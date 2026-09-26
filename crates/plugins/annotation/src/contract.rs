@@ -1,5 +1,6 @@
-//! `types.ts`: the slice, its actions, the selection-chrome settings, the
-//! render projections the capability hands out, and the token.
+//! `contract.ts` and `token.ts`: the public protocol's types (the page-space
+//! record, patches, filters, events, the selection-chrome settings, the
+//! render projections) and the token.
 //!
 //! The TypeScript types the one capability twice (the public
 //! `AnnotationCapability` and the host `AnnotationHostCapability`, two lenses
@@ -9,8 +10,12 @@
 use std::rc::Rc;
 use std::sync::LazyLock;
 
+use epdf_annotation_core::js::Nullable;
+use epdf_annotation_core::richtext::RichTextParagraph;
 use epdf_annotation_core::{
-    AnnotationRef, Geom, Model, PageObjectNumber, PropKey, PropSpec, Rect, SnapSettingsPatch,
+    AnnotationFlags, AnnotationFlagsPatch, AnnotationPropsPatch, AnnotationRef, Callout,
+    CreationDraftAnchor, Geom, PageRef, PropKey, PropSpec, Rect, SelectionAnchor,
+    SnapSettingsPatch, TextQuad,
 };
 use epdf_geometry::{Point, Size};
 use epdf_kernel::rt::Promise;
@@ -19,8 +24,12 @@ use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
-use crate::capability::AnnotationCapability;
-use crate::tools::AnnotationToolDef;
+use crate::controller::AnnotationCapability;
+use crate::rich_text::FontHandle;
+use crate::tools::definitions::AnnotationToolDef;
+
+pub use crate::rich_text::{Face, TextFormat, TextSelection};
+pub use crate::tools::definitions::ARMED_STAMP_TOOL_ID;
 
 // ── selection chrome ──────────────────────────────────────────────────────────
 
@@ -161,7 +170,7 @@ pub struct ChromeSettingsPatch {
     pub guides: Option<ChromeGuidesPatch>,
 }
 
-// ── the slice ─────────────────────────────────────────────────────────────────
+// ── hydration and the tool ghost ──────────────────────────────────────────────
 
 /// `AnnotationHydration`: whole-document hydration status.
 #[derive(Clone, Debug, PartialEq)]
@@ -193,7 +202,7 @@ impl Serialize for AnnotationHydration {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolGhost {
-    pub pon: PageObjectNumber,
+    pub page: PageRef,
     #[serde(rename = "box")]
     pub box_: Rect,
     pub rot: f64,
@@ -206,51 +215,26 @@ pub struct ToolGhost {
 pub enum ToolGhostKind {
     /// The armed stamp raster; the framework blits it.
     Image,
-    /// Painted through `pageItems`.
+    /// Painted through `listPageItems`.
     Vector { tool_id: String, geom: Geom },
 }
 
-/// `AnnotationState`. The model and chrome sit behind `Rc` so the memoized
-/// selectors can key on identity, as the TypeScript's `===` does.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotationState {
-    pub model: Rc<Model>,
-    pub hydration: AnnotationHydration,
-    pub chrome: Rc<ChromeSettings>,
-    pub tool_ghost: Option<Rc<ToolGhost>>,
-    pub stamp_arm_epoch: f64,
-}
+// ── configuration and host inputs ─────────────────────────────────────────────
 
-/// The hydration error makes one variant large; actions are transient.
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Serialize)]
-#[serde(tag = "type")]
-pub enum AnnotationAction {
-    #[serde(rename = "SET_MODEL")]
-    SetModel { model: Rc<Model> },
-    #[serde(rename = "SET_HYDRATION")]
-    SetHydration { hydration: AnnotationHydration },
-    #[serde(rename = "SET_CHROME")]
-    SetChrome { patch: ChromeSettingsPatch },
-    #[serde(rename = "SET_TOOL_GHOST")]
-    SetToolGhost { ghost: Option<Rc<ToolGhost>> },
-    #[serde(rename = "STAMP_ARM_CHANGED")]
-    StampArmChanged,
-}
-
-// ── host inputs ───────────────────────────────────────────────────────────────
-
-/// What the TypeScript reads from its global environment. The capability
-/// never touches the DOM; these are the two ambient values it does use.
+/// What the TypeScript reads from its global environment. The controller
+/// never touches the DOM; these are the ambient values it does use.
 #[derive(Clone, Default)]
 pub struct AnnotationHost {
-    /// `console.error(message, error?)`: the placement, file-picker, link
-    /// sync, grouped-create and flags-write failures. `None` drops them.
+    /// `console.error(message, error?)`: every failure the plugin swallows.
+    /// `None` drops them.
     pub console_error: Option<Rc<dyn Fn(&str, Option<&Error>)>>,
     /// `crypto.randomUUID()`: the `/NM` seeded on every repository create.
-    /// `None` uses a process-wide counter (`00000000-0000-4000-8000-...`).
+    /// `None` counts up from `00000000-0000-4000-8000-000000000001`.
     pub random_uuid: Option<Rc<dyn Fn() -> String>>,
+    /// `ctx.engine.fonts.list()`: the registered fonts. The Rust engine
+    /// contract has no fonts service, so the host supplies the list; `None`
+    /// is no registered fonts, as on the cloud engine.
+    pub fonts: Option<Rc<dyn Fn() -> Vec<FontHandle>>>,
 }
 
 /// `AnnotationConfig`: the initial snap and chrome settings and the tools.
@@ -266,7 +250,7 @@ pub struct AnnotationConfig {
     pub host: AnnotationHost,
 }
 
-// ── projections ───────────────────────────────────────────────────────────────
+// ── render projections ────────────────────────────────────────────────────────
 
 /// `LinkNavItem`: one clickable link area on a page. It deserializes too:
 /// the link plugin's engine-backed page cache keeps items in its slice.
@@ -274,7 +258,7 @@ pub struct AnnotationConfig {
 #[serde(rename_all = "camelCase")]
 pub struct LinkNavItem {
     pub id: String,
-    pub rect: Rect,
+    pub bounds: Rect,
     pub target: Value,
     pub attached: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -318,15 +302,17 @@ pub type SelectionFlags = Map<String, Value>;
 pub struct TextItemCss {
     pub font_family: String,
     pub font_size: f64,
-    pub line_height: f64,
     pub color: String,
+    pub font_weight: f64,
+    pub font_style: &'static str,
+    pub text_decoration: &'static str,
     pub align: epdf_annotation_core::TextAlign,
     pub padding: f64,
-    pub background: Option<String>,
 }
 
 /// `TextItem`: a free-text annotation projected for the editable layer.
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TextItem {
     pub id: String,
     #[serde(rename = "ref")]
@@ -334,11 +320,20 @@ pub struct TextItem {
     #[serde(rename = "box")]
     pub box_: Rect,
     pub contents: Value,
+    pub rich_text: RichTextParagraphs,
     pub editing: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rot: Option<f64>,
     pub css: TextItemCss,
 }
+
+/// `{ paragraphs: RichTextParagraph[] }`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RichTextParagraphs {
+    pub paragraphs: Vec<RichTextParagraph>,
+}
+
+// ── comments ──────────────────────────────────────────────────────────────────
 
 /// `CommentPermissions`: per-thread action gates.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -353,14 +348,14 @@ pub struct CommentPermissions {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThreadDeleteFailure {
-    pub ref_: Value,
+    pub ref_: AnnotationRef,
     pub error: Error,
 }
 
 /// `ThreadDeleteResult`.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThreadDeleteResult {
-    pub deleted: Vec<Value>,
+    pub deleted: Vec<AnnotationRef>,
     pub failed: Vec<ThreadDeleteFailure>,
 }
 
@@ -377,17 +372,284 @@ impl ThreadDeleteResult {
     }
 }
 
-/// `StampToolInput`. `source` and `preview` are `BinarySource`s as
-/// canonical JSON.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+/// `CommentThreadChangedEvent['change']`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ThreadChange {
+    Reply,
+    Text,
+    Status,
+    Marked,
+    Deleted,
+}
+
+/// `CommentThreadChangedEvent`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CommentThreadChangedEvent {
+    pub root_ref: AnnotationRef,
+    pub change: ThreadChange,
+}
+
+// ── the page-space record ─────────────────────────────────────────────────────
+
+/// `AnnotationGeometry`: subtype-specific geometry in page space.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum AnnotationGeometry {
+    Rect { bounds: Rect, rotation: f64 },
+    Line { from: Point, to: Point },
+    Polygon { vertices: Vec<Point> },
+    Polyline { vertices: Vec<Point> },
+    Ink { strokes: Vec<Vec<Point>> },
+    Markup { quads: Vec<TextQuad> },
+    Caret { bounds: Rect },
+    Text { bounds: Rect, rotation: f64, callout: Option<Callout> },
+}
+
+/// `{ update, delete }`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+pub struct RecordAuthority {
+    pub update: bool,
+    pub delete: bool,
+}
+
+/// `Annotation`: the page-space record every read returns, projected once
+/// per model entry.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Annotation {
+    #[serde(rename = "ref")]
+    pub ref_: AnnotationRef,
+    pub page: PageRef,
+    pub subtype: String,
+    pub bounds: Rect,
+    pub geometry: AnnotationGeometry,
+    pub props: Map<String, Value>,
+    pub flags: AnnotationFlags,
+    pub contents: Value,
+    pub author: Value,
+    pub created_at: Value,
+    pub modified_at: Value,
+    pub group: Option<AnnotationRef>,
+    pub in_reply_to: Value,
+    pub authority: RecordAuthority,
+    pub raw: Option<Value>,
+}
+
+/// `AnnotationGeometryPatch`.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum AnnotationGeometryPatch {
+    Rect {
+        bounds: Rect,
+        #[serde(default)]
+        rotation: Option<f64>,
+    },
+    Line {
+        from: Point,
+        to: Point,
+    },
+    Polygon {
+        vertices: Vec<Point>,
+    },
+    Polyline {
+        vertices: Vec<Point>,
+    },
+    Ink {
+        strokes: Vec<Vec<Point>>,
+    },
+    Markup {
+        quads: Vec<TextQuad>,
+    },
+    Text {
+        bounds: Rect,
+        #[serde(default)]
+        rotation: Option<f64>,
+        /// Absent leaves the callout, `null` removes it.
+        #[serde(default)]
+        callout: Nullable<Callout>,
+    },
+}
+
+impl AnnotationGeometryPatch {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            AnnotationGeometryPatch::Rect { .. } => "rect",
+            AnnotationGeometryPatch::Line { .. } => "line",
+            AnnotationGeometryPatch::Polygon { .. } => "polygon",
+            AnnotationGeometryPatch::Polyline { .. } => "polyline",
+            AnnotationGeometryPatch::Ink { .. } => "ink",
+            AnnotationGeometryPatch::Markup { .. } => "markup",
+            AnnotationGeometryPatch::Text { .. } => "text",
+        }
+    }
+}
+
+/// `AnnotationPatch`: a page-space patch. Omitted parts are untouched.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationPatch {
+    #[serde(default)]
+    pub bounds: Option<Rect>,
+    #[serde(default)]
+    pub geometry: Option<AnnotationGeometryPatch>,
+    #[serde(default)]
+    pub props: Option<AnnotationPropsPatch>,
+    #[serde(default)]
+    pub flags: Option<AnnotationFlagsPatch>,
+    #[serde(default)]
+    pub contents: Option<String>,
+    #[serde(default)]
+    pub rich_text: Option<RichTextParagraphs>,
+}
+
+/// `AnnotationFilter`: every field narrows.
+#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+pub struct AnnotationFilter {
+    #[serde(default)]
+    pub page: Option<PageRef>,
+    #[serde(default)]
+    pub subtype: Option<String>,
+    #[serde(default)]
+    pub author: Option<String>,
+    #[serde(default)]
+    pub group: Option<AnnotationRef>,
+}
+
+/// `AnnotationTool`: the public shape of an authoring tool.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AnnotationTool {
+    pub id: String,
+    pub subtype: String,
+    pub preset: String,
+    pub cursor: String,
+    pub enables: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defaults: Option<AnnotationPropsPatch>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flags: Option<AnnotationFlagsPatch>,
+    pub upright: bool,
+}
+
+/// `AnnotationSelectionAnchor`.
+pub type AnnotationSelectionAnchor = SelectionAnchor;
+
+// ── events ────────────────────────────────────────────────────────────────────
+
+/// `ChangeOrigin`, as JSON: `{locality, trigger, sessionId, actorId}`.
+pub type ChangeOrigin = Value;
+
+/// `AnnotationChangedEvent`: a confirmed creation or update.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AnnotationChangedEvent {
+    #[serde(rename = "ref")]
+    pub ref_: AnnotationRef,
+    pub page: PageRef,
+    pub subtype: Value,
+    pub annotation: Option<Annotation>,
+    pub raw: Value,
+    pub origin: ChangeOrigin,
+}
+
+pub type AnnotationCreatedEvent = AnnotationChangedEvent;
+pub type AnnotationUpdatedEvent = AnnotationChangedEvent;
+
+/// `AnnotationDeletedEvent`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AnnotationDeletedEvent {
+    #[serde(rename = "ref")]
+    pub ref_: AnnotationRef,
+    pub page: PageRef,
+    pub origin: ChangeOrigin,
+}
+
+/// `AnnotationResyncedEvent`: `pages` is `'all'` or the reloaded pages.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ResyncedPages {
+    All,
+    Pages(Vec<PageRef>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AnnotationResyncedEvent {
+    pub pages: ResyncedPages,
+}
+
+impl Serialize for AnnotationResyncedEvent {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut map = s.serialize_map(Some(1))?;
+        match &self.pages {
+            ResyncedPages::All => map.serialize_entry("pages", "all")?,
+            ResyncedPages::Pages(pages) => map.serialize_entry("pages", pages)?,
+        }
+        map.end()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationSelectionChangedEvent {
+    pub refs: Vec<AnnotationRef>,
+    pub previous_refs: Vec<AnnotationRef>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AnnotationDraftChangedEvent {
+    pub draft: Option<CreationDraftAnchor>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct AnnotationEditingChangedEvent {
+    #[serde(rename = "ref")]
+    pub ref_: Option<AnnotationRef>,
+}
+
+// ── batches ───────────────────────────────────────────────────────────────────
+
+/// `BatchResult<AnnotationRef, R>`: what applied, and what failed with its
+/// `PluginErrorInfo`. `skipped` is always empty here.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BatchResult<R> {
+    pub applied: Vec<AnnotationRef>,
+    pub failed: Vec<(R, Error)>,
+}
+
+impl<R: Serialize> BatchResult<R> {
+    pub fn to_json(&self) -> Value {
+        json!({
+            "applied": self.applied,
+            "skipped": [],
+            "failed": self
+                .failed
+                .iter()
+                .map(|(r, e)| json!({ "ref": r, "error": e.plugin_error_info() }))
+                .collect::<Vec<_>>(),
+        })
+    }
+}
+
+// ── stamps and the file-picker port ───────────────────────────────────────────
+
+/// `StampPreviewProvider`: a render at a device pixel width, or `null`.
+pub type StampPreviewProvider = Rc<dyn Fn(f64) -> Promise<Option<ArmedStampPreview>>>;
+
+/// `StampToolInput['preview']`: fixed bytes, or a resolution-aware provider.
+#[derive(Clone)]
+pub enum StampPreview {
+    /// A `BinarySource` as canonical JSON; a falsy one is no preview.
+    Source(Value),
+    Provider(StampPreviewProvider),
+}
+
+/// `StampToolInput`. `source` is a `BinarySource` as canonical JSON.
+#[derive(Clone, Default)]
 pub struct StampToolInput {
     pub source: Value,
-    #[serde(default)]
     pub target_width: Option<f64>,
-    #[serde(default)]
-    pub preview: Option<Value>,
-    #[serde(default)]
+    pub name: Option<String>,
+    pub subject: Option<String>,
+    pub preview: Option<StampPreview>,
     pub intrinsic_size: Option<Size>,
 }
 
@@ -398,6 +660,18 @@ pub struct ArmedStampPreview {
     pub mime_type: Option<String>,
 }
 
+/// `StampPlacement`: where a programmatic stamp placement lands.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampPlacement {
+    pub page: PageRef,
+    pub at: Point,
+    #[serde(default)]
+    pub target_width: Option<f64>,
+    #[serde(default)]
+    pub rotation: Option<f64>,
+}
+
 /// `FilePromptRequest`: what the file-picker port is asked for.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -406,7 +680,7 @@ pub struct FilePromptRequest {
     pub subtype: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub accept: Option<String>,
-    pub pon: PageObjectNumber,
+    pub page: PageRef,
     pub point: Point,
 }
 
@@ -415,7 +689,8 @@ pub struct FilePromptRequest {
 /// to cancel.
 pub type FilePickerProvider = Rc<dyn Fn(FilePromptRequest) -> Promise<Value>>;
 
-/// The annotation capability token.
+/// The annotation capability token. The TypeScript's public and host tokens
+/// are one runtime object; Rust has one token and one type.
 pub static ANNOTATION: LazyLock<Token<AnnotationCapability>> = LazyLock::new(|| {
     Token::with_hint(
         "annotation",

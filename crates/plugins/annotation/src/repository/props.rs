@@ -66,11 +66,13 @@ pub fn generic(key: PropKey, a: &Annot) -> Wire {
         PropKey::Link => Wire::new(),
         // `lineEndings` has no generic lowering; only the stroke kinds
         // declare one. The caller never asks for it here.
-        PropKey::LineEndings => Wire::new(),
+        // Neither do the formatting toggles: free text lowers them as a
+        // rich body write.
+        PropKey::LineEndings | PropKey::Bold | PropKey::Italic | PropKey::Underline => Wire::new(),
     }
 }
 
 /// Whether `GENERIC_PROPS` has the key.
 pub fn has_generic(key: PropKey) -> bool {
-    key != PropKey::LineEndings
+    !matches!(key, PropKey::LineEndings | PropKey::Bold | PropKey::Italic | PropKey::Underline)
 }

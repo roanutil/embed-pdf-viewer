@@ -183,6 +183,43 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'create-from-selection-text-edits',
+    covers:
+      'createFromSelection authors a caret at the selection’s end for insert-text (resolving its ref), one Caret + StrikeOut group per page for replace-text (the end page anchored at its end glyph, the others at their last segment, each resolving its primary’s ref), and one redaction mark per page; clear: false keeps the selection, and a page whose segments are empty is skipped.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          ...reads,
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(70)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(71, { intent: 'replace' })) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(markup('strikeout', 72, { intent: 'strikeout-text-edit', inReplyTo: objRef(71), replyType: 'group' })) },
+          { path: 'page.annotations.create', pon: 2, times: 1, value: created(caret(73, { pageObjectNumber: 2, intent: 'replace' })) },
+          { path: 'page.annotations.create', pon: 2, times: 1, value: created(markup('strikeout', 74, { pageObjectNumber: 2, intent: 'strikeout-text-edit', inReplyTo: objRef(73, 2), replyType: 'group' })) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(markup('highlight', 75)) },
+          { path: 'page.annotations.create', pon: 2, times: 1, value: created(markup('highlight', 76, { pageObjectNumber: 2 })) },
+        ]),
+      },
+    },
+    snapshot: slices,
+    steps: [
+      ...boot,
+      ...load,
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'createFromSelection', args: ['insert-text'] },
+      sel('select', [range([1, 0], [1, 4])]),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'createFromSelection', args: ['insert-text', { clear: false }] },
+      sel('hasSelection'),
+      sel('select', [range([1, 13], [2, 4])]),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'createFromSelection', args: ['replace-text', { preset: 'replace-text' }] },
+      sel('hasSelection'),
+      sel('select', [range([1, 0], [2, 4])]),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'createFromSelection', args: ['highlight', { preset: 'highlight', clear: false }] },
+      call('list', [1]),
+      call('list', [2]),
+    ],
+  },
+  {
     name: 'markup-needs-a-selection-plugin-and-authority',
     covers:
       'Without a selection plugin markupFromSelection is false and the markup tools never register; without create authority it is false and createMarkup, createCaret and createReplaceText do nothing.',

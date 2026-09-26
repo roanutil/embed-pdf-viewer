@@ -171658,7 +171658,7 @@
     },
     {
       "name": "armed-stamps",
-      "covers": "armStamp validates the bytes, keeps the preview (the source for rasters, an explicit one for PDF, none otherwise), sizes from the intrinsic pixels or an override or a target width, bumps the arm epoch and activates the stamp tool. Hover draws the image ghost; each click places a stamp; leaving the stamp family disarms. Junk bytes reject.",
+      "covers": "armStamp validates the bytes, keeps the preview (the source for rasters, an explicit one for PDF, none otherwise), sizes from the intrinsic pixels or an override or a target width, bumps the arm epoch and activates the stamp tool. Hover draws the image ghost; each click places a stamp; activating any tool but the stamp tool disarms. Junk bytes reject.",
       "plugins": [
         {
           "factory": "interaction"
@@ -185047,7 +185047,7 @@
     },
     {
       "name": "armed-stamps-need-the-stamp-tag",
-      "covers": "armStamp activates the stamp tool, and the tool-change callback disarms unless the active tool enables annotation-stamp; the built-in stamp tool does not (it enables annotation-place), so only a stamp tool configured with the legacy tag keeps the payload. Armed: hover draws the image ghost, a click places it, a page without a crop declines, the preview is readable; leaving the family disarms.",
+      "covers": "The tool-change callback keeps an armed payload on the stamp tool armStamp activates, and on any tool carrying the legacy annotation-stamp tag (here the stamp tool is reconfigured with it, and a flat-stamp preset extending it inherits it); the pointer tool disarms. Armed: hover draws the image ghost, a click places it, a page without a crop declines, the preview is readable.",
       "plugins": [
         {
           "factory": "interaction"

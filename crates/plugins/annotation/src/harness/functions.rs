@@ -9,12 +9,15 @@ use plugin_conformance::FunctionTable;
 use plugin_conformance::js::{arg, from_value, to_value};
 use serde_json::{Value, json};
 
-use crate::reducer::{annotation_reducer, initial_annotation_state, merge_chrome};
+use crate::contract::*;
+use crate::model::{
+    AnnotationAction, AnnotationState, annotation_reducer, initial_annotation_state, merge_chrome,
+};
 use crate::repository::kinds::{free_text, misc, quads, shape};
 use crate::repository::seam::{self, pdf_json};
 use crate::repository::{self, projection::Wire};
-use crate::tools::{AnnotationToolDef, build_tool_registry, is_touch_direct};
-use crate::types::*;
+use crate::rich_text::{self, Face, FontHandle, RichTextDocument};
+use crate::tools::definitions::{AnnotationToolDef, build_tool_registry, is_touch_direct};
 use crate::value::{opt_f64, opt_pdf_rect, pdf_rect_of};
 
 type Out = Result<Value, Error>;
@@ -60,8 +63,8 @@ fn to_create_draft(a: &[Value]) -> Out {
     Ok(wire(repository::to_create_draft(&annot(a, 0)?, crop(a, 1), &uuid)))
 }
 
-fn ref_key(a: &[Value]) -> Out {
-    Ok(json!(seam::ref_key(&arg(a, 0)?)))
+fn annotation_key(a: &[Value]) -> Out {
+    Ok(json!(seam::annotation_key(&arg(a, 0)?)))
 }
 
 fn color_to_css(a: &[Value]) -> Out {
@@ -172,7 +175,7 @@ pub fn repository_functions() -> FunctionTable {
         ("toPatch", to_patch),
         ("toScopedPatch", to_scoped_patch),
         ("toCreateDraft", to_create_draft),
-        ("refKey", ref_key),
+        ("annotationKey", annotation_key),
         ("colorToCss", color_to_css),
         ("cssToColor", css_to_color),
         ("boxGeomFields", box_geom_fields),
@@ -211,12 +214,12 @@ fn touch_direct(a: &[Value]) -> Out {
 
 fn text_items(a: &[Value]) -> Out {
     let m: epdf_annotation_core::Model = arg(a, 0)?;
-    let pon: u32 = arg(a, 1)?;
+    let page: epdf_annotation_core::PageRef = arg(a, 1)?;
     let view: Option<epdf_annotation_core::ViewEnv> = match a.get(2) {
         Some(v) if !epdf_kernel::is_undefined(v) => Some(from_value(v)?),
         _ => None,
     };
-    Ok(to_value(&crate::text_item::build_text_items(&m, pon, view)))
+    Ok(to_value(&crate::text_item::build_text_items(&m, page, view)))
 }
 
 fn icon_draft(a: &[Value]) -> Out {
@@ -228,7 +231,7 @@ fn icon_draft(a: &[Value]) -> Out {
         _ => None,
     };
     let file = a.get(4).filter(|v| !v.is_null()).cloned();
-    Ok(Value::Object(crate::placement::icon_placement_draft(
+    Ok(Value::Object(crate::write::placement::icon_placement_draft(
         subtype,
         geom,
         &defaults,
@@ -267,7 +270,7 @@ pub fn ghost_from_json(v: &Value) -> Result<Option<Rc<ToolGhost>>, Error> {
         _ => ToolGhostKind::Image,
     };
     Ok(Some(Rc::new(ToolGhost {
-        pon: from_value(v.get("pon").unwrap_or(&Value::Null))?,
+        page: from_value(v.get("page").unwrap_or(&Value::Null))?,
         box_: from_value(v.get("box").unwrap_or(&Value::Null))?,
         rot: v.get("rot").and_then(Value::as_f64).unwrap_or(0.0),
         kind,
@@ -292,12 +295,20 @@ fn state_from_json(v: &Value) -> Result<AnnotationState, Error> {
         chrome: Rc::new(from_value(v.get("chrome").unwrap_or(&Value::Null))?),
         tool_ghost: ghost_from_json(v.get("toolGhost").unwrap_or(&Value::Null))?,
         stamp_arm_epoch: v.get("stampArmEpoch").and_then(Value::as_f64).unwrap_or(0.0),
+        text_selection: match v.get("textSelection") {
+            Some(t) if !t.is_null() && !epdf_kernel::is_undefined(t) => {
+                Some(Rc::new(from_value(t)?))
+            }
+            _ => None,
+        },
     })
 }
 
-fn action_from_json(v: &Value) -> Result<AnnotationAction, Error> {
+/// `None` for an action outside the union, which the reducer's `default`
+/// arm returns the state for.
+fn action_from_json(v: &Value) -> Result<Option<AnnotationAction>, Error> {
     let member = |k: &str| v.get(k).unwrap_or(&Value::Null);
-    Ok(match v.get("type").and_then(Value::as_str) {
+    Ok(Some(match v.get("type").and_then(Value::as_str) {
         Some("SET_MODEL") => {
             AnnotationAction::SetModel { model: Rc::new(from_value(member("model"))?) }
         }
@@ -308,21 +319,30 @@ fn action_from_json(v: &Value) -> Result<AnnotationAction, Error> {
         Some("SET_TOOL_GHOST") => {
             AnnotationAction::SetToolGhost { ghost: ghost_from_json(member("ghost"))? }
         }
-        _ => AnnotationAction::StampArmChanged,
-    })
+        Some("SET_TEXT_SELECTION") => AnnotationAction::SetTextSelection {
+            selection: match member("selection") {
+                Value::Null => None,
+                t => Some(Rc::new(from_value(t)?)),
+            },
+        },
+        Some("STAMP_ARM_CHANGED") => AnnotationAction::StampArmChanged,
+        _ => return Ok(None),
+    }))
 }
 
 fn reducer(a: &[Value]) -> Out {
     let state = state_from_json(&a[0])?;
-    let action = action_from_json(&a[1])?;
-    let next = annotation_reducer(&state, &action).unwrap_or(state);
+    let next = match action_from_json(&a[1])? {
+        Some(action) => annotation_reducer(&state, &action).unwrap_or(state),
+        None => state,
+    };
     Ok(to_value(&next))
 }
 
 fn comment_threads(a: &[Value]) -> Out {
     let dtos: Vec<Value> = a[0].as_array().cloned().unwrap_or_default();
     let user = a.get(1).and_then(|o| o.get("currentUserId")).and_then(Value::as_str);
-    let threads = crate::threads::build_comment_threads(&dtos, user);
+    let threads = crate::comments::build::build_comment_threads(&dtos, user);
     Ok(Value::Array(threads.iter().map(|t| t.to_json()).collect()))
 }
 
@@ -339,6 +359,98 @@ fn sniff(a: &[Value]) -> Out {
     })
 }
 
+// ── rich text ────────────────────────────────────────────────────────────────
+
+fn fonts_arg(a: &[Value], i: usize) -> Result<Option<Vec<FontHandle>>, Error> {
+    match a.get(i) {
+        Some(v) if !epdf_kernel::is_undefined(v) && !v.is_null() => Ok(Some(from_value(v)?)),
+        _ => Ok(None),
+    }
+}
+
+fn text(a: &[Value], i: usize) -> String {
+    a.get(i).and_then(Value::as_str).unwrap_or_default().to_string()
+}
+
+fn face_for_font(a: &[Value]) -> Out {
+    let fonts = fonts_arg(a, 1)?;
+    Ok(to_value(&rich_text::face_for_font(&text(a, 0), fonts.as_deref())))
+}
+
+fn font_for_face(a: &[Value]) -> Out {
+    let face: Face = arg(a, 0)?;
+    let fonts = fonts_arg(a, 1)?;
+    Ok(json!(rich_text::font_for_face(&face, fonts.as_deref())))
+}
+
+fn css_for_face(a: &[Value]) -> Out {
+    let fonts = fonts_arg(a, 1)?;
+    Ok(json!(rich_text::css_font_family_for_face(&text(a, 0), fonts.as_deref())))
+}
+
+fn css_for_font(a: &[Value]) -> Out {
+    Ok(json!(rich_text::css_font_family_for_font(&text(a, 0))))
+}
+
+fn family_key(a: &[Value]) -> Out {
+    Ok(json!(rich_text::family_key(&text(a, 0))))
+}
+
+fn body_from_text_style(a: &[Value]) -> Out {
+    let t: epdf_annotation_core::TextStyle = arg(a, 0)?;
+    let fonts = fonts_arg(a, 1)?;
+    Ok(Value::Object(rich_text::body_from_text_style(&t, fonts.as_deref())))
+}
+
+fn rich_doc_of(a: &[Value]) -> Out {
+    Ok(to_value(&rich_text::rich_doc_of(&annot(a, 0)?, None)))
+}
+
+fn text_commit_patch(a: &[Value]) -> Out {
+    let paragraphs: Vec<epdf_annotation_core::richtext::RichTextParagraph> = arg(a, 1)?;
+    Ok(rich_text::text_commit_patch(&annot(a, 0)?, &paragraphs, None))
+}
+
+fn strip_body_defaults(a: &[Value]) -> Out {
+    let paragraphs: Vec<epdf_annotation_core::richtext::RichTextParagraph> = arg(a, 0)?;
+    let body = a.get(1).and_then(Value::as_object).cloned().unwrap_or_default();
+    Ok(to_value(&rich_text::strip_body_defaults(&paragraphs, &body)))
+}
+
+fn run_delta_for_props(a: &[Value]) -> Out {
+    let patch: epdf_annotation_core::AnnotationPropsPatch = arg(a, 0)?;
+    let fonts = fonts_arg(a, 1)?;
+    let (delta, rest) = rich_text::run_delta_for_props(&patch, fonts.as_deref());
+    Ok(json!({ "delta": to_value(&delta), "rest": to_value(&rest) }))
+}
+
+fn runs_in_range(a: &[Value]) -> Out {
+    let paragraphs: Vec<epdf_annotation_core::richtext::RichTextParagraph> =
+        from_value(a[0].get("paragraphs").unwrap_or(&Value::Null))?;
+    let range: epdf_annotation_core::richtext::RichTextRange = arg(a, 1)?;
+    Ok(to_value(&rich_text::runs_in_range(&paragraphs, range)))
+}
+
+fn range_props(a: &[Value]) -> Out {
+    let doc: RichTextDocument = arg(a, 0)?;
+    let range: epdf_annotation_core::richtext::RichTextRange = arg(a, 1)?;
+    let fonts = fonts_arg(a, 2)?;
+    let (values, mixed) = rich_text::range_props(&doc, range, fonts.as_deref());
+    Ok(json!({ "values": values, "mixed": to_value(&mixed) }))
+}
+
+fn geometry_from_input(a: &[Value]) -> Out {
+    let input: crate::create_input::CreateAnnotationInput = arg(a, 0)?;
+    let (subtype, geom) = crate::create_input::geometry_from_input(&input)?;
+    Ok(json!({ "subtype": subtype, "geom": to_value(&geom) }))
+}
+
+fn preview_bucket(a: &[Value]) -> Out {
+    let px = a.first().and_then(Value::as_f64).unwrap_or(f64::NAN);
+    let cap = a.get(1).and_then(Value::as_f64);
+    Ok(plugin_conformance::js::number(crate::host_contract::preview_bucket(px, cap)))
+}
+
 /// `plugins/annotation-pure.json`.
 pub fn pure_functions() -> FunctionTable {
     vec![
@@ -351,5 +463,19 @@ pub fn pure_functions() -> FunctionTable {
         ("annotationReducer", reducer),
         ("buildCommentThreads", comment_threads),
         ("sniffBinaryMetadata", sniff),
+        ("faceForFont", face_for_font),
+        ("fontForFace", font_for_face),
+        ("cssFontFamilyForFace", css_for_face),
+        ("cssFontFamilyForFont", css_for_font),
+        ("familyKey", family_key),
+        ("bodyFromTextStyle", body_from_text_style),
+        ("richDocOf", rich_doc_of),
+        ("textCommitPatch", text_commit_patch),
+        ("stripBodyDefaults", strip_body_defaults),
+        ("runDeltaForProps", run_delta_for_props),
+        ("runsInRange", runs_in_range),
+        ("rangeProps", range_props),
+        ("geometryFromInput", geometry_from_input),
+        ("previewBucket", preview_bucket),
     ]
 }

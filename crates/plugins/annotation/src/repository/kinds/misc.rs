@@ -111,6 +111,9 @@ fn widget_text_from_dto(d: &Value) -> TextStyle {
         text_align: get(d, "textAlign")
             .and_then(|a| serde_json::from_value(a.clone()).ok())
             .unwrap_or(TextAlign::Left),
+        bold: None,
+        italic: None,
+        underline: None,
     }
 }
 

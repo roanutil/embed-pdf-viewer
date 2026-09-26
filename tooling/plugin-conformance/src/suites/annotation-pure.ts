@@ -18,6 +18,22 @@ import {
 } from '../../../../packages/plugin/annotation/src/model';
 import { buildToolRegistry, isTouchDirect } from '../../../../packages/plugin/annotation/src/tools/definitions';
 import { fromDTO } from '../../../../packages/plugin/annotation/src/repository';
+import {
+  bodyFromTextStyle,
+  cssFontFamilyForFace,
+  cssFontFamilyForFont,
+  faceForFont,
+  familyKey,
+  fontForFace,
+  rangeProps,
+  richDocOf,
+  runDeltaForProps,
+  runsInRange,
+  stripBodyDefaults,
+  textCommitPatch,
+} from '../../../../packages/plugin/annotation/src/rich-text';
+import { geometryFromInput } from '../../../../packages/plugin/annotation/src/create-input';
+import { previewBucket } from '../../../../packages/plugin/annotation/src/host-contract';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
 
 import { CROP, callout, freeText, objRef, pr, square, textNote, markup, link, widget, base } from './annotation-fixtures';
@@ -101,6 +117,31 @@ const model = (annots: Record<string, unknown>[], over: Record<string, unknown> 
   order: annots.map((x) => x.id as string),
   ...over,
 });
+/** A rich body: the engine's resolved defaults with the three toggles set. */
+const body = (weight: number, italic: boolean, decoration: string[], over: Record<string, unknown> = {}) => ({
+  family: 'Helvetica',
+  weight,
+  italic,
+  size: 12,
+  color: '#EF4444',
+  decoration,
+  script: 'normal',
+  letterSpacing: 0,
+  horizontalScale: 1,
+  align: 'left',
+  dir: 'ltr',
+  ...over,
+});
+const PARAS = [
+  { runs: [{ text: 'Hel' }, { text: 'lo', style: { weight: 700 } }], align: 'left', dir: 'ltr' },
+  { runs: [{ text: 'world', style: { italic: true, decoration: ['underline'], color: '#0000FF' } }], align: 'center' },
+  { runs: [{ text: '' }, { text: 'x', style: { family: 'Courier', size: 20 } }], dir: 'rtl' },
+];
+const richTexts = [
+  a(freeText(11, { richText: { body: body(700, true, ['underline']), paragraphs: PARAS } })),
+  a(freeText(12, { richText: { body: body(400, false, []), paragraphs: PARAS } })),
+  a(freeText(13), { text: { fontFamily: 'helvetica', fontSize: 9, fontColor: '#000000', textAlign: 'right', bold: true, italic: true, underline: true } }),
+];
 const texts = [
   a(freeText(1)),
   a(freeText(2, { fontFamily: 'courier', fontColor: { r: 0, g: 0, b: 255 }, interiorColor: { r: 255, g: 255, b: 0 } })),
@@ -112,10 +153,11 @@ const texts = [
   a(square(8)),
 ];
 cases.push(
-  c('buildTextItems', 'page', model(texts, { editing: 'obj:2', selected: ['obj:6'] }), 1),
-  c('buildTextItems', 'view', model(texts), 1, { zoom: 2, rotation: 90 }),
-  c('buildTextItems', 'other-page', model(texts), 2),
-  c('buildTextItems', 'empty', model([]), 1),
+  c('buildTextItems', 'page', model(texts, { editing: 'obj:2', selected: ['obj:6'] }), pr(1)),
+  c('buildTextItems', 'view', model(texts), pr(1), { zoom: 2, rotation: 90 }),
+  c('buildTextItems', 'other-page', model(texts), pr(2)),
+  c('buildTextItems', 'empty', model([]), pr(1)),
+  c('buildTextItems', 'rich', model(richTexts), pr(1)),
 );
 
 // ── icon placement ────────────────────────────────────────────────────────────
@@ -156,8 +198,102 @@ cases.push(
     type: 'SET_TOOL_GHOST',
     ghost: { page: pr(1), box: { x: 1, y: 2, width: 3, height: 4 }, rot: 0, kind: 'image' },
   }),
+  c('annotationReducer', 'set-text-selection', state, { type: 'SET_TEXT_SELECTION', selection: { id: 'obj:1', start: 1, end: 3 } }),
+  c('annotationReducer', 'unknown-action', state, { type: 'NOPE' }),
   c('annotationReducer', 'stamp-armed', { ...state, stampArmEpoch: 3, toolGhost: { page: pr(1), box: { x: 0, y: 0, width: 1, height: 1 }, rot: 0, kind: 'image' } }, { type: 'STAMP_ARM_CHANGED' }),
 );
+
+// ── rich text ─────────────────────────────────────────────────────────────────
+
+/** Registered fonts, as the local engine's `fonts.list()` answers them. */
+const FONTS = [
+  { key: 'inter-regular', familyName: 'Inter', weight: 400, italic: false },
+  { key: 'inter-bold', familyName: 'Inter', weight: 700, italic: false },
+  { key: 'inter-italic', familyName: 'Inter', weight: 400, italic: true },
+  { key: 'noto-sans-light', familyName: 'Noto Sans', weight: 300, italic: false },
+];
+const TEXT_STYLE = { fontFamily: 'helvetica', fontSize: 12, fontColor: '#ef4444', textAlign: 'left' };
+for (const font of ['helvetica', 'times-bold-italic', 'zapf-dingbats', 'inter-bold', 'MyFont']) {
+  cases.push(c('faceForFont', font, font, FONTS));
+}
+cases.push(c('faceForFont', 'no-fonts', 'inter-bold'));
+for (const [label, face] of [
+  ['registered-exact', { family: 'Inter', weight: 700 }],
+  ['registered-closest', { family: 'inter', weight: 600, italic: true }],
+  ['registered-italic-penalty', { family: 'Noto_Sans', italic: true }],
+  ['standard-regular', { family: 'Arial' }],
+  ['standard-bold-italic', { family: 'Times New Roman', weight: 700, italic: true }],
+  ['standard-one-face', { family: 'Symbol', weight: 700 }],
+  ['dingbats', { family: 'dingbats', italic: true }],
+  ['unknown', { family: 'Comic Sans' }],
+] as const) {
+  cases.push(c('fontForFace', label, face, FONTS));
+}
+cases.push(c('fontForFace', 'no-fonts', { family: 'Inter', weight: 700 }));
+for (const family of ['Helvetica', 'courier new', 'Inter', 'Unknown Face']) {
+  cases.push(c('cssFontFamilyForFace', family, family, FONTS));
+}
+cases.push(c('cssFontFamilyForFace', 'no-fonts', 'Inter'));
+for (const font of ['helvetica-bold', 'courier', 'symbol', 'inter-bold']) cases.push(c('cssFontFamilyForFont', font, font));
+cases.push(c('familyKey', 'punctuated', " Times-New_Roman 'PS' "));
+cases.push(
+  c('bodyFromTextStyle', 'plain', TEXT_STYLE),
+  c('bodyFromTextStyle', 'toggles', { ...TEXT_STYLE, fontFamily: 'times-italic', bold: true, underline: true, textAlign: 'center' }),
+  c('bodyFromTextStyle', 'registered', { ...TEXT_STYLE, fontFamily: 'inter-italic' }, FONTS),
+  c('bodyFromTextStyle', 'unknown-font', { ...TEXT_STYLE, fontFamily: 'MyFont', italic: false }),
+  c('richDocOf', 'dto-rich', richTexts[0]),
+  c('richDocOf', 'dto-plain', a(freeText(14, { contents: 'one\rtwo' }))),
+  c('richDocOf', 'no-text-style', { ...a(freeText(15)), text: undefined, data: undefined }),
+  c('richDocOf', 'not-free-text', a(square(16))),
+  c('textCommitPatch', 'strips-defaults', richTexts[0], PARAS),
+  c('textCommitPatch', 'plain', a(freeText(17)), [{ runs: [{ text: 'hi' }], align: 'left', dir: 'ltr' }]),
+  c('stripBodyDefaults', 'mixed', PARAS, { align: 'center', dir: 'ltr' }),
+  c('stripBodyDefaults', 'none', [{ runs: [{ text: 'a' }] }], { align: 'left', dir: 'ltr' }),
+  c('runDeltaForProps', 'every-key', { fontFamily: 'times-bold', fontSize: 14, fontColor: '#abcdef', bold: false, italic: true, underline: true, color: '#000000', opacity: 0.5 }),
+  c('runDeltaForProps', 'registered-font', { fontFamily: 'inter-italic', bold: true, underline: false }, FONTS),
+  c('runDeltaForProps', 'unknown-font', { fontFamily: 'MyFont', fontSize: undefined }),
+  c('runsInRange', 'across', { paragraphs: PARAS }, { start: 2, end: 9 }),
+  c('runsInRange', 'reversed', { paragraphs: PARAS }, { start: 9, end: 2 }),
+  c('runsInRange', 'empty', { paragraphs: PARAS }, { start: 4, end: 4 }),
+  c('runsInRange', 'to-the-end', { paragraphs: PARAS }, { start: 0, end: 12 }),
+  c('rangeProps', 'mixed', { body: body(400, false, []), paragraphs: PARAS }, { start: 2, end: 9 }),
+  c('rangeProps', 'one-run', { body: body(400, false, []), paragraphs: PARAS }, { start: 0, end: 2 }),
+  c('rangeProps', 'caret', { body: body(700, true, ['underline']), paragraphs: PARAS }, { start: 3, end: 3 }),
+  c('rangeProps', 'registered', { body: body(700, false, [], { family: 'Inter' }), paragraphs: PARAS }, { start: 0, end: 1 }, FONTS),
+);
+
+// ── page-space create input ───────────────────────────────────────────────────
+
+const R = { x: 10, y: 20, width: 30, height: 40 };
+const Q = { upperStart: { x: 1, y: 2 }, upperEnd: { x: 3, y: 2 }, lowerStart: { x: 1, y: 4 }, lowerEnd: { x: 3, y: 4 } };
+for (const [label, input] of [
+  ['square', { subtype: 'square', bounds: R }],
+  ['circle-rotated', { subtype: 'circle', bounds: R, rotation: 30 }],
+  ['square-negative', { subtype: 'square', bounds: { ...R, width: -1 } }],
+  ['square-nan', { subtype: 'square', bounds: { ...R, x: Number.NaN } }],
+  ['line', { subtype: 'line', from: { x: 1, y: 2 }, to: { x: 3, y: 4 } }],
+  ['line-infinite', { subtype: 'line', from: { x: 1, y: Number.POSITIVE_INFINITY }, to: { x: 3, y: 4 } }],
+  ['polygon', { subtype: 'polygon', vertices: [{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 5 }] }],
+  ['polygon-short', { subtype: 'polygon', vertices: [{ x: 0, y: 0 }, { x: 5, y: 0 }] }],
+  ['polyline', { subtype: 'polyline', vertices: [{ x: 0, y: 0 }, { x: 5, y: 0 }] }],
+  ['polyline-nan', { subtype: 'polyline', vertices: [{ x: 0, y: 0 }, { x: Number.NaN, y: 0 }] }],
+  ['ink', { subtype: 'ink', strokes: [[{ x: 0, y: 0 }], [{ x: 1, y: 1 }, { x: 2, y: 2 }]] }],
+  ['ink-empty', { subtype: 'ink', strokes: [[{ x: 0, y: 0 }]] }],
+  ['ink-nan', { subtype: 'ink', strokes: [[{ x: 0, y: 0 }, { x: 1, y: Number.NaN }]] }],
+  ['highlight', { subtype: 'highlight', quads: [Q] }],
+  ['squiggly-empty', { subtype: 'squiggly', quads: [] }],
+  ['redact-quads', { subtype: 'redact', quads: [Q] }],
+  ['redact-area', { subtype: 'redact', bounds: R }],
+  ['redact-area-empty', { subtype: 'redact', bounds: { ...R, height: 0 } }],
+  ['free-text', { subtype: 'free-text', bounds: R }],
+  ['free-text-callout', { subtype: 'free-text', bounds: R, callout: { tip: { x: 0, y: 0 }, knee: { x: 5, y: 5 }, ending: 'open-arrow' } }],
+  ['free-text-empty', { subtype: 'free-text', bounds: { ...R, width: 0 } }],
+  ['stamp', { subtype: 'stamp', bounds: R }],
+] as const) {
+  cases.push(c('geometryFromInput', label, { page: pr(1), ...input }));
+}
+for (const px of [0, 127.5, 129, 1000, 5000]) cases.push(c('previewBucket', `${px}`, px));
+cases.push(c('previewBucket', 'capped', 3000, 2048));
 
 // ── comment threads ───────────────────────────────────────────────────────────
 
@@ -239,7 +375,7 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'plugins/annotation-pure.json',
     describes:
-      'packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads and sniffBinaryMetadata.',
+      'packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, the rich-text policy, page-space create input, the ghost preview bucket, and engine-core buildCommentThreads and sniffBinaryMetadata.',
     functions: {
       buildToolRegistry: buildToolRegistry as never,
       isTouchDirect: ((tags: string[]) => isTouchDirect(new Set(tags))) as never,
@@ -250,6 +386,21 @@ export const suites: Suite[] = [
       annotationReducer: annotationReducer as never,
       buildCommentThreads: buildCommentThreads as never,
       sniffBinaryMetadata: ((b: Uint8Array) => sniffBinaryMetadata(new Uint8Array(b).buffer)) as never,
+      // A `FontLookup` is a function; the cases pass the list it answers.
+      faceForFont: ((font: string, fonts?: never[]) => faceForFont(font, fonts && (() => fonts))) as never,
+      fontForFace: ((face: never, fonts?: never[]) => fontForFace(face, fonts && (() => fonts))) as never,
+      cssFontFamilyForFace: ((family: string, fonts?: never[]) => cssFontFamilyForFace(family, fonts && (() => fonts))) as never,
+      cssFontFamilyForFont: cssFontFamilyForFont as never,
+      familyKey: familyKey as never,
+      bodyFromTextStyle: ((t: never, fonts?: never[]) => bodyFromTextStyle(t, fonts && (() => fonts))) as never,
+      richDocOf: richDocOf as never,
+      textCommitPatch: textCommitPatch as never,
+      stripBodyDefaults: stripBodyDefaults as never,
+      runDeltaForProps: ((p: never, fonts?: never[]) => runDeltaForProps(p, fonts && (() => fonts))) as never,
+      runsInRange: runsInRange as never,
+      rangeProps: ((d: never, r: never, fonts?: never[]) => rangeProps(d, r, fonts && (() => fonts))) as never,
+      geometryFromInput: geometryFromInput as never,
+      previewBucket: previewBucket as never,
     },
     cases,
   },

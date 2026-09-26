@@ -179,6 +179,9 @@ pub fn redact_ingest(d: &Value, crop: PdfRect) -> IngestSlice {
         text_align: get(d, "textAlign")
             .and_then(|a| serde_json::from_value(a.clone()).ok())
             .unwrap_or(TextAlign::Left),
+        bold: None,
+        italic: None,
+        underline: None,
     });
     if let Some(text) = str_of(d, "overlayText").filter(|t| !t.is_empty()) {
         slice.label = Some(Label {

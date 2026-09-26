@@ -1,120 +1,122 @@
 # epdf-plugin-annotation
 
-`packages/plugin/annotation` in Rust: the pure `epdf-annotation-core` model wired to the engine and
-to the interaction hub. All 648 cases in nine vector files replay identically (`cargo test -p
-epdf-plugin-annotation`):
+`packages/plugin/annotation` in Rust, on the v3 controller contract: the pure `epdf-annotation-core`
+model wired to the engine and to the interaction hub. All 932 cases in ten vector files replay
+identically (`CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-annotation`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/annotation-repository.json` | function | 537 | `repository/`: `fromDTO` over 52 fixtures, then `toPatch`, `toScopedPatch` (geometry and 10 prop scopes over 22 restyled annotations) and `toCreateDraft`, plus the seam helpers |
-| `vectors/plugins/annotation-pure.json` | function | 38 | the tool registry, `buildTextItems`, `iconPlacementDraft`, the reducer, and `engine-core`'s `buildCommentThreads` |
-| `vectors/plugins/annotation-hydration.json` | scenario | 14 | whole-document hydration, the cursor-ordered replay of the hydration window, remote events, page membership, form and redaction events, `reloadPage` |
-| `vectors/plugins/annotation-crud.json` | scenario | 11 | create/update/delete, the optimistic effects and their rollback, selection, props and flags, text editing, settings, projections and their memos |
-| `vectors/plugins/annotation-comments.json` | scenario | 14 | comment threads and their verbs, attached links, the script commit door, attachment download, baked appearances |
-| `vectors/plugins/annotation-grouping.json` | scenario | 4 | `group`/`ungroup` and their twins, the grouped Replace Text create and its rollback |
-| `vectors/plugins/annotation-tools.json` | scenario | 21 | tools in the hub and the five pointer handlers as `PointerSample` sequences through `interaction.dispatch`, click placement, stamps, the file-picker port, ghosts, behaviors |
-| `vectors/plugins/annotation-markup.json` | scenario | 6 | markup, caret and replace-text from the selection plugin's signals, `markupFromSelection` |
+| `vectors/plugins/annotation-repository.json` | function | 685 | `repository/`: `fromDTO` over 60 fixtures (measurement dimensions and rich free-text bodies among them), `toPatch`, `toScopedPatch` (geometry, caption, leader and 11 prop scopes), `toCreateDraft`, the seam helpers |
+| `vectors/plugins/annotation-pure.json` | function | 141 | the tool registry, `buildTextItems`, `iconPlacementDraft`, the reducer, the rich-text policy (`rich-text.ts`), `geometryFromInput`, `previewBucket`, `engine-core`'s `buildCommentThreads` and `sniffBinaryMetadata` |
+| `vectors/plugins/annotation-api.json` | scenario | 15 | the page-space reads and writes, the change events, `selectAll`, `selectInRect`, run restyles over an editor range, rich-text editing, `createAttachment`, `placeStamp`, `readAttachment` without `downloadFile`, the measurement seam, the v3 document events, preview providers |
+| `vectors/plugins/annotation-hydration.json` | scenario | 16 | whole-document hydration, the cursor-ordered replay, remote events, page membership, form and redaction events, `reloadPage` |
+| `vectors/plugins/annotation-crud.json` | scenario | 13 | the raw create, update and delete, the optimistic effects and their rollback, selection, props and flags, text editing, settings, projections |
+| `vectors/plugins/annotation-comments.json` | scenario | 15 | comment threads and their verbs, attached links, the script commit door, attachment download, baked appearances |
+| `vectors/plugins/annotation-grouping.json` | scenario | 5 | `group`/`ungroup` and their twins, the grouped Replace Text create and its rollback |
+| `vectors/plugins/annotation-tools.json` | scenario | 31 | tools in the hub and the five pointer handlers, click placement, stamps, the file-picker port, ghosts, behaviors |
+| `vectors/plugins/annotation-markup.json` | scenario | 8 | markup, caret and replace-text from the selection plugin's signals, `createFromSelection` |
 | `vectors/plugins/annotation-hover.json` | scenario | 3 | hover state, the enter/exit feed onto the actions hover pump, the permission twins |
 
-The scenario registry runs the real interaction, selection and actions adapters beside this one.
+The older scenario files were written against v2 names and reach v3 through the mapping table in
+`annotation-fixtures.ts`. `annotation-api.json` calls v3 by name, for the surface that table never
+reached.
 
 ## The API sibling plugins use
 
-Form, link, redaction and stamp reach this plugin through the TypeScript's `/contract`,
-`/contract/host`, `/authoring` and `/internal` entries. Those split one runtime object into typed
-lenses; here there is one token, `ANNOTATION`, and one type, `AnnotationCapability`, whose host
-members say so in their docs. The methods are the TypeScript's in snake case (`create`, `update`,
-`page_items`, `hit_kind`, `set_placement_preview`, `register_behavior`, `commit_script_effects`,
-...). The `comments` and `links` members are flattened to `comment_*` and `links_*` methods.
-
-`/authoring` is `widget_appearance_from_props` and the core's `resolve_click_placement` and
-`MIN_DRAG`, re-exported. `/internal` is `create_annotation_capability` and `build_tool_registry`.
-The repository (`from_dto`, `to_patch`, `to_scoped_patch`, `to_create_draft`, `ref_key`,
-`style_from_dto`), the reducer, the tool table (`default_tools`, `ResolvedTool`) and the five
-handler constructors are public too. A sibling that implements a behavior implements the
-`Behavior` trait.
+Redaction, link, form, stamp, measurement and signature call this plugin through the TypeScript's
+`/contract/host`. Here the public and host lenses are one type, `AnnotationCapability`
+(`AnnotationHostCapability` is an alias), resolved with `ANNOTATION`. Its methods are the
+TypeScript's in snake case, grouped by the file that defines them: `read/` (`get`, `list`,
+`list_raw`, `hit_test_at`, `list_page_items`, `get_hit_kind`, ...), `write/` (`create`,
+`update`, `create_raw`, `update_raw`, `place_stamp`, `create_attachment`, `set_placement_preview`,
+`set_page_viewports`, `remeasure_page`, ...), `sync/` (`get_status`, `refresh`, `reload_page`,
+`deliver_remote_event`), `tools/` (`register_tool`, `register_behavior`, `get_resolved_tool`) and
+the events (`on_created`, `on_draft_captured`, ...). `comments()` and `links()` return the two
+object members as lenses. `create_annotation_controller`, the tool table, the repository and the
+five handler constructors are public, as `/internal` exports them.
 
 Engine DTOs stay `serde_json::Value`: the model carries each one verbatim in `Annot.data`, and
 every engine call sends JSON built the way the TypeScript's object literal is.
 
 ## Host inputs
 
-`handler.ts` reads nothing from `window` or the DOM. The capability reads two ambient values, and
-both come in through `AnnotationHost` on `AnnotationConfig`:
-
-- `console_error(message, error)` receives every failure the plugin swallows (stamp and icon
-  placement, the file-picker provider, attached-link sync, grouped creates, flag writes). `None`
-  drops them. The vectors log them as a `console.error` callback.
-- `random_uuid()` is `crypto.randomUUID()`, which `toCreateDraft` seeds `/NM` with. `None` counts up
-  from `00000000-0000-4000-8000-000000000001`, which is also what the generator stubs, reset per
-  case.
-
-The other two environment seams are already explicit in the TypeScript and stay so: the file
-picker is `set_file_picker_provider` (a promise of an `AttachmentFileSource` as JSON, or a falsy
-value to cancel), and `appearances` takes an optional `epdf_kernel::signal::AbortSignal`. A
-`Blob` has no spelling in canonical JSON, so `resolveBinarySource` handles bytes and
-`{data, mimeType, name}` payloads and reproduces the TypeScript's `TypeError` for anything else.
+`AnnotationHost` on `AnnotationConfig` carries the three ambient values the TypeScript reads:
+`console_error` (every failure the plugin swallows; the vectors log it as a `console.error`
+callback), `random_uuid` (`crypto.randomUUID()`, seeding `/NM`), and `fonts`, the registered-font
+list `ctx.engine.fonts.list()` answers. The Rust engine contract has no fonts service, so the host
+passes the list; `None` is no registered fonts, which is what the fake engine and the cloud engine
+have. The face mapping over a registered list is pinned by the function cases in
+`annotation-pure.json`.
 
 ## Turn order
 
 The trace records how engine answers and model updates interleave, so each `await` and `.then` is
 mirrored (`src/promise.rs`). A `.then` on an engine call reacts one turn after it settles; an
-`await` on one adopts the `AbortablePromise` as a thenable and resumes three turns after. Every
-TypeScript `async` function is a spawned `Promise`, so awaiting one costs what awaiting a native
-promise does. The hydration chain `.then(...).catch(...).finally(...)` settles two turns after its
-`finally` callback, because the callback's result is adopted.
+`await` on one adopts the guarded `AbortablePromise` as a thenable. `Promise.allSettled` over the
+write sink adopts each abortable element the same way. An `async` function returning a promise
+costs the adoption job and its reaction.
 
-## TypeScript behaviour the vectors pin
+## TypeScript behaviour, re-checked under v3
 
-Two findings are recorded rather than fixed, since the TypeScript is the oracle:
+The v2 README pinned two behaviours and one gap. Under v3:
 
-- `armStamp` activates the `stamp` tool, and the plugin's tool-change callback disarms any tool that
-  does not enable `annotation-stamp`. The built-in `stamp` tool enables `annotation-place`, so an
-  armed payload is dropped the moment it is armed. Only a stamp tool configured with the legacy tag
-  keeps it (`armed-stamps-need-the-stamp-tag`).
-- `rehydrate()` stores whatever `runHydration` returns as the running promise. Without read
-  authority that is an already-resolved promise that nothing clears, so a later `rehydrate` flags a
-  re-run and returns it without asking again: the "re-check after /access" the docs describe never
-  happens (`no-read-grant-means-forbidden`).
+- `armStamp` no longer disarms itself. It activates `ARMED_STAMP_TOOL_ID`, and the tool-change
+  callback keeps the payload on that tool (and on any tool with the legacy `annotation-stamp` tag).
+  The `armed-stamps` case in `annotation-tools.json` reads `hasArmedStamp()` as `true` after arming
+  with the default tools.
+- `refresh()` (v2 `rehydrate`) still never re-checks read authority. `runHydration` returns an
+  already-resolved promise when `canRead()` is false, `rehydrate` stores it as `running`, and only
+  the `listRawAll` chain's `finally` clears `running`. Every later `refresh()` sets `again` and
+  returns that promise, so a grant arriving through `/access` is never seen. The port keeps this;
+  `no-read-grant-means-forbidden` in `annotation-hydration.json` pins it.
+- `readAttachment` on a page service without `downloadFile` now has a vector. The fake engine's
+  `lacks` list can name `page.annotations.downloadFile` on both sides, and
+  `attachments-stamps-and-downloads` rejects with the TypeScript's error. The Rust side asks
+  `DocumentHandle::has("page.annotations.downloadFile")`.
 
 ## Where the port differs in shape
 
-The memo caches key on `Rc` identity of the model and chrome, as the TypeScript's do on object
-identity. The comments index is recomputed on every read instead of memoized on `byId`/`order`
-identity, which the Rust model does not carry separately; the output is the same.
+The TypeScript memoizes its projections by model identity so a subscribed selector gets a stable
+reference. Canonical JSON has no identity, so the port recomputes every read; the values are the
+same.
 
-`downloadAttachment` feature-detects `downloadFile` on the page service. The Rust engine contract
-has no member test for page services, so the call is always made. The fake engine answers every
-page member, so the TypeScript's refusal branch is unreachable in the vectors either way.
+The store announces a draft change when the draft differs by value; the TypeScript compares the
+draft object by identity. They disagree only when an update rebuilds the draft with equal content,
+which no vector does.
 
-A page object number the document does not know makes `doc.page(pon)` throw. Where that throw would
-escape a synchronous handler (`createStampAt`, `createIconAt`, the delete effect), the Rust skips
-the call instead. The crop lookup that precedes each one comes from the same page list, so no
-vector reaches it.
+`remeasurePage` walks `Object.values(byId)`, which is insertion order. The Rust model's map is
+sorted, so the port walks `order`, which follows insertion for every record the model holds.
 
-Prototype-named subtypes and keys (`constructor`, `__proto__`) resolve through `Object.prototype`
-in the TypeScript's kind and prop tables. The Rust tables are matches over known names, so those
-fall to the unsupported kind.
+A page object number the document does not know makes `doc.page(ref)` throw. Where that throw
+would escape a synchronous path (the stamp and icon placements, the effect runners), the Rust
+skips the call or logs it. The crop lookup that precedes each one comes from the same page list, so
+no vector reaches it.
 
 ## Coverage
 
-The generators reach 6,261 of the package's 6,275 statements and 1,431 of its 1,488 branches
-(`vectors/coverage.json`). The 14 statements left:
+The generators reach 9,238 of the package's 9,254 statements and 2,159 of its 2,258 branches
+(measured with `src/coverage.ts`). The 16 statements left cannot be reached from the public
+surface:
 
-- `capability.ts` 2182 to 2189, `commitScriptEffects` with no `ctx.doc`. The plugin is
-  document-scoped, so its context always has a handle.
-- `capability.ts` 1395 to 1397, a `createGroup` effect whose members are missing or on different
-  pages. The core's group message only ever names members of one page.
-- `capability.ts` 1648 and 1649, an engine page service without `downloadFile`. This one is a
-  harness limit, not unreachable code: the fake engine answers every page member, so no vector can
-  describe an engine that lacks one.
-- `reducer.ts` 69, the `default` arm for an action outside the union, which a Rust enum can't
-  express.
+- `services/write-sink.ts` 64 to 68, `awaitCreate` with no optimistic id. `create` validates its
+  input before committing, and every message it and `createFromSelection` commit stages an entry
+  in the core.
+- `write/crud.ts` 290 to 292, a `createGroup` effect whose members are missing or on different
+  pages. The core's replace-text group only ever names members of one page.
+- `write/script-effects.ts` 64 to 71, `commitScriptEffects` with no `ctx.doc`. The plugin is
+  document-scoped, so its controller always has a handle.
 
-The 57 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
+The 99 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
 `coverage.json` lists each by line and column.
 
-## Mutation testing
+## Mutation testing, pre-v3, rerun pending
+
+The numbers below are from the v2 port. `capability.rs`, `effects.rs`, `reducer.rs` and `types.rs`
+are gone (their code moved into the v3 areas), so their rows are dropped. The rest describe files
+that still exist, some renamed (`handler.rs` is `tools/handlers.rs`, `tools.rs` is
+`tools/definitions.rs`, `threads.rs` is `comments/build.rs`, `markup.rs` is
+`tools/markup_bridge.rs`, `placement.rs` is `write/placement.rs`), and wait on a rerun through
+`scripts/mutants.sh`.
 
 Every source file but `harness/` (excluded in `.cargo/mutants.toml`) has been run, one file at a
 time (`scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file
@@ -129,7 +131,6 @@ replay fail, not by a second full run. The nine files the first pass covered (`e
 | `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
 | `tools.rs` | 73 | 0 | 17 | 6 | 11 | 6 |
 | `binary.rs` | 50 | 1 | 21 | 10 | 17 | 4 |
-| `types.rs` | 1 | 0 | 0 | 1 | | |
 | `repository/mod.rs` | 29 | 0 | 0 | 1 | | |
 | `repository/links.rs` | 2 | 0 | 0 | 0 | | |
 | `repository/projection.rs` | 39 | 0 | 0 | 3 | | |
@@ -140,18 +141,13 @@ replay fail, not by a second full run. The nine files the first pass covered (`e
 | `repository/kinds/quads.rs` | 48 | 0 | 6 | 4 | 2 | 4 |
 | `repository/kinds/shape.rs` | 5 | 0 | 0 | 1 | | |
 | `repository/kinds/stroke.rs` | 22 | 0 | 0 | 5 | | |
-| `effects.rs` | 18 | 0 | 1 | 1 | 1 | |
 | `hover_feed.rs` | 6 | 0 | 1 | 2 | 1 | |
 | `markup.rs` | 7 | 0 | 1 | 0 | 1 | |
 | `placement.rs` | 8 | 0 | 0 | 0 | | |
 | `promise.rs` | 5 | 0 | 0 | 11 | | |
-| `reducer.rs` | 4 | 0 | 0 | 5 | | |
 | `text_item.rs` | 6 | 0 | 0 | 1 | | |
 | `threads.rs` | 54 | 0 | 5 | 7 | 1 | 4 |
 | `value.rs` | 13 | 0 | 0 | 0 | | |
-| `capability.rs` | 328 | 0 | 78 | 177 | 61 | 17 |
-| `lib.rs` | 2 | 0 | 0 | 1 | | |
-| Total | 899 | 1 | 165 | 261 | 118 | 47 |
 
 Timeouts count as caught: the one is a mutant that loops forever.
 
@@ -173,13 +169,3 @@ Timeouts count as caught: the one is a mutant that loops forever.
 | `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
 | `threads.rs` 130 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
 | `threads.rs` 141 | `d > 0.0` to `==`, `<` and `>=` | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
-| `capability.rs` 76 to 78, 84 to 86 | `same_num` and `same_rc` to `false`, and each of their arms deleted | Unobservable. Each only turns a memo hit into a miss, which recomputes an equal value, and canonical JSON has no object identity. (`==` to `!=` in `same_num`, which turns a miss into a stale hit, is killed.) |
-| `capability.rs` 221 | `owner_of` to `Default::default()` | Unreachable in the harness. The fake engine's `allowsAnnotationMutation` ignores its target, so the owner never changes an answer. |
-| `capability.rs` 279 | `+` to `-` and `*` in `random_uuid`'s counter | Unreachable in the harness, which always installs `random_uuid`. |
-| `capability.rs` 806 | `&&` to `\|\|` in `selected_committed` | Equivalent. An annotation has both a ref and a DTO (ingested) or neither (an uncommitted draft). |
-| `capability.rs` 982 | the `w > 0.0` guard to `true`, and `>` to `>=` | Equivalent. `sniff_binary_metadata` never reports a raster with a zero width. |
-| `capability.rs` 995 | `&&` to `\|\|` in `upright_rot_for`'s filter | Equivalent. It only lets a `NaN` display rotation through, and `fit_stamp_box` and `box_geom_fields` both read a `NaN` rotation as none. |
-| `capability.rs` 1098 | delete the `(None, None)` arm of the file picker's same-document check | Unreachable. The plugin is document-scoped, so a click always has a document. |
-| `capability.rs` 689 | the first `==` to `!=` in the link-chain cleanup | Equivalent. The entry is then never removed, and the next sync awaits a settled promise instead of a fresh resolved one, which costs the same turns. |
-| `capability.rs` 2237 | the `subtype == "link"` guard in `link_items_on` to `true` | Equivalent. The loop only reaches it for link annotations, whose DTO subtype is `link`. |
-| `capability.rs` 2640 | `-1.0` to `1.0` for a member missing from the paint order in `group` | Unreachable. Every committed selected member is in `order`. |

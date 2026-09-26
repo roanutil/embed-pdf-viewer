@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads and sniffBinaryMetadata.",
+  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, the rich-text policy, page-space create input, the ghost preview bucket, and engine-core buildCommentThreads and sniffBinaryMetadata.",
   "cases": [
     {
       "name": "buildToolRegistry/built-ins",
@@ -8597,10 +8597,215 @@
             "rotationThreshold": 4
           }
         },
-        1
+        {
+          "kind": "objectNumber",
+          "pageObjectNumber": 1
+        }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "id": "obj:1",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 1
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:2",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": true,
+            "css": {
+              "fontFamily": "\"Courier New\", Courier, monospace",
+              "fontSize": 12,
+              "color": "#0000ff",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:3",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            },
+            "box": {
+              "x": 110,
+              "y": 110,
+              "width": 80,
+              "height": 80
+            },
+            "contents": "",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "rot": 330,
+            "css": {
+              "fontFamily": "\"Times New Roman\", Times, serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:4",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            },
+            "box": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "\"MyFont\", sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 6
+            }
+          },
+          {
+            "id": "obj:5",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 5
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 14,
+              "color": "#000000",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          }
+        ]
       }
     },
     {
@@ -9630,14 +9835,219 @@
             "rotationThreshold": 4
           }
         },
-        1,
+        {
+          "kind": "objectNumber",
+          "pageObjectNumber": 1
+        },
         {
           "zoom": 2,
           "rotation": 90
         }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "id": "obj:1",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 1
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:2",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 2
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "\"Courier New\", Courier, monospace",
+              "fontSize": 12,
+              "color": "#0000ff",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:3",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 3
+            },
+            "box": {
+              "x": 110,
+              "y": 110,
+              "width": 80,
+              "height": 80
+            },
+            "contents": "",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "rot": 330,
+            "css": {
+              "fontFamily": "\"Times New Roman\", Times, serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:4",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 4
+            },
+            "box": {
+              "x": 150,
+              "y": 100,
+              "width": 150,
+              "height": 150
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "\"MyFont\", sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 6
+            }
+          },
+          {
+            "id": "obj:5",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 5
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 14,
+              "color": "#000000",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          }
+        ]
       }
     },
     {
@@ -10667,10 +11077,54 @@
             "rotationThreshold": 4
           }
         },
-        2
+        {
+          "kind": "objectNumber",
+          "pageObjectNumber": 2
+        }
       ],
       "outcome": {
-        "returned": []
+        "returned": [
+          {
+            "id": "obj:7",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 2
+              },
+              "annotObjectNumber": 7
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          }
+        ]
       }
     },
     {
@@ -10711,10 +11165,744 @@
             "rotationThreshold": 4
           }
         },
-        1
+        {
+          "kind": "objectNumber",
+          "pageObjectNumber": 1
+        }
       ],
       "outcome": {
         "returned": []
+      }
+    },
+    {
+      "name": "buildTextItems/rich",
+      "fn": "buildTextItems",
+      "args": [
+        {
+          "byId": {
+            "obj:11": {
+              "id": "obj:11",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 11
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "annotObjectNumber": 11
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "index": 11,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 600,
+                  "right": 200,
+                  "top": 700
+                },
+                "contents": "Hello",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": null,
+                "replyType": null,
+                "subtype": "free-text",
+                "intent": "free-text",
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "textAlign": "left",
+                "color": {
+                  "r": 239,
+                  "g": 68,
+                  "b": 68
+                },
+                "interiorColor": null,
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "rectDifferences": null,
+                "richText": {
+                  "body": {
+                    "family": "Helvetica",
+                    "weight": 700,
+                    "italic": true,
+                    "size": 12,
+                    "color": "#EF4444",
+                    "decoration": [
+                      "underline"
+                    ],
+                    "script": "normal",
+                    "letterSpacing": 0,
+                    "horizontalScale": 1,
+                    "align": "left",
+                    "dir": "ltr"
+                  },
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "Hel"
+                        },
+                        {
+                          "text": "lo",
+                          "style": {
+                            "weight": 700
+                          }
+                        }
+                      ],
+                      "align": "left",
+                      "dir": "ltr"
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "world",
+                          "style": {
+                            "italic": true,
+                            "decoration": [
+                              "underline"
+                            ],
+                            "color": "#0000FF"
+                          }
+                        }
+                      ],
+                      "align": "center"
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ""
+                        },
+                        {
+                          "text": "x",
+                          "style": {
+                            "family": "Courier",
+                            "size": 20
+                          }
+                        }
+                      ],
+                      "dir": "rtl"
+                    }
+                  ]
+                }
+              },
+              "style": {
+                "color": "#ef4444",
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 100,
+                  "height": 100
+                }
+              },
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#ef4444",
+                "textAlign": "left",
+                "bold": true,
+                "italic": true,
+                "underline": true
+              },
+              "apBox": {
+                "x": 100,
+                "y": 100,
+                "width": 100,
+                "height": 100
+              }
+            },
+            "obj:12": {
+              "id": "obj:12",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 12
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "annotObjectNumber": 12
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "index": 12,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 600,
+                  "right": 200,
+                  "top": 700
+                },
+                "contents": "Hello",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": null,
+                "replyType": null,
+                "subtype": "free-text",
+                "intent": "free-text",
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "textAlign": "left",
+                "color": {
+                  "r": 239,
+                  "g": 68,
+                  "b": 68
+                },
+                "interiorColor": null,
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "rectDifferences": null,
+                "richText": {
+                  "body": {
+                    "family": "Helvetica",
+                    "weight": 400,
+                    "italic": false,
+                    "size": 12,
+                    "color": "#EF4444",
+                    "decoration": [],
+                    "script": "normal",
+                    "letterSpacing": 0,
+                    "horizontalScale": 1,
+                    "align": "left",
+                    "dir": "ltr"
+                  },
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "Hel"
+                        },
+                        {
+                          "text": "lo",
+                          "style": {
+                            "weight": 700
+                          }
+                        }
+                      ],
+                      "align": "left",
+                      "dir": "ltr"
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": "world",
+                          "style": {
+                            "italic": true,
+                            "decoration": [
+                              "underline"
+                            ],
+                            "color": "#0000FF"
+                          }
+                        }
+                      ],
+                      "align": "center"
+                    },
+                    {
+                      "runs": [
+                        {
+                          "text": ""
+                        },
+                        {
+                          "text": "x",
+                          "style": {
+                            "family": "Courier",
+                            "size": 20
+                          }
+                        }
+                      ],
+                      "dir": "rtl"
+                    }
+                  ]
+                }
+              },
+              "style": {
+                "color": "#ef4444",
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 100,
+                  "height": 100
+                }
+              },
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#ef4444",
+                "textAlign": "left"
+              },
+              "apBox": {
+                "x": 100,
+                "y": 100,
+                "width": 100,
+                "height": 100
+              }
+            },
+            "obj:13": {
+              "id": "obj:13",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 13
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "annotObjectNumber": 13
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "index": 13,
+                "identityQuality": "durable",
+                "nm": null,
+                "flags": {
+                  "invisible": false,
+                  "hidden": false,
+                  "print": true,
+                  "noZoom": false,
+                  "noRotate": false,
+                  "noView": false,
+                  "readOnly": false,
+                  "locked": false,
+                  "toggleNoView": false,
+                  "lockedContents": false
+                },
+                "rect": {
+                  "left": 100,
+                  "bottom": 600,
+                  "right": 200,
+                  "top": 700
+                },
+                "contents": "Hello",
+                "subject": null,
+                "author": null,
+                "created": null,
+                "modified": null,
+                "blendMode": "normal",
+                "inReplyTo": null,
+                "replyType": null,
+                "subtype": "free-text",
+                "intent": "free-text",
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "textAlign": "left",
+                "color": {
+                  "r": 239,
+                  "g": 68,
+                  "b": 68
+                },
+                "interiorColor": null,
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "rectDifferences": null
+              },
+              "style": {
+                "color": "#ef4444",
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 100,
+                  "y": 100,
+                  "width": 100,
+                  "height": 100
+                }
+              },
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 9,
+                "fontColor": "#000000",
+                "textAlign": "right",
+                "bold": true,
+                "italic": true,
+                "underline": true
+              },
+              "apBox": {
+                "x": 100,
+                "y": 100,
+                "width": 100,
+                "height": 100
+              }
+            }
+          },
+          "order": [
+            "obj:11",
+            "obj:12",
+            "obj:13"
+          ],
+          "selected": [],
+          "hovered": null,
+          "draft": null,
+          "preview": null,
+          "seq": 0,
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "defaults": {},
+          "hitMargin": 6,
+          "editing": null,
+          "snap": {
+            "guides": true,
+            "guideThreshold": 5,
+            "rotation": true,
+            "rotationAngles": [
+              0,
+              90,
+              180,
+              270
+            ],
+            "rotationThreshold": 4
+          }
+        },
+        {
+          "kind": "objectNumber",
+          "pageObjectNumber": 1
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "id": "obj:11",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 11
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hel"
+                    },
+                    {
+                      "text": "lo",
+                      "style": {
+                        "weight": 700
+                      }
+                    }
+                  ]
+                },
+                {
+                  "runs": [
+                    {
+                      "text": "world",
+                      "style": {
+                        "italic": true,
+                        "decoration": [
+                          "underline"
+                        ],
+                        "color": "#0000FF"
+                      }
+                    }
+                  ],
+                  "align": "center"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    },
+                    {
+                      "text": "x",
+                      "style": {
+                        "family": "Courier",
+                        "size": 20
+                      }
+                    }
+                  ],
+                  "dir": "rtl"
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 700,
+              "fontStyle": "italic",
+              "textDecoration": "underline",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:12",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 12
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hel"
+                    },
+                    {
+                      "text": "lo",
+                      "style": {
+                        "weight": 700
+                      }
+                    }
+                  ]
+                },
+                {
+                  "runs": [
+                    {
+                      "text": "world",
+                      "style": {
+                        "italic": true,
+                        "decoration": [
+                          "underline"
+                        ],
+                        "color": "#0000FF"
+                      }
+                    }
+                  ],
+                  "align": "center"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    },
+                    {
+                      "text": "x",
+                      "style": {
+                        "family": "Courier",
+                        "size": 20
+                      }
+                    }
+                  ],
+                  "dir": "rtl"
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 12,
+              "color": "#ef4444",
+              "fontWeight": 400,
+              "fontStyle": "normal",
+              "textDecoration": "none",
+              "align": "left",
+              "padding": 2
+            }
+          },
+          {
+            "id": "obj:13",
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 13
+            },
+            "box": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "contents": "Hello",
+            "richText": {
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hello"
+                    }
+                  ]
+                }
+              ]
+            },
+            "editing": false,
+            "css": {
+              "fontFamily": "Helvetica, Arial, sans-serif",
+              "fontSize": 9,
+              "color": "#000000",
+              "fontWeight": 700,
+              "fontStyle": "italic",
+              "textDecoration": "underline",
+              "align": "right",
+              "padding": 2
+            }
+          }
+        ]
       }
     },
     {
@@ -12018,6 +13206,309 @@
       }
     },
     {
+      "name": "annotationReducer/set-text-selection",
+      "fn": "annotationReducer",
+      "args": [
+        {
+          "model": {
+            "byId": {},
+            "order": [],
+            "selected": [],
+            "hovered": null,
+            "draft": null,
+            "preview": null,
+            "seq": 0,
+            "style": {
+              "color": "#e5484d",
+              "interiorColor": null,
+              "strokeWidth": 2,
+              "opacity": 1,
+              "blendMode": "normal",
+              "border": {
+                "kind": "solid"
+              }
+            },
+            "defaults": {},
+            "hitMargin": 6,
+            "editing": null,
+            "snap": {
+              "guides": true,
+              "guideThreshold": 5,
+              "rotation": true,
+              "rotationAngles": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "rotationThreshold": 4
+            }
+          },
+          "hydration": {
+            "status": "loading"
+          },
+          "chrome": {
+            "accent": "#3858e9",
+            "outline": {
+              "style": "solid",
+              "width": 1
+            },
+            "handles": {
+              "size": 8,
+              "hitSize": 24,
+              "fill": "#ffffff"
+            },
+            "knob": {
+              "size": 10,
+              "hitSize": 24,
+              "offset": 32,
+              "stalk": true,
+              "fill": "#ffffff"
+            },
+            "guides": {
+              "enabled": true,
+              "style": "solid",
+              "width": 1,
+              "axisOpacity": 0.35,
+              "indicatorOpacity": 0.8
+            }
+          },
+          "toolGhost": null,
+          "stampArmEpoch": 0,
+          "textSelection": null
+        },
+        {
+          "type": "SET_TEXT_SELECTION",
+          "selection": {
+            "id": "obj:1",
+            "start": 1,
+            "end": 3
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "model": {
+            "byId": {},
+            "order": [],
+            "selected": [],
+            "hovered": null,
+            "draft": null,
+            "preview": null,
+            "seq": 0,
+            "style": {
+              "color": "#e5484d",
+              "interiorColor": null,
+              "strokeWidth": 2,
+              "opacity": 1,
+              "blendMode": "normal",
+              "border": {
+                "kind": "solid"
+              }
+            },
+            "defaults": {},
+            "hitMargin": 6,
+            "editing": null,
+            "snap": {
+              "guides": true,
+              "guideThreshold": 5,
+              "rotation": true,
+              "rotationAngles": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "rotationThreshold": 4
+            }
+          },
+          "hydration": {
+            "status": "loading"
+          },
+          "chrome": {
+            "accent": "#3858e9",
+            "outline": {
+              "style": "solid",
+              "width": 1
+            },
+            "handles": {
+              "size": 8,
+              "hitSize": 24,
+              "fill": "#ffffff"
+            },
+            "knob": {
+              "size": 10,
+              "hitSize": 24,
+              "offset": 32,
+              "stalk": true,
+              "fill": "#ffffff"
+            },
+            "guides": {
+              "enabled": true,
+              "style": "solid",
+              "width": 1,
+              "axisOpacity": 0.35,
+              "indicatorOpacity": 0.8
+            }
+          },
+          "toolGhost": null,
+          "stampArmEpoch": 0,
+          "textSelection": {
+            "id": "obj:1",
+            "start": 1,
+            "end": 3
+          }
+        }
+      }
+    },
+    {
+      "name": "annotationReducer/unknown-action",
+      "fn": "annotationReducer",
+      "args": [
+        {
+          "model": {
+            "byId": {},
+            "order": [],
+            "selected": [],
+            "hovered": null,
+            "draft": null,
+            "preview": null,
+            "seq": 0,
+            "style": {
+              "color": "#e5484d",
+              "interiorColor": null,
+              "strokeWidth": 2,
+              "opacity": 1,
+              "blendMode": "normal",
+              "border": {
+                "kind": "solid"
+              }
+            },
+            "defaults": {},
+            "hitMargin": 6,
+            "editing": null,
+            "snap": {
+              "guides": true,
+              "guideThreshold": 5,
+              "rotation": true,
+              "rotationAngles": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "rotationThreshold": 4
+            }
+          },
+          "hydration": {
+            "status": "loading"
+          },
+          "chrome": {
+            "accent": "#3858e9",
+            "outline": {
+              "style": "solid",
+              "width": 1
+            },
+            "handles": {
+              "size": 8,
+              "hitSize": 24,
+              "fill": "#ffffff"
+            },
+            "knob": {
+              "size": 10,
+              "hitSize": 24,
+              "offset": 32,
+              "stalk": true,
+              "fill": "#ffffff"
+            },
+            "guides": {
+              "enabled": true,
+              "style": "solid",
+              "width": 1,
+              "axisOpacity": 0.35,
+              "indicatorOpacity": 0.8
+            }
+          },
+          "toolGhost": null,
+          "stampArmEpoch": 0,
+          "textSelection": null
+        },
+        {
+          "type": "NOPE"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "model": {
+            "byId": {},
+            "order": [],
+            "selected": [],
+            "hovered": null,
+            "draft": null,
+            "preview": null,
+            "seq": 0,
+            "style": {
+              "color": "#e5484d",
+              "interiorColor": null,
+              "strokeWidth": 2,
+              "opacity": 1,
+              "blendMode": "normal",
+              "border": {
+                "kind": "solid"
+              }
+            },
+            "defaults": {},
+            "hitMargin": 6,
+            "editing": null,
+            "snap": {
+              "guides": true,
+              "guideThreshold": 5,
+              "rotation": true,
+              "rotationAngles": [
+                0,
+                90,
+                180,
+                270
+              ],
+              "rotationThreshold": 4
+            }
+          },
+          "hydration": {
+            "status": "loading"
+          },
+          "chrome": {
+            "accent": "#3858e9",
+            "outline": {
+              "style": "solid",
+              "width": 1
+            },
+            "handles": {
+              "size": 8,
+              "hitSize": 24,
+              "fill": "#ffffff"
+            },
+            "knob": {
+              "size": 10,
+              "hitSize": 24,
+              "offset": 32,
+              "stalk": true,
+              "fill": "#ffffff"
+            },
+            "guides": {
+              "enabled": true,
+              "style": "solid",
+              "width": 1,
+              "axisOpacity": 0.35,
+              "indicatorOpacity": 0.8
+            }
+          },
+          "toolGhost": null,
+          "stampArmEpoch": 0,
+          "textSelection": null
+        }
+      }
+    },
+    {
       "name": "annotationReducer/stamp-armed",
       "fn": "annotationReducer",
       "args": [
@@ -12175,6 +13666,3750 @@
           "stampArmEpoch": 4,
           "textSelection": null
         }
+      }
+    },
+    {
+      "name": "faceForFont/helvetica",
+      "fn": "faceForFont",
+      "args": [
+        "helvetica",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false
+        }
+      }
+    },
+    {
+      "name": "faceForFont/times-bold-italic",
+      "fn": "faceForFont",
+      "args": [
+        "times-bold-italic",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Times",
+          "weight": 700,
+          "italic": true
+        }
+      }
+    },
+    {
+      "name": "faceForFont/zapf-dingbats",
+      "fn": "faceForFont",
+      "args": [
+        "zapf-dingbats",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "ZapfDingbats",
+          "weight": 400,
+          "italic": false
+        }
+      }
+    },
+    {
+      "name": "faceForFont/inter-bold",
+      "fn": "faceForFont",
+      "args": [
+        "inter-bold",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Inter",
+          "weight": 700,
+          "italic": false
+        }
+      }
+    },
+    {
+      "name": "faceForFont/MyFont",
+      "fn": "faceForFont",
+      "args": [
+        "MyFont",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "MyFont"
+        }
+      }
+    },
+    {
+      "name": "faceForFont/no-fonts",
+      "fn": "faceForFont",
+      "args": [
+        "inter-bold"
+      ],
+      "outcome": {
+        "returned": {
+          "family": "inter-bold"
+        }
+      }
+    },
+    {
+      "name": "fontForFace/registered-exact",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Inter",
+          "weight": 700
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "inter-bold"
+      }
+    },
+    {
+      "name": "fontForFace/registered-closest",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "inter",
+          "weight": 600,
+          "italic": true
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "inter-italic"
+      }
+    },
+    {
+      "name": "fontForFace/registered-italic-penalty",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Noto_Sans",
+          "italic": true
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "noto-sans-light"
+      }
+    },
+    {
+      "name": "fontForFace/standard-regular",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Arial"
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "helvetica"
+      }
+    },
+    {
+      "name": "fontForFace/standard-bold-italic",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Times New Roman",
+          "weight": 700,
+          "italic": true
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "times-bold-italic"
+      }
+    },
+    {
+      "name": "fontForFace/standard-one-face",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Symbol",
+          "weight": 700
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "symbol"
+      }
+    },
+    {
+      "name": "fontForFace/dingbats",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "dingbats",
+          "italic": true
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "zapf-dingbats"
+      }
+    },
+    {
+      "name": "fontForFace/unknown",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Comic Sans"
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "Comic Sans"
+      }
+    },
+    {
+      "name": "fontForFace/no-fonts",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Inter",
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": "Inter"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFace/Helvetica",
+      "fn": "cssFontFamilyForFace",
+      "args": [
+        "Helvetica",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "Helvetica, Arial, sans-serif"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFace/courier new",
+      "fn": "cssFontFamilyForFace",
+      "args": [
+        "courier new",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "\"Courier New\", Courier, monospace"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFace/Inter",
+      "fn": "cssFontFamilyForFace",
+      "args": [
+        "Inter",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "\"inter-regular\""
+      }
+    },
+    {
+      "name": "cssFontFamilyForFace/Unknown Face",
+      "fn": "cssFontFamilyForFace",
+      "args": [
+        "Unknown Face",
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "\"Unknown Face\", sans-serif"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFace/no-fonts",
+      "fn": "cssFontFamilyForFace",
+      "args": [
+        "Inter"
+      ],
+      "outcome": {
+        "returned": "\"Inter\", sans-serif"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFont/helvetica-bold",
+      "fn": "cssFontFamilyForFont",
+      "args": [
+        "helvetica-bold"
+      ],
+      "outcome": {
+        "returned": "Helvetica, Arial, sans-serif"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFont/courier",
+      "fn": "cssFontFamilyForFont",
+      "args": [
+        "courier"
+      ],
+      "outcome": {
+        "returned": "\"Courier New\", Courier, monospace"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFont/symbol",
+      "fn": "cssFontFamilyForFont",
+      "args": [
+        "symbol"
+      ],
+      "outcome": {
+        "returned": "serif"
+      }
+    },
+    {
+      "name": "cssFontFamilyForFont/inter-bold",
+      "fn": "cssFontFamilyForFont",
+      "args": [
+        "inter-bold"
+      ],
+      "outcome": {
+        "returned": "\"inter-bold\", sans-serif"
+      }
+    },
+    {
+      "name": "familyKey/punctuated",
+      "fn": "familyKey",
+      "args": [
+        " Times-New_Roman 'PS' "
+      ],
+      "outcome": {
+        "returned": "timesnewromanps"
+      }
+    },
+    {
+      "name": "bodyFromTextStyle/plain",
+      "fn": "bodyFromTextStyle",
+      "args": [
+        {
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "fontColor": "#ef4444",
+          "textAlign": "left"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#EF4444",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        }
+      }
+    },
+    {
+      "name": "bodyFromTextStyle/toggles",
+      "fn": "bodyFromTextStyle",
+      "args": [
+        {
+          "fontFamily": "times-italic",
+          "fontSize": 12,
+          "fontColor": "#ef4444",
+          "textAlign": "center",
+          "bold": true,
+          "underline": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Times",
+          "weight": 700,
+          "italic": true,
+          "size": 12,
+          "color": "#EF4444",
+          "decoration": [
+            "underline"
+          ],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "center",
+          "dir": "ltr"
+        }
+      }
+    },
+    {
+      "name": "bodyFromTextStyle/registered",
+      "fn": "bodyFromTextStyle",
+      "args": [
+        {
+          "fontFamily": "inter-italic",
+          "fontSize": 12,
+          "fontColor": "#ef4444",
+          "textAlign": "left"
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Inter",
+          "weight": 400,
+          "italic": true,
+          "size": 12,
+          "color": "#EF4444",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        }
+      }
+    },
+    {
+      "name": "bodyFromTextStyle/unknown-font",
+      "fn": "bodyFromTextStyle",
+      "args": [
+        {
+          "fontFamily": "MyFont",
+          "fontSize": 12,
+          "fontColor": "#ef4444",
+          "textAlign": "left",
+          "italic": false
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "family": "MyFont",
+          "weight": 400,
+          "italic": false,
+          "size": 12,
+          "color": "#EF4444",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        }
+      }
+    },
+    {
+      "name": "richDocOf/dto-rich",
+      "fn": "richDocOf",
+      "args": [
+        {
+          "id": "obj:11",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 11
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 11
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 11,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "richText": {
+              "body": {
+                "family": "Helvetica",
+                "weight": 700,
+                "italic": true,
+                "size": 12,
+                "color": "#EF4444",
+                "decoration": [
+                  "underline"
+                ],
+                "script": "normal",
+                "letterSpacing": 0,
+                "horizontalScale": 1,
+                "align": "left",
+                "dir": "ltr"
+              },
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hel"
+                    },
+                    {
+                      "text": "lo",
+                      "style": {
+                        "weight": 700
+                      }
+                    }
+                  ],
+                  "align": "left",
+                  "dir": "ltr"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": "world",
+                      "style": {
+                        "italic": true,
+                        "decoration": [
+                          "underline"
+                        ],
+                        "color": "#0000FF"
+                      }
+                    }
+                  ],
+                  "align": "center"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    },
+                    {
+                      "text": "x",
+                      "style": {
+                        "family": "Courier",
+                        "size": 20
+                      }
+                    }
+                  ],
+                  "dir": "rtl"
+                }
+              ]
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left",
+            "bold": true,
+            "italic": true,
+            "underline": true
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "weight": 700,
+            "italic": true,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [
+              "underline"
+            ],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "richDocOf/dto-plain",
+      "fn": "richDocOf",
+      "args": [
+        {
+          "id": "obj:14",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 14
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 14
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 14,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "one\rtwo",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "one"
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "two"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "richDocOf/no-text-style",
+      "fn": "richDocOf",
+      "args": [
+        {
+          "id": "obj:15",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 15
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "color": "#000000",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "richDocOf/not-free-text",
+      "fn": "richDocOf",
+      "args": [
+        {
+          "id": "obj:16",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 16
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 16
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 16,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "color": "#000000",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "textCommitPatch/strips-defaults",
+      "fn": "textCommitPatch",
+      "args": [
+        {
+          "id": "obj:11",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 11
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 11
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 11,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null,
+            "richText": {
+              "body": {
+                "family": "Helvetica",
+                "weight": 700,
+                "italic": true,
+                "size": 12,
+                "color": "#EF4444",
+                "decoration": [
+                  "underline"
+                ],
+                "script": "normal",
+                "letterSpacing": 0,
+                "horizontalScale": 1,
+                "align": "left",
+                "dir": "ltr"
+              },
+              "paragraphs": [
+                {
+                  "runs": [
+                    {
+                      "text": "Hel"
+                    },
+                    {
+                      "text": "lo",
+                      "style": {
+                        "weight": 700
+                      }
+                    }
+                  ],
+                  "align": "left",
+                  "dir": "ltr"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": "world",
+                      "style": {
+                        "italic": true,
+                        "decoration": [
+                          "underline"
+                        ],
+                        "color": "#0000FF"
+                      }
+                    }
+                  ],
+                  "align": "center"
+                },
+                {
+                  "runs": [
+                    {
+                      "text": ""
+                    },
+                    {
+                      "text": "x",
+                      "style": {
+                        "family": "Courier",
+                        "size": 20
+                      }
+                    }
+                  ],
+                  "dir": "rtl"
+                }
+              ]
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left",
+            "bold": true,
+            "italic": true,
+            "underline": true
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        [
+          {
+            "runs": [
+              {
+                "text": "Hel"
+              },
+              {
+                "text": "lo",
+                "style": {
+                  "weight": 700
+                }
+              }
+            ],
+            "align": "left",
+            "dir": "ltr"
+          },
+          {
+            "runs": [
+              {
+                "text": "world",
+                "style": {
+                  "italic": true,
+                  "decoration": [
+                    "underline"
+                  ],
+                  "color": "#0000FF"
+                }
+              }
+            ],
+            "align": "center"
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              },
+              {
+                "text": "x",
+                "style": {
+                  "family": "Courier",
+                  "size": 20
+                }
+              }
+            ],
+            "dir": "rtl"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "richText": {
+            "paragraphs": [
+              {
+                "runs": [
+                  {
+                    "text": "Hel"
+                  },
+                  {
+                    "text": "lo",
+                    "style": {
+                      "weight": 700
+                    }
+                  }
+                ]
+              },
+              {
+                "runs": [
+                  {
+                    "text": "world",
+                    "style": {
+                      "italic": true,
+                      "decoration": [
+                        "underline"
+                      ],
+                      "color": "#0000FF"
+                    }
+                  }
+                ],
+                "align": "center"
+              },
+              {
+                "runs": [
+                  {
+                    "text": ""
+                  },
+                  {
+                    "text": "x",
+                    "style": {
+                      "family": "Courier",
+                      "size": 20
+                    }
+                  }
+                ],
+                "dir": "rtl"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "textCommitPatch/plain",
+      "fn": "textCommitPatch",
+      "args": [
+        {
+          "id": "obj:17",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 17
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 17
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 17,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": "Hello",
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "free-text",
+            "intent": "free-text",
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "textAlign": "left",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 1,
+            "borderStyle": "solid",
+            "rectDifferences": null
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 1,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            }
+          },
+          "text": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "textAlign": "left"
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        [
+          {
+            "runs": [
+              {
+                "text": "hi"
+              }
+            ],
+            "align": "left",
+            "dir": "ltr"
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "richText": {
+            "paragraphs": [
+              {
+                "runs": [
+                  {
+                    "text": "hi"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "stripBodyDefaults/mixed",
+      "fn": "stripBodyDefaults",
+      "args": [
+        [
+          {
+            "runs": [
+              {
+                "text": "Hel"
+              },
+              {
+                "text": "lo",
+                "style": {
+                  "weight": 700
+                }
+              }
+            ],
+            "align": "left",
+            "dir": "ltr"
+          },
+          {
+            "runs": [
+              {
+                "text": "world",
+                "style": {
+                  "italic": true,
+                  "decoration": [
+                    "underline"
+                  ],
+                  "color": "#0000FF"
+                }
+              }
+            ],
+            "align": "center"
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              },
+              {
+                "text": "x",
+                "style": {
+                  "family": "Courier",
+                  "size": 20
+                }
+              }
+            ],
+            "dir": "rtl"
+          }
+        ],
+        {
+          "align": "center",
+          "dir": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "Hel"
+              },
+              {
+                "text": "lo",
+                "style": {
+                  "weight": 700
+                }
+              }
+            ],
+            "align": "left"
+          },
+          {
+            "runs": [
+              {
+                "text": "world",
+                "style": {
+                  "italic": true,
+                  "decoration": [
+                    "underline"
+                  ],
+                  "color": "#0000FF"
+                }
+              }
+            ]
+          },
+          {
+            "runs": [
+              {
+                "text": ""
+              },
+              {
+                "text": "x",
+                "style": {
+                  "family": "Courier",
+                  "size": 20
+                }
+              }
+            ],
+            "dir": "rtl"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stripBodyDefaults/none",
+      "fn": "stripBodyDefaults",
+      "args": [
+        [
+          {
+            "runs": [
+              {
+                "text": "a"
+              }
+            ]
+          }
+        ],
+        {
+          "align": "left",
+          "dir": "ltr"
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "runs": [
+              {
+                "text": "a"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "runDeltaForProps/every-key",
+      "fn": "runDeltaForProps",
+      "args": [
+        {
+          "fontFamily": "times-bold",
+          "fontSize": 14,
+          "fontColor": "#abcdef",
+          "bold": false,
+          "italic": true,
+          "underline": true,
+          "color": "#000000",
+          "opacity": 0.5
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "family": "Times",
+            "weight": 400,
+            "italic": true,
+            "size": 14,
+            "color": "#ABCDEF",
+            "decoration": [
+              "underline"
+            ]
+          },
+          "rest": {
+            "color": "#000000",
+            "opacity": 0.5
+          }
+        }
+      }
+    },
+    {
+      "name": "runDeltaForProps/registered-font",
+      "fn": "runDeltaForProps",
+      "args": [
+        {
+          "fontFamily": "inter-italic",
+          "bold": true,
+          "underline": false
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "family": "Inter",
+            "weight": 700,
+            "italic": true,
+            "decoration": []
+          },
+          "rest": {}
+        }
+      }
+    },
+    {
+      "name": "runDeltaForProps/unknown-font",
+      "fn": "runDeltaForProps",
+      "args": [
+        {
+          "fontFamily": "MyFont"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "delta": {
+            "family": "MyFont"
+          },
+          "rest": {}
+        }
+      }
+    },
+    {
+      "name": "runsInRange/across",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 2,
+          "end": 9
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {},
+          {
+            "weight": 700
+          },
+          {
+            "italic": true,
+            "decoration": [
+              "underline"
+            ],
+            "color": "#0000FF"
+          }
+        ]
+      }
+    },
+    {
+      "name": "runsInRange/reversed",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 9,
+          "end": 2
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {},
+          {
+            "weight": 700
+          },
+          {
+            "italic": true,
+            "decoration": [
+              "underline"
+            ],
+            "color": "#0000FF"
+          }
+        ]
+      }
+    },
+    {
+      "name": "runsInRange/empty",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 4,
+          "end": 4
+        }
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "runsInRange/to-the-end",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 12
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {},
+          {
+            "weight": 700
+          },
+          {
+            "italic": true,
+            "decoration": [
+              "underline"
+            ],
+            "color": "#0000FF"
+          }
+        ]
+      }
+    },
+    {
+      "name": "rangeProps/mixed",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 2,
+          "end": 9
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "bold": false,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": [
+            "fontColor",
+            "bold",
+            "italic",
+            "underline"
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeProps/one-run",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "bold": false,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": []
+        }
+      }
+    },
+    {
+      "name": "rangeProps/caret",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 700,
+            "italic": true,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [
+              "underline"
+            ],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 3,
+          "end": 3
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica-bold-oblique",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "bold": true,
+            "italic": true,
+            "underline": true
+          },
+          "mixed": []
+        }
+      }
+    },
+    {
+      "name": "rangeProps/registered",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Inter",
+            "weight": 700,
+            "italic": false,
+            "size": 12,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 1
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "inter-bold",
+            "fontSize": 12,
+            "fontColor": "#ef4444",
+            "bold": true,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": []
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "ellipse": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/circle-rotated",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "circle",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          },
+          "rotation": 30
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "circle",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "ellipse": true,
+            "rot": 30
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-negative",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": -1,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite, non-negative rectangle",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-nan",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": {
+              "$number": "NaN"
+            },
+            "y": 20,
+            "width": 30,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite, non-negative rectangle",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/line",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "line",
+          "from": {
+            "x": 1,
+            "y": 2
+          },
+          "to": {
+            "x": 3,
+            "y": 4
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "line",
+          "geom": {
+            "t": "line",
+            "a": {
+              "x": 1,
+              "y": 2
+            },
+            "b": {
+              "x": 3,
+              "y": 4
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/line-infinite",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "line",
+          "from": {
+            "x": 1,
+            "y": {
+              "$number": "Infinity"
+            }
+          },
+          "to": {
+            "x": 3,
+            "y": 4
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "from and to must be finite points",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/polygon",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "polygon",
+          "vertices": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 5
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "polygon",
+          "geom": {
+            "t": "poly",
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 5
+              }
+            ],
+            "closed": true
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/polygon-short",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "polygon",
+          "vertices": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "polygon needs at least 3 finite vertices",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/polyline",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "polyline",
+          "vertices": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "polyline",
+          "geom": {
+            "t": "poly",
+            "points": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 5,
+                "y": 0
+              }
+            ],
+            "closed": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/polyline-nan",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "polyline",
+          "vertices": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": {
+                "$number": "NaN"
+              },
+              "y": 0
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "polyline needs at least 2 finite vertices",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/ink",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ],
+            [
+              {
+                "x": 1,
+                "y": 1
+              },
+              {
+                "x": 2,
+                "y": 2
+              }
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "ink",
+          "geom": {
+            "t": "ink",
+            "strokes": [
+              [
+                {
+                  "x": 1,
+                  "y": 1
+                },
+                {
+                  "x": 2,
+                  "y": 2
+                }
+              ]
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/ink-empty",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              }
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "ink needs at least one stroke of two or more finite points",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/ink-nan",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "ink",
+          "strokes": [
+            [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 1,
+                "y": {
+                  "$number": "NaN"
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "ink needs at least one stroke of two or more finite points",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/highlight",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "highlight",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 1,
+                "y": 2
+              },
+              "upperEnd": {
+                "x": 3,
+                "y": 2
+              },
+              "lowerStart": {
+                "x": 1,
+                "y": 4
+              },
+              "lowerEnd": {
+                "x": 3,
+                "y": 4
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "highlight",
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 1,
+                  "y": 2
+                },
+                "upperEnd": {
+                  "x": 3,
+                  "y": 2
+                },
+                "lowerStart": {
+                  "x": 1,
+                  "y": 4
+                },
+                "lowerEnd": {
+                  "x": 3,
+                  "y": 4
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/squiggly-empty",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "squiggly",
+          "quads": []
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "squiggly needs at least one quad",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/redact-quads",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "redact",
+          "quads": [
+            {
+              "upperStart": {
+                "x": 1,
+                "y": 2
+              },
+              "upperEnd": {
+                "x": 3,
+                "y": 2
+              },
+              "lowerStart": {
+                "x": 1,
+                "y": 4
+              },
+              "lowerEnd": {
+                "x": 3,
+                "y": 4
+              }
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "redact",
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 1,
+                  "y": 2
+                },
+                "upperEnd": {
+                  "x": 3,
+                  "y": 2
+                },
+                "lowerStart": {
+                  "x": 1,
+                  "y": 4
+                },
+                "lowerEnd": {
+                  "x": 3,
+                  "y": 4
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/redact-area",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "redact",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "redact",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "ellipse": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/redact-area-empty",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "redact",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 0
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite rectangle with positive size",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/free-text",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/free-text-callout",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 0,
+              "y": 0
+            },
+            "knee": {
+              "x": 5,
+              "y": 5
+            },
+            "ending": "open-arrow"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "free-text",
+          "geom": {
+            "t": "text",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "callout": {
+              "tip": {
+                "x": 0,
+                "y": 0
+              },
+              "knee": {
+                "x": 5,
+                "y": 5
+              },
+              "ending": "open-arrow"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/free-text-empty",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "free-text",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 0,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite rectangle with positive size",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/stamp",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "stamp",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "create() does not build 'stamp' annotations yet; use createRaw(), placeStamp() or createAttachment()",
+            "code": "unsupported",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "previewBucket/0",
+      "fn": "previewBucket",
+      "args": [
+        0
+      ],
+      "outcome": {
+        "returned": 128
+      }
+    },
+    {
+      "name": "previewBucket/127.5",
+      "fn": "previewBucket",
+      "args": [
+        127.5
+      ],
+      "outcome": {
+        "returned": 128
+      }
+    },
+    {
+      "name": "previewBucket/129",
+      "fn": "previewBucket",
+      "args": [
+        129
+      ],
+      "outcome": {
+        "returned": 256
+      }
+    },
+    {
+      "name": "previewBucket/1000",
+      "fn": "previewBucket",
+      "args": [
+        1000
+      ],
+      "outcome": {
+        "returned": 1024
+      }
+    },
+    {
+      "name": "previewBucket/5000",
+      "fn": "previewBucket",
+      "args": [
+        5000
+      ],
+      "outcome": {
+        "returned": 4096
+      }
+    },
+    {
+      "name": "previewBucket/capped",
+      "fn": "previewBucket",
+      "args": [
+        3000,
+        2048
+      ],
+      "outcome": {
+        "returned": 2048
       }
     },
     {

@@ -50,6 +50,11 @@ fn comments_and_links_match_the_typescript() {
 }
 
 #[test]
+fn page_space_api_matches_the_typescript() {
+    scenarios("plugins/annotation-api.json");
+}
+
+#[test]
 fn repository_matches_the_typescript() {
     assert_suite(
         "plugins/annotation-repository.json",

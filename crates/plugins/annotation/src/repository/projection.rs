@@ -6,6 +6,7 @@
 //! `None` where the member is absent.
 
 use epdf_annotation_core::js::Nullable;
+use epdf_annotation_core::measurement::MeasurementAppearance;
 use epdf_annotation_core::{
     Annot, Geom, Intent, Label, PdfLinkTarget, PdfRect, PropKey, TextStyle, geom_rotation,
 };
@@ -27,6 +28,7 @@ pub struct IngestSlice {
     pub label: Option<Label>,
     pub link: Nullable<PdfLinkTarget>,
     pub intent: Option<Intent>,
+    pub measure: Option<MeasurementAppearance>,
 }
 
 impl IngestSlice {
@@ -38,6 +40,7 @@ impl IngestSlice {
             label: None,
             link: Nullable::Undefined,
             intent: None,
+            measure: None,
         }
     }
 }
@@ -145,6 +148,7 @@ impl Kind {
                 kinds::stroke::prop(key, a, crop)
             }
             Kind::Link => kinds::misc::link_prop(key, a),
+            Kind::FreeText => kinds::free_text::prop(key, a),
             _ => None,
         }
     }
@@ -154,6 +158,9 @@ impl Kind {
     pub fn draft_extras(self, a: &Annot, crop: PdfRect) -> Option<Option<Wire>> {
         match self {
             Kind::Ink => Some(Some(kinds::stroke::ink_draft_extras(a))),
+            Kind::Line => Some(Some(kinds::stroke::line_draft_extras(a))),
+            Kind::Polygon => Some(Some(kinds::stroke::poly_draft_extras(a, true))),
+            Kind::Polyline => Some(Some(kinds::stroke::poly_draft_extras(a, false))),
             Kind::FreeText => Some(Some(kinds::free_text::draft_extras(a, crop))),
             Kind::Highlight | Kind::Underline | Kind::Squiggly | Kind::Strikeout => {
                 Some(kinds::quads::markup_draft_extras(a, crop, self == Kind::Strikeout))

@@ -1,13 +1,20 @@
-//! `markup.ts`: the bridge that turns a text selection into markup or a
-//! text-edit annotation. Selection is the producer, annotation the consumer.
+//! `tools/markup-bridge.ts`: the bridge that turns a text selection into
+//! markup or a text-edit annotation. Selection is the producer, annotation
+//! the consumer; selection never knows annotation exists.
 
-use epdf_annotation_core::TextEndAnchor;
+use std::rc::Rc;
+
 use epdf_annotation_core::js::Record;
+use epdf_annotation_core::{PageRef, TextEndAnchor};
 use epdf_plugin_interaction::InteractionCapability;
 use epdf_plugin_selection::SelectionCapability;
 
-use crate::capability::AnnotationCapability;
-use crate::tools::{SelectionAuthoring, TextEditOperation};
+use crate::controller::AnnotationCapability;
+use crate::tools::definitions::{SelectionAuthoring, TextEditOperation};
+
+fn core_page(p: epdf_kernel::geometry::PageRef) -> PageRef {
+    PageRef::new(p.page_object_number)
+}
 
 /// `wireMarkup(annotation, selection, interaction)`: keep the live preview
 /// in step with the active tool and the selection, and author on commit.
@@ -20,7 +27,7 @@ pub fn wire_markup(
         let (annotation, selection, interaction) =
             (annotation.clone(), selection.clone(), interaction.clone());
         move || {
-            let tool = annotation.tool(&interaction.active_tool_id());
+            let tool = annotation.get_resolved_tool(&interaction.get_active_tool_id());
             let authoring = tool.as_ref().and_then(|t| t.selection);
             let preview_subtype = match authoring {
                 Some(SelectionAuthoring::Markup) => tool.as_ref().map(|t| t.subtype.clone()),
@@ -33,10 +40,10 @@ pub fn wire_markup(
             match (&preview_subtype, &tool) {
                 (Some(subtype), Some(tool)) if selection.has_selection() => {
                     let mut quads_by_page = Record::new();
-                    for page in selection.snapshot().pages {
+                    for entry in selection.get_snapshot().pages {
                         quads_by_page.insert(
-                            page.pon.to_string(),
-                            page.segments.iter().map(|s| s.quad).collect(),
+                            entry.page.page_object_number.to_string(),
+                            entry.segments.iter().map(|s| s.quad).collect(),
                         );
                     }
                     annotation.preview_markup(subtype, quads_by_page, Some(&tool.preset));
@@ -45,24 +52,32 @@ pub fn wire_markup(
             }
         }
     };
-    let sync = std::rc::Rc::new(sync);
+    let sync = Rc::new(sync);
     let on_change = sync.clone();
-    selection.on_change(move || on_change());
+    let _ = selection.on_changed(move |_| {
+        on_change();
+        Ok(())
+    });
     let on_tool = sync.clone();
-    interaction.on_tool_change(move || on_tool());
+    let _ = interaction.on_tool_changed(move |_| {
+        on_tool();
+        Ok(())
+    });
 
     let (commit_annotation, commit_selection) = (annotation, selection.clone());
-    selection.on_commit(move || {
+    let _ = selection.on_committed(move |_| {
         let annotation = &commit_annotation;
         let selection = &commit_selection;
-        let Some(tool) = annotation.tool(&interaction.active_tool_id()) else { return };
-        let Some(authoring) = tool.selection else { return };
-        let snapshot = selection.snapshot();
+        let Some(tool) = annotation.get_resolved_tool(&interaction.get_active_tool_id()) else {
+            return Ok(());
+        };
+        let Some(authoring) = tool.selection else { return Ok(()) };
+        let snapshot = selection.get_snapshot();
         match authoring {
             SelectionAuthoring::TextEdit { operation: TextEditOperation::Insert } => {
                 if let Some(end) = &snapshot.end {
                     annotation.create_caret(
-                        end.pon,
+                        core_page(end.page),
                         TextEndAnchor {
                             glyph_quad: end.glyph_quad,
                             advance: f64::from(end.advance),
@@ -72,21 +87,25 @@ pub fn wire_markup(
                 selection.clear();
             }
             SelectionAuthoring::TextEdit { operation: TextEditOperation::Replace } => {
-                for page in &snapshot.pages {
-                    let Some(last) = page.segments.last() else { continue };
+                for entry in &snapshot.pages {
+                    let Some(last) = entry.segments.last() else { continue };
                     let anchor = match &snapshot.end {
-                        Some(end) if end.pon == page.pon => TextEndAnchor {
-                            glyph_quad: end.glyph_quad,
-                            advance: f64::from(end.advance),
-                        },
+                        Some(end)
+                            if end.page.page_object_number == entry.page.page_object_number =>
+                        {
+                            TextEndAnchor {
+                                glyph_quad: end.glyph_quad,
+                                advance: f64::from(end.advance),
+                            }
+                        }
                         _ => TextEndAnchor {
                             glyph_quad: last.quad,
                             advance: f64::from(last.advance),
                         },
                     };
                     annotation.create_replace_text(
-                        page.pon,
-                        page.segments.iter().map(|s| s.quad).collect(),
+                        core_page(entry.page),
+                        entry.segments.iter().map(|s| s.quad).collect(),
                         anchor,
                         Some(&tool.preset),
                     );
@@ -94,16 +113,17 @@ pub fn wire_markup(
                 selection.clear();
             }
             SelectionAuthoring::Markup => {
-                for page in &snapshot.pages {
+                for entry in &snapshot.pages {
                     annotation.create_markup(
                         &tool.subtype,
-                        page.pon,
-                        page.segments.iter().map(|s| s.quad).collect(),
+                        core_page(entry.page),
+                        entry.segments.iter().map(|s| s.quad).collect(),
                         Some(&tool.preset),
                     );
                 }
                 selection.clear();
             }
         }
+        Ok(())
     });
 }

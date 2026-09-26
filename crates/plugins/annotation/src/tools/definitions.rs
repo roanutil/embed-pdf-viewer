@@ -1,9 +1,10 @@
-//! `tools.ts`: the tool registry. A tool is a named authoring preset over a
+//! `tools/definitions.ts`: the tool table. A tool is a named authoring preset over a
 //! routing subtype: its defaults bag (keyed by `preset`), cursor, the
 //! interaction tags it turns on, and for payload kinds how the payload
 //! resolves. [`default_tools`] is the built-in table; an embedder merges
 //! over it by id, adds new ids, or inherits with `extends`.
 
+use epdf_annotation_core::measurement::LineLeader;
 use epdf_annotation_core::{
     AnnotationFlagsPatch, AnnotationPropsPatch, ClickCreate, ClickCreateOption,
     InkStraightenOptions,
@@ -13,6 +14,20 @@ use serde::de::{self, Deserializer};
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
+
+/// `ARMED_STAMP_TOOL_ID`: the tool `armStamp` activates, and the only tool
+/// an armed payload survives onto (with the legacy `annotation-stamp` tag).
+pub const ARMED_STAMP_TOOL_ID: &str = "stamp";
+
+/// `measurement`: a measurement preset's caption defaults (a
+/// `LineDimensionCaption` for a line, a `ShapeDimensionCaption` for a
+/// shape, as JSON) and a line's leader.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ToolMeasurement {
+    pub caption: Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub leader: Option<LineLeader>,
+}
 
 /// `PromptSourceSpec`: ask the environment (the file-picker port).
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -123,6 +138,8 @@ pub struct AnnotationToolDef {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub intent: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measurement: Option<ToolMeasurement>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ink: Option<InkAuthoringOptions>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upright: Option<bool>,
@@ -153,6 +170,7 @@ pub struct ResolvedTool {
     pub source: Option<StampSourceSpec>,
     pub selection: Option<SelectionAuthoring>,
     pub intent: Option<String>,
+    pub measurement: Option<ToolMeasurement>,
     pub ink: Option<InkAuthoringOptions>,
     pub upright: bool,
     pub click_create: ClickCreateOption,
@@ -164,6 +182,19 @@ impl ResolvedTool {
     /// `tool.enables.has(tag)`.
     pub fn enables(&self, tag: &str) -> bool {
         self.enables.iter().any(|t| t == tag)
+    }
+
+    /// `isDimension(tool)`: a measurement preset.
+    pub fn is_dimension(&self) -> bool {
+        epdf_annotation_core::measure::is_dimension(
+            &self.subtype,
+            self.intent.as_deref().unwrap_or_default(),
+        )
+    }
+
+    /// `meta.capture === true`: a capture-only tool (the calibration line).
+    pub fn captures(&self) -> bool {
+        self.meta.as_ref().and_then(|m| m.get("capture")) == Some(&Value::Bool(true))
     }
 
     /// `clickCreate` when it is a policy.
@@ -193,6 +224,7 @@ impl ResolvedTool {
         put("source", self.source.as_ref().map(|s| serde_json::to_value(s).unwrap()));
         put("selection", self.selection.as_ref().map(|s| serde_json::to_value(s).unwrap()));
         put("intent", self.intent.as_ref().map(|i| json!(i)));
+        put("measurement", self.measurement.as_ref().map(|m| serde_json::to_value(m).unwrap()));
         put("ink", self.ink.as_ref().map(|i| serde_json::to_value(i).unwrap()));
         out.insert("upright".into(), json!(self.upright));
         out.insert("clickCreate".into(), serde_json::to_value(self.click_create).unwrap());
@@ -218,6 +250,9 @@ pub fn tool_default_keys(kind: &str) -> Option<&'static [&'static str]> {
             "fontFamily",
             "fontSize",
             "fontColor",
+            "bold",
+            "italic",
+            "underline",
             "textAlign",
             "opacity",
             "interiorColor",
@@ -229,6 +264,9 @@ pub fn tool_default_keys(kind: &str) -> Option<&'static [&'static str]> {
             "fontFamily",
             "fontSize",
             "fontColor",
+            "bold",
+            "italic",
+            "underline",
             "textAlign",
             "opacity",
             "interiorColor",
@@ -261,7 +299,7 @@ pub fn tool_default_keys(kind: &str) -> Option<&'static [&'static str]> {
             "fontColor",
             "textAlign",
         ],
-        "widget-toggle" => &["color", "interiorColor", "strokeWidth", "border"],
+        "widget-toggle" | "widget-box" => &["color", "interiorColor", "strokeWidth", "border"],
         _ => return None,
     })
 }
@@ -311,8 +349,53 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
         draw("square", json!({ "strokeWidth": 6 }), Some(ClickCreate::boxed(80.0, 60.0, None))),
         draw("circle", json!({ "strokeWidth": 6 }), Some(ClickCreate::boxed(80.0, 60.0, None))),
         draw("line", json!({ "strokeWidth": 6 }), Some(ClickCreate::segment(80.0, None))),
+        AnnotationToolDef {
+            extends: Some("line".into()),
+            intent: Some("LineDimension".into()),
+            click_create: Some(ClickCreateOption::Off),
+            defaults: patch(json!({
+                "strokeWidth": 1,
+                "lineEndings": { "start": "closed-arrow", "end": "closed-arrow" },
+            })),
+            measurement: Some(ToolMeasurement {
+                caption: json!({ "enabled": true, "position": "inline" }),
+                leader: Some(LineLeader { length: 12.0, extension: Some(5.0), offset: Some(0.0) }),
+            }),
+            ..def("distance")
+        },
+        AnnotationToolDef {
+            extends: Some("line".into()),
+            enables: tags(&["annotation-draw"]),
+            defaults: patch(json!({ "strokeWidth": 1 })),
+            click_create: Some(ClickCreateOption::Off),
+            meta: Some(json!({ "capture": true }).as_object().cloned().unwrap_or_default()),
+            ..def("calibrate")
+        },
         draw("polygon", json!({ "strokeWidth": 6 }), None),
         draw("polyline", json!({ "strokeWidth": 6 }), None),
+        AnnotationToolDef {
+            extends: Some("polyline".into()),
+            intent: Some("PolyLineDimension".into()),
+            defaults: patch(json!({
+                "strokeWidth": 1,
+                "lineEndings": { "start": "none", "end": "none" },
+            })),
+            measurement: Some(ToolMeasurement {
+                caption: json!({ "enabled": true }),
+                leader: None,
+            }),
+            ..def("perimeter")
+        },
+        AnnotationToolDef {
+            extends: Some("polygon".into()),
+            intent: Some("PolygonDimension".into()),
+            defaults: patch(json!({ "strokeWidth": 1 })),
+            measurement: Some(ToolMeasurement {
+                caption: json!({ "enabled": true }),
+                leader: None,
+            }),
+            ..def("area")
+        },
         AnnotationToolDef {
             ink: Some(InkAuthoringOptions { group_strokes_ms: Some(800.0), straighten: None }),
             ..draw(
@@ -396,7 +479,7 @@ pub fn default_tools() -> Vec<AnnotationToolDef> {
             })),
             upright: Some(true),
             ghost: Some(GhostPolicy::Footprint),
-            ..def("stamp")
+            ..def(ARMED_STAMP_TOOL_ID)
         },
         AnnotationToolDef {
             subtype: Some("link".into()),
@@ -504,6 +587,7 @@ fn merge_def(base: &AnnotationToolDef, over: &AnnotationToolDef) -> AnnotationTo
         source: over.source.clone().or_else(|| base.source.clone()),
         selection: over.selection.or(base.selection),
         intent: over.intent.clone().or_else(|| base.intent.clone()),
+        measurement: over.measurement.clone().or_else(|| base.measurement.clone()),
         ink: spread_ink(base.ink.as_ref(), over.ink.as_ref()),
         upright: over.upright.or(base.upright),
         click_create: over.click_create.or(base.click_create),
@@ -611,6 +695,10 @@ impl Resolver {
             source: def.source.clone().or_else(|| base.and_then(|b| b.source.clone())),
             selection: def.selection.or_else(|| base.and_then(|b| b.selection)),
             intent: def.intent.clone().or_else(|| base.and_then(|b| b.intent.clone())),
+            measurement: def
+                .measurement
+                .clone()
+                .or_else(|| base.and_then(|b| b.measurement.clone())),
             ink: spread_ink(base.and_then(|b| b.ink.as_ref()), def.ink.as_ref()),
             upright: def.upright.or_else(|| base.map(|b| b.upright)).unwrap_or(false),
             click_create: def

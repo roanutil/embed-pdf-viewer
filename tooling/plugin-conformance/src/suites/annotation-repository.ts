@@ -63,6 +63,9 @@ import type { FunctionCase, Suite } from '../vectors';
 
 type Dto = Record<string, unknown>;
 
+const METRES = METRES_FORMAT();
+const RICH_PARAS = [{ runs: [{ text: 'Hel' }, { text: 'lo', style: { weight: 700 } }] }];
+
 const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
 
 const rotated = { rotation: 30, unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } };
@@ -129,7 +132,55 @@ const DTOS: [string, Dto, typeof CROP][] = [
   ['caret-unrotated-box-no-rotation', caret(58, { unrotatedRect: { left: 86, bottom: 746, right: 94, top: 754 } }), CROP],
   // Only a strikeout reads its intent.
   ['highlight-with-intent', markup('highlight', 57, { intent: 'strikeout-text-edit' }), CROP],
+  // Measurement dimensions: the line carries its leader and caption, the
+  // shapes their caption, and every one derives /Contents from /Measure.
+  [
+    'line-dimension',
+    line(59, {
+      intent: 'LineDimension',
+      measure: METRES,
+      caption: { enabled: true, position: 'inline' },
+      leader: { length: 12, extension: 5, offset: 0 },
+      contents: '2 m',
+      linePoints: { start: { x: 100, y: 700 }, end: { x: 244, y: 700 } },
+    }),
+    CROP,
+  ],
+  ['line-dimension-bare', line(60, { intent: 'LineDimension' }), CROP],
+  ['line-dimension-foreign', line(61, { intent: 'LineDimension', measure: { subtype: 'GEO' }, caption: { enabled: false }, contents: null }), CROP],
+  ['polyline-dimension', polyline(62, { intent: 'PolyLineDimension', measure: METRES, caption: { enabled: true }, contents: 'stale' }), CROP],
+  ['polygon-dimension', polygon(63, { intent: 'PolygonDimension', measure: METRES, caption: { enabled: true, center: { x: 150, y: 670 } } }), CROP],
+  ['polygon-dimension-bare', polygon(64, { intent: 'PolygonDimension', rotation: 30 }), CROP],
+  // A rich body carries the formatting the /DA cannot.
+  ['free-text-rich', freeText(65, { richText: { body: RICH_BODY(700, true, ['underline']), paragraphs: RICH_PARAS } }), CROP],
+  ['free-text-rich-plain', freeText(66, { richText: { body: RICH_BODY(400, false, []), paragraphs: RICH_PARAS } }), CROP],
 ];
+
+/** 72 pt to the metre. */
+function METRES_FORMAT() {
+  return {
+    subtype: 'RL',
+    ratio: '1 in = 1 m',
+    x: [{ unit: 'm', conversion: 1 / 72 }],
+    distance: [{ unit: 'm', conversion: 1 }],
+    area: [{ unit: 'm²', conversion: 1 }],
+  };
+}
+function RICH_BODY(weight: number, italic: boolean, decoration: string[]) {
+  return {
+    family: 'Helvetica',
+    weight,
+    italic,
+    size: 12,
+    color: '#EF4444',
+    decoration,
+    script: 'normal',
+    letterSpacing: 0,
+    horizontalScale: 1,
+    align: 'left',
+    dir: 'ltr',
+  };
+}
 
 function BLUE_DTO() {
   return { r: 56, g: 88, b: 233 };
@@ -157,6 +208,7 @@ const PROP_SCOPES: [string, string[]][] = [
   ['line-endings', ['lineEndings']],
   ['interior', ['interiorColor', 'opacity', 'blendMode']],
   ['font', ['fontFamily', 'fontSize', 'fontColor', 'textAlign']],
+  ['format', ['bold', 'italic', 'underline']],
   ['icon', ['icon']],
   ['link', ['link']],
   ['unknown', ['bogus']],
@@ -204,7 +256,16 @@ const STYLED: [string, Annot, typeof CROP][] = [
   ['widget-text', annotOf('widget-text'), CROP],
   ['stamp', annotOf('stamp'), CROP],
   ['square-empty-interior', restyle(annotOf('square'), { interiorColor: '' }), CROP],
+  ['free-text-rich', annotOf('free-text-rich'), CROP],
+  ['free-text-bold-draft', { ...annotOf('free-text'), text: { ...annotOf('free-text').text!, bold: true, underline: true }, data: undefined } as Annot, CROP],
+  ['line-dimension', annotOf('line-dimension'), CROP],
+  ['polygon-dimension', annotOf('polygon-dimension'), CROP],
 ];
+// The measurement scopes: a caption for every dimension, a leader for the line only.
+for (const label of ['line-dimension', 'line-dimension-bare', 'polyline-dimension', 'polygon-dimension', 'square']) {
+  cases.push(c('toScopedPatch', `${label}/caption`, annotOf(label), { kind: 'caption' }, CROP));
+  cases.push(c('toScopedPatch', `${label}/leader`, annotOf(label), { kind: 'leader' }, CROP));
+}
 for (const [label, a, crop] of STYLED) {
   for (const [scope, keys] of PROP_SCOPES) {
     cases.push(c('toScopedPatch', `${label}/${scope}`, a, { kind: 'props', keys }, crop));
