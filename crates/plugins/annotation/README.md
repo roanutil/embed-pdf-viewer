@@ -127,6 +127,10 @@ fail, or listed below with the reason no case can kill it.
 |---|---|---|---|---|---|---|
 | `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
 | `tools.rs` | 73 | 0 | 17 | 6 | 11 | 6 |
+| `binary.rs` | 50 | 1 | 21 | 10 | 17 | 4 |
+| `types.rs` | 1 | 0 | 0 | 1 | | |
+| `repository/mod.rs` | 29 | 0 | 0 | 1 | | |
+| `repository/links.rs` | 2 | 0 | 0 | 0 | | |
 
 The other files are being run.
 
@@ -140,3 +144,6 @@ The other files are being run.
 | `tools.rs` 294 | delete `cursor` from the `draw` row | Equivalent. Its value is `crosshair`, the resolved default. |
 | `tools.rs` 439 | `\|\|` to `&&` in `merge_defaults` | Equivalent. When only one side has line endings, merging them over the empty default gives that side's endings, which the spread already holds. |
 | `tools.rs` 549 | `!=` to `==` on `ToolRegistry::delete`'s return | Unobservable. Its one caller, the `registerTool` unregister, ignores the result. |
+| `binary.rs` 31, 48 | the `is_undefined` guards in `not_a_blob` and `resolve_now` to `false` | Unreachable. The harness decodes an explicit `{"$undefined": true}` member to `null`, and an omitted member is `None`, so the undefined marker never reaches either match. |
+| `binary.rs` 105 | `offset + 4 < len` to `<=` in `parse_jpeg` | Equivalent. With four bytes left, every branch of the extra pass returns `None` or leaves the loop: an SOF needs nine. |
+| `binary.rs` 129 | `\|` to `^` in the segment length | Equivalent. The high byte is shifted clear of the low one, so the bits never overlap. |

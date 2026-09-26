@@ -703,6 +703,13 @@ const cases: ScenarioCase[] = [
       tool('pointer'),
       call('hasArmedStamp'),
       call('stampArmEpoch'),
+      // An explicit preview keeps its declared type; a null source, and a
+      // payload whose data is neither bytes nor a Blob, reject as V8 does.
+      call('armStamp', [{ source: PDF, preview: { data: JPEG, mimeType: 'image/jpeg' } }]),
+      call('armedStampPreview'),
+      call('armStamp', [{ source: null }]),
+      call('armStamp', [{ source: { data: 5 } }]),
+      call('armStamp', [{ source: { name: 'no-data' } }]),
     ],
   },
   {

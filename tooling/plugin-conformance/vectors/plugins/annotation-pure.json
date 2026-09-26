@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads.",
+  "describes": "packages/plugin/annotation: the tool registry, the free-text projection, icon placement, the reducer, and engine-core buildCommentThreads and sniffBinaryMetadata.",
   "cases": [
     {
       "name": "buildToolRegistry/built-ins",
@@ -10923,6 +10923,164 @@
           "toolGhost": null,
           "stampArmEpoch": 4
         }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/png-wide",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgABEXAAAQAB"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/png",
+          "width": 70000,
+          "height": 65537
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/png-trailing-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAyAQIDBAUG"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/png",
+          "width": 100,
+          "height": 50
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/png-zero-width",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAAAAAAAy"
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-sof-ends-the-buffer",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAAeACg="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-sof-truncated",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAA="
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-zero-width",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/wAARCAAeAAA="
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-soi-after-a-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AAEAAD/2P/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-long-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AECAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/jpeg-second-segment",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "/9j/4AAEAAD/4QAGqrvM3f/AABEIAB4AKA=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "image/jpeg",
+          "width": 40,
+          "height": 30
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/pdf-four-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "JVBERg=="
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "mimeType": "application/pdf"
+        }
+      }
+    },
+    {
+      "name": "sniffBinaryMetadata/three-bytes",
+      "fn": "sniffBinaryMetadata",
+      "args": [
+        {
+          "$bytes": "JVBE"
+        }
+      ],
+      "outcome": {
+        "returned": null
       }
     },
     {
