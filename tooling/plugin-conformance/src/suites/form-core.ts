@@ -235,6 +235,7 @@ const selectionCases: FunctionCase[] = [
   fc('resolveFieldSelection', 'exclude-a-subtree', TREE, [n('parent')], true),
   fc('resolveFieldSelection', 'object-number', TREE, [o(42)], false),
   fc('resolveFieldSelection', 'object-number-never-matches-an-fqn-ref', TREE, [o(0)], false),
+  fc('resolveFieldSelection', 'a-numberless-target-finds-a-numberless-ref', [...TREE, { ...sel('bare'), ref: { kind: 'objectNumber' } }], [{ kind: 'objectNumber' }], false),
   fc('resolveFieldSelection', 'mixed-targets', TREE, [o(42), n('parentheses'), { kind: 'other' }], false),
   fc('buildSubmitEntries', 'fields-absent-silently-drops-ineligible', [
     sel('plain'),

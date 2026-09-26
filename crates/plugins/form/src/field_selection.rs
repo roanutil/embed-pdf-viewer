@@ -13,7 +13,8 @@ use crate::value::{get, num, str_of, string_of, truthy};
 /// the target list addressed (directly or through a subtree).
 pub struct FieldSelection {
     names: Vec<String>,
-    object_numbers: Vec<f64>,
+    /// `None` is a target without an object number (`undefined`).
+    object_numbers: Vec<Option<f64>>,
     /// `targets === null`: nothing is ever listed.
     everything: bool,
     pub selected: Vec<Value>,
@@ -27,11 +28,8 @@ impl FieldSelection {
         }
         let r = get(field, "ref");
         let by_number = r.is_some_and(|r| {
-            str_of(r, "kind") == Some("objectNumber")
-                && num(r, "fieldObjectNumber").is_some_and(|n| {
-                    // `Set#has` is SameValueZero: NaN finds NaN.
-                    self.object_numbers.iter().any(|&m| m == n || (m.is_nan() && n.is_nan()))
-                })
+            let number = num(r, "fieldObjectNumber");
+            str_of(r, "kind") == Some("objectNumber") && self.object_numbers.contains(&number)
         });
         by_number || {
             let name = get(field, "name");
@@ -67,7 +65,7 @@ pub fn resolve_field_selection(
     let object_numbers = targets
         .iter()
         .filter(|t| str_of(t, "kind") == Some("objectNumber"))
-        .map(|t| num(t, "objectNumber").unwrap_or(f64::NAN))
+        .map(|t| num(t, "objectNumber"))
         .collect();
     let mut selection =
         FieldSelection { names, object_numbers, everything: false, selected: Vec::new() };

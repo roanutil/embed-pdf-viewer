@@ -46719,6 +46719,241 @@
       }
     },
     {
+      "name": "resolveFieldSelection/a-numberless-target-finds-a-numberless-ref",
+      "fn": "resolveFieldSelection",
+      "args": [
+        [
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 0
+            },
+            "fieldObjectNumber": 0,
+            "name": "parent.c1",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "parent.c1-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 0
+            },
+            "fieldObjectNumber": 0,
+            "name": "parent.c2",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "parent.c2-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 0
+            },
+            "fieldObjectNumber": 0,
+            "name": "parentheses",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "parentheses-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 0
+            },
+            "fieldObjectNumber": 0,
+            "name": "other",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "other-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "objectNumber",
+              "fieldObjectNumber": 42
+            },
+            "fieldObjectNumber": 42,
+            "name": "byNumber",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "byNumber-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "fqn",
+              "name": "fqnRef"
+            },
+            "fieldObjectNumber": 0,
+            "name": "fqnRef",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "fqnRef-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          },
+          {
+            "ref": {
+              "kind": "objectNumber"
+            },
+            "fieldObjectNumber": 0,
+            "name": "bare",
+            "family": "text",
+            "origin": "acroform",
+            "flags": {
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "raw": 0
+            },
+            "alternateName": null,
+            "mappingName": null,
+            "valueEntry": {
+              "kind": "scalar",
+              "value": "bare-value"
+            },
+            "defaultValueEntry": {
+              "kind": "none"
+            },
+            "widgets": []
+          }
+        ],
+        [
+          {
+            "kind": "objectNumber"
+          }
+        ],
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "selected": [
+            {
+              "ref": {
+                "kind": "objectNumber"
+              },
+              "fieldObjectNumber": 0,
+              "name": "bare",
+              "family": "text",
+              "origin": "acroform",
+              "flags": {
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "raw": 0
+              },
+              "alternateName": null,
+              "mappingName": null,
+              "valueEntry": {
+                "kind": "scalar",
+                "value": "bare-value"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "widgets": []
+            }
+          ],
+          "listed": [
+            false,
+            false,
+            false,
+            false,
+            false,
+            false,
+            true
+          ]
+        }
+      }
+    },
+    {
       "name": "resolveFieldSelection/mixed-targets",
       "fn": "resolveFieldSelection",
       "args": [
