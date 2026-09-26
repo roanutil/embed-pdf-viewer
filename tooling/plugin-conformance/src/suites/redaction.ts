@@ -10,12 +10,14 @@
  * starts `[redaction]` logs as the callback `console.error` (the Rust port
  * takes it as `RedactionHost::console_error`).
  */
-import type { AnyPlugin, PluginContext } from '@embedpdf/core';
+import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/core';
 
-import { initialRedactionState, redactionReducer } from '../../../../packages/plugin/redaction/src/reducer';
-import { createRedactionCapability } from '../../../../packages/plugin/redaction/src/capability';
-import { RedactionToken, redactionPlugin } from '../../../../packages/plugin/redaction/src/index';
-import type { RedactionAction, RedactionState } from '../../../../packages/plugin/redaction/src/types';
+import { initialRedactionState, redactionReducer } from '../../../../packages/plugin/redaction/src/model';
+import { createPendingReads } from '../../../../packages/plugin/redaction/src/read/pending';
+import { redactionPlugin } from '../../../../packages/plugin/redaction/src/index';
+import { RedactionToken } from '../../../../packages/plugin/redaction/src/host-contract';
+import type { RedactionAction, RedactionState } from '../../../../packages/plugin/redaction/src/model';
+import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
@@ -31,12 +33,14 @@ import {
   markup,
   objRef,
   open,
+  pr,
   redact,
   sel,
   settle,
   square,
   textNote,
   updated,
+  v3Event,
 } from './annotation-fixtures';
 
 // ── the console.error shim ────────────────────────────────────────────────────
@@ -57,6 +61,33 @@ registerPlugin('redaction', {
     return redactionPlugin() as AnyPlugin;
   },
   tokens: [RedactionToken],
+});
+
+/**
+ * v2's redact-tool verbs (enableRedact, toggleRedact, isRedactActive) left
+ * the plugin: the `redact` tool is the annotation plugin's, armed through the
+ * interaction hub. This lens keeps those three verbs over the hub, so the
+ * cases read the same; `crates/plugins/redaction/src/harness.rs` mirrors it.
+ */
+const ToolLensToken = createCapabilityToken<Record<string, () => unknown>>('redaction-test/tool');
+registerPlugin('redaction-tool', {
+  factory: () =>
+    definePlugin({
+      id: 'redaction-test/tool',
+      token: ToolLensToken,
+      scope: 'document',
+      requires: [InteractionToken],
+      capability: (ctx) => {
+        const hub = () => ctx.get(InteractionToken);
+        const active = () => hub().getActiveToolId() === 'redact';
+        return {
+          enableRedact: () => hub().activateTool('redact'),
+          toggleRedact: () => (active() ? hub().activateDefaultTool() : hub().activateTool('redact')),
+          isRedactActive: active,
+        };
+      },
+    }) as AnyPlugin,
+  tokens: [ToolLensToken],
 });
 
 // ── text geometry (the annotation-markup suite's page 1) ─────────────────────
@@ -106,21 +137,42 @@ const range = (from: [number, number], to: [number, number]) => ({
 
 // ── steps ─────────────────────────────────────────────────────────────────────
 
-const call = (method: string, args: unknown[] = [], docId = 'a'): Step => ({
-  op: 'call',
-  target: { token: 'redaction', doc: docId },
-  method,
-  args,
-});
+/** A v2 mark id (`obj:N`, `nm:X` on page 2, anything else unknown) as a ref. */
+const idRef = (id: unknown): unknown => {
+  if (typeof id !== 'string') return id;
+  if (id.startsWith('obj:')) return objRef(Number(id.slice(4)));
+  if (id.startsWith('nm:')) return { kind: 'nm', page: pr(2), nm: id.slice(3) };
+  if (id.startsWith('idx:')) {
+    const [, pon, index] = id.split(':');
+    return { kind: 'index', page: pr(Number(pon)), index: Number(index), revision: { docSessionId: 's', page: pr(Number(pon)), generation: 1 } };
+  }
+  return { kind: 'nm', page: pr(1), nm: id };
+};
+const RENAMED: Readonly<Record<string, string>> = {
+  lastResult: 'getLastResult',
+  queueCurrentSelection: 'markSelection',
+  pendingCount: 'getPendingCount',
+  getPending: 'listPending',
+  setLabel: 'updateLabel',
+};
+const TOOL = new Set(['enableRedact', 'toggleRedact', 'isRedactActive']);
+const call = (method: string, args: unknown[] = [], docId = 'a'): Step => {
+  if (TOOL.has(method)) return { op: 'call', target: { token: 'redaction-test/tool', doc: docId }, method, args };
+  // The pending list is read off the annotation plane, which hydrates on
+  // its own; v2's explicit preparePending is its ensureHydrated.
+  if (method === 'preparePending') return anno('ensurePage', [], docId);
+  const out = (method === 'apply' || method === 'estimateCollateral') && Array.isArray(args[0]) ? [(args[0] as unknown[]).map(idRef), ...args.slice(1)] : args;
+  return { op: 'call', target: { token: 'redaction', doc: docId }, method: RENAMED[method] ?? method, args: out };
+};
 const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
-const emit = (event: Record<string, unknown>, docId = 'a'): Step => ({ op: 'emit', doc: docId, event });
+const emit = (event: Record<string, unknown>, docId = 'a'): Step => ({ op: 'emit', doc: docId, event: v3Event(event) });
 const openDoc = (id: string): Step => open(id);
 
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 const at = (phase: string, x: number, y: number, pon = 1) => ({
   phase,
   viewport: { x, y },
-  page: { pon, point: { x, y }, scale: 1 },
+  page: { ref: pr(pon), point: { x, y }, scale: 1 },
   modifiers: noMods,
 });
 const ptr = (phase: string, x: number, y: number): Step => ix('dispatch', [at(phase, x, y)]);
@@ -129,8 +181,8 @@ const REMOTE = { kind: 'remote', serverId: 'srv-7' };
 const LOCAL = { kind: 'local', serverId: null };
 const APPLY_CAPS = ['doc.redact', 'doc.pages.modify', 'doc.annotate.modify'];
 
-const WITH_SELECTION = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }, { factory: 'redaction' }];
-const PLUGINS = [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction' }];
+const WITH_SELECTION = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }, { factory: 'redaction' }, { factory: 'redaction-tool' }];
+const PLUGINS = [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction' }, { factory: 'redaction-tool' }];
 const SNAP = ['redaction::a', 'annotation::a'];
 const withService = (responses: Parameters<typeof doc>[0], over: Parameters<typeof doc>[1] = {}) =>
   doc(responses, { services: ['redaction'], ...over });
@@ -150,7 +202,7 @@ const textMark = redact(11, {
   quadPoints: [quad(50, 730, 150, 15), quad(50, 710, 60, 15)],
 });
 const nmMark = redact(12, {
-  ref: { kind: 'nm', pageObjectNumber: 2, nm: 'mark-b' },
+  ref: { kind: 'nm', page: pr(2), nm: 'mark-b' },
   pageObjectNumber: 2,
   rect: { left: 20, bottom: 20, right: 60, top: 60 },
 });
@@ -168,14 +220,14 @@ const seed = {
 const applyResult = (scope: unknown, removed = 2) => ({
   scope,
   results: [
-    { pageObjectNumber: 1, status: 'applied', removedAnnotationCount: removed },
-    { pageObjectNumber: 2, status: 'unchanged', removedAnnotationCount: 0 },
+    { page: pr(1), status: 'applied', removedAnnotationCount: removed },
+    { page: pr(2), status: 'unchanged', removedAnnotationCount: 0 },
   ],
   removedAnnotationCount: removed,
   meta: { revision: 3 },
 });
-const refsScope = { kind: 'annotations', refs: [objRef(10), { kind: 'nm', pageObjectNumber: 2, nm: 'mark-b' }] };
-const pagesScope = { kind: 'pages', pageObjectNumbers: [1, 2] };
+const refsScope = { kind: 'annotations', refs: [objRef(10), { kind: 'nm', page: pr(2), nm: 'mark-b' }] };
+const pagesScope = { kind: 'pages', pages: [pr(1), pr(2)] };
 const reloadPages = [
   { path: 'page.annotations.list', pon: 1, value: { annotations: [square(4, { rect: { left: 400, bottom: 100, right: 500, top: 200 } })] } },
   { path: 'page.annotations.list', pon: 2, value: { annotations: [] } },
@@ -471,7 +523,7 @@ const cases: ScenarioCase[] = [
       call('getPending'),
       call('setLabel', [objRef(10), { overlayText: null, repeat: true }]),
       call('setLabel', [objRef(10), {}]),
-      call('setLabel', [{ kind: 'nm', pageObjectNumber: 2, nm: 'mark-b' }, { overlayText: 'B', repeat: false }]),
+      call('setLabel', [{ kind: 'nm', page: pr(2), nm: 'mark-b' }, { overlayText: 'B', repeat: false }]),
       call('setLabel', [objRef(1), { overlayText: 'x' }]),
       call('setLabel', [objRef(77), { overlayText: 'x' }]),
     ],
@@ -481,19 +533,22 @@ const cases: ScenarioCase[] = [
 // ── functions ─────────────────────────────────────────────────────────────────
 
 /**
- * `estimateCollateral` and `getPending` read only `ctx.document()` and the
- * annotation plane's `list`, so a function case drives the real capability
- * over a stub context: `pages` is the document's page list (`null` for no
- * document) and `byPage` the annotations `list(pon)` answers. With
- * `doc: null` the capability subscribes to nothing.
+ * `estimateCollateral` reads only the document's page list and the
+ * annotation plane's `listRaw({page})`, so a function case drives the real
+ * pending reads over a stub: `pages` is the document's page list (`null` for
+ * no document) and `byPage` the annotations `listRaw` answers per object
+ * number. A filter lists v2 mark ids, turned into refs.
  */
-const stubCapability = (pages: unknown[] | null, byPage: Record<string, unknown[]>) =>
-  createRedactionCapability({
-    doc: null,
-    document: () => (pages === null ? null : { pages }),
-    get: () => ({ list: (pon: number) => byPage[String(pon)] ?? [] }),
-    tryGet: () => null,
-  } as unknown as PluginContext<RedactionState, RedactionAction>);
+const stubReads = (pages: { pageObjectNumber: number }[] | null, byPage: Record<string, unknown[]>) =>
+  createPendingReads({
+    store: {
+      pages: () => (pages ?? []).map((p) => pr(p.pageObjectNumber)),
+      pageIndexOf: () => -1,
+    },
+    siblings: {
+      annotation: { listRaw: ({ page }: { page: { pageObjectNumber: number } }) => byPage[String(page.pageObjectNumber)] ?? [] },
+    },
+  } as never).api;
 
 const functions = {
   initialRedactionState,
@@ -501,9 +556,8 @@ const functions = {
     const next = redactionReducer(state, action);
     return { changed: next !== state, state: next };
   },
-  estimateCollateral: (pages: unknown[] | null, byPage: Record<string, unknown[]>, ids?: string[]) =>
-    stubCapability(pages, byPage).estimateCollateral(ids),
-  getPending: (pages: unknown[] | null, byPage: Record<string, unknown[]>) => stubCapability(pages, byPage).getPending(),
+  estimateCollateral: (pages: { pageObjectNumber: number }[] | null, byPage: Record<string, unknown[]>, ids?: unknown[] | null) =>
+    stubReads(pages, byPage).estimateCollateral(ids ? (ids.map(idRef) as never) : undefined),
 };
 
 const RESULT = applyResult(pagesScope);
@@ -560,8 +614,8 @@ const functionCases: FunctionCase[] = [
   c('null-filter-is-all', { 1: [mark(1), other(3, rect(150, 650, 160, 660))] }, null),
   c('filter-by-nm-and-index', {
     1: [
-      mark(1, { ref: { kind: 'nm', pageObjectNumber: 1, nm: 'n1' } }),
-      mark(2, { ref: { kind: 'index', pageObjectNumber: 1, index: 4, revision: { docSessionId: 's', pageObjectNumber: 1, generation: 2 } }, rect: rect(300, 300, 400, 400) }),
+      mark(1, { ref: { kind: 'nm', page: pr(1), nm: 'n1' } }),
+      mark(2, { ref: { kind: 'index', page: pr(1), index: 4, revision: { docSessionId: 's', page: pr(1), generation: 2 } }, rect: rect(300, 300, 400, 400) }),
       other(3, rect(150, 650, 160, 660)),
       other(4, rect(350, 350, 360, 360)),
     ],
@@ -574,30 +628,6 @@ const functionCases: FunctionCase[] = [
   c('nan-geometry-never-intersects', { 1: [mark(1), other(2, rect(NAN as never, 600, 200, 700)), mark(3, { quadPoints: [{ ...quad(100, 600, 10, 10), p1: { x: NAN, y: 610 } }] }), other(4, rect(100, 600, 105, 605))] }),
   c('negative-and-fractional', { 1: [mark(1, { rect: rect(-50.5, -50.5, -10.25, -10.25) }), other(2, rect(-20, -20, 0, 0)), other(3, rect(-10.25, -60, 0, 0))] }),
 
-  { name: 'pending-no-document', fn: 'getPending', args: [null, { 1: [mark(1)] }] },
-  {
-    name: 'pending-kinds-ids-and-labels',
-    fn: 'getPending',
-    covers: 'Each redact annotation becomes a pending item: id from its ref (obj:, nm:, idx:), text kind with quads else area, its overlay label, and the page’s display index (-1 when the page has none).',
-    args: [
-      [page(0, 1), { pageObjectNumber: 2 }, page(5, 3)],
-      {
-        1: [
-          mark(1, { overlayText: 'A' }),
-          other(9, rect(0, 0, 1, 1)),
-          mark(2, { ref: { kind: 'nm', pageObjectNumber: 1, nm: 'x y' }, quadPoints: [quad(0, 0, 1, 1)] }),
-        ],
-        2: [mark(3, { pageObjectNumber: 2, ref: { kind: 'index', pageObjectNumber: 2, index: 0, revision: { docSessionId: 's', pageObjectNumber: 2, generation: 1 } } })],
-        3: [mark(4, { pageObjectNumber: 3, ref: { kind: 'objectNumber', pageObjectNumber: 3, annotObjectNumber: 1.5 } }), base(5, 'redact', { pageObjectNumber: 3, quadPoints: [] })],
-      },
-    ],
-  },
-  {
-    name: 'pending-unknown-ref-kind',
-    fn: 'getPending',
-    covers: 'A ref of any other kind takes the index spelling, with whatever members it has.',
-    args: [[page(0, 1)], { 1: [mark(1, { ref: { kind: 'other', pageObjectNumber: 1 } }), mark(2, { ref: { kind: 'other', pageObjectNumber: 1, index: 'z' } }), mark(3, { ref: { kind: 'other', pageObjectNumber: true, index: [1, null, 'a', [2, null], { x: 1 }] } })] }],
-  },
 ];
 
 export const suites: Suite[] = [
@@ -610,7 +640,7 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/redaction-functions.json',
-    describes: 'packages/plugin/redaction: the reducer, and estimateCollateral and getPending over a stub context.',
+    describes: 'packages/plugin/redaction: the reducer, and estimateCollateral over a stub annotation plane.',
     functions,
     cases: functionCases,
   },
