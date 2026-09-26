@@ -402,10 +402,14 @@ impl DocumentHandle for FakeHandle {
         self.engine.call(Some(&self.id), self.table, path, pon, args, fallback, None)
     }
 
+    /// `page(ref)`: the page whose `ref.pageObjectNumber` is `pon`.
     fn page_index(&self, pon: u32) -> Result<u32, Error> {
         self.pages()
             .iter()
-            .find(|p| p.get("pageObjectNumber").and_then(Value::as_u64) == Some(pon as u64))
+            .find(|p| {
+                p.get("ref").and_then(|r| r.get("pageObjectNumber")).and_then(Value::as_u64)
+                    == Some(pon as u64)
+            })
             .and_then(|p| p.get("index").and_then(Value::as_u64))
             .map(|i| i as u32)
             .ok_or_else(|| Error::engine("NotFound", format!("no page {pon}")))

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "function",
-  "describes": "packages/core/main: docInfoEquals, docInfoListEquals and createEventHook.",
+  "describes": "packages/core/main: docInfoEquals, docInfoListEquals, createEventHook, composeApi and the plugin error vocabulary.",
   "cases": [
     {
       "name": "equal",
@@ -306,6 +306,117 @@
       }
     },
     {
+      "name": "error-code-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "m",
+            "capability": "documents"
+          }
+        },
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "operation-failed",
+            "message": "m",
+            "capability": "documents"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "error-message-differs",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "m",
+            "capability": "documents"
+          }
+        },
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "n",
+            "capability": "documents"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "error-capability-is-not-compared",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "m",
+            "capability": "documents"
+          }
+        },
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "m",
+            "capability": "other"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "error-absent-vs-present",
+      "fn": "docInfoEquals",
+      "args": [
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3
+        },
+        {
+          "id": "a",
+          "status": "error",
+          "pageCount": 3,
+          "error": {
+            "code": "not-found",
+            "message": "m",
+            "capability": "documents"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
       "name": "hook-fans-out-in-order",
       "fn": "eventHookScript",
       "args": [
@@ -545,6 +656,1247 @@
             "emit": 2
           }
         ]
+      }
+    },
+    {
+      "name": "hook-signal-ends-a-subscription",
+      "covers": "A listener subscribed with a signal is removed when it aborts; one subscribed with a pre-aborted signal never registers.",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "onSignal",
+            "id": "a",
+            "signal": "s"
+          },
+          {
+            "op": "on",
+            "id": "b"
+          },
+          {
+            "op": "emit",
+            "event": 1
+          },
+          {
+            "op": "abort",
+            "signal": "s"
+          },
+          {
+            "op": "emit",
+            "event": 2
+          },
+          {
+            "op": "onSignal",
+            "id": "c",
+            "signal": "s"
+          },
+          {
+            "op": "emit",
+            "event": 3
+          },
+          {
+            "op": "off",
+            "id": "c"
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "emit": 1
+          },
+          {
+            "id": "a",
+            "event": 1
+          },
+          {
+            "id": "b",
+            "event": 1
+          },
+          {
+            "aborted": "s"
+          },
+          {
+            "emit": 2
+          },
+          {
+            "id": "b",
+            "event": 2
+          },
+          {
+            "emit": 3
+          },
+          {
+            "id": "b",
+            "event": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "hook-signal-after-dispose",
+      "covers": "After dispose a subscription with a live signal is inert, and aborting that signal later is harmless.",
+      "fn": "eventHookScript",
+      "args": [
+        [
+          {
+            "op": "dispose"
+          },
+          {
+            "op": "onSignal",
+            "id": "a",
+            "signal": "s"
+          },
+          {
+            "op": "abort",
+            "signal": "s"
+          },
+          {
+            "op": "emit",
+            "event": 1
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": [
+          "disposed",
+          {
+            "aborted": "s"
+          },
+          {
+            "emit": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "engine-code-InvalidArg",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said InvalidArg",
+          "code": "InvalidArg"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said InvalidArg",
+            "code": "invalid-input",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said InvalidArg",
+                "code": "InvalidArg"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-MalformedPdf",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said MalformedPdf",
+          "code": "MalformedPdf"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said MalformedPdf",
+            "code": "invalid-input",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said MalformedPdf",
+                "code": "MalformedPdf"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-WireFormat",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said WireFormat",
+          "code": "WireFormat"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said WireFormat",
+            "code": "invalid-input",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said WireFormat",
+                "code": "WireFormat"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-DocNotOpen",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said DocNotOpen",
+          "code": "DocNotOpen"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said DocNotOpen",
+            "code": "not-ready",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said DocNotOpen",
+                "code": "DocNotOpen"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-DocPasswordRequired",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said DocPasswordRequired",
+          "code": "DocPasswordRequired"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said DocPasswordRequired",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said DocPasswordRequired",
+                "code": "DocPasswordRequired"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-DocPasswordIncorrect",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said DocPasswordIncorrect",
+          "code": "DocPasswordIncorrect"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said DocPasswordIncorrect",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said DocPasswordIncorrect",
+                "code": "DocPasswordIncorrect"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-SharePasswordRequired",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said SharePasswordRequired",
+          "code": "SharePasswordRequired"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said SharePasswordRequired",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said SharePasswordRequired",
+                "code": "SharePasswordRequired"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-Unauthenticated",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said Unauthenticated",
+          "code": "Unauthenticated"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said Unauthenticated",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said Unauthenticated",
+                "code": "Unauthenticated"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-Forbidden",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said Forbidden",
+          "code": "Forbidden"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said Forbidden",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said Forbidden",
+                "code": "Forbidden"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-ProtectedDocument",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said ProtectedDocument",
+          "code": "ProtectedDocument"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said ProtectedDocument",
+            "code": "permission-denied",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said ProtectedDocument",
+                "code": "ProtectedDocument"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-NotFound",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said NotFound",
+          "code": "NotFound"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said NotFound",
+            "code": "not-found",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said NotFound",
+                "code": "NotFound"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-InvalidReference",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said InvalidReference",
+          "code": "InvalidReference"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said InvalidReference",
+            "code": "not-found",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said InvalidReference",
+                "code": "InvalidReference"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-NotImplemented",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said NotImplemented",
+          "code": "NotImplemented"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said NotImplemented",
+            "code": "unsupported",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said NotImplemented",
+                "code": "NotImplemented"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-Aborted",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said Aborted",
+          "code": "Aborted"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said Aborted",
+            "code": "operation-cancelled",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said Aborted",
+                "code": "Aborted"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-WeakAnnotationSessionConflict",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said WeakAnnotationSessionConflict",
+          "code": "WeakAnnotationSessionConflict"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said WeakAnnotationSessionConflict",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said WeakAnnotationSessionConflict",
+                "code": "WeakAnnotationSessionConflict"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-LayerVersionConflict",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said LayerVersionConflict",
+          "code": "LayerVersionConflict"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said LayerVersionConflict",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said LayerVersionConflict",
+                "code": "LayerVersionConflict"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-StaleBase",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said StaleBase",
+          "code": "StaleBase"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said StaleBase",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said StaleBase",
+                "code": "StaleBase"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-SigningPending",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said SigningPending",
+          "code": "SigningPending"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said SigningPending",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said SigningPending",
+                "code": "SigningPending"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-SigningExpired",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said SigningExpired",
+          "code": "SigningExpired"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said SigningExpired",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said SigningExpired",
+                "code": "SigningExpired"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-SigningVersionMismatch",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said SigningVersionMismatch",
+          "code": "SigningVersionMismatch"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said SigningVersionMismatch",
+            "code": "conflict",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said SigningVersionMismatch",
+                "code": "SigningVersionMismatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-code-Format",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "engine said Format",
+          "code": "Format"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "engine said Format",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "engine said Format",
+                "code": "Format"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-error-with-details",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "gone",
+          "code": "NotFound",
+          "details": {
+            "pon": 3
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "gone",
+            "code": "not-found",
+            "capability": "probe",
+            "details": {
+              "pon": 3
+            },
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "gone",
+                "code": "NotFound",
+                "details": {
+                  "pon": 3
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "engine-error-without-code",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "EngineError",
+          "message": "no code"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "no code",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "EngineError",
+                "message": "no code"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "permission-denied",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "class": "PermissionDenied",
+          "required": "doc.print"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "permission denied: doc.print",
+            "code": "permission-denied",
+            "capability": "probe",
+            "details": {
+              "required": "doc.print"
+            },
+            "cause": {
+              "$error": {
+                "name": "PermissionDenied",
+                "message": "permission denied: doc.print",
+                "required": "doc.print"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "permission-denied-with-context",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "class": "PermissionDenied",
+          "required": "doc.print",
+          "context": "print"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "permission denied (print): doc.print",
+            "code": "permission-denied",
+            "capability": "probe",
+            "details": {
+              "required": "doc.print",
+              "context": "print"
+            },
+            "cause": {
+              "$error": {
+                "name": "PermissionDenied",
+                "message": "permission denied (print): doc.print",
+                "required": "doc.print",
+                "context": "print"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "a-plain-error-named-permission-denied",
+      "covers": "PermissionDenied is matched by class: a plain error that only carries the name is a failure.",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "PermissionDenied",
+          "message": "looks like one"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "looks like one",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "PermissionDenied",
+                "message": "looks like one"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "cancelled",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "class": "CancelledError",
+          "what": "closed while opening: a"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "operation cancelled",
+            "code": "operation-cancelled",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "CancelledError",
+                "message": "[kernel] cancelled: closed while opening: a"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "a-plain-error-named-cancelled",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "CancelledError",
+          "message": "looks like one"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "looks like one",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "CancelledError",
+                "message": "looks like one"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "abort-error",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "AbortError",
+          "message": "aborted"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "operation cancelled",
+            "code": "operation-cancelled",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "AbortError",
+                "message": "aborted"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "plugin-error-passes-through",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "class": "PluginError",
+          "code": "conflict",
+          "message": "stale",
+          "details": {
+            "at": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "stale",
+            "code": "conflict",
+            "capability": "origin",
+            "details": {
+              "at": 1
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "plain-error",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "message": "broke"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "broke",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "Error",
+                "message": "broke"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "type-error",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "name": "TypeError",
+          "message": "x is not a function"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "x is not a function",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": {
+              "$error": {
+                "name": "TypeError",
+                "message": "x is not a function"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "not-an-error",
+      "fn": "toPluginError",
+      "args": [
+        {
+          "class": "string",
+          "value": "a string was thrown"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "$error": {
+            "name": "PluginError",
+            "message": "a string was thrown",
+            "code": "operation-failed",
+            "capability": "probe",
+            "cause": "a string was thrown"
+          }
+        }
+      }
+    },
+    {
+      "name": "is-plugin-error",
+      "fn": "isPluginError",
+      "args": [
+        {
+          "class": "PluginError",
+          "code": "conflict",
+          "message": "m"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "is-plugin-error-with-code",
+      "fn": "isPluginError",
+      "args": [
+        {
+          "class": "PluginError",
+          "code": "conflict",
+          "message": "m"
+        },
+        "conflict"
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "is-plugin-error-other-code",
+      "fn": "isPluginError",
+      "args": [
+        {
+          "class": "PluginError",
+          "code": "conflict",
+          "message": "m"
+        },
+        "not-found"
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "is-plugin-error-plain",
+      "fn": "isPluginError",
+      "args": [
+        {
+          "message": "m"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "error-info",
+      "fn": "toPluginErrorInfo",
+      "args": [
+        {
+          "class": "PluginError",
+          "code": "not-found",
+          "message": "m",
+          "details": {
+            "x": 1
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "code": "not-found",
+          "message": "m",
+          "capability": "origin"
+        }
+      }
+    },
+    {
+      "name": "compose-disjoint",
+      "fn": "composeApiScript",
+      "args": [
+        [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          []
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          [
+            "a",
+            0
+          ],
+          [
+            "b",
+            0
+          ],
+          [
+            "c",
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "name": "compose-empty",
+      "fn": "composeApiScript",
+      "args": [
+        []
+      ],
+      "outcome": {
+        "returned": []
+      }
+    },
+    {
+      "name": "compose-duplicate-refuses",
+      "covers": "A key two slices define throws naming the capability and the key.",
+      "fn": "composeApiScript",
+      "args": [
+        [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "b"
+          ]
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[probe] api member 'b' is defined twice"
+          }
+        }
+      }
+    },
+    {
+      "name": "compose-duplicate-within-a-later-slice",
+      "fn": "composeApiScript",
+      "args": [
+        [
+          [
+            "a"
+          ],
+          [
+            "a"
+          ]
+        ]
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "Error",
+            "message": "[probe] api member 'a' is defined twice"
+          }
+        }
+      }
+    },
+    {
+      "name": "origin-local",
+      "fn": "originOf",
+      "args": [
+        {
+          "type": "metadata.updated",
+          "origin": {
+            "kind": "local",
+            "sessionId": "s1",
+            "sub": "u1"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locality": "local",
+          "trigger": "unknown",
+          "sessionId": "s1",
+          "actorId": "u1"
+        }
+      }
+    },
+    {
+      "name": "origin-remote-without-actor",
+      "fn": "originOf",
+      "args": [
+        {
+          "type": "metadata.updated",
+          "origin": {
+            "kind": "remote",
+            "sessionId": "s2",
+            "sub": null
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "locality": "remote",
+          "trigger": "unknown",
+          "sessionId": "s2",
+          "actorId": null
+        }
       }
     }
   ]

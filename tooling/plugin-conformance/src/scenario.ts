@@ -191,7 +191,21 @@ async function runInstalled(
     defer: (label, resolve, reject) => fake.defer(label, resolve, reject),
     token: tokenNamed,
   };
-  const plugins = [spy, ...(scenario.plugins ?? []).map((spec) => instrument(instantiate(spec, env), () => entry))];
+  // One wrapper per plugin object, so a factory that hands back the same
+  // definition twice still installs the same object twice.
+  const wrapped = new Map<AnyPlugin, AnyPlugin>();
+  const plugins = [
+    spy,
+    ...(scenario.plugins ?? []).map((spec) => {
+      const plugin = instantiate(spec, env);
+      let wrapper = wrapped.get(plugin);
+      if (!wrapper) {
+        wrapper = instrument(plugin, () => entry);
+        wrapped.set(plugin, wrapper);
+      }
+      return wrapper;
+    }),
+  ];
   let kernel: Kernel;
   try {
     kernel = createKernel({

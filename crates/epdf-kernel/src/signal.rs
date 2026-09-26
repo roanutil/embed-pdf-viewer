@@ -20,6 +20,11 @@ impl AbortSignal {
         AbortSignal(Rc::new(RefCell::new(Inner { reason: None, listeners: Vec::new(), next: 0 })))
     }
 
+    /// The same controller.
+    pub fn same(&self, other: &AbortSignal) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+
     pub fn aborted(&self) -> bool {
         self.0.borrow().reason.is_some()
     }

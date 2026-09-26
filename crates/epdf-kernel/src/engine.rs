@@ -49,8 +49,9 @@ pub trait DocumentHandle {
     fn capabilities(&self) -> Value;
     fn security(&self) -> Rc<dyn DocumentSecurity>;
     /// Whether an optional member exists: `render`, `actions`,
-    /// `attachments`, `pieceInfo`, `redaction`, `downloadLayer`,
-    /// `page.pieceInfo`, and the members every shipped engine has but the
+    /// `attachments`, `pieceInfo`, `redaction`, `signatures`, `fonts`,
+    /// `version`, `downloadLayer`, `page.pieceInfo`, `page.measure`, and
+    /// the members every shipped engine has but the
     /// contract leaves optional (`forms.applyEffects`, `pages.flatten`,
     /// `pages.extract`). The TypeScript feature-detects with
     /// `doc.render !== undefined`.
@@ -58,7 +59,8 @@ pub trait DocumentHandle {
     /// An asynchronous service call on the document, or on one of its pages
     /// when `pon` is given.
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value>;
-    /// `page(pon)`: the page's display index, or `EngineError(NotFound)`.
+    /// `page(ref)` for the page whose `PageRef` names object number `pon`:
+    /// the page's display index, or `EngineError(NotFound)`.
     fn page_index(&self, pon: u32) -> Result<u32, Error>;
     /// `events.subscribe(listener)`.
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe;
