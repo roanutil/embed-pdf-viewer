@@ -3,7 +3,7 @@ name = "epdf-plugin-redaction"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/plugin/redaction in Rust: the destructive apply stage over redact annotation marks (pending view, collateral estimate, labels, the doc.redaction.apply wrapper, remote applies) and the canMark / canApply twins."
+description = "packages/plugin/redaction in Rust: marking as redact annotations (from the selection, an area, a page or search matches), the pending view, the collateral estimate, labels, and the destructive doc.redaction.apply stage with remote applies and the canMark / canApply twins."
 
 [lib]
 crate-type = ["rlib"]
@@ -15,8 +15,10 @@ crate-type = ["rlib"]
 default = ["harness"]
 harness = [
   "dep:plugin-conformance",
+  "dep:epdf-plugin-interaction",
   "epdf-plugin-annotation/harness",
   "epdf-plugin-interaction/harness",
+  "epdf-plugin-search/harness",
   "epdf-plugin-selection/harness",
 ]
 
@@ -25,8 +27,10 @@ epdf-kernel = { path = "../../epdf-kernel" }
 epdf-geometry = { path = "../geometry", default-features = false }
 epdf-annotation-core = { path = "../annotation-core", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
-epdf-plugin-interaction = { path = "../interaction", default-features = false }
+epdf-plugin-search = { path = "../search", default-features = false }
 epdf-plugin-selection = { path = "../selection", default-features = false }
+# The harness's `redaction-tool` lens arms the redact tool through the hub.
+epdf-plugin-interaction = { path = "../interaction", default-features = false, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }

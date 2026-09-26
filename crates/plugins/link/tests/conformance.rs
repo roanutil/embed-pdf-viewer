@@ -3,12 +3,12 @@
 use epdf_plugin_actions::harness::Actions;
 use epdf_plugin_annotation::harness::Annotation;
 use epdf_plugin_interaction::harness::Interaction;
-use epdf_plugin_link::harness::{self, Link};
+use epdf_plugin_link::harness::{self, LinkAdapter};
 use epdf_plugin_stage::harness::Stage;
 use plugin_conformance::{Registry, assert_suite};
 
 fn registry() -> Registry {
-    Registry::new().with(Interaction).with(Actions).with(Stage).with(Annotation).with(Link)
+    Registry::new().with(Interaction).with(Actions).with(Stage).with(Annotation).with(LinkAdapter)
 }
 
 #[test]
