@@ -15,15 +15,17 @@ use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined, undefined};
 use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
+use crate::contract::*;
 use crate::feedback::{
     FEEDBACK, Feedback, FeedbackPluginOptions, ImpactWeight, NotifyKind, PlatformFeedback,
     feedback_plugin,
 };
-use crate::types::*;
+use crate::model::{InteractionAction, InteractionState};
 use crate::{
     InteractionCapability, builtin_tools, initial_interaction_state, interaction_plugin,
-    interaction_reducer,
+    reduce_interaction,
 };
+use epdf_kernel::geometry::PageRef;
 
 // ── JavaScript values ─────────────────────────────────────────────────────────
 
@@ -106,6 +108,18 @@ pub fn tool_from_json(value: &Value) -> Tool {
     tool
 }
 
+/// An `InteractionConfig` from a vector; `undefined` or `null` is `{}`.
+pub fn config_from_json(value: &Value) -> InteractionConfig {
+    InteractionConfig {
+        default_tool: opt_str(value.get("defaultTool")),
+        tools: value
+            .get("tools")
+            .and_then(Value::as_array)
+            .map(|tools| tools.iter().map(tool_from_json).collect())
+            .unwrap_or_default(),
+    }
+}
+
 // ── samples ───────────────────────────────────────────────────────────────────
 
 fn decode<T: serde::de::DeserializeOwned>(value: &Value, what: &str) -> Result<T, Error> {
@@ -134,7 +148,7 @@ pub fn sample_from_json(
     let project = match (value.get("project"), h) {
         (Some(spec), Some(h)) if spec.get("$fn").is_some() => {
             let callback = h.callback(spec);
-            let f: Project = Rc::new(move |pon| match callback.call(vec![json!(pon)]) {
+            let f: Project = Rc::new(move |page| match callback.call(vec![page.to_json()]) {
                 Answer::Returns(v) => decode::<Point>(&v, "project").ok(),
                 _ => None,
             });
@@ -265,18 +279,29 @@ pub struct Interaction;
 
 /// The TypeScript object literal's member order.
 const MEMBERS: &[&str] = &[
-    "activeTool",
-    "activeToolId",
-    "cursor",
-    "tools",
+    "getActiveTool",
+    "getActiveToolId",
+    "getDefaultToolId",
+    "listTools",
+    "getTool",
+    "hasTool",
+    "activeToolEnables",
     "activateTool",
-    "onToolChange",
-    "registerTool",
+    "activateDefaultTool",
+    "pushTool",
+    "popTool",
     "setToolCursor",
+    "registerTool",
+    "onToolChanged",
+    "onGestureStarted",
+    "onGestureEnded",
+    "onGestureCancelled",
     "registerHandler",
-    "setCursor",
+    "claimCursor",
+    "getCursor",
+    "onCursorChanged",
     "wouldClaimTouch",
-    "dispatch",
+    "dispatchPointer",
 ];
 
 const FEEDBACK_MEMBERS: &[&str] = &["selection", "impact", "notify"];
@@ -308,6 +333,50 @@ fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
 
+/// A `ToolChangedEvent` as the TypeScript prints it; an absent payload is
+/// an `undefined` member, which the canonical form drops.
+pub fn tool_changed_json(event: &ToolChangedEvent) -> Value {
+    let mut out = Map::new();
+    out.insert("toolId".into(), json!(event.tool_id));
+    out.insert("previousToolId".into(), json!(event.previous_tool_id));
+    out.insert("tool".into(), tool_json(&event.tool));
+    if let Some(payload) = &event.payload {
+        out.insert("payload".into(), payload.clone());
+    }
+    Value::Object(out)
+}
+
+fn activate_options(value: Option<&Value>) -> Option<ActivateToolOptions> {
+    value.map(|o| ActivateToolOptions {
+        payload: o.get("payload").filter(|p| !is_undefined(p)).cloned(),
+    })
+}
+
+/// Subscribe a scripted callback to an event hook; the unsubscribe is a ref.
+fn listen<T: 'static>(
+    h: &Harness,
+    spec: Option<&Value>,
+    to_json: fn(&T) -> Value,
+    on: impl FnOnce(Box<dyn Fn(&T) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
+) -> Outcome {
+    let callback = h.callback(spec.unwrap_or(&Value::Null));
+    let off = on(Box::new(move |event| match callback.call(vec![to_json(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    }));
+    Outcome::Returned(h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    })))
+}
+
+fn unit(result: Result<(), Error>) -> Outcome {
+    match result {
+        Ok(()) => Outcome::undefined(),
+        Err(error) => Outcome::Threw(error),
+    }
+}
+
 fn call_interaction(
     cap: &InteractionCapability,
     method: &str,
@@ -315,26 +384,25 @@ fn call_interaction(
     h: &Harness,
 ) -> Outcome {
     let sample = |i: usize| sample_from_json(arg(args, i).unwrap_or(&Value::Null), Some(h), None);
+    let gesture_json: fn(&GestureEvent) -> Value = |e| serde_json::to_value(e).unwrap();
     match method {
-        "activeTool" => Outcome::Returned(tool_json(&cap.active_tool())),
-        "activeToolId" => Outcome::Returned(json!(cap.active_tool_id())),
-        "cursor" => Outcome::Returned(json!(cap.cursor())),
-        "tools" => Outcome::Returned(Value::Array(cap.tools().iter().map(tool_json).collect())),
-        "activateTool" => match cap.activate_tool(&str_arg(args, 0)) {
-            Ok(()) => Outcome::undefined(),
-            Err(error) => Outcome::Threw(error),
-        },
-        "onToolChange" => {
-            let callback = h.callback(arg(args, 0).unwrap_or(&Value::Null));
-            let off = cap.on_tool_change(move || {
-                callback.call(Vec::new());
-            });
-            Outcome::Returned(h.register_fn(Rc::new(move |_| Outcome::Returned(json!(off.call())))))
+        "getActiveTool" => Outcome::Returned(tool_json(&cap.get_active_tool())),
+        "getActiveToolId" => Outcome::Returned(json!(cap.get_active_tool_id())),
+        "getDefaultToolId" => Outcome::Returned(json!(cap.get_default_tool_id())),
+        "listTools" => {
+            Outcome::Returned(Value::Array(cap.list_tools().iter().map(tool_json).collect()))
         }
-        "registerTool" => unregister_ref(
-            h,
-            cap.register_tool(tool_from_json(arg(args, 0).unwrap_or(&Value::Null))),
+        "getTool" => Outcome::Returned(
+            cap.get_tool(&str_arg(args, 0)).map_or(Value::Null, |t| tool_json(&t)),
         ),
+        "hasTool" => Outcome::Returned(json!(cap.has_tool(&str_arg(args, 0)))),
+        "activeToolEnables" => Outcome::Returned(json!(cap.active_tool_enables(&str_arg(args, 0)))),
+        "activateTool" => {
+            unit(cap.activate_tool(&str_arg(args, 0), activate_options(arg(args, 1))))
+        }
+        "activateDefaultTool" => unit(cap.activate_default_tool()),
+        "pushTool" => unit(cap.push_tool(&str_arg(args, 0), activate_options(arg(args, 1)))),
+        "popTool" => unit(cap.pop_tool()),
         "setToolCursor" => {
             let skin = arg(args, 1).and_then(Value::as_object).map(|skin| {
                 skin.iter()
@@ -344,24 +412,50 @@ fn call_interaction(
             cap.set_tool_cursor(&str_arg(args, 0), skin);
             Outcome::undefined()
         }
+        "registerTool" => {
+            let replace = arg(args, 1).and_then(|o| o.get("replace")).is_some_and(truthy);
+            match cap.register_tool(
+                tool_from_json(arg(args, 0).unwrap_or(&Value::Null)),
+                RegisterToolOptions { replace },
+            ) {
+                Ok(unregister) => unregister_ref(h, unregister),
+                Err(error) => Outcome::Threw(error),
+            }
+        }
+        "onToolChanged" => listen(h, arg(args, 0), tool_changed_json, |f| cap.on_tool_changed(f)),
+        "onGestureStarted" => listen(h, arg(args, 0), gesture_json, |f| cap.on_gesture_started(f)),
+        "onGestureEnded" => listen(h, arg(args, 0), gesture_json, |f| cap.on_gesture_ended(f)),
+        "onGestureCancelled" => {
+            listen(h, arg(args, 0), gesture_json, |f| cap.on_gesture_cancelled(f))
+        }
         "registerHandler" => {
             let handler = ScriptedHandler::from_json(arg(args, 0).unwrap_or(&Value::Null), h);
             let source = opt_str(arg(args, 1).and_then(|o| o.get("source")));
-            unregister_ref(h, cap.register_handler(Rc::new(handler), source))
+            unregister_ref(
+                h,
+                cap.register_handler(Rc::new(handler), RegisterHandlerOptions { source }),
+            )
         }
-        "setCursor" => {
+        "claimCursor" => {
             let cursor = arg(args, 1).and_then(Value::as_str);
             let priority = arg(args, 2).and_then(number).unwrap_or(0.0);
-            cap.set_cursor(&str_arg(args, 0), cursor, priority);
+            cap.claim_cursor(&str_arg(args, 0), cursor, priority);
             Outcome::undefined()
         }
+        "getCursor" => Outcome::Returned(json!(cap.get_cursor())),
+        "onCursorChanged" => listen(
+            h,
+            arg(args, 0),
+            |e: &CursorChangedEvent| serde_json::to_value(e).unwrap(),
+            |f| cap.on_cursor_changed(f),
+        ),
         "wouldClaimTouch" => match sample(0) {
             Ok(sample) => Outcome::Returned(json!(cap.would_claim_touch(&sample))),
             Err(error) => Outcome::Threw(error),
         },
-        "dispatch" => match sample(0) {
+        "dispatchPointer" => match sample(0) {
             Ok(sample) => {
-                cap.dispatch(&sample);
+                cap.dispatch_pointer(&sample);
                 Outcome::undefined()
             }
             Err(error) => Outcome::Threw(error),
@@ -396,14 +490,7 @@ impl HarnessPlugin for Interaction {
                     wants.then(|| Rc::new(LoggingFeedback(h.clone())) as Rc<dyn PlatformFeedback>);
                 Ok(feedback_plugin(FeedbackPluginOptions { provider }))
             }
-            _ => {
-                let config = if is_undefined(config) || config.is_null() {
-                    InteractionConfig::default()
-                } else {
-                    decode(config, "config")?
-                };
-                Ok(interaction_plugin(config))
-            }
+            _ => Ok(interaction_plugin(config_from_json(config))),
         }
     }
 
@@ -445,14 +532,16 @@ fn value_arg(args: &[Value], i: usize) -> Value {
 fn sample_point_on_fn(args: &[Value]) -> Result<Value, Error> {
     let sample = value_arg(args, 0);
     let project: Option<Project> = sample.get("projects").cloned().map(|table| {
-        let f: Project = Rc::new(move |pon| {
-            table.get(pon.to_string()).and_then(|p| serde_json::from_value::<Point>(p.clone()).ok())
+        let f: Project = Rc::new(move |page| {
+            table
+                .get(page.page_object_number.to_string())
+                .and_then(|p| serde_json::from_value::<Point>(p.clone()).ok())
         });
         f
     });
     let sample = sample_from_json(&sample, None, project)?;
-    let pon = number(&value_arg(args, 1)).unwrap_or(f64::NAN) as PageObjectNumber;
-    Ok(sample_point_on(&sample, pon).map_or(Value::Null, |p| serde_json::to_value(p).unwrap()))
+    let page = PageRef::new(number(&value_arg(args, 1)).unwrap_or(f64::NAN) as u32);
+    Ok(sample_point_on(&sample, page).map_or(Value::Null, |p| serde_json::to_value(p).unwrap()))
 }
 
 fn builtin_tools_fn(_: &[Value]) -> Result<Value, Error> {
@@ -460,14 +549,14 @@ fn builtin_tools_fn(_: &[Value]) -> Result<Value, Error> {
 }
 
 fn initial_state_fn(args: &[Value]) -> Result<Value, Error> {
-    let config: InteractionConfig = decode(&value_arg(args, 0), "config")?;
+    let config = config_from_json(&value_arg(args, 0));
     Ok(serde_json::to_value(initial_interaction_state(&config)).unwrap())
 }
 
 fn reducer_fn(args: &[Value]) -> Result<Value, Error> {
     let state: InteractionState = decode(&value_arg(args, 0), "state")?;
     let action: InteractionAction = decode(&value_arg(args, 1), "action")?;
-    let next = interaction_reducer(&state, &action).unwrap_or(state);
+    let next = reduce_interaction(&state, &action).unwrap_or(state);
     Ok(serde_json::to_value(next).unwrap())
 }
 
@@ -477,6 +566,6 @@ pub fn functions() -> FunctionTable {
         ("samplePointOn", sample_point_on_fn),
         ("builtinTools", builtin_tools_fn),
         ("initialInteractionState", initial_state_fn),
-        ("interactionReducer", reducer_fn),
+        ("reduceInteraction", reducer_fn),
     ]
 }

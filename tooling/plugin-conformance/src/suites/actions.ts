@@ -20,11 +20,12 @@
  * sandbox: the TypeScript runs with scripting disabled, and the Rust port
  * runs with `enabled: true` and no factory, which must behave identically.
  */
-import { definePlugin, type AnyPlugin } from '@embedpdf/core';
+import { definePlugin, type AnyPlugin, type DocumentMeta } from '@embedpdf/core';
+import type { ScriptWorldInput } from '../../../../packages/core/acrojs/src/index';
 
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
 import { createHoverPump, type HoverTarget } from '../../../../packages/plugin/actions/src/hover-pump';
-import { ActionsToken } from '../../../../packages/plugin/actions/src/host-contract';
+import { ActionsToken, type DetachedScriptRealm } from '../../../../packages/plugin/actions/src/host-contract';
 import { submitEntriesToUrlEncoded } from '../../../../packages/plugin/actions/src/submit-encoding';
 import {
   eventOf,
@@ -134,6 +135,50 @@ function hoverPumpDriver(config: HoverPumpConfig, env: PluginEnv): AnyPlugin {
 }
 
 registerPlugin('hover-pump', { factory: (config, env) => hoverPumpDriver(config as HoverPumpConfig, env) });
+
+/** A sibling that mints a DETACHED realm for its own document from the
+ *  actions plugin of `owner` (default `a`), as the stamp plugin does for an
+ *  asset. `meta` replaces the realm's document metadata (`null` is none);
+ *  `bootSources` is a scripted callback (default: no programs). `run`
+ *  boots and runs one program in a single transaction over an empty world. */
+interface DetachedRealmConfig {
+  readonly owner?: string;
+  readonly meta?: DocumentMeta | null;
+  readonly bootSources?: Scripted;
+}
+
+const EMPTY_WORLD: ScriptWorldInput = { fields: [], event: { kind: 'widget-activate' } };
+
+registerPlugin('detached-realm', {
+  factory: (config, env) => {
+    const { owner = 'a', meta, bootSources } = (config ?? {}) as DetachedRealmConfig;
+    return definePlugin({
+      id: 'detached-realm',
+      token: env.token('detached-realm'),
+      scope: 'document',
+      optional: [ActionsToken],
+      capability: (ctx) => {
+        let realm: DetachedScriptRealm | null = null;
+        return {
+          mint: () => {
+            const mintRealm = ctx.tryForDocument(ActionsToken, owner)?.createDetachedScriptRealm;
+            if (!mintRealm) return null;
+            realm = mintRealm({
+              doc: ctx.doc!,
+              document: () => (meta === undefined ? ctx.document() : meta),
+              bootSources: bootSources
+                ? (scriptedCallback(bootSources.$fn, bootSources, env) as () => Promise<string[]>)
+                : async () => [],
+            });
+            return realm;
+          },
+          run: (program: string) =>
+            realm!.transaction(async (txn) => ({ boot: await txn.boot(EMPTY_WORLD), run: await txn.run(program, EMPTY_WORLD) })),
+        };
+      },
+    });
+  },
+});
 
 // ── builders ──────────────────────────────────────────────────────────────────
 
@@ -390,6 +435,92 @@ const dispatcherCases: ScenarioCase[] = [
       cap('canExecute', tree(uri('https://b.test/')), LIFECYCLE),
     ],
     snapshot: snap,
+  },
+  {
+    name: 'policy-rows-merge-and-update-live',
+    covers:
+      'config.policy merges row-wise over the defaults (a partial row keeps the other origins); getPolicy is the effective policy; updatePolicy merges rows over the current policy, skips an empty row, bumps policyRevision even for an empty patch, and later dispatches decide with it.',
+    plugins: plugins({ openSequence: 'off', policy: { uri: { hover: 'allow' } } }),
+    engine: engineWith(),
+    steps: [
+      ...boot,
+      cap('setUiAdapter', adapter()),
+      reg('goto'),
+      listen(),
+      cap('getPolicy'),
+      cap('execute', tree(uri('https://a.test/')), HOVER),
+      cap('updatePolicy', { uri: { user: 'block' }, goto: { lifecycle: 'block' }, hide: null }),
+      cap('getPolicy'),
+      cap('execute', tree(uri('https://a.test/')), USER),
+      cap('execute', tree(goto(1)), LIFECYCLE),
+      cap('canExecute', tree(goto(1)), LIFECYCLE),
+      cap('updatePolicy', {}),
+      cap('getPolicy'),
+    ],
+    snapshot: snap,
+  },
+  {
+    name: 'execute-named',
+    covers:
+      'executeNamed runs one Named verb as a user-origin api action through the same queue; a partial context overrides the origin, source or event; Print goes through the adapter door.',
+    plugins: plugins(OFF),
+    engine: engineWith(),
+    steps: [
+      ...boot,
+      reg('named'),
+      listen(),
+      listen('onExecuted'),
+      cap('executeNamed', 'NextPage'),
+      cap('executeNamed', 'FirstPage', { source: { kind: 'link' }, event: { scope: 'annotation', name: 'mouseUp' } }),
+      cap('executeNamed', 'Print'),
+      cap('setUiAdapter', adapter()),
+      cap('executeNamed', 'Print'),
+      cap('executeNamed', 'Print', { origin: 'hover' }),
+    ],
+    snapshot: snap,
+  },
+  {
+    name: 'get-action-tree',
+    covers:
+      'getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number or by name, a page (open by default), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.',
+    plugins: plugins(OFF),
+    engine: {
+      documents: {
+        a: doc({
+          services: ['actions'],
+          pages: [page(1, 0, { open: tree(named('O-1')), close: tree(named('C-1')) }), page(2, 1)],
+          responses: [
+            annotations(1, [annot(1, 5, { activate: tree(named('A-5')), mouseUp: tree(named('U-5')), cursorEnter: tree(named('E-5')) })]),
+            forms([formField('f', 100, [], { actions: { keystroke: tree(js('k()')) } }), formField('g', 101)]),
+            catalog({ openAction: tree(named('OpenAction')), willSave: tree(named('WS')) }),
+          ],
+        }),
+        b: doc(),
+      },
+    },
+    steps: [
+      start,
+      open('a'),
+      open('b'),
+      cap('getActionTree', { kind: 'annotation', annotation: aref(1, 5), page: pr(1) }),
+      cap('getActionTree', { kind: 'annotation', annotation: aref(1, 5), page: pr(1), event: 'cursorEnter' }),
+      cap('getActionTree', { kind: 'annotation', annotation: aref(1, 5), page: pr(1), event: 'mouseUp' }),
+      cap('getActionTree', { kind: 'annotation', annotation: aref(1, 5), page: pr(1), event: 'blur' }),
+      cap('getActionTree', { kind: 'annotation', annotation: aref(1, 9), page: pr(1) }),
+      cap('getActionTree', { kind: 'field', field: { kind: 'objectNumber', fieldObjectNumber: 100 }, event: 'keystroke' }),
+      cap('getActionTree', { kind: 'field', field: { kind: 'fqn', name: 'f' }, event: 'keystroke' }),
+      cap('getActionTree', { kind: 'field', field: { kind: 'fqn', name: 'g' }, event: 'keystroke' }),
+      cap('getActionTree', { kind: 'field', field: { kind: 'objectNumber', fieldObjectNumber: 999 }, event: 'format' }),
+      cap('getActionTree', { kind: 'page', page: pr(1) }),
+      cap('getActionTree', { kind: 'page', page: pr(1), event: 'close' }),
+      cap('getActionTree', { kind: 'page', page: pr(2) }),
+      cap('getActionTree', { kind: 'page', page: pr(7) }),
+      cap('getActionTree', { kind: 'document' }),
+      cap('getActionTree', { kind: 'document', event: 'will-save' }),
+      cap('getActionTree', { kind: 'document', event: 'did-print' }),
+      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'getActionTree', args: [{ kind: 'document' }] },
+    ],
+    snapshot: 'none',
   },
   {
     name: 'uri-without-an-adapter',
@@ -1111,6 +1242,25 @@ const sequenceCases: ScenarioCase[] = [
     snapshot: snap,
   },
   {
+    name: 'open-sequence-completed-event',
+    covers:
+      'onOpenSequenceCompleted fires once with the folded sequence result after the document steps; a throwing listener is reported to the host sink and never stops its siblings.',
+    plugins: plugins(),
+    engine: engineWith({ services: ['actions'], pages: threePages, responses: [catalog(openDocs)] }),
+    steps: [
+      ...boot,
+      reg('goto'),
+      reg('named'),
+      cap('onOpenSequenceCompleted', fnSpec('completed.bad', { throws: { message: 'listener broke' } })),
+      listen('onOpenSequenceCompleted', 'completed'),
+      cap('setUiAdapter', adapter()),
+      drainTrigger,
+      cap('setUiAdapter', adapter()),
+      drainTrigger,
+    ],
+    snapshot: snap,
+  },
+  {
     name: 'auto-a-submit-handler-does-not-arm',
     covers: 'Installing a submit handler is not the latch release: nothing runs until an adapter arrives.',
     plugins: plugins(),
@@ -1736,11 +1886,62 @@ const scriptCases: ScenarioCase[] = [
     snapshot: 'none',
   },
   {
+    name: 'detached-script-realm',
+    covers:
+      'createDetachedScriptRealm mints a realm for another document under this document\'s environment: a fresh sandbox from the same factory, the target\'s id and metadata, the owner\'s identity, a seed from the target id, the target\'s boot sources, and the configured budget. The caller owns it: the transaction port queues bodies, and dispose ends the realm.',
+    plugins: [
+      { factory: 'actions', config: JS_OFF({ sandbox: { builds: [{}, { run: [{ output: { uiEffects: [{ kind: 'alert', message: 'hi', icon: 0 }] } }] }] }, budget: { maxExecutionMs: 9, maxMemoryBytes: 1024, maxStackBytes: 256, maxEffects: 2, maxOutputBytes: 64 } }) },
+      { factory: 'detached-realm', config: { bootSources: fnSpec('asset.boot', { resolves: ['var asset = 1;'] }) } },
+    ],
+    engine: { documents: { a: scriptEngine().documents.a, b: doc() } },
+    steps: [
+      start,
+      open('a'),
+      open('b', { name: 'Asset.pdf' }),
+      cap('isScriptingEnabled'),
+      cap('execute', tree(js('own()')), USER),
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['stamp()'] },
+      callRef(0, fnSpec('body', { resolves: 'body-result' })),
+      callRef(1),
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['again()'] },
+    ],
+    snapshot: 'none',
+  },
+  {
+    name: 'detached-script-realm-without-metadata',
+    covers: 'A target with no document metadata runs as document.pdf with zero pages; with scripting off there is nothing to mint.',
+    plugins: [
+      { factory: 'actions', config: JS_OFF() },
+      { factory: 'detached-realm', config: { meta: null } },
+    ],
+    engine: { documents: { a: scriptEngine().documents.a, b: doc(), c: doc() } },
+    steps: [
+      start,
+      open('a'),
+      open('b'),
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['stamp()'] },
+    ],
+    snapshot: 'none',
+  },
+  {
+    name: 'no-detached-realm-without-scripting',
+    covers: 'With scripting off the host lens has no createDetachedScriptRealm, so a sibling mints nothing.',
+    plugins: [
+      { factory: 'actions', config: { openSequence: 'off', javascript: { enabled: false } } },
+      { factory: 'detached-realm' },
+    ],
+    engine: { documents: { a: doc(), b: doc() } },
+    steps: [start, open('a'), open('b'), { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] }],
+    snapshot: 'none',
+  },
+  {
     name: 'scripting-disabled',
     covers: 'javascript.enabled false: no realm, javascript nodes inert.',
     plugins: plugins({ openSequence: 'off', javascript: { enabled: false } }),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER)],
+    steps: [...boot, cap('execute', tree(js('a()')), USER), cap('isScriptingEnabled')],
     snapshot: snap,
   },
 ];
@@ -1810,6 +2011,65 @@ const surfaceCases: ScenarioCase[] = [
       cap('setSubmitHandler', fnSpec('handler')),
       surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }, { kind: 'submitForm', url: 'https://x.test', fieldNames: ['a'], includeEmpty: true, format: 'html', method: 'get' }], origin: 'lifecycle' }),
       surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }], origin: 'user' }),
+    ],
+    snapshot: 'none',
+  },
+  {
+    name: 'surface-a-detached-realm',
+    covers:
+      'A detached realm has no document surface: its print, gotoPage and submitForm requests are suppressed with ui-effect-suppressed, and only alerts reach the adapter.',
+    plugins: plugins(OFF),
+    engine: engineWith(),
+    steps: [
+      ...boot,
+      listen(),
+      listen('onScriptDiagnostic'),
+      cap('registerSubmitResolver', resolverEcho()),
+      cap('setSubmitHandler', fnSpec('handler')),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      surface({
+        uiEffects: [
+          { kind: 'print' },
+          { kind: 'gotoPage', page: 2 },
+          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          { kind: 'alert', message: 'from the asset', icon: 3 },
+        ],
+        realm: 'detached',
+      }),
+      surface({ uiEffects: [{ kind: 'gotoPage', page: 2 }], realm: 'document' }),
+    ],
+    snapshot: 'none',
+  },
+  {
+    name: 'surface-script-commit',
+    covers:
+      'surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error; the realm kind rides both.',
+    plugins: plugins(OFF),
+    engine: engineWith(),
+    steps: [
+      ...boot,
+      listen('onScriptDiagnostic'),
+      listen('onScriptError'),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      cap(
+        'surfaceScriptCommit',
+        {
+          uiEffects: [
+            { kind: 'alert', message: 'boot', icon: 0, phase: 'boot' },
+            { kind: 'gotoPage', page: 1, phase: 'user' },
+            { kind: 'alert', message: 'user', icon: 1, phase: 'user' },
+          ],
+          diagnostics: [{ code: 'unsupported-api', message: 'd' }],
+          error: { kind: 'exception', message: 'e' },
+        },
+        { origin: 'user', realm: 'document' },
+      ),
+      cap('surfaceScriptCommit', { uiEffects: [], diagnostics: [] }, { origin: 'hover', realm: 'document' }),
+      cap(
+        'surfaceScriptCommit',
+        { uiEffects: [{ kind: 'print', phase: 'boot' }, { kind: 'alert', message: 'asset', icon: 0, phase: 'user' }], diagnostics: [] },
+        { origin: 'user', realm: 'detached' },
+      ),
     ],
     snapshot: 'none',
   },

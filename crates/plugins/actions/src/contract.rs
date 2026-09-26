@@ -1,21 +1,17 @@
-//! `types.ts`: the dispatcher's vocabulary, its results, its policy and
-//! config, the registration surfaces sibling plugins use, and the token.
-//!
-//! The TypeScript splits the capability into a public lens and a host lens
-//! (`ActionsHostCapability`, imported from `/contract/host`). The split is an
-//! API-visibility boundary over one runtime object, so Rust has one
-//! [`crate::ActionsCapability`] and marks the host members in their docs.
+//! `contract.ts`: the public action vocabulary (triggers, contexts,
+//! results, policy, the UI adapter and submit handler ports) and the two
+//! pure mappings, `eventOf` and `triggerOriginOf`. The host lens lives in
+//! [`crate::host_contract`]; both are one runtime object,
+//! [`crate::ActionsCapability`].
 
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_acrojs::{
-    IdentityOverrides, ScriptBudget, ScriptDiagnostic, ScriptExecutionError, ScriptSandboxFactory,
-    ScriptUiEffect,
-};
+use epdf_acrojs::{IdentityOverrides, ScriptBudget, ScriptSandboxFactory};
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::{Error, Token};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::ActionsCapability;
@@ -33,8 +29,64 @@ pub type PdfActionNode = Value;
 pub type PdfActionTargetRef = Value;
 /// `FormEffect`.
 pub type FormEffect = Value;
-/// `PageObjectNumber`. A JSON number, compared as JavaScript compares it.
-pub type PageObjectNumber = f64;
+
+/// `PageRef` as JSON, for the serde derives in this crate. The kernel's
+/// `PageRef` carries no serde impls.
+pub mod page_ref_json {
+    use super::*;
+
+    pub fn serialize<S: Serializer>(page: &PageRef, s: S) -> Result<S::Ok, S::Error> {
+        page.to_json().serialize(s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<PageRef, D::Error> {
+        let value = Value::deserialize(d)?;
+        PageRef::from_json(&value).ok_or_else(|| serde::de::Error::custom("not a PageRef"))
+    }
+
+    /// An optional member: absent when `None`.
+    pub mod option {
+        use super::*;
+
+        pub fn serialize<S: Serializer>(page: &Option<PageRef>, s: S) -> Result<S::Ok, S::Error> {
+            page.map(PageRef::to_json).serialize(s)
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<PageRef>, D::Error> {
+            let value = Option::<Value>::deserialize(d)?;
+            match value {
+                None | Some(Value::Null) => Ok(None),
+                Some(value) => PageRef::from_json(&value)
+                    .map(Some)
+                    .ok_or_else(|| serde::de::Error::custom("not a PageRef")),
+            }
+        }
+    }
+
+    /// A nullable member: `null` when `None`.
+    pub mod nullable {
+        pub use super::option::{deserialize, serialize};
+    }
+
+    /// A list of refs.
+    pub mod list {
+        use super::*;
+
+        pub fn serialize<S: Serializer>(pages: &[PageRef], s: S) -> Result<S::Ok, S::Error> {
+            pages.iter().map(|p| p.to_json()).collect::<Vec<_>>().serialize(s)
+        }
+
+        pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<PageRef>, D::Error> {
+            let values = Vec::<Value>::deserialize(d)?;
+            values
+                .iter()
+                .map(|v| {
+                    PageRef::from_json(v).ok_or_else(|| serde::de::Error::custom("not a PageRef"))
+                })
+                .collect()
+        }
+    }
+}
 
 // ── the when/who axes ─────────────────────────────────────────────────────────
 
@@ -64,22 +116,25 @@ pub enum ActionSource {
     Widget {
         field: FormFieldRef,
         annotation: AnnotationRef,
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
     },
     Link {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         annotation: Option<AnnotationRef>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pon: Option<PageObjectNumber>,
+        #[serde(default, skip_serializing_if = "Option::is_none", with = "page_ref_json::option")]
+        page: Option<PageRef>,
     },
     /// A non-widget annotation's own /AA event.
     Annotation {
         annotation: AnnotationRef,
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
     },
     /// A page /AA tree inside a page-trigger fan-out.
     Page {
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
     },
     /// The document-open sequence.
     Document,
@@ -147,6 +202,28 @@ pub enum PageEventKind {
     Invisible,
 }
 
+/// The four field-level /AA scripts (ISO Table 198: K F V C).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PdfFieldEventKind {
+    Keystroke,
+    Format,
+    Validate,
+    Calculate,
+}
+
+impl PdfFieldEventKind {
+    /// The `PdfFieldActions` key.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            PdfFieldEventKind::Keystroke => "keystroke",
+            PdfFieldEventKind::Format => "format",
+            PdfFieldEventKind::Validate => "validate",
+            PdfFieldEventKind::Calculate => "calculate",
+        }
+    }
+}
+
 /// Trigger provenance: which event fired.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "scope", rename_all = "camelCase")]
@@ -157,11 +234,83 @@ pub enum ActionTriggerEvent {
     Document { name: DocumentTriggerEvent },
 }
 
+/// `ActionTreeSource`'s annotation event: the /A click tree or one /AA key.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AnnotationTreeEvent {
+    Activate(ActivateTag),
+    Event(PdfAnnotationEventKind),
+}
+
+/// The literal `'activate'`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ActivateTag {
+    Activate,
+}
+
+impl AnnotationTreeEvent {
+    /// The `PdfAnnotationActions` key.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            AnnotationTreeEvent::Activate(_) => "activate",
+            AnnotationTreeEvent::Event(event) => event.as_str(),
+        }
+    }
+}
+
+/// Where an action tree lives, for [`ActionsCapability::get_action_tree`].
+/// The annotation arm defaults to the /A click tree, the page and document
+/// arms to their open trees.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum ActionTreeSource {
+    Annotation {
+        annotation: AnnotationRef,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        event: Option<AnnotationTreeEvent>,
+    },
+    Field {
+        field: FormFieldRef,
+        event: PdfFieldEventKind,
+    },
+    Page {
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
+        /// `open` or `close`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        event: Option<PageEventKind>,
+    },
+    Document {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        event: Option<DocumentTriggerEvent>,
+    },
+}
+
+/// The document-open sequence has run (once per document).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OpenSequenceCompletedEvent {
+    pub result: ActionTriggerResult,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionContext {
     pub origin: ActionOrigin,
     pub source: ActionSource,
     pub event: ActionTriggerEvent,
+}
+
+/// `Partial<ActionContext>`: what `executeNamed` overrides.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct PartialActionContext {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<ActionOrigin>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<ActionSource>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub event: Option<ActionTriggerEvent>,
 }
 
 /// What a feed reports. The dispatcher resolves trees and derives the
@@ -172,7 +321,8 @@ pub enum ActionTrigger {
     Activate {
         #[serde(rename = "ref")]
         annotation_ref: AnnotationRef,
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         source: Option<ActionSource>,
     },
@@ -180,13 +330,15 @@ pub enum ActionTrigger {
         event: PdfAnnotationEventKind,
         #[serde(rename = "ref")]
         annotation_ref: AnnotationRef,
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         source: Option<ActionSource>,
     },
     Page {
         event: PageEventKind,
-        pon: PageObjectNumber,
+        #[serde(with = "page_ref_json")]
+        page: PageRef,
     },
     Document {
         event: DocumentTriggerEvent,
@@ -203,9 +355,9 @@ pub fn event_of(trigger: &ActionTrigger) -> ActionTriggerEvent {
     }
 }
 
-/// `originOf`: the one origin mapping. A feed cannot launder a hover into a
-/// user gesture.
-pub fn origin_of(trigger: &ActionTrigger) -> ActionOrigin {
+/// `triggerOriginOf`: the one origin mapping. A feed cannot launder a hover
+/// into a user gesture.
+pub fn trigger_origin_of(trigger: &ActionTrigger) -> ActionOrigin {
     match trigger {
         ActionTrigger::Activate { .. } => ActionOrigin::User,
         ActionTrigger::Annotation { event, .. } => match event {
@@ -320,24 +472,6 @@ pub struct ActionTriggerResult {
     pub diagnostics: Vec<ActionDiagnostic>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum PageStateCause {
-    User,
-    Programmatic,
-}
-
-/// Stage's page-truth report, the one door into the lifecycle coordinator.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageStateReport {
-    pub current_pon: Option<PageObjectNumber>,
-    pub visible_pons: Vec<PageObjectNumber>,
-    /// False until layout exists; unplaced reports are ignored.
-    pub placed: bool,
-    pub cause: PageStateCause,
-}
-
 // ── policy ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -375,6 +509,26 @@ impl ActionPolicyRow {
             ActionOrigin::Lifecycle => self.lifecycle,
         }
     }
+
+    /// `{ ...row, ...patch }`.
+    pub fn merged(&self, patch: &PartialActionPolicyRow) -> ActionPolicyRow {
+        ActionPolicyRow {
+            user: patch.user.unwrap_or(self.user),
+            hover: patch.hover.unwrap_or(self.hover),
+            lifecycle: patch.lifecycle.unwrap_or(self.lifecycle),
+        }
+    }
+}
+
+/// `Partial<ActionPolicyRow>`: only the origins a patch changes.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PartialActionPolicyRow {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub user: Option<ActionPolicyDecision>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hover: Option<ActionPolicyDecision>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lifecycle: Option<ActionPolicyDecision>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -409,25 +563,26 @@ impl ActionPolicy {
     }
 }
 
-/// `Partial<ActionPolicy>`: rows given here replace the defaults.
+/// `ActionPolicyPatch`: row-wise overrides. A row names only the origins it
+/// changes; an absent or `null` row is left alone.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PartialActionPolicy {
+pub struct ActionPolicyPatch {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub goto: Option<ActionPolicyRow>,
+    pub goto: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub named: Option<ActionPolicyRow>,
+    pub named: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hide: Option<ActionPolicyRow>,
+    pub hide: Option<PartialActionPolicyRow>,
     #[serde(rename = "reset-form", default, skip_serializing_if = "Option::is_none")]
-    pub reset_form: Option<ActionPolicyRow>,
+    pub reset_form: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub javascript: Option<ActionPolicyRow>,
+    pub javascript: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub uri: Option<ActionPolicyRow>,
+    pub uri: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub print: Option<ActionPolicyRow>,
+    pub print: Option<PartialActionPolicyRow>,
     #[serde(rename = "submit-form", default, skip_serializing_if = "Option::is_none")]
-    pub submit_form: Option<ActionPolicyRow>,
+    pub submit_form: Option<PartialActionPolicyRow>,
 }
 
 /// Trigger-family gates, default all on. `activate` is never gated.
@@ -454,7 +609,7 @@ pub enum OpenSequence {
     Off,
 }
 
-/// `ActionsPluginConfig.javascript`: the one JavaScript switch.
+/// `ActionsConfig.javascript`: the one JavaScript switch.
 #[derive(Clone, Default)]
 pub struct JavaScriptConfig {
     pub enabled: bool,
@@ -475,24 +630,26 @@ pub struct JavaScriptConfig {
     pub max_script_nodes_per_dispatch: Option<f64>,
 }
 
+/// `ActionsConfig`, plus the two host inputs the TypeScript reads from the
+/// environment.
 #[derive(Clone, Default)]
-pub struct ActionsPluginConfig {
-    pub policy: Option<PartialActionPolicy>,
+pub struct ActionsConfig {
+    /// Row-wise overrides merged over the defaults.
+    pub policy: Option<ActionPolicyPatch>,
     pub triggers: Option<TriggerGates>,
     pub open_sequence: Option<OpenSequence>,
     pub javascript: Option<JavaScriptConfig>,
-    /// Host input: where a throwing `onAction`/`onDiagnostic`/
-    /// `onScriptDiagnostic`/`onScriptError` observer is reported. The
-    /// TypeScript writes these to `globalThis.console.error` with the same
-    /// message; with no sink they are dropped.
+    /// Host input: where a throwing observer on one of the five hooks is
+    /// reported. The TypeScript writes these to `console.error` with the
+    /// same message; with no sink they are dropped.
     pub observer_error: Option<Rc<dyn Fn(&str, &Error)>>,
     /// Host input: `-new Date(nowMs).getTimezoneOffset()`, the local UTC
-    /// offset in minutes at an instant, used when `javascript.utc_offset_minutes`
-    /// is not configured. Default: zero (UTC).
+    /// offset in minutes at an instant, used when
+    /// `javascript.utc_offset_minutes` is not configured. Default: zero.
     pub host_utc_offset_minutes: Option<Rc<dyn Fn(f64) -> f64>>,
 }
 
-// ── registration surfaces (host lens) ─────────────────────────────────────────
+// ── registration surfaces ─────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "status", rename_all = "camelCase")]
@@ -502,72 +659,11 @@ pub enum ActionExecutorResult {
     Failed { error: String },
 }
 
-/// One node of one registered type, executed in dispatch order. `Err` is a
-/// synchronous throw; the promise may reject.
+/// One node of one registered type, executed in dispatch order. Executors
+/// never see the tree or the capability. `Err` is a synchronous throw; the
+/// promise may reject.
 pub type ActionExecutor =
     Rc<dyn Fn(&PdfActionNode, &ActionContext) -> Result<Promise<ActionExecutorResult>, Error>>;
-
-/// One annotation-effect commit entry. `page_object_number` is absent for
-/// a bare Hide object-number target.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotCommitEntry {
-    pub annot_object_number: f64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub page_object_number: Option<f64>,
-    pub patch: Value,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum AnnotCommitStatus {
-    Applied,
-    Failed,
-    Skipped,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotCommitResultEntry {
-    pub annot_object_number: f64,
-    pub status: AnnotCommitStatus,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct AnnotCommitResult {
-    pub results: Vec<AnnotCommitResultEntry>,
-}
-
-/// Invoked from inside a serialized dispatch; a sink never enqueues and never
-/// acquires the script host.
-pub type AnnotCommitSink =
-    Rc<dyn Fn(Vec<AnnotCommitEntry>) -> Result<Promise<AnnotCommitResult>, Error>>;
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectError {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
-}
-
-/// One entry of `FormEffectsResult.results`: the members the dispatcher reads.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectResultEntry {
-    pub index: f64,
-    pub status: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<FormEffectError>,
-}
-
-/// `FormEffectsResult`, read for its per-effect results.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectsResult {
-    pub results: Vec<FormEffectResultEntry>,
-}
-
-/// The form plugin's document commit.
-pub type FormCommitSink = Rc<dyn Fn(Vec<FormEffect>) -> Result<Promise<FormEffectsResult>, Error>>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -576,18 +672,7 @@ pub enum ScriptPhase {
     User,
 }
 
-/// What a script transaction surfaced besides document effects.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ScriptSurfaceResult {
-    pub ui_effects: Vec<ScriptUiEffect>,
-    pub diagnostics: Vec<ScriptDiagnostic>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<ScriptExecutionError>,
-    pub origin: ActionOrigin,
-    pub phase: ScriptPhase,
-}
-
+/// Origin and phase context every script-produced UI request carries.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionUiContext {
     pub origin: ActionOrigin,
@@ -676,32 +761,16 @@ pub struct SubmitHandlerContext {
 pub type ActionSubmitHandler =
     Rc<dyn Fn(&ActionSubmitRequest, SubmitHandlerContext) -> Result<Option<Promise<Value>>, Error>>;
 
-/// The form plugin's dataset resolver.
-pub type SubmitResolver = Rc<
-    dyn Fn(
-        &SubmitIntent,
-        &ActionContext,
-        Rc<dyn Fn(ActionDiagnostic)>,
-    ) -> Result<Promise<ActionSubmitRequest>, Error>,
->;
-
 /// A disposer an identity-safe registration returns. Calling it again does
 /// what it did the first time, as a TypeScript closure would.
 pub type Disposer = Rc<dyn Fn()>;
 
-// ── state and the token ───────────────────────────────────────────────────────
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct ActionsState {
-    /// Monotonic dispatch counter.
-    pub seq: f64,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum ActionsAction {
-    #[serde(rename = "ACTIONS_DISPATCHED")]
-    ActionsDispatched,
+/// `runDocumentVerb`'s verbs.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum DocumentVerb {
+    Save,
+    Print,
 }
 
 /// `ActionsToken`, shared by the public and host lenses.

@@ -5,7 +5,7 @@
 use epdf_acrojs::js::{encode_uri_component, string_of};
 use serde_json::Value;
 
-use crate::types::FormSubmissionEntry;
+use crate::contract::FormSubmissionEntry;
 
 /// A name-only entry (`value` null) encodes as a bare name; a multi-select
 /// repeats the name per value, the HTML-form convention.

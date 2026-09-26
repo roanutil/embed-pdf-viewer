@@ -97,6 +97,10 @@ answer per call and repeats the last. An interaction handler, a listener, an ope
 
 A Rust capability printed as an outcome lists its members in the order the TypeScript object
 literal defines them (`HarnessPlugin::members`), because that order numbers the refs.
+A member that is not a method prints through `HarnessPlugin::describe_member`, which the runner
+calls in the same order, so any ref it registers numbers in place. The actions plugin's
+`scriptRealm` (`{transaction, budget}`) is the one such member so far. The TypeScript needs no
+counterpart: canonical JSON already prints a nested object.
 
 ## The fake engine
 

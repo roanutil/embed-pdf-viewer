@@ -8,14 +8,19 @@ use std::rc::Rc;
 use epdf_acrojs::harness::{
     answer_promise, scripted_callback, scripted_sandbox_factory, to_json, typed, untyped,
 };
-use epdf_acrojs::{IdentityOverrides, PartialScriptIdentity, ScriptTransaction};
+use epdf_acrojs::{
+    IdentityOverrides, PartialScriptIdentity, ScriptEventInput, ScriptEventKind, ScriptTransaction,
+    ScriptWorldInput,
+};
 use epdf_kernel::engine::decode;
 use epdf_kernel::rt::Promise;
+use epdf_kernel::types::DocumentMeta;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, define, is_undefined};
 use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
+use std::cell::RefCell;
 
 use crate::hover_pump::{HoverPump, HoverTarget, create_hover_pump};
 use crate::*;
@@ -127,9 +132,9 @@ fn javascript_config(spec: &Value, h: &Harness) -> Result<JavaScriptConfig, Erro
 }
 
 /// The vector's plugin config as the plugin's.
-pub fn actions_config(config: &Value, h: &Harness) -> Result<ActionsPluginConfig, Error> {
+pub fn actions_config(config: &Value, h: &Harness) -> Result<ActionsConfig, Error> {
     let log = h.clone();
-    let mut out = ActionsPluginConfig {
+    let mut out = ActionsConfig {
         observer_error: Some(Rc::new(move |message: &str, error: &Error| {
             log.log("console.error", vec![json!(message), error.to_canonical()]);
         })),
@@ -212,26 +217,36 @@ fn submit_resolver(callback: Callback) -> SubmitResolver {
     )
 }
 
+/// The capability's members in the TypeScript `composeApi` order. The two
+/// realm members exist only with scripting on.
 const MEMBERS: &[&str] = &[
-    "execute",
-    "canExecute",
-    "dispatch",
-    "canDispatch",
-    "setUiAdapter",
-    "runDocumentVerb",
-    "prepareClose",
-    "setSubmitHandler",
-    "onAction",
-    "onDiagnostic",
-    "onScriptDiagnostic",
-    "onScriptError",
+    "getPolicy",
+    "updatePolicy",
     "registerExecutor",
     "registerAnnotCommitSink",
     "registerFormCommitSink",
-    "scriptTransaction",
-    "surfaceScriptResult",
-    "reportPageState",
+    "setSubmitHandler",
     "registerSubmitResolver",
+    "isScriptingEnabled",
+    "scriptRealm",
+    "createDetachedScriptRealm",
+    "surfaceScriptResult",
+    "surfaceScriptCommit",
+    "reportPageState",
+    "setUiAdapter",
+    "runDocumentVerb",
+    "execute",
+    "canExecute",
+    "executeNamed",
+    "getActionTree",
+    "dispatch",
+    "canDispatch",
+    "prepareClose",
+    "onExecuted",
+    "onDiagnostic",
+    "onScriptDiagnostic",
+    "onScriptError",
+    "onOpenSequenceCompleted",
 ];
 
 fn not_a_function(method: &str) -> Outcome {
@@ -246,6 +261,27 @@ fn call_actions(
 ) -> Result<Outcome, Error> {
     let callback = |i: usize| h.callback(arg(args, i).unwrap_or(&Value::Null));
     Ok(match method {
+        "getPolicy" => Outcome::Returned(to_json(&cap.get_policy())),
+        "updatePolicy" => {
+            cap.update_policy(&decoded(args, 0)?);
+            Outcome::undefined()
+        }
+        "isScriptingEnabled" => Outcome::Returned(json!(cap.is_scripting_enabled())),
+        "executeNamed" => {
+            let name = arg(args, 0).and_then(Value::as_str).unwrap_or_default().to_string();
+            let context = match arg(args, 1) {
+                Some(context) => Some(decode(context.clone())?),
+                None => None,
+            };
+            Outcome::Promise(untyped(cap.execute_named(&name, context)))
+        }
+        "getActionTree" => Outcome::Promise(cap.get_action_tree(decoded(args, 0)?)),
+        "surfaceScriptCommit" => {
+            match cap.surface_script_commit(&decoded(args, 0)?, decoded(args, 1)?) {
+                Ok(()) => Outcome::undefined(),
+                Err(error) => Outcome::Threw(error),
+            }
+        }
         "execute" => Outcome::Promise(untyped(
             cap.execute(arg(args, 0).cloned().unwrap_or(Value::Null), decoded(args, 1)?),
         )),
@@ -270,7 +306,10 @@ fn call_actions(
                 arg(args, 0).filter(|v| !v.is_null()).map(|_| submit_handler(callback(0)));
             disposer_ref(h, cap.set_submit_handler(handler))
         }
-        "onAction" => unsubscribe_ref(h, cap.on_action(listener(callback(0)))),
+        "onExecuted" => unsubscribe_ref(h, cap.on_executed(listener(callback(0)))),
+        "onOpenSequenceCompleted" => {
+            unsubscribe_ref(h, cap.on_open_sequence_completed(listener(callback(0))))
+        }
         "onDiagnostic" => unsubscribe_ref(h, cap.on_diagnostic(listener(callback(0)))),
         "onScriptDiagnostic" => unsubscribe_ref(h, cap.on_script_diagnostic(listener(callback(0)))),
         "onScriptError" => unsubscribe_ref(h, cap.on_script_error(listener(callback(0)))),
@@ -295,18 +334,6 @@ fn call_actions(
                     answer_to(sink.call(vec![Value::Array(effects)]))
                 })),
             )
-        }
-        "scriptTransaction" => {
-            let body = callback(0);
-            let run = move |_txn: ScriptTransaction| {
-                answer_promise(
-                    body.call(vec![json!({ "boot": function_marker(), "run": function_marker() })]),
-                )
-            };
-            match cap.script_transaction(run) {
-                Some(promise) => Outcome::Promise(promise),
-                None => not_a_function(method),
-            }
         }
         "surfaceScriptResult" => match cap.surface_script_result(&decoded(args, 0)?) {
             Ok(()) => Outcome::undefined(),
@@ -364,12 +391,13 @@ fn hover_pump_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
 
 impl HarnessPlugin for Actions {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["actions", "hover-pump"]
+        vec!["actions", "hover-pump", "detached-realm"]
     }
 
     fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         match factory {
             "hover-pump" => hover_pump_plugin(config, h),
+            "detached-realm" => detached_realm_plugin(config, h),
             _ => Ok(actions_plugin(actions_config(config, h)?)),
         }
     }
@@ -407,6 +435,19 @@ impl HarnessPlugin for Actions {
                 other => not_a_function(other),
             });
         }
+        if let Some(driver) = capability.downcast_ref::<DetachedRealmDriver>() {
+            return Some(match method {
+                "mint" => Outcome::from_result(driver.mint(h)),
+                "run" => {
+                    let program = arg(&args, 0).and_then(Value::as_str).unwrap_or_default();
+                    match driver.run(program.to_string()) {
+                        Ok(promise) => Outcome::Promise(promise),
+                        Err(error) => Outcome::Threw(error),
+                    }
+                }
+                other => not_a_function(other),
+            });
+        }
         let cap = capability.downcast_ref::<ActionsCapability>()?;
         Some(call_actions(cap, method, &args, h).unwrap_or_else(Outcome::Threw))
     }
@@ -415,15 +456,176 @@ impl HarnessPlugin for Actions {
         if capability.downcast_ref::<HoverPumpDriver>().is_some() {
             return Some(vec!["hover", "reset"]);
         }
+        if capability.downcast_ref::<DetachedRealmDriver>().is_some() {
+            return Some(vec!["mint", "run"]);
+        }
         let cap = capability.downcast_ref::<ActionsCapability>()?;
+        let scripting = cap.is_scripting_enabled();
         Some(
             MEMBERS
                 .iter()
                 .copied()
-                .filter(|m| *m != "scriptTransaction" || cap.has_script_transaction())
+                .filter(|m| scripting || !matches!(*m, "scriptRealm" | "createDetachedScriptRealm"))
                 .collect(),
         )
     }
+
+    fn describe_member(
+        &self,
+        capability: &Rc<dyn Any>,
+        member: &'static str,
+        h: &Harness,
+    ) -> Option<Value> {
+        let cap = capability.downcast_ref::<ActionsCapability>()?;
+        if member != "scriptRealm" {
+            return None;
+        }
+        let port = cap.script_realm()?;
+        Some(realm_json(h, port.clone(), port.budget.clone(), None))
+    }
+}
+
+/// A realm port as the TypeScript prints it: `transaction` (and `dispose`
+/// for a detached realm) are refs, `budget` a value. A transaction body is a
+/// scripted callback, handed the transaction's two functions.
+fn realm_json(
+    h: &Harness,
+    port: ScriptRealmPort,
+    budget: epdf_acrojs::ScriptBudget,
+    dispose: Option<DetachedScriptRealm>,
+) -> Value {
+    let harness = h.clone();
+    let transaction = h.register_fn(Rc::new(move |args: Vec<Value>| {
+        let body = harness.callback(args.first().unwrap_or(&Value::Null));
+        Outcome::Promise(port.transaction(move |_txn: ScriptTransaction| {
+            answer_promise(
+                body.call(vec![json!({ "boot": function_marker(), "run": function_marker() })]),
+            )
+        }))
+    }));
+    let mut out = serde_json::Map::new();
+    out.insert("transaction".into(), transaction);
+    out.insert("budget".into(), to_json(&budget));
+    if let Some(realm) = dispose {
+        out.insert(
+            "dispose".into(),
+            h.register_fn(Rc::new(move |_| {
+                realm.dispose();
+                Outcome::undefined()
+            })),
+        );
+    }
+    Value::Object(out)
+}
+
+// ── the detached-realm driver ─────────────────────────────────────────────────
+
+/// A sibling that mints a detached realm for its own document from the
+/// actions plugin of `owner`, as the stamp plugin does for an asset.
+#[derive(Clone)]
+pub struct DetachedRealmDriver {
+    ctx: epdf_kernel::plugin::PluginContext,
+    owner: String,
+    /// `undefined`: the document's own metadata; otherwise this (`null` is none).
+    meta: Option<Option<DocumentMeta>>,
+    boot_sources: Option<Callback>,
+    realm: Rc<RefCell<Option<DetachedScriptRealm>>>,
+}
+
+fn empty_world() -> ScriptWorldInput {
+    ScriptWorldInput {
+        fields: Vec::new(),
+        annots: None,
+        annot_pages: None,
+        annots_cover_document: None,
+        page_number: None,
+        event: ScriptEventInput::of(ScriptEventKind::WidgetActivate),
+    }
+}
+
+impl DetachedRealmDriver {
+    fn mint(&self, h: &Harness) -> Result<Value, Error> {
+        let actions = self.ctx.try_for_document(&ACTIONS, &self.owner)?;
+        let Some(actions) = actions.filter(|a| a.is_scripting_enabled()) else {
+            return Ok(Value::Null);
+        };
+        let doc = self.ctx.doc().ok_or_else(|| Error::new("[detached-realm] no document"))?;
+        let document: Rc<dyn Fn() -> Option<DocumentMeta>> = match &self.meta {
+            None => {
+                let ctx = self.ctx.clone();
+                Rc::new(move || ctx.document())
+            }
+            Some(meta) => {
+                let meta = meta.clone();
+                Rc::new(move || meta.clone())
+            }
+        };
+        let boot_sources: Rc<dyn Fn() -> Result<Promise<Vec<String>>, Error>> =
+            match &self.boot_sources {
+                Some(callback) => {
+                    let callback = callback.clone();
+                    Rc::new(move || answer_to(callback.call(Vec::new())))
+                }
+                // `async () => []`.
+                None => Rc::new(|| Ok(Promise::resolved(Vec::new()))),
+            };
+        let Some(realm) =
+            actions.create_detached_script_realm(ScriptRealmTarget { doc, document, boot_sources })
+        else {
+            return Ok(Value::Null);
+        };
+        *self.realm.borrow_mut() = Some(realm.clone());
+        Ok(realm_json(h, realm.port.clone(), realm.budget().clone(), Some(realm)))
+    }
+
+    fn run(&self, program: String) -> Result<Promise<Value>, Error> {
+        let realm = self.realm.borrow().clone().ok_or_else(|| {
+            Error::named("TypeError", "Cannot read properties of null (reading 'transaction')")
+        })?;
+        Ok(realm.transaction(move |txn: ScriptTransaction| {
+            Ok(Promise::spawn(async move {
+                let boot = txn.boot(empty_world(), None).await?;
+                let run = txn.run(&program, empty_world(), None).await?;
+                Ok(json!({ "boot": to_json(&boot), "run": to_json(&run) }))
+            }))
+        }))
+    }
+}
+
+fn detached_realm_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
+    let token: Token<DetachedRealmDriver> = Token::from_any(h.token("detached-realm", None));
+    let owner = config.get("owner").and_then(Value::as_str).unwrap_or("a").to_string();
+    let meta: Option<Option<DocumentMeta>> = match config.get("meta") {
+        None => None,
+        Some(Value::Null) => Some(None),
+        Some(meta) => Some(Some(DocumentMeta {
+            id: meta.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
+            instance_id: meta
+                .get("instanceId")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            name: meta.get("name").and_then(Value::as_str).map(str::to_string),
+            page_count: meta.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
+            pages: meta.get("pages").cloned().unwrap_or(json!([])),
+            revision: meta.get("revision").and_then(Value::as_u64).unwrap_or(0),
+            render_policy: meta.get("renderPolicy").cloned().unwrap_or(Value::Null),
+        })),
+    };
+    let boot_sources = config.get("bootSources").map(|spec| scripted(spec, h));
+    Ok(define::<Value, Value>("detached-realm")
+        .document_scoped()
+        .optional(ACTIONS.any())
+        .capability(&token, move |ctx| {
+            Ok(DetachedRealmDriver {
+                ctx: ctx.ctx.clone(),
+                owner: owner.clone(),
+                meta: meta.clone(),
+                boot_sources: boot_sources.clone(),
+                realm: Rc::default(),
+            })
+        })
+        .build())
 }
 
 // ── the function table ────────────────────────────────────────────────────────
@@ -432,8 +634,8 @@ fn event_of_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(to_json(&event_of(&decoded(args, 0)?)))
 }
 
-fn origin_of_fn(args: &[Value]) -> Result<Value, Error> {
-    Ok(to_json(&origin_of(&decoded(args, 0)?)))
+fn trigger_origin_of_fn(args: &[Value]) -> Result<Value, Error> {
+    Ok(to_json(&trigger_origin_of(&decoded(args, 0)?)))
 }
 
 fn url_encoded_fn(args: &[Value]) -> Result<Value, Error> {
@@ -445,7 +647,7 @@ fn url_encoded_fn(args: &[Value]) -> Result<Value, Error> {
 pub fn functions() -> FunctionTable {
     vec![
         ("eventOf", event_of_fn),
-        ("originOf", origin_of_fn),
+        ("triggerOriginOf", trigger_origin_of_fn),
         ("submitEntriesToUrlEncoded", url_encoded_fn),
     ]
 }

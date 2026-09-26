@@ -1233,6 +1233,871 @@
       ]
     },
     {
+      "name": "open-sequence-completed-event",
+      "covers": "onOpenSequenceCompleted fires once with the folded sequence result after the document steps; a throwing listener is reported to the host sink and never stops its siblings.",
+      "plugins": [
+        {
+          "factory": "actions"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                },
+                "actions": {
+                  "open": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "O-1",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                },
+                "actions": {
+                  "open": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "O-3",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "services": [
+              "actions"
+            ],
+            "responses": [
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "OpenAction",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "openDestination": {
+                    "kind": "fit",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  }
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "goto",
+            {
+              "$fn": "exec.goto",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "registerExecutor",
+          "args": [
+            "named",
+            {
+              "$fn": "exec.named",
+              "returns": {
+                "status": "executed"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onOpenSequenceCompleted",
+          "args": [
+            {
+              "$fn": "completed.bad",
+              "throws": {
+                "message": "listener broke"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onOpenSequenceCompleted",
+          "args": [
+            {
+              "$fn": "completed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "scope": "annotation",
+              "event": "cursorEnter",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
+                "annotObjectNumber": 1
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "dispatch",
+          "args": [
+            {
+              "scope": "annotation",
+              "event": "cursorEnter",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 999
+                },
+                "annotObjectNumber": 1
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 999
+              }
+            }
+          ]
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            },
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "exec.goto",
+              "args": [
+                {
+                  "type": "goto",
+                  "subtype": "GoTo",
+                  "destination": {
+                    "kind": "fit",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  },
+                  "next": []
+                },
+                {
+                  "origin": "lifecycle",
+                  "source": {
+                    "kind": "document"
+                  },
+                  "event": {
+                    "scope": "document",
+                    "name": "open"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "exec.named",
+              "args": [
+                {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "OpenAction",
+                  "next": []
+                },
+                {
+                  "origin": "lifecycle",
+                  "source": {
+                    "kind": "document"
+                  },
+                  "event": {
+                    "scope": "document",
+                    "name": "open"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "completed.bad",
+              "args": [
+                {
+                  "result": {
+                    "status": "executed",
+                    "steps": [
+                      {
+                        "source": {
+                          "kind": "document"
+                        },
+                        "tree": {
+                          "root": {
+                            "type": "goto",
+                            "subtype": "GoTo",
+                            "destination": {
+                              "kind": "fit",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 3
+                              }
+                            },
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "result": {
+                          "status": "executed",
+                          "nodes": [
+                            {
+                              "path": [],
+                              "type": "goto",
+                              "status": "executed"
+                            }
+                          ],
+                          "diagnostics": []
+                        }
+                      },
+                      {
+                        "source": {
+                          "kind": "document"
+                        },
+                        "tree": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "OpenAction",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "result": {
+                          "status": "executed",
+                          "nodes": [
+                            {
+                              "path": [],
+                              "type": "named",
+                              "status": "executed"
+                            }
+                          ],
+                          "diagnostics": []
+                        }
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "console.error",
+              "args": [
+                "[actions] onOpenSequenceCompleted listener threw",
+                {
+                  "$error": {
+                    "name": "Error",
+                    "message": "listener broke"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "completed",
+              "args": [
+                {
+                  "result": {
+                    "status": "executed",
+                    "steps": [
+                      {
+                        "source": {
+                          "kind": "document"
+                        },
+                        "tree": {
+                          "root": {
+                            "type": "goto",
+                            "subtype": "GoTo",
+                            "destination": {
+                              "kind": "fit",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 3
+                              }
+                            },
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "result": {
+                          "status": "executed",
+                          "nodes": [
+                            {
+                              "path": [],
+                              "type": "goto",
+                              "status": "executed"
+                            }
+                          ],
+                          "diagnostics": []
+                        }
+                      },
+                      {
+                        "source": {
+                          "kind": "document"
+                        },
+                        "tree": {
+                          "root": {
+                            "type": "named",
+                            "subtype": "Named",
+                            "name": "OpenAction",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "result": {
+                          "status": "executed",
+                          "nodes": [
+                            {
+                              "path": [],
+                              "type": "named",
+                              "status": "executed"
+                            }
+                          ],
+                          "diagnostics": []
+                        }
+                      }
+                    ],
+                    "diagnostics": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 4
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "refused",
+                "steps": [],
+                "diagnostics": [
+                  {
+                    "code": "trigger-failed",
+                    "message": "trigger resolution failed: no page 999"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 5
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "refused",
+                "steps": [],
+                "diagnostics": [
+                  {
+                    "code": "trigger-failed",
+                    "message": "trigger resolution failed: no page 999"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "auto-a-submit-handler-does-not-arm",
       "covers": "Installing a submit handler is not the latch release: nothing runs until an adapter arrives.",
       "plugins": [

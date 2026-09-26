@@ -421,6 +421,112 @@
       }
     },
     {
+      "name": "reduceInteraction/set-same-tool-with-a-stack",
+      "fn": "reduceInteraction",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [
+            "pointer"
+          ],
+          "cursor": "grab"
+        },
+        {
+          "type": "SET_TOOL",
+          "toolId": "pan"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
+          "cursor": "grab"
+        }
+      }
+    },
+    {
+      "name": "reduceInteraction/push-tool",
+      "fn": "reduceInteraction",
+      "args": [
+        {
+          "activeToolId": "pointer",
+          "defaultToolId": "pointer",
+          "toolStack": [
+            "ink"
+          ],
+          "cursor": "default"
+        },
+        {
+          "type": "PUSH_TOOL",
+          "toolId": "pan"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [
+            "ink",
+            "pointer"
+          ],
+          "cursor": "default"
+        }
+      }
+    },
+    {
+      "name": "reduceInteraction/pop-tool",
+      "fn": "reduceInteraction",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [
+            "ink",
+            "pointer"
+          ],
+          "cursor": "grab"
+        },
+        {
+          "type": "POP_TOOL"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pointer",
+          "defaultToolId": "pointer",
+          "toolStack": [
+            "ink"
+          ],
+          "cursor": "grab"
+        }
+      }
+    },
+    {
+      "name": "reduceInteraction/pop-empty-stack",
+      "fn": "reduceInteraction",
+      "args": [
+        {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
+          "cursor": "grab"
+        },
+        {
+          "type": "POP_TOOL"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "activeToolId": "pan",
+          "defaultToolId": "pointer",
+          "toolStack": [],
+          "cursor": "grab"
+        }
+      }
+    },
+    {
       "name": "reduceInteraction/set-same-cursor",
       "fn": "reduceInteraction",
       "args": [
