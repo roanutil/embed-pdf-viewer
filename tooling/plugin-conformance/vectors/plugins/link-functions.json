@@ -21,8 +21,11 @@
           "pages": {}
         },
         {
-          "type": "SET_PAGE",
-          "pon": 1,
+          "type": "setPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "items": [
             {
               "id": "obj:1",
@@ -38,7 +41,10 @@
               },
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 1
               },
               "attached": false
@@ -66,7 +72,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 1
                   },
                   "attached": false
@@ -98,7 +107,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -108,8 +120,11 @@
           }
         },
         {
-          "type": "SET_PAGE",
-          "pon": 2,
+          "type": "setPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 2
+          },
           "items": [
             {
               "id": "obj:2",
@@ -125,7 +140,10 @@
               },
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 2
               },
               "attached": false,
@@ -168,7 +186,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 1
                   },
                   "attached": false
@@ -189,7 +210,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 2
                   },
                   "attached": false,
@@ -237,7 +261,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -247,8 +274,11 @@
           }
         },
         {
-          "type": "SET_PAGE",
-          "pon": 1,
+          "type": "setPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
           "items": [
             {
               "id": "obj:4",
@@ -264,7 +294,10 @@
               },
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 4
               },
               "attached": false
@@ -283,7 +316,10 @@
               },
               "ref": {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1,
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "annotObjectNumber": 5
               },
               "attached": true
@@ -291,7 +327,7 @@
           ]
         }
       ],
-      "covers": "SET_PAGE replaces the page and keeps the others.",
+      "covers": "setPage replaces the page and keeps the others.",
       "outcome": {
         "returned": {
           "changed": true,
@@ -312,7 +348,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 4
                   },
                   "attached": false
@@ -331,7 +370,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 5
                   },
                   "attached": true
@@ -364,7 +406,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -374,8 +419,11 @@
           }
         },
         {
-          "type": "SET_PAGE",
-          "pon": 0,
+          "type": "setPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 0
+          },
           "items": []
         }
       ],
@@ -400,7 +448,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 1
                   },
                   "attached": false
@@ -433,7 +484,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -443,8 +497,11 @@
           }
         },
         {
-          "type": "DROP_PAGE",
-          "pon": 1
+          "type": "dropPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {
@@ -479,7 +536,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -489,8 +549,11 @@
           }
         },
         {
-          "type": "DROP_PAGE",
-          "pon": 3
+          "type": "dropPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 3
+          }
         }
       ],
       "covers": "A page cached with no links is still present, so dropping it makes a new state.",
@@ -514,7 +577,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 1
                   },
                   "attached": false
@@ -546,7 +612,10 @@
                 },
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
                   "annotObjectNumber": 1
                 },
                 "attached": false
@@ -556,8 +625,11 @@
           }
         },
         {
-          "type": "DROP_PAGE",
-          "pon": 2
+          "type": "dropPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 2
+          }
         }
       ],
       "covers": "Dropping a page that is not cached returns the same state.",
@@ -581,7 +653,10 @@
                   },
                   "ref": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 1,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
                     "annotObjectNumber": 1
                   },
                   "attached": false
@@ -601,8 +676,11 @@
           "pages": {}
         },
         {
-          "type": "DROP_PAGE",
-          "pon": 1
+          "type": "dropPage",
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          }
         }
       ],
       "outcome": {

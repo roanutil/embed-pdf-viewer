@@ -15,13 +15,14 @@
 import type { AnyPlugin } from '@embedpdf/core';
 
 import { linkPlugin } from '../../../../packages/plugin/link/src/link.plugin';
-import { initialLinkState, linkReducer } from '../../../../packages/plugin/link/src/reducer';
-import { LinkToken, type LinkActivateEvent, type LinkAction, type LinkState } from '../../../../packages/plugin/link/src/types';
+import { initialLinkState, linkReducer } from '../../../../packages/plugin/link/src/model';
+import { LinkToken, type LinkActivatedEvent, type LinkAction, type LinkHostCapability, type LinkState } from '../../../../packages/plugin/link/src/host-contract';
 
 import type { ResponseSpec } from '../fake-engine';
-import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
+import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
+import { stageStep } from './stage-plugin';
 
 import {
   CROP2,
@@ -36,6 +37,7 @@ import {
   layout,
   link,
   objRef,
+  pr,
   settle,
   square,
   updated,
@@ -48,30 +50,58 @@ interface HarnessConfig {
   readonly onActivate?: Scripted;
 }
 
-const printable = (event: LinkActivateEvent) => ({
+const printable = (event: LinkActivatedEvent) => ({
   target: event.target,
   activation: event.activation.outcome === 'dispatched' ? { outcome: 'dispatched', dispatch: '[promise]' } : event.activation,
+  origin: event.origin,
 });
+
+/** A throwing onActivated listener is reported to `console.error` with a
+ *  `[link]` prefix; while a link factory is current that logs as the
+ *  callback `console.error`, as the annotation and redaction suites do. */
+let linkLog: PluginEnv['log'] | null = null;
+{
+  const previous = console.error;
+  console.error = (...args: unknown[]) => {
+    if (linkLog && typeof args[0] === 'string' && args[0].startsWith('[link]')) {
+      linkLog('console.error', args);
+      return;
+    }
+    previous(...args);
+  };
+}
 
 registerPlugin('link', {
   factory: (config, env) => {
+    linkLog = env.log;
     const { onActivate } = (config ?? {}) as HarnessConfig;
-    if (!onActivate) return linkPlugin() as AnyPlugin;
+    const plugin = linkPlugin() as AnyPlugin;
+    if (!onActivate) return plugin;
+    // v2 took `onActivate` as config; v3 publishes `onActivated`, which the
+    // harness subscribes the scripted callback to as the controller is built.
     const callback = scriptedCallback(onActivate.$fn, onActivate, env);
-    return linkPlugin({ onActivate: (event) => void callback(printable(event)) }) as AnyPlugin;
+    return {
+      ...plugin,
+      create: (ctx) => {
+        const built = plugin.create!(ctx);
+        (built.api as LinkHostCapability).onActivated((event) => void callback(printable(event)));
+        return built;
+      },
+    } as AnyPlugin;
   },
   tokens: [LinkToken],
 });
 
 // ── steps ─────────────────────────────────────────────────────────────────────
 
+const LINK: Readonly<Record<string, string>> = { linksOn: 'listLinks', ensurePage: 'ensureLoaded', engaged: 'isNavigationEngaged' };
 const lk = (method: string, args: unknown[] = [], docId = 'a'): Step => ({
   op: 'call',
   target: { token: 'link', doc: docId },
-  method,
-  args,
+  method: LINK[method] ?? method,
+  args: (method === 'linksOn' || method === 'ensurePage') && typeof args[0] === 'number' ? [pr(args[0]), ...args.slice(1)] : args,
 });
-const st = (method: string, args: unknown[] = []): Step => ({ op: 'call', target: { token: 'stage', doc: 'a' }, method, args });
+const st = (method: string, args: unknown[] = []): Step => stageStep('stage', 'a', method, args);
 const ref = (n: number, args: unknown[] = []): Step => ({ op: 'call', target: { ref: n }, args });
 const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };
 const viewport: Step = st('setViewport', [{ width: 1000, height: 700 }]);
@@ -93,7 +123,7 @@ const SNAP = ['link::a'];
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 const goto = (destination: Record<string, unknown>) => ({ kind: 'goto', destination });
-const xyz = (pon: number, left: unknown, top: unknown, zoom: unknown) => ({ kind: 'xyz', pageObjectNumber: pon, left, top, zoom });
+const xyz = (pon: number, left: unknown, top: unknown, zoom: unknown) => ({ kind: 'xyz', page: pr(pon), left, top, zoom });
 const uri = (u: string) => ({ kind: 'uri', uri: u });
 const named = (name: string) => ({ kind: 'named', name });
 const tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
@@ -116,12 +146,12 @@ const pageList = (pon: number, annotations: unknown[], times?: number): Response
 const PAGE1 = [
   link(1, { rect: { left: 100, bottom: 700, right: 200, top: 720 } }),
   link(2, {
-    ref: { kind: 'nm', pageObjectNumber: 1, nm: 'n-2' },
+    ref: { kind: 'nm', page: pr(1), nm: 'n-2' },
     target: goto(xyz(2, 20, 500, 0)),
     rect: { left: 0, bottom: 0, right: 50, top: 10 },
   }),
   link(3, {
-    ref: { kind: 'index', pageObjectNumber: 1, index: 3, revision: { docSessionId: 's', pageObjectNumber: 1, generation: 1 } },
+    ref: { kind: 'index', page: pr(1), index: 3, revision: { docSessionId: 's', page: pr(1), generation: 1 } },
     target: named('NextPage'),
   }),
   square(4),
@@ -189,7 +219,7 @@ const cases: ScenarioCase[] = [
             pageList(5, [omit(link(1), 'rect')]),
             pageList(6, [
               omit(square(1), 'flags'),
-              omit(link(3, { ref: { kind: 'nm', pageObjectNumber: 6, nm: 'x' } }), 'index'),
+              omit(link(3, { ref: { kind: 'nm', page: pr(6), nm: 'x' } }), 'index'),
               link(4, { rect: {} }),
               omit(link(5, { replyType: 'group' }), 'inReplyTo'),
               link(6, { actions: { activate: 0, cursorEnter: { root: false }, cursorExit: null } }),
@@ -213,13 +243,12 @@ const cases: ScenarioCase[] = [
   {
     name: 'viewer-only-loads-in-flight',
     covers:
-      'Until a list answers the page is not cached, so a second ensurePage lists it again; each answer replaces the page. A refused list is swallowed and leaves the page unloaded, so the next ensurePage retries.',
+      'A second ensureLoaded while a list is in flight joins it (v2 listed the page again). A refused list leaves the page unloaded, so the next ensureLoaded retries.',
     plugins: VIEWER,
     engine: {
       documents: {
         a: doc([
           { path: 'page.annotations.list', pon: 1, times: 1, defer: 'first' },
-          { path: 'page.annotations.list', pon: 1, times: 1, defer: 'second' },
           { path: 'page.annotations.list', pon: 2, times: 1, error: { name: 'EngineError', message: 'refused', code: 'Refused' } },
           pageList(2, PAGE2),
         ]),
@@ -230,7 +259,6 @@ const cases: ScenarioCase[] = [
       ...boot,
       lk('ensurePage', [1]),
       lk('ensurePage', [1]),
-      settle('second', list([link(1)])),
       settle('first', list([link(1), link(2)])),
       lk('linksOn', [1]),
       lk('ensurePage', [2]),
@@ -266,7 +294,7 @@ const cases: ScenarioCase[] = [
       emit({ type: 'annotation.deleted', pageObjectNumber: 1, origin: { kind: 'local', serverId: null }, deleted: objRef(3) }),
       emit({ type: 'annotation.created', pageObjectNumber: 2, origin: { kind: 'local', serverId: null }, ...created(link(9, { pageObjectNumber: 2 })) }),
       emit({ type: 'annotation.updated', pageObjectNumber: 1, origin: { kind: 'local', serverId: null }, updated: link(4, { pageObjectNumber: 2 }) }),
-      emit({ type: 'pages.rotated', pageObjectNumbers: [1], origin: { kind: 'local', serverId: null } }),
+      emit({ type: 'pages.rotated', pages: [pr(1)], origin: { kind: 'local', serverId: null } }),
       lk('linksOn', [1]),
       close,
     ],
@@ -351,7 +379,7 @@ const cases: ScenarioCase[] = [
       lk('activate', [{ kind: 'goto-remote', file: 'other.pdf' }]),
       lk('activate', [{ kind: 'launch', path: 'calc.exe' }]),
       lk('activate', [{ kind: 'unsupported' }]),
-      lk('activate', [goto({ kind: 'fit', pageObjectNumber: 1 }), { activate: tree(gotoNode({ kind: 'fit', pageObjectNumber: 1 })), ref: objRef(1), pon: 1 }]),
+      lk('activate', [goto({ kind: 'fit', page: pr(1) }), { activate: tree(gotoNode({ kind: 'fit', page: pr(1) })), ref: objRef(1), page: pr(1) }]),
     ],
   },
   {
@@ -377,11 +405,11 @@ const cases: ScenarioCase[] = [
       st('currentPage'),
       lk('activate', [goto(xyz(1, null, null, 0))]),
       st('camera'),
-      lk('activate', [goto({ kind: 'fit', pageObjectNumber: 1 })]),
+      lk('activate', [goto({ kind: 'fit', page: pr(1) })]),
       st('camera'),
-      lk('activate', [goto({ kind: 'fitH', pageObjectNumber: 2, top: 400 })]),
+      lk('activate', [goto({ kind: 'fitH', page: pr(2), top: 400 })]),
       st('camera'),
-      lk('activate', [goto({ kind: 'fitR', pageObjectNumber: 2, left: 50, bottom: 100, right: 250, top: 300 })]),
+      lk('activate', [goto({ kind: 'fitR', page: pr(2), left: 50, bottom: 100, right: 250, top: 300 })]),
       st('camera'),
       lk('activate', [goto(xyz(77, 0, 0, 1))]),
       lk('activate', [uri('https://example.com')]),
@@ -402,7 +430,7 @@ const cases: ScenarioCase[] = [
     plugins: WITH_STAGE,
     engine: { documents: { a: doc([], { pages: [layout(0, 1), { ...layout(1, 2, CROP2), userUnit: 0 }] }) } },
     snapshot: 'none',
-    steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), lk('activate', [goto({ kind: 'fit', pageObjectNumber: 1 })])],
+    steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), lk('activate', [goto({ kind: 'fit', page: pr(1) })])],
   },
   {
     name: 'a-throwing-listener-throws-out-of-activate',
@@ -437,10 +465,10 @@ const cases: ScenarioCase[] = [
       ...boot,
       viewport,
       lk('linksOn', [1]),
-      lk('activate', [goto(xyz(2, 60, 300, 2)), { activate: tree(gotoNode(xyz(2, 60, 300, 2))), ref: objRef(1), pon: 1 }]),
+      lk('activate', [goto(xyz(2, 60, 300, 2)), { activate: tree(gotoNode(xyz(2, 60, 300, 2))), ref: objRef(1), page: pr(1) }]),
       st('currentPage'),
       lk('activate', [uri('https://example.com'), { activate: tree(uriNode('https://example.com')) }]),
-      lk('activate', [goto({ kind: 'fit', pageObjectNumber: 1 }), { activate: null, ref: objRef(1), pon: 1 }]),
+      lk('activate', [goto({ kind: 'fit', page: pr(1) }), { activate: null, ref: objRef(1), page: pr(1) }]),
       st('currentPage'),
       lk('activate', [named('NextPage'), {}]),
       lk('activate', [named('NextPage')]),
@@ -477,14 +505,14 @@ const r = (name: string, state: LinkState, action: unknown, covers?: string): Fu
 
 const functionCases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialLinkState', args: [] },
-  r('set-a-first-page', initialLinkState(), { type: 'SET_PAGE', pon: 1, items: [item(1)] }),
-  r('set-another-page', loaded, { type: 'SET_PAGE', pon: 2, items: [item(2, { activate: tree(uriNode('u')), hoverEvents: { enter: true, exit: false } })] }),
-  r('set-replaces-a-page', loaded, { type: 'SET_PAGE', pon: 1, items: [item(4), item(5, { attached: true })] }, 'SET_PAGE replaces the page and keeps the others.'),
-  r('set-an-empty-page', loaded, { type: 'SET_PAGE', pon: 0, items: [] }),
-  r('drop-a-page', loaded, { type: 'DROP_PAGE', pon: 1 }),
-  r('drop-an-empty-page', loaded, { type: 'DROP_PAGE', pon: 3 }, 'A page cached with no links is still present, so dropping it makes a new state.'),
-  r('drop-an-absent-page', loaded, { type: 'DROP_PAGE', pon: 2 }, 'Dropping a page that is not cached returns the same state.'),
-  r('drop-from-empty', initialLinkState(), { type: 'DROP_PAGE', pon: 1 }),
+  r('set-a-first-page', initialLinkState(), { type: 'setPage', page: pr(1), items: [item(1)] }),
+  r('set-another-page', loaded, { type: 'setPage', page: pr(2), items: [item(2, { activate: tree(uriNode('u')), hoverEvents: { enter: true, exit: false } })] }),
+  r('set-replaces-a-page', loaded, { type: 'setPage', page: pr(1), items: [item(4), item(5, { attached: true })] }, 'setPage replaces the page and keeps the others.'),
+  r('set-an-empty-page', loaded, { type: 'setPage', page: pr(0), items: [] }),
+  r('drop-a-page', loaded, { type: 'dropPage', page: pr(1) }),
+  r('drop-an-empty-page', loaded, { type: 'dropPage', page: pr(3) }, 'A page cached with no links is still present, so dropping it makes a new state.'),
+  r('drop-an-absent-page', loaded, { type: 'dropPage', page: pr(2) }, 'Dropping a page that is not cached returns the same state.'),
+  r('drop-from-empty', initialLinkState(), { type: 'dropPage', page: pr(1) }),
 ];
 
 export const suites: Suite[] = [
