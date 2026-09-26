@@ -118,6 +118,8 @@ interface CertSpec {
   subjectAttributes?: pkijs.AttributeTypeAndValue[];
   /** Change the public key info after it is set from the key. */
   spki?: (spki: pkijs.PublicKeyInfo) => void;
+  /** Further extensions: `[oid, value DER, critical]`. */
+  extra?: [string, ArrayBuffer, boolean?][];
 }
 
 const skid = (spki: Uint8Array) => new Uint8Array(createHash('sha1').update(spki).digest()).slice(0, 20);
@@ -164,6 +166,9 @@ async function certificate(spec: CertSpec): Promise<Uint8Array> {
   }
   if (spec.unknownCritical) {
     extensions.push(new pkijs.Extension({ extnID: '1.3.6.1.4.1.99999.1', critical: true, extnValue: new asn1js.Null().toBER(false) }));
+  }
+  for (const [extnID, extnValue, critical] of spec.extra ?? []) {
+    extensions.push(new pkijs.Extension({ extnID, critical: critical ?? false, extnValue }));
   }
   if (extensions.length) cert.extensions = extensions;
   cert.subjectPublicKeyInfo.fromSchema(asn1js.fromBER(ab(spec.key.spki)).result);
@@ -362,6 +367,105 @@ certs.leafWrongIssuerName = await certificate({
   subject: 'Conformance Signer With Wrong Issuer Name', issuer: { name: 'Somebody Else', key: keys.inter }, key: keys.leaf,
   serial: 47, ...VALID, ski: true, aki: true,
 });
+
+// Chains for the chain engine's policy and name-constraint half: a CA under
+// the root, a sub-CA under it, and a signer under the sub-CA. The CMS carries
+// [signer, CA, sub-CA], so the path is sub-CA, CA, root.
+const P1 = '1.3.6.1.4.1.99999.2.1';
+const P2 = '1.3.6.1.4.1.99999.2.2';
+const ANY_POLICY = '2.5.29.32.0';
+const seq = (...value: asn1js.BaseBlock[]) => new asn1js.Sequence({ value });
+const policiesExt = (...ids: string[]): [string, ArrayBuffer] => [
+  '2.5.29.32',
+  seq(...ids.map((id) => seq(new asn1js.ObjectIdentifier({ value: id })))).toBER(false),
+];
+const mappingsExt = (...pairs: [string, string][]): [string, ArrayBuffer] => [
+  '2.5.29.33',
+  seq(...pairs.map(([a, b]) => seq(new asn1js.ObjectIdentifier({ value: a }), new asn1js.ObjectIdentifier({ value: b })))).toBER(false),
+];
+const ctxInt = (tag: number, value: number) =>
+  new asn1js.Primitive({ idBlock: { tagClass: 3, tagNumber: tag }, valueHex: new asn1js.Integer({ value }).valueBlock.toBER(false) });
+const constraintsExt = (require?: number, inhibit?: number): [string, ArrayBuffer] => [
+  '2.5.29.36',
+  seq(...(require === undefined ? [] : [ctxInt(0, require)]), ...(inhibit === undefined ? [] : [ctxInt(1, inhibit)])).toBER(false),
+];
+const inhibitAnyExt = (n: number): [string, ArrayBuffer] => ['2.5.29.54', new asn1js.Integer({ value: n }).toBER(false)];
+const ia5 = (tag: number, text: string) =>
+  new asn1js.Primitive({ idBlock: { tagClass: 3, tagNumber: tag }, valueHex: ab(new TextEncoder().encode(text)) });
+const ipName = (bytes: number[]) => new asn1js.Primitive({ idBlock: { tagClass: 3, tagNumber: 7 }, valueHex: ab(new Uint8Array(bytes)) });
+const dirName = (cn: string) => new asn1js.Constructed({ idBlock: { tagClass: 3, tagNumber: 4 }, value: [name(cn).toSchema()] });
+const subtree = (base: asn1js.BaseBlock) => seq(base);
+const nameConstraintsExt = (permitted: asn1js.BaseBlock[], excluded: asn1js.BaseBlock[]): [string, ArrayBuffer, boolean] => [
+  '2.5.29.30',
+  seq(
+    ...(permitted.length ? [new asn1js.Constructed({ idBlock: { tagClass: 3, tagNumber: 0 }, value: permitted.map(subtree) })] : []),
+    ...(excluded.length ? [new asn1js.Constructed({ idBlock: { tagClass: 3, tagNumber: 1 }, value: excluded.map(subtree) })] : []),
+  ).toBER(false),
+  true,
+];
+const altNamesExt = (...names: asn1js.BaseBlock[]): [string, ArrayBuffer] => ['2.5.29.17', seq(...names).toBER(false)];
+
+interface PolicyChain {
+  ca: [string, ArrayBuffer, boolean?][];
+  sub: [string, ArrayBuffer, boolean?][];
+  subAttributes?: pkijs.AttributeTypeAndValue[];
+}
+const policyChains: Record<string, PolicyChain> = {
+  policiesMatch: { ca: [policiesExt(P1)], sub: [policiesExt(P1)] },
+  explicitNoIntersection: { ca: [policiesExt(P1), constraintsExt(0)], sub: [policiesExt(P2)] },
+  explicitAnyPolicy: { ca: [policiesExt(ANY_POLICY), constraintsExt(0)], sub: [policiesExt(ANY_POLICY)] },
+  explicitShared: { ca: [policiesExt(P1, P2), constraintsExt(0)], sub: [policiesExt(P1, P2)] },
+  mappingInhibited: { ca: [constraintsExt(undefined, 0)], sub: [mappingsExt([P1, P2])] },
+  mappingAnyPolicy: { ca: [policiesExt(P1), mappingsExt([ANY_POLICY, P1])], sub: [policiesExt(P1)] },
+  mappingMapped: { ca: [policiesExt(P1), mappingsExt([P1, P2])], sub: [policiesExt(P2)] },
+  mappingUnknownIssuer: { ca: [mappingsExt([P2, P1])], sub: [policiesExt(P1)] },
+  mappingNoPolicies: { ca: [policiesExt(P1), mappingsExt([P1, P2])], sub: [] },
+  inhibitAny: { ca: [inhibitAnyExt(0), policiesExt(ANY_POLICY)], sub: [policiesExt(P1)] },
+  pendingConstraints: { ca: [constraintsExt(1, 1), inhibitAnyExt(1)], sub: [constraintsExt(2, 3), inhibitAnyExt(2), policiesExt(P1)] },
+  pendingOnly: { ca: [constraintsExt(2, 2), inhibitAnyExt(2)], sub: [] },
+  dnsPermitted: { ca: [nameConstraintsExt([ia5(2, 'example.com')], [])], sub: [altNamesExt(ia5(2, 'ca.example.com'))] },
+  dnsRefused: { ca: [nameConstraintsExt([ia5(2, 'example.com')], [])], sub: [altNamesExt(ia5(2, 'ca.evil.org'))] },
+  dnsExcluded: { ca: [nameConstraintsExt([], [ia5(2, '.evil.org')])], sub: [altNamesExt(ia5(2, 'ca.evil.org'))] },
+  emailPermitted: { ca: [nameConstraintsExt([ia5(1, 'example.com')], [])], sub: [altNamesExt(ia5(1, 'ca@example.com'))] },
+  emailExcluded: { ca: [nameConstraintsExt([], [ia5(1, 'ca@evil.org')])], sub: [altNamesExt(ia5(1, 'ca@evil.org'))] },
+  emailInSubject: {
+    ca: [nameConstraintsExt([ia5(1, '.example.com')], [])],
+    sub: [],
+    subAttributes: [
+      new pkijs.AttributeTypeAndValue({ type: '1.2.840.113549.1.9.1', value: new asn1js.IA5String({ value: 'ca@mail.evil.org' }) }),
+      new pkijs.AttributeTypeAndValue({ type: OID.commonName, value: new asn1js.Utf8String({ value: 'Policy Sub-CA' }) }),
+    ],
+  },
+  uriPermitted: { ca: [nameConstraintsExt([ia5(6, '.example.com')], [])], sub: [altNamesExt(ia5(6, 'https://ca.example.com:443/x'))] },
+  uriExcluded: { ca: [nameConstraintsExt([], [ia5(6, 'ca.evil.org')])], sub: [altNamesExt(ia5(6, 'http://ca.evil.org/'))] },
+  ipPermitted: { ca: [nameConstraintsExt([ipName([10, 0, 0, 0, 255, 0, 0, 0])], [])], sub: [altNamesExt(ipName([10, 1, 2, 3]))] },
+  ipExcluded: { ca: [nameConstraintsExt([], [ipName([10, 0, 0, 0, 255, 0, 0, 0])])], sub: [altNamesExt(ipName([10, 1, 2, 3]))] },
+  directoryPermitted: { ca: [nameConstraintsExt([dirName('Policy Sub-CA')], [])], sub: [] },
+  directoryExcluded: { ca: [nameConstraintsExt([], [dirName('Policy Sub-CA')])], sub: [] },
+  directoryRefused: { ca: [nameConstraintsExt([dirName('Somebody Else')], [])], sub: [] },
+};
+let policySerial = 100;
+const policyCms: Record<string, Uint8Array> = {};
+for (const [id, chain] of Object.entries(policyChains)) {
+  const caName = 'Policy CA';
+  const subName = 'Policy Sub-CA';
+  const ca = await certificate({
+    subject: caName, issuer: rootIssuer, key: keys.inter, serial: policySerial++, ...VALID, ca: true, keyUsage: [0x06, 1], ski: true, aki: true, extra: chain.ca,
+  });
+  const sub = await certificate({
+    subject: subName, issuer: { name: caName, key: keys.inter }, key: keys.other, serial: policySerial++, ...VALID, ca: true, keyUsage: [0x06, 1],
+    ski: true, aki: true, extra: chain.sub, subjectAttributes: chain.subAttributes,
+  });
+  const signerCert = await certificate({
+    subject: 'Policy Signer', issuer: { name: subName, key: keys.other }, key: keys.leaf, serial: policySerial++, ...VALID, ski: true, aki: true,
+  });
+  policyCms[id] = await buildDetachedCms({
+    digest: new Uint8Array(32).map((_, i) => (i * 7 + 3) & 0xff),
+    hash: 'sha256',
+    profile: 'cades-b',
+    signer: rawSigner(keys.leaf, [signerCert, ca, sub], 'RSA-PKCS1-v1_5', 'sha256'),
+  });
+}
 
 // ── CMS blobs ────────────────────────────────────────────────────────────────
 
@@ -578,6 +682,17 @@ const fixturesDir = join(repo, 'packages/engine/main/test/fixtures');
 cms.pdfCertified = (await pdfContents(join(fixturesDir, 'signed_certified.pdf')))[0];
 cms.pdfApproval = (await pdfContents(join(fixturesDir, 'signed_two_approvals.pdf')))[0];
 cms.pdfCompat = (await pdfContents(join(fixturesDir, 'signature-compat/v1/01-approval-control.pdf')))[0];
+
+for (const [id, blob] of Object.entries(policyCms)) cms[`policy-${id}`] = blob;
+// A signer identifier in the `[0]` constructed form, which carries no key
+// identifier pkijs can read.
+cms.skiSidConstructed = editCms(cms.rsaCades, (sd) => {
+  sd.signerInfos[0].version = 3;
+  sd.signerInfos[0].sid = new asn1js.Constructed({
+    idBlock: { tagClass: 3, tagNumber: 0 },
+    value: [new asn1js.OctetString({ valueHex: ab(skid(keys.leaf.spki)) })],
+  });
+});
 
 const out = {
   note: 'Generated by fixtures/signature/generate.ts. Test-only keys; never use them for anything else.',

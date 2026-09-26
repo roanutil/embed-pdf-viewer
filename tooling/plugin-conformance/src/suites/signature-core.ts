@@ -547,6 +547,9 @@ const gateCases: ScenarioCase[] = [
   scenario('gate-digest-mismatch', 'A CMS whose message digest is not the prepared digest.', [
     gate(cmsArg('rsaCades'), 'cades-b', { digest: $b(b64(digestBytes(32, 4))) }),
   ]),
+  scenario('gate-digest-length-mismatch', 'A prepared digest of another length is a digest mismatch, not an error.', [
+    gate(cmsArg('rsaCades'), 'cades-b', { digest: $b(b64(digestBytes(31, 3))) }),
+  ]),
   scenario('gate-cades-without-ess', 'CAdES requires signing-certificate-v2.', [gate(cmsArg('rsaPkcs7NoTime'), 'cades-b')]),
   scenario('gate-cades-with-time', 'PAdES forbids signing-time; checked after the ESS attribute.', [gate(cmsArg('cadesWithTime'), 'cades-b')]),
   scenario('gate-pkcs7-with-time', 'The same CMS is refused for its signature, not its profile, under PKCS#7.', [gate(cmsArg('generalizedTime'), 'pkcs7')]),
@@ -611,6 +614,14 @@ const trustCases: ScenarioCase[] = [
   ]),
   scenario('trust-ec-self-signed-anchor', 'An EC self-signed signer trusted directly.', [chain('ecSelfSigned', anchors('selfSignedP256'))]),
 ];
+
+// The chain engine's policy and name-constraint half: each CMS carries
+// [signer, CA, sub-CA] under the root, so the path is sub-CA, CA, root.
+for (const name of Object.keys(fixtures.cms).filter((n) => n.startsWith('policy-'))) {
+  trustCases.push(
+    scenario(`trust-${name}`, `Certificate policies and name constraints: the ${name.slice(7)} chain.`, [chain(name, anchors('root'))]),
+  );
+}
 
 // ── sign ─────────────────────────────────────────────────────────────────────
 
