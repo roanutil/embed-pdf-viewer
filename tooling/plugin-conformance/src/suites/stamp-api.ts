@@ -72,6 +72,7 @@ const libraries: ScenarioCase[] = [
     steps: [
       start,
       ...listenAll,
+      stamp('onLibraryCreated', [fn('LibraryCreated.bad', { throws: { message: 'listener broke' } })]),
       stamp('createLibrary', ['Mine']),
       stamp('createLibrary', ['Sigs', { id: 'sigs', kind: 'signatures', categories: ['Legal'] }]),
       stamp('createLibrary', ['Taken', { id: 'sigs' }]),
@@ -207,6 +208,27 @@ const marks: ScenarioCase[] = [
   },
 ];
 
+const extraMarks: ScenarioCase[] = [
+  {
+    name: 'an-ink-mark-with-defaults',
+    covers: "An ink mark with no colour or stroke width takes the defaults (#1d2b53, 2); a scratch document with no page rejects Unknown after closing.",
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        ink: scratchDoc(),
+        blank: { pages: [], responses: [{ path: 'pages.list', value: { pageCount: 0, pages: [] } }] },
+      },
+      responses: opens('ink', 'workshop', 'workshop', 'blank'),
+    },
+    steps: [
+      start,
+      stamp('createAsset', [{ name: 'Plain ink', mark: { kind: 'ink', strokes: [[{ x: 1, y: 2 }]] } }]),
+      stamp('createAsset', [{ name: 'Nowhere', mark: { kind: 'text', text: 'x', fontFamily: 'Helvetica' } }]),
+      stamp('listAssets'),
+    ],
+  },
+];
+
 const assets: ScenarioCase[] = [
   {
     name: 'edit-move-and-copy-assets',
@@ -242,6 +264,50 @@ const assets: ScenarioCase[] = [
       stamp('listAssets', [{ kind: 'signature' }]),
       stamp('listAssets', [{ category: 'd' }]),
       stamp('listAssets', [{ libraryId: 'other' }]),
+    ],
+  },
+  {
+    name: 'edits-queued-behind-removals',
+    covers:
+      'An asset edit queued behind the removal of that asset, and a library edit queued behind the removal of that library, find their target gone when their turn comes and reject NotFound. A move and a copy of an asset carry its subject, categories and preview.',
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        lib: assetDoc(TWO, { page: { 101: { SubjectOverride: str('Subj'), Categories: arr('k') } } }),
+        remove: assetDoc(TWO, { responses: [{ path: 'pages.delete', value: { layout: null, cache: null } }] }),
+      },
+      responses: [...opens('lib'), { path: 'open', times: 1, defer: 'reopen' }, ...opens('workshop', 'workshop', 'workshop', 'remove')],
+    },
+    steps: [
+      start,
+      stamp('importLibraryPdf', [PDF]),
+      stamp('deleteAsset', ['stamp-lib-0-1:Stamp1']),
+      stamp('updateAsset', ['stamp-lib-0-1:Stamp1', { label: 'Late' }]),
+      stamp('deleteLibrary', ['stamp-lib-0-1']),
+      stamp('updateLibrary', ['stamp-lib-0-1', { name: 'Late' }]),
+      { op: 'settle', label: 'reopen', value: { $document: 'remove' } },
+      stamp('listLibraries'),
+    ],
+  },
+  {
+    name: 'copies-carry-their-metadata',
+    covers: "moveAsset and duplicateAsset pass the asset's subject, categories and preview to the copy.",
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        lib: assetDoc(TWO, { page: { 101: { SubjectOverride: str('Subj'), Categories: arr('k') } } }),
+        remove: assetDoc(TWO, { responses: [{ path: 'pages.delete', value: { layout: null, cache: null } }] }),
+      },
+      responses: opens('lib', 'workshop', 'workshop', 'workshop', 'workshop', 'remove'),
+    },
+    steps: [
+      start,
+      stamp('importLibraryPdf', [PDF]),
+      stamp('duplicateAsset', ['stamp-lib-0-1:Stamp2']),
+      stamp('duplicateAsset', ['stamp-lib-0-1:Stamp1']),
+      stamp('createLibrary', ['Other', { id: 'other' }]),
+      stamp('moveAsset', ['stamp-lib-0-1:Stamp2', { libraryId: 'other' }]),
+      stamp('listAssets'),
     ],
   },
   {
@@ -298,7 +364,7 @@ const previews: ScenarioCase[] = [
   {
     name: 'rendered-previews',
     covers:
-      "renderAssetPreview opens the asset's page bytes, renders its first page at the width asked and closes, caching the render per width; a render that fails is reported and falls back to the cached thumbnail; a copy with no pages answers null; an unknown asset rejects not-found. Removing the asset drops its renders.",
+      "renderAssetPreview opens the asset's page bytes, renders its first page at the width asked and closes, caching the render per width; a render that fails is reported and falls back to the cached thumbnail; a copy with no pages answers null; a render with no content type reads as image/png; an unknown asset rejects not-found. Removing the asset drops its renders.",
     plugins: STAMP(),
     engine: {
       documents: {
@@ -306,9 +372,10 @@ const previews: ScenarioCase[] = [
         ghost: assetDoc([assetPage(0, 5, 50, 20)]),
         broken: assetDoc([assetPage(0, 5, 50, 20)], { responses: [{ path: 'page.render.image', error: engineError('Io', 'render failed') }] }),
         empty: { pages: [], responses: [{ path: 'pages.list', value: { pageCount: 0, pages: [] } }] },
+        nomime: assetDoc([assetPage(0, 6, 50, 20)], { responses: [{ path: 'page.render.image', value: { source: { kind: 'bytes', bytes: pdf('no-type') } } }] }),
         remove: assetDoc(TWO, { responses: [{ path: 'pages.delete', value: { layout: null, cache: null } }] }),
       },
-      responses: opens('lib', 'ghost', 'broken', 'empty', 'remove'),
+      responses: opens('lib', 'ghost', 'broken', 'empty', 'nomime', 'remove'),
     },
     steps: [
       start,
@@ -318,6 +385,7 @@ const previews: ScenarioCase[] = [
       stamp('renderAssetPreview', ['stamp-lib-0-1:Stamp1', { width: 128 }]),
       stamp('renderAssetPreview', ['stamp-lib-0-1:Stamp2', { width: 512 }]),
       stamp('renderAssetPreview', ['nope', { width: 512 }]),
+      stamp('renderAssetPreview', ['stamp-lib-0-1:Stamp2', { width: 64 }]),
       stamp('deleteAsset', ['stamp-lib-0-1:Stamp1']),
       stamp('renderAssetPreview', ['stamp-lib-0-1:Stamp1', { width: 512 }]),
     ],
@@ -458,7 +526,7 @@ export const suites: Suite[] = [
     kind: 'scenario',
     file: 'plugins/stamp-api.json',
     describes: 'packages/plugin/stamp: library and asset edits, marks, registered libraries, previews, placement without the pointer, and the change events.',
-    cases: workshop([...libraries, ...marks, ...assets, ...previews, ...placement, ...persistence]),
+    cases: workshop([...libraries, ...marks, ...extraMarks, ...assets, ...previews, ...placement, ...persistence]),
   },
 ];
 

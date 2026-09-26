@@ -118,6 +118,21 @@
           "target": {
             "token": "stamp"
           },
+          "method": "onLibraryCreated",
+          "args": [
+            {
+              "$fn": "LibraryCreated.bad",
+              "throws": {
+                "message": "listener broke"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
           "method": "createLibrary",
           "args": [
             "Mine"
@@ -1093,6 +1108,36 @@
           }
         },
         {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 8
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
           "settled": [
             {
               "promise": 1,
@@ -1189,6 +1234,32 @@
                     "name": "Mine",
                     "kind": "stamps",
                     "assetIds": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "LibraryCreated.bad",
+              "args": [
+                {
+                  "libraryId": "stamp-lib-0-0",
+                  "library": {
+                    "id": "stamp-lib-0-0",
+                    "name": "Mine",
+                    "kind": "stamps",
+                    "assetIds": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "console.error",
+              "args": [
+                "[stamp] event listener failed:",
+                {
+                  "$error": {
+                    "name": "Error",
+                    "message": "listener broke"
                   }
                 }
               ]
@@ -1338,6 +1409,35 @@
                   }
                 }
               ]
+            },
+            {
+              "fn": "LibraryCreated.bad",
+              "args": [
+                {
+                  "libraryId": "sigs",
+                  "library": {
+                    "id": "sigs",
+                    "name": "Sigs",
+                    "kind": "signatures",
+                    "assetIds": [],
+                    "categories": [
+                      "Legal"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "console.error",
+              "args": [
+                "[stamp] event listener failed:",
+                {
+                  "$error": {
+                    "name": "Error",
+                    "message": "listener broke"
+                  }
+                }
+              ]
             }
           ],
           "reports": [],
@@ -1483,6 +1583,32 @@
                     "name": "Taken",
                     "kind": "stamps",
                     "assetIds": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "LibraryCreated.bad",
+              "args": [
+                {
+                  "libraryId": "stamp-lib-0-3",
+                  "library": {
+                    "id": "stamp-lib-0-3",
+                    "name": "Taken",
+                    "kind": "stamps",
+                    "assetIds": []
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "console.error",
+              "args": [
+                "[stamp] event listener failed:",
+                {
+                  "$error": {
+                    "name": "Error",
+                    "message": "listener broke"
                   }
                 }
               ]
@@ -13300,6 +13426,1363 @@
       ]
     },
     {
+      "name": "an-ink-mark-with-defaults",
+      "covers": "An ink mark with no colour or stroke width takes the defaults (#1d2b53, 2); a scratch document with no page rejects Unknown after closing.",
+      "plugins": [
+        {
+          "factory": "stamp"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "ink": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "page.annotations.create",
+                "pon": 3,
+                "value": {
+                  "created": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "annotObjectNumber": 40
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    },
+                    "index": 40,
+                    "identityQuality": "durable",
+                    "nm": null,
+                    "flags": {
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false
+                    },
+                    "rect": {
+                      "left": 100,
+                      "bottom": 600,
+                      "right": 200,
+                      "top": 700
+                    },
+                    "contents": null,
+                    "subject": null,
+                    "author": null,
+                    "created": null,
+                    "modified": null,
+                    "blendMode": "normal",
+                    "inReplyTo": null,
+                    "replyType": null,
+                    "subtype": "stamp"
+                  }
+                }
+              },
+              {
+                "path": "page.annotations.exportAppearance",
+                "pon": 3,
+                "value": {
+                  "$bytes": "JVBERi1tYXJr"
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 3,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTM="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 3,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTM="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "blank": {
+            "pages": [],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 0,
+                  "pages": []
+                }
+              }
+            ]
+          },
+          "workshop": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "page.annotations.create",
+                "value": {
+                  "created": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "status": "applied"
+                    }
+                  ],
+                  "pages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 120
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 3,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 900,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTM="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTkwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 3,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTM="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 900,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTkwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi13b3Jrc2hvcA=="
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "ink"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "blank"
+            }
+          }
+        ],
+        "defaultDocument": "workshop"
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "createAsset",
+          "args": [
+            {
+              "name": "Plain ink",
+              "mark": {
+                "kind": "ink",
+                "strokes": [
+                  [
+                    {
+                      "x": 1,
+                      "y": 2
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "createAsset",
+          "args": [
+            {
+              "name": "Nowhere",
+              "mark": {
+                "kind": "text",
+                "text": "x",
+                "fontFamily": "Helvetica"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "listAssets",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "stamp-lib-0-1:Plain ink"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-1",
+                  "name": "Plain ink",
+                  "kind": "stamps",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:Plain ink",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Plain ink",
+                  "label": "Plain ink",
+                  "size": {
+                    "width": 300,
+                    "height": 120
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE4NgolJUVPRgo="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "ink",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "ink",
+              "path": "page.annotations.create",
+              "pon": 3,
+              "args": [
+                {
+                  "subtype": "ink",
+                  "inkList": [
+                    [
+                      {
+                        "x": 1,
+                        "y": 2
+                      }
+                    ]
+                  ],
+                  "rect": {
+                    "left": -1,
+                    "bottom": 0,
+                    "right": 3,
+                    "top": 4
+                  },
+                  "color": {
+                    "r": 29,
+                    "g": 43,
+                    "b": 83
+                  },
+                  "strokeWidth": 2
+                }
+              ]
+            },
+            {
+              "doc": "ink",
+              "path": "page.annotations.exportAppearance",
+              "pon": 3,
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    },
+                    "annotObjectNumber": 40
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "ink",
+              "path": "close",
+              "args": []
+            },
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-2",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE4NgolJUVPRgo="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Plain ink"
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "stamp-lib-0-1",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            },
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-3",
+                  "bytes": {
+                    "$bytes": "JVBERi13b3Jrc2hvcA=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.insert",
+              "args": [
+                {
+                  "$bytes": "JVBERi1tYXJr"
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Plain ink=Plain ink",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "page.pieceInfo.update",
+              "pon": 900,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "page.render.image",
+              "pon": 900,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "ink": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Plain ink",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Plain ink"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Plain ink": {
+                    "id": "stamp-lib-0-1:Plain ink",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Plain ink",
+                    "label": "Plain ink",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] no scratch page",
+                  "code": "Unknown"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-4",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE4NgolJUVPRgo="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "blank",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "blank",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "ink": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            },
+            "blank": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Plain ink",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Plain ink"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Plain ink": {
+                    "id": "stamp-lib-0-1:Plain ink",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Plain ink",
+                    "label": "Plain ink",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "ink": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            },
+            "blank": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "stamp-lib-0-1:Plain ink",
+                "libraryId": "stamp-lib-0-1",
+                "kind": "stamp",
+                "name": "Plain ink",
+                "label": "Plain ink",
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                }
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Plain ink",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Plain ink"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Plain ink": {
+                    "id": "stamp-lib-0-1:Plain ink",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Plain ink",
+                    "label": "Plain ink",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "edit-move-and-copy-assets",
       "covers": "updateAsset renames the registry entry only when the label changes, rewrites the page PieceInfo, and clears the subject for null; an unknown asset rejects NotFound. duplicateAsset appends a copy of the page with a minted identifier and a ' copy' label (or the one given); moveAsset copies into another library and removes the original, returns the id itself for the same library, and rejects not-found for an unknown asset, as duplicateAsset does. A second asset of the same name rejects InvalidArg.",
       "plugins": [
@@ -18436,6 +19919,4653 @@
                       "kind": "objectNumber",
                       "pageObjectNumber": 900
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "edits-queued-behind-removals",
+      "covers": "An asset edit queued behind the removal of that asset, and a library edit queued behind the removal of that library, find their target gone when their turn comes and reject NotFound. A move and a copy of an asset carry its subject, categories and preview.",
+      "plugins": [
+        {
+          "factory": "stamp"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "lib": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 101
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": {
+                  "entries": {
+                    "SubjectOverride": {
+                      "type": "string",
+                      "value": "Subj"
+                    },
+                    "Categories": {
+                      "type": "string-array",
+                      "value": [
+                        "k"
+                      ]
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "remove": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": null,
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 101
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "workshop": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "page.annotations.create",
+                "value": {
+                  "created": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "status": "applied"
+                    }
+                  ],
+                  "pages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 120
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 3,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 900,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTM="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTkwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 3,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTM="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 900,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTkwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi13b3Jrc2hvcA=="
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "lib"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "defer": "reopen"
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "remove"
+            }
+          }
+        ],
+        "defaultDocument": "workshop"
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibrary",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "deleteAsset",
+          "args": [
+            "stamp-lib-0-1:Stamp1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "updateAsset",
+          "args": [
+            "stamp-lib-0-1:Stamp1",
+            {
+              "label": "Late"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "deleteLibrary",
+          "args": [
+            "stamp-lib-0-1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "updateLibrary",
+          "args": [
+            "stamp-lib-0-1",
+            {
+              "name": "Late"
+            }
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "reopen",
+          "value": {
+            "$document": "remove"
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "listLibraries",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "stamp-lib-0-1"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-1",
+                  "name": "Stamps",
+                  "kind": "stamps",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:Stamp1",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp1",
+                  "label": "Stamp1",
+                  "size": {
+                    "width": 200,
+                    "height": 100
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:Stamp2",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp2",
+                  "label": "Stamp2",
+                  "size": {
+                    "width": 201,
+                    "height": 101
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  },
+                  "subject": "Subj",
+                  "categories": [
+                    "k"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "metadata.read",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Stamps"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp1=Stamp1",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp2=Stamp2",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "stamp-lib-0-1",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": "Subj",
+                  "Categories": [
+                    "k"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 101,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-2",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] unknown asset 'stamp-lib-0-1:Stamp1'",
+                  "code": "NotFound"
+                }
+              }
+            },
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            },
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "EngineError",
+                  "message": "[stamp] unknown library 'stamp-lib-0-1'",
+                  "code": "NotFound"
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_REMOVED",
+                "assetId": "stamp-lib-0-1:Stamp1"
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_REMOVED",
+                "libraryId": "stamp-lib-0-1"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "remove",
+              "path": "pages.delete",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "remove",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "remove",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "copies-carry-their-metadata",
+      "covers": "moveAsset and duplicateAsset pass the asset's subject, categories and preview to the copy.",
+      "plugins": [
+        {
+          "factory": "stamp"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "lib": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 101
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": {
+                  "entries": {
+                    "SubjectOverride": {
+                      "type": "string",
+                      "value": "Subj"
+                    },
+                    "Categories": {
+                      "type": "string-array",
+                      "value": [
+                        "k"
+                      ]
+                    }
+                  },
+                  "lastModified": null
+                }
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "remove": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "label": null,
+                "size": {
+                  "width": 201,
+                  "height": 101
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 201,
+                    "top": 101
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": null,
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 101
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 201,
+                        "height": 101
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 201,
+                          "top": 101
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 101,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 101,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMQ=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "workshop": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "page.annotations.create",
+                "value": {
+                  "created": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "status": "applied"
+                    }
+                  ],
+                  "pages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 120
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 3,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 900,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTM="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTkwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 3,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTM="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 900,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTkwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi13b3Jrc2hvcA=="
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "lib"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "workshop"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "remove"
+            }
+          }
+        ],
+        "defaultDocument": "workshop"
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibrary",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "duplicateAsset",
+          "args": [
+            "stamp-lib-0-1:Stamp2"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "duplicateAsset",
+          "args": [
+            "stamp-lib-0-1:Stamp1"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "createLibrary",
+          "args": [
+            "Other",
+            {
+              "id": "other"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "moveAsset",
+          "args": [
+            "stamp-lib-0-1:Stamp2",
+            {
+              "libraryId": "other"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "listAssets",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "stamp-lib-0-1"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "stamp-lib-0-1",
+                  "name": "Stamps",
+                  "kind": "stamps",
+                  "assetIds": []
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:Stamp1",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp1",
+                  "label": "Stamp1",
+                  "size": {
+                    "width": 200,
+                    "height": 100
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:Stamp2",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "Stamp2",
+                  "label": "Stamp2",
+                  "size": {
+                    "width": 201,
+                    "height": 101
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  },
+                  "subject": "Subj",
+                  "categories": [
+                    "k"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "metadata.read",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Stamps"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp1=Stamp1",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp2=Stamp2",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "stamp-lib-0-1",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.read",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.pieceInfo.update",
+              "pon": 101,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": "Subj",
+                  "Categories": [
+                    "k"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "page.render.image",
+              "pon": 101,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "lib",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "lib",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                  "label": "Stamp2 copy",
+                  "size": {
+                    "width": 300,
+                    "height": 120
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  },
+                  "subject": "Subj",
+                  "categories": [
+                    "k"
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-2",
+                  "bytes": {
+                    "$bytes": "JVBERi1jYW5vbmljYWw="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.insert",
+              "args": [
+                {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "#ABCDEFGHIJKLMNOPQRSTUV=Stamp2 copy",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "page.pieceInfo.update",
+              "pon": 900,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": "Subj",
+                  "Categories": [
+                    "k"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2",
+                      "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV": {
+                    "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                    "label": "Stamp2 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                  "libraryId": "stamp-lib-0-1",
+                  "kind": "stamp",
+                  "name": "#WXYZabcdefghijklmnopqr",
+                  "label": "Stamp1 copy",
+                  "size": {
+                    "width": 300,
+                    "height": 120
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-3",
+                  "bytes": {
+                    "$bytes": "JVBERi13b3Jrc2hvcA=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.insert",
+              "args": [
+                {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "#WXYZabcdefghijklmnopqr=Stamp1 copy",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "page.pieceInfo.update",
+              "pon": 900,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2",
+                      "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                      "stamp-lib-0-1:#WXYZabcdefghijklmnopqr"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV": {
+                    "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                    "label": "Stamp2 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#WXYZabcdefghijklmnopqr": {
+                    "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#WXYZabcdefghijklmnopqr",
+                    "label": "Stamp1 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": "other"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "LIBRARY_ADDED",
+                "library": {
+                  "id": "other",
+                  "name": "Other",
+                  "kind": "stamps",
+                  "assetIds": []
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-4",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSA+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDQgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjE4NgolJUVPRgo="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Other"
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "other",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2",
+                      "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                      "stamp-lib-0-1:#WXYZabcdefghijklmnopqr"
+                    ]
+                  },
+                  "other": {
+                    "id": "other",
+                    "name": "Other",
+                    "kind": "stamps",
+                    "assetIds": []
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1",
+                  "other"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV": {
+                    "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                    "label": "Stamp2 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#WXYZabcdefghijklmnopqr": {
+                    "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#WXYZabcdefghijklmnopqr",
+                    "label": "Stamp1 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "resolved": "other:#stuvwxyz0123456789ABCD"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_ADDED",
+                "asset": {
+                  "id": "other:#stuvwxyz0123456789ABCD",
+                  "libraryId": "other",
+                  "kind": "stamp",
+                  "name": "#stuvwxyz0123456789ABCD",
+                  "label": "Stamp2",
+                  "size": {
+                    "width": 300,
+                    "height": 120
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  },
+                  "subject": "Subj",
+                  "categories": [
+                    "k"
+                  ]
+                }
+              }
+            },
+            {
+              "slice": "stamp",
+              "action": {
+                "type": "ASSET_REMOVED",
+                "assetId": "stamp-lib-0-1:Stamp2"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-5",
+                  "bytes": {
+                    "$bytes": "JVBERi13b3Jrc2hvcA=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.insert",
+              "args": [
+                {
+                  "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "#stuvwxyz0123456789ABCD=Stamp2",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "page.pieceInfo.update",
+              "pon": 900,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": "Subj",
+                  "Categories": [
+                    "k"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 900
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "workshop",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "workshop",
+              "path": "close",
+              "args": []
+            },
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-6",
+                  "bytes": {
+                    "$bytes": "JVBERi13b3Jrc2hvcA=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "remove",
+              "path": "pages.delete",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 101
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "remove",
+              "path": "download",
+              "args": []
+            },
+            {
+              "doc": "remove",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                      "stamp-lib-0-1:#WXYZabcdefghijklmnopqr"
+                    ]
+                  },
+                  "other": {
+                    "id": "other",
+                    "name": "Other",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "other:#stuvwxyz0123456789ABCD"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1",
+                  "other"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV": {
+                    "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                    "label": "Stamp2 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#WXYZabcdefghijklmnopqr": {
+                    "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#WXYZabcdefghijklmnopqr",
+                    "label": "Stamp1 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  },
+                  "other:#stuvwxyz0123456789ABCD": {
+                    "id": "other:#stuvwxyz0123456789ABCD",
+                    "libraryId": "other",
+                    "kind": "stamp",
+                    "name": "#stuvwxyz0123456789ABCD",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "workshop": {
+              "subscribers": 0
+            },
+            "remove": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "stamp-lib-0-1:Stamp1",
+                "libraryId": "stamp-lib-0-1",
+                "kind": "stamp",
+                "name": "Stamp1",
+                "label": "Stamp1",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
+              },
+              {
+                "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                "libraryId": "stamp-lib-0-1",
+                "kind": "stamp",
+                "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                "label": "Stamp2 copy",
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "subject": "Subj",
+                "categories": [
+                  "k"
+                ]
+              },
+              {
+                "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                "libraryId": "stamp-lib-0-1",
+                "kind": "stamp",
+                "name": "#WXYZabcdefghijklmnopqr",
+                "label": "Stamp1 copy",
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                }
+              },
+              {
+                "id": "other:#stuvwxyz0123456789ABCD",
+                "libraryId": "other",
+                "kind": "stamp",
+                "name": "#stuvwxyz0123456789ABCD",
+                "label": "Stamp2",
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "subject": "Subj",
+                "categories": [
+                  "k"
+                ]
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                      "stamp-lib-0-1:#WXYZabcdefghijklmnopqr"
+                    ]
+                  },
+                  "other": {
+                    "id": "other",
+                    "name": "Other",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "other:#stuvwxyz0123456789ABCD"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1",
+                  "other"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV": {
+                    "id": "stamp-lib-0-1:#ABCDEFGHIJKLMNOPQRSTUV",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#ABCDEFGHIJKLMNOPQRSTUV",
+                    "label": "Stamp2 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
+                  },
+                  "stamp-lib-0-1:#WXYZabcdefghijklmnopqr": {
+                    "id": "stamp-lib-0-1:#WXYZabcdefghijklmnopqr",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "#WXYZabcdefghijklmnopqr",
+                    "label": "Stamp1 copy",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  },
+                  "other:#stuvwxyz0123456789ABCD": {
+                    "id": "other:#stuvwxyz0123456789ABCD",
+                    "libraryId": "other",
+                    "kind": "stamp",
+                    "name": "#stuvwxyz0123456789ABCD",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 300,
+                      "height": 120
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    },
+                    "subject": "Subj",
+                    "categories": [
+                      "k"
+                    ]
                   }
                 }
               }
@@ -23980,7 +30110,7 @@
     },
     {
       "name": "rendered-previews",
-      "covers": "renderAssetPreview opens the asset's page bytes, renders its first page at the width asked and closes, caching the render per width; a render that fails is reported and falls back to the cached thumbnail; a copy with no pages answers null; an unknown asset rejects not-found. Removing the asset drops its renders.",
+      "covers": "renderAssetPreview opens the asset's page bytes, renders its first page at the width asked and closes, caching the render per width; a render that fails is reported and falls back to the cached thumbnail; a copy with no pages answers null; a render with no content type reads as image/png; an unknown asset rejects not-found. Removing the asset drops its renders.",
       "plugins": [
         {
           "factory": "stamp"
@@ -24533,6 +30663,164 @@
                 "value": {
                   "pageCount": 0,
                   "pages": []
+                }
+              }
+            ]
+          },
+          "nomime": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 6
+                },
+                "label": null,
+                "size": {
+                  "width": 50,
+                  "height": 20
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 50,
+                    "top": 20
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 50,
+                    "top": 20
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "page.render.image",
+                "value": {
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "JVBERi1uby10eXBl"
+                    }
+                  }
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 6
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 50,
+                        "height": 20
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 50,
+                          "top": 20
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 50,
+                          "top": 20
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 6,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 6
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTY="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 6,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTY="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
                 }
               }
             ]
@@ -25300,6 +31588,13 @@
             "path": "open",
             "times": 1,
             "value": {
+              "$document": "nomime"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
               "$document": "remove"
             }
           }
@@ -25386,6 +31681,19 @@
             "nope",
             {
               "width": 512
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "renderAssetPreview",
+          "args": [
+            "stamp-lib-0-1:Stamp2",
+            {
+              "width": 64
             }
           ]
         },
@@ -26396,6 +32704,148 @@
             {
               "promise": 7,
               "resolved": {
+                "bytes": {
+                  "$bytes": "JVBERi1uby10eXBl"
+                },
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-5",
+                  "bytes": {
+                    "$bytes": "JVBERi1wYWdlLTEwMQ=="
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "nomime",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "nomime",
+              "path": "page.render.image",
+              "pon": 6,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 64
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "nomime",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "lib": {
+              "subscribers": 0
+            },
+            "ghost": {
+              "subscribers": 0
+            },
+            "broken": {
+              "subscribers": 0
+            },
+            "empty": {
+              "subscribers": 0
+            },
+            "nomime": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 7
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {
+                  "stamp-lib-0-1": {
+                    "id": "stamp-lib-0-1",
+                    "name": "Stamps",
+                    "kind": "stamps",
+                    "assetIds": [
+                      "stamp-lib-0-1:Stamp1",
+                      "stamp-lib-0-1:Stamp2"
+                    ]
+                  }
+                },
+                "libraryOrder": [
+                  "stamp-lib-0-1"
+                ],
+                "assets": {
+                  "stamp-lib-0-1:Stamp1": {
+                    "id": "stamp-lib-0-1:Stamp1",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp1",
+                    "label": "Stamp1",
+                    "size": {
+                      "width": 200,
+                      "height": 100
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  },
+                  "stamp-lib-0-1:Stamp2": {
+                    "id": "stamp-lib-0-1:Stamp2",
+                    "libraryId": "stamp-lib-0-1",
+                    "kind": "stamp",
+                    "name": "Stamp2",
+                    "label": "Stamp2",
+                    "size": {
+                      "width": 201,
+                      "height": 101
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 101
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "resolved": {
                 "$undefined": true
               }
             }
@@ -26416,7 +32866,7 @@
               "args": [
                 {
                   "kind": "bytes",
-                  "id": "stamp-import-0-5",
+                  "id": "stamp-import-0-6",
                   "bytes": {
                     "$bytes": "JVBERi1jYW5vbmljYWw="
                   }
@@ -26467,12 +32917,15 @@
             "empty": {
               "subscribers": 0
             },
+            "nomime": {
+              "subscribers": 0
+            },
             "remove": {
               "subscribers": 0
             }
           },
           "outcome": {
-            "promise": 7
+            "promise": 8
           },
           "state": {
             "core": {
@@ -26521,7 +32974,7 @@
         {
           "settled": [
             {
-              "promise": 8,
+              "promise": 9,
               "rejected": {
                 "$error": {
                   "name": "PluginError",
@@ -26550,12 +33003,15 @@
             "empty": {
               "subscribers": 0
             },
+            "nomime": {
+              "subscribers": 0
+            },
             "remove": {
               "subscribers": 0
             }
           },
           "outcome": {
-            "promise": 8
+            "promise": 9
           },
           "state": {
             "core": {
