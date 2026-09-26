@@ -169,6 +169,109 @@ const cases: ScenarioCase[] = [
     },
     steps: [start, open('a'), open('b'), open('c'), call('canEdit', [], 'a'), call('canEdit', [], 'b'), call('canEdit', [], 'c')],
   },
+  {
+    name: 'update-without-the-capability-is-refused-locally',
+    covers:
+      'Without doc.metadata.modify, update() rejects with a permission-denied PluginError before it reaches the engine, and the snapshot and status stay as they were.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc({ security: { allows: ['doc.render'] }, responses: [{ path: 'metadata.read', value: meta({ title: 'Kept' }) }] }),
+      },
+    },
+    steps: [start, open('a'), call('update', [{ title: 'x' }]), call('getSnapshot'), call('getStatus')],
+  },
+  {
+    name: 'a-forbidden-seed-read',
+    covers:
+      'A seed read the engine refuses with PermissionDenied leaves the snapshot null and the status forbidden; a later plain failure makes it error, and a good refresh makes it ready.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc({
+          responses: [
+            {
+              path: 'metadata.read',
+              times: 1,
+              error: { name: 'PermissionDenied', message: 'permission denied (local): doc.metadata.read', required: 'doc.metadata.read', context: 'local' },
+            },
+            { path: 'metadata.read', times: 1, error: { name: 'EngineError', message: 'gone', code: 'Unknown' } },
+            { path: 'metadata.read', value: meta({ title: 'Back' }) },
+          ],
+        }),
+      },
+    },
+    steps: [
+      start,
+      open('a'),
+      call('getStatus'),
+      call('getSnapshot'),
+      call('refresh'),
+      call('getStatus'),
+      call('refresh'),
+      call('getStatus'),
+      call('getSnapshot'),
+    ],
+  },
+  {
+    name: 'status-while-the-seed-read-is-in-flight',
+    covers:
+      'The status is loading while the seed read is out, and a refresh made meanwhile shares that read instead of issuing a second one.',
+    plugins,
+    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    steps: [
+      start,
+      open('a'),
+      call('getStatus'),
+      call('refresh'),
+      { op: 'settle', label: 'read', value: meta({ title: 'Once' }) },
+      call('getStatus'),
+      call('getSnapshot'),
+    ],
+  },
+  {
+    name: 'an-event-during-the-seed-read-wins',
+    covers:
+      'A confirmed metadata.updated that lands while the seed read is out is newer than that read, so the read is dropped when it arrives.',
+    plugins,
+    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    steps: [
+      start,
+      open('a'),
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Event' }), origin: remote } },
+      { op: 'settle', label: 'read', value: meta({ title: 'Stale read' }) },
+      call('getSnapshot'),
+      call('getStatus'),
+    ],
+  },
+  {
+    name: 'closing-during-the-seed-read',
+    covers:
+      'Closing the document while its seed read is out ends that read as instance-closed, which the controller swallows: nothing is reported.',
+    plugins,
+    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    steps: [start, open('a'), { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
+  },
+  {
+    name: 'on-updated-reports-each-confirmed-change',
+    covers:
+      'onUpdated fires once per confirmed value, after the snapshot changed: the seed read with every key and a system origin, then each event with its previous value, the keys that differ (custom by its JSON, so reordered entries count) and the origin the event carried. After unsubscribing it stays quiet.',
+    plugins,
+    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', defer: 'read' }] }) } },
+    steps: [
+      start,
+      open('a'),
+      call('onUpdated', [{ $fn: 'updated', returns: null }]),
+      { op: 'settle', label: 'read', value: meta({ title: 'Seed', custom: { A: '1', B: '2' } }) },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { A: '1', B: '2' } }), origin: local } },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { B: '2', A: '1' } }), origin: remote } },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Local', custom: { B: '2', A: '1' } }), origin: remote } },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: { title: 'Sparse', author: null }, origin: local } },
+      { op: 'call', target: { ref: 0 } },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ title: 'Unheard' }), origin: local } },
+      call('getSnapshot'),
+    ],
+  },
 ];
 
 export const suites: Suite[] = [
