@@ -167,6 +167,8 @@ const basics: FunctionCase[] = [
   c('fitStampBox', 'clamp-right-bottom', v(595, 799), { width: 100, height: 50 }, { width: 600, height: 800 }, 0),
   c('fitStampBox', 'zero-size', v(300, 400), { width: 0, height: 0 }, { width: 600, height: 800 }, 0),
   c('fitStampBox', 'zero-width', v(300, 400), { width: 0, height: 900 }, { width: 600, height: 800 }, 0),
+  // An empty stamp on an empty page: the zero guards keep 0 / 0 out of the scale.
+  c('fitStampBox', 'zero-size-zero-page', v(0, 0), { width: 0, height: 0 }, { width: 0, height: 0 }, 0),
   c('fitStampBox', 'never-scales-up', v(300, 400), { width: 10, height: 10 }, { width: 600, height: 800 }, 0),
 
   c('rectHandlesFor', 'box', rc(10, 20, 100, 50)),
@@ -207,6 +209,9 @@ const basics: FunctionCase[] = [
   c('chordThrough', 'on-edge', PAGE, v(0, 400), 90),
   c('chordThrough', 'zero-box', rc(10, 10, 0, 0), v(10, 10), 45),
   c('chordThrough', 'nan-angle', PAGE, v(300, 400), NaN),
+  // sin of this angle is exactly 1e-12, the parallel threshold, which is not
+  // parallel: the y slab still clips, 1e-10 from the bottom edge.
+  c('chordThrough', 'at-the-parallel-threshold', PAGE, v(300, 800 - 1e-10), 5.729577951308232e-11),
   c('chordThrough', 'parallel-on-right-edge', PAGE, v(600, 400), 90),
   c('chordThrough', 'parallel-on-bottom-edge', PAGE, v(300, 800), 0),
   c('chordThrough', 'infinite-box-end', rc(0, 0, Infinity, 100), v(50, 50), 0),
@@ -253,6 +258,15 @@ const basics: FunctionCase[] = [
   c('quadIntersectsRect', 'tilted-end-gap', turned(rc(100, 100, 100, 10), 45), rc(188, 150, 6, 6)),
   c('quadIntersectsRect', 'tilted-near-long-side', turned(rc(100, 100, 100, 10), 45), rc(152, 104, 4, 4)),
   c('quadIntersectsRect', 'tilted-near-end', turned(rc(100, 100, 100, 10), 45), rc(180, 140, 6, 6)),
+  // Off the origin, where only the true edge normal separates: past the
+  // short end, then beside the long side.
+  c('quadIntersectsRect', 'tilted30-end-gap', turned(rc(100, 100, 100, 10), 30), rc(102, 74, 4, 4)),
+  c('quadIntersectsRect', 'tilted30-long-side-gap', turned(rc(100, 100, 100, 10), 30), rc(102, 86, 4, 4)),
+  // A triangle whose first edge is degenerate: only that edge's normal
+  // separates the rect, so the result turns on whether the edge counts.
+  c('quadIntersectsRect', 'tiny-edge-skipped', [v(0, 0), v(1e-13, 1e-13), v(100, 100), v(0, 100)], rc(60, 10, 10, 10)),
+  c('quadIntersectsRect', 'tiny-edge-x-at-threshold', [v(0, 0), v(5e-13, 1e-12), v(50, 100), v(0, 100)], rc(30, 5, 10, 10)),
+  c('quadIntersectsRect', 'tiny-edge-y-at-threshold', [v(0, 0), v(1e-12, 5e-13), v(100, 50), v(0, 50)], rc(60, 5, 10, 10)),
 ];
 
 // ── per-geom functions, crossed with GEOMS ───────────────────────────────────
@@ -327,9 +341,18 @@ for (const [name, gm] of GEOMS) {
   if (gm.t === 'text') shapes.push(c('calloutLinePoints', name, gm));
 }
 shapes.push(c('geomScene', 'rect-default-width', geom('rect')));
+// The leader's box end is pushed out by half the stroke only for a positive
+// stroke: a negative one would pull it in, and at zero stroke an infinite tip
+// would turn the pushed point into NaN.
+shapes.push(c('geomScene', 'callout-negative-stroke', gText(rc(200, 200, 120, 40), { tip: v(100, 100), ending: 'none' }), -2));
+shapes.push(c('geomScene', 'callout-infinite-tip-sw0', gText(rc(200, 200, 120, 40), { tip: v(Infinity, 100), ending: 'none' }), 0));
 shapes.push(c('geomScene', 'cloudy-small-box', gRect(rc(0, 0, 10, 10)), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-just-fits', gRect(rc(0, 0, 11, 30)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-too-narrow', gRect(rc(0, 0, 8, 30)), 1, cloudy(1)));
+// Exactly twice the border extent (5 at intensity 1, stroke 1) is still too
+// small for the curls.
+shapes.push(c('geomScene', 'cloudy-width-at-extent', gRect(rc(0, 0, 10, 30)), 1, cloudy(1)));
+shapes.push(c('geomScene', 'cloudy-height-at-extent', gRect(rc(0, 0, 30, 10)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-too-short', gRect(rc(0, 0, 30, 8)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-ellipse-small', gRect(rc(0, 0, 10, 10), true), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-poly-two', gPoly([v(0, 0), v(40, 40)], true), 1, cloudy(1)));
@@ -341,7 +364,16 @@ shapes.push(c('geomVisualBounds', 'callout-rot-nan', gText(rc(100, 100, 120, 40)
 // within the miter limit only at the real limit (10 h, not 10 + h or 10 / h).
 shapes.push(c('geomVisualBounds', 'miter-within-limit-sw8', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 8));
 shapes.push(c('geomVisualBounds', 'miter-within-limit-sw1', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 1));
+// A join whose miter comes to exactly MITER_LIMIT * h (found by search): at
+// the limit is still within it.
+shapes.push(c('geomVisualBounds', 'miter-exactly-at-limit', gPoly([v(0, 0), v(100, 0), v(0, 20.305866063400426)], false), 2));
+// A near reversal whose half-angle cosine rounds to 0: the guard skips its
+// infinite miter, which a negative stroke width would otherwise keep.
+shapes.push(c('geomVisualBounds', 'reversal-negative-stroke', gPoly([v(0, 0), v(100, 0), v(0, 1.5e-7)], false), -2));
 shapes.push(c('obbFromGeom', 'line-rot-nan', gLine(v(0, 0), v(50, 20), undefined, NaN), 2));
+// An infinite `rot` is truthy, so a box resets to 0; spinning it back by
+// `-rot` instead would leave NaN.
+shapes.push(c('geomResetRotation', 'rect-rot-infinite', gRect(rc(100, 100, 80, 60), false, Infinity)));
 
 // Drag every handle a geom offers, plus the bogus ones, to one target.
 const dragTo = v(210, 185);
@@ -412,7 +444,7 @@ for (const e of ENDINGS) {
   const cg = gText(rc(200, 200, 120, 40), { tip: v(100, 100), ending: e });
   hits.push(c('geomHitProbe', `callout-ending-${e}-sw3`, cg, 1, false, 3, [...points, v(150, 150), v(200, 220)]));
 }
-hits.push(c('geomHitProbe', 'poly-open-ending', gPoly([v(0, 0), v(100, 0), v(100, 100)], false, ends('closed-arrow', 'diamond')), 1, false, 3, [v(-10, 0), v(-20, 3), v(100, 110), v(103, 118), v(96, 116)]));
+hits.push(c('geomHitProbe', 'poly-open-ending',gPoly([v(0, 0), v(100, 0), v(100, 100)], false, ends('closed-arrow', 'diamond')), 1, false, 3, [v(-10, 0), v(-20, 3), v(100, 110), v(103, 118), v(96, 116)]));
 hits.push(c('geomHitProbe', 'poly-closing-edge', gPoly([v(10, 10), v(90, 20), v(40, 80)], true), 1, false, 1, [v(25, 45), v(24, 46), v(20, 50)]));
 hits.push(c('geomHitProbe', 'poly-closed-two-points', gPoly([v(0, 0), v(100, 0)], true), 1, true, 1, [v(50, 0), v(50, 5)]));
 hits.push(c('geomHitProbe', 'ellipse-thick-stroke', gRect(rc(0, 0, 10, 10), true), 0, false, 30, [v(5, 5), v(0, 5), v(20, 5)]));
@@ -458,6 +490,13 @@ const text: FunctionCase[] = [
     ['rot-near-360', tqRot(100, 100, 50, 12, -0.04), 1],
     ['rot-just-past', tqRot(100, 100, 50, 12, 0.06), 1],
     ['rot180', tqRot(100, 100, 50, 12, 180), 1],
+    // A baseline tilted by -0.05° normalizes to exactly 360 - 0.05, the edge of
+    // the upright band, which is not upright.
+    ...(() => {
+      const by = 1000 * Math.tan((-0.05 * Math.PI) / 180);
+      const q = { upperStart: v(0, -12), upperEnd: v(1000, by - 12), lowerStart: v(0, 0), lowerEnd: v(1000, by) };
+      return [['rot-at-the-upper-edge', q, 1]];
+    })(),
     ['zero-baseline', { upperStart: v(10, 0), upperEnd: v(10, 0), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
     ['zero-baseline-and-ink', { upperStart: v(10, 12), upperEnd: v(10, 12), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
     ['advance-zero', tq(10, 10, 50, 12), 0],

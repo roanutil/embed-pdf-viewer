@@ -1408,6 +1408,80 @@
       }
     },
     {
+      "name": "caretRectFromAnchor/rot-at-the-upper-edge",
+      "fn": "caretRectFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 0,
+              "y": -12
+            },
+            "upperEnd": {
+              "x": 1000,
+              "y": -12.872664847521271
+            },
+            "lowerStart": {
+              "x": 0,
+              "y": 0
+            },
+            "lowerEnd": {
+              "x": 1000,
+              "y": -0.8726648475212713
+            }
+          },
+          "advance": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "x": 997,
+          "y": -6.872664847521271,
+          "width": 6,
+          "height": 6
+        }
+      }
+    },
+    {
+      "name": "caretGeomFromAnchor/rot-at-the-upper-edge",
+      "fn": "caretGeomFromAnchor",
+      "args": [
+        {
+          "glyphQuad": {
+            "upperStart": {
+              "x": 0,
+              "y": -12
+            },
+            "upperEnd": {
+              "x": 1000,
+              "y": -12.872664847521271
+            },
+            "lowerStart": {
+              "x": 0,
+              "y": 0
+            },
+            "lowerEnd": {
+              "x": 1000,
+              "y": -0.8726648475212713
+            }
+          },
+          "advance": 1
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "caret",
+          "rect": {
+            "x": 997,
+            "y": -6.872664847521271,
+            "width": 6,
+            "height": 6
+          },
+          "rot": 359.95
+        }
+      }
+    },
+    {
       "name": "caretRectFromAnchor/zero-baseline",
       "fn": "caretRectFromAnchor",
       "args": [

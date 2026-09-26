@@ -114,20 +114,36 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
 
-Incomplete. The run went file by file (`scripts/mutants.sh --file`) and stopped before it
-finished, so this is what 18 of the crate's 20 source files show (`harness.rs` is excluded),
-not the crate:
+In progress. Each file runs on its own (`scripts/mutants.sh -p epdf-annotation-core --test-package
+epdf-annotation-core --file <file>`); `harness.rs` is excluded and `lib.rs` holds re-exports only.
+A miss is either killed by a new case or listed below with the reason it can't be. "Killed after"
+counts the misses a later case kills, each confirmed by applying the mutant by hand and watching the
+replay fail.
 
-| Files | Caught | Timeouts | Missed | Unviable |
-|---|---|---|---|---|
-| 17 complete: `anchor`, `endings`, `flags`, `group`, `hit`, `ink`, `js`, `kinds`, `links`, `placement`, `plane`, `props`, `scene`, `snap`, `types`, `update`, `view` | 1,615 | 3 | 30 | 145 |
-| `cloudy.rs`, cut off partway | 411 | 12 | 19 | 0 |
-| `geometry.rs` | not run | | | |
+| File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
+|---|---|---|---|---|---|---|
+| `geometry.rs` | 1,156 | 0 | 35 | 20 | 21 | 14 |
 
-Timeouts count as caught: each is a mutant that loops forever. `lib.rs`, the other file not run,
-holds re-exports only.
+Timeouts count as caught: each is a mutant that loops forever.
 
-The 49 misses have not been triaged one by one. Two commits after the first pass
-(`84f73b5ee`, `90be0fb5a`) added cases for the ones found then, so some of these may already be
-dead: the counts come from runs that started before those cases landed. `geometry.rs` is the
-largest file and the one most likely to hide survivors; it is the next run to do.
+The 17 files the first pass completed (1,615 caught, 3 timeouts, 30 missed, 145 unviable, before
+`84f73b5ee` and `90be0fb5a` added cases) and `cloudy.rs` are being re-run.
+
+### Accepted misses
+
+`geometry.rs`:
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| 139 | delete the `"se"` arm of `opposite_handle` | Equivalent. `group_resize_anchor` falls back to `nw`, which is `se`'s opposite anyway, and in `resize_rotated_rect` the anchor cancels: the new centre is `c0 + R(next_centre - c0)` whatever the anchor is. |
+| 466 | `\|\|` to `&&` in `obb_from_geom` | Equivalent. The two differ only at `rot` 0, where `geom_rotate_about` by `-0` returns the geom unchanged, and at `NaN`, where the final rotation makes every corner `NaN` either way. |
+| 757 | `>` to `>=` on the baseline length in `caret_geom_from_anchor` | Equivalent. A zero length means `bx` and `by` are zeros, and `atan2` of zeros gives the 0 the other arm returns. Only a `-0` `bx` gives 180, and canonical JSON has no `-0`. |
+| 762 | `<` to `<=` against `CARET_ROT_EPSILON` | Unreachable. `normalize_deg` returns a value near 0.05 as `(x + 360) - 360`, a multiple of 2^-44, and 0.05 isn't one. The upper edge, `> 360 - 0.05`, is reachable and killed (`rot-at-the-upper-edge`). |
+| 840 | `<` to `<=` and to `==` on the join's direction change in `stroke_outline_points` | Equivalent. The points only reach `union_rect` in `geom_visual_bounds`. A join that turns by less than 1e-9 is straight to within `h * theta^2 / 8`, so its miter lands on corners already in the set. |
+| 846 | `<` to `<=` on the bisector length | Unreachable. Near a reversal that length is rounding noise of order 1e-16 over the angle, so it never lands on exactly 1e-9. |
+| 851 | `<` to `<=` on the bisector orientation test | Unreachable. The dot product is exactly 0 only when the two directions are parallel, and both parallel cases are skipped above it. |
+| 856 | `<` to `<=` on the half-angle cosine | Unreachable, for the reason 846 is; only a negative stroke width could observe it. The `==` mutant on the same line is killed (`reversal-negative-stroke`). |
+| 961 | the `*rot != 0.0` guard in `selection_bounds` to `true` | Equivalent. `rotated_aabb(rect, 0)` returns `rect`, which is what `geom_bounds` gives a text box. |
+| 1031 | `\|\|` to `&&` on the ellipse radii in `ending_nodes_hit` | Equivalent. The only ellipse node is the circle ending, placed with rotation 0 from `(-r, -r)` and `(r, r)`, so its radii are always equal. |
+| 1047, 1165 | `>` to `>=` on `len > 2` before a closing edge | Equivalent. With two points the closing edge is the first segment, already tested. |
+| 1191 | `&&` to `\|\|` on `rot` in `geom_handles` | Unreachable by a vector. At `rot` 0 the mutant rotates by 0, which is exact. Only a `NaN` `rot` tells them apart, and every consumer carries the handle's cursor, where the port already differs for a non-finite `rot` (see "Not ported"). |

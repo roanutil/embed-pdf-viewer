@@ -100584,6 +100584,92 @@
       }
     },
     {
+      "name": "geomScene/callout-negative-stroke",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 200,
+            "y": 200,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": 100,
+              "y": 100
+            },
+            "ending": "none"
+          }
+        },
+        -2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": 100,
+                "y": 100
+              },
+              {
+                "x": 200,
+                "y": 220
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
+      "name": "geomScene/callout-infinite-tip-sw0",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "text",
+          "rect": {
+            "x": 200,
+            "y": 200,
+            "width": 120,
+            "height": 40
+          },
+          "callout": {
+            "tip": {
+              "x": {
+                "$number": "Infinity"
+              },
+              "y": 100
+            },
+            "ending": "none"
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "poly",
+            "points": [
+              {
+                "x": {
+                  "$number": "Infinity"
+                },
+                "y": 100
+              },
+              {
+                "x": 320,
+                "y": 220
+              }
+            ],
+            "closed": false
+          }
+        ]
+      }
+    },
+    {
       "name": "geomScene/cloudy-small-box",
       "fn": "geomScene",
       "args": [
@@ -100675,6 +100761,74 @@
               "y": 0.5,
               "width": 7,
               "height": 29
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "geomScene/cloudy-width-at-extent",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 10,
+            "height": 30
+          },
+          "ellipse": false
+        },
+        1,
+        {
+          "kind": "cloudy",
+          "intensity": 1
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 0.5,
+              "y": 0.5,
+              "width": 9,
+              "height": 29
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "geomScene/cloudy-height-at-extent",
+      "fn": "geomScene",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 30,
+            "height": 10
+          },
+          "ellipse": false
+        },
+        1,
+        {
+          "kind": "cloudy",
+          "intensity": 1
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "rect",
+            "rect": {
+              "x": 0.5,
+              "y": 0.5,
+              "width": 29,
+              "height": 9
             }
           }
         ]
@@ -101043,6 +101197,72 @@
       }
     },
     {
+      "name": "geomVisualBounds/miter-exactly-at-limit",
+      "fn": "geomVisualBounds",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 20.305866063400426
+            }
+          ],
+          "closed": false
+        },
+        2
+      ],
+      "outcome": {
+        "returned": {
+          "x": -0.19899748742132417,
+          "y": -1,
+          "width": 110.14887185848752,
+          "height": 22.285866063400427
+        }
+      }
+    },
+    {
+      "name": "geomVisualBounds/reversal-negative-stroke",
+      "fn": "geomVisualBounds",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 100,
+              "y": 0
+            },
+            {
+              "x": 0,
+              "y": 1.5e-7
+            }
+          ],
+          "closed": false
+        },
+        -2
+      ],
+      "outcome": {
+        "returned": {
+          "x": -1.5e-9,
+          "y": -1,
+          "width": 100.000000003,
+          "height": 2.00000015
+        }
+      }
+    },
+    {
       "name": "obbFromGeom/line-rot-nan",
       "fn": "obbFromGeom",
       "args": [
@@ -101101,6 +101321,38 @@
           "angle": {
             "$number": "NaN"
           }
+        }
+      }
+    },
+    {
+      "name": "geomResetRotation/rect-rot-infinite",
+      "fn": "geomResetRotation",
+      "args": [
+        {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": {
+            "$number": "Infinity"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "t": "rect",
+          "rect": {
+            "x": 100,
+            "y": 100,
+            "width": 80,
+            "height": 60
+          },
+          "ellipse": false,
+          "rot": 0
         }
       }
     },
