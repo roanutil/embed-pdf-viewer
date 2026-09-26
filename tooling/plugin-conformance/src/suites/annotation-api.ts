@@ -656,6 +656,28 @@ const cases: ScenarioCase[] = [
       api('createAttachment', [pr(1), { x: 50, y: 60 }, { data: { $bytes: 'AAEC' }, name: 'a.bin' }]),
     ],
   },
+  {
+    name: 'stamp-preview-providers',
+    covers:
+      'A resolution-aware preview provider renders once per size bucket for the arm (powers of two from 128 px, capped at 4096); a provider that rejects is logged and reads null, and the null is cached for that bucket too.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      api('armStamp', [
+        {
+          source: { $bytes: 'JVBERi0x' },
+          preview: { $fn: 'render', seq: [{ resolves: { bytes: { $bytes: 'AAEC' }, mimeType: 'image/png' } }, { rejects: { name: 'Error', message: 'raster failed' } }] },
+        },
+      ]),
+      api('getArmedStampPreview', [200]),
+      api('getArmedStampPreview', [250]),
+      api('getArmedStampPreview', [9000]),
+      api('getArmedStampPreview', [5000]),
+      api('getArmedStampPreview'),
+    ],
+  },
 ];
 
 export const suites: Suite[] = [
