@@ -311,6 +311,92 @@ const designCases: ScenarioCase[] = [
   },
 ];
 
+const HIT_ANNOTS = [
+  widgetAnnot(1, 101, { left: 0, bottom: 500, right: 300, top: 800 }),
+  widgetAnnot(1, 102, { left: 10, bottom: 700, right: 60, top: 790 }),
+  widgetAnnot(1, 150, { left: 400, bottom: 0, right: 600, top: 200 }),
+  { ...widgetAnnot(1, 103), subtype: 'square', color: { r: 1, g: 2, b: 3 }, interiorColor: null, opacity: 1, cloudyIntensity: null, rectDifferences: null },
+];
+const HIT_FIELDS = [text(1, 'big', '', {}, [[101, 1]]), text(2, 'small', '', {}, [[102, 1]]), text(3, 'boxy', '', {}, [[103, 1]])];
+
+const v3DesignCases: ScenarioCase[] = [
+  {
+    name: 'widget-hit-test',
+    covers:
+      "getWidgetAt kicks the page's geometry read and, until it lands, asks the annotation plane's live boxes: the smallest widget with a field under the point wins, a widget no field owns and a non-widget annotation are skipped. Once the geometry lands the model answers; a page without either answers null.",
+    plugins: WITH_ANNOTATION,
+    engine: {
+      documents: {
+        a: doc([
+          list(HIT_FIELDS),
+          { path: 'annotations.listRawAll', value: { pages: [{ pageState: { page: pr(1) }, annotations: HIT_ANNOTS }] } },
+          annotations(1, HIT_ANNOTS, { defer: 'geom' }),
+          annotations(2, []),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
+      call('getWidgetAt', [pr(1), { x: 200, y: 200 }]),
+      call('getWidgetAt', [pr(1), { x: 500, y: 700 }]),
+      call('getWidgetAt', [pr(1), { x: 590, y: 20 }]),
+      settle('geom', { annotations: HIT_ANNOTS }),
+      call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
+      call('getWidgetAt', [pr(1), { x: 500, y: 700 }]),
+      call('getWidgetAt', [pr(2), { x: 1, y: 1 }]),
+    ],
+  },
+  {
+    name: 'widget-hit-test-without-annotation',
+    covers: 'Without the annotation plugin a page whose geometry has not landed answers null.',
+    plugins: FORM_ONLY,
+    engine: { documents: { a: doc([list(HIT_FIELDS), annotations(1, HIT_ANNOTS)]) } },
+    snapshot: 'none',
+    steps: [...boot, call('getWidgetAt', [pr(1), { x: 20, y: 20 }]), call('getWidgetAt', [pr(1), { x: 20, y: 20 }])],
+  },
+  {
+    name: 'attach-widget',
+    covers: "attachWidget links an annotation to the field by ref, re-reads, then clears and nudges the widget's page; a refusal rejects.",
+    plugins: WITH_ANNOTATION,
+    engine: {
+      documents: {
+        a: doc([
+          list([text(7, 'pair', 'v', {}, [[107, 1]])]),
+          HYDRATE,
+          annotations(1, [widgetAnnot(1, 107)]),
+          { path: 'forms.attachWidget', times: 1, value: { field: text(7, 'pair', 'v', {}, [[107, 1], [150, 1]]) } },
+          { path: 'forms.attachWidget', error: { name: 'EngineError', message: 'already attached', code: 'InvalidArg' } },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('ensureGeom', [1]),
+      call('attachWidget', [{ kind: 'objectNumber', fieldObjectNumber: 7 }, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 150 }]),
+      call('attachWidget', [{ kind: 'fqn', name: 'pair' }, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 150 }]),
+    ],
+  },
+  {
+    name: 'place-with-a-name-and-options',
+    covers: 'An explicit name skips auto-naming, and a choice field takes the options given instead of the two starters.',
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([list([]), { path: 'forms.createField', value: { field: placed(44, 'my.choice') } }]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('placeField', [input({ family: 'combobox', name: 'my.choice', options: [{ label: 'A', value: 'a' }] })]),
+      call('placeField', [input({ family: 'signature' })]),
+    ],
+  },
+];
+
 // ── the place handler ─────────────────────────────────────────────────────────
 
 const PLACE_ENGINE = (extra: ResponseSpec[] = [], over = {}) => ({
@@ -511,7 +597,7 @@ export const suites: Suite[] = [
     kind: 'scenario',
     file: 'plugins/form-design.json',
     describes: 'packages/plugin/form design mode: tool and behavior registration, placeField and the design verbs, and the draw-to-place handler.',
-    cases: [...initCases, ...designCases, ...handlerCases],
+    cases: [...initCases, ...designCases, ...v3DesignCases, ...handlerCases],
   },
 ];
 

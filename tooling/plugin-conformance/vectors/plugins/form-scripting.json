@@ -39280,6 +39280,2637 @@
       ]
     },
     {
+      "name": "batch-writes-count-rejections",
+      "covers": "setValues and importValues report a rejected write as failed 'invalid-input' with the first diagnostic's message (or the status), and a failed one as 'operation-failed' with the error's message; a rejection is also announced on onValidationRejected with its diagnostics.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off",
+            "javascript": {
+              "enabled": true,
+              "sandbox": {
+                "builds": [
+                  {
+                    "run": [
+                      {
+                        "output": {
+                          "event": {
+                            "rc": false,
+                            "value": "x",
+                            "change": "",
+                            "selStart": 0,
+                            "selEnd": 0
+                          }
+                        }
+                      },
+                      {
+                        "output": {
+                          "error": {
+                            "kind": "budget",
+                            "message": "boom"
+                          }
+                        }
+                      },
+                      {
+                        "output": {
+                          "event": {
+                            "rc": true,
+                            "value": "ok",
+                            "change": "",
+                            "selStart": 0,
+                            "selEnd": 0
+                          }
+                        }
+                      },
+                      {
+                        "output": {
+                          "event": {
+                            "rc": false,
+                            "value": "y",
+                            "change": "",
+                            "selStart": 0,
+                            "selEnd": 0
+                          },
+                          "diagnostics": [
+                            {
+                              "code": "script-error",
+                              "message": "bad email"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "factory": "form"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "name",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 101
+                          },
+                          "annotObjectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "fieldObjectNumber": 2,
+                      "name": "email",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 102
+                          },
+                          "annotObjectNumber": 102,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "validate": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "check()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              },
+              "alert": {
+                "$fn": "ui.alert"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onScriptDiagnostic",
+          "args": [
+            {
+              "$fn": "onScriptDiagnostic"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onScriptError",
+          "args": [
+            {
+              "$fn": "onScriptError"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "onValidationRejected",
+          "args": [
+            {
+              "$fn": "validationRejected"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "setValues",
+          "args": [
+            [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 2
+                },
+                "value": {
+                  "type": "text",
+                  "value": "bad"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 2
+                },
+                "value": {
+                  "type": "text",
+                  "value": "worse"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 2
+                },
+                "value": {
+                  "type": "text",
+                  "value": "fine"
+                }
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 2
+                },
+                "value": {
+                  "type": "text",
+                  "value": "noted"
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "importValues",
+          "args": [
+            {
+              "email": {
+                "type": "text",
+                "value": "again"
+              }
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 1
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "ready"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 3
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "applied": [
+                  {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 2
+                  }
+                ],
+                "skipped": [],
+                "failed": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "error": {
+                      "code": "invalid-input",
+                      "message": "rejected",
+                      "capability": "form"
+                    }
+                  },
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "error": {
+                      "code": "operation-failed",
+                      "message": "boom",
+                      "capability": "form"
+                    }
+                  },
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "error": {
+                      "code": "invalid-input",
+                      "message": "bad email",
+                      "capability": "form"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {
+                    "obj:2": true
+                  },
+                  "geom": {},
+                  "seq": 2
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 3
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {
+                    "obj:2": true
+                  },
+                  "geom": {},
+                  "seq": 4
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 5
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {
+                    "obj:2": true
+                  },
+                  "geom": {},
+                  "seq": 6
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 7
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {
+                    "obj:2": true
+                  },
+                  "geom": {},
+                  "seq": 8
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 9
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.applyEffects",
+              "args": [
+                [
+                  {
+                    "kind": "setValue",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": {
+                      "type": "text",
+                      "value": "ok"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "check()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "email",
+                      "family": "text",
+                      "value": "bad",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-validate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "bad",
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "validationRejected",
+              "args": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 2
+                  },
+                  "issues": []
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "check()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3686612585
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "email",
+                      "family": "text",
+                      "value": "worse",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-validate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "worse",
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "onScriptError",
+              "args": [
+                {
+                  "kind": "budget",
+                  "message": "boom"
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "check()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3636279728
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "email",
+                      "family": "text",
+                      "value": "fine",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-validate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "fine",
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "check()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3653057347
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "Ada",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "name": "email",
+                      "family": "text",
+                      "value": "noted",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "event": {
+                    "kind": "field-validate",
+                    "target": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "source": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 2
+                    },
+                    "value": "noted",
+                    "willCommit": true
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "onScriptDiagnostic",
+              "args": [
+                {
+                  "code": "script-error",
+                  "message": "bad email"
+                }
+              ]
+            },
+            {
+              "fn": "validationRejected",
+              "args": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 2
+                  },
+                  "issues": [
+                    {
+                      "code": "script-error",
+                      "message": "bad email"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "applied": [],
+                "skipped": [],
+                "failed": [
+                  {
+                    "ref": "email",
+                    "error": {
+                      "code": "operation-failed",
+                      "message": "Form field 'fqn:email' no longer exists",
+                      "capability": "form"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {
+                    "fqn:email": true
+                  },
+                  "geom": {},
+                  "seq": 10
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "email",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false,
+                        "actions": {
+                          "validate": {
+                            "root": {
+                              "type": "javascript",
+                              "subtype": "JavaScript",
+                              "script": "check()",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 11
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "onScriptError",
+              "args": [
+                {
+                  "kind": "invalid-output",
+                  "message": "Form field 'fqn:email' no longer exists"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        }
+      ]
+    },
+    {
       "name": "reset-recalculates",
       "covers": "With scripting on, a reset recalculates the /CO chain after its batch and folds the recalculation's UI, diagnostics and error into its result, surfaced with the caller's origin.",
       "plugins": [
