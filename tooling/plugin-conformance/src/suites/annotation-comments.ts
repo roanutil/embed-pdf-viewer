@@ -31,6 +31,7 @@ import {
   widget,
   layout,
   base,
+  pr,
 } from './annotation-fixtures';
 
 const at = (d: number) => `2024-01-${String(d).padStart(2, '0')}T00:00:00Z`;
@@ -80,7 +81,7 @@ const cases: ScenarioCase[] = [
               value: {
                 pages: [
                   {
-                    pageState: { pageObjectNumber: 1 },
+                    pageState: { page: pr(1) },
                     annotations: [
                       square(1, { contents: 'a' }),
                       square(2, { contents: 'tie one' }),
@@ -89,7 +90,7 @@ const cases: ScenarioCase[] = [
                       square(5, { contents: 'lost page too', pageObjectNumber: 8, ref: objRef(5, 8) }),
                     ],
                   },
-                  { pageState: { pageObjectNumber: 2 }, annotations: page2() },
+                  { pageState: { page: pr(2) }, annotations: page2() },
                 ],
               },
             },
