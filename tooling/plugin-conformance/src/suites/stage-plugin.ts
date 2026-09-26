@@ -234,6 +234,9 @@ const open: Step = { op: 'call', target: 'documents', method: 'open', args: [{ k
 const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };
 const st = (method: string, ...args: unknown[]): Step => stageStep('stage', 'a', method, args);
 const lensCall = (lens: string, method: string, ...args: unknown[]): Step => stageStep(lens, 'a', method, args);
+/** A call by its v3 name, bypassing the v2 rename table. */
+const v3 = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'stage', doc: 'a' }, method, args });
+const callRef = (ref: number): Step => ({ op: 'call', target: { ref } });
 const vp = (width: number, height: number): Step => st('setViewport', { width, height });
 const advance = (ms: number): Step => ({ op: 'advance', ms });
 const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
@@ -1496,6 +1499,14 @@ const feedCases: ScenarioCase[] = [
     snapshot: ['stage::a', 'actions::a'],
   },
   {
+    name: 'a-cursor-past-the-last-page',
+    covers: 'A restored view may carry a cursor the document no longer has: getCurrentPage is null then, and the feed reports a null current page.',
+    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
+    engine: withActions(portrait(3)),
+    steps: [...boot, st('applyViewState', view({ cursor: 7, anchor: { pageIndex: 2, fx: 0.5, fy: 0.5 } })), v3('getCurrentPage'), v3('getCurrentPageIndex')],
+    snapshot: ['stage::a', 'actions::a'],
+  },
+  {
     name: 'a-thumbnail-lens-stays-out',
     covers: 'A lens with its own id registers no executors and feeds no page state, so actions only ever drive the main lens.',
     plugins: [ACTIONS_OFF, { factory: 'stage', config: { lens: 'stage-thumbs', viewUnitsPerPoint: 1 } }],
@@ -1583,12 +1594,169 @@ const feedCases: ScenarioCase[] = [
   },
 ];
 
+// ── the v3 surface: verbs with no v2 twin, and the change hooks ───────────────
+
+const HOOKS = ['onPageChanged', 'onZoomChanged', 'onCameraChanged', 'onMotionEnded', 'onSettingsChanged', 'onViewportChanged'];
+/** Subscribe a logging listener to every hook; the unsubscribes are refs 0 to 5. */
+const listenAll = (): Step[] => HOOKS.map((hook) => v3(hook, fnSpec(hook)));
+
+const v3VerbCases: ScenarioCase[] = [
+  {
+    name: 'v3-page-verbs',
+    covers:
+      'goToPage and reveal take a PageRef and ignore a page the document lacks; goToFirstPage and goToLastPage clamp to the ends; canGoNext and canGoPrevious read the cursor; revealRect is a positioned reveal; isPageVisible, getCurrentPage and pageToViewport read the laid-out pages.',
+    plugins: stage({ scrollBehavior: 'instant' }),
+    engine: engine(),
+    steps: [
+      ...boot,
+      v3('canGoPrevious'),
+      v3('canGoNext'),
+      v3('getCurrentPage'),
+      v3('isPageVisible', pr(1)),
+      v3('isPageVisible', pr(4)),
+      v3('goToPage', pr(3)),
+      v3('getCurrentPageIndex'),
+      v3('goToPage', pr(99)),
+      v3('getCurrentPageIndex'),
+      v3('goToLastPage'),
+      v3('canGoNext'),
+      v3('canGoPrevious'),
+      v3('getCurrentPage'),
+      v3('goToFirstPage', { behavior: 'instant' }),
+      v3('reveal', pr(4)),
+      v3('reveal', pr(99)),
+      v3('getCamera'),
+      v3('revealRect', pr(2), { x: 10, y: 20, width: 100, height: 50 }, { zoom: 'fit' }),
+      v3('getCamera'),
+      v3('getCurrentPageIndex'),
+      v3('pageToViewport', pr(2), { x: 10, y: 20 }),
+      v3('pageToViewport', pr(99), { x: 10, y: 20 }),
+      v3('isPageVisible', pr(99)),
+    ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'v3-zoom-verbs',
+    covers:
+      'zoomTo with a bare number writes a fixed level intent, or with around holds that point; zoomBy multiplies around the zoomAlign point or a given one; fitAutomatic is the automatic intent.',
+    plugins: stage({ scrollBehavior: 'instant' }),
+    engine: engine(MIXED),
+    steps: [
+      ...boot,
+      v3('zoomTo', 2),
+      v3('getCamera'),
+      v3('zoomTo', 1.5, { around: { x: 100, y: 100 } }),
+      v3('getCamera'),
+      v3('getZoomMode'),
+      v3('zoomBy', 1.25),
+      v3('getCamera'),
+      v3('zoomBy', 0.8, { around: { x: 900, y: 600 } }),
+      v3('getCamera'),
+      v3('zoomTo', { mode: 'fit-page' }),
+      v3('fitAutomatic'),
+      v3('getZoomMode'),
+    ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'reset-settings',
+    covers: 'resetSettings writes the constructed config back as the base and re-resolves it, with the usual anchor-preserving reaction.',
+    plugins: stage({ scrollBehavior: 'instant', padding: 10 }),
+    engine: engine(),
+    steps: [...boot, st('goToPage', 2), st('update', { layout: 'horizontal', padding: 40, zoom: { level: 2 } }), v3('resetSettings'), v3('getSettings'), v3('getCamera'), v3('resetSettings')],
+    snapshot: SNAP,
+  },
+  {
+    name: 'withdrawn-initial-view',
+    covers: 'provideInitialView returns an unsubscribe; a provider withdrawn before placement is never asked, and a second call of the unsubscribe is harmless.',
+    plugins: stage(),
+    engine: engine(),
+    steps: [
+      start,
+      open,
+      v3('provideInitialView', 9, fnSpec('withdrawn', { returns: view() })),
+      v3('provideInitialView', 1, fnSpec('kept', { returns: null })),
+      callRef(0),
+      callRef(0),
+      vp(1000, 700),
+      v3('getCurrentPageIndex'),
+    ],
+    snapshot: SNAP,
+  },
+];
+
+const eventCases: ScenarioCase[] = [
+  {
+    name: 'change-hooks',
+    covers:
+      'Every write goes through the diffing dispatch: the viewport, camera, zoom (with its mode), page and settings hooks fire for what the write changed, in that order; a re-clamp in place on an unbounded stage keeps the camera object and fires no camera event; a throwing listener is swallowed without stopping its siblings; an unsubscribed listener hears nothing more.',
+    plugins: stage({ scrollBehavior: 'instant' }),
+    engine: engine(),
+    steps: [
+      start,
+      open,
+      ...listenAll(),
+      v3('onPageChanged', fnSpec('page-throws', { throws: { name: 'Error', message: 'listener' } })),
+      vp(1000, 700),
+      st('goToPage', 2),
+      st('zoomTo', { level: 2 }),
+      st('fitWidth'),
+      st('setLayout', 'horizontal'),
+      vp(900, 700),
+      st('update', { bounded: false }),
+      st('update', { padding: 30 }),
+      st('update', { bounded: true }),
+      st('setDevicePixelRatio', 2),
+      callRef(2),
+      st('panBy', 0, -40),
+      st('applyViewState', view({ cursor: 9, anchor: { pageIndex: 4, fx: 0.5, fy: 0.5 } })),
+      callRef(0),
+      callRef(4),
+      st('goToPage', 0),
+    ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'motion-ended',
+    covers:
+      'onMotionEnded fires when a tween, a zoom-anchored tween or a fling settles, and when stopMotion halts a running one; stopMotion with nothing running is silent.',
+    plugins: framed(),
+    engine: engine(),
+    steps: [
+      ...boot,
+      v3('onMotionEnded', fnSpec('ended')),
+      v3('stopMotion'),
+      st('goToPage', 3),
+      advance(300),
+      st('next'),
+      advance(48),
+      v3('stopMotion'),
+      v3('isMoving'),
+      advance(300),
+      st('doubleTapZoom', { x: 500, y: 300 }),
+      advance(300),
+      st('fling', 0, -2000),
+      advance(4000),
+      v3('isMoving'),
+    ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'an-unbounded-landing-keeps-the-camera',
+    covers: 'On an unbounded stage a fling lands with setCam(cam()), which keeps the camera object: the last frame fires no camera event, then onMotionEnded does.',
+    plugins: framed({ bounded: false }),
+    engine: engine(portrait(2)),
+    steps: [...boot, v3('onCameraChanged', fnSpec('camera')), v3('onMotionEnded', fnSpec('ended')), st('fling', 0, -300), advance(2000), v3('isMoving')],
+    snapshot: SNAP,
+  },
+];
+
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stage-capability.json',
     describes: 'packages/plugin/stage: placement, selectors, settings, navigation, reveal, manipulation and responsive rules, frameless.',
-    cases: [...placementCases, ...settingsCases, ...navigationCases, ...manipulationCases, ...mutationEdgeCases, ...responsiveCases, ...edgeCases, ...lensCases],
+    cases: [...placementCases, ...settingsCases, ...navigationCases, ...manipulationCases, ...mutationEdgeCases, ...responsiveCases, ...edgeCases, ...lensCases, ...v3VerbCases],
   },
   {
     kind: 'scenario',
@@ -1601,5 +1769,11 @@ export const suites: Suite[] = [
     file: 'plugins/stage-feeds.json',
     describes: 'packages/plugin/stage: the page-registry refit, the actions executors and page-state feed, and the pan handler on the interaction hub.',
     cases: feedCases,
+  },
+  {
+    kind: 'scenario',
+    file: 'plugins/stage-events.json',
+    describes: 'packages/plugin/stage: the six change hooks and the diffing dispatch behind them.',
+    cases: eventCases,
   },
 ];

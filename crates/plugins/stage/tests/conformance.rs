@@ -33,3 +33,8 @@ fn motion_matches_the_typescript() {
 fn feeds_match_the_typescript() {
     assert_suite("plugins/stage-feeds.json", &registry(), &Vec::new());
 }
+
+#[test]
+fn change_hooks_match_the_typescript() {
+    assert_suite("plugins/stage-events.json", &registry(), &Vec::new());
+}
