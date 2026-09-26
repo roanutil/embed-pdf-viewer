@@ -98,8 +98,8 @@ fall to the unsupported kind.
 
 ## Coverage
 
-The generators reach 6,255 of the package's 6,272 statements and 1,409 of its 1,471 branches
-(`vectors/coverage.json`). The 17 statements left:
+The generators reach 6,261 of the package's 6,275 statements and 1,431 of its 1,488 branches
+(`vectors/coverage.json`). The 14 statements left:
 
 - `capability.ts` 2182 to 2189, `commitScriptEffects` with no `ctx.doc`. The plugin is
   document-scoped, so its context always has a handle.
@@ -108,12 +108,10 @@ The generators reach 6,255 of the package's 6,272 statements and 1,409 of its 1,
 - `capability.ts` 1648 and 1649, an engine page service without `downloadFile`. This one is a
   harness limit, not unreachable code: the fake engine answers every page member, so no vector can
   describe an engine that lacks one.
-- `handler.ts` 454 to 456, a pointer cancel while an ink group is still inside its grouping
-  window. Reachable, and not yet covered: a case would cancel between two quick ink strokes.
 - `reducer.ts` 69, the `default` arm for an action outside the union, which a Rust enum can't
   express.
 
-The 62 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
+The 57 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
 `coverage.json` lists each by line and column.
 
 ## Mutation testing

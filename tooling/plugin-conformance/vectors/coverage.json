@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "30788/30846",
-    "branches": "7541/7743"
+    "branches": "7557/7756"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -90,7 +90,7 @@
     },
     "packages/core/annotation/src/geometry.ts": {
       "statements": "1458/1458",
-      "branches": "545/548",
+      "branches": "546/549",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "411:51#0",
@@ -166,7 +166,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1572/1572",
-      "branches": "591/593",
+      "branches": "593/595",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "1195:63#0",
@@ -175,7 +175,7 @@
     },
     "packages/core/annotation/src/view.ts": {
       "statements": "602/602",
-      "branches": "220/222",
+      "branches": "221/223",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "358:43#0",
@@ -184,7 +184,7 @@
     },
     "packages/core/geometry/src/index.ts": {
       "statements": "801/801",
-      "branches": "94/94",
+      "branches": "93/93",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -417,7 +417,7 @@
     },
     "packages/plugin/annotation/src/capability.ts": {
       "statements": "2251/2264",
-      "branches": "732/778",
+      "branches": "741/786",
       "uncoveredLines": [
         1395,
         1396,
@@ -440,7 +440,6 @@
         "375:20#0",
         "384:24#0",
         "655:52#0",
-        "656:58#0",
         "698:52#0",
         "745:36#0",
         "804:52#0",
@@ -515,7 +514,7 @@
     },
     "packages/plugin/annotation/src/hover-feed.ts": {
       "statements": "47/47",
-      "branches": "17/18",
+      "branches": "18/19",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "36:21#0"
@@ -553,10 +552,9 @@
     },
     "packages/plugin/annotation/src/repository/index.ts": {
       "statements": "204/204",
-      "branches": "51/54",
+      "branches": "53/55",
       "uncoveredLines": [],
       "uncoveredBranches": [
-        "87:56#0",
         "165:58#0",
         "197:13#0"
       ]
@@ -575,7 +573,7 @@
     },
     "packages/plugin/annotation/src/repository/kinds/quads.ts": {
       "statements": "159/159",
-      "branches": "55/55",
+      "branches": "56/56",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -587,7 +585,7 @@
     },
     "packages/plugin/annotation/src/repository/kinds/stroke.ts": {
       "statements": "147/147",
-      "branches": "51/51",
+      "branches": "50/50",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -626,11 +624,9 @@
     },
     "packages/plugin/annotation/src/tools.ts": {
       "statements": "645/645",
-      "branches": "87/88",
+      "branches": "88/88",
       "uncoveredLines": [],
-      "uncoveredBranches": [
-        "629:45#0"
-      ]
+      "uncoveredBranches": []
     },
     "packages/plugin/annotation/src/types.ts": {
       "statements": "984/984",
