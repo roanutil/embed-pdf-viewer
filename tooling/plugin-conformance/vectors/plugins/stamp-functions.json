@@ -1840,6 +1840,740 @@
       }
     },
     {
+      "name": "library-updated",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "kind": "signatures",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "label": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "label": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "label": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_UPDATED",
+          "library": {
+            "id": "M",
+            "name": "Renamed",
+            "kind": "signatures",
+            "assetIds": [
+              "c"
+            ]
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "kind": "stamps",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Renamed",
+                "kind": "signatures",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "label": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "label": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "label": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "library-updated-unknown",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "kind": "signatures",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "label": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "label": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "label": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
+            }
+          }
+        },
+        {
+          "type": "LIBRARY_UPDATED",
+          "library": {
+            "id": "nope",
+            "name": "Library nope",
+            "kind": "stamps",
+            "assetIds": []
+          }
+        }
+      ],
+      "covers": "An update for an unknown library returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "kind": "stamps",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "kind": "signatures",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "label": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "label": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "label": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-updated",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "kind": "signatures",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "label": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "label": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "label": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
+            }
+          }
+        },
+        {
+          "type": "ASSET_UPDATED",
+          "asset": {
+            "id": "c",
+            "libraryId": "M",
+            "kind": "stamp",
+            "name": "Asset c",
+            "label": "Relabelled",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 102
+            }
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "changed": true,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "kind": "stamps",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "kind": "signatures",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "label": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "label": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "label": "Relabelled",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "asset-updated-unknown",
+      "fn": "stampReducer",
+      "args": [
+        {
+          "libraries": {
+            "L": {
+              "id": "L",
+              "name": "Library L",
+              "kind": "stamps",
+              "assetIds": [
+                "a",
+                "b"
+              ],
+              "categories": [
+                "Team"
+              ]
+            },
+            "M": {
+              "id": "M",
+              "name": "Library M",
+              "kind": "signatures",
+              "assetIds": [
+                "c"
+              ]
+            }
+          },
+          "libraryOrder": [
+            "L",
+            "M"
+          ],
+          "assets": {
+            "a": {
+              "id": "a",
+              "libraryId": "L",
+              "kind": "stamp",
+              "name": "Asset a",
+              "label": "Asset a",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 100
+              }
+            },
+            "b": {
+              "id": "b",
+              "libraryId": "L",
+              "kind": "signature",
+              "name": "Asset b",
+              "label": "Asset b",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 101
+              },
+              "subject": "S",
+              "categories": [
+                "x"
+              ]
+            },
+            "c": {
+              "id": "c",
+              "libraryId": "M",
+              "kind": "stamp",
+              "name": "Asset c",
+              "label": "Asset c",
+              "size": {
+                "width": 200,
+                "height": 100
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 102
+              }
+            }
+          }
+        },
+        {
+          "type": "ASSET_UPDATED",
+          "asset": {
+            "id": "nope",
+            "libraryId": "M",
+            "kind": "stamp",
+            "name": "Asset nope",
+            "label": "Asset nope",
+            "size": {
+              "width": 200,
+              "height": 100
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 100
+            }
+          }
+        }
+      ],
+      "covers": "An update for an unknown asset returns the same state.",
+      "outcome": {
+        "returned": {
+          "changed": false,
+          "state": {
+            "libraries": {
+              "L": {
+                "id": "L",
+                "name": "Library L",
+                "kind": "stamps",
+                "assetIds": [
+                  "a",
+                  "b"
+                ],
+                "categories": [
+                  "Team"
+                ]
+              },
+              "M": {
+                "id": "M",
+                "name": "Library M",
+                "kind": "signatures",
+                "assetIds": [
+                  "c"
+                ]
+              }
+            },
+            "libraryOrder": [
+              "L",
+              "M"
+            ],
+            "assets": {
+              "a": {
+                "id": "a",
+                "libraryId": "L",
+                "kind": "stamp",
+                "name": "Asset a",
+                "label": "Asset a",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                }
+              },
+              "b": {
+                "id": "b",
+                "libraryId": "L",
+                "kind": "signature",
+                "name": "Asset b",
+                "label": "Asset b",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 101
+                },
+                "subject": "S",
+                "categories": [
+                  "x"
+                ]
+              },
+              "c": {
+                "id": "c",
+                "libraryId": "M",
+                "kind": "stamp",
+                "name": "Asset c",
+                "label": "Asset c",
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 102
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "unknown-action",
       "fn": "stampReducer",
       "args": [

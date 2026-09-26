@@ -102,6 +102,10 @@ const cases: FunctionCase[] = [
     { type: 'ASSET_REMOVED', assetId: 'stray' },
     'An asset whose library is gone is deleted and the libraries are left as they are.',
   ),
+  r('library-updated', TWO, { type: 'LIBRARY_UPDATED', library: library('M', ['c'], { name: 'Renamed', kind: 'signatures' }) }),
+  r('library-updated-unknown', TWO, { type: 'LIBRARY_UPDATED', library: library('nope') }, 'An update for an unknown library returns the same state.'),
+  r('asset-updated', TWO, { type: 'ASSET_UPDATED', asset: asset('c', 'M', { label: 'Relabelled', page: pr(102) }) }),
+  r('asset-updated-unknown', TWO, { type: 'ASSET_UPDATED', asset: asset('nope', 'M') }, 'An update for an unknown asset returns the same state.'),
   r('unknown-action', TWO, { type: 'OTHER' }, 'An action outside the union returns the same state.'),
 ];
 

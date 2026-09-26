@@ -14,9 +14,14 @@
  *     counter is thread-local, and the harness resets it per case. The
  *     `stamp-plugin` factory is `stampPlugin()` itself, over the shared
  *     instance, and exactly one case may use it.
- *   - `console.error`. While a stamp factory is current, a call whose message
- *     starts `[stamp]` logs as the callback `console.error` (the Rust port
- *     takes it as `StampHost::console_error`).
+ *   - `console.error` and `console.warn`. While a stamp factory is current,
+ *     a call whose message starts `[stamp]` logs as the callback of that name
+ *     (the Rust port takes them as `StampHost::console_error` and
+ *     `console_warn`).
+ *   - `Math.random`, which `customStampName` draws a fresh identifier from.
+ *     Once a stamp factory has built, the nth call of a case answers
+ *     `((n % 62) + 0.5) / 62`, so the nth character is `BASE62[n % 62]`; the
+ *     Rust port takes the source as `StampHost::random`.
  *   - The asset engine. A vector cannot carry an `Engine`, so
  *     `config.assetEngine` names one built over the kernel's (fake) engine:
  *     `'instance'` passes it as is; `'factory'` and `'async-factory'` are
@@ -85,6 +90,24 @@ console.error = (...args: unknown[]) => {
     return;
   }
   previousError(...args);
+};
+const previousWarn = console.warn;
+console.warn = (...args: unknown[]) => {
+  if (stampLog && typeof args[0] === 'string' && args[0].startsWith('[stamp]')) {
+    stampLog('console.warn', args);
+    return;
+  }
+  previousWarn(...args);
+};
+
+// ── the Math.random shim ──────────────────────────────────────────────────────
+
+let stampRandomCalls: number | null = null;
+const previousRandom = Math.random;
+Math.random = () => {
+  if (stampRandomCalls === null) return previousRandom();
+  const n = stampRandomCalls++;
+  return ((n % 62) + 0.5) / 62;
 };
 
 // ── config ────────────────────────────────────────────────────────────────────
@@ -191,6 +214,7 @@ export const scriptingActions = (spec: StampScriptingSpec) => {
 registerPlugin('stamp', {
   factory: (config, env) => {
     stampLog = env.log;
+    stampRandomCalls = 0;
     const instance = freshCapability();
     const spec = (config ?? {}) as StampSpec;
     // `stamp.plugin.ts`, over this case's own controller module.
@@ -213,6 +237,7 @@ registerPlugin('stamp-plugin', {
     if (sharedInstanceUsed) throw new Error('[stamp suite] only one case may use the shared stamp-plugin instance');
     sharedInstanceUsed = true;
     stampLog = env.log;
+    stampRandomCalls = 0;
     return stampPlugin() as AnyPlugin;
   },
   tokens: [StampToken],
