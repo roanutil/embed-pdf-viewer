@@ -1705,8 +1705,10 @@
           ],
           "error": {
             "$error": {
-              "name": "Error",
-              "message": "[commands] duplicate command: a"
+              "name": "PluginError",
+              "message": "duplicate command 'a'",
+              "code": "conflict",
+              "capability": "commands"
             }
           }
         }
@@ -1786,7 +1788,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "disabledCategories": []
+            "$function": true
           }
         }
       }
@@ -1802,7 +1804,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "disabledCategories": []
+            "$function": true
           }
         }
       }
@@ -1824,11 +1826,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "disabledCategories": [
-              "pro",
-              "beta",
-              "pro"
-            ]
+            "$function": true
           }
         }
       }
@@ -1856,7 +1854,7 @@
           "id": "commands",
           "scope": "workspace",
           "initialState": {
-            "disabledCategories": []
+            "$function": true
           }
         }
       }
@@ -1879,10 +1877,11 @@
         }
       ],
       "outcome": {
-        "threw": {
-          "$error": {
-            "name": "Error",
-            "message": "[commands] duplicate command: a"
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "$function": true
           }
         }
       }
@@ -1902,10 +1901,11 @@
         }
       ],
       "outcome": {
-        "threw": {
-          "$error": {
-            "name": "Error",
-            "message": "[ui-core] unknown modifier \"Super\" in \"Super+A\""
+        "returned": {
+          "id": "commands",
+          "scope": "workspace",
+          "initialState": {
+            "$function": true
           }
         }
       }

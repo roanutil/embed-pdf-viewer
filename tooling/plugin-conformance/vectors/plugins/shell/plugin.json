@@ -17,7 +17,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -279,11 +282,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -348,11 +355,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -413,7 +424,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -477,7 +491,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "left"
           ]
@@ -488,7 +502,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -497,7 +511,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -581,7 +595,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "right"
           ]
@@ -592,7 +606,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -601,7 +615,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -648,7 +662,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "right"
           ]
@@ -695,7 +709,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "right"
           ]
@@ -706,7 +720,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -769,7 +783,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -789,7 +803,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "toString"
           ]
@@ -895,11 +909,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -964,11 +982,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1026,89 +1048,22 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "returned": null
           },
           "state": {
             "core": {
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
-                      "label": null,
-                      "size": {
-                        "width": 600,
-                        "height": 800
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
                       },
-                      "rotation": 0,
-                      "userUnit": 1,
-                      "boxes": {
-                        "media": {
-                          "left": 0,
-                          "bottom": 0,
-                          "right": 600,
-                          "top": 800
-                        },
-                        "crop": {
-                          "left": 0,
-                          "bottom": 0,
-                          "right": 600,
-                          "top": 800
-                        }
-                      }
-                    }
-                  ],
-                  "revision": 0,
-                  "renderPolicy": {
-                    "kind": "continuous"
-                  }
-                }
-              },
-              "pending": {},
-              "order": [
-                "a"
-              ],
-              "activeId": "a"
-            },
-            "plugins": {
-              "@@conformance/spy": {},
-              "shell::a": {
-                "surfaces": {},
-                "openMenus": []
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 1
-            }
-          },
-          "outcome": {
-            "returned": []
-          },
-          "state": {
-            "core": {
-              "documents": {
-                "a": {
-                  "id": "a",
-                  "pageCount": 1,
-                  "pages": [
-                    {
-                      "index": 0,
-                      "pageObjectNumber": 1,
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1173,11 +1128,88 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "shell::a": {
+                "surfaces": {},
+                "openMenus": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1242,11 +1274,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1322,11 +1358,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1406,11 +1446,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1493,11 +1537,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1587,11 +1635,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1674,11 +1726,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1755,7 +1811,12 @@
           },
           "outcome": {
             "returned": {
-              "tab": "layers"
+              "id": "right",
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": "layers"
+              }
             }
           },
           "state": {
@@ -1763,11 +1824,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1844,9 +1909,22 @@
           },
           "outcome": {
             "returned": [
-              "0",
-              "9",
-              "right"
+              {
+                "id": "0",
+                "open": true
+              },
+              {
+                "id": "9",
+                "open": true
+              },
+              {
+                "id": "right",
+                "open": true,
+                "exclusive": "side",
+                "props": {
+                  "tab": "layers"
+                }
+              }
             ]
           },
           "state": {
@@ -1854,11 +1932,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -1941,11 +2023,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2028,11 +2114,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2115,11 +2205,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2215,11 +2309,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2295,7 +2393,11 @@
           },
           "outcome": {
             "returned": {
-              "tab": "outline"
+              "id": "right",
+              "open": true,
+              "props": {
+                "tab": "outline"
+              }
             }
           },
           "state": {
@@ -2303,11 +2405,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2400,11 +2506,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2500,11 +2610,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2600,11 +2714,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2684,7 +2802,11 @@
           },
           "outcome": {
             "returned": {
-              "tab": "outline"
+              "id": "right",
+              "open": false,
+              "props": {
+                "tab": "outline"
+              }
             }
           },
           "state": {
@@ -2692,11 +2814,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2776,9 +2902,19 @@
           },
           "outcome": {
             "returned": [
-              "0",
-              "9",
-              "modal"
+              {
+                "id": "0",
+                "open": true
+              },
+              {
+                "id": "9",
+                "open": true
+              },
+              {
+                "id": "modal",
+                "open": true,
+                "exclusive": ""
+              }
             ]
           },
           "state": {
@@ -2786,11 +2922,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2890,11 +3030,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -2994,11 +3138,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3095,11 +3243,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3196,11 +3348,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3284,10 +3440,23 @@
           },
           "outcome": {
             "returned": [
-              "0",
-              "2",
-              "9",
-              "modal"
+              {
+                "id": "0",
+                "open": true
+              },
+              {
+                "id": "2",
+                "open": true
+              },
+              {
+                "id": "9",
+                "open": true
+              },
+              {
+                "id": "modal",
+                "open": true,
+                "exclusive": ""
+              }
             ]
           },
           "state": {
@@ -3295,11 +3464,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3389,11 +3562,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3477,7 +3654,7 @@
           },
           "outcome": {
             "returned": {
-              "$undefined": true
+              "id": "toString"
             }
           },
           "state": {
@@ -3485,11 +3662,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3589,11 +3770,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -3679,7 +3864,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -3776,7 +3964,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "left"
           ]
@@ -3787,7 +3975,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -3796,7 +3984,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -3838,7 +4026,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -3898,7 +4086,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         }
       ],
@@ -3991,11 +4179,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4070,11 +4262,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4151,11 +4347,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4233,11 +4433,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4305,11 +4509,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4370,20 +4578,22 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "returned": null
           },
           "state": {
             "core": {
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4451,11 +4661,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4526,11 +4740,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4598,11 +4816,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4680,11 +4902,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4761,11 +4987,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4836,11 +5066,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -4918,11 +5152,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5000,11 +5238,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5071,11 +5313,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5151,11 +5397,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5229,11 +5479,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5298,11 +5552,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5363,7 +5621,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5392,7 +5653,10 @@
             "pages": [
               {
                 "index": 0,
-                "pageObjectNumber": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
                 "label": null,
                 "size": {
                   "width": 600,
@@ -5492,7 +5756,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "left"
           ]
@@ -5503,7 +5767,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -5512,7 +5776,7 @@
             "token": "shell",
             "doc": "a"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -5543,7 +5807,7 @@
             "token": "shell",
             "doc": "b"
           },
-          "method": "surfaceProps",
+          "method": "getSurface",
           "args": [
             "left"
           ]
@@ -5554,7 +5818,7 @@
             "token": "shell",
             "doc": "b"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -5563,7 +5827,7 @@
             "token": "shell",
             "doc": "b"
           },
-          "method": "openMenus",
+          "method": "listOpenMenus",
           "args": []
         },
         {
@@ -5582,7 +5846,7 @@
           "target": {
             "token": "shell"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -5598,7 +5862,7 @@
           "target": {
             "token": "shell"
           },
-          "method": "openSurfaces",
+          "method": "listOpenSurfaces",
           "args": []
         },
         {
@@ -5746,11 +6010,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5856,11 +6124,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5891,11 +6163,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -5978,11 +6254,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6013,11 +6293,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6104,11 +6388,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6139,11 +6427,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6222,11 +6514,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6257,11 +6553,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6334,7 +6634,8 @@
           },
           "outcome": {
             "returned": {
-              "$undefined": true
+              "id": "left",
+              "open": true
             }
           },
           "state": {
@@ -6342,11 +6643,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6377,11 +6682,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6454,7 +6763,10 @@
           },
           "outcome": {
             "returned": [
-              "left"
+              {
+                "id": "left",
+                "open": true
+              }
             ]
           },
           "state": {
@@ -6462,11 +6774,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6497,11 +6813,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6580,11 +6900,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6615,11 +6939,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6698,11 +7026,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6733,11 +7065,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6816,11 +7152,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6851,11 +7191,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6927,20 +7271,22 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
-            }
+            "returned": null
           },
           "state": {
             "core": {
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -6971,11 +7317,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7054,11 +7404,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7089,11 +7443,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7174,11 +7532,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7209,11 +7571,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7292,11 +7658,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7327,11 +7697,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7410,11 +7784,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7445,11 +7823,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7537,11 +7919,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7572,11 +7958,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7649,7 +8039,10 @@
           },
           "outcome": {
             "returned": [
-              "left"
+              {
+                "id": "left",
+                "open": true
+              }
             ]
           },
           "state": {
@@ -7657,11 +8050,15 @@
               "documents": {
                 "a": {
                   "id": "a",
+                  "instanceId": "a#1",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7692,11 +8089,15 @@
                 },
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7795,11 +8196,15 @@
               "documents": {
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7874,11 +8279,15 @@
               "documents": {
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -7948,11 +8357,15 @@
               "documents": {
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -8060,11 +8473,15 @@
               "documents": {
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -8095,11 +8512,15 @@
                 },
                 "a": {
                   "id": "a",
+                  "instanceId": "a#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -8174,11 +8595,15 @@
               "documents": {
                 "b": {
                   "id": "b",
+                  "instanceId": "b#2",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
@@ -8209,11 +8634,15 @@
                 },
                 "a": {
                   "id": "a",
+                  "instanceId": "a#3",
                   "pageCount": 1,
                   "pages": [
                     {
                       "index": 0,
-                      "pageObjectNumber": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
                       "label": null,
                       "size": {
                         "width": 600,
