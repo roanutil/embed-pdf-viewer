@@ -162,7 +162,8 @@ const register = (defs: CommandDef[]) => {
  *  The definitions are registered when the controller is created, not here. */
 const plugin = (config?: CommandsConfig) => {
   const def = commandsPlugin(config);
-  return { id: def.id, scope: def.scope, initialState: def.initialState?.() };
+  const initial = def.initialState;
+  return { id: def.id, scope: def.scope, initialState: typeof initial === 'function' ? initial() : initial };
 };
 
 /** `resolvedCommandsEqual(a, a)`: one object on both sides. */
