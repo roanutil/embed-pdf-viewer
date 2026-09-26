@@ -43,6 +43,9 @@ trap 'rm -f "$TICKET"; [ "$(cat "$LOCK/pid" 2>/dev/null)" = "$$" ] && rm -rf "$L
 
 alive() { kill -0 "$1" 2>/dev/null; }
 
+# Say so once: a caller reads this output after the run, and a line every
+# poll over an hour's wait is hundreds of lines of nothing.
+announced=
 while :; do
   # Drop tickets whose owner is gone.
   for t in "$QUEUE"/*; do
@@ -60,7 +63,10 @@ while :; do
     echo $$ >"$LOCK/pid"
     break
   fi
-  echo "scripts/mutants.sh: waiting for $(ls "$QUEUE" | wc -l | tr -d ' ') queued run(s) ahead (lock pid ${holder:-none})" >&2
+  if [ -z "$announced" ]; then
+    echo "scripts/mutants.sh: queued behind another run (lock pid ${holder:-none}); waiting" >&2
+    announced=1
+  fi
   sleep 15
 done
 rm -f "$TICKET"
