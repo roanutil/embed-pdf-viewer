@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
+use epdf_kernel::error::ErrorClass;
 use epdf_kernel::store::Unsubscribe;
 use epdf_kernel::{Error, Promise, undefined};
 use serde_json::{Value, json};
@@ -14,6 +15,8 @@ use crate::canonical;
 
 struct Pending {
     label: String,
+    /// An engine call's settlement, as opposed to a scripted callback's.
+    engine: bool,
     settle: Box<dyn FnOnce(Result<Value, Error>)>,
 }
 
@@ -38,6 +41,19 @@ pub struct FakeEngine {
 enum Table {
     Engine,
     Document(usize),
+}
+
+/// `makeEngineError`: an error the fake ENGINE rejects with. The kernel maps
+/// engine refusals by class (`instanceof PermissionDenied` in the
+/// TypeScript), and a real engine throws that class, so a refusal the table
+/// names `PermissionDenied` is one, with the members it spells. Errors a
+/// vector hands in as arguments (`$error`) stay plain.
+pub fn engine_error(spec: &Value) -> Error {
+    let error = Error::from_spec(spec);
+    if error.name == "PermissionDenied" {
+        return error.of_class(ErrorClass::PermissionDenied);
+    }
+    error
 }
 
 impl FakeEngine {
@@ -189,12 +205,13 @@ impl FakeEngine {
             },
             Some(entry) => {
                 if let Some(label) = entry.get("defer").and_then(Value::as_str) {
-                    self.state
-                        .borrow_mut()
-                        .pending
-                        .push(Pending { label: label.to_string(), settle: Box::new(settle) });
+                    self.state.borrow_mut().pending.push(Pending {
+                        label: label.to_string(),
+                        engine: true,
+                        settle: Box::new(settle),
+                    });
                 } else if let Some(error) = entry.get("error") {
-                    settle(Err(Error::from_spec(error)));
+                    settle(Err(engine_error(error)));
                 } else {
                     settle(Ok(entry.get("value").cloned().unwrap_or_else(undefined)));
                 }
@@ -203,8 +220,10 @@ impl FakeEngine {
         promise
     }
 
-    /// Settle the oldest pending call or callback with this label.
-    pub fn settle(&self, label: &str, outcome: Result<Value, Error>) -> bool {
+    /// Settle the oldest pending call or callback with this label. An error
+    /// is given as its spec: an engine call rejects with `engine_error`, a
+    /// scripted callback with a plain error.
+    pub fn settle(&self, label: &str, outcome: Result<Value, &Value>) -> bool {
         let pending = {
             let mut state = self.state.borrow_mut();
             let Some(index) = state.pending.iter().position(|p| p.label == label) else {
@@ -212,13 +231,20 @@ impl FakeEngine {
             };
             state.pending.remove(index)
         };
+        let outcome = outcome.map_err(|spec| {
+            if pending.engine { engine_error(spec) } else { Error::from_spec(spec) }
+        });
         (pending.settle)(outcome);
         true
     }
 
     /// Park a settlement owned by someone else (a `$fn` callback, a probe).
     pub fn defer(&self, label: &str, settle: Box<dyn FnOnce(Result<Value, Error>)>) {
-        self.state.borrow_mut().pending.push(Pending { label: label.to_string(), settle });
+        self.state.borrow_mut().pending.push(Pending {
+            label: label.to_string(),
+            engine: false,
+            settle,
+        });
     }
 
     pub fn emit(&self, doc: &str, event: &Value) -> Result<(), Error> {
@@ -286,7 +312,10 @@ impl Engine for AsEngine {
         let fallback: Box<dyn FnOnce() -> Result<Value, Error>> =
             Box::new(move || match input_id {
                 Some(id) if this.document_spec(&id).is_some() => Ok(json!({ "$document": id })),
-                _ => Err(Error::named("FakeEngineUnmatched", "no document for open")),
+                _ => match this.spec.get("defaultDocument").and_then(Value::as_str) {
+                    Some(key) => Ok(json!({ "$document": key })),
+                    None => Err(Error::named("FakeEngineUnmatched", "no document for open")),
+                },
             });
         // The handle is made as the answer arrives, even when the call was
         // aborted first: the TypeScript's `resolve(map(value))` runs `map`
