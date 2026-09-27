@@ -1,6 +1,6 @@
 # epdf-plugin-view-manager
 
-`packages/plugin/view-manager` in Rust, at the v3 contract. All 63 cases in
+`packages/plugin/view-manager` in Rust, at the v3 contract. All 64 cases in
 `vectors/plugins/view-manager/reducer.json` and all 12 in `vectors/plugins/view-manager/plugin.json`
 replay identically (`cargo test -p epdf-plugin-view-manager`).
 

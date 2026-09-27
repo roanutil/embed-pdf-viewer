@@ -1,6 +1,6 @@
 # epdf-plugin-metadata
 
-`packages/plugin/metadata` in Rust, at the v3 contract. All 13 cases in
+`packages/plugin/metadata` in Rust, at the v3 contract. All 14 cases in
 `vectors/plugins/metadata.json` replay identically (`cargo test -p epdf-plugin-metadata`).
 
 The crate has the TypeScript's shape. `model.rs` is `model.ts` (status, value and revision, the

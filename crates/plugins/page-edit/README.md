@@ -1,6 +1,6 @@
 # epdf-plugin-page-edit
 
-`packages/plugin/page-edit` in Rust, at the v3 contract. All 17 cases in
+`packages/plugin/page-edit` in Rust, at the v3 contract. All 19 cases in
 `vectors/plugins/page-edit.json` replay identically (`cargo test -p epdf-plugin-page-edit`).
 
 The crate has the TypeScript's shape: `contract.rs` and `controller.rs`, with
