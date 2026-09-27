@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "49195/49390",
-    "branches": "12155/12478"
+    "statements": "49197/49390",
+    "branches": "12172/12495"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -200,7 +200,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1966/1966",
-      "branches": "720/722",
+      "branches": "722/724",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "1534:63#0",
@@ -810,12 +810,11 @@
     },
     "packages/plugin/annotation/src/comments/comments.ts": {
       "statements": "186/186",
-      "branches": "37/40",
+      "branches": "40/42",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "49:14#0",
-        "57:14#0",
-        "91:8#0"
+        "57:14#0"
       ]
     },
     "packages/plugin/annotation/src/comments/threads.ts": {
@@ -872,7 +871,7 @@
     },
     "packages/plugin/annotation/src/read/annotations.ts": {
       "statements": "171/171",
-      "branches": "88/92",
+      "branches": "87/91",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "29:76#0",
@@ -883,7 +882,7 @@
     },
     "packages/plugin/annotation/src/read/chrome.ts": {
       "statements": "230/230",
-      "branches": "46/48",
+      "branches": "47/49",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "176:48#0",
@@ -905,7 +904,7 @@
     },
     "packages/plugin/annotation/src/read/selection-props.ts": {
       "statements": "104/104",
-      "branches": "42/43",
+      "branches": "43/44",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "69:20#0"
@@ -913,7 +912,7 @@
     },
     "packages/plugin/annotation/src/repository/index.ts": {
       "statements": "214/214",
-      "branches": "62/64",
+      "branches": "63/65",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "165:58#0",
@@ -946,7 +945,7 @@
     },
     "packages/plugin/annotation/src/repository/kinds/stroke.ts": {
       "statements": "200/200",
-      "branches": "83/83",
+      "branches": "85/85",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -1114,7 +1113,7 @@
     },
     "packages/plugin/annotation/src/tools/handlers.ts": {
       "statements": "526/526",
-      "branches": "117/121",
+      "branches": "119/123",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "178:19#0",
@@ -1186,7 +1185,7 @@
     },
     "packages/plugin/annotation/src/write/drafts.ts": {
       "statements": "79/79",
-      "branches": "26/28",
+      "branches": "27/29",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "37:18#0",
@@ -1221,7 +1220,7 @@
     },
     "packages/plugin/annotation/src/write/markup.ts": {
       "statements": "112/112",
-      "branches": "32/33",
+      "branches": "33/34",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "77:38#0"
@@ -1241,7 +1240,7 @@
     },
     "packages/plugin/annotation/src/write/pointer.ts": {
       "statements": "213/213",
-      "branches": "71/75",
+      "branches": "72/76",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "40:78#0",
@@ -1292,7 +1291,7 @@
     },
     "packages/plugin/annotation/src/write/text-editing.ts": {
       "statements": "160/160",
-      "branches": "34/37",
+      "branches": "35/38",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "45:27#0",
@@ -1572,18 +1571,17 @@
       ]
     },
     "packages/plugin/form/src/write/activation.ts": {
-      "statements": "174/179",
-      "branches": "50/56",
+      "statements": "176/179",
+      "branches": "52/59",
       "uncoveredLines": [
-        27,
-        28,
         29,
         30,
         31
       ],
       "uncoveredBranches": [
-        "26:2#0",
+        "26:20#0",
         "26:49#0",
+        "28:18#0",
         "51:14#0",
         "53:61#0",
         "56:67#0",

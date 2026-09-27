@@ -6,6 +6,31 @@ gained 101 commits, including a merge of `main` that restructures every plugin p
 is the plan for catching the port up, and the measurements it starts from.
 `multiplatform-plugins-status.md` records the port itself.
 
+## Where it ended
+
+Done. The merge is `807f9f718`, and every step below is finished on
+`research/multi-platform-rust-core-impl-plugins`. All 109 vector files are current, every crate
+replays its own, and each crate was mutation-tested file by file and its survivors triaged.
+`multiplatform-plugins-status.md` has the per-crate numbers.
+
+Two things in the measurements below turned out wrong. `packages/core/main/src` did change: 14
+files, 1,485 insertions, for leases, `create()` controllers, the guarded handle, `PluginError` and
+lanes. The kernel was ported first for that reason, and every plugin port built on it. And the
+table's 9 stale files were only the ones that could run: once every suite imported, 62 of the 94
+vector files changed.
+
+The work cost 38 first-parent commits and touched 510 files under `crates` and
+`tooling/plugin-conformance/src` (64,183 insertions, 23,111 deletions). The harness needed two
+rules the plan did not foresee, both in `tooling/plugin-conformance/README.md`. The kernel numbers
+document instances from one counter per process, so traces renumber them per case. And the stamp
+plugin's asset ids come from a module-level counter, so its suites load a fresh copy of the stamp
+source per case.
+
+Mutation triage paid for itself. It found and fixed port bugs the vectors had not reached: the
+RSA-PSS hash and a stack overflow on cross-issuing CAs in `epdf-signature-core`, four DER and date
+divergences there, a dropped `mark` in `epdf-plugin-stamp`, and number formatting in
+`epdf-plugin-page-edit` and `epdf-kernel`.
+
 ## The answer so far
 
 The merge is textually clean and semantically expensive. A probe merge on 2026-09-26 (branch tip
@@ -65,11 +90,11 @@ deferred, which is a behaviour or call-order change.
 
 ## Re-running the probe
 
-To measure again after the other branch moves: merge into a throwaway branch, `pnpm install`, then
-run a script that imports each file in `tooling/plugin-conformance/src/suites/` inside a
-`try`/`catch` and calls `emit([suite], true)` from `src/vectors.ts` for each suite, printing
-whether it failed to import, threw, came out stale or came out unchanged. The one used for the
-table above was not committed; it is about forty lines.
+`tooling/plugin-conformance/src/staleness.ts` is the probe, now committed. It imports every suite
+and reports each vector file as `no-import`, `throws`, `stale` or `unchanged` without stopping at
+the first failure. `src/emit-one.ts <suite>...` writes chosen suites alone while others still fail
+to import. To measure against a newer TypeScript: merge into a throwaway branch, `pnpm install`,
+then run `npx tsx --conditions=development src/staleness.ts` from `tooling/plugin-conformance`.
 
 ## Running agents on this work
 
