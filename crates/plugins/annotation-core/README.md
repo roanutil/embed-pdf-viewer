@@ -148,43 +148,43 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
 
-Pre-v3, rerun pending: the counts below predate `measure.rs`, `measurement.rs`,
-`measurement_shape.rs`, `richtext.rs`, `selection.rs` and the PageRef changes, and several line
-numbers have moved.
-
-Every source file but `harness.rs` (excluded in `.cargo/mutants.toml`) and `lib.rs` (re-exports
-only) has been run, one file at a time (`scripts/mutants.sh -p epdf-annotation-core
---test-package epdf-annotation-core --file <file>`). Of the 98 mutants that survived, 30 are killed
-by cases added afterwards and 68 are equivalent or unreachable, each listed below. "Killed after"
-counts the first group; each of those was confirmed by applying the mutant by hand and watching the
-replay fail, not by a second full run. Timeouts count as caught: each is a mutant that loops
-forever.
+`scripts/mutants.sh -p epdf-annotation-core --test-package epdf-annotation-core --file <file>`,
+file by file over every module but `harness.rs`, catches 4,577 of 4,669 viable mutants (4,556
+caught, 21 timeouts; 213 unviable). `lib.rs` only re-exports and has no mutants. The run itself, at
+`afb842b48`, caught 4,458 and missed 190. Cases added afterwards kill 98 of those 190, and the
+counts above include them: 93 through new vectors, 5 through unit tests in `tests/api.rs` for
+`PageRef::same_page` and `MeasurementAppearance::is_polygon`, which nothing in the crate calls. Each
+was confirmed by applying the mutant by hand and watching `cargo test` fail, not by a second run.
+The other 92 are equivalent or unreachable, each listed below. Timeouts count as caught: each is a
+mutant that loops forever.
 
 | File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
 |---|---|---|---|---|---|---|
 | `anchor.rs` | 72 | 0 | 0 | 5 | | |
-| `cloudy.rs` | 632 | 18 | 39 | 1 | 7 | 32 |
+| `cloudy.rs` | 639 | 18 | 32 | 1 | | 32 |
 | `endings.rs` | 66 | 0 | 1 | 2 | | 1 |
 | `flags.rs` | 47 | 0 | 0 | 2 | | |
-| `geometry.rs` | 1,156 | 0 | 35 | 20 | 21 | 14 |
+| `geometry.rs` | 1,180 | 0 | 14 | 21 | | 14 |
 | `group.rs` | 18 | 0 | 0 | 1 | | |
-| `hit.rs` | 94 | 0 | 1 | 5 | | 1 |
+| `hit.rs` | 97 | 0 | 9 | 7 | 8 | 1 |
 | `ink.rs` | 45 | 0 | 0 | 0 | | |
 | `js.rs` | 149 | 0 | 6 | 11 | | 6 |
 | `kinds.rs` | 33 | 0 | 0 | 17 | | |
 | `links.rs` | 5 | 0 | 0 | 2 | | |
+| `measure.rs` | 243 | 0 | 41 | 8 | 24 | 17 |
+| `measurement.rs` | 258 | 0 | 18 | 12 | 14 | 4 |
+| `measurement_shape.rs` | 184 | 0 | 36 | 7 | 35 | 1 |
 | `placement.rs` | 63 | 0 | 0 | 2 | | |
 | `plane.rs` | 35 | 0 | 0 | 3 | | |
-| `props.rs` | 40 | 0 | 0 | 21 | | |
+| `props.rs` | 41 | 0 | 0 | 23 | | |
+| `richtext.rs` | 142 | 0 | 3 | 6 | 1 | 2 |
 | `scene.rs` | 225 | 3 | 1 | 5 | | 1 |
+| `selection.rs` | 17 | 0 | 0 | 1 | | |
 | `snap.rs` | 62 | 0 | 0 | 3 | | |
-| `types.rs` | 61 | 0 | 3 | 9 | | 3 |
-| `update.rs` | 468 | 0 | 9 | 31 | 2 | 7 |
-| `view.rs` | 138 | 0 | 3 | 26 | | 3 |
-| Total | 3,409 | 21 | 98 | 166 | 30 | 68 |
-
-The rows for the 17 files the first pass had already covered are fresh runs, taken after
-`84f73b5ee` and `90be0fb5a` added cases; that pass had counted 30 misses in them, and 24 remain.
+| `types.rs` | 64 | 0 | 7 | 9 | 4 | 3 |
+| `update.rs` | 593 | 0 | 17 | 38 | 10 | 7 |
+| `view.rs` | 180 | 0 | 5 | 27 | 2 | 3 |
+| Total | 4,458 | 21 | 190 | 213 | 98 | 92 |
 
 ### Accepted misses
 
@@ -214,36 +214,61 @@ shows):
 | Line | Mutant | Why no case kills it |
 |---|---|---|
 | 139 | delete the `"se"` arm of `opposite_handle` | Equivalent. `group_resize_anchor` falls back to `nw`, which is `se`'s opposite anyway, and in `resize_rotated_rect` the anchor cancels: the new centre is `c0 + R(next_centre - c0)` whatever the anchor is. |
-| 466 | `\|\|` to `&&` in `obb_from_geom` | Equivalent. The two differ only at `rot` 0, where `geom_rotate_about` by `-0` returns the geom unchanged, and at `NaN`, where the final rotation makes every corner `NaN` either way. |
-| 757 | `>` to `>=` on the baseline length in `caret_geom_from_anchor` | Equivalent. A zero length means `bx` and `by` are zeros, and `atan2` of zeros gives the 0 the other arm returns. Only a `-0` `bx` gives 180, and canonical JSON has no `-0`. |
-| 762 | `<` to `<=` against `CARET_ROT_EPSILON` | Unreachable. `normalize_deg` returns a value near 0.05 as `(x + 360) - 360`, a multiple of 2^-44, and 0.05 isn't one. The upper edge, `> 360 - 0.05`, is reachable and killed (`rot-at-the-upper-edge`). |
-| 840 | `<` to `<=` and to `==` on the join's direction change in `stroke_outline_points` | Equivalent. The points only reach `union_rect` in `geom_visual_bounds`. A join that turns by less than 1e-9 is straight to within `h * theta^2 / 8`, so its miter lands on corners already in the set. |
-| 846 | `<` to `<=` on the bisector length | Unreachable. Near a reversal that length is rounding noise of order 1e-16 over the angle, so it never lands on exactly 1e-9. |
-| 851 | `<` to `<=` on the bisector orientation test | Unreachable. The dot product is exactly 0 only when the two directions are parallel, and both parallel cases are skipped above it. |
-| 856 | `<` to `<=` on the half-angle cosine | Unreachable, for the reason 846 is; only a negative stroke width could observe it. The `==` mutant on the same line is killed (`reversal-negative-stroke`). |
-| 961 | the `*rot != 0.0` guard in `selection_bounds` to `true` | Equivalent. `rotated_aabb(rect, 0)` returns `rect`, which is what `geom_bounds` gives a text box. |
-| 1031 | `\|\|` to `&&` on the ellipse radii in `ending_nodes_hit` | Equivalent. The only ellipse node is the circle ending, placed with rotation 0 from `(-r, -r)` and `(r, r)`, so its radii are always equal. |
-| 1047, 1165 | `>` to `>=` on `len > 2` before a closing edge | Equivalent. With two points the closing edge is the first segment, already tested. |
-| 1191 | `&&` to `\|\|` on `rot` in `geom_handles` | Unreachable by a vector. At `rot` 0 the mutant rotates by 0, which is exact. Only a `NaN` `rot` tells them apart, and every consumer carries the handle's cursor, where the port already differs for a non-finite `rot` (see "Not ported"). |
+| 467 | `\|\|` to `&&` in `obb_from_geom` | Equivalent. The two differ only at `rot` 0, where `geom_rotate_about` by `-0` returns the geom unchanged, and at `NaN`, where the final rotation makes every corner `NaN` either way. |
+| 758 | `>` to `>=` on the baseline length in `caret_geom_from_anchor` | Equivalent. A zero length means `bx` and `by` are zeros, and `atan2` of zeros gives the 0 the other arm returns. Only a `-0` `bx` gives 180, and canonical JSON has no `-0`. |
+| 763 | `<` to `<=` against `CARET_ROT_EPSILON` | Unreachable. `normalize_deg` returns a value near 0.05 as `(x + 360) - 360`, a multiple of 2^-44, and 0.05 isn't one. The upper edge, `> 360 - 0.05`, is reachable and killed (`rot-at-the-upper-edge`). |
+| 841 | `<` to `<=` and to `==` on the join's direction change in `stroke_outline_points` | Equivalent. The points only reach `union_rect` in `geom_visual_bounds`. A join that turns by less than 1e-9 is straight to within `h * theta^2 / 8`, so its miter lands on corners already in the set. |
+| 847 | `<` to `<=` on the bisector length | Unreachable. Near a reversal that length is rounding noise of order 1e-16 over the angle, so it never lands on exactly 1e-9. |
+| 852 | `<` to `<=` on the bisector orientation test | Unreachable. The dot product is exactly 0 only when the two directions are parallel, and both parallel cases are skipped above it. |
+| 857 | `<` to `<=` on the half-angle cosine | Unreachable, for the reason 847 is; only a negative stroke width could observe it. The `==` mutant on the same line is killed (`reversal-negative-stroke`). |
+| 962 | the `*rot != 0.0` guard in `selection_bounds` to `true` | Equivalent. `rotated_aabb(rect, 0)` returns `rect`, which is what `geom_bounds` gives a text box. |
+| 1032 | `\|\|` to `&&` on the ellipse radii in `ending_nodes_hit` | Equivalent. The only ellipse node is the circle ending, placed with rotation 0 from `(-r, -r)` and `(r, r)`, so its radii are always equal. |
+| 1048, 1166 | `>` to `>=` on `len > 2` before a closing edge | Equivalent. With two points the closing edge is the first segment, already tested. |
+| 1192 | `&&` to `\|\|` on `rot` in `geom_handles` | Unreachable by a vector. At `rot` 0 the mutant rotates by 0, which is exact. Only a `NaN` `rot` tells them apart, and every consumer carries the handle's cursor, where the port already differs for a non-finite `rot` (see "Not ported"). |
 
 The other files:
 
 | Line | Mutant | Why no case kills it |
 |---|---|---|
 | `endings.rs` 42 | `a + PI` to `a - PI` for the reversed endings | Equivalent. The two angles are a full turn apart. |
-| `hit.rs` 212 | `selected.len() > 1` to `>=` in `hit_test` | Equivalent. A single selection only reaches the group branch when it isn't selectable, and then it is either not interactive (so not transformable) or of the one kind whose caps say unselectable, whose group caps are all false: the branch returns nothing. |
+| `hit.rs` 245 | `selected.len() > 1` to `>=` in `hit_test` | Equivalent. A single selection only reaches the group branch when it isn't selectable, and then it is either not interactive (so not transformable) or of the one kind whose caps say unselectable, whose group caps are all false: the branch returns nothing. |
 | `js.rs` 23 | `-1074` to `1074`, and `\|` to `^`, in `decompose` | Equivalent. A subnormal times `10^digits` is never an exact tie either way, and the fraction never has bit 52 set. |
 | `js.rs` 34 | the `s > 0` guard in `exact_tie` to `false` | Equivalent. The last arm answers `false` for a positive shift too, since `(-s) as u32` wraps far past any trailing-zero count. |
 | `js.rs` 323 | `>` to `>=` in `Record::insert` | Equivalent. Two keys with the same array index are the same key, and that case returns earlier. |
 | `js.rs` 362, 423 | the `Record` and `IdSet` visitors' `expecting` to `Ok(())` | Unobservable. It only writes a decode error message, and no vector holds a malformed record or set. |
-| `scene.rs` 202 | outer `nodes.len() < 400` to `<=` in `layout_redact_label` | Equivalent. The inner loop's own `< 400` guard stops every push. |
-| `types.rs` 614 | delete `!` in `AnnotationPropsPatch::spread`'s key order | Unobservable here. The spread's order only reaches `set_defaults`, whose output is a JSON object (member order isn't compared, and a repeated key collapses on decode); the `props` effect's key list comes from the message's own patch. |
-| `types.rs` 654 | `PatchVisitor::expecting` to `Ok(())` | Unobservable, as for `js.rs` 362. |
-| `types.rs` 888 | the `is_segment()` guard in `segment_policy` to `true` | Equivalent. Its one caller is the line draft, and `click_create_geom` gives a line nothing from a box placement, just as it gets nothing without a policy. |
-| `update.rs` 238 | `same()` to `Default::default()` | Equivalent. `(None, Vec::new())` is the default. |
-| `update.rs` 606 | `delta.abs() < 0.01` to `<=` | Unreachable without a last-bit comparison. The delta is a difference of `atan2` angles; a snapped delta from a still pointer is `arc_to`, which is `x - 180` for an `x` near 180 and so a multiple of 2^-45, never 0.01. |
-| `update.rs` 623 | both `< 1e-4` to `<=` on the group factors | Unreachable. `sx - 1` is a multiple of `ulp(sx)`, at least 2^-53 near 1, and 1e-4 isn't one. |
-| `update.rs` 1021 | the `dr != 0.0 && !dr.is_nan()` guard to `true`, and `&&` to `\|\|` | Equivalent. A `dr` of 0 gives an upright rotation of 0, and a `NaN` one gives `NaN`, which `upright_box` and `rot_of` both treat as 0. |
-| `update.rs` 1405 | `\|\|` to `&&` on the caret box | Equivalent. The caret box is square. |
-| `view.rs` 72 | the `mode.zoom` guard in `eff_style` to `true` | Equivalent. Without `zoom` the anchor scale is 1, so the stroke divides by 1. |
-| `view.rs` 391, 494 | `sel.len() > 1` to `>=` | Equivalent. Both follow a `sel.len() == 1` branch. |
+| `scene.rs` 205 | outer `nodes.len() < 400` to `<=` in `layout_redact_label` | Equivalent. The inner loop's own `< 400` guard stops every push. |
+| `types.rs` 689 | delete `!` in `AnnotationPropsPatch::spread`'s key order | Unobservable here. The spread's order only reaches `set_defaults`, whose output is a JSON object (member order isn't compared, and a repeated key collapses on decode); the `props` effect's key list comes from the message's own patch. |
+| `types.rs` 732 | `PatchVisitor::expecting` to `Ok(())` | Unobservable, as for `js.rs` 362. |
+| `types.rs` 972 | the `is_segment()` guard in `segment_policy` to `true` | Equivalent. Its one caller is the line draft, and `click_create_geom` gives a line nothing from a box placement, just as it gets nothing without a policy. |
+| `update.rs` 266 | `same()` to `Default::default()` | Equivalent. `(None, Vec::new())` is the default. |
+| `update.rs` 769 | `delta.abs() < 0.01` to `<=` | Unreachable without a last-bit comparison. The delta is a difference of `atan2` angles; a snapped delta from a still pointer is `arc_to`, which is `x - 180` for an `x` near 180 and so a multiple of 2^-45, never 0.01. |
+| `update.rs` 789 | both `< 1e-4` to `<=` on the group factors | Unreachable. `sx - 1` is a multiple of `ulp(sx)`, at least 2^-53 near 1, and 1e-4 isn't one. |
+| `update.rs` 1247 | the `dr != 0.0 && !dr.is_nan()` guard to `true`, and `&&` to `\|\|` | Equivalent. A `dr` of 0 gives an upright rotation of 0, and a `NaN` one gives `NaN`, which `upright_box` and `rot_of` both treat as 0. |
+| `update.rs` 1677 | `\|\|` to `&&` on the caret box | Equivalent. The caret box is square. |
+| `view.rs` 118 | the `mode.zoom` guard in `eff_style` to `true` | Equivalent. Without `zoom` the anchor scale is 1, so the stroke divides by 1. |
+| `view.rs` 479, 591 | `sel.len() > 1` to `>=` | Equivalent. Both follow a `sel.len() == 1` branch. |
+
+`measure.rs`. The boundary tests compare cross products with 0. For `fround` coordinates of similar
+magnitude those products are exact, and the arguments below assume so; a counterexample would need
+a rounding coincidence.
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| 221 | `+=` to `-=` in `polygon_area` | Equivalent. Negating every term negates the sum, and the area is its absolute value. |
+| 230 | `>` to `>=` on `boundary.len()` | Equivalent. A one-point boundary pops to empty instead of staying at one point, and both fail the `< 3` test. |
+| 233 | `\|\|` to `&&` on the size and area test | Equivalent. Fewer than three points still have zero area and return. A zero-area boundary of three or more points is collinear or self-intersecting, and the fold, touch and crossing tests below reject every such boundary. |
+| 254 | `*` to `/` on either product, `+` to `*` between them, `<` to `==` and `<=` on `doubles_back` | Equivalent. The test only counts where `cross(a, b, next)` is 0. Straight through, both steps point the same way: each axis ratio is positive or `NaN`, both products are at least 0, so none of these makes the dot negative, and the dot is 0 only at a repeated vertex, which `same` rejects on the next edge. A real fold also puts a vertex on a non-adjacent edge for four or more points, which `on_segment` rejects, and a folded triangle has zero area. The other 11 mutants on the line are killed (`area-straight-*`). |
+| 265, 266, 267 | each `\|\|` to `&&` in the `on_segment` chain | Equivalent. Unless all four points are collinear, any endpoint lying on the other segment also makes the sign test below report a crossing. Two collinear segments that meet have both endpoints of one inside the other, or one endpoint of each inside the other, and each mutated chain still holds for those. |
+| 370 | both `\|\|` to `&&` in `format_measurement` | Equivalent. Both callers have already rejected an empty or invalid format list, and an infinite value fails the loop's own `is_finite` check on the first format. |
+| 429, 430, 431 | `is_dimension` to `true`, and each `&&` to `\|\|` | Unreachable. The only caller is `measurement_readout`, and the port always passes it a matching pair: `line` and `LineDimension` from `distance_label`, `polygon` and `PolygonDimension` or `polyline` and `PolyLineDimension` from `shape_measurement_readout`. |
+
+The other new survivors:
+
+| Line | Mutant | Why no case kills it |
+|---|---|---|
+| `measurement.rs` 369 | `*` to `+` in `2.0 * CAPTION_PADDING` | Equivalent. 2 + 2 is 2 * 2. |
+| `measurement.rs` 372 | `>` to `>=` on `along.y` | Equivalent. `along` is a unit vector, `(1, 0)` for a zero-length line, so where `along.x` is 0 `along.y` is 1 or -1. |
+| `measurement.rs` 425, 426 | `angle + pi` to `angle - pi` | Equivalent, as for `endings.rs` 42: the angles are a full turn apart. |
+| `measurement_shape.rs` 211 | `<` to `<=` in the widest-span loop | Unreachable. It would read past the end only for an odd number of intersections, and a closed ring crosses the middle height an even number of times: each vertex's above-or-below flag is read once, and round the cycle it changes an even number of times. |
+| `richtext.rs` 163 | the `a.len() == b.len()` guard in `same_decoration` to `true` | Equivalent. Sorted lists of different lengths are unequal anyway. |
+| `richtext.rs` 325 | `>` to `>=` in `style_at` | Equivalent. At a boundary past 0 the last non-empty run before it ends there and has already matched; if every earlier run is empty, the boundary is 0 and the next test returns the same run. |
