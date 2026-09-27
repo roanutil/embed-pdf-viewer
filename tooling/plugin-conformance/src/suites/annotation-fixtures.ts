@@ -133,6 +133,7 @@ registerPlugin('annotation-lens', {
           linksGet: (ref: never) => a().links.get(ref),
           linksSet: (ref: never, target: never) => a().links.set(ref, target),
           linksClear: (ref: never) => a().links.clear(ref),
+          onThreadChanged: (listener: never) => a().comments.onThreadChanged(listener),
         };
       },
     }) as AnyPlugin,

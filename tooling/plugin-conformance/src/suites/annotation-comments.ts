@@ -21,6 +21,7 @@ import {
   fail,
   hydrate,
   lens,
+  line,
   link,
   markup,
   objRef,
@@ -110,13 +111,13 @@ const cases: ScenarioCase[] = [
   {
     name: 'reply-edit-status-marked',
     covers:
-      'reply writes a flat /IRT to the root whatever member was passed, with the reply flags; edit patches contents through the one update path; setStatus chains to the caller’s previous status (else the root); setMarked writes the Marked model. Each create syncs baked and resolves after the engine confirms. An unknown ref rejects.',
+      'reply writes a flat /IRT to the root whatever member was passed, with the reply flags; edit patches contents through the one update path; setStatus chains to the caller’s previous status (else the root); setMarked writes the Marked model; onThreadChanged hears each verb. A measurement dimension’s contents are derived, so edit rejects. Each create syncs baked and resolves after the engine confirms. An unknown ref rejects.',
     plugins: WITH_LENS,
     engine: {
       documents: {
         a: doc(
           [
-            hydrate({ 1: thread() }),
+            hydrate({ 1: [...thread(), line(9, { intent: 'LineDimension' })] }),
             { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(20, { inReplyTo: objRef(1), contents: 'thanks' })) },
             { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(21, { inReplyTo: objRef(6), state: 'completed', stateModel: 'review', userId: 'me' })) },
             { path: 'page.annotations.create', pon: 1, times: 1, value: created(textNote(22, { inReplyTo: objRef(1), state: 'marked', stateModel: 'marked' })) },
@@ -130,9 +131,11 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      lens('onThreadChanged', [{ $fn: 'threadChanged' }]),
       lens('reply', [objRef(5), 'thanks']),
       lens('edit', [objRef(4), 'edited']),
       lens('edit', [objRef(99), 'nope']),
+      lens('edit', [objRef(9), 'derived']),
       lens('setStatus', [objRef(4), 'completed']),
       lens('setMarked', [objRef(1), true]),
       lens('setMarked', [objRef(1), false]),
@@ -192,7 +195,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'comment-permissions',
     covers:
-      'permissionsFor: reply and status are create authority; text edits are gated by lockedContents, deletes by locked; the thread gate covers every member. Without create authority neither verb is offered; an unknown ref can do nothing but reply.',
+      'permissionsFor: reply and status are create authority; text edits are gated by lockedContents and refused on a measurement dimension, deletes by locked; the thread gate covers every member. Without create authority neither verb is offered; an unknown ref can do nothing but reply.',
     plugins: WITH_LENS,
     engine: {
       documents: {
@@ -203,6 +206,7 @@ const cases: ScenarioCase[] = [
                 square(1, { flags: FLAGS({ lockedContents: true }) }),
                 textNote(2, { inReplyTo: objRef(1), flags: FLAGS({ locked: true }) }),
                 square(3),
+                line(4, { intent: 'LineDimension' }),
               ],
             }),
           ],
@@ -216,6 +220,7 @@ const cases: ScenarioCase[] = [
       lens('permissionsFor', [objRef(1)]),
       lens('permissionsFor', [objRef(2)]),
       lens('permissionsFor', [objRef(3)]),
+      lens('permissionsFor', [objRef(4)]),
       lens('permissionsFor', [objRef(99)]),
     ],
   },

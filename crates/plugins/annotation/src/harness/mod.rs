@@ -219,6 +219,7 @@ const LENS_MEMBERS: &[&str] = &[
     "linksGet",
     "linksSet",
     "linksClear",
+    "onThreadChanged",
 ];
 
 // ── argument decoding ─────────────────────────────────────────────────────────
@@ -927,7 +928,7 @@ fn call_capability(
     })
 }
 
-fn call_lens(lens: &Lens, method: &str, args: &[Value]) -> Result<Outcome, Error> {
+fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<Outcome, Error> {
     let cap = lens.ctx.get(&ANNOTATION)?;
     let comments = cap.comments();
     let links = cap.links();
@@ -954,6 +955,10 @@ fn call_lens(lens: &Lens, method: &str, args: &[Value]) -> Result<Outcome, Error
             unit(links.set(&r(0)?, target))
         }
         "linksClear" => unit(links.clear(&r(0)?)),
+        "onThreadChanged" => {
+            let comments = comments.clone();
+            hook(h, present(args, 0), move |f| comments.on_thread_changed(f))
+        }
         other => not_a_function(other),
     })
 }
@@ -1020,7 +1025,7 @@ impl HarnessPlugin for Annotation {
             return Some(from_result(call_capability(cap, method, &args, h)));
         }
         if let Some(lens) = capability.downcast_ref::<Lens>() {
-            return Some(from_result(call_lens(lens, method, &args)));
+            return Some(from_result(call_lens(lens, method, &args, h)));
         }
         capability.downcast_ref::<Signals>()?;
         Some(match method {

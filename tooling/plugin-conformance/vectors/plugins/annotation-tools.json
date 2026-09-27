@@ -185546,6 +185546,34 @@
           },
           "method": "armStamp",
           "args": [
+            {}
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "armStamp",
+          "args": [
+            {
+              "source": {
+                "data": {
+                  "$undefined": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "armStamp",
+          "args": [
             {
               "source": {
                 "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
@@ -193014,238 +193042,15 @@
           "settled": [
             {
               "promise": 9,
-              "resolved": {
-                "$undefined": true
-              }
-            }
-          ],
-          "actions": [
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "STAMP_ARM_CHANGED"
-              }
-            },
-            {
-              "slice": "interaction::a",
-              "action": {
-                "type": "SET_TOOL",
-                "toolId": "stamp"
-              }
-            },
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
+              "rejected": {
+                "$error": {
+                  "name": "TypeError",
+                  "message": "Cannot destructure property 'data' of 'source' as it is undefined."
                 }
               }
             }
           ],
+          "actions": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -193497,7 +193302,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 4,
+                "stampArmEpoch": 3,
                 "textSelection": null
               }
             }
@@ -193507,11 +193312,11 @@
           "settled": [
             {
               "promise": 10,
-              "resolved": {
-                "bytes": {
-                  "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
-                },
-                "mimeType": "image/png"
+              "rejected": {
+                "$error": {
+                  "name": "TypeError",
+                  "message": "Cannot read properties of undefined (reading 'arrayBuffer')"
+                }
               }
             }
           ],
@@ -193767,7 +193572,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 4,
+                "stampArmEpoch": 3,
                 "textSelection": null
               }
             }
@@ -194260,7 +194065,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 5,
+                "stampArmEpoch": 4,
                 "textSelection": null
               }
             }
@@ -194270,7 +194075,12 @@
           "settled": [
             {
               "promise": 12,
-              "resolved": null
+              "resolved": {
+                "bytes": {
+                  "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
+                },
+                "mimeType": "image/png"
+              }
             }
           ],
           "actions": [],
@@ -194525,7 +194335,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 5,
+                "stampArmEpoch": 4,
                 "textSelection": null
               }
             }
@@ -195018,715 +194828,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 6,
-                "textSelection": null
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                }
-              }
-            },
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                }
-              }
-            }
-          ],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "page.annotations.create",
-              "pon": 1,
-              "args": [
-                {
-                  "subtype": "stamp",
-                  "rect": {
-                    "left": 250,
-                    "bottom": 475,
-                    "right": 350,
-                    "top": 525
-                  },
-                  "rotation": null,
-                  "unrotatedRect": null,
-                  "source": {
-                    "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
-                  },
-                  "fit": "contain"
-                }
-              ]
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          },
-          "outcome": {
-            "returned": true
-          },
-          "state": {
-            "plugins": {
-              "annotation::a": {
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                },
-                "hydration": {
-                  "status": "complete"
-                },
-                "chrome": {
-                  "accent": "#3858e9",
-                  "outline": {
-                    "style": "solid",
-                    "width": 1
-                  },
-                  "handles": {
-                    "size": 8,
-                    "hitSize": 24,
-                    "fill": "#ffffff"
-                  },
-                  "knob": {
-                    "size": 10,
-                    "hitSize": 24,
-                    "offset": 32,
-                    "stalk": true,
-                    "fill": "#ffffff"
-                  },
-                  "guides": {
-                    "enabled": true,
-                    "style": "solid",
-                    "width": 1,
-                    "axisOpacity": 0.35,
-                    "indicatorOpacity": 0.8
-                  }
-                },
-                "toolGhost": null,
-                "stampArmEpoch": 6,
+                "stampArmEpoch": 5,
                 "textSelection": null
               }
             }
@@ -195736,238 +194838,10 @@
           "settled": [
             {
               "promise": 14,
-              "resolved": {
-                "$undefined": true
-              }
+              "resolved": null
             }
           ],
-          "actions": [
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "STAMP_ARM_CHANGED"
-              }
-            },
-            {
-              "slice": "interaction::a",
-              "action": {
-                "type": "SET_TOOL",
-                "toolId": "stamp"
-              }
-            },
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                }
-              }
-            }
-          ],
+          "actions": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -196219,715 +195093,7 @@
                   }
                 },
                 "toolGhost": null,
-                "stampArmEpoch": 7,
-                "textSelection": null
-              }
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                }
-              }
-            },
-            {
-              "slice": "annotation::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                }
-              }
-            }
-          ],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "page.annotations.create",
-              "pon": 1,
-              "args": [
-                {
-                  "subtype": "stamp",
-                  "rect": {
-                    "left": 250,
-                    "bottom": 475,
-                    "right": 350,
-                    "top": 525
-                  },
-                  "rotation": null,
-                  "unrotatedRect": null,
-                  "source": {
-                    "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
-                  },
-                  "fit": "contain"
-                }
-              ]
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          },
-          "outcome": {
-            "returned": true
-          },
-          "state": {
-            "plugins": {
-              "annotation::a": {
-                "model": {
-                  "byId": {
-                    "obj:96": {
-                      "id": "obj:96",
-                      "ref": {
-                        "kind": "objectNumber",
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "annotObjectNumber": 96
-                      },
-                      "page": {
-                        "kind": "objectNumber",
-                        "pageObjectNumber": 1
-                      },
-                      "subtype": "stamp",
-                      "flags": {
-                        "invisible": false,
-                        "hidden": false,
-                        "print": true,
-                        "noZoom": false,
-                        "noRotate": false,
-                        "noView": false,
-                        "readOnly": false,
-                        "locked": false,
-                        "toggleNoView": false,
-                        "lockedContents": false
-                      },
-                      "source": "baked",
-                      "data": {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 96
-                        },
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        },
-                        "index": 96,
-                        "identityQuality": "durable",
-                        "nm": null,
-                        "flags": {
-                          "invisible": false,
-                          "hidden": false,
-                          "print": true,
-                          "noZoom": false,
-                          "noRotate": false,
-                          "noView": false,
-                          "readOnly": false,
-                          "locked": false,
-                          "toggleNoView": false,
-                          "lockedContents": false
-                        },
-                        "rect": {
-                          "left": 100,
-                          "bottom": 600,
-                          "right": 200,
-                          "top": 700
-                        },
-                        "contents": null,
-                        "subject": null,
-                        "author": null,
-                        "created": null,
-                        "modified": null,
-                        "blendMode": "normal",
-                        "inReplyTo": null,
-                        "replyType": null,
-                        "subtype": "stamp"
-                      },
-                      "style": {
-                        "color": "#444444",
-                        "interiorColor": null,
-                        "strokeWidth": 1,
-                        "opacity": 1,
-                        "blendMode": "normal",
-                        "border": {
-                          "kind": "solid"
-                        }
-                      },
-                      "geom": {
-                        "t": "rect",
-                        "rect": {
-                          "x": 100,
-                          "y": 100,
-                          "width": 100,
-                          "height": 100
-                        },
-                        "ellipse": false
-                      },
-                      "apBox": {
-                        "x": 100,
-                        "y": 100,
-                        "width": 100,
-                        "height": 100
-                      },
-                      "authority": {
-                        "update": true,
-                        "delete": true
-                      },
-                      "apVersion": 0
-                    }
-                  },
-                  "order": [
-                    "obj:96"
-                  ],
-                  "selected": [
-                    "obj:96"
-                  ],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "seq": 0,
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "defaults": {
-                    "square": {
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      }
-                    },
-                    "calibrate": {
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "strokeWidth": 1,
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      }
-                    },
-                    "area": {
-                      "strokeWidth": 1
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply"
-                    },
-                    "free-text": {
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "strokeWidth": 6,
-                      "lineEndings": {
-                        "end": "open-arrow"
-                      }
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "guides": true,
-                    "guideThreshold": 5,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThreshold": 4
-                  }
-                },
-                "hydration": {
-                  "status": "complete"
-                },
-                "chrome": {
-                  "accent": "#3858e9",
-                  "outline": {
-                    "style": "solid",
-                    "width": 1
-                  },
-                  "handles": {
-                    "size": 8,
-                    "hitSize": 24,
-                    "fill": "#ffffff"
-                  },
-                  "knob": {
-                    "size": 10,
-                    "hitSize": 24,
-                    "offset": 32,
-                    "stalk": true,
-                    "fill": "#ffffff"
-                  },
-                  "guides": {
-                    "enabled": true,
-                    "style": "solid",
-                    "width": 1,
-                    "axisOpacity": 0.35,
-                    "indicatorOpacity": 0.8
-                  }
-                },
-                "toolGhost": null,
-                "stampArmEpoch": 7,
+                "stampArmEpoch": 5,
                 "textSelection": null
               }
             }
@@ -197180,6 +195346,2408 @@
           },
           "outcome": {
             "promise": 15
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 6,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.create",
+              "pon": 1,
+              "args": [
+                {
+                  "subtype": "stamp",
+                  "rect": {
+                    "left": 250,
+                    "bottom": 475,
+                    "right": 350,
+                    "top": 525
+                  },
+                  "rotation": null,
+                  "unrotatedRect": null,
+                  "source": {
+                    "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
+                  },
+                  "fit": "contain"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 6,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 16,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "STAMP_ARM_CHANGED"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "stamp"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 16
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 7,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.create",
+              "pon": 1,
+              "args": [
+                {
+                  "subtype": "stamp",
+                  "rect": {
+                    "left": 250,
+                    "bottom": 475,
+                    "right": 350,
+                    "top": 525
+                  },
+                  "rotation": null,
+                  "unrotatedRect": null,
+                  "source": {
+                    "$bytes": "iVBORw0KGgoAAAANSUhEUgAAAGQAAAAy"
+                  },
+                  "fit": "contain"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                },
+                "hydration": {
+                  "status": "complete"
+                },
+                "chrome": {
+                  "accent": "#3858e9",
+                  "outline": {
+                    "style": "solid",
+                    "width": 1
+                  },
+                  "handles": {
+                    "size": 8,
+                    "hitSize": 24,
+                    "fill": "#ffffff"
+                  },
+                  "knob": {
+                    "size": 10,
+                    "hitSize": 24,
+                    "offset": 32,
+                    "stalk": true,
+                    "fill": "#ffffff"
+                  },
+                  "guides": {
+                    "enabled": true,
+                    "style": "solid",
+                    "width": 1,
+                    "axisOpacity": 0.35,
+                    "indicatorOpacity": 0.8
+                  }
+                },
+                "toolGhost": null,
+                "stampArmEpoch": 7,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 17,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "STAMP_ARM_CHANGED"
+              }
+            },
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "stamp"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:96": {
+                      "id": "obj:96",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 96
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 96
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 96,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "stamp"
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:96"
+                  ],
+                  "selected": [
+                    "obj:96"
+                  ],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 17
           },
           "state": {
             "plugins": {
@@ -198137,7 +198705,7 @@
         {
           "settled": [
             {
-              "promise": 16,
+              "promise": 18,
               "resolved": {
                 "$undefined": true
               }
@@ -198380,7 +198948,7 @@
             }
           },
           "outcome": {
-            "promise": 16
+            "promise": 18
           },
           "state": {
             "plugins": {

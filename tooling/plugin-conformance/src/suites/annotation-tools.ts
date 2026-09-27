@@ -790,6 +790,9 @@ const cases: ScenarioCase[] = [
       call('armStamp', [{ source: null }]),
       call('armStamp', [{ source: { data: 5 } }]),
       call('armStamp', [{ source: { name: 'no-data' } }]),
+      // No source at all, and a data member that is explicitly undefined.
+      call('armStamp', [{}]),
+      call('armStamp', [{ source: { data: U } }]),
       // A falsy preview falls back to the raster's own bytes; a PDF without
       // one has none. Sizes: an override with a zero side is ignored, a valid
       // one wins, a target width keeps the aspect. A NaN rotation counts as
