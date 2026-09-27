@@ -208,3 +208,133 @@ fn the_kernel_helpers_match_the_typescript() {
     ];
     assert_suite("kernel/utils.json", &Registry::new(), &functions);
 }
+
+// ── the typed layer ───────────────────────────────────────────────────────────
+//
+// The probes are untyped, so the vectors never reach the typed wrappers every
+// real plugin goes through: `Controller`, `Ctx`, the typed resolvers, and the
+// accessors the TypeScript has as plain properties. This drives one typed
+// document plugin and one typed workspace plugin through a real kernel.
+
+mod typed {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use std::sync::LazyLock;
+
+    use epdf_kernel::kernel::{KernelOptions, OpenOptions, OpenSource};
+    use epdf_kernel::plugin::slice_key;
+    use epdf_kernel::rt;
+    use epdf_kernel::{Controller, Ctx, Kernel, Token, define};
+    use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
+    use serde::Serialize;
+    use serde_json::json;
+
+    #[derive(Clone, Serialize)]
+    struct Count {
+        n: i64,
+    }
+
+    #[derive(Clone, Serialize)]
+    #[serde(tag = "type")]
+    enum Add {
+        #[serde(rename = "ADD")]
+        By { by: i64 },
+    }
+
+    fn reduce(state: &Count, action: &Add) -> Option<Count> {
+        let Add::By { by } = action;
+        Some(Count { n: state.n + by })
+    }
+
+    #[derive(Clone)]
+    struct CounterApi(Controller<Count, Add>);
+
+    #[derive(Clone)]
+    struct WorkspaceApi(Ctx<Count, Add>);
+
+    static COUNTER: LazyLock<Token<CounterApi>> = LazyLock::new(|| Token::new("counter"));
+    static WORKSPACE: LazyLock<Token<WorkspaceApi>> = LazyLock::new(|| Token::new("tally"));
+
+    #[test]
+    fn typed_plugins_reach_their_state_their_lifetime_and_each_other() {
+        rt::reset();
+        let torn_down: Rc<RefCell<Vec<String>>> = Rc::default();
+        let log = torn_down.clone();
+        let counter = define::<Count, Add>("counter")
+            .document_scoped()
+            .initial_state(|| Count { n: 0 })
+            .reduce(reduce)
+            .create(&COUNTER, move |cx: Controller<Count, Add>| {
+                let log = log.clone();
+                let id = cx.instance_id().to_string();
+                cx.defer(Box::new(move || {
+                    log.borrow_mut().push(id);
+                    Ok(None)
+                }));
+                Ok((CounterApi(cx), None))
+            })
+            .build();
+        let workspace = define::<Count, Add>("tally")
+            .optional(COUNTER.any())
+            .initial_state(|| Count { n: 10 })
+            .reduce(reduce)
+            .capability(&WORKSPACE, |ctx| Ok(WorkspaceApi(ctx)))
+            .build();
+
+        let page = json!({
+            "index": 0,
+            "ref": { "kind": "objectNumber", "pageObjectNumber": 1 },
+            "label": null,
+            "size": { "width": 600, "height": 800 },
+            "rotation": 0,
+            "userUnit": 1,
+            "boxes": {
+                "media": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
+                "crop": { "left": 0, "bottom": 0, "right": 600, "top": 800 }
+            }
+        });
+        let fake = FakeEngine::new(json!({ "documents": { "a": { "pages": [page] } } }));
+        let kernel = Kernel::new(
+            Rc::new(AsEngine(fake)),
+            vec![counter, workspace],
+            KernelOptions::default(),
+        )
+        .unwrap();
+        let events = kernel.documents().events().unwrap();
+        events.opened.on(|_| Ok(()));
+        events.closed.on(|_| Ok(()));
+        let _ = kernel.start();
+        rt::run_until_stalled();
+        let input = json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } });
+        let _ = kernel.documents().open(OpenSource::Input(input), OpenOptions::default());
+        rt::run_until_stalled();
+
+        assert_eq!(kernel.core().active_id.as_deref(), Some("a"));
+        let CounterApi(cx) = kernel.try_capability(&COUNTER, Some("a")).unwrap().unwrap();
+        assert_eq!(cx.id(), "counter");
+        assert_eq!(cx.slice_key(), slice_key("counter", Some("a")));
+        assert!(cx.engine().is_some());
+        assert!(!cx.lifetime().aborted());
+        cx.dispatch(Add::By { by: 2 });
+        assert_eq!(cx.state().n, 2);
+
+        let WorkspaceApi(ctx) = kernel.try_capability(&WORKSPACE, None).unwrap().unwrap();
+        ctx.dispatch(Add::By { by: 5 });
+        assert_eq!(ctx.try_state().map(|s| s.n), Some(15));
+        let CounterApi(through_get) = ctx.try_get(&COUNTER).unwrap().unwrap();
+        assert_eq!(through_get.state().n, 2);
+        let CounterApi(through_doc) = ctx.try_for_document(&COUNTER, "a").unwrap().unwrap();
+        assert_eq!(through_doc.instance_id(), cx.instance_id());
+
+        let _ = kernel.documents().close("a");
+        rt::run_until_stalled();
+        assert!(cx.lifetime().aborted());
+        assert_eq!(*torn_down.borrow(), [cx.instance_id().to_string()]);
+
+        assert_eq!(events.opened.listener_count(), 1);
+        let _ = kernel.destroy();
+        rt::run_until_stalled();
+        // The kernel's lifecycle events are disposed with the workspace scope.
+        assert_eq!((events.opened.listener_count(), events.closed.listener_count()), (0, 0));
+    }
+}

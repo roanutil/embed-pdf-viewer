@@ -456,6 +456,8 @@ fn describe_space(space: &PageSpace) -> Value {
         "height": space.height,
         "pdfToPage": space.pdf_to_page(point),
         "pageToPdf": space.page_to_pdf(point),
+        "pdfOriginToPage": space.pdf_to_page(Point { x: 0.0, y: 0.0 }),
+        "pageOriginToPdf": space.page_to_pdf(Point { x: 0.0, y: 0.0 }),
         "pdfRectToPage": space.pdf_rect_to_page(PdfEdges { left: 10.0, bottom: 20.0, right: 30.0, top: 60.0 }),
         "pageRectToPdf": { "left": edges.left, "right": edges.right, "top": edges.top, "bottom": edges.bottom },
         "pdfQuadToPage": space.pdf_quad_to_page(quad),
@@ -610,6 +612,19 @@ impl ProbeController {
                     "security.identity" => doc.security().identity(),
                     "security.current" => doc.security().current(),
                     "security.passwordPrompt" => doc.security().password_prompt(),
+                    "security.allowsAnnotationCreate" => {
+                        json!(doc.security().allows_annotation_create())
+                    }
+                    "security.allowsAnnotationMutation" => {
+                        json!(doc.security().allows_annotation_mutation(
+                            &str_arg(args, 1),
+                            arg(args, 2).unwrap_or(&Value::Null)
+                        ))
+                    }
+                    "security.allowsAnnotationGroupAssignment" => {
+                        json!(doc.security().allows_annotation_group_assignment(&str_arg(args, 1)))
+                    }
+                    "events.lastServerId" => json!(doc.last_server_id()),
                     _ => epdf_kernel::undefined(),
                 }),
                 Err(error) => Outcome::Threw(error),

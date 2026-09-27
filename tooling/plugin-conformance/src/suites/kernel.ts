@@ -911,6 +911,39 @@ const cases: ScenarioCase[] = [
     engine: { documents: { a: doc() } },
     steps: [start, open(bytes('a')), { op: 'emit', doc: 'a', event: { type: 'pages.deleted', layout: { pageCount: 0 } } }],
   },
+  {
+    name: 'a-rekey-onto-a-closing-id-refuses',
+    covers:
+      'A ticket whose input names a document that is still closing refuses the re-key: the closing session holds the id even though its slot has left the store.',
+    plugins: [probe(docProbe('alpha', { effects: { cleanup: { defer: 'teardown' } } }))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      open({ $fn: 'source', defer: 'fetch' }),
+      docs('close', 'a'),
+      ...listing,
+      settle('fetch', bytes('a')),
+      ...listing,
+      settle('teardown'),
+      ...listing,
+    ],
+  },
+  {
+    name: 'a-rekeyed-ticket-lists-its-new-id-while-the-engine-opens',
+    covers: 'Between the re-key and the engine answering, the pending slot already carries the real id.',
+    plugins: [],
+    engine: { documents: { real: doc() }, responses: [{ path: 'open', defer: 'open-real' }] },
+    steps: [
+      start,
+      open({ $fn: 'source', defer: 'fetch' }),
+      settle('fetch', bytes('real')),
+      docs('list'),
+      docs('get', 'real'),
+      settle('open-real', { $document: 'real' }),
+      docs('list'),
+    ],
+  },
 ];
 
 // ── the v3 contract: create/connect controllers, leases, documents API ─────────
@@ -1312,6 +1345,99 @@ const v3Cases: ScenarioCase[] = [
       cap('wsc', 'tryForDocument', ['ctl', 'a']),
       cap('wsc', 'tryForDocument', ['ctl', 'zzz']),
       cap('wsc', 'tryGet', ['documents']),
+    ],
+  },
+  {
+    name: 'page-space-at-the-origin',
+    covers:
+      'A page space maps the origin both ways, including for a crop whose top edge is 0; a registry entry whose ref is not a whole non-negative number names no page.',
+    plugins: [probe(ctl('ctl'))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      capOf('ctl', 'a'),
+      api('forPage', 1),
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          type: 'pages.deleted',
+          layout: {
+            pageCount: 3,
+            pages: [
+              { ...page(1, 0), ref: { kind: 'objectNumber', pageObjectNumber: 1.5 } },
+              { ...page(1, 1), ref: { kind: 'objectNumber', pageObjectNumber: -1 } },
+              { ...page(3, 2), boxes: { media: { ...box }, crop: { left: 5, bottom: -100, right: 105, top: 0 } } },
+            ],
+          },
+        },
+      },
+      api('getPage', 1),
+      api('getPage', 0),
+      api('tryForPage', 1),
+      api('forPage', 3),
+    ],
+  },
+  {
+    name: 'lane-cancel-reasons',
+    covers:
+      "cancel(reason) aborts with String(reason ?? 'cancelled'): null is 'cancelled', and numbers, booleans, objects and arrays print as JavaScript prints them. A superseded run that finishes leaves the newer run active.",
+    plugins: [probe(ctl('ctl'))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      open(bytes('a')),
+      capOf('ctl', 'a'),
+      api('latest', 's', 'old'),
+      api('latest', 's', 'new'),
+      settle('old', 'late'),
+      api('latestRunning', 's'),
+      settle('new', 'fresh'),
+      ...(
+        [null, 1.5, -2, 1e20, 1e21, 1.5e-7, 0.000001, true, {}, [1, null, [2, U], 'x']] as unknown[]
+      ).flatMap((reason, i) => [
+        api('latest', 's', `r${i}`),
+        api('latestCancel', 's', reason),
+        settle(`r${i}`, 'after cancel'),
+      ]),
+    ],
+  },
+  {
+    name: 'guarded-handle-security-reads',
+    covers:
+      'The guarded security passes every synchronous read straight through: identity, current, the password prompt, the annotation checks, and the server id.',
+    plugins: [probe(ctl('ctl'))],
+    engine: {
+      documents: {
+        a: doc({
+          security: {
+            identity: { user: 'u1' },
+            current: { level: 'owner' },
+            passwordPrompt: { state: 'unlocked' },
+            allowsAnnotationCreate: true,
+            allowsAnnotationMutation: { update: true, delete: false },
+            allowsAnnotationGroupAssignment: true,
+          },
+        }),
+        b: doc({ security: { allowsAnnotationCreate: false, allowsAnnotationGroupAssignment: false } }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      capOf('ctl', 'a'),
+      api('docRead', 'security.identity'),
+      api('docRead', 'security.current'),
+      api('docRead', 'security.passwordPrompt'),
+      api('docRead', 'security.allowsAnnotationCreate'),
+      api('docRead', 'security.allowsAnnotationMutation', 'update', {}),
+      api('docRead', 'security.allowsAnnotationMutation', 'delete', {}),
+      api('docRead', 'security.allowsAnnotationGroupAssignment', 'g1'),
+      api('docRead', 'events.lastServerId'),
+      open(bytes('b')),
+      cap('ctl', 'docRead', ['security.allowsAnnotationCreate'], 'b'),
+      cap('ctl', 'docRead', ['security.allowsAnnotationGroupAssignment', 'g1'], 'b'),
     ],
   },
   {
