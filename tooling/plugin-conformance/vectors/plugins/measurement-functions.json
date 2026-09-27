@@ -1271,6 +1271,220 @@
       }
     },
     {
+      "name": "select-beside-the-centre",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 0,
+              "right": 1,
+              "top": 800
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        false
+      ],
+      "covers": "A viewport that spans the centre's height but not its x is not under it.",
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "default",
+          "ready": true,
+          "persistent": false
+        }
+      }
+    },
+    {
+      "name": "select-on-a-raised-crop",
+      "fn": "selectPageScale",
+      "args": [
+        [
+          {
+            "bbox": {
+              "left": 0,
+              "bottom": 450,
+              "right": 600,
+              "top": 900
+            },
+            "measure": {
+              "subtype": "RL",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "owned": false
+          }
+        ],
+        {
+          "left": 0,
+          "bottom": 100,
+          "right": 600,
+          "top": 900
+        },
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 100
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        false
+      ],
+      "covers": "The centre of a crop that does not start at 0 is the midpoint of its bottom and top.",
+      "outcome": {
+        "returned": {
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 ft",
+            "x": [
+              {
+                "unit": "ft",
+                "conversion": 0.013888888888888888,
+                "precision": 100
+              }
+            ],
+            "distance": [
+              {
+                "unit": "ft",
+                "conversion": 1,
+                "precision": 100
+              }
+            ],
+            "area": [
+              {
+                "unit": "ft²",
+                "conversion": 1,
+                "precision": 100
+              }
+            ]
+          },
+          "source": "foreign",
+          "ready": true,
+          "persistent": false
+        }
+      }
+    },
+    {
       "name": "with-unit",
       "fn": "withUnit",
       "args": [
@@ -1455,6 +1669,68 @@
               "unit": "yd²",
               "conversion": 0.11111111111111112,
               "precision": 100,
+              "fraction": "decimal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "with-unit-keeps-precision",
+      "fn": "withUnit",
+      "args": [
+        {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "m",
+              "conversion": 1,
+              "precision": 1000
+            }
+          ],
+          "area": [
+            {
+              "unit": "m²",
+              "conversion": 1,
+              "precision": 100
+            }
+          ]
+        },
+        "ft"
+      ],
+      "covers": "A decimal last format keeps its precision.",
+      "outcome": {
+        "returned": {
+          "subtype": "RL",
+          "ratio": "1 in = 1 m",
+          "x": [
+            {
+              "unit": "m",
+              "conversion": 0.013888888888888888,
+              "precision": 100
+            }
+          ],
+          "distance": [
+            {
+              "unit": "ft",
+              "conversion": 3.280839895013123,
+              "precision": 1000,
+              "fraction": "decimal"
+            }
+          ],
+          "area": [
+            {
+              "unit": "ft²",
+              "conversion": 10.763910416709722,
+              "precision": 1000,
               "fraction": "decimal"
             }
           ]
