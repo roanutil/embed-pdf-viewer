@@ -9872,6 +9872,492 @@
           }
         }
       ]
+    },
+    {
+      "name": "changed-keys-beyond-the-info-dict",
+      "covers": "changedKeys compares every key but custom with !==: an equal number is unchanged and a different one changed, while an object or array member always counts as changed, even with the same contents.",
+      "plugins": [
+        {
+          "factory": "metadata"
+        }
+      ],
+      "snapshot": "none",
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {},
+                  "pages": 3,
+                  "ratio": 1.5,
+                  "extra": {
+                    "x": 1
+                  },
+                  "list": [
+                    1
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "metadata",
+            "doc": "a"
+          },
+          "method": "onUpdated",
+          "args": [
+            {
+              "$fn": "updated",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": null,
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {},
+              "pages": 3,
+              "ratio": 2.5,
+              "extra": {
+                "x": 1
+              },
+              "list": [
+                1
+              ]
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "metadata.updated",
+            "metadata": {
+              "title": null,
+              "author": null,
+              "subject": null,
+              "keywords": null,
+              "producer": null,
+              "creator": null,
+              "created": null,
+              "modified": null,
+              "trapped": "unknown",
+              "custom": {},
+              "pages": 4,
+              "ratio": 2.5,
+              "extra": "x",
+              "list": "y"
+            },
+            "origin": {
+              "kind": "local",
+              "sessionId": "s1",
+              "sub": null
+            }
+          }
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {},
+                  "pages": 3,
+                  "ratio": 1.5,
+                  "extra": {
+                    "x": 1
+                  },
+                  "list": [
+                    1
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "metadata.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {},
+                  "pages": 3,
+                  "ratio": 2.5,
+                  "extra": {
+                    "x": 1
+                  },
+                  "list": [
+                    1
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": null,
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {},
+                    "pages": 3,
+                    "ratio": 2.5,
+                    "extra": {
+                      "x": 1
+                    },
+                    "list": [
+                      1
+                    ]
+                  },
+                  "previous": {
+                    "title": null,
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {},
+                    "pages": 3,
+                    "ratio": 1.5,
+                    "extra": {
+                      "x": 1
+                    },
+                    "list": [
+                      1
+                    ]
+                  },
+                  "changedKeys": [
+                    "ratio",
+                    "extra",
+                    "list"
+                  ],
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "unknown",
+                    "sessionId": "s1",
+                    "actorId": null
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "metadata::a",
+              "action": {
+                "type": "set",
+                "metadata": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {},
+                  "pages": 4,
+                  "ratio": 2.5,
+                  "extra": "x",
+                  "list": "y"
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "updated",
+              "args": [
+                {
+                  "metadata": {
+                    "title": null,
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {},
+                    "pages": 4,
+                    "ratio": 2.5,
+                    "extra": "x",
+                    "list": "y"
+                  },
+                  "previous": {
+                    "title": null,
+                    "author": null,
+                    "subject": null,
+                    "keywords": null,
+                    "producer": null,
+                    "creator": null,
+                    "created": null,
+                    "modified": null,
+                    "trapped": "unknown",
+                    "custom": {},
+                    "pages": 3,
+                    "ratio": 2.5,
+                    "extra": {
+                      "x": 1
+                    },
+                    "list": [
+                      1
+                    ]
+                  },
+                  "changedKeys": [
+                    "pages",
+                    "extra",
+                    "list"
+                  ],
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "unknown",
+                    "sessionId": "s1",
+                    "actorId": null
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        }
+      ]
     }
   ]
 }
