@@ -319,6 +319,17 @@ const HIT_ANNOTS = [
 ];
 const HIT_FIELDS = [text(1, 'big', '', {}, [[101, 1]]), text(2, 'small', '', {}, [[102, 1]]), text(3, 'boxy', '', {}, [[103, 1]])];
 
+// Page 1 is 600 x 800, so a content y is 800 minus the PDF y.
+const LIVE_ANNOTS = [
+  widgetAnnot(1, 201, { left: 99, bottom: 300, right: 101, top: 500 }),
+  widgetAnnot(1, 202, { left: 85, bottom: 385, right: 115, top: 415 }),
+  widgetAnnot(1, 203, { left: 280, bottom: 395, right: 320, top: 405 }),
+  widgetAnnot(1, 204, { left: 285, bottom: 385, right: 315, top: 415 }),
+  widgetAnnot(1, 205, { left: 490, bottom: 390, right: 510, top: 410 }),
+  widgetAnnot(1, 206, { left: 495, bottom: 385, right: 515, top: 405 }),
+];
+const LIVE_FIELDS = [201, 202, 203, 204, 205, 206].map((n) => text(n - 200, `live${n}`, '', {}, [[n, 1]]));
+
 const v3DesignCases: ScenarioCase[] = [
   {
     name: 'widget-hit-test',
@@ -346,6 +357,28 @@ const v3DesignCases: ScenarioCase[] = [
       call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
       call('getWidgetAt', [pr(1), { x: 500, y: 700 }]),
       call('getWidgetAt', [pr(2), { x: 1, y: 1 }]),
+    ],
+  },
+  {
+    name: 'widget-hit-test-live-boxes-compare-areas',
+    covers:
+      'The live-box fallback compares areas, not perimeters or aspect ratios: a 2 x 200 widget beats a 30 x 30 one and a 40 x 10 widget beats a 30 x 30 one; between equal areas the first listed wins.',
+    plugins: WITH_ANNOTATION,
+    engine: {
+      documents: {
+        a: doc([
+          list(LIVE_FIELDS),
+          { path: 'annotations.listRawAll', value: { pages: [{ pageState: { page: pr(1) }, annotations: LIVE_ANNOTS }] } },
+          annotations(1, LIVE_ANNOTS, { defer: 'geom' }),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      call('getWidgetAt', [pr(1), { x: 100, y: 400 }]),
+      call('getWidgetAt', [pr(1), { x: 300, y: 400 }]),
+      call('getWidgetAt', [pr(1), { x: 500, y: 400 }]),
     ],
   },
   {
@@ -493,7 +526,7 @@ const handlerCases: ScenarioCase[] = [
   },
   {
     name: 'the-handler-outranks-lower-priorities',
-    covers: 'At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked.',
+    covers: "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked; the gesture starts under the id 'form-place'.",
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE(),
     snapshot: 'none',
@@ -508,6 +541,7 @@ const handlerCases: ScenarioCase[] = [
           onUp: { $fn: 'low.onUp' },
         },
       ]),
+      ix('onGestureStarted', [fnSpec('gestureStarted')]),
       tool('form-text'),
       pointer('down', 100, 100),
       pointer('up', 100, 100),
@@ -516,7 +550,7 @@ const handlerCases: ScenarioCase[] = [
   {
     name: 'the-handler-declines',
     covers:
-      'No capture off a page, under a tool the palette does not know (even one enabling form-place), or without the design grant; the gesture falls through to other handlers.',
+      'No capture off a page, under a tool the palette does not know (even one enabling form-place), without the design grant, or under a palette id re-registered without form-place; the gesture falls through to other handlers.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
@@ -538,6 +572,10 @@ const handlerCases: ScenarioCase[] = [
       ix('activateTool', ['form-text'], 'b'),
       ix('dispatch', [sample('down', 10, 10)], 'b'),
       ix('dispatch', [sample('up', 10, 10)], 'b'),
+      ix('registerTool', [{ id: 'form-text', cursor: 'crosshair', enables: { $set: [] } }, { replace: true }]),
+      tool('form-text'),
+      pointer('down', 10, 10),
+      pointer('up', 10, 10),
     ],
   },
   {

@@ -109,6 +109,29 @@ list pads with `null`s, which JSON prints as the TypeScript prints its holes.
 
 ## Mutation testing
 
-Pre-v3, rerun pending. The last run, over the pre-v3 layout (`capability.rs`, `scripting.rs`,
-`handler.rs`, since split into the areas above), caught 454 of 466 viable mutants (449 caught, 5
-timeouts; 164 unviable), and the 12 survivors were equivalent.
+`scripts/mutants.sh -p epdf-plugin-form --test-package epdf-plugin-form --file <file>`, file by
+file over every module but `harness.rs`, catches 521 of 530 viable mutants (519 caught, 2 timeouts;
+186 unviable). The run itself, at `afb842b48`, caught 499 and missed 29. Cases added afterwards
+kill 20 of those 29, and the counts above include them: 13 through new or reshaped vectors in
+`form-core`, `form-fill`, `form-design` and `form-scripting`, 7 through unit tests. Of those 7, 3
+are the fill projection's `Rc` identity (`tests/api.rs`), which JSON cannot show, and 4 are
+`value::f64_of` and `value::string_to_number` (the `value.rs` tests), which nothing in the crate
+calls. Each kill was confirmed by applying the mutant by hand and watching `cargo test` fail, not
+by a second run. The 2 timeouts are `+=` to `*=` in `auto_name` (`write/fields.rs:55`, a loop that
+never ends) and deleting `!` in `refresh` (`sync/hydration.rs:53`). The other 9 are equivalent or
+unreachable:
+
+| File | Line | Mutant | Why no case kills it |
+|---|---|---|---|
+| `core/model.rs` | 59 | `initial_model` to `Default::default()` | Equivalent. It is `Model::default()`. |
+| `model.rs` | 33 | `initial_form_state` to `Default::default()` | Equivalent. `ResourceStatus` defaults to `Idle` and `Rc<Model>` to the default model, the value the function builds. |
+| `field_selection.rs` | 86 | `&&` to `\|\|` in `explicit_include` | Equivalent. `explicit` also needs `listed(field)`, and no selected field is listed unless the targets are an include list: with no targets nothing is listed, and in exclude mode the selection is exactly the unlisted fields. |
+| `field_selection.rs` | 92 | `&&` to `\|\|` in `explicit` | Equivalent, for the same reason: in include mode every selected field is listed, otherwise none is. |
+| `lib.rs` | 107 | `defer` to `()` | Unobservable. It unregisters the commit sink, the submit resolver and the `reset-form` executor from the actions plugin at document close, and the actions plugin is document-scoped too, so its registries close with the same document. |
+| `write/activation.rs` | 41 | `==` to `!=` on either `Some("index")` (2 mutants) | Unreachable. `activateWidget` finds the field through `widgetObjectOf`, which reads 0 for any ref that is not an object number, and 0 is never indexed, so an index ref rejects `not-found` before any page read. |
+| `write/activation.rs` | 41 | the first `&&` to `\|\|` | Equivalent. The arm runs only after `eq("kind")`, so both kinds are the same and `l == index \|\| r == index` equals `l == index && r == index`. |
+| `write/activation.rs` | 150 | `&&` to `\|\|` in `no_tree` | Equivalent. The dispatcher answers a non-`inert` status with no steps only from its catch arm, which always pushes a `trigger-failed` diagnostic, so `diagnostics.is_empty()` decides either way. |
+
+The case `a-kindless-address-matches-no-candidate` (`form-scripting`) sends the one address that
+reaches the last arm of `same_annotation_ref` without being an index ref, an off-contract
+`{ page, annotObjectNumber }` with no kind, and kills the other two `&&` mutants on line 41.

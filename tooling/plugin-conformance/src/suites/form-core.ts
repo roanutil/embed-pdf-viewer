@@ -190,6 +190,7 @@ const projectionCases: FunctionCase[] = [
   fc('widgetAt', 'the-smallest-containing-box-wins', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(0, 0, 100, 100), 105: box(10, 10, 20, 20), 106: box(5, 5, 50, 50) } }), 3, { x: 15, y: 15 }),
   fc('widgetAt', 'edges-are-inside', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(10, 10, 20, 20) } }), 3, { x: 30, y: 30 }),
   fc('widgetAt', 'a-box-without-a-field-is-skipped', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 999: box(0, 0, 5, 5), 104: box(0, 0, 50, 50) } }), 3, { x: 2, y: 2 }),
+  fc('widgetAt', 'equal-areas-keep-the-lower-object-number', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 104: box(0, 0, 20, 20), 105: box(10, 10, 20, 20) } }), 3, { x: 15, y: 15 }),
   fc('widgetAt', 'a-larger-box-later-loses', update(loaded, { t: 'pageGeom', pageObjectNumber: 3, boxes: { 105: box(10, 10, 20, 20), 106: box(0, 0, 50, 50) } }), 3, { x: 15, y: 15 }),
 ];
 
