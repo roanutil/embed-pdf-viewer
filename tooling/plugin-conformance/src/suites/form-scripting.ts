@@ -543,6 +543,9 @@ const CALC_FIELDS = [
   text(6, 'emptycalc', 'e', kvcf({ calculate: tree(null), format: tree(js('fmt()')) })),
 ];
 
+/** `total` with its widget on page 2: the world's pageNumber says which field anchored. */
+const TOTAL_ON_PAGE_2 = text(4, 'total', '2', kvcf({ calculate: tree(js('total()')), format: tree(js('fmt()')) }), [[104, 2]]);
+
 const calculateCases: ScenarioCase[] = [
   {
     name: 'calculation-order',
@@ -587,11 +590,11 @@ const calculateCases: ScenarioCase[] = [
   {
     name: 'recalculate-anchors',
     covers:
-      "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
+      "recalculate() anchors on the first live /CO field (here not the first field, and on page 2, which the world's pageNumber shows), else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
     plugins: solo({ sandbox: { builds: [{ run: [out({ formEffects: [setValue(4, textValue('9'))] }), out({})] }] } }),
     engine: {
       documents: {
-        a: doc([list(CALC_FIELDS.slice(2), {}, [null, ref(99), ref(4)]), applyOk()]),
+        a: doc([list([CALC_FIELDS[3], TOTAL_ON_PAGE_2, CALC_FIELDS[4]], {}, [null, ref(99), ref(4)]), applyOk()]),
         b: doc([list(CALC_FIELDS.slice(2)), applyOk()]),
         c: doc([list([])]),
       },
@@ -970,6 +973,24 @@ const capabilityCases: ScenarioCase[] = [
       call('activateWidget', ['obj:8', { kind: 'index', page: pr(1), index: 3, revision: 'r2' }]),
       call('activateWidget', ['obj:8', aref(2, 108)]),
     ],
+  },
+  {
+    name: 'a-kindless-address-matches-no-candidate',
+    covers:
+      "An off-contract address without a kind ({ page, annotObjectNumber }) finds its field, but sameAnnotationRef matches no candidate for it, not even one whose ref has no kind, index or revision either: its last arm holds only for two index refs. The form path is a scripted no-op.",
+    plugins: scripted({ builds: [{ run: [out({ formEffects: [setValue(1, textValue('clicked'))] })] }] }),
+    engine: {
+      documents: {
+        a: doc([
+          list([NAME, BUTTON]),
+          annotations(1, [], { times: 1 }),
+          annotations(1, [{ ...widgetAnnot(1, 108, undefined, { actions: { activate: tree(js('kindless()')) } }), ref: { page: pr(1) } }]),
+          applyOk(),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, call('activateWidget', ['obj:8', { page: pr(1), annotObjectNumber: 108 }])],
   },
   {
     name: 'scripted-activation-reads-the-folded-annotation',

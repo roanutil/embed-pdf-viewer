@@ -31289,6 +31289,4400 @@
       ]
     },
     {
+      "name": "widget-hit-test-live-boxes-compare-areas",
+      "covers": "The live-box fallback compares areas, not perimeters or aspect ratios: a 2 x 200 widget beats a 30 x 30 one and a 40 x 10 widget beats a 30 x 30 one; between equal areas the first listed wins.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "annotation"
+        },
+        {
+          "factory": "form"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "live201",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 201
+                          },
+                          "annotObjectNumber": 201,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 2
+                      },
+                      "fieldObjectNumber": 2,
+                      "name": "live202",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 202
+                          },
+                          "annotObjectNumber": 202,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 3
+                      },
+                      "fieldObjectNumber": 3,
+                      "name": "live203",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 203
+                          },
+                          "annotObjectNumber": 203,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "fieldObjectNumber": 4,
+                      "name": "live204",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 204
+                          },
+                          "annotObjectNumber": 204,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 5
+                      },
+                      "fieldObjectNumber": 5,
+                      "name": "live205",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 205
+                          },
+                          "annotObjectNumber": 205,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 6
+                      },
+                      "fieldObjectNumber": 6,
+                      "name": "live206",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 206
+                          },
+                          "annotObjectNumber": 206,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": [
+                    {
+                      "pageState": {
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      },
+                      "annotations": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 201
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 201,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 99,
+                            "bottom": 300,
+                            "right": 101,
+                            "top": 500
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 202
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 202,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 85,
+                            "bottom": 385,
+                            "right": 115,
+                            "top": 415
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 203
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 203,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 280,
+                            "bottom": 395,
+                            "right": 320,
+                            "top": 405
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 204
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 204,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 285,
+                            "bottom": 385,
+                            "right": 315,
+                            "top": 415
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 205
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 205,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 490,
+                            "bottom": 390,
+                            "right": 510,
+                            "top": 410
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 206
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 206,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 495,
+                            "bottom": 385,
+                            "right": 515,
+                            "top": 405
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "widget",
+                          "fieldFamily": "text",
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "textAlign": "left"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 201
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 201,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 99,
+                        "bottom": 300,
+                        "right": 101,
+                        "top": 500
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 202
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 202,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 85,
+                        "bottom": 385,
+                        "right": 115,
+                        "top": 415
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 203
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 203,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 280,
+                        "bottom": 395,
+                        "right": 320,
+                        "top": 405
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 204
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 204,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 285,
+                        "bottom": 385,
+                        "right": 315,
+                        "top": 415
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 205
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 205,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 490,
+                        "bottom": 390,
+                        "right": 510,
+                        "top": 410
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 206
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 206,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 495,
+                        "bottom": 385,
+                        "right": 515,
+                        "top": 405
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left"
+                    }
+                  ]
+                },
+                "defer": "geom"
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getWidgetAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 100,
+              "y": 400
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getWidgetAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 300,
+              "y": 400
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getWidgetAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 500,
+              "y": 400
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "loading"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-signature": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:201": {
+                      "id": "obj:201",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 201
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 201
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 201,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 99,
+                          "bottom": 300,
+                          "right": 101,
+                          "top": 500
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 99,
+                          "y": 300,
+                          "width": 2,
+                          "height": 200
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 99,
+                        "y": 300,
+                        "width": 2,
+                        "height": 200
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:202": {
+                      "id": "obj:202",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 202
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 202
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 202,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 85,
+                          "bottom": 385,
+                          "right": 115,
+                          "top": 415
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 85,
+                          "y": 385,
+                          "width": 30,
+                          "height": 30
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 85,
+                        "y": 385,
+                        "width": 30,
+                        "height": 30
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:203": {
+                      "id": "obj:203",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 203
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 203
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 203,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 280,
+                          "bottom": 395,
+                          "right": 320,
+                          "top": 405
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 280,
+                          "y": 395,
+                          "width": 40,
+                          "height": 10
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 280,
+                        "y": 395,
+                        "width": 40,
+                        "height": 10
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:204": {
+                      "id": "obj:204",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 204
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 204
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 204,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 285,
+                          "bottom": 385,
+                          "right": 315,
+                          "top": 415
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 285,
+                          "y": 385,
+                          "width": 30,
+                          "height": 30
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 285,
+                        "y": 385,
+                        "width": 30,
+                        "height": 30
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:205": {
+                      "id": "obj:205",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 205
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 205
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 205,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 490,
+                          "bottom": 390,
+                          "right": 510,
+                          "top": 410
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 490,
+                          "y": 390,
+                          "width": 20,
+                          "height": 20
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 490,
+                        "y": 390,
+                        "width": 20,
+                        "height": 20
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    },
+                    "obj:206": {
+                      "id": "obj:206",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 206
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 206
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 206,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 495,
+                          "bottom": 385,
+                          "right": 515,
+                          "top": 405
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "widget",
+                        "fieldFamily": "text",
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left"
+                      },
+                      "style": {
+                        "color": "#1a1a1a",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 495,
+                          "y": 395,
+                          "width": 20,
+                          "height": 20
+                        },
+                        "ellipse": false
+                      },
+                      "text": {
+                        "fontFamily": "helvetica",
+                        "fontSize": 0,
+                        "fontColor": "#000000",
+                        "textAlign": "left"
+                      },
+                      "apBox": {
+                        "x": 495,
+                        "y": 395,
+                        "width": 20,
+                        "height": 20
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:201",
+                    "obj:202",
+                    "obj:203",
+                    "obj:204",
+                    "obj:205",
+                    "obj:206"
+                  ],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "form-text": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-checkbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-radio": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    },
+                    "form-combobox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-listbox": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1,
+                      "fontSize": 12
+                    },
+                    "form-signature": {
+                      "interiorColor": "#ffffff",
+                      "color": "#6b7280",
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "live201",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 201
+                            },
+                            "annotObjectNumber": 201,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "live202",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 202
+                            },
+                            "annotObjectNumber": 202,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "live203",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 203
+                            },
+                            "annotObjectNumber": 203,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "live204",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 204
+                            },
+                            "annotObjectNumber": 204,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 5
+                        },
+                        "fieldObjectNumber": 5,
+                        "name": "live205",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 205
+                            },
+                            "annotObjectNumber": 205,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 6
+                        },
+                        "fieldObjectNumber": 6,
+                        "name": "live206",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 206
+                            },
+                            "annotObjectNumber": 206,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1,
+                    "obj:3": 2,
+                    "obj:4": 3,
+                    "obj:5": 4,
+                    "obj:6": 5
+                  },
+                  "byWidget": {
+                    "201": 0,
+                    "202": 1,
+                    "203": 2,
+                    "204": 3,
+                    "205": 4,
+                    "206": 5
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 1
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "ready"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "annotObjectNumber": 201,
+              "field": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 1
+                },
+                "fieldObjectNumber": 1,
+                "name": "live201",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 201
+                    },
+                    "annotObjectNumber": 201,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              "box": {
+                "x": 99,
+                "y": 300,
+                "width": 2,
+                "height": 200
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "annotObjectNumber": 203,
+              "field": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 3
+                },
+                "fieldObjectNumber": 3,
+                "name": "live203",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 203
+                    },
+                    "annotObjectNumber": 203,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              "box": {
+                "x": 280,
+                "y": 395,
+                "width": 40,
+                "height": 10
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "annotObjectNumber": 205,
+              "field": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 5
+                },
+                "fieldObjectNumber": 5,
+                "name": "live205",
+                "family": "text",
+                "origin": "acroform",
+                "flags": {
+                  "readOnly": false,
+                  "required": false,
+                  "noExport": false,
+                  "raw": 0
+                },
+                "alternateName": null,
+                "mappingName": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 205
+                    },
+                    "annotObjectNumber": 205,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    }
+                  }
+                ],
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "value": "",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              "box": {
+                "x": 490,
+                "y": 390,
+                "width": 20,
+                "height": 20
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "widget-hit-test-without-annotation",
       "covers": "Without the annotation plugin a page whose geometry has not landed answers null.",
       "plugins": [
@@ -49181,7 +53575,7 @@
     },
     {
       "name": "the-handler-outranks-lower-priorities",
-      "covers": "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked.",
+      "covers": "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked; the gesture starts under the id 'form-place'.",
       "plugins": [
         {
           "factory": "interaction"
@@ -49436,6 +53830,19 @@
             "token": "interaction",
             "doc": "a"
           },
+          "method": "onGestureStarted",
+          "args": [
+            {
+              "$fn": "gestureStarted"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
           "method": "activateTool",
           "args": [
             "form-text"
@@ -49642,6 +54049,24 @@
         },
         {
           "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
           "actions": [
             {
               "slice": "interaction::a",
@@ -49691,6 +54116,19 @@
                       "annotation-edit"
                     ]
                   }
+                }
+              ]
+            },
+            {
+              "fn": "gestureStarted",
+              "args": [
+                {
+                  "handlerId": "form-place",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "pointerType": "mouse"
                 }
               ]
             }
@@ -49811,7 +54249,7 @@
     },
     {
       "name": "the-handler-declines",
-      "covers": "No capture off a page, under a tool the palette does not know (even one enabling form-place), or without the design grant; the gesture falls through to other handlers.",
+      "covers": "No capture off a page, under a tool the palette does not know (even one enabling form-place), without the design grant, or under a palette id re-registered without form-place; the gesture falls through to other handlers.",
       "plugins": [
         {
           "factory": "interaction"
@@ -50215,6 +54653,105 @@
           "target": {
             "token": "interaction",
             "doc": "b"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "up",
+              "viewport": {
+                "x": 10,
+                "y": 10
+              },
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 10,
+                  "y": 10
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "registerTool",
+          "args": [
+            {
+              "id": "form-text",
+              "cursor": "crosshair",
+              "enables": {
+                "$set": []
+              }
+            },
+            {
+              "replace": true
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "activateTool",
+          "args": [
+            "form-text"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
+          "method": "dispatchPointer",
+          "args": [
+            {
+              "phase": "down",
+              "viewport": {
+                "x": 10,
+                "y": 10
+              },
+              "page": {
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "point": {
+                  "x": 10,
+                  "y": 10
+                },
+                "scale": 1
+              },
+              "modifiers": {
+                "shift": false,
+                "alt": false,
+                "ctrl": false,
+                "meta": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
           },
           "method": "dispatchPointer",
           "args": [
@@ -50663,6 +55200,98 @@
               }
             }
           ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "interaction::a",
+              "action": {
+                "type": "SET_TOOL",
+                "toolId": "form-text"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
           "engine": [],
           "callbacks": [],
           "reports": [],

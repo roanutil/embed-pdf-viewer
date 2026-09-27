@@ -24209,7 +24209,7 @@
     },
     {
       "name": "recalculate-anchors",
-      "covers": "recalculate() anchors on the first live /CO field, else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
+      "covers": "recalculate() anchors on the first live /CO field (here not the first field, and on page 2, which the world's pageNumber shows), else the first field, and runs with no source; a first-field anchor outside the /CO chain is neither calculated nor formatted; a document with no fields is an honest no-op.",
       "plugins": [
         {
           "factory": "actions",
@@ -24326,78 +24326,6 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "fieldObjectNumber": 4
-                      },
-                      "fieldObjectNumber": 4,
-                      "name": "total",
-                      "family": "text",
-                      "origin": "acroform",
-                      "flags": {
-                        "readOnly": false,
-                        "required": false,
-                        "noExport": false,
-                        "raw": 0
-                      },
-                      "alternateName": null,
-                      "mappingName": null,
-                      "widgets": [
-                        {
-                          "ref": {
-                            "kind": "objectNumber",
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            },
-                            "annotObjectNumber": 104
-                          },
-                          "annotObjectNumber": 104,
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          }
-                        }
-                      ],
-                      "valueEntry": {
-                        "kind": "scalar",
-                        "value": "2"
-                      },
-                      "defaultValueEntry": {
-                        "kind": "none"
-                      },
-                      "value": "2",
-                      "defaultValue": "",
-                      "maxLength": null,
-                      "multiline": false,
-                      "password": false,
-                      "comb": false,
-                      "actions": {
-                        "calculate": {
-                          "root": {
-                            "type": "javascript",
-                            "subtype": "JavaScript",
-                            "script": "total()",
-                            "next": []
-                          },
-                          "incomplete": false,
-                          "warningFlags": 0,
-                          "warnings": []
-                        },
-                        "format": {
-                          "root": {
-                            "type": "javascript",
-                            "subtype": "JavaScript",
-                            "script": "fmt()",
-                            "next": []
-                          },
-                          "incomplete": false,
-                          "warningFlags": 0,
-                          "warnings": []
-                        }
-                      }
-                    },
-                    {
-                      "ref": {
-                        "kind": "objectNumber",
                         "fieldObjectNumber": 5
                       },
                       "fieldObjectNumber": 5,
@@ -24442,6 +24370,78 @@
                       "multiline": false,
                       "password": false,
                       "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 4
+                      },
+                      "fieldObjectNumber": 4,
+                      "name": "total",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 2
+                            },
+                            "annotObjectNumber": 104
+                          },
+                          "annotObjectNumber": 104,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 2
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "2"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "2",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false,
+                      "actions": {
+                        "calculate": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "total()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        },
+                        "format": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "fmt()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
                     },
                     {
                       "ref": {
@@ -25356,7 +25356,7 @@
                     "id": "a",
                     "fileName": "document.pdf",
                     "pageCount": 2,
-                    "pageNumber": 0
+                    "pageNumber": 1
                   },
                   "identity": {
                     "name": "",
@@ -25373,11 +25373,11 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "fieldObjectNumber": 4
+                        "fieldObjectNumber": 5
                       },
-                      "name": "total",
+                      "name": "nocalc",
                       "family": "text",
-                      "value": "2",
+                      "value": "n",
                       "defaultValue": null,
                       "display": "visible",
                       "readOnly": false,
@@ -25386,11 +25386,11 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "fieldObjectNumber": 5
+                        "fieldObjectNumber": 4
                       },
-                      "name": "nocalc",
+                      "name": "total",
                       "family": "text",
-                      "value": "n",
+                      "value": "2",
                       "defaultValue": null,
                       "display": "visible",
                       "readOnly": false,
@@ -25438,7 +25438,7 @@
                     "id": "a",
                     "fileName": "document.pdf",
                     "pageCount": 2,
-                    "pageNumber": 0
+                    "pageNumber": 1
                   },
                   "identity": {
                     "name": "",
@@ -25455,11 +25455,11 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "fieldObjectNumber": 4
+                        "fieldObjectNumber": 5
                       },
-                      "name": "total",
+                      "name": "nocalc",
                       "family": "text",
-                      "value": "9",
+                      "value": "n",
                       "defaultValue": null,
                       "display": "visible",
                       "readOnly": false,
@@ -25468,11 +25468,11 @@
                     {
                       "ref": {
                         "kind": "objectNumber",
-                        "fieldObjectNumber": 5
+                        "fieldObjectNumber": 4
                       },
-                      "name": "nocalc",
+                      "name": "total",
                       "family": "text",
-                      "value": "n",
+                      "value": "9",
                       "defaultValue": null,
                       "display": "visible",
                       "readOnly": false,
@@ -47349,6 +47349,645 @@
           },
           "outcome": {
             "promise": 7
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-kindless-address-matches-no-candidate",
+      "covers": "An off-contract address without a kind ({ page, annotObjectNumber }) finds its field, but sameAnnotationRef matches no candidate for it, not even one whose ref has no kind, index or revision either: its last arm holds only for two index refs. The form path is a scripted no-op.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off",
+            "javascript": {
+              "enabled": true,
+              "sandbox": {
+                "builds": [
+                  {
+                    "run": [
+                      {
+                        "output": {
+                          "formEffects": [
+                            {
+                              "kind": "setValue",
+                              "ref": {
+                                "kind": "objectNumber",
+                                "fieldObjectNumber": 1
+                              },
+                              "value": {
+                                "type": "text",
+                                "value": "clicked"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "factory": "form"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 1
+                      },
+                      "fieldObjectNumber": 1,
+                      "name": "name",
+                      "family": "text",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 101
+                          },
+                          "annotObjectNumber": 101,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "Ada"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "value": "Ada",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 8
+                      },
+                      "fieldObjectNumber": 8,
+                      "name": "go",
+                      "family": "pushbutton",
+                      "origin": "acroform",
+                      "flags": {
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "raw": 0
+                      },
+                      "alternateName": null,
+                      "mappingName": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 108
+                          },
+                          "annotObjectNumber": 108,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      }
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": []
+                },
+                "times": 1
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 108,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 600,
+                        "right": 260,
+                        "top": 624
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "widget",
+                      "fieldFamily": "text",
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "textAlign": "left",
+                      "actions": {
+                        "activate": {
+                          "root": {
+                            "type": "javascript",
+                            "subtype": "JavaScript",
+                            "script": "kindless()",
+                            "next": []
+                          },
+                          "incomplete": false,
+                          "warningFlags": 0,
+                          "warnings": []
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.applyEffects",
+                "value": {
+                  "results": [
+                    {
+                      "index": 0,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 1,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 2,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 3,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 4,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 5,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 6,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    },
+                    {
+                      "index": 7,
+                      "status": "applied",
+                      "fields": [],
+                      "changedWidgets": []
+                    }
+                  ],
+                  "changedWidgets": [],
+                  "meta": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "activateWidget",
+          "args": [
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 108
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "loading"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 8
+                        },
+                        "fieldObjectNumber": 8,
+                        "name": "go",
+                        "family": "pushbutton",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 108
+                            },
+                            "annotObjectNumber": 108,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        }
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:8": 1
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "108": 1
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 1
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_STATUS",
+                "status": "ready"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "kind": "form",
+                "result": {
+                  "status": "unchanged",
+                  "scripted": true,
+                  "effectsResult": null,
+                  "uiEffects": [],
+                  "diagnostics": []
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
           }
         }
       ]

@@ -165,6 +165,15 @@ mod tests {
     }
 
     #[test]
+    fn reads_numbers_like_javascript() {
+        assert_eq!(f64_of(&json!({ "a": 2.5 }), "a"), 2.5);
+        assert!(f64_of(&json!({ "a": "2.5" }), "a").is_nan());
+        assert!(f64_of(&json!({}), "a").is_nan());
+        assert_eq!(string_to_number(" 12 "), 12.0);
+        assert!(string_to_number("x").is_nan());
+    }
+
+    #[test]
     fn strict_equality() {
         assert!(strict_eq(Some(&json!(1)), Some(&json!(1.0))));
         assert!(!strict_eq(Some(&json!([1])), Some(&json!([1]))));

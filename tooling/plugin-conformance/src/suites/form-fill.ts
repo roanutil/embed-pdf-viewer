@@ -124,7 +124,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'widget-geometry-loads-once-per-page',
     covers:
-      'ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection joins it.',
+      'ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection (listWidgets included) joins it.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
@@ -165,6 +165,7 @@ const cases: ScenarioCase[] = [
       call('ensureGeom', [2]),
       call('fillItems', [2]),
       call('fillItems', [1]),
+      call('listWidgets', [pr(1)]),
     ],
   },
   {
@@ -659,7 +660,7 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'confirmed-change-events',
     covers:
-      'Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.',
+      'Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin, whose sub becomes the actorId. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)]) } },
     snapshot: 'none',
@@ -674,6 +675,7 @@ const v3Cases: ScenarioCase[] = [
       call('onResynced', [fnSpec('resynced')]),
       emit({ type: 'form.valueChanged', origin: { kind: 'remote', actor: 'u2' }, field: NAME, changedWidgets: [] }),
       emit({ type: 'form.valueChanged', origin: { kind: 'local' }, field: AGREE, changedWidgets: [] }),
+      emit({ type: 'form.valueChanged', origin: { kind: 'remote', sub: 'u9', sessionId: 's9' }, field: NAME, changedWidgets: [] }),
       emit({ type: 'form.fieldCreated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
       emit({ type: 'form.fieldUpdated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
       emit({ type: 'form.widgetAttached', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),

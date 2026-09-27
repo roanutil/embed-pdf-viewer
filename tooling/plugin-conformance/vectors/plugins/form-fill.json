@@ -6370,7 +6370,7 @@
     },
     {
       "name": "widget-geometry-loads-once-per-page",
-      "covers": "ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection joins it.",
+      "covers": "ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection (listWidgets included) joins it.",
       "plugins": [
         {
           "factory": "interaction"
@@ -7161,6 +7161,20 @@
             "doc": "a"
           },
           "method": "listFillItems",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "listWidgets",
           "args": [
             {
               "kind": "objectNumber",
@@ -9878,6 +9892,272 @@
                 "password": false,
                 "maxLength": null,
                 "comb": false
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 5
+                        },
+                        "fieldObjectNumber": 5,
+                        "name": "far",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 2
+                              },
+                              "annotObjectNumber": 105
+                            },
+                            "annotObjectNumber": 105,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 2
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "f"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "f",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1,
+                    "obj:5": 2
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1,
+                    "105": 2
+                  },
+                  "writing": {},
+                  "geom": {
+                    "1": {
+                      "101": {
+                        "x": 100,
+                        "y": 176,
+                        "width": 160,
+                        "height": 24
+                      },
+                      "102": {
+                        "x": 50,
+                        "y": 82,
+                        "width": 18,
+                        "height": 18
+                      }
+                    },
+                    "2": {
+                      "105": {
+                        "x": 20,
+                        "y": 100,
+                        "width": 100,
+                        "height": 20
+                      }
+                    }
+                  },
+                  "seq": 3
+                },
+                "status": "ready"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "key": "obj:1",
+                "fieldRef": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 1
+                },
+                "annotObjectNumber": 101,
+                "annotationRef": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "annotObjectNumber": 101
+                },
+                "box": {
+                  "x": 100,
+                  "y": 176,
+                  "width": 160,
+                  "height": 24
+                },
+                "disabled": false,
+                "label": "name",
+                "control": "text",
+                "value": "Ada",
+                "multiline": false,
+                "password": false,
+                "maxLength": null,
+                "comb": false
+              },
+              {
+                "key": "obj:2",
+                "fieldRef": {
+                  "kind": "objectNumber",
+                  "fieldObjectNumber": 2
+                },
+                "annotObjectNumber": 102,
+                "annotationRef": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "annotObjectNumber": 102
+                },
+                "box": {
+                  "x": 50,
+                  "y": 82,
+                  "width": 18,
+                  "height": 18
+                },
+                "disabled": false,
+                "label": "agree",
+                "control": "toggle",
+                "kind": "checkbox",
+                "checked": false,
+                "onState": "Yes"
               }
             ]
           },
@@ -85899,7 +86179,7 @@
     },
     {
       "name": "confirmed-change-events",
-      "covers": "Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.",
+      "covers": "Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin, whose sub becomes the actorId. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.",
       "plugins": [
         {
           "factory": "interaction"
@@ -86415,6 +86695,67 @@
                 "kind": "none"
               },
               "checked": false
+            },
+            "changedWidgets": []
+          }
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "form.valueChanged",
+            "origin": {
+              "kind": "remote",
+              "sub": "u9",
+              "sessionId": "s9"
+            },
+            "field": {
+              "ref": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 1
+              },
+              "fieldObjectNumber": 1,
+              "name": "name",
+              "family": "text",
+              "origin": "acroform",
+              "flags": {
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "raw": 0
+              },
+              "alternateName": null,
+              "mappingName": null,
+              "widgets": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 101
+                  },
+                  "annotObjectNumber": 101,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  }
+                }
+              ],
+              "valueEntry": {
+                "kind": "scalar",
+                "value": "Ada"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "value": "Ada",
+              "defaultValue": "",
+              "maxLength": null,
+              "multiline": false,
+              "password": false,
+              "comb": false
             },
             "changedWidgets": []
           }
@@ -88159,7 +88500,387 @@
                   "seq": 3
                 }
               }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "valueChanged.bad",
+              "args": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 1
+                  },
+                  "field": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "fieldObjectNumber": 1,
+                    "name": "name",
+                    "family": "text",
+                    "origin": "acroform",
+                    "flags": {
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "raw": 0
+                    },
+                    "alternateName": null,
+                    "mappingName": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 101
+                        },
+                        "annotObjectNumber": 101,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      }
+                    ],
+                    "valueEntry": {
+                      "kind": "scalar",
+                      "value": "Ada"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "value": "Ada",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  },
+                  "origin": {
+                    "locality": "remote",
+                    "trigger": "unknown",
+                    "sessionId": "s9",
+                    "actorId": "u9"
+                  }
+                }
+              ]
             },
+            {
+              "fn": "console.error",
+              "args": [
+                "[form] event listener failed:",
+                {
+                  "$error": {
+                    "name": "Error",
+                    "message": "listener broke"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "valueChanged",
+              "args": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 1
+                  },
+                  "field": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 1
+                    },
+                    "fieldObjectNumber": 1,
+                    "name": "name",
+                    "family": "text",
+                    "origin": "acroform",
+                    "flags": {
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "raw": 0
+                    },
+                    "alternateName": null,
+                    "mappingName": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 101
+                        },
+                        "annotObjectNumber": 101,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      }
+                    ],
+                    "valueEntry": {
+                      "kind": "scalar",
+                      "value": "Ada"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "value": "Ada",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  },
+                  "origin": {
+                    "locality": "remote",
+                    "trigger": "unknown",
+                    "sessionId": "s9",
+                    "actorId": "u9"
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "resynced",
+              "args": [
+                {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
             {
               "slice": "form::a",
               "action": {
@@ -88390,6 +89111,239 @@
                   "writing": {},
                   "geom": {},
                   "seq": 4
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1,
+                    "obj:3": 2,
+                    "obj:4": 3
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1,
+                    "103": 2,
+                    "104": 3
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 5
                 }
               }
             }
@@ -88930,551 +89884,10 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 5
-                }
-              }
-            },
-            {
-              "slice": "form::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "snapshot": {
-                    "formKind": "acroform",
-                    "needsAppearances": false,
-                    "fields": [
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 1
-                        },
-                        "fieldObjectNumber": 1,
-                        "name": "name",
-                        "family": "text",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 101
-                            },
-                            "annotObjectNumber": 101,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "Ada"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "Ada",
-                        "defaultValue": "",
-                        "maxLength": null,
-                        "multiline": false,
-                        "password": false,
-                        "comb": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 2
-                        },
-                        "fieldObjectNumber": 2,
-                        "name": "agree",
-                        "family": "checkbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 102
-                            },
-                            "annotObjectNumber": 102,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            },
-                            "onState": "Yes"
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "none"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "checked": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 3
-                        },
-                        "fieldObjectNumber": 3,
-                        "name": "colour",
-                        "family": "combobox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 103
-                            },
-                            "annotObjectNumber": 103,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "r"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "r",
-                        "edit": false,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ]
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 4
-                        },
-                        "fieldObjectNumber": 4,
-                        "name": "colours",
-                        "family": "listbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 104
-                            },
-                            "annotObjectNumber": 104,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "array",
-                          "values": [
-                            "g"
-                          ]
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "multiSelect": true,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ],
-                        "selectedValues": [
-                          "g"
-                        ]
-                      }
-                    ],
-                    "calculationOrder": []
-                  },
-                  "byKey": {
-                    "obj:1": 0,
-                    "obj:2": 1,
-                    "obj:3": 2,
-                    "obj:4": 3
-                  },
-                  "byWidget": {
-                    "101": 0,
-                    "102": 1,
-                    "103": 2,
-                    "104": 3
-                  },
-                  "writing": {},
-                  "geom": {},
                   "seq": 6
                 }
               }
-            }
-          ],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [
-            {
-              "fn": "fieldUpdated",
-              "args": [
-                {
-                  "ref": {
-                    "kind": "objectNumber",
-                    "fieldObjectNumber": 3
-                  },
-                  "field": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "fieldObjectNumber": 3
-                    },
-                    "fieldObjectNumber": 3,
-                    "name": "colour",
-                    "family": "combobox",
-                    "origin": "acroform",
-                    "flags": {
-                      "readOnly": false,
-                      "required": false,
-                      "noExport": false,
-                      "raw": 0
-                    },
-                    "alternateName": null,
-                    "mappingName": null,
-                    "widgets": [
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "page": {
-                            "kind": "objectNumber",
-                            "pageObjectNumber": 1
-                          },
-                          "annotObjectNumber": 103
-                        },
-                        "annotObjectNumber": 103,
-                        "page": {
-                          "kind": "objectNumber",
-                          "pageObjectNumber": 1
-                        }
-                      }
-                    ],
-                    "valueEntry": {
-                      "kind": "scalar",
-                      "value": "r"
-                    },
-                    "defaultValueEntry": {
-                      "kind": "none"
-                    },
-                    "value": "r",
-                    "edit": false,
-                    "options": [
-                      {
-                        "label": "Red",
-                        "value": "r"
-                      },
-                      {
-                        "label": "Green",
-                        "value": "g"
-                      }
-                    ]
-                  },
-                  "origin": {
-                    "locality": "local",
-                    "trigger": "unknown",
-                    "actorId": null
-                  }
-                }
-              ]
             },
-            {
-              "fn": "resynced",
-              "args": [
-                {
-                  "snapshot": {
-                    "formKind": "acroform",
-                    "needsAppearances": false,
-                    "fields": [
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 1
-                        },
-                        "fieldObjectNumber": 1,
-                        "name": "name",
-                        "family": "text",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 101
-                            },
-                            "annotObjectNumber": 101,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "Ada"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "Ada",
-                        "defaultValue": "",
-                        "maxLength": null,
-                        "multiline": false,
-                        "password": false,
-                        "comb": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 2
-                        },
-                        "fieldObjectNumber": 2,
-                        "name": "agree",
-                        "family": "checkbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 102
-                            },
-                            "annotObjectNumber": 102,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            },
-                            "onState": "Yes"
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "none"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "checked": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 3
-                        },
-                        "fieldObjectNumber": 3,
-                        "name": "colour",
-                        "family": "combobox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 103
-                            },
-                            "annotObjectNumber": 103,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "r"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "r",
-                        "edit": false,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ]
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 4
-                        },
-                        "fieldObjectNumber": 4,
-                        "name": "colours",
-                        "family": "listbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 104
-                            },
-                            "annotObjectNumber": 104,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "array",
-                          "values": [
-                            "g"
-                          ]
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "multiSelect": true,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ],
-                        "selectedValues": [
-                          "g"
-                        ]
-                      }
-                    ],
-                    "calculationOrder": []
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
             {
               "slice": "form::a",
               "action": {
@@ -89707,7 +90120,315 @@
                   "seq": 7
                 }
               }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "fieldUpdated",
+              "args": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "fieldObjectNumber": 3
+                  },
+                  "field": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "fieldObjectNumber": 3
+                    },
+                    "fieldObjectNumber": 3,
+                    "name": "colour",
+                    "family": "combobox",
+                    "origin": "acroform",
+                    "flags": {
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "raw": 0
+                    },
+                    "alternateName": null,
+                    "mappingName": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 103
+                        },
+                        "annotObjectNumber": 103,
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      }
+                    ],
+                    "valueEntry": {
+                      "kind": "scalar",
+                      "value": "r"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "value": "r",
+                    "edit": false,
+                    "options": [
+                      {
+                        "label": "Red",
+                        "value": "r"
+                      },
+                      {
+                        "label": "Green",
+                        "value": "g"
+                      }
+                    ]
+                  },
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "unknown",
+                    "actorId": null
+                  }
+                }
+              ]
             },
+            {
+              "fn": "resynced",
+              "args": [
+                {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
             {
               "slice": "form::a",
               "action": {
@@ -89938,6 +90659,239 @@
                   "writing": {},
                   "geom": {},
                   "seq": 8
+                }
+              }
+            },
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1,
+                    "obj:3": 2,
+                    "obj:4": 3
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1,
+                    "103": 2,
+                    "104": 3
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 9
                 }
               }
             }
@@ -90478,7 +91432,7 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 9
+                  "seq": 10
                 }
               }
             },
@@ -90711,7 +91665,7 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 10
+                  "seq": 11
                 }
               }
             }
@@ -91252,7 +92206,7 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 11
+                  "seq": 12
                 }
               }
             },
@@ -91485,7 +92439,7 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 12
+                  "seq": 13
                 }
               }
             }
@@ -91973,481 +92927,10 @@
                   },
                   "writing": {},
                   "geom": {},
-                  "seq": 13
-                }
-              }
-            },
-            {
-              "slice": "form::a",
-              "action": {
-                "type": "SET_MODEL",
-                "model": {
-                  "snapshot": {
-                    "formKind": "acroform",
-                    "needsAppearances": false,
-                    "fields": [
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 1
-                        },
-                        "fieldObjectNumber": 1,
-                        "name": "name",
-                        "family": "text",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 101
-                            },
-                            "annotObjectNumber": 101,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "Ada"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "Ada",
-                        "defaultValue": "",
-                        "maxLength": null,
-                        "multiline": false,
-                        "password": false,
-                        "comb": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 2
-                        },
-                        "fieldObjectNumber": 2,
-                        "name": "agree",
-                        "family": "checkbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 102
-                            },
-                            "annotObjectNumber": 102,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            },
-                            "onState": "Yes"
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "none"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "checked": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 3
-                        },
-                        "fieldObjectNumber": 3,
-                        "name": "colour",
-                        "family": "combobox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 103
-                            },
-                            "annotObjectNumber": 103,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "r"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "r",
-                        "edit": false,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ]
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 4
-                        },
-                        "fieldObjectNumber": 4,
-                        "name": "colours",
-                        "family": "listbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 104
-                            },
-                            "annotObjectNumber": 104,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "array",
-                          "values": [
-                            "g"
-                          ]
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "multiSelect": true,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ],
-                        "selectedValues": [
-                          "g"
-                        ]
-                      }
-                    ],
-                    "calculationOrder": []
-                  },
-                  "byKey": {
-                    "obj:1": 0,
-                    "obj:2": 1,
-                    "obj:3": 2,
-                    "obj:4": 3
-                  },
-                  "byWidget": {
-                    "101": 0,
-                    "102": 1,
-                    "103": 2,
-                    "104": 3
-                  },
-                  "writing": {},
-                  "geom": {},
                   "seq": 14
                 }
               }
-            }
-          ],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [
-            {
-              "fn": "resynced",
-              "args": [
-                {
-                  "snapshot": {
-                    "formKind": "acroform",
-                    "needsAppearances": false,
-                    "fields": [
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 1
-                        },
-                        "fieldObjectNumber": 1,
-                        "name": "name",
-                        "family": "text",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 101
-                            },
-                            "annotObjectNumber": 101,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "Ada"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "Ada",
-                        "defaultValue": "",
-                        "maxLength": null,
-                        "multiline": false,
-                        "password": false,
-                        "comb": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 2
-                        },
-                        "fieldObjectNumber": 2,
-                        "name": "agree",
-                        "family": "checkbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 102
-                            },
-                            "annotObjectNumber": 102,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            },
-                            "onState": "Yes"
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "none"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "checked": false
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 3
-                        },
-                        "fieldObjectNumber": 3,
-                        "name": "colour",
-                        "family": "combobox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 103
-                            },
-                            "annotObjectNumber": 103,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "scalar",
-                          "value": "r"
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "value": "r",
-                        "edit": false,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ]
-                      },
-                      {
-                        "ref": {
-                          "kind": "objectNumber",
-                          "fieldObjectNumber": 4
-                        },
-                        "fieldObjectNumber": 4,
-                        "name": "colours",
-                        "family": "listbox",
-                        "origin": "acroform",
-                        "flags": {
-                          "readOnly": false,
-                          "required": false,
-                          "noExport": false,
-                          "raw": 0
-                        },
-                        "alternateName": null,
-                        "mappingName": null,
-                        "widgets": [
-                          {
-                            "ref": {
-                              "kind": "objectNumber",
-                              "page": {
-                                "kind": "objectNumber",
-                                "pageObjectNumber": 1
-                              },
-                              "annotObjectNumber": 104
-                            },
-                            "annotObjectNumber": 104,
-                            "page": {
-                              "kind": "objectNumber",
-                              "pageObjectNumber": 1
-                            }
-                          }
-                        ],
-                        "valueEntry": {
-                          "kind": "array",
-                          "values": [
-                            "g"
-                          ]
-                        },
-                        "defaultValueEntry": {
-                          "kind": "none"
-                        },
-                        "multiSelect": true,
-                        "options": [
-                          {
-                            "label": "Red",
-                            "value": "r"
-                          },
-                          {
-                            "label": "Green",
-                            "value": "g"
-                          }
-                        ],
-                        "selectedValues": [
-                          "g"
-                        ]
-                      }
-                    ],
-                    "calculationOrder": []
-                  }
-                }
-              ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          }
-        },
-        {
-          "settled": [],
-          "actions": [
+            },
             {
               "slice": "form::a",
               "action": {
@@ -93149,6 +93632,477 @@
                   "writing": {},
                   "geom": {},
                   "seq": 16
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "resynced",
+              "args": [
+                {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "form::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "snapshot": {
+                    "formKind": "acroform",
+                    "needsAppearances": false,
+                    "fields": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 1
+                        },
+                        "fieldObjectNumber": 1,
+                        "name": "name",
+                        "family": "text",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 101
+                            },
+                            "annotObjectNumber": 101,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "Ada"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "Ada",
+                        "defaultValue": "",
+                        "maxLength": null,
+                        "multiline": false,
+                        "password": false,
+                        "comb": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 2
+                        },
+                        "fieldObjectNumber": 2,
+                        "name": "agree",
+                        "family": "checkbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 102
+                            },
+                            "annotObjectNumber": 102,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "onState": "Yes"
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 3
+                        },
+                        "fieldObjectNumber": 3,
+                        "name": "colour",
+                        "family": "combobox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 103
+                            },
+                            "annotObjectNumber": 103,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "scalar",
+                          "value": "r"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "value": "r",
+                        "edit": false,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ]
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "fieldObjectNumber": 4
+                        },
+                        "fieldObjectNumber": 4,
+                        "name": "colours",
+                        "family": "listbox",
+                        "origin": "acroform",
+                        "flags": {
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "raw": 0
+                        },
+                        "alternateName": null,
+                        "mappingName": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "pageObjectNumber": 1
+                              },
+                              "annotObjectNumber": 104
+                            },
+                            "annotObjectNumber": 104,
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            }
+                          }
+                        ],
+                        "valueEntry": {
+                          "kind": "array",
+                          "values": [
+                            "g"
+                          ]
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "multiSelect": true,
+                        "options": [
+                          {
+                            "label": "Red",
+                            "value": "r"
+                          },
+                          {
+                            "label": "Green",
+                            "value": "g"
+                          }
+                        ],
+                        "selectedValues": [
+                          "g"
+                        ]
+                      }
+                    ],
+                    "calculationOrder": []
+                  },
+                  "byKey": {
+                    "obj:1": 0,
+                    "obj:2": 1,
+                    "obj:3": 2,
+                    "obj:4": 3
+                  },
+                  "byWidget": {
+                    "101": 0,
+                    "102": 1,
+                    "103": 2,
+                    "104": 3
+                  },
+                  "writing": {},
+                  "geom": {},
+                  "seq": 17
                 }
               }
             }
