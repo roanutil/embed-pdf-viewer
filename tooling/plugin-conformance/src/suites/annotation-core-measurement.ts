@@ -435,6 +435,7 @@ for (const offset of [0, 3, 6, 10, 16, 2.5]) {
 richCases.push(c('splitRunsAt', 'surrogate-safe', DOC.paragraphs[3], 5));
 const RANGES: [string, rt.RichTextRange][] = [
   ['inside-run', { start: 1, end: 4 }],
+  ['inside-later-run', { start: 7, end: 9 }],
   ['across-runs', { start: 3, end: 12 }],
   ['reversed', { start: 12, end: 3 }],
   ['empty', { start: 5, end: 5 }],
@@ -496,6 +497,9 @@ const DIST_MSG = { measure: dist() };
 const DIST_CAPTION = ms.distanceCaptionAt(LINE, dist({ leader: { length: -20 } }), 2)!;
 const PERIM_CAPTION = { x: 450, y: 792 - 412 };
 const AREA_CAPTION = msh.shapeMeasurementLayout(gPoly(AREA_POINTS, true), area(), initialModel.style)!.caption!.center;
+
+const ROTATED_SQ = sq('rot', rc(100, 100, 80, 60), { geom: gRect(rc(100, 100, 80, 60), false, 30) });
+const BAKED_DIST = annot('dist', 'line', LINE, { source: 'baked', measure: dist({ leader: { length: -20 } }) });
 
 const RUNS: [string, Partial<Model>, Msg[]][] = [
   ['distance-create', MS(), [
@@ -627,6 +631,15 @@ const RUNS: [string, Partial<Model>, Msg[]][] = [
   ]],
   ['callout-move-clamp', MS({ selected: ['callout'] }), [ed('down', 530, 720), ed('move', 600, 800, { pageBox: PAGE }), ed('up', 600, 800)]],
   ['callout-move-clamp-view', MS({ selected: ['callout'] }), [ed('down', 530, 720, { zoom: 2 }), ed('move', 400, 720, { pageBox: PAGE, zoom: 2 }), ed('up', 400, 720)]],
+  ['callout-move-clamp-top-left', MS({ selected: ['callout'] }), [ed('down', 530, 720), ed('move', 0, 0, { pageBox: PAGE }), ed('up', 0, 0)]],
+  // A rotated box clamps by its selection frame, not its unrotated bounds.
+  ['move-clamp-rotated-square', start([ROTATED_SQ], { selected: ['rot'] }), [ed('down', 140, 130), ed('move', 0, 0, { pageBox: PAGE }), ed('up', 0, 0)]],
+  // Committing a leader or caption drag makes a baked annotation a vector one.
+  ['draft-leader-baked', start([BAKED_DIST], { draft: { g: 'leader', id: 'dist', start: v(0, 0), delta: 5 } }), [ed('up', 0, 0)]],
+  ['draft-caption-x-only-baked', start([BAKED_DIST], { draft: { g: 'caption', id: 'dist', start: v(0, 0), delta: v(4, 0) } }), [ed('up', 0, 0)]],
+  ['distance-create-clears-selection', MS({ selected: ['sq'] }), [cr('line', 'down', 100, 700, {}, DIST_MSG)]],
+  ['distance-create-vertical', MS(), [cr('line', 'down', 100, 700, {}, DIST_MSG), cr('line', 'up', 100, 720)]],
+  ['distance-create-at-min-drag', MS(), [cr('line', 'down', 100, 700, {}, DIST_MSG), cr('line', 'up', 103, 700)]],
   ['bold-props', MS({ selected: ['ft', 'ft-plain-dto', 'sq'] }), [
     { t: 'setProps', patch: { bold: true } },
     { t: 'setProps', patch: { italic: true, underline: false } },
@@ -684,6 +697,23 @@ modelCases.push(
     hitCall(['dist'], v(20, 20), 4, { view: { zoom: 2, rotation: 0 } }),
     hitCall(['ft'], v(460, 520)),
   ]),
+  // A 70 pt line pushes its caption outside at the default stroke width 2
+  // but not at 1; the noZoom copy at zoom 2 measures 70 pt with a stroke of
+  // 1, so only the anchored stroke keeps its caption on the line. The
+  // vertical line's handles differ in x, so the closest one decides.
+  c('hitCalls', 'measured-edges', start([
+    annot('d70', 'line', gLine(v(100, 100), v(170, 100)), { measure: dist() }),
+    annot('nz', 'line', gLine(v(100, 300), v(240, 300)), { flags: flags({ noZoom: true }), measure: dist() }),
+    annot('vert', 'line', gLine(v(100, 600), v(100, 744)), { measure: dist({ leader: { length: -3 } }) }),
+  ]), [
+    hitCall(['d70'], v(135, 88.5)),
+    hitCall(['d70'], v(135, 83.5)),
+    hitCall(['d70'], v(135, 82.5), 4, { gm: { ...CG, handleTol: 3 } }),
+    hitCall(['nz'], v(135, 288.5), 4, { view: { zoom: 2, rotation: 0 } }),
+    hitCall(['nz'], v(135, 300), 4, { view: { zoom: 2, rotation: 0 } }),
+    hitCall(['vert'], v(99.5, 600)),
+    hitCall(['vert'], v(97.5, 600)),
+  ]),
 );
 
 const MEASURED_ITEMS = pageItems(modelOf(MS({ selected: ['dist'] })), pageRef(PON));
@@ -726,6 +756,9 @@ const VIEW_STATES: [string, Model][] = [
   ['draft-rotate-perim', drive(MS({ selected: ['perim'], draft: { g: 'rotate', ids: ['perim'], pivot: v(450, 330), start: v(450, 250), cur: v(530, 330) } }), [])],
   ['draft-group-perim', drive(MS({ selected: ['perim', 'area'], draft: { g: 'group', op: 'resize', ids: ['perim', 'area'], handle: 'se', anchor: v(100, 300), base: rc(100, 300, 452, 80), cur: rc(100, 300, 500, 100) } }), [])],
   ['draft-leader-area', drive(MS({ selected: ['area'], draft: { g: 'leader', id: 'area', start: v(0, 0), delta: 5 } }), [])],
+  // Gestures on the area alone leave the pinned perimeter caption where it is.
+  ['draft-rotate-area-only', drive(MS({ selected: ['area'], draft: { g: 'rotate', ids: ['area'], pivot: v(172, 336), start: v(172, 250), cur: v(250, 336) } }), [])],
+  ['draft-group-area-only', drive(MS({ selected: ['area'], draft: { g: 'group', op: 'resize', ids: ['area'], handle: 'se', anchor: v(100, 300), base: rc(100, 300, 144, 72), cur: rc(100, 300, 200, 100) } }), [])],
   ['move-perim', drive(MS({ selected: ['perim'] }), [ed('down', 400, 325), ed('move', 420, 345)])],
   ['move-dist', drive(MS({ selected: ['dist'] }), [ed('down', 150, 120), ed('move', 160, 130)])],
   ['rotate-perim', drive(MS({ selected: ['perim'] }), [ed('down', 450, 250), ed('move', 520, 280)])],

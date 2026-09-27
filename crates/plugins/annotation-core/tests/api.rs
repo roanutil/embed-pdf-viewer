@@ -35,3 +35,10 @@ fn click_create_segment_is_a_segment_policy() {
     let b = ClickCreate::boxed(10.0, 20.0, None);
     assert!(!b.is_segment() && b.has_width());
 }
+
+#[test]
+fn same_page_compares_the_object_number() {
+    let a = PageRef::new(7);
+    assert!(a.same_page(&PageRef::new(7)));
+    assert!(!a.same_page(&PageRef::new(8)));
+}

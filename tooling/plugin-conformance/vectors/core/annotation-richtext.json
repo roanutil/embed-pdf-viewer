@@ -3921,6 +3921,290 @@
       }
     },
     {
+      "name": "applyStyleToRange/bold-inside-later-run",
+      "fn": "applyStyleToRange",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 7,
+          "end": 9
+        },
+        {
+          "weight": 700
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeHasStyle/bold-inside-later-run",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 7,
+          "end": 9
+        },
+        {
+          "key": "weight",
+          "value": 700
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
+      "name": "rangeHasStyle/unstyled-inside-later-run",
+      "fn": "rangeHasStyle",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "size": 12
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hello "
+                },
+                {
+                  "text": "bold",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": " world"
+                }
+              ]
+            },
+            {
+              "align": "center",
+              "runs": [
+                {
+                  "text": "Second "
+                },
+                {
+                  "text": "line",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline",
+                      "line-through"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                }
+              ]
+            },
+            {
+              "runs": [
+                {
+                  "text": "café 😀!",
+                  "style": {
+                    "color": "#ff0000"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 7,
+          "end": 9
+        },
+        {
+          "key": "weight"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
       "name": "applyStyleToRange/bold-across-runs",
       "fn": "applyStyleToRange",
       "args": [
