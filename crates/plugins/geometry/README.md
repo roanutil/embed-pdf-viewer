@@ -55,16 +55,17 @@ fdlibm, and no case prints a transcendental result through `matrixToCss`.
 
 ## Mutation testing
 
-Pre-v3, rerun pending: these counts predate `rectFromCorners`, `rectContains`, `rectsOverlap` and
-`page-space.ts`.
+`scripts/mutants.sh -p epdf-geometry --test-package epdf-geometry --file <file>`, file by file over
+every module but `harness.rs`, catches 507 of 514 viable mutants (507 caught, 0 timeouts; 3
+unviable). Two of those are killed by the new unit test `sign_keeps_signed_zeros_and_nan` in
+`js.rs`, checked by applying each by hand: `>` to `>=` and `<` to `<=` in `sign`. Inside this crate
+only `normalizeQuad` calls `sign`, on two areas that already passed `|area| > 1e-6 * len * len`, so
+no vector passes it zero. The downstream ports in `epdf-annotation-core` and `epdf-plugin-stage` can.
 
-`cargo mutants -p epdf-geometry --test-package epdf-geometry` tests 449 mutants: 438 caught, 9
-missed, 2 unviable. Every miss is equivalent:
+The seven survivors are all in `src/js.rs`, and all equivalent:
 
 - `js.rs:23` and `js.rs:37`, `>` to `>=` in `max` and `<` to `<=` in `min`. Equal operands return
   one branch earlier, so the mutated comparison never sees them.
-- `js.rs:56` `>` to `>=` and `js.rs:58` `<` to `<=` in `sign`. `sign` is only called on
-  `normalizeQuad`'s two areas after both passed `|area| > 1e-6 * len * len`, so neither is zero.
 - `js.rs:76` `>` to `>=` in `hypot`: an equal magnitude sets `max` to the value it already holds.
 - `js.rs:93` and `js.rs:95`, the Kahan compensation's `-` to `+`. With two arguments the first
   term's compensation is exactly zero (`sum` starts at zero, so `preliminary` equals `summand`),
