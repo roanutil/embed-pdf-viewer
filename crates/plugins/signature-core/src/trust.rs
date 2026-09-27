@@ -151,6 +151,7 @@ struct ChainEngine {
 }
 
 const NO_VALID_PATH: &str = "No valid certificate paths found";
+const ISSUER_CYCLE: &str = "Certificate issuers form a cycle";
 
 impl ChainEngine {
     fn new(trusted: Vec<Certificate>, certs: Vec<Certificate>, check_date: f64) -> ChainEngine {
@@ -233,7 +234,11 @@ impl ChainEngine {
         result
     }
 
-    fn build_path(&self, id: usize) -> Result<Vec<Vec<usize>>, String> {
+    /// `buildPath`. `below` holds the certificates this one was reached
+    /// from. Deliberate deviation: pkijs has no cycle check, so two CAs that
+    /// issue each other recurse until it never returns; here an issuer that
+    /// is already below fails the validation instead of the stack.
+    fn build_path(&self, id: usize, below: &mut Vec<usize>) -> Result<Vec<Vec<usize>>, String> {
         if self.is_trusted(id) {
             return Ok(vec![vec![id]]);
         }
@@ -241,13 +246,17 @@ impl ChainEngine {
         if issuers.is_empty() {
             return Err(NO_VALID_PATH.into());
         }
+        below.push(id);
         let mut result = Vec::new();
         for issuer in issuers {
             if self.tbs_equal(issuer, id) {
                 result.push(vec![issuer]);
                 continue;
             }
-            for path in self.build_path(issuer)? {
+            if below.iter().any(|&b| self.tbs_equal(b, issuer)) {
+                return Err(ISSUER_CYCLE.into());
+            }
+            for path in self.build_path(issuer, below)? {
                 let mut copy = vec![issuer];
                 copy.extend(&path);
                 let unique =
@@ -255,6 +264,7 @@ impl ChainEngine {
                 result.push(if unique { copy } else { path });
             }
         }
+        below.pop();
         Ok(result)
     }
 
@@ -350,7 +360,7 @@ impl ChainEngine {
             i += 1;
         }
         let leaf = *local.last().ok_or("Empty certificate array")?;
-        let mut result = self.build_path(leaf)?;
+        let mut result = self.build_path(leaf, &mut Vec::new())?;
         if result.is_empty() {
             return Err("Unable to find certificate path".into());
         }

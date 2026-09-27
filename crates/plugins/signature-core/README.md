@@ -2,8 +2,8 @@
 
 `packages/core/signature` in Rust: parse, verify and build detached CMS signatures, the completion
 gate, certificate chain validation, `sign()` and `validateSignatures()` over a document handle, and
-the signer ports. All 454 cases in the five `vectors/core/signature-*.json` files replay identically
-(`cargo test -p epdf-signature-core`): 201 parse cases, 95 for verify, build and the gate, 96 for
+the signer ports. All 455 cases in the five `vectors/core/signature-*.json` files replay identically
+(`cargo test -p epdf-signature-core`): 202 parse cases, 95 for verify, build and the gate, 96 for
 trust, 34 for signing and validation over a document, and 28 for the signers.
 
 ## What ports and what the host supplies
@@ -64,7 +64,7 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   digest is `invalid`, and SHA-1 parameters over a SHA-256 signature are `valid`
   (`verify-pssSha1`, `verify-pssSha1ParamsOverSha256`).
 
-## Deliberate differences
+## Deliberate deviations from the TypeScript
 
 - Malformed input outside the vectors can refuse with different text. pkijs validates the whole
   SignedData against one schema and reports "Object's schema was not verified against input data
@@ -76,12 +76,13 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   otherwise refuse it.
 - RSA keys go through `rsa::RsaPublicKey::new`, which refuses moduli above 4,096 bits. WebCrypto
   in Node accepts up to 16,384. Such a signature verifies as `invalid` here.
-- `number_text` prints a whole number through `i64`, so a `contentsSize` of 2^63 or more prints as
-  `9223372036854775807` where JavaScript prints the number.
-- Two CA certificates that issue each other (two levels over one key) send pkijs's `buildPath`
-  into a recursion that never returns; we saw `validateChain` hang on such a chain while building
-  the fixtures. `ChainEngine::build_path` has the same recursion with no cycle check, so here it
-  would exhaust the stack. No vector can pin a hang, so nothing tests this.
+- Two CA certificates that issue each other send pkijs's `buildPath` into a recursion that never
+  returns: `validateChain` hangs. A straight port overflows the stack instead, which aborts the
+  process, and a hostile PDF can carry such a chain. `ChainEngine::build_path` refuses an issuer
+  it was reached from, and the chain is `untrusted` with "Certificate issuers form a cycle". No
+  vector can pin a hang, so `tests/chain_cycle.rs` checks this over the `cyclicIssuers` fixture;
+  before the guard, that test aborted with a stack overflow. The cost: a chain pkijs would never
+  finish gets a verdict here that the TypeScript cannot confirm.
 
 ## Coverage
 
@@ -108,12 +109,13 @@ engine's policy and name-constraint half.
 ## Mutation testing
 
 `scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
-file over every module but `harness.rs`, catches 1,770 of 1,816 viable mutants (1,766 caught, 4
+file over every module but `harness.rs`, catches 1,770 of 1,813 viable mutants (1,766 caught, 4
 timeouts; 91 unviable). 169 of the caught were killed by cases added for this count, each confirmed
-by applying the mutant by hand. Three more sat in `integer_from_der`, which was rewritten to match
-asn1js (above) and is not counted. The same pass fixed four other divergences the new cases
+by applying the mutant by hand. Six more sat in code since replaced and are not counted: three in
+`integer_from_der`, rewritten to match asn1js (above), and three in `number_text`, which now calls
+`epdf_geometry::js::number_to_string`. The same pass fixed four other divergences the new cases
 exposed: the OID termination check in `der::read`, the two-digit GeneralizedTime year, the UTCTime
-year `padNumber` drops, and the RSA-PSS hash. None of the 46 survivors lets a bad signature or chain
+year `padNumber` drops, and the RSA-PSS hash. None of the 43 survivors lets a bad signature or chain
 pass.
 
 `cert.rs`
@@ -140,11 +142,6 @@ pass.
 - `||` to `&&` in `integer`: every caller passes a value from 1 to 127.
 - `-` to `+` and `/` in `days_from_civil`'s negative-era branch (2): parsed years are 1900 or later.
 - `generalized_time` returning `vec![]`, `vec![0]` or `vec![1]` (3): nothing calls it.
-
-`lib.rs`
-
-- `<` to `==`, `>` and `<=` against `1e21` in `number_text` (3): below 2^63 the `i64` branch and
-  `f64` formatting print the same digits; above it the original is already wrong (above).
 
 `policy.rs`
 
