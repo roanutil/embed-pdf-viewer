@@ -858,6 +858,17 @@ const validateCases: ScenarioCase[] = [
   scenario('validate-chain-invalid', 'A broken revision chain makes integrity indeterminate without reading the CMS.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto()], { chainValid: false }) },
   ])),
+  scenario('validate-signed-by-truthiness', 'Only a truthy `signed` is judged, whatever its type: null, 0 and the empty string are skipped; 1, a string, an object and an array are not.', [validate()], signDoc([
+    { path: 'signatures.list', value: snapshot([
+      sigDto({ index: 0, signed: null }),
+      sigDto({ index: 1, signed: 0 }),
+      sigDto({ index: 2, signed: '' }),
+      sigDto({ index: 3, signed: 1 }),
+      sigDto({ index: 4, signed: 'x' }),
+      sigDto({ index: 5, signed: {} }),
+      sigDto({ index: 6, signed: [] }),
+    ], { chainValid: false }) },
+  ])),
   scenario('validate-coverage-malformed', 'Malformed coverage on a valid chain is invalid.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto({ coverage: 'malformed' })]) },
   ])),

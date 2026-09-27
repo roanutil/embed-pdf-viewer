@@ -5483,6 +5483,576 @@
       ]
     },
     {
+      "name": "validate-signed-by-truthiness",
+      "covers": "Only a truthy `signed` is judged, whatever its type: null, 0 and the empty string are skipped; 1, a string, an object and an array are not.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "engine": {
+        "documents": {
+          "d": {
+            "pages": [],
+            "services": [
+              "signatures"
+            ],
+            "responses": [
+              {
+                "path": "signatures.list",
+                "value": {
+                  "chainValid": false,
+                  "revisions": [
+                    {
+                      "index": 0
+                    }
+                  ],
+                  "signatures": [
+                    {
+                      "index": 0,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": null,
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 1,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": 0,
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 2,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": "",
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 3,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": 1,
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 4,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": "x",
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 5,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": {},
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    },
+                    {
+                      "index": 6,
+                      "field": {
+                        "kind": "name",
+                        "name": "Sig1"
+                      },
+                      "fieldName": "Sig1",
+                      "widget": null,
+                      "signed": [],
+                      "kind": "signature",
+                      "filter": "Adobe.PPKLite",
+                      "subFilter": "ETSI.CAdES.detached",
+                      "byteRange": [
+                        0,
+                        100,
+                        8292,
+                        50
+                      ],
+                      "contentsSize": 8192,
+                      "coverage": "whole-revision",
+                      "revisionIndex": 0,
+                      "signer": {
+                        "name": "Conformance Signer"
+                      },
+                      "docMdp": null,
+                      "catalogCertification": false,
+                      "fieldMdp": null,
+                      "lock": null,
+                      "seedValue": null
+                    }
+                  ],
+                  "protection": {}
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "d",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "validateSignatures",
+          "args": [
+            "d"
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "d"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "d",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "d",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "d": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "signature": {
+                    "index": 3,
+                    "field": {
+                      "kind": "name",
+                      "name": "Sig1"
+                    },
+                    "fieldName": "Sig1",
+                    "widget": null,
+                    "signed": 1,
+                    "kind": "signature",
+                    "filter": "Adobe.PPKLite",
+                    "subFilter": "ETSI.CAdES.detached",
+                    "byteRange": [
+                      0,
+                      100,
+                      8292,
+                      50
+                    ],
+                    "contentsSize": 8192,
+                    "coverage": "whole-revision",
+                    "revisionIndex": 0,
+                    "signer": {
+                      "name": "Conformance Signer"
+                    },
+                    "docMdp": null,
+                    "catalogCertification": false,
+                    "fieldMdp": null,
+                    "lock": null,
+                    "seedValue": null
+                  },
+                  "integrity": "indeterminate",
+                  "cryptography": "unsupported",
+                  "trust": "unknown",
+                  "validatedAt": {
+                    "kind": "now"
+                  },
+                  "modifications": {
+                    "verdict": "unchanged",
+                    "basis": "persisted"
+                  },
+                  "summary": "indeterminate",
+                  "cms": null
+                },
+                {
+                  "signature": {
+                    "index": 4,
+                    "field": {
+                      "kind": "name",
+                      "name": "Sig1"
+                    },
+                    "fieldName": "Sig1",
+                    "widget": null,
+                    "signed": "x",
+                    "kind": "signature",
+                    "filter": "Adobe.PPKLite",
+                    "subFilter": "ETSI.CAdES.detached",
+                    "byteRange": [
+                      0,
+                      100,
+                      8292,
+                      50
+                    ],
+                    "contentsSize": 8192,
+                    "coverage": "whole-revision",
+                    "revisionIndex": 0,
+                    "signer": {
+                      "name": "Conformance Signer"
+                    },
+                    "docMdp": null,
+                    "catalogCertification": false,
+                    "fieldMdp": null,
+                    "lock": null,
+                    "seedValue": null
+                  },
+                  "integrity": "indeterminate",
+                  "cryptography": "unsupported",
+                  "trust": "unknown",
+                  "validatedAt": {
+                    "kind": "now"
+                  },
+                  "modifications": {
+                    "verdict": "unchanged",
+                    "basis": "persisted"
+                  },
+                  "summary": "indeterminate",
+                  "cms": null
+                },
+                {
+                  "signature": {
+                    "index": 5,
+                    "field": {
+                      "kind": "name",
+                      "name": "Sig1"
+                    },
+                    "fieldName": "Sig1",
+                    "widget": null,
+                    "signed": {},
+                    "kind": "signature",
+                    "filter": "Adobe.PPKLite",
+                    "subFilter": "ETSI.CAdES.detached",
+                    "byteRange": [
+                      0,
+                      100,
+                      8292,
+                      50
+                    ],
+                    "contentsSize": 8192,
+                    "coverage": "whole-revision",
+                    "revisionIndex": 0,
+                    "signer": {
+                      "name": "Conformance Signer"
+                    },
+                    "docMdp": null,
+                    "catalogCertification": false,
+                    "fieldMdp": null,
+                    "lock": null,
+                    "seedValue": null
+                  },
+                  "integrity": "indeterminate",
+                  "cryptography": "unsupported",
+                  "trust": "unknown",
+                  "validatedAt": {
+                    "kind": "now"
+                  },
+                  "modifications": {
+                    "verdict": "unchanged",
+                    "basis": "persisted"
+                  },
+                  "summary": "indeterminate",
+                  "cms": null
+                },
+                {
+                  "signature": {
+                    "index": 6,
+                    "field": {
+                      "kind": "name",
+                      "name": "Sig1"
+                    },
+                    "fieldName": "Sig1",
+                    "widget": null,
+                    "signed": [],
+                    "kind": "signature",
+                    "filter": "Adobe.PPKLite",
+                    "subFilter": "ETSI.CAdES.detached",
+                    "byteRange": [
+                      0,
+                      100,
+                      8292,
+                      50
+                    ],
+                    "contentsSize": 8192,
+                    "coverage": "whole-revision",
+                    "revisionIndex": 0,
+                    "signer": {
+                      "name": "Conformance Signer"
+                    },
+                    "docMdp": null,
+                    "catalogCertification": false,
+                    "fieldMdp": null,
+                    "lock": null,
+                    "seedValue": null
+                  },
+                  "integrity": "indeterminate",
+                  "cryptography": "unsupported",
+                  "trust": "unknown",
+                  "validatedAt": {
+                    "kind": "now"
+                  },
+                  "modifications": {
+                    "verdict": "unchanged",
+                    "basis": "persisted"
+                  },
+                  "summary": "indeterminate",
+                  "cms": null
+                }
+              ]
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "d",
+              "path": "signatures.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "d": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
       "name": "validate-coverage-malformed",
       "covers": "Malformed coverage on a valid chain is invalid.",
       "plugins": [

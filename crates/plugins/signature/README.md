@@ -78,4 +78,33 @@ comparison.
 
 ## Mutation testing
 
-Not run yet. It happens centrally through `scripts/mutants.sh`.
+`scripts/mutants.sh -p epdf-plugin-signature --test-package epdf-plugin-signature --file <file>`,
+file by file over every module but `harness.rs`, catches 148 of 150 viable mutants (148 caught, 0
+timeouts; 132 unviable). Fifteen of those are killed by new cases, each checked by applying the
+mutant by hand:
+
+- `signed-by-truthiness`: signatures whose `signed` is null, 0, `''`, 1, `'x'`, `{}` and `[]`.
+  It kills the eight mutants of `truthy` (`read/signatures.rs:23` to `:27`). The case first
+  failed in the Rust for another reason: `validate_signatures` in `epdf-signature-core` judged only
+  `signed == true`, where `verdict.ts` skips on `!signature.signed`. That is fixed, with
+  `validate-signed-by-truthiness` in `signature-core.ts`.
+- `get-signature-edges`: a widget the snapshot carries and the form plugin does not, which only
+  the snapshot lookup finds (the `!` at `read/signatures.rs:98`), and an `objectNumber` address
+  with no number at all against a signature whose field ref also has none, which only
+  `is_field_ref` turns away (`:50` replaced with `true`).
+- `the-sign-here-target` now reads `getTarget` while a target is set: both replacements of
+  `get_target` (`:158`).
+- `an-armed-mark-reports-its-handler` listens to `onGestureStarted`: both replacements of the
+  armed-mark handler's `id` (`tools/armed_mark.rs:44`).
+- `a-legacy-stamp-tool-keeps-the-arm`: a tool that enables the legacy `annotation-stamp` tag keeps
+  the stamp armed without being the armed-stamp tool, so `enabled_for` replaced with `true`
+  (`tools/armed_mark.rs:52`) drops the mark into the field where the TypeScript places a stamp.
+
+The two survivors:
+
+- `src/read/signatures.rs:51`, `&&` to `||` in `is_field_ref`. The two differ only for an address
+  without a `kind`, and `widget_object_of` answers every such address first, so `is_field_ref`
+  never sees one.
+- `src/sync/hydration.rs:111`, `&&` to `||` in the invalidation detail's filter. Null and
+  `{"$undefined": true}` then pass the filter, but `as_str` maps both to `None`, so the detail is
+  the empty string either way.
