@@ -39,7 +39,12 @@ and the next action's spread drops it; Rust stores it as an ordinary id. And
 `updateSurfaceProps('toString', props)` finds the inherited function and stores `{props}` with no
 open flag under that id; Rust ignores it, as it ignores any unknown id.
 
-Mutation numbers are pre-v3, rerun pending. `cargo mutants -p epdf-plugin-shell --test-package
-epdf-plugin-shell` caught 60 of 62 viable mutants in the v2 crate. Both survivors were equivalent:
-`initial_shell_state()` replaced with `Default::default()` builds the same value, and the record
-deserializer's `expecting` only words a parse error.
+`scripts/mutants.sh -p epdf-plugin-shell --test-package epdf-plugin-shell --file <file>`, file by file
+over every module but `harness.rs`, catches 77 of 79 viable mutants (77 caught, 0 timeouts; 18
+unviable). No new cases were needed. Both survivors are equivalent:
+
+- `src/model.rs`: `initial_shell_state()` replaced with `Default::default()`. `ShellState` is
+  `ShellSnapshot`, whose derived default is an empty `JsRecord` and an empty `Vec`, the same value.
+- `src/record.rs`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
+  words a serde error for a non-object, and the public API takes typed values, so that text only
+  ever reaches a `[shell harness]` error that no TypeScript outcome is compared with.
