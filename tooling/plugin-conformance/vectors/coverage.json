@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49195/49390",
-    "branches": "12140/12463"
+    "branches": "12155/12478"
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -200,7 +200,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1966/1966",
-      "branches": "719/721",
+      "branches": "720/722",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "1534:63#0",
@@ -286,7 +286,7 @@
     },
     "packages/core/main/src/guarded-handle.ts": {
       "statements": "123/123",
-      "branches": "35/35",
+      "branches": "36/36",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -399,7 +399,7 @@
     },
     "packages/core/signature/src/cms/parse.ts": {
       "statements": "204/204",
-      "branches": "79/79",
+      "branches": "80/80",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -426,7 +426,7 @@
     },
     "packages/core/signature/src/sign.ts": {
       "statements": "76/76",
-      "branches": "24/24",
+      "branches": "23/23",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -495,7 +495,7 @@
     },
     "packages/core/signature/src/trust.ts": {
       "statements": "71/73",
-      "branches": "17/20",
+      "branches": "18/21",
       "uncoveredLines": [
         71,
         72
@@ -582,7 +582,7 @@
     },
     "packages/plugin/actions/src/dispatch/dispatcher.ts": {
       "statements": "240/240",
-      "branches": "73/76",
+      "branches": "77/80",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "101:16#0",
@@ -1195,7 +1195,7 @@
     },
     "packages/plugin/annotation/src/write/ghost.ts": {
       "statements": "139/139",
-      "branches": "28/28",
+      "branches": "29/29",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -1948,7 +1948,7 @@
     },
     "packages/plugin/measurement/src/write/scale.ts": {
       "statements": "202/202",
-      "branches": "64/66",
+      "branches": "65/67",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "79:56#0",
@@ -2442,7 +2442,7 @@
     },
     "packages/plugin/signature/src/read/signatures.ts": {
       "statements": "89/89",
-      "branches": "50/50",
+      "branches": "51/51",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -2515,7 +2515,7 @@
     },
     "packages/plugin/signature/src/tools/armed-mark.ts": {
       "statements": "50/50",
-      "branches": "14/14",
+      "branches": "15/15",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -2527,7 +2527,7 @@
     },
     "packages/plugin/signature/src/write/place.ts": {
       "statements": "104/104",
-      "branches": "23/23",
+      "branches": "24/24",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -2848,7 +2848,7 @@
     },
     "packages/plugin/stamp/src/write/assets.ts": {
       "statements": "351/356",
-      "branches": "132/137",
+      "branches": "133/138",
       "uncoveredLines": [
         215,
         216,
@@ -2874,7 +2874,7 @@
     },
     "packages/plugin/stamp/src/write/marks.ts": {
       "statements": "164/169",
-      "branches": "47/48",
+      "branches": "49/50",
       "uncoveredLines": [
         89,
         90,
