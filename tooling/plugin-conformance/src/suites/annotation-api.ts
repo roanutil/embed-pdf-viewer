@@ -353,6 +353,14 @@ const cases: ScenarioCase[] = [
       api('selectInRect', [pr(1), { x: 290, y: 390, width: 20, height: 20 }, { add: true }]),
       api('selectInRect', [pr(1), { x: 590, y: 790, width: 5, height: 5 }]),
       api('getSelection'),
+      // Sharing only a band (x or y) with an annotation is no hit, and a
+      // rect on page 2 never reaches page 1's annotations.
+      api('selectInRect', [pr(1), { x: 500, y: 150, width: 20, height: 20 }]),
+      api('getSelection'),
+      api('selectInRect', [pr(1), { x: 150, y: 700, width: 20, height: 20 }]),
+      api('getSelection'),
+      api('selectInRect', [pr(2), { x: 300, y: 400, width: 100, height: 100 }]),
+      api('getSelection'),
       api('select', [[objRef(1), objRef(2)]]),
       api('rotateSelectionBy', [-90]),
       api('resetSelectionRotation'),
@@ -363,6 +371,25 @@ const cases: ScenarioCase[] = [
       api('select', [[objRef(1), objRef(3)]]),
       api('deleteSelection'),
       api('getSelection'),
+    ],
+  },
+  {
+    name: 'set-contents-settles-with-the-engine',
+    covers: 'setContents and setRichText settle with the engine write they commit: a refused write rejects them.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [freeText(2)] }),
+          { path: 'page.annotations.update', pon: 1, error: { name: 'EngineError', message: 'read-only', code: 'Refused' } },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      api('setContents', [objRef(2), 'plain']),
+      api('setRichText', [objRef(2), { paragraphs: [{ runs: [{ text: 'a' }] }] }]),
     ],
   },
   {
