@@ -109,8 +109,9 @@ engine's policy and name-constraint half.
 ## Mutation testing
 
 `scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
-file over every module but `harness.rs`, catches 1,770 of 1,813 viable mutants (1,766 caught, 4
-timeouts; 91 unviable). 169 of the caught were killed by cases added for this count, each confirmed
+file over every module but `harness.rs`, catches 1,781 of 1,824 viable mutants (1,777 caught, 4
+timeouts; 91 unviable). `verdict.rs` was run again after `validate_signatures` moved to JavaScript
+truthiness for `signed`: 57 of 57 caught, 11 more than before the fix. 169 of the caught were killed by cases added for this count, each confirmed
 by applying the mutant by hand. Six more sat in code since replaced and are not counted: three in
 `integer_from_der`, rewritten to match asn1js (above), and three in `number_text`, which now calls
 `epdf_geometry::js::number_to_string`. The same pass fixed four other divergences the new cases
