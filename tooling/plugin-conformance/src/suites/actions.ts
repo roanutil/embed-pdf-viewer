@@ -482,13 +482,13 @@ const dispatcherCases: ScenarioCase[] = [
   {
     name: 'get-action-tree',
     covers:
-      'getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number or by name, a page (open by default), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.',
+      'getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default, or close, visible or invisible), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.',
     plugins: plugins(OFF),
     engine: {
       documents: {
         a: doc({
           services: ['actions'],
-          pages: [page(1, 0, { open: tree(named('O-1')), close: tree(named('C-1')) }), page(2, 1)],
+          pages: [page(1, 0, { open: tree(named('O-1')), close: tree(named('C-1')), visible: tree(named('V-1')), invisible: tree(named('I-1')) }), page(2, 1)],
           responses: [
             annotations(1, [annot(1, 5, { activate: tree(named('A-5')), mouseUp: tree(named('U-5')), cursorEnter: tree(named('E-5')) })]),
             forms([formField('f', 100, [], { actions: { keystroke: tree(js('k()')) } }), formField('g', 101)]),
@@ -511,8 +511,11 @@ const dispatcherCases: ScenarioCase[] = [
       cap('getActionTree', { kind: 'field', field: { kind: 'fqn', name: 'f' }, event: 'keystroke' }),
       cap('getActionTree', { kind: 'field', field: { kind: 'fqn', name: 'g' }, event: 'keystroke' }),
       cap('getActionTree', { kind: 'field', field: { kind: 'objectNumber', fieldObjectNumber: 999 }, event: 'format' }),
+      cap('getActionTree', { kind: 'field', field: { kind: 'objectNumber', fieldObjectNumber: 101 }, event: 'keystroke' }),
       cap('getActionTree', { kind: 'page', page: pr(1) }),
       cap('getActionTree', { kind: 'page', page: pr(1), event: 'close' }),
+      cap('getActionTree', { kind: 'page', page: pr(1), event: 'visible' }),
+      cap('getActionTree', { kind: 'page', page: pr(1), event: 'invisible' }),
       cap('getActionTree', { kind: 'page', page: pr(2) }),
       cap('getActionTree', { kind: 'page', page: pr(7) }),
       cap('getActionTree', { kind: 'document' }),
@@ -2043,7 +2046,7 @@ const surfaceCases: ScenarioCase[] = [
   {
     name: 'surface-script-commit',
     covers:
-      'surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error; the realm kind rides both.',
+      'surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error even with no user effects; the realm kind rides both.',
     plugins: plugins(OFF),
     engine: engineWith(),
     steps: [
@@ -2065,6 +2068,11 @@ const surfaceCases: ScenarioCase[] = [
         { origin: 'user', realm: 'document' },
       ),
       cap('surfaceScriptCommit', { uiEffects: [], diagnostics: [] }, { origin: 'hover', realm: 'document' }),
+      cap(
+        'surfaceScriptCommit',
+        { uiEffects: [], diagnostics: [{ code: 'unsupported-api', message: 'no effects' }], error: { kind: 'exception', message: 'no effects' } },
+        { origin: 'user', realm: 'document' },
+      ),
       cap(
         'surfaceScriptCommit',
         { uiEffects: [{ kind: 'print', phase: 'boot' }, { kind: 'alert', message: 'asset', icon: 0, phase: 'user' }], diagnostics: [] },
