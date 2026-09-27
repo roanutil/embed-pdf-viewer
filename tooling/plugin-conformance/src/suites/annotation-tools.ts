@@ -102,6 +102,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      ix('onGestureStarted', [{ $fn: 'gesture' }]),
       hover(150, 150),
       ix('cursor'),
       call('select', [objRef(1)]),
@@ -214,6 +215,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      ix('onGestureStarted', [{ $fn: 'gesture' }]),
       pointer('down', 50, 50),
       pointer('move', 52, 51),
       pointer('move', 250, 250),
@@ -237,7 +239,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'draw-shapes',
     covers:
-      'Under a draw tool the draw handler captures: a drag sizes the shape and commits on up (released off-page it commits at the last point); a bare click commits the tool’s click-create default; the DOWN sample’s rotation feeds upright. Without create authority nothing drafts. A gesture’s create is announced with an unknown trigger, since nobody awaits it.',
+      'Under a draw tool the draw handler captures: a drag sizes the shape and commits on up (released off-page it commits at the last point); a bare click commits the tool’s click-create default; the DOWN sample’s rotation feeds upright. Without create authority nothing drafts. A gesture’s create is announced with an unknown trigger, since nobody awaits it. Each gesture start names the capturing handler.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -250,6 +252,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      ix('onGestureStarted', [{ $fn: 'gesture' }]),
       call('onCreated', [{ $fn: 'created' }]),
       tool('square'),
       pointer('down', 100, 100),
@@ -529,6 +532,29 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'hover-follows-the-subtype-the-draft-began-with',
+    covers:
+      'The hover preview follows a draft only while the active tool still has the kind it began with: re-registering the active tool under the other multi-click kind mid-draft stops the preview, for a callout turned polygon and for a polygon turned callout.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('registerTool', [{ id: 'shift', extends: 'free-text-callout' }]),
+      tool('shift'),
+      pointer('down', 10, 10),
+      pointer('up', 10, 10),
+      call('registerTool', [{ id: 'shift', extends: 'polygon' }]),
+      hover(50, 40),
+      call('registerTool', [{ id: 'turn', extends: 'polygon' }]),
+      tool('turn'),
+      pointer('down', 10, 10),
+      pointer('up', 10, 10),
+      call('registerTool', [{ id: 'turn', extends: 'free-text-callout' }]),
+      hover(60, 20),
+    ],
+  },
+  {
     name: 'poly-and-callout-clicks',
     covers:
       'Poly tools take vertices by click, ignore drags, preview on hover and finish on a double-click; a callout advances tip, knee, box by click with a hover preview. A cancel drops the draft; a tool change resets the gesture state.',
@@ -591,6 +617,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      ix('onGestureStarted', [{ $fn: 'gesture' }]),
       tool('note'),
       hover(100, 100),
       call('toolGhost', [1]),
@@ -817,7 +844,8 @@ const cases: ScenarioCase[] = [
       // A falsy preview falls back to the raster's own bytes; a PDF without
       // one has none. Sizes: an override with a zero side is ignored, a valid
       // one wins, a target width keeps the aspect. A NaN rotation counts as
-      // none; a tool with upright off ignores a real one.
+      // none, for the placement and the ghost; a tool with upright off ignores
+      // a real one.
       call('armStamp', [{ source: PNG, preview: false }]),
       call('armedStampPreview'),
       call('armStamp', [{ source: PDF }]),
@@ -830,6 +858,8 @@ const cases: ScenarioCase[] = [
       call('placeArmedStamp', [1, { x: 300, y: 300 }]),
       call('armStamp', [{ source: PNG, targetWidth: 80 }]),
       call('placeArmedStamp', [1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('ghostHoverAt', ['stamp', 1, { x: 300, y: 300 }, { $number: 'NaN' }]),
+      call('toolGhost', [1]),
       call('registerTool', [{ id: 'flat-stamp', extends: 'stamp', upright: false }]),
       tool('flat-stamp'),
       call('hasArmedStamp'),
