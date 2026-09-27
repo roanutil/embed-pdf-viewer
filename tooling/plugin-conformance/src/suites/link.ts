@@ -507,6 +507,53 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'hit-testing-by-area',
+    covers:
+      'getLinkAt compares areas, not perimeters or aspect ratios: under a point inside a tall, a square and a wide link it answers the tall one (the first of the two smallest areas), and off the tall one the wide one, whose area is smaller than the square\'s though its sides sum higher. A point right of every link, or below every link, answers null.',
+    plugins: VIEWER,
+    engine: {
+      documents: {
+        a: doc([
+          pageList(1, [
+            link(1, { rect: { left: 100, bottom: 600, right: 110, top: 700 } }),
+            link(2, { rect: { left: 100, bottom: 660, right: 140, top: 700 } }),
+            link(3, { rect: { left: 100, bottom: 690, right: 200, top: 700 } }),
+          ]),
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      lk('ensureLoaded', [pr(1)]),
+      lk('getLinkAt', [pr(1), { x: 105, y: 105 }]),
+      lk('getLinkAt', [pr(1), { x: 120, y: 105 }]),
+      lk('getLinkAt', [pr(1), { x: 400, y: 105 }]),
+      lk('getLinkAt', [pr(1), { x: 105, y: 300 }]),
+    ],
+  },
+  {
+    name: 'activate-at-dispatches-with-the-page',
+    covers:
+      'With the actions plugin activateAt dispatches the tree the link under the point carries, from a link source that names the hit page and the link ref. An empty context keeps both the page and the link\'s own tree.',
+    plugins: FULL,
+    engine: {
+      documents: {
+        a: annotationDoc(
+          { 1: [link(1, { target: uri('https://t.example'), actions: { activate: tree(uriNode('https://a.example')) } })] },
+          [FORMS_EMPTY, pageList(1, [])],
+        ),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      { op: 'call', target: { token: 'actions', doc: 'a' }, method: 'onExecuted', args: [{ $fn: 'executed' }] },
+      lk('activateAt', [pr(1), { x: 150, y: 150 }]),
+      lk('activateAt', [pr(1), { x: 150, y: 150 }, {}]),
+    ],
+  },
+  {
     name: 'labels-and-resolution',
     covers:
       'getLabel reads a Link’s target or a bare target: the uri, a fixed goto label, the name, and Link for anything else. resolve has no side effect: a goto to a page of the document resolves to a reveal with its page index and options, one to a page the document lacks to its destination, uri and named to their member, and the rest to reported.',

@@ -22418,6 +22418,2596 @@
       ]
     },
     {
+      "name": "hit-testing-by-area",
+      "covers": "getLinkAt compares areas, not perimeters or aspect ratios: under a point inside a tall, a square and a wide link it answers the tall one (the first of the two smallest areas), and off the tall one the wide one, whose area is smaller than the square's though its sides sum higher. A point right of every link, or below every link, answers null.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "link",
+          "config": {
+            "onActivate": {
+              "$fn": "onActivate"
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 1
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 1,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 600,
+                        "right": 110,
+                        "top": 700
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "link",
+                      "target": {
+                        "kind": "uri",
+                        "uri": "https://example.com"
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 2
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 2,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 660,
+                        "right": 140,
+                        "top": 700
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "link",
+                      "target": {
+                        "kind": "uri",
+                        "uri": "https://example.com"
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 3
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "index": 3,
+                      "identityQuality": "durable",
+                      "nm": null,
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "rect": {
+                        "left": 100,
+                        "bottom": 690,
+                        "right": 200,
+                        "top": 700
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "author": null,
+                      "created": null,
+                      "modified": null,
+                      "blendMode": "normal",
+                      "inReplyTo": null,
+                      "replyType": null,
+                      "subtype": "link",
+                      "target": {
+                        "kind": "uri",
+                        "uri": "https://example.com"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getLinkAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 105,
+              "y": 105
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getLinkAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 120,
+              "y": 105
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getLinkAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 400,
+              "y": 105
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getLinkAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 105,
+              "y": 300
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "link::a",
+              "action": {
+                "type": "setPage",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "items": [
+                  {
+                    "id": "obj:1",
+                    "bounds": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 10,
+                      "height": 100
+                    },
+                    "target": {
+                      "kind": "uri",
+                      "uri": "https://example.com"
+                    },
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 1
+                    },
+                    "attached": false
+                  },
+                  {
+                    "id": "obj:2",
+                    "bounds": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 40,
+                      "height": 40
+                    },
+                    "target": {
+                      "kind": "uri",
+                      "uri": "https://example.com"
+                    },
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 2
+                    },
+                    "attached": false
+                  },
+                  {
+                    "id": "obj:3",
+                    "bounds": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 10
+                    },
+                    "target": {
+                      "kind": "uri",
+                      "uri": "https://example.com"
+                    },
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "annotObjectNumber": 3
+                    },
+                    "attached": false
+                  }
+                ]
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "obj:1",
+              "bounds": {
+                "x": 100,
+                "y": 100,
+                "width": 10,
+                "height": 100
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 1
+              },
+              "attached": false
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "obj:3",
+              "bounds": {
+                "x": 100,
+                "y": 100,
+                "width": 100,
+                "height": 10
+              },
+              "target": {
+                "kind": "uri",
+                "uri": "https://example.com"
+              },
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 3
+              },
+              "attached": false
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": null
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": null
+          }
+        }
+      ]
+    },
+    {
+      "name": "activate-at-dispatches-with-the-page",
+      "covers": "With the actions plugin activateAt dispatches the tree the link under the point carries, from a link source that names the hit page and the link ref. An empty context keeps both the page and the link's own tree.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off"
+          }
+        },
+        {
+          "factory": "stage",
+          "config": {
+            "viewUnitsPerPoint": 1,
+            "scrollBehavior": "instant"
+          }
+        },
+        {
+          "factory": "annotation"
+        },
+        {
+          "factory": "link",
+          "config": {
+            "onActivate": {
+              "$fn": "onActivate"
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": [
+                    {
+                      "pageState": {
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        }
+                      },
+                      "annotations": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 1
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "index": 1,
+                          "identityQuality": "durable",
+                          "nm": null,
+                          "flags": {
+                            "invisible": false,
+                            "hidden": false,
+                            "print": true,
+                            "noZoom": false,
+                            "noRotate": false,
+                            "noView": false,
+                            "readOnly": false,
+                            "locked": false,
+                            "toggleNoView": false,
+                            "lockedContents": false
+                          },
+                          "rect": {
+                            "left": 100,
+                            "bottom": 600,
+                            "right": 200,
+                            "top": 700
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "author": null,
+                          "created": null,
+                          "modified": null,
+                          "blendMode": "normal",
+                          "inReplyTo": null,
+                          "replyType": null,
+                          "subtype": "link",
+                          "target": {
+                            "kind": "uri",
+                            "uri": "https://t.example"
+                          },
+                          "actions": {
+                            "activate": {
+                              "root": {
+                                "type": "uri",
+                                "subtype": "URI",
+                                "uri": "https://a.example",
+                                "next": []
+                              },
+                              "incomplete": false,
+                              "warningFlags": 0,
+                              "warnings": []
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onExecuted",
+          "args": [
+            {
+              "$fn": "executed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "activateAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 150,
+              "y": 150
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "activateAt",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "x": 150,
+              "y": 150
+            },
+            {}
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {
+                    "obj:1": {
+                      "id": "obj:1",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 1
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "link",
+                      "flags": {
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false
+                      },
+                      "source": "baked",
+                      "data": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          },
+                          "annotObjectNumber": 1
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "index": 1,
+                        "identityQuality": "durable",
+                        "nm": null,
+                        "flags": {
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false
+                        },
+                        "rect": {
+                          "left": 100,
+                          "bottom": 600,
+                          "right": 200,
+                          "top": 700
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "author": null,
+                        "created": null,
+                        "modified": null,
+                        "blendMode": "normal",
+                        "inReplyTo": null,
+                        "replyType": null,
+                        "subtype": "link",
+                        "target": {
+                          "kind": "uri",
+                          "uri": "https://t.example"
+                        },
+                        "actions": {
+                          "activate": {
+                            "root": {
+                              "type": "uri",
+                              "subtype": "URI",
+                              "uri": "https://a.example",
+                              "next": []
+                            },
+                            "incomplete": false,
+                            "warningFlags": 0,
+                            "warnings": []
+                          }
+                        }
+                      },
+                      "style": {
+                        "color": "#444444",
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "opacity": 1,
+                        "blendMode": "normal",
+                        "border": {
+                          "kind": "solid"
+                        }
+                      },
+                      "geom": {
+                        "t": "rect",
+                        "rect": {
+                          "x": 100,
+                          "y": 100,
+                          "width": 100,
+                          "height": 100
+                        },
+                        "ellipse": false
+                      },
+                      "link": {
+                        "kind": "uri",
+                        "uri": "https://t.example"
+                      },
+                      "apBox": {
+                        "x": 100,
+                        "y": 100,
+                        "width": 100,
+                        "height": 100
+                      },
+                      "authority": {
+                        "update": true,
+                        "delete": true
+                      },
+                      "apVersion": 0
+                    }
+                  },
+                  "order": [
+                    "obj:1"
+                  ],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "uri",
+                    "status": "no-executor"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "no-adapter",
+                    "message": "uri: no UI adapter installed"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onActivate",
+              "args": [
+                {
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://t.example"
+                  },
+                  "activation": {
+                    "outcome": "dispatched",
+                    "dispatch": "[promise]"
+                  },
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "user",
+                    "sessionId": null,
+                    "actorId": null
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "executed",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "link",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 1
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      }
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "uri",
+                      "subtype": "URI",
+                      "uri": "https://a.example",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "uri",
+                        "status": "no-executor"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "no-adapter",
+                        "message": "uri: no UI adapter installed"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "returned": {
+              "outcome": "dispatched",
+              "dispatch": {
+                "$promise": 2
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "inert",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "uri",
+                    "status": "no-executor"
+                  }
+                ],
+                "diagnostics": [
+                  {
+                    "code": "no-adapter",
+                    "message": "uri: no UI adapter installed"
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onActivate",
+              "args": [
+                {
+                  "target": {
+                    "kind": "uri",
+                    "uri": "https://t.example"
+                  },
+                  "activation": {
+                    "outcome": "dispatched",
+                    "dispatch": "[promise]"
+                  },
+                  "origin": {
+                    "locality": "local",
+                    "trigger": "user",
+                    "sessionId": null,
+                    "actorId": null
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "executed",
+              "args": [
+                {
+                  "ctx": {
+                    "origin": "user",
+                    "source": {
+                      "kind": "link",
+                      "annotation": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 1
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      }
+                    },
+                    "event": {
+                      "scope": "activate"
+                    }
+                  },
+                  "tree": {
+                    "root": {
+                      "type": "uri",
+                      "subtype": "URI",
+                      "uri": "https://a.example",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "result": {
+                    "status": "inert",
+                    "nodes": [
+                      {
+                        "path": [],
+                        "type": "uri",
+                        "status": "no-executor"
+                      }
+                    ],
+                    "diagnostics": [
+                      {
+                        "code": "no-adapter",
+                        "message": "uri: no UI adapter installed"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 4
+            }
+          },
+          "outcome": {
+            "returned": {
+              "outcome": "dispatched",
+              "dispatch": {
+                "$promise": 3
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "labels-and-resolution",
       "covers": "getLabel reads a Link’s target or a bare target: the uri, a fixed goto label, the name, and Link for anything else. resolve has no side effect: a goto to a page of the document resolves to a reveal with its page index and options, one to a page the document lacks to its destination, uri and named to their member, and the rest to reported.",
       "plugins": [

@@ -79,6 +79,19 @@ The function fixture `item()` in `suites/link.ts` still built v2 items with `rec
 
 ## Mutation testing
 
-The pre-v3 run covered `capability.rs`, `effects.rs` and `source.rs`, which are rewritten or gone.
-The reducer moved to `model.rs` with the v3 action shape; its pre-v3 result (one equivalent
-survivor, `initial_link_state` as `Default::default()`) is pre-v3, rerun pending.
+`scripts/mutants.sh -p epdf-plugin-link --test-package epdf-plugin-link --file <file>`, file by
+file over every module but `harness.rs`, catches 95 of 96 viable mutants (95 caught, 0 timeouts;
+34 unviable). Six of those are killed by two new cases, each checked by applying the mutant by
+hand:
+
+- `hit-testing-by-area` puts a tall, a square and a wide link over one corner. A point on the square
+  and the wide link kills both mutants of the area product in `get_link_at` (`controller.rs:117`):
+  the sum and the ratio both prefer the square. A point right of every link and one below every
+  link kill `b.x + b.width` and `b.y + b.height` to `*` in `contains` (`controller.rs:37`).
+- `activate-at-dispatches-with-the-page` runs `activateAt` with the actions plugin and listens to
+  `onExecuted`. Dropping the page from the context (`controller.rs:303`) drops it from the dispatch
+  source. With an empty context, `spread` as `Default::default()` (`contract.rs:131`) loses the
+  link's own tree, so the activation takes the classic path.
+
+The one survivor is `src/model.rs:42`, `initial_link_state` as `Default::default()`. The function
+body is `LinkState::default()` already.
