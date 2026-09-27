@@ -426,6 +426,11 @@ impl DocumentHandle for FakeHandle {
         if member.starts_with("page.annotations.") {
             return true;
         }
+        // `forms` is a proxy too, with `submit` present only when `services`
+        // lists it and every other member present unless `lacks` names it.
+        if member.starts_with("forms.") && member != "forms.submit" {
+            return !self.lacks().contains(&member);
+        }
         self.services().contains(&member)
     }
 

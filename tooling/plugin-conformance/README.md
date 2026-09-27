@@ -137,7 +137,9 @@ engine has them, so each is present unless the document's `lacks` list names it.
 Every other `pages.*` member (`pages.setName`, `pages.insertBlank`) is present unless `lacks` names
 it, and every other `page.annotations.*` member (`exportAppearance`) is always present, because the
 TypeScript handle answers both services through a proxy. The Rust `has` answers the same way; it
-answered false for them until the stamp port asked.
+answered false for them until the stamp port asked. `forms` is a proxy as well: every `forms.*`
+member but `submit` is present unless `lacks` names it, which is how a case takes
+`forms.setSignatureAppearance` away (the signature port added this rule on both sides).
 
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
