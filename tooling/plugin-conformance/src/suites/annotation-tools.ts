@@ -237,7 +237,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'draw-shapes',
     covers:
-      'Under a draw tool the draw handler captures: a drag sizes the shape and commits on up (released off-page it commits at the last point); a bare click commits the tool’s click-create default; the DOWN sample’s rotation feeds upright. Without create authority nothing drafts.',
+      'Under a draw tool the draw handler captures: a drag sizes the shape and commits on up (released off-page it commits at the last point); a bare click commits the tool’s click-create default; the DOWN sample’s rotation feeds upright. Without create authority nothing drafts. A gesture’s create is announced with an unknown trigger, since nobody awaits it.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -250,6 +250,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
+      call('onCreated', [{ $fn: 'created' }]),
       tool('square'),
       pointer('down', 100, 100),
       pointer('move', 150, 130),
@@ -671,6 +672,26 @@ const cases: ScenarioCase[] = [
       pointer('up', 500, 700),
       call('setFilePickerProvider', [null]),
       call('requestStampAt', [1, { x: 1, y: 1 }]),
+    ],
+  },
+  {
+    name: 'file-picker-remover-clears-only-its-own',
+    covers:
+      'setFilePickerProvider returns a remover that clears the slot only while its own provider is installed: the first remover after a second install leaves the second provider in place, the second remover clears it and the next click is declined.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate()]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      tool('attachment'),
+      call('setFilePickerProvider', [{ $fn: 'first', resolves: null }]),
+      call('setFilePickerProvider', [{ $fn: 'second', resolves: null }]),
+      { op: 'call', target: { ref: 0 } },
+      pointer('down', 50, 50),
+      pointer('up', 50, 50),
+      { op: 'call', target: { ref: 1 } },
+      pointer('down', 90, 90),
+      pointer('up', 90, 90),
     ],
   },
   {

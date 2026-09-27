@@ -203,13 +203,20 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'direct-delivery',
-    covers: 'deliverRemoteAnnotationEvent applies at once outside a window; an event type it does not know is ignored.',
+    covers:
+      'deliverRemoteAnnotationEvent applies at once outside a window; an event type it does not know is ignored. Each change is announced with originOf: remote or local by the origin kind, its sessionId as given, its sub (else null) as the actor.',
     plugins: PLUGINS,
-    engine: { documents: { a: doc([hydrate({ 1: [square(1)] })]) } },
+    engine: { documents: { a: doc([hydrate({ 1: [square(1), square(2)] })]) } },
     snapshot: SNAP,
     steps: [
       ...boot,
+      call('onCreated', [{ $fn: 'created' }]),
+      call('onUpdated', [{ $fn: 'updated' }]),
+      call('onDeleted', [{ $fn: 'deleted' }]),
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.created', pageObjectNumber: 1, origin: remote(1), created: square(3) }]),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.created', pageObjectNumber: 1, origin: { kind: 'remote', sessionId: 's1', sub: 'u1' }, created: square(4) }]),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.updated', pageObjectNumber: 1, origin: { kind: 'local', sessionId: 's2', sub: null }, updated: square(1, { contents: 'x' }), appearance: { changed: false } }]),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.deleted', pageObjectNumber: 1, origin: { kind: 'remote', sessionId: 's3', sub: { $undefined: true } }, deleted: { kind: 'objectNumber', value: 2 } }]),
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.other', pageObjectNumber: 1 }]),
       call('list', [1]),
     ],
