@@ -73,9 +73,9 @@ export interface FakeDocumentSpec {
    *  `forms.submit`. */
   readonly services?: readonly string[];
   /** Optional members present by default that this handle lacks:
-   *  `forms.applyEffects`, `pages.flatten`, `pages.extract` and
-   *  `page.annotations.downloadFile`, which the contract makes optional and
-   *  every shipped engine implements. */
+   *  `forms.applyEffects`, `forms.setSignatureAppearance`, `pages.flatten`,
+   *  `pages.extract` and `page.annotations.downloadFile`, which the contract
+   *  makes optional and every shipped engine implements. */
   readonly lacks?: readonly string[];
   readonly capabilities?: unknown;
   readonly security?: SecuritySpec;
@@ -240,7 +240,9 @@ export function createFakeEngine(
     const lacks = new Set(document.lacks ?? []);
     const formsAbsent = new Set<string>();
     if (!services.has('forms.submit')) formsAbsent.add('submit');
-    if (lacks.has('forms.applyEffects')) formsAbsent.add('applyEffects');
+    // Every other `forms.*` member is present unless `lacks` names it
+    // (`forms.applyEffects`, `forms.setSignatureAppearance`).
+    for (const member of lacks) if (member.startsWith('forms.')) formsAbsent.add(member.slice(6));
     const pageAnnotationsAbsent = new Set<string>();
     if (lacks.has('page.annotations.downloadFile')) pageAnnotationsAbsent.add('downloadFile');
     const table = document.responses;

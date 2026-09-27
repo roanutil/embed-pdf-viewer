@@ -1,0 +1,37 @@
+[package]
+name = "epdf-plugin-signature"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "packages/plugin/signature in Rust: document-scoped digital signing. Sign a signature field with a mark through a signer port (one-shot or two-phase), fill it visually, validate the working copy, follow the document's signature events, and take an armed mark dropped on a field."
+
+[lib]
+crate-type = ["rlib"]
+
+[features]
+# The conformance adapter (`harness` module). On by default so `cargo test`
+# replays the vectors with no flags; a host that ships the plugin turns it
+# off with `default-features = false`.
+default = ["harness"]
+harness = [
+  "dep:plugin-conformance",
+  "epdf-plugin-interaction/harness",
+  "epdf-plugin-annotation/harness",
+  "epdf-plugin-form/harness",
+  "epdf-plugin-stamp/harness",
+]
+
+[dependencies]
+epdf-kernel = { path = "../../epdf-kernel" }
+epdf-signature-core = { path = "../signature-core", default-features = false }
+epdf-plugin-interaction = { path = "../interaction", default-features = false }
+epdf-plugin-annotation = { path = "../annotation", default-features = false }
+epdf-plugin-form = { path = "../form", default-features = false }
+epdf-plugin-stamp = { path = "../stamp", default-features = false }
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "conformance"
+required-features = ["harness"]
