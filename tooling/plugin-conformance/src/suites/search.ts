@@ -5,8 +5,8 @@
  * Replayed by `crates/plugins/search/tests/conformance.rs`.
  *
  * One harness shim lives here, and `crates/plugins/search/src/harness.rs`
- * mirrors it: `findAll`'s `signal`. A vector cannot carry an `AbortSignal`,
- * so the `search` factory wraps the capability: an option `signal:
+ * mirrors it: the `signal` of `findAll` and `search`. A vector cannot carry
+ * an `AbortSignal`, so the `search` factory wraps the capability: an option `signal:
  * {"$abortSignal": name}` becomes the signal of a controller named `name`,
  * and the `search-signals` test plugin's `abort(name, reason?)` aborts it.
  * Without a reason the signal's reason is the platform's `AbortError`
@@ -42,6 +42,11 @@ const withSignals = (capability: SearchCapability): SearchCapability => ({
     const spec = (opts as { signal?: { $abortSignal?: string } } | undefined)?.signal;
     if (spec?.$abortSignal === undefined) return capability.findAll(query, opts);
     return capability.findAll(query, { ...opts, signal: controllerNamed(spec.$abortSignal).signal });
+  },
+  search: (query, opts) => {
+    const spec = (opts as { signal?: { $abortSignal?: string } } | undefined)?.signal;
+    if (spec?.$abortSignal === undefined) return capability.search(query, opts);
+    return capability.search(query, { ...opts, signal: controllerNamed(spec.$abortSignal).signal });
   },
 });
 
@@ -968,6 +973,15 @@ const HOOKS = ['onStarted', 'onProgress', 'onCompleted', 'onCancelled', 'onFaile
 const listenAll: Step[] = HOOKS.map((hook) => v3(hook, { $fn: hook }));
 
 const v3Cases: ScenarioCase[] = [
+  {
+    name: 'search-signal-already-aborted',
+    covers:
+      "A search whose signal is already aborted never starts: the lane rejects it 'cancelled before start', so it resolves cancelled and onCancelled reports an empty operation id, but the session is not its to cancel and no CANCELLED is dispatched over the finished run.",
+    plugins: withSignals_(),
+    engine: { documents: { a: doc(CHAIN) } },
+    snapshot: SNAPSHOT,
+    steps: [start, open(), v3('onCancelled', { $fn: 'cancelled' }), s('search', Q), abortSignal('s1'), s('search', Q2, { signal: signal('s1') }), s('status'), s('hitCount')],
+  },
   {
     name: 'cancel-keeps-the-hits',
     covers:

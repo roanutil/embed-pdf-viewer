@@ -2,12 +2,12 @@
 
 `packages/plugin/search` in Rust, on the v3 contract: `create()` builds the controller, `connect`
 subscribes the mutation rerun, the session runs on the kernel's `latest` lane, pages are addressed
-by `PageRef`, and engine failures arrive as `PluginError`s through the guarded handle. All 76 cases
+by `PageRef`, and engine failures arrive as `PluginError`s through the guarded handle. All 77 cases
 in four vector files replay identically (`cargo test -p epdf-plugin-search`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/search.json` | scenario | 38 | the session, `'full'` to `'rects'` degradation, stale-cursor restarts, errors, hit geometry, `canSearch`, navigation, the rerun, `cancel`, the seven events, the page reads, close |
+| `vectors/plugins/search.json` | scenario | 39 | the session, `'full'` to `'rects'` degradation, stale-cursor restarts, errors, hit geometry, `canSearch`, navigation, the rerun, `cancel`, the seven events, the page reads, close |
 | `vectors/plugins/search-stage.json` | scenario | 6 | viewport-first start pages, reveal-on-navigate and `revealActiveHit` through `epdf-plugin-stage` |
 | `vectors/plugins/search-find-all.json` | scenario | 10 | `findAll`: the cursor chain, pinned and degraded modes, restarts, errors, its abort signal |
 | `vectors/plugins/search-reducer.json` | function | 22 | `initialSearchState` and `reduceSearch` |
@@ -95,6 +95,16 @@ hits now convert through `ctx.geometry.forPage`, which reads only the crop, so a
 
 ## Mutation testing
 
-Pre-v3, rerun pending. The v3 controller replaced the generation counter the pre-v3 misses
-described, so those are gone. The pre-v3 run's five timeouts were `&&` to `||` in the fallback and
-restart guards, which retry a refused request forever; both guards survive in `collect`.
+`scripts/mutants.sh -p epdf-plugin-search --test-package epdf-plugin-search --file <file>`, file by
+file over every module but `harness.rs`, catches 89 of 90 viable mutants (84 caught, 5 timeouts;
+42 unviable). The timeouts are `&&` to `||` in the fallback and restart guards of `collect`, which
+retry a refused request forever. One caught mutant is killed by the new case
+`search-signal-already-aborted`, checked by applying it by hand: `&&` to `||` in `search`'s
+cancelled branch (`controller.rs:465`), which would dispatch `CANCELLED` for a run the lane refused
+before it started. Reaching it meant extending the harness shim to `search`'s `signal` on both
+sides.
+
+The one survivor is in `src/controller.rs:495`: `refresh`'s match guard
+`state.status != SearchStatus::Idle` replaced with `true`. It is unreachable. Only the initial
+state is `idle`, and its query is `null`, so the `Some(query)` arm never sees an idle status. The
+TypeScript's `status === 'idle'` test is the same dead check.
