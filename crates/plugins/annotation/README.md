@@ -1,20 +1,20 @@
 # epdf-plugin-annotation
 
 `packages/plugin/annotation` in Rust, on the v3 controller contract: the pure `epdf-annotation-core`
-model wired to the engine and to the interaction hub. All 932 cases in ten vector files replay
+model wired to the engine and to the interaction hub. All 956 cases in ten vector files replay
 identically (`CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-annotation`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/annotation-repository.json` | function | 685 | `repository/`: `fromDTO` over 60 fixtures (measurement dimensions and rich free-text bodies among them), `toPatch`, `toScopedPatch` (geometry, caption, leader and 11 prop scopes), `toCreateDraft`, the seam helpers |
-| `vectors/plugins/annotation-pure.json` | function | 141 | the tool registry, `buildTextItems`, `iconPlacementDraft`, the reducer, the rich-text policy (`rich-text.ts`), `geometryFromInput`, `previewBucket`, `engine-core`'s `buildCommentThreads` and `sniffBinaryMetadata` |
-| `vectors/plugins/annotation-api.json` | scenario | 15 | the page-space reads and writes, the change events, `selectAll`, `selectInRect`, run restyles over an editor range, rich-text editing, `createAttachment`, `placeStamp`, `readAttachment` without `downloadFile`, the measurement seam, the v3 document events, preview providers |
+| `vectors/plugins/annotation-repository.json` | function | 693 | `repository/`: `fromDTO` over 60 fixtures (measurement dimensions and rich free-text bodies among them), `toPatch`, `toScopedPatch` (geometry, caption, leader and 11 prop scopes), `toCreateDraft`, the seam helpers |
+| `vectors/plugins/annotation-pure.json` | function | 151 | the tool registry, `buildTextItems`, `iconPlacementDraft`, the reducer, the rich-text policy (`rich-text.ts`), `geometryFromInput`, `previewBucket`, `engine-core`'s `buildCommentThreads` and `sniffBinaryMetadata` |
+| `vectors/plugins/annotation-api.json` | scenario | 18 | the page-space reads and writes, the change events, `selectAll`, `selectInRect`, run restyles over an editor range, rich-text editing, `createAttachment`, `placeStamp`, `readAttachment` without `downloadFile`, the measurement seam, the v3 document events, preview providers |
 | `vectors/plugins/annotation-hydration.json` | scenario | 16 | whole-document hydration, the cursor-ordered replay, remote events, page membership, form and redaction events, `reloadPage` |
 | `vectors/plugins/annotation-crud.json` | scenario | 13 | the raw create, update and delete, the optimistic effects and their rollback, selection, props and flags, text editing, settings, projections |
 | `vectors/plugins/annotation-comments.json` | scenario | 15 | comment threads and their verbs, attached links, the script commit door, attachment download, baked appearances |
 | `vectors/plugins/annotation-grouping.json` | scenario | 5 | `group`/`ungroup` and their twins, the grouped Replace Text create and its rollback |
-| `vectors/plugins/annotation-tools.json` | scenario | 31 | tools in the hub and the five pointer handlers, click placement, stamps, the file-picker port, ghosts, behaviors |
-| `vectors/plugins/annotation-markup.json` | scenario | 8 | markup, caret and replace-text from the selection plugin's signals, `createFromSelection` |
+| `vectors/plugins/annotation-tools.json` | scenario | 33 | tools in the hub and the five pointer handlers, click placement, stamps, the file-picker port, ghosts, behaviors |
+| `vectors/plugins/annotation-markup.json` | scenario | 9 | markup, caret and replace-text from the selection plugin's signals, `createFromSelection` |
 | `vectors/plugins/annotation-hover.json` | scenario | 3 | hover state, the enter/exit feed onto the actions hover pump, the permission twins |
 
 The older scenario files were written against v2 names and reach v3 through the mapping table in
@@ -109,63 +109,59 @@ surface:
 The 99 unreached branches are mostly the `??` and optional-chaining arms of the same guards;
 `coverage.json` lists each by line and column.
 
-## Mutation testing, pre-v3, rerun pending
+## Mutation testing
 
-The numbers below are from the v2 port. `capability.rs`, `effects.rs`, `reducer.rs` and `types.rs`
-are gone (their code moved into the v3 areas), so their rows are dropped. The rest describe files
-that still exist, some renamed (`handler.rs` is `tools/handlers.rs`, `tools.rs` is
-`tools/definitions.rs`, `threads.rs` is `comments/build.rs`, `markup.rs` is
-`tools/markup_bridge.rs`, `placement.rs` is `write/placement.rs`), and wait on a rerun through
-`scripts/mutants.sh`.
+`scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file <file>`,
+file by file over every module but `harness/`, catches 1,412 of 1,449 viable mutants (1,411 caught,
+1 timeout; 534 unviable). The run itself, at `afb842b48`, caught 1,356 and missed 92, across the 59
+files that have mutants. Cases added afterwards kill 55 of those 92, and the counts above include
+them. Each kill was confirmed by applying the mutant by hand and watching `cargo test` fail, not by
+a second run.
 
-Every source file but `harness/` (excluded in `.cargo/mutants.toml`) has been run, one file at a
-time (`scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file
-<file>`); `repository/kinds/mod.rs` has no mutants. Of the 165 that survived, 118 are killed by
-cases added afterwards and 47 are equivalent or unreachable, each listed below. "Killed after"
-counts the first group; each of those was confirmed by applying the mutant by hand and watching the
-replay fail, not by a second full run. The nine files the first pass covered (`effects` through
-`value`) are fresh runs; that pass had counted 15 misses in them, and 8 remain.
+Most of the 55 needed a listener or a read the vectors never made. The `annotation-lens` test plugin
+now exposes `onThreadChanged` on both sides, `direct-delivery` listens to the change events (all
+six `originOf` mutants), and four tool cases listen to the hub's `onGestureStarted`, which is where
+a handler's `id()` shows. Six scenario cases are new: `text-range-needs-an-active-edit`,
+`dimension-drafts-continue-without-viewports` and `set-contents-settles-with-the-engine` in
+`annotation-api`, `file-picker-remover-clears-only-its-own` and
+`hover-follows-the-subtype-the-draft-began-with` in `annotation-tools`,
+and `create-from-selection-anchors-at-the-end-glyph` in `annotation-markup`. `annotation-repository`
+gains two `fromDTO` fixtures with NaN and infinite rotations. The rest are extra steps in existing
+cases and extra function cases. None needed a unit test.
 
-| File | Caught | Timeouts | Missed | Unviable | Killed after | Accepted |
-|---|---|---|---|---|---|---|
-| `handler.rs` | 75 | 0 | 28 | 7 | 18 | 10 |
-| `tools.rs` | 73 | 0 | 17 | 6 | 11 | 6 |
-| `binary.rs` | 50 | 1 | 21 | 10 | 17 | 4 |
-| `repository/mod.rs` | 29 | 0 | 0 | 1 | | |
-| `repository/links.rs` | 2 | 0 | 0 | 0 | | |
-| `repository/projection.rs` | 39 | 0 | 0 | 3 | | |
-| `repository/props.rs` | 9 | 0 | 1 | 1 | 1 | |
-| `repository/seam.rs` | 67 | 0 | 3 | 4 | 1 | 2 |
-| `repository/kinds/free_text.rs` | 13 | 0 | 3 | 3 | 3 | |
-| `repository/kinds/misc.rs` | 15 | 0 | 0 | 10 | | |
-| `repository/kinds/quads.rs` | 48 | 0 | 6 | 4 | 2 | 4 |
-| `repository/kinds/shape.rs` | 5 | 0 | 0 | 1 | | |
-| `repository/kinds/stroke.rs` | 22 | 0 | 0 | 5 | | |
-| `hover_feed.rs` | 6 | 0 | 1 | 2 | 1 | |
-| `markup.rs` | 7 | 0 | 1 | 0 | 1 | |
-| `placement.rs` | 8 | 0 | 0 | 0 | | |
-| `promise.rs` | 5 | 0 | 0 | 11 | | |
-| `text_item.rs` | 6 | 0 | 0 | 1 | | |
-| `threads.rs` | 54 | 0 | 5 | 7 | 1 | 4 |
-| `value.rs` | 13 | 0 | 0 | 0 | | |
+The timeout is `+=` to `*=` in `parse_jpeg` (`binary.rs:127`), a loop that never ends. The 37
+survivors left are equivalent or unreachable:
 
-Timeouts count as caught: the one is a mutant that loops forever.
+| File | Line | Mutant | Why no case kills it |
+|---|---|---|---|
+| `binary.rs` | 105 | `offset + 4 < len` to `<=` in `parse_jpeg` | Equivalent. With four bytes left every branch of the extra pass returns `None` or leaves the loop: an SOF needs nine. |
+| `binary.rs` | 129 | `\|` to `^` in the segment length | Equivalent. The high byte is shifted clear of the low one. |
+| `comments/build.rs` | 131 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
+| `comments/build.rs` | 142 | `d > 0.0` to `==`, `<` and `>=` (3 mutants) | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
+| `controller.rs` | 152 | `+` to `-` and `*` in `random_uuid` (2) | Unreachable by a vector. It is the fallback for a host that passes no `random_uuid`; the harness always passes one, so the `/NM` seeds match the TypeScript's. |
+| `controller.rs` | 161 | `fonts` to `vec![]` | Unreachable by a vector. The harness passes `fonts: None`, as neither fake engine has a fonts service on `ctx.engine`. The face mapping over a registered list is pinned by the `annotation-pure` function cases. |
+| `controller.rs` | 172 | `defer_fn` to `()` | Unobservable. The deferred cleanups clear the viewport cache and dispose the event hooks at document close, after which nothing can emit or read them. |
+| `host_contract.rs` | 92 | delete `!` on the `details` filter in `serialize_error` | Unreachable. The `EngineError` branch never runs: the kernel hands every engine refusal to this plugin as a `PluginError`, and the other errors are plain. A refused update and a failed hydration both arrive that way. |
+| `read/annotations.rs` | 109 | the `a.ref_.is_some()` guard in `loaded_or_throw` to `true` | Unreachable. An entry without a ref is keyed `tmp:N` (the core's optimistic ids) or `""` (a DTO with no ref), and `annotation_key` builds neither. |
+| `read/annotations.rs` | 126 | `&&` to `\|\|` in `selected_committed` | Equivalent. An entry has a ref without data only between `Msg::Created` and the `sync` that follows it in the same synchronous block (`write/crud.rs` 423, 485, 499), and optimistic entries carry neither. |
+| `read/render.rs` | 79 | the `subtype == "link"` guard in `list_link_items` to `true` | Equivalent. The loop already skips entries whose subtype is not `link`, and `ingest` takes an entry's subtype and data from the same DTO; a link-tool draft has no data. |
+| `repository/kinds/quads.rs` | 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` (4) | Equivalent. On a tie the running bound is replaced by an equal value (a `-0` prints as `0`). |
+| `repository/seam.rs` | 127 | the `truthy_num(r)` rotation guard in `box_geom_from_dto` to `true` | Equivalent. It only lets a 0 or `NaN` rotation through, and the two `truthy_num(rot)` tests below treat those as no rotation either way. |
+| `repository/seam.rs` | 305 | `content_rect_of` to `Default::default()` | Unobservable. Nothing in the workspace calls it. |
+| `services/authority.rs` | 16 | `owner_of` to `Default::default()` | Unreachable by a vector. Both fake engines answer `allowsAnnotationMutation` by action alone and ignore the target. |
+| `services/file_picker.rs` | 69 | delete the `(None, None)` arm in `prompt_at` | Unreachable. The plugin is document-scoped, so the document is bound whenever a handler runs a click. |
+| `tools/definitions.rs` | 84 | the `mode == "footprint"` guard in `GhostPolicy`'s decoder to `true` | Unreachable by a vector. It only changes what a non-`false` value without that mode decodes to, which is outside the TypeScript's `false \| { mode: 'footprint' }` type. |
+| `tools/definitions.rs` | 331, 339 | delete `subtype` from the `draw` and `markup` rows (2) | Equivalent. Those rows set the subtype to the tool's id, which is what resolution falls back to. |
+| `tools/definitions.rs` | 332 | delete `cursor` from the `draw` row | Equivalent. Its value is `crosshair`, the resolved default. |
+| `tools/definitions.rs` | 522 | `\|\|` to `&&` in `merge_defaults` | Equivalent. When only one side has line endings, merging them over the empty default gives that side's endings, which the spread already holds. |
+| `tools/definitions.rs` | 633 | `!=` to `==` on `ToolRegistry::delete`'s return | Unobservable. Its one caller, the `registerTool` unregister (`tools/registry.rs:93`), ignores it. |
+| `tools/handlers.rs` | 85 | the ghost handler's `id()` to `""` and `"xyzzy"` (2) | Unobservable. The hub reads an id only for the handler that owns a gesture, and the ghost handler's `on_down` always declines. |
+| `value.rs` | 61 | `<` to `==` and `<=` in `number` (2) | Equivalent under the harness. They only change whether an integral value is spelled as an integer or a float, and the vectors compare numbers as `f64`. The `>` mutant, which saturates past `i64`, is killed. |
+| `write/links.rs` | 105 | `==` to `!=` in `schedule_link_sync`'s cleanup | Equivalent. The finished chain stays in the map, but a chain never rejects (`reconcile_link_children` reports every engine failure to `console_error`), so the next sync chains onto a fulfilled promise either way. |
+| `write/measurement.rs` | 47 | `PageViewports::clear` to `()` | Unobservable. Its only caller is the close cleanup (`controller.rs:114`). |
+| `write/selection.rs` | 195 | `-1.0` to `1.0` in `group`'s index | Unreachable. Every entry the core holds is in `order`, so the position is never missing. |
+| `write/stamps.rs` | 61 | the `w > 0.0` guard in `desired_stamp_size` to `true`, and `>` to `>=` (2) | Unreachable. `sniff_binary_metadata` reports a size only for a PNG or JPEG whose width and height are both nonzero. |
 
-### Accepted misses
-
-| Line | Mutant | Why no case kills it |
-|---|---|---|
-| `handler.rs` 43, 73, 123, 278, 413 | each handler's `id()` to `""` and to `"xyzzy"` | Unobservable. The hub never reads a handler's id; it orders by `priority()` and gates by `enabled_for()`. |
-| `tools.rs` 69 | the `mode == "footprint"` guard in `GhostPolicy`'s decoder to `true` | Unreachable by a vector. It only changes what an object without that mode decodes to. That object is outside `GhostPolicy`'s type: the TypeScript draws a ghost for anything but `false`, and the port refuses to decode it, the same split as the core's unknown enum strings. |
-| `tools.rs` 293, 301 | delete `subtype` from the `draw` and `markup` built-in rows | Equivalent. Those rows set the subtype to the tool's id, which is what resolution falls back to. |
-| `tools.rs` 294 | delete `cursor` from the `draw` row | Equivalent. Its value is `crosshair`, the resolved default. |
-| `tools.rs` 439 | `\|\|` to `&&` in `merge_defaults` | Equivalent. When only one side has line endings, merging them over the empty default gives that side's endings, which the spread already holds. |
-| `tools.rs` 549 | `!=` to `==` on `ToolRegistry::delete`'s return | Unobservable. Its one caller, the `registerTool` unregister, ignores the result. |
-| `binary.rs` 31, 48 | the `is_undefined` guards in `not_a_blob` and `resolve_now` to `false` | Unreachable. The harness decodes an explicit `{"$undefined": true}` member to `null`, and an omitted member is `None`, so the undefined marker never reaches either match. |
-| `binary.rs` 105 | `offset + 4 < len` to `<=` in `parse_jpeg` | Equivalent. With four bytes left, every branch of the extra pass returns `None` or leaves the loop: an SOF needs nine. |
-| `binary.rs` 129 | `\|` to `^` in the segment length | Equivalent. The high byte is shifted clear of the low one, so the bits never overlap. |
-| `repository/seam.rs` 126 | the `truthy_num(r)` guard on the rotation in `box_geom_from_dto` to `true` | Equivalent. It only lets a 0 or `NaN` rotation through, and `from_pdf_rotation` turns those into 0 and `NaN`, which the two `truthy_num(rot)` tests below treat as no rotation either way. |
-| `repository/seam.rs` 304 | `content_rect_of` to `Default::default()` | Unobservable. Nothing in the workspace calls it. |
-| `repository/kinds/quads.rs` 85, 88, 91, 94 | `<` to `<=` and `>` to `>=` in `pdf_bounds_of_quads` | Equivalent. On a tie the running bound is replaced by an equal value. |
-| `threads.rs` 130 | `x < y` to `<=` in `chronological` | Equivalent. It sits under `x != y`. |
-| `threads.rs` 141 | `d > 0.0` to `==`, `<` and `>=` | Equivalent. `sort_by` only asks whether the answer is `Less`, and every mutant still answers `Less` exactly when `d < 0`. |
+Writing the `direct-delivery` steps turned up one difference, off the contract. An `annotation.updated` event with no
+`appearance` makes the TypeScript throw reading `changed` (`packages/plugin/annotation/src/sync/remote.ts:51`); the port applies
+it. The `direct-delivery` case sends a well-formed event, and the port is unchanged.
