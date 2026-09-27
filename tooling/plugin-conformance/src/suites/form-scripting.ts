@@ -945,7 +945,7 @@ const capabilityCases: ScenarioCase[] = [
   {
     name: 'scripted-activation-matches-refs',
     covers:
-      "The form path finds the widget by ref the way sameAnnotationRef does: an /NM on the same page, an index with the same revision, never another page's object number.",
+      "activateWidget resolves only object-number widget refs in v3: an /NM or index ref, and another page's object number, each reject not-found, so the sameAnnotationRef nm and index arms are unreachable from here.",
     plugins: scripted({ builds: [{ run: [out({ formEffects: [setValue(1, textValue('clicked'))] })] }] }),
     engine: {
       documents: {
