@@ -159,7 +159,7 @@ const failures: ScenarioCase[] = [
   {
     name: 'a-cloud-kernel-engine-names-the-fix',
     covers:
-      "With no assetEngine configured, an InvalidArg from the kernel engine's open becomes a NotImplemented naming the assetEngine option; any other open error rejects as it is.",
+      "With no assetEngine configured, an InvalidArg from the kernel engine's open becomes a NotImplemented naming the assetEngine option, and canImport turns false after it; any other open error rejects as it is.",
     plugins: STAMP(),
     engine: {
       responses: [
@@ -170,7 +170,9 @@ const failures: ScenarioCase[] = [
     },
     steps: [
       start,
+      stamp('canImport'),
       stamp('importLibraryPdf', [PDF]),
+      stamp('canImport'),
       stamp('importLibraryPdf', [PDF]),
       stamp('importLibraryPdf', [PDF]),
       stamp('libraries'),
@@ -264,6 +266,22 @@ const failures: ScenarioCase[] = [
       stamp('importLibraryPdf', [PDF]),
       stamp('assetPreview', ['stamp-0-3']),
     ],
+  },
+];
+
+const blankRenders: ScenarioCase[] = [
+  {
+    name: 'a-render-with-no-image-throws',
+    covers: "A render that answers null, or an image whose source is null, rejects the import with the TypeError reading 'source' or 'kind' off null.",
+    plugins: STAMP(),
+    engine: {
+      documents: {
+        noImage: assetDoc(ONE, { responses: [{ path: 'page.render.image', value: null }] }),
+        noSource: assetDoc(ONE, { responses: [{ path: 'page.render.image', value: { contentType: 'image/png', source: null } }] }),
+      },
+      responses: opens('noImage', 'noSource'),
+    },
+    steps: [start, stamp('importLibraryPdf', [PDF]), stamp('importLibraryPdf', [PDF]), stamp('libraries')],
   },
 ];
 
@@ -401,6 +419,6 @@ export const suites: Suite[] = [
     kind: 'scenario',
     file: 'plugins/stamp-library.json',
     describes: 'packages/plugin/stamp: importing canonical PDF libraries, PieceInfo metadata, ids, the asset engine port and its failures.',
-    cases: workshop([...importing, ...failures, ...ids, ...engines]),
+    cases: workshop([...importing, ...failures, ...blankRenders, ...ids, ...engines]),
   },
 ];

@@ -8946,7 +8946,7 @@
     },
     {
       "name": "a-cloud-kernel-engine-names-the-fix",
-      "covers": "With no assetEngine configured, an InvalidArg from the kernel engine's open becomes a NotImplemented naming the assetEngine option; any other open error rejects as it is.",
+      "covers": "With no assetEngine configured, an InvalidArg from the kernel engine's open becomes a NotImplemented naming the assetEngine option, and canImport turns false after it; any other open error rejects as it is.",
       "plugins": [
         {
           "factory": "stamp"
@@ -9483,12 +9483,28 @@
           "target": {
             "token": "stamp"
           },
+          "method": "canImport",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
           "method": "importLibrary",
           "args": [
             {
               "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "canImport",
+          "args": []
         },
         {
           "op": "call",
@@ -9560,6 +9576,34 @@
           }
         },
         {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": true
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
           "settled": [
             {
               "promise": 1,
@@ -9599,6 +9643,34 @@
           "engineState": {},
           "outcome": {
             "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": false
           },
           "state": {
             "core": {
@@ -16960,6 +17032,1310 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-render-with-no-image-throws",
+      "covers": "A render that answers null, or an image whose source is null, rejects the import with the TypeError reading 'source' or 'kind' off null.",
+      "plugins": [
+        {
+          "factory": "stamp"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "noImage": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "page.render.image",
+                "value": null
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "noSource": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 100
+                },
+                "label": null,
+                "size": {
+                  "width": 200,
+                  "height": 100
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 200,
+                    "top": 100
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "page.render.image",
+                "value": {
+                  "contentType": "image/png",
+                  "source": null
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 100
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 200,
+                        "height": 100
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 200,
+                          "top": 100
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 100,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 100
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTEwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 100,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTEwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi1jYW5vbmljYWw="
+                }
+              }
+            ]
+          },
+          "workshop": {
+            "services": [
+              "pieceInfo",
+              "page.pieceInfo"
+            ],
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 3
+                },
+                "label": null,
+                "size": {
+                  "width": 612,
+                  "height": 792
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 900
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 120
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 120
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "page.annotations.create",
+                "value": {
+                  "created": null
+                }
+              },
+              {
+                "path": "pages.flatten",
+                "value": {
+                  "results": [
+                    {
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "status": "applied"
+                    }
+                  ],
+                  "pages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ],
+                  "cache": null
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "layout": {
+                    "pageCount": 2,
+                    "pages": [
+                      {
+                        "index": 0,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 3
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 612,
+                          "height": 792
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 612,
+                            "top": 792
+                          }
+                        }
+                      },
+                      {
+                        "index": 1,
+                        "ref": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 900
+                        },
+                        "label": null,
+                        "size": {
+                          "width": 300,
+                          "height": 120
+                        },
+                        "rotation": 0,
+                        "userUnit": 1,
+                        "boxes": {
+                          "media": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          },
+                          "crop": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 300,
+                            "top": 120
+                          }
+                        }
+                      }
+                    ],
+                    "namedPages": []
+                  },
+                  "cache": null
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "pages.list",
+                "value": {
+                  "pageCount": 2,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 3
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 612,
+                        "height": 792
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 612,
+                          "top": 792
+                        }
+                      }
+                    },
+                    {
+                      "index": 1,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 900
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 300,
+                        "height": 120
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 300,
+                          "top": 120
+                        }
+                      }
+                    }
+                  ],
+                  "namedPages": []
+                }
+              },
+              {
+                "path": "metadata.read",
+                "value": {
+                  "title": null,
+                  "author": null,
+                  "subject": null,
+                  "keywords": null,
+                  "producer": null,
+                  "creator": null,
+                  "created": null,
+                  "modified": null,
+                  "trapped": "unknown",
+                  "custom": {}
+                }
+              },
+              {
+                "path": "metadata.update"
+              },
+              {
+                "path": "pages.setName"
+              },
+              {
+                "path": "pages.removeName"
+              },
+              {
+                "path": "pieceInfo.read",
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 3,
+                "value": null
+              },
+              {
+                "path": "page.pieceInfo.read",
+                "pon": 900,
+                "value": null
+              },
+              {
+                "path": "pieceInfo.update"
+              },
+              {
+                "path": "page.pieceInfo.update"
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 3
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTM="
+                }
+              },
+              {
+                "path": "pages.extract",
+                "args": [
+                  [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 900
+                    }
+                  ]
+                ],
+                "value": {
+                  "$bytes": "JVBERi1wYWdlLTkwMA=="
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 3,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTM="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "page.render.image",
+                "pon": 900,
+                "value": {
+                  "contentType": "image/png",
+                  "source": {
+                    "kind": "bytes",
+                    "bytes": {
+                      "$bytes": "cG5nLTkwMA=="
+                    }
+                  }
+                }
+              },
+              {
+                "path": "download",
+                "value": {
+                  "$bytes": "JVBERi13b3Jrc2hvcA=="
+                }
+              }
+            ]
+          }
+        },
+        "responses": [
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "noImage"
+            }
+          },
+          {
+            "path": "open",
+            "times": 1,
+            "value": {
+              "$document": "noSource"
+            }
+          }
+        ],
+        "defaultDocument": "workshop"
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibrary",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "importLibrary",
+          "args": [
+            {
+              "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "stamp"
+          },
+          "method": "listLibraries",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "TypeError",
+                  "message": "Cannot read properties of null (reading 'source')"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-0",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "noImage",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "metadata.read",
+              "args": []
+            },
+            {
+              "doc": "noImage",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Stamps"
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp1=Stamp1",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "stamp-lib-0-1",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "noImage",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "noImage": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "TypeError",
+                  "message": "Cannot read properties of null (reading 'kind')"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "stamp-import-0-2",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJXN0YW1wIGZpeHR1cmUK"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "noSource",
+              "path": "pieceInfo.read",
+              "args": [
+                "EMBD_StampLibrary"
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "metadata.read",
+              "args": []
+            },
+            {
+              "doc": "noSource",
+              "path": "metadata.update",
+              "args": [
+                {
+                  "title": "Stamps"
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "pages.setName",
+              "args": [
+                {
+                  "name": "Stamp1=Stamp1",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "pieceInfo.update",
+              "args": [
+                "EMBD_StampLibrary",
+                {
+                  "Version": 2,
+                  "Id": "stamp-lib-0-3",
+                  "Kind": {
+                    "name": "StampLibrary"
+                  },
+                  "Name": null,
+                  "Categories": null,
+                  "Locale": null
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "page.pieceInfo.read",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp"
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "page.pieceInfo.update",
+              "pon": 100,
+              "args": [
+                "EMBD_Stamp",
+                {
+                  "Version": 2,
+                  "Kind": {
+                    "name": "Stamp"
+                  },
+                  "Name": null,
+                  "Subject": null,
+                  "SubjectOverride": null,
+                  "Categories": null
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 100
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "page.render.image",
+              "pon": 100,
+              "args": [
+                {
+                  "viewport": {
+                    "kind": "width",
+                    "width": 256
+                  },
+                  "background": "transparent",
+                  "includeAnnotations": true,
+                  "format": "png"
+                }
+              ]
+            },
+            {
+              "doc": "noSource",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "noImage": {
+              "subscribers": 0
+            },
+            "noSource": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "noImage": {
+              "subscribers": 0
+            },
+            "noSource": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {},
+              "stamp": {
+                "libraries": {},
+                "libraryOrder": [],
+                "assets": {}
               }
             }
           }

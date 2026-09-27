@@ -119,6 +119,25 @@ const staticCases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'the-target-width-sizes-the-ghost-and-a-template-ghost-is-cached',
+    covers:
+      "The target width armAsset passes sizes the stamp tool's hover ghost. A template (not materialized) asset's ghost render is cached under its id, so arming it again and asking for the same width opens no second copy.",
+    plugins: PLACEMENT(),
+    engine: { documents: { a: target(), lib: assetDoc(ONE), ghost: assetDoc(ONE) }, responses: opens('a', 'lib', 'ghost') },
+    steps: [
+      start,
+      openDoc('a'),
+      stamp('importLibraryPdf', [PDF]),
+      arm('stamp-lib-0-1:Stamp1', { targetWidth: 120 }),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'hoverGhostAt', args: ['stamp', { kind: 'objectNumber', pageObjectNumber: 1 }, { x: 300, y: 400 }] },
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getToolGhost', args: [{ kind: 'objectNumber', pageObjectNumber: 1 }] },
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getArmedStampPreview', args: [200] },
+      stamp('disarm', ['a']),
+      arm('stamp-lib-0-1:Stamp1'),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getArmedStampPreview', args: [200] },
+    ],
+  },
+  {
     name: 'a-raster-asset-arms-with-its-own-preview',
     covers: 'A loose raster asset arms with its bytes and itself as the preview; a PDF asset with no preview arms without one.',
     plugins: PLACEMENT(),
