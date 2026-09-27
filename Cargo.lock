@@ -626,6 +626,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-signature"
+version = "0.0.0"
+dependencies = [
+ "epdf-kernel",
+ "epdf-plugin-annotation",
+ "epdf-plugin-form",
+ "epdf-plugin-interaction",
+ "epdf-plugin-stamp",
+ "epdf-signature-core",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-stage"
 version = "0.0.0"
 dependencies = [
