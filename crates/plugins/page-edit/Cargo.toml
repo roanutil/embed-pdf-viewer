@@ -17,6 +17,7 @@ harness = ["dep:plugin-conformance"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
+epdf-geometry = { path = "../geometry", default-features = false }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
