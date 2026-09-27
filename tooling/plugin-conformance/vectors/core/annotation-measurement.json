@@ -7738,6 +7738,240 @@
       }
     },
     {
+      "name": "shapeMeasurementReadout/perimeter-rounding-crop-x",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100000000,
+              "y": 0
+            },
+            {
+              "x": 100000100,
+              "y": 0
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 3,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "perimeter",
+          "value": 1.4444444552063942,
+          "label": "1.44 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-rounding-crop-y",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 100000000
+            },
+            {
+              "x": 0,
+              "y": 100000100
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 795
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "perimeter",
+          "value": 1.3333333432674408,
+          "label": "1.33 m"
+        }
+      }
+    },
+    {
+      "name": "distanceLabel/rounding-crop-x",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100000000,
+            "y": 0
+          },
+          "b": {
+            "x": 100000100,
+            "y": 0
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 3,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "1.44 m"
+      }
+    },
+    {
+      "name": "distanceLabel/rounding-crop-y",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 100000000
+          },
+          "b": {
+            "x": 0,
+            "y": 100000100
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 795
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "1.33 m"
+      }
+    },
+    {
       "name": "shapeMeasurementReadout/area-bowtie-offset",
       "fn": "shapeMeasurementReadout",
       "args": [
@@ -40698,6 +40932,771 @@
       }
     },
     {
+      "name": "distanceLayout/outside-threshold-below",
+      "fn": "distanceLayout",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 144,
+            "y": 100
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": null,
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "x"
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": {
+          "along": {
+            "x": 1,
+            "y": 0
+          },
+          "normal": {
+            "x": 0,
+            "y": -1
+          },
+          "length": 44,
+          "measuredStart": {
+            "x": 100,
+            "y": 100
+          },
+          "measuredEnd": {
+            "x": 144,
+            "y": 100
+          },
+          "dimensionStart": {
+            "x": 100,
+            "y": 100
+          },
+          "dimensionEnd": {
+            "x": 144,
+            "y": 100
+          },
+          "dimensionSegments": [
+            {
+              "from": {
+                "x": 70,
+                "y": 100
+              },
+              "to": {
+                "x": 100,
+                "y": 100
+              }
+            },
+            {
+              "from": {
+                "x": 144,
+                "y": 100
+              },
+              "to": {
+                "x": 174,
+                "y": 100
+              }
+            }
+          ],
+          "leaderSegments": [],
+          "captionConnector": [],
+          "caption": {
+            "text": "x",
+            "center": {
+              "x": 122,
+              "y": 88.5
+            },
+            "along": {
+              "x": 1,
+              "y": 0
+            },
+            "normal": {
+              "x": 0,
+              "y": -1
+            },
+            "width": 4.5,
+            "height": 9,
+            "bounds": [
+              {
+                "x": 119.75,
+                "y": 93
+              },
+              {
+                "x": 124.25,
+                "y": 93
+              },
+              {
+                "x": 124.25,
+                "y": 84
+              },
+              {
+                "x": 119.75,
+                "y": 84
+              }
+            ]
+          },
+          "arrowPlacement": "outside",
+          "endings": [],
+          "selectionPoints": [
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 144,
+              "y": 100
+            },
+            {
+              "x": 70,
+              "y": 100
+            },
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 144,
+              "y": 100
+            },
+            {
+              "x": 174,
+              "y": 100
+            },
+            {
+              "x": 119.75,
+              "y": 93
+            },
+            {
+              "x": 124.25,
+              "y": 93
+            },
+            {
+              "x": 124.25,
+              "y": 84
+            },
+            {
+              "x": 119.75,
+              "y": 84
+            }
+          ],
+          "visualBounds": {
+            "x": 68.25,
+            "y": 82.25,
+            "width": 107.5,
+            "height": 19.5
+          }
+        }
+      }
+    },
+    {
+      "name": "distanceLayout/outside-threshold-at",
+      "fn": "distanceLayout",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 144.5,
+            "y": 100
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": null,
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "x"
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": {
+          "along": {
+            "x": 1,
+            "y": 0
+          },
+          "normal": {
+            "x": 0,
+            "y": -1
+          },
+          "length": 44.5,
+          "measuredStart": {
+            "x": 100,
+            "y": 100
+          },
+          "measuredEnd": {
+            "x": 144.5,
+            "y": 100
+          },
+          "dimensionStart": {
+            "x": 100,
+            "y": 100
+          },
+          "dimensionEnd": {
+            "x": 144.5,
+            "y": 100
+          },
+          "dimensionSegments": [
+            {
+              "from": {
+                "x": 100,
+                "y": 100
+              },
+              "to": {
+                "x": 118,
+                "y": 100
+              }
+            },
+            {
+              "from": {
+                "x": 126.5,
+                "y": 100
+              },
+              "to": {
+                "x": 144.5,
+                "y": 100
+              }
+            }
+          ],
+          "leaderSegments": [],
+          "captionConnector": [],
+          "caption": {
+            "text": "x",
+            "center": {
+              "x": 122.25,
+              "y": 100
+            },
+            "along": {
+              "x": 1,
+              "y": 0
+            },
+            "normal": {
+              "x": 0,
+              "y": -1
+            },
+            "width": 4.5,
+            "height": 9,
+            "bounds": [
+              {
+                "x": 120,
+                "y": 104.5
+              },
+              {
+                "x": 124.5,
+                "y": 104.5
+              },
+              {
+                "x": 124.5,
+                "y": 95.5
+              },
+              {
+                "x": 120,
+                "y": 95.5
+              }
+            ]
+          },
+          "arrowPlacement": "inside",
+          "endings": [],
+          "selectionPoints": [
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 144.5,
+              "y": 100
+            },
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 118,
+              "y": 100
+            },
+            {
+              "x": 126.5,
+              "y": 100
+            },
+            {
+              "x": 144.5,
+              "y": 100
+            },
+            {
+              "x": 120,
+              "y": 104.5
+            },
+            {
+              "x": 124.5,
+              "y": 104.5
+            },
+            {
+              "x": 124.5,
+              "y": 95.5
+            },
+            {
+              "x": 120,
+              "y": 95.5
+            }
+          ],
+          "visualBounds": {
+            "x": 98.25,
+            "y": 93.75,
+            "width": 48,
+            "height": 12.5
+          }
+        }
+      }
+    },
+    {
+      "name": "distanceLayout/offset-perpendicular-7",
+      "fn": "distanceLayout",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true,
+            "offset": {
+              "along": 0,
+              "perpendicular": 7
+            }
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        },
+        1.5
+      ],
+      "outcome": {
+        "returned": {
+          "along": {
+            "x": 1,
+            "y": 0
+          },
+          "normal": {
+            "x": 0,
+            "y": -1
+          },
+          "length": 144,
+          "measuredStart": {
+            "x": 100,
+            "y": 100
+          },
+          "measuredEnd": {
+            "x": 244,
+            "y": 100
+          },
+          "dimensionStart": {
+            "x": 100,
+            "y": 100
+          },
+          "dimensionEnd": {
+            "x": 244,
+            "y": 100
+          },
+          "dimensionSegments": [
+            {
+              "from": {
+                "x": 100,
+                "y": 100
+              },
+              "to": {
+                "x": 244,
+                "y": 100
+              }
+            }
+          ],
+          "leaderSegments": [],
+          "captionConnector": [
+            {
+              "from": {
+                "x": 172,
+                "y": 100
+              },
+              "to": {
+                "x": 172,
+                "y": 99.5
+              }
+            }
+          ],
+          "caption": {
+            "text": "2 m",
+            "center": {
+              "x": 172,
+              "y": 93
+            },
+            "along": {
+              "x": 1,
+              "y": 0
+            },
+            "normal": {
+              "x": 0,
+              "y": -1
+            },
+            "width": 15.003,
+            "height": 9,
+            "bounds": [
+              {
+                "x": 164.4985,
+                "y": 97.5
+              },
+              {
+                "x": 179.5015,
+                "y": 97.5
+              },
+              {
+                "x": 179.5015,
+                "y": 88.5
+              },
+              {
+                "x": 164.4985,
+                "y": 88.5
+              }
+            ]
+          },
+          "arrowPlacement": "inside",
+          "endings": [
+            {
+              "kind": "poly",
+              "points": [
+                {
+                  "x": 100,
+                  "y": 100
+                },
+                {
+                  "x": 111.69134295108992,
+                  "y": 93.25
+                },
+                {
+                  "x": 111.69134295108992,
+                  "y": 106.75
+                }
+              ],
+              "closed": true
+            },
+            {
+              "kind": "poly",
+              "points": [
+                {
+                  "x": 244,
+                  "y": 100
+                },
+                {
+                  "x": 232.30865704891008,
+                  "y": 106.75
+                },
+                {
+                  "x": 232.30865704891008,
+                  "y": 93.25
+                }
+              ],
+              "closed": true
+            }
+          ],
+          "selectionPoints": [
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 244,
+              "y": 100
+            },
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 244,
+              "y": 100
+            },
+            {
+              "x": 172,
+              "y": 100
+            },
+            {
+              "x": 172,
+              "y": 99.5
+            },
+            {
+              "x": 100,
+              "y": 100
+            },
+            {
+              "x": 111.69134295108992,
+              "y": 93.25
+            },
+            {
+              "x": 111.69134295108992,
+              "y": 106.75
+            },
+            {
+              "x": 244,
+              "y": 100
+            },
+            {
+              "x": 232.30865704891008,
+              "y": 106.75
+            },
+            {
+              "x": 232.30865704891008,
+              "y": 93.25
+            },
+            {
+              "x": 164.4985,
+              "y": 97.5
+            },
+            {
+              "x": 179.5015,
+              "y": 97.5
+            },
+            {
+              "x": 179.5015,
+              "y": 88.5
+            },
+            {
+              "x": 164.4985,
+              "y": 88.5
+            }
+          ],
+          "visualBounds": {
+            "x": 98.25,
+            "y": 86.75,
+            "width": 147.5,
+            "height": 21.75
+          }
+        }
+      }
+    },
+    {
+      "name": "distanceHitProbe/caption-edges",
+      "fn": "distanceHitProbe",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        },
+        1.5,
+        [
+          {
+            "x": 181.5015,
+            "y": 100
+          },
+          {
+            "x": 183.5015,
+            "y": 100
+          },
+          {
+            "x": 172,
+            "y": 92
+          }
+        ],
+        3
+      ],
+      "outcome": {
+        "returned": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ]
+      }
+    },
+    {
+      "name": "distanceHitProbe/arrow-wing",
+      "fn": "distanceHitProbe",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": false
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        },
+        4,
+        [
+          {
+            "x": 125,
+            "y": 88
+          }
+        ],
+        0.5
+      ],
+      "outcome": {
+        "returned": [
+          [
+            false,
+            false,
+            true
+          ]
+        ]
+      }
+    },
+    {
       "name": "distanceSelectionQuad/not-a-line",
       "fn": "distanceSelectionQuad",
       "args": [
@@ -55730,6 +56729,310 @@
       "outcome": {
         "returned": {
           "x": 90,
+          "y": 50
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/open-later-segment",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 10,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 0
+          }
+        ],
+        false
+      ],
+      "outcome": {
+        "returned": {
+          "x": 50,
+          "y": -6.5
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-triangle-offset",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 300
+          },
+          {
+            "x": 400,
+            "y": 300
+          },
+          {
+            "x": 100,
+            "y": 420
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 200,
+          "y": 340
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-quad-offset",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 100,
+            "y": 300
+          },
+          {
+            "x": 400,
+            "y": 320
+          },
+          {
+            "x": 380,
+            "y": 420
+          },
+          {
+            "x": 150,
+            "y": 400
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 258.3460559796438,
+          "y": 357.8625954198473
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-area-at-threshold",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 1e-8,
+            "y": 0
+          },
+          {
+            "x": 0,
+            "y": 1
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 2.5e-9,
+          "y": 0.5
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-u-wide-right-arm",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 0
+          },
+          {
+            "x": 11,
+            "y": 90
+          },
+          {
+            "x": 100,
+            "y": 90
+          },
+          {
+            "x": 100,
+            "y": 0
+          },
+          {
+            "x": 120,
+            "y": 0
+          },
+          {
+            "x": 120,
+            "y": 100
+          },
+          {
+            "x": 1,
+            "y": 100
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 110,
+          "y": 50
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-u-under-one-unit",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 0.01,
+            "y": 0
+          },
+          {
+            "x": 0.11,
+            "y": 0
+          },
+          {
+            "x": 0.11,
+            "y": 0.9
+          },
+          {
+            "x": 1,
+            "y": 0.9
+          },
+          {
+            "x": 1,
+            "y": 0
+          },
+          {
+            "x": 1.2,
+            "y": 0
+          },
+          {
+            "x": 1.2,
+            "y": 1
+          },
+          {
+            "x": 0.01,
+            "y": 1
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 1.1,
+          "y": 0.5
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-c-slanted",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 20
+          },
+          {
+            "x": 30,
+            "y": 20
+          },
+          {
+            "x": 30,
+            "y": 80
+          },
+          {
+            "x": 100,
+            "y": 80
+          },
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 20,
+            "y": 100
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 20,
+          "y": 50
+        }
+      }
+    },
+    {
+      "name": "automaticShapeCaptionCenter/closed-c-vertex-on-middle",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 0,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 0
+          },
+          {
+            "x": 100,
+            "y": 20
+          },
+          {
+            "x": 20,
+            "y": 20
+          },
+          {
+            "x": 20,
+            "y": 80
+          },
+          {
+            "x": 100,
+            "y": 80
+          },
+          {
+            "x": 100,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 100
+          },
+          {
+            "x": 0,
+            "y": 50
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 10,
           "y": 50
         }
       }

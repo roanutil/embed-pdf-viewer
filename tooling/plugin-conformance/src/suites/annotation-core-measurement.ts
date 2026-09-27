@@ -180,6 +180,7 @@ const SHAPES: [string, Geom, ShapeMeasurementAppearance][] = [
 ];
 
 const STYLE = style({ strokeWidth: 1.5 });
+const U_SHAPE = [v(1, 0), v(11, 0), v(11, 90), v(100, 90), v(100, 0), v(120, 0), v(120, 100), v(1, 100)];
 const DASHED_STYLE = style({ strokeWidth: 2, border: DASHED, interiorColor: '#00ff00', opacity: 0.5 });
 
 const layoutOf = (geom: Geom, appearance: DistanceAppearance, sw: number) => ms.distanceLayout(geom, appearance, sw);
@@ -262,6 +263,11 @@ measurementCases.push(
   ] as [string, [number, number][]][]).map(([name, pdf]) =>
     c('shapeMeasurementReadout', `area-straight-${name}`, gPoly(pdf.map(([x, y]) => v(x, CROP.top - y)), true), area()),
   ),
+  // Far from the origin a crop offset changes how fround rounds each vertex.
+  c('shapeMeasurementReadout', 'perimeter-rounding-crop-x', gPoly([v(1e8, 0), v(1e8 + 100, 0)], false), perimeter({ crop: { left: 3, bottom: 0, right: 612, top: 792 } })),
+  c('shapeMeasurementReadout', 'perimeter-rounding-crop-y', gPoly([v(0, 1e8), v(0, 1e8 + 100)], false), perimeter({ crop: { left: 0, bottom: 0, right: 612, top: 795 } })),
+  c('distanceLabel', 'rounding-crop-x', gLine(v(1e8, 0), v(1e8 + 100, 0)), dist({ crop: { left: 3, bottom: 0, right: 612, top: 792 } })),
+  c('distanceLabel', 'rounding-crop-y', gLine(v(0, 1e8), v(0, 1e8 + 100)), dist({ crop: { left: 0, bottom: 0, right: 612, top: 795 } })),
   c('shapeMeasurementReadout', 'area-bowtie-offset', gPoly([v(200, 200), v(300, 300), v(300, 200), v(200, 260)], true), area()),
   c('shapeMeasurementReadout', 'area-two-points', gPoly([v(0, 0), v(10, 10)], true), area()),
   c('shapeMeasurementReadout', 'area-closing-repeat', gPoly([...AREA_POINTS, AREA_POINTS[0]], true), area()),
@@ -297,6 +303,13 @@ measurementCases.push(
   c('distanceLayout', 'not-a-line', gRect(rc(0, 0, 10, 10)), dist(), 1),
   c('distanceLayout', 'wide-stroke-outside', LINE, dist(), 8),
   c('distanceLayout', 'zero-stroke', LINE, dist(), 0),
+  // 'x' is 4.5 wide: with the padding and a 1.5 stroke's reserve, 44.5.
+  c('distanceLayout', 'outside-threshold-below', gLine(v(100, 100), v(144, 100)), dist({ measure: null, text: 'x' }), 1.5),
+  c('distanceLayout', 'outside-threshold-at', gLine(v(100, 100), v(144.5, 100)), dist({ measure: null, text: 'x' }), 1.5),
+  c('distanceLayout', 'offset-perpendicular-7', LINE, dist({ caption: { enabled: true, offset: { along: 0, perpendicular: 7 } } }), 1.5),
+  // Just inside and outside the '2 m' caption (15.003 wide) grown by 3.
+  c('distanceHitProbe', 'caption-edges', LINE, dist(), 1.5, [v(181.5015, 100), v(183.5015, 100), v(172, 92)], 3),
+  c('distanceHitProbe', 'arrow-wing', gLine(v(100, 100), v(244, 100), ends('closed-arrow', 'closed-arrow')), dist({ caption: { enabled: false } }), 4, [v(125, 88)], 0.5),
   c('distanceSelectionQuad', 'not-a-line', gRect(rc(0, 0, 10, 10)), dist(), 2),
   c('distanceHandles', 'not-a-line', gRect(rc(0, 0, 10, 10)), dist(), 2),
   c('distanceHitProbe', 'not-a-line', gRect(rc(0, 0, 10, 10)), dist(), 2, [v(5, 5)], 1),
@@ -351,6 +364,18 @@ measurementCases.push(
   c('automaticShapeCaptionCenter', 'closed-single', [v(7, 8)], true),
   c('automaticShapeCaptionCenter', 'closed-ring-far', [v(1000, 1000), v(1100, 1000), v(1100, 1100), v(1000, 1100)], true),
   c('automaticShapeCaptionCenter', 'closed-c-shape-wide-right', [v(0, 0), v(100, 0), v(100, 100), v(0, 100), v(0, 60), v(80, 60), v(80, 40), v(0, 40)], true),
+  c('automaticShapeCaptionCenter', 'open-later-segment', [v(0, 0), v(10, 0), v(100, 0)], false),
+  // A centroid inside, away from the bounds' centre and the origin.
+  c('automaticShapeCaptionCenter', 'closed-triangle-offset', [v(100, 300), v(400, 300), v(100, 420)], true),
+  c('automaticShapeCaptionCenter', 'closed-quad-offset', [v(100, 300), v(400, 320), v(380, 420), v(150, 400)], true),
+  // Twice the area is exactly 1e-8: the fallback, not the centroid.
+  c('automaticShapeCaptionCenter', 'closed-area-at-threshold', [v(0, 0), v(1e-8, 0), v(0, 1)], true),
+  // A U whose centroid falls between its arms: the wider, later span wins.
+  c('automaticShapeCaptionCenter', 'closed-u-wide-right-arm', U_SHAPE, true),
+  c('automaticShapeCaptionCenter', 'closed-u-under-one-unit', U_SHAPE.map((p) => v(p.x / 100, p.y / 100)), true),
+  // A slanted outer edge and a vertex at the middle height.
+  c('automaticShapeCaptionCenter', 'closed-c-slanted', [v(0, 0), v(100, 0), v(100, 20), v(30, 20), v(30, 80), v(100, 80), v(100, 100), v(20, 100)], true),
+  c('automaticShapeCaptionCenter', 'closed-c-vertex-on-middle', [v(0, 0), v(100, 0), v(100, 20), v(20, 20), v(20, 80), v(100, 80), v(100, 100), v(0, 100), v(0, 50)], true),
   c('textPlateInset', 'positive', 2),
   c('textPlateInset', 'zero', 0),
   c('textPlateInset', 'negative', -3),
