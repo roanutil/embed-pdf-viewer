@@ -178,37 +178,80 @@ unbounded stage fires none.
 
 ## Mutation testing
 
-Pre-v3, rerun pending. The numbers and line references below are from the pre-v3 port, whose
-`capability.rs` is now split across the area files; the code each item describes still exists.
+`scripts/mutants.sh -p epdf-plugin-stage --test-package epdf-plugin-stage --file <file>`, file by
+file over every module but `harness.rs`, catches 874 of 899 viable mutants (870 caught, 4
+timeouts; 84 unviable). Seven of those are killed by new cases, each checked by applying the mutant
+by hand:
 
-`cargo mutants -p epdf-plugin-stage --test-package epdf-plugin-stage -j 4` tests 973 mutants: 859
-caught, 4 caught by timeout (a binary search in `item_index_of_page` or a watch that never settles),
-78 unviable, 32 missed. Two rounds of new cases (commits `9855c1579` and `fd54cc2fe`) took the
-misses from 102. Every remaining one is equivalent:
+- `a-rule-moves-a-quantized-setting`: a responsive rule moves a px gap from 1 to 1.4 at zoom 1.
+  Both key as 1, so only the cache invalidation in `sync_responsive` rebuilds the scene. It kills
+  `||` to `&&` and the first `==` to `!=` at `settings/area.rs:80`.
+- `double-tap-rungs-exactly-1.1-apart`: fit-width is 1100/1000 over an automatic of 1, so the
+  ladder dedupe meets exact equality (`navigation/zoom.rs:41`).
+- `double-tap-at-the-rung-edges`: a zoom of exactly the rung times 1.1, then the rung over 1.1,
+  kills both boundary mutants of `near` (`navigation/zoom.rs:45`).
+- `pan-handler-gesture-id` listens to `onGestureStarted`: both replacements of the scroll
+  handler's `id` (`scroll_handler.rs:37`).
 
-- `lib.rs:131`, `page_count - 1` to `+ 1` or `/ 1` for `LastPage`: `go_to_page` clamps both to the
-  last page.
-- `capability.rs:292`, `no_frame` always false: an all-zero frame divides to the same zeros, and
-  the frame key only changes spelling while it stays constant.
-- `capability.rs:327`, the `!falsy(px)` guard: a `{px}` gap of 0 gives 0 either way, and a NaN one
-  can't be written into a vector, because the kernel prints an action through `serde_json`, which
-  writes NaN as `null` where the TypeScript trace has `{"$number": "NaN"}`.
-- `capability.rs:461`, the paged slice's `len - 1` bound: `item_index_of_page` never exceeds it.
-- `capability.rs:554`, `>` to `>=` and `<` to `<=` in the nearest reveal: at equality both branches
-  return the same camera.
-- `capability.rs:890` and `:938`, `item_count > 0` to `>= 0` in the zoom-anchored tween: the
-  frameless path only runs over a scene with items, and a registry change refits, which cancels the
-  tween before a frame can meet an empty scene.
-- `capability.rs:1036`, `> 1e-6` to `>= 1e-6`: exact equality of a float difference.
-- `capability.rs:1231`, `:1236` and `:1237` (six mutants), the registry fallbacks in
-  `pon_for_index` and `unrotated_points`, unreachable as their TypeScript lines are.
-- `capability.rs:1412` (three) and `serde_str` at `:1435-1436` (three): the scene cache is
-  invalidated on every write of a scene setting, and the scene key carries them all, so each is a
-  second guard for the other.
-- `capability.rs:1709` and `:1785` (three): `gesture_elastic` is only true while a gesture is open,
-  and `gesture_raw` is only read by an elastic pan.
-- `capability.rs:1781`, `after.item_count > 0` to `>= 0`: an empty scene after the zoom means an
-  empty one before it, so there is no focal point.
-- `capability.rs:1876` and `:1880` (three): the double-tap ladder's comparisons at exact equality of
-  float products.
-- `scroll_handler.rs:37` (two), the handler id: the hub never reads it.
+The 25 survivors:
+
+`src/camera/animation.rs`, 3:
+
+- `:102` and `:153`, `item_count > 0` to `>= 0` in the zoom-anchored tween. With an empty scene
+  the mutant would panic in `set_cam_anchor_at_screen`, but neither line meets one. The only
+  caller, `double_tap_zoom`, returns early on an empty scene, and a registry change refits, which
+  cancels the tween before a frame can run.
+- `:248`, `> 1e-6` to `>= 1e-6` in the spring's clamp check: exact equality of a float difference
+  with `1e-6`.
+
+`src/camera/gestures.rs`, 4:
+
+- `:19` and `:95:43`, `gesture_depth > 0` to `>= 0`. `gesture_elastic` is only true while a
+  gesture is open (`end_gesture` clears it), so the depth test never decides.
+- `:95:47`, `&&` to `||`. A non-elastic gesture then writes `gesture_raw`, but only an elastic pan
+  reads it, and the next `begin_gesture` resets it.
+- `:91`, `after.item_count > 0` to `>= 0`. A focal point exists only if the scene before the zoom
+  had items, and a zoom cannot empty the scene.
+
+`src/controller.rs`, 3:
+
+- `serde_str` replaced with `String::new()` or `"xyzzy"`, and its `Ok(String(s))` arm deleted.
+  The scene key then stops telling layouts, spreads, sizings and directions apart. Every write of
+  those settings also invalidates the scene cache (`settings/area.rs:38`, `:81` and `:171`), so
+  the key is a second guard. The visible-pages signature also carries the flow, but a flow change
+  already flips the scene key between `paged|` and `cont|`.
+
+`src/navigation/arrive.rs`, 2:
+
+- `:190`, `page_count - 1` to `+ 1` or `/ 1` in `go_to_last_page`: `go_to_target` clamps both to
+  the last page.
+
+`src/navigation/reveal.rs`, 2:
+
+- `:41`, `>` to `>=` and `<` to `<=` in the nearest reveal. At `rect_extent == hi - lo` the other
+  branch computes `rect_pos - p / zoom` by another route, and at `rect_pos == lo` a rect that fits
+  already returned. Telling them apart would need a world rect bit-equal to a float difference
+  whose two routes round apart, which page geometry cannot be steered to.
+
+`src/read/pages.rs`, 6:
+
+- `:25`, `+` to `*` in `ref_for_index`, and `:30` and `:31` (five), the fallback in
+  `unrotated_points`. Both run only for a laid-out box whose page is missing from the registry.
+  The scene is built from the registry under the same `page_count.revision` key, so the fallbacks
+  are unreachable, as their TypeScript lines are.
+
+`src/services/scene.rs`, 4:
+
+- `:115`, `no_frame` always false: an all-zero frame divides to the same zeros, and the frame key
+  only changes spelling while it stays constant.
+- `:150`, the `!falsy(px)` guard: a `{px}` gap of 0 gives 0 either way, and a NaN one cannot be
+  written into a vector, because the kernel prints an action through `serde_json`, which writes
+  NaN as `null` where the TypeScript trace has `{"$number": "NaN"}`.
+- `:284`, `groups.len() - 1` to `+ 1` or `/ 1` in the paged slice bound: `item_index_of_page`
+  never exceeds `len - 1`.
+
+`src/settings/area.rs`, 1:
+
+- `:80:59`, `strongest == Reflow` to `!= Reflow`. The mutant invalidates on every effect but
+  reflow. A reflow is a flow change, which already changes the scene key, and the extra
+  invalidations only rebuild an equal scene before anything compares one by reference.
