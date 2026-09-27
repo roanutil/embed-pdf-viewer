@@ -7,12 +7,21 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { readdir } from 'node:fs/promises';
+
 import { emit, type Suite } from './vectors';
 
 process.env.TZ = 'UTC';
 const suitesDir = join(dirname(fileURLToPath(import.meta.url)), 'suites');
 const check = process.argv.includes('--check');
+// Import every suite first, as generate.ts does: a scenario may name a plugin
+// factory that another suite registers (link's cases use interaction).
+const modules = new Map<string, { suites?: Suite[] }>();
+for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).sort()) {
+  modules.set(file.slice(0, -3), await import(pathToFileURL(join(suitesDir, file)).href));
+}
 for (const name of process.argv.slice(2).filter((a) => a !== '--check')) {
-  const module = (await import(pathToFileURL(join(suitesDir, `${name}.ts`)).href)) as { suites: Suite[] };
+  const module = modules.get(name);
+  if (!module?.suites) throw new Error(`src/suites/${name}.ts exports no suites`);
   await emit(module.suites, check);
 }
