@@ -7142,7 +7142,7 @@
     },
     {
       "name": "get-action-tree",
-      "covers": "getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number or by name, a page (open by default), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.",
+      "covers": "getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default, or close, visible or invisible), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null, and a document without the actions service has no catalog trees.",
       "plugins": [
         {
           "factory": "actions",
@@ -7199,6 +7199,28 @@
                       "type": "named",
                       "subtype": "Named",
                       "name": "C-1",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "visible": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "V-1",
+                      "next": []
+                    },
+                    "incomplete": false,
+                    "warningFlags": 0,
+                    "warnings": []
+                  },
+                  "invisible": {
+                    "root": {
+                      "type": "named",
+                      "subtype": "Named",
+                      "name": "I-1",
                       "next": []
                     },
                     "incomplete": false,
@@ -7751,6 +7773,24 @@
           "method": "getActionTree",
           "args": [
             {
+              "kind": "field",
+              "field": {
+                "kind": "objectNumber",
+                "fieldObjectNumber": 101
+              },
+              "event": "keystroke"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
               "kind": "page",
               "page": {
                 "kind": "objectNumber",
@@ -7774,6 +7814,42 @@
                 "pageObjectNumber": 1
               },
               "event": "close"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "visible"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "getActionTree",
+          "args": [
+            {
+              "kind": "page",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "event": "invisible"
             }
           ]
         },
@@ -8327,21 +8403,17 @@
           "settled": [
             {
               "promise": 12,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "O-1",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
+              "resolved": null
             }
           ],
           "actions": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -8365,7 +8437,7 @@
                 "root": {
                   "type": "named",
                   "subtype": "Named",
-                  "name": "C-1",
+                  "name": "O-1",
                   "next": []
                 },
                 "incomplete": false,
@@ -8395,7 +8467,17 @@
           "settled": [
             {
               "promise": 14,
-              "resolved": null
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "C-1",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
             }
           ],
           "actions": [],
@@ -8419,7 +8501,17 @@
           "settled": [
             {
               "promise": 15,
-              "resolved": null
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "V-1",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
             }
           ],
           "actions": [],
@@ -8447,7 +8539,7 @@
                 "root": {
                   "type": "named",
                   "subtype": "Named",
-                  "name": "OpenAction",
+                  "name": "I-1",
                   "next": []
                 },
                 "incomplete": false,
@@ -8457,13 +8549,7 @@
             }
           ],
           "actions": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "actions.read",
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -8483,17 +8569,7 @@
           "settled": [
             {
               "promise": 17,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "WS",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
+              "resolved": null
             }
           ],
           "actions": [],
@@ -8541,6 +8617,80 @@
           "settled": [
             {
               "promise": 19,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "OpenAction",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 19
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 20,
+              "resolved": {
+                "root": {
+                  "type": "named",
+                  "subtype": "Named",
+                  "name": "WS",
+                  "next": []
+                },
+                "incomplete": false,
+                "warningFlags": 0,
+                "warnings": []
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 20
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 21,
               "resolved": null
             }
           ],
@@ -8558,7 +8708,31 @@
             }
           },
           "outcome": {
-            "promise": 19
+            "promise": 21
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 22,
+              "resolved": null
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 22
           }
         }
       ]

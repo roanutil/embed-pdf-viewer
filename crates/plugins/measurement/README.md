@@ -98,4 +98,40 @@ kernel drops the dispatch and reports it once (`close-mid-flight`).
 
 ## Mutation testing
 
-Not run yet. It runs centrally through `scripts/mutants.sh`.
+`scripts/mutants.sh -p epdf-plugin-measurement --test-package epdf-plugin-measurement --file
+<file>`, file by file over every module but `harness.rs`, catches 245 of 248 viable mutants (245
+caught, 0 timeouts; 124 unviable). The run left 27 survivors. 23 of them are killed by new cases
+and one by a unit test, each checked by applying the mutant by hand:
+
+- `set-scale-preflight` sends malformed and edge-case measures through a single-page `setScale`,
+  which rejects with the preflight's message. It kills 18 in `units.rs`. A zero conversion kills
+  `valid_number_format` as `true`, `num_member` as `Some(1.0)` and `||` to `&&` at `:187`. A
+  precision of 1.5 kills `is_integer` as `true` and its `&&` to `||`; `1e10` kills `||` to `&&` at
+  `:193`. A format whose unit is the number 5 fails as a number format, and both `&&` to `||` at
+  `:236` and `:237` let it through to fail as text instead. A non-string `thousands` kills `text_ok`
+  as `true`. A measure without a distance list kills `&&` to `||` at `:228`. An origin at `1e39`
+  kills `assert_pdf_float` as `Ok(())` and its guard as `true`; a finite origin kills the guard as
+  `false`. A decimal format with no precision kills `==` to `!=` at `:192`, whose default of 16 is
+  not a power of ten. A `labelPosition`, a `fixed` flag and a CYX of 1 kill the deleted `!` at
+  `:247` and `:252` and `<=` to `>` at `:269`. A calibration over 7 points writes `1 in =
+  10.285714 m`, which kills `to_precision` as `1.0`: every earlier calibration came out at exactly
+  1.
+- A `plan` preset with a paper length of 2 in `imperial-default-and-custom-presets` kills `/` to
+  `*` for `real / paper` in `measure_from_ratio` (`units.rs:148`). Every other preset has a paper
+  length of 1.
+- `select-beside-the-centre`, a viewport that spans the crop centre's height but not its x, kills
+  both `&&` to `||` in `viewport_for_point` (`units.rs:285`). `select-on-a-raised-crop` kills `+`
+  to `-` for the centre's y in `select_page_scale` (`scale.rs:62`): every earlier crop started at 0.
+- `with-unit-keeps-precision` kills the `kept_precision` guard as `true` (`scale.rs:96`).
+- `tests/api.rs` kills `ScaleChangeReport::page` as `Default::default()` (`contract.rs:213`). The
+  accessor is Rust only, and nothing in the crate calls it.
+
+The 3 survivors:
+
+- `src/contract.rs:28`, the `s == "all"` guard in `PageTarget`'s decoder as `true`. It turns any
+  string into `All`. The TypeScript's `PageTarget` admits no string but `'all'`, and the Rust
+  decoder rejects any other before the plugin sees it, so no vector can carry one.
+- `src/model.rs:63`, `initial_measurement_state` as `Default::default()`. The body is already
+  `MeasurementState::default()`.
+- `src/read/scale.rs:77`, the `!raw.is_null()` guard in `get_readout` as `true`. A null DTO has no
+  subtype, so `readout_of_dto` answers `not-dimension`, the same as the fallback arm.

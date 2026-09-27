@@ -75,6 +75,16 @@ The generators reach 731 of the package's 738 statements and 167 of its 172 bran
 
 ## Mutation testing
 
-The pre-v3 runs covered `capability.rs`, which is gone. The reducer moved unchanged to `model.rs`;
-its pre-v3 result (3 caught, 1 equivalent miss: `initial_redaction_state` as `Default::default()`)
-is pre-v3, rerun pending.
+`scripts/mutants.sh -p epdf-plugin-redaction --test-package epdf-plugin-redaction --file <file>`,
+file by file over every module but `harness.rs`, catches 67 of 70 viable mutants (67 caught, 0
+timeouts; 70 unviable). No new cases were needed.
+
+The 3 survivors:
+
+- `src/model.rs:30`, `initial_redaction_state` as `Default::default()`. `RedactionState` derives
+  `Default`, which is `applying: false, last_result: None`, the same value.
+- `src/read/pending.rs:112`, the `subtype` field deleted from the `AnnotationFilter` in `marks_on`.
+  Every record the wider list returns goes through `get_raw(..).filter(is_redact)`, which drops
+  anything whose DTO subtype is not `redact`. The list keeps its order, so the marks are the same.
+- `src/services/store.rs:70`, the `-1` page-index default to `1`. It is the same unreachable arm
+  as `services/store.ts:33` under Coverage: a mark's page always has a layout.

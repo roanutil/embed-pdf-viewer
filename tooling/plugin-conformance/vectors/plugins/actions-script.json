@@ -35271,7 +35271,7 @@
     },
     {
       "name": "surface-script-commit",
-      "covers": "surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error; the realm kind rides both.",
+      "covers": "surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error even with no user effects; the realm kind rides both.",
       "plugins": [
         {
           "factory": "actions",
@@ -35493,6 +35493,33 @@
             },
             {
               "origin": "hover",
+              "realm": "document"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "surfaceScriptCommit",
+          "args": [
+            {
+              "uiEffects": [],
+              "diagnostics": [
+                {
+                  "code": "unsupported-api",
+                  "message": "no effects"
+                }
+              ],
+              "error": {
+                "kind": "exception",
+                "message": "no effects"
+              }
+            },
+            {
+              "origin": "user",
               "realm": "document"
             }
           ]
@@ -35730,6 +35757,43 @@
           "actions": [],
           "engine": [],
           "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "onScriptDiagnostic",
+              "args": [
+                {
+                  "code": "unsupported-api",
+                  "message": "no effects"
+                }
+              ]
+            },
+            {
+              "fn": "onScriptError",
+              "args": [
+                {
+                  "kind": "exception",
+                  "message": "no effects"
+                }
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {

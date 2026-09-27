@@ -4519,7 +4519,7 @@
     },
     {
       "name": "imperial-default-and-custom-presets",
-      "covers": "defaultScale 'imperial' makes the fallback 1:1 in feet, and presets replaces the picker.",
+      "covers": "defaultScale 'imperial' makes the fallback 1:1 in feet, and presets replaces the picker. A preset whose paper length is not 1 divides the real length by it.",
       "plugins": [
         {
           "factory": "interaction"
@@ -4539,6 +4539,13 @@
                 "paper": 1,
                 "real": 500,
                 "unit": "m"
+              },
+              {
+                "id": "plan",
+                "label": "2 in = 300 ft",
+                "paper": 2,
+                "real": 300,
+                "unit": "ft"
               }
             ]
           }
@@ -4684,6 +4691,38 @@
             {
               "x": 72,
               "y": 0
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setPreset",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "plan",
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "getPageScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
             }
           ]
         }
@@ -6315,6 +6354,13 @@
                 "paper": 1,
                 "real": 500,
                 "unit": "m"
+              },
+              {
+                "id": "plan",
+                "label": "2 in = 300 ft",
+                "paper": 2,
+                "real": 300,
+                "unit": "ft"
               }
             ]
           },
@@ -6489,6 +6535,537 @@
                 "pending": 0,
                 "calibration": null,
                 "reports": []
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "scale": {
+                    "subtype": "RL",
+                    "ratio": "2:300",
+                    "x": [
+                      {
+                        "unit": "ft",
+                        "conversion": 0.1736111044883728,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "ft",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "ft²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "updated": [],
+                  "skipped": [],
+                  "failed": []
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [
+                  {
+                    "bbox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "name": "EmbedPDF",
+                    "owned": true,
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "2:300",
+                      "x": [
+                        {
+                          "unit": "ft",
+                          "conversion": 0.1736111044883728,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "ft",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "ft²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "2:300",
+                    "x": [
+                      {
+                        "unit": "ft",
+                        "conversion": 0.1736111044883728,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "ft",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "ft²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "owned",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "REPORTS",
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "2:300",
+                      "x": [
+                        {
+                          "unit": "ft",
+                          "conversion": 0.1736111044883728,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "ft",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "ft²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "measurement::a": {
+                "pages": {
+                  "1": {
+                    "viewports": [
+                      {
+                        "bbox": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "name": "EmbedPDF",
+                        "owned": true,
+                        "measure": {
+                          "subtype": "RL",
+                          "ratio": "2:300",
+                          "x": [
+                            {
+                              "unit": "ft",
+                              "conversion": 0.1736111044883728,
+                              "precision": 100
+                            }
+                          ],
+                          "distance": [
+                            {
+                              "unit": "ft",
+                              "conversion": 1,
+                              "precision": 100
+                            }
+                          ],
+                          "area": [
+                            {
+                              "unit": "ft²",
+                              "conversion": 1,
+                              "precision": 100
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "scale": {
+                      "measure": {
+                        "subtype": "RL",
+                        "ratio": "2:300",
+                        "x": [
+                          {
+                            "unit": "ft",
+                            "conversion": 0.1736111044883728,
+                            "precision": 100
+                          }
+                        ],
+                        "distance": [
+                          {
+                            "unit": "ft",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ],
+                        "area": [
+                          {
+                            "unit": "ft²",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ]
+                      },
+                      "source": "owned",
+                      "ready": true,
+                      "persistent": false
+                    }
+                  },
+                  "2": {
+                    "viewports": [],
+                    "scale": {
+                      "measure": {
+                        "subtype": "RL",
+                        "ratio": "1:1",
+                        "x": [
+                          {
+                            "unit": "ft",
+                            "conversion": 0.0011574074160307646,
+                            "precision": 100
+                          }
+                        ],
+                        "distance": [
+                          {
+                            "unit": "ft",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ],
+                        "area": [
+                          {
+                            "unit": "ft²",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ]
+                      },
+                      "source": "default",
+                      "ready": true,
+                      "persistent": false
+                    }
+                  }
+                },
+                "pending": 0,
+                "calibration": null,
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "2:300",
+                      "x": [
+                        {
+                          "unit": "ft",
+                          "conversion": 0.1736111044883728,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "ft",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "ft²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "measure": {
+                "subtype": "RL",
+                "ratio": "2:300",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.1736111044883728,
+                    "precision": 100
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "ft",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ]
+              },
+              "source": "owned",
+              "ready": true,
+              "persistent": false
+            }
+          },
+          "state": {
+            "plugins": {
+              "measurement::a": {
+                "pages": {
+                  "1": {
+                    "viewports": [
+                      {
+                        "bbox": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "name": "EmbedPDF",
+                        "owned": true,
+                        "measure": {
+                          "subtype": "RL",
+                          "ratio": "2:300",
+                          "x": [
+                            {
+                              "unit": "ft",
+                              "conversion": 0.1736111044883728,
+                              "precision": 100
+                            }
+                          ],
+                          "distance": [
+                            {
+                              "unit": "ft",
+                              "conversion": 1,
+                              "precision": 100
+                            }
+                          ],
+                          "area": [
+                            {
+                              "unit": "ft²",
+                              "conversion": 1,
+                              "precision": 100
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "scale": {
+                      "measure": {
+                        "subtype": "RL",
+                        "ratio": "2:300",
+                        "x": [
+                          {
+                            "unit": "ft",
+                            "conversion": 0.1736111044883728,
+                            "precision": 100
+                          }
+                        ],
+                        "distance": [
+                          {
+                            "unit": "ft",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ],
+                        "area": [
+                          {
+                            "unit": "ft²",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ]
+                      },
+                      "source": "owned",
+                      "ready": true,
+                      "persistent": false
+                    }
+                  },
+                  "2": {
+                    "viewports": [],
+                    "scale": {
+                      "measure": {
+                        "subtype": "RL",
+                        "ratio": "1:1",
+                        "x": [
+                          {
+                            "unit": "ft",
+                            "conversion": 0.0011574074160307646,
+                            "precision": 100
+                          }
+                        ],
+                        "distance": [
+                          {
+                            "unit": "ft",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ],
+                        "area": [
+                          {
+                            "unit": "ft²",
+                            "conversion": 1,
+                            "precision": 100
+                          }
+                        ]
+                      },
+                      "source": "default",
+                      "ready": true,
+                      "persistent": false
+                    }
+                  }
+                },
+                "pending": 0,
+                "calibration": null,
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "2:300",
+                      "x": [
+                        {
+                          "unit": "ft",
+                          "conversion": 0.1736111044883728,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "ft",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "ft²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
               }
             }
           }
@@ -38777,6 +39354,3057 @@
                   }
                 ]
               }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "set-scale-preflight",
+      "covers": "A single-page setScale runs the write preflight and rejects with its message: a conversion that is not positive, a precision that is not a whole number or is past the int32 range, a format whose unit is not a string, a text member that is not a string, a missing distance list, and an origin outside the PDF float range. A decimal format without a precision defaults to 100, and a label position, a fixed flag, a finite origin and a positive CYX all pass. calibrate writes the ratio rounded to eight significant digits.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "annotation"
+        },
+        {
+          "factory": "measurement"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 410,
+                    "top": 520
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "responses": [
+              {
+                "path": "annotations.listRawAll",
+                "value": {
+                  "pages": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": "none",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 0,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 1.5
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 10000000000
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": 5,
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100,
+                  "thousands": 5
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1:1",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "origin": {
+                "x": 1e+39,
+                "y": 0
+              }
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "getPageScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "setScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            {
+              "subtype": "RL",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100,
+                  "labelPosition": "suffix",
+                  "fixed": true
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m²",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "origin": {
+                "x": 10,
+                "y": 20
+              },
+              "cyx": 1
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "getPageScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "calibrate",
+          "args": [
+            {
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "from": {
+                "x": 0,
+                "y": 0
+              },
+              "to": {
+                "x": 7,
+                "y": 0
+              },
+              "distance": {
+                "value": 1,
+                "unit": "m"
+              }
+            },
+            {
+              "recalculate": false
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "measurement",
+            "doc": "a"
+          },
+          "method": "getPageScale",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "loading"
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "persistent": false,
+                  "ready": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1:1",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.00035277777351439,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "viewports": [],
+                "scale": {
+                  "measure": null,
+                  "source": "default",
+                  "persistent": false,
+                  "ready": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "viewports": [],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1:1",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.00035277777351439,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "default",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_MODEL",
+                "model": {
+                  "byId": {},
+                  "order": [],
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "seq": 0,
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "defaults": {
+                    "square": {
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      }
+                    },
+                    "calibrate": {
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "strokeWidth": 1,
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      }
+                    },
+                    "area": {
+                      "strokeWidth": 1
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply"
+                    },
+                    "free-text": {
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "strokeWidth": 6,
+                      "lineEndings": {
+                        "end": "open-arrow"
+                      }
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "guides": true,
+                    "guideThreshold": 5,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThreshold": 4
+                  }
+                }
+              }
+            },
+            {
+              "slice": "annotation::a",
+              "action": {
+                "type": "SET_HYDRATION",
+                "hydration": {
+                  "status": "complete"
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.listRawAll",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Invalid number format",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Invalid number format"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Invalid number format",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Invalid number format"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Invalid number format",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Invalid number format"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Invalid number format",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Invalid number format"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Invalid measurement text",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Invalid measurement text"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Missing distance formats",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Missing distance formats"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 7
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Value is outside PDF float range",
+                  "code": "operation-failed",
+                  "capability": "measurement",
+                  "cause": {
+                    "$error": {
+                      "name": "RangeError",
+                      "message": "Value is outside PDF float range"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 8
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 9,
+              "resolved": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "scale": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "updated": [],
+                  "skipped": [],
+                  "failed": []
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [
+                  {
+                    "bbox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "name": "EmbedPDF",
+                    "owned": true,
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "owned",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "REPORTS",
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 9
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "measure": {
+                "subtype": "RL",
+                "ratio": "1 in = 1 m",
+                "x": [
+                  {
+                    "unit": "m",
+                    "conversion": 0.013888888888888888,
+                    "precision": 100
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "m",
+                    "conversion": 1
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "m²",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ]
+              },
+              "source": "owned",
+              "ready": true,
+              "persistent": false
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 10,
+              "resolved": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "scale": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100,
+                        "labelPosition": "suffix",
+                        "fixed": true
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "origin": {
+                      "x": 10,
+                      "y": 20
+                    },
+                    "cyx": 1
+                  },
+                  "updated": [],
+                  "skipped": [],
+                  "failed": []
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [
+                  {
+                    "bbox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "name": "EmbedPDF",
+                    "owned": true,
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1,
+                          "precision": 100,
+                          "labelPosition": "suffix",
+                          "fixed": true
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "origin": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "cyx": 1
+                    }
+                  }
+                ],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100,
+                        "labelPosition": "suffix",
+                        "fixed": true
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "origin": {
+                      "x": 10,
+                      "y": 20
+                    },
+                    "cyx": 1
+                  },
+                  "source": "owned",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "REPORTS",
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1,
+                          "precision": 100,
+                          "labelPosition": "suffix",
+                          "fixed": true
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "origin": {
+                        "x": 10,
+                        "y": 20
+                      },
+                      "cyx": 1
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 10
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "measure": {
+                "subtype": "RL",
+                "ratio": "1 in = 1 m",
+                "x": [
+                  {
+                    "unit": "m",
+                    "conversion": 0.013888888888888888,
+                    "precision": 100
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "m",
+                    "conversion": 1,
+                    "precision": 100,
+                    "labelPosition": "suffix",
+                    "fixed": true
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "m²",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ],
+                "origin": {
+                  "x": 10,
+                  "y": 20
+                },
+                "cyx": 1
+              },
+              "source": "owned",
+              "ready": true,
+              "persistent": false
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 11,
+              "resolved": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "scale": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 10.285714 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.1428571492433548,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "updated": [],
+                  "skipped": [],
+                  "failed": []
+                }
+              ]
+            }
+          ],
+          "actions": [
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": 1
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PAGE_SCALE",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "viewports": [
+                  {
+                    "bbox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "name": "EmbedPDF",
+                    "owned": true,
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 10.285714 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.1428571492433548,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "scale": {
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 10.285714 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.1428571492433548,
+                        "precision": 100
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1,
+                        "precision": 100
+                      }
+                    ]
+                  },
+                  "source": "owned",
+                  "ready": true,
+                  "persistent": false
+                }
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "REPORTS",
+                "reports": [
+                  {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "scale": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 10.285714 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.1428571492433548,
+                          "precision": 100
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1,
+                          "precision": 100
+                        }
+                      ]
+                    },
+                    "updated": [],
+                    "skipped": [],
+                    "failed": []
+                  }
+                ]
+              }
+            },
+            {
+              "slice": "measurement::a",
+              "action": {
+                "type": "PENDING",
+                "delta": -1
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 11
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "measure": {
+                "subtype": "RL",
+                "ratio": "1 in = 10.285714 m",
+                "x": [
+                  {
+                    "unit": "m",
+                    "conversion": 0.1428571492433548,
+                    "precision": 100
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "m",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "m²",
+                    "conversion": 1,
+                    "precision": 100
+                  }
+                ]
+              },
+              "source": "owned",
+              "ready": true,
+              "persistent": false
             }
           }
         }

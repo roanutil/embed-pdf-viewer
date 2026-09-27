@@ -123,21 +123,38 @@ statements and 26 branches left are unreachable from the public surface or don't
 
 ## Mutation testing
 
-Pre-v3, rerun pending. The pre-v3 run of `cargo mutants -p epdf-plugin-actions --test-package
-epdf-plugin-actions` caught 274 of 283 viable mutants (262 caught, 12 timeouts, 115 unviable). The
-timeouts were all in `hover_pump.rs`: a `same_target` that never matches re-delivers a target on
-every settle and never stalls, which the replay reports as a hang. The nine survivors were
-equivalent, and the code behind each still exists, now in the area modules:
+`scripts/mutants.sh -p epdf-plugin-actions --test-package epdf-plugin-actions --file <file>`, file
+by file over every module but `harness.rs`, catches 307 of 314 viable mutants (295 caught, 12
+timeouts; 142 unviable). The timeouts are all in `hover_pump.rs`: a `same_target` that never
+matches re-delivers a target on every settle, which the replay reports as a hang.
 
-- `same_number`'s numeric arm and its `==` (now `services/mod.rs`): every ref member the vectors can
-  write is an integer, for which `Value` equality and `f64` equality agree.
-- `page_index_of` returning `1` instead of `-1` (now `scripting/world.rs`): a page that isn't in the
-  document makes `doc.page(pon)` throw right after, so the index is never used.
-- Dropping the boot world's `event` (now `scripting/executor.rs`): `ScriptHost` replaces it with
-  `name-tree-boot` before the sandbox sees it.
-- `&&` to `||` in the lifecycle filter (now `dispatch/triggers.rs`): an annotation with actions but no
-  lifecycle tree then sits in the cache, and `plan_page_steps` filters it out again.
-- The `(None, None)` arms of the adapter disposer (`lifecycle/open_sequence.rs`) and of the handler
-  disposer, which is now a no-op for a `None` install (`services/ports.rs`): clearing an empty slot
-  and leaving it empty are the same.
-- `initial_actions_state` as `Default::default()` (`model.rs`), the same zeroed state.
+Four of the caught are killed by new steps in existing cases, each checked by applying the mutant by
+hand:
+
+- `get-action-tree` asks for field 101 by object number. With `&&` to `||` at
+  `dispatch/dispatcher.rs:304`, any numbered field matches, so the mutant answers field 100's
+  keystroke tree.
+- `get-action-tree` gives page 1 `visible` and `invisible` trees and asks for both. Deleting either
+  arm at `dispatcher.rs:318` or `:319` answers the page's open tree.
+- `surface-script-commit` surfaces a commit with diagnostics and an error but no effects. With `==`
+  to `!=` at `scripting/surface.rs:126` the empty user phase is skipped and both are lost.
+
+The 7 survivors:
+
+- `src/services/mod.rs:108`, deleting `same_number`'s numeric arm, and `:109`, `==` to `!=` in its
+  fallback. The fallback compares two JSON values when either is not a number. Every member it is
+  given is a ref's object number, page or index: typed on the caller's side and a number in every
+  engine DTO, so the fallback never runs. With two numbers, `Value` equality and `f64` equality
+  only disagree for `5` against `5.0`, and TypeScript never writes `5.0`.
+- `src/scripting/world.rs:76`, `-1` to `1` in `page_index_of`. A page the document lacks makes
+  `doc.page_index(pon)?` fail on the next line, so the index is never used.
+- `src/scripting/executor.rs:214`, dropping the boot world's `event`. `boot_now` in
+  `crates/plugins/acrojs/src/host.rs` replaces it with a fresh `name-tree-boot` event before the
+  sandbox sees it.
+- `src/dispatch/triggers.rs:90`, `&&` to `||` in the lifecycle filter. An annotation with actions
+  but no lifecycle tree then sits in the cache, and `plan_page_steps` drops it again because it has
+  no root for the event's key.
+- `src/lifecycle/open_sequence.rs:155`, deleting the adapter disposer's `(None, None)` arm. The
+  slot is already empty, and clearing it or leaving it is the same.
+- `src/model.rs:26`, `initial_actions_state` as `Default::default()`. `ActionsState` derives
+  `Default`, the same zeroed state.
