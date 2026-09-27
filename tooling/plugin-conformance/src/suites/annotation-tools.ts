@@ -111,6 +111,9 @@ const cases: ScenarioCase[] = [
       pointer('down', 150, 150),
       pointer('move', 160, 155, { project: { $fn: 'project', returns: { x: 170, y: 160 } } }),
       pointer('move', 175, 162),
+      // A move draft is not a creation draft, and finishing one is a no-op.
+      call('hasCreationDraft'),
+      call('finishCreationDraft'),
       pointer('move', 175, 162, { page: { ref: pr(2), point: { x: 1, y: 1 }, scale: 1 } }),
       pointer('up', 170, 160),
       hover(150, 150),

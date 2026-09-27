@@ -197,6 +197,7 @@ const cases: ScenarioCase[] = [
           { path: 'page.annotations.create', pon: 1, times: 1, error: { name: 'EngineError', message: 'full', code: 'Refused' } },
           { path: 'page.annotations.create', pon: 2, times: 1, value: created(square(40, { pageObjectNumber: 2 })) },
           { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(41)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(42)) },
         ]),
       },
     },
@@ -226,6 +227,9 @@ const cases: ScenarioCase[] = [
         ],
       ]),
       api('list'),
+      // A tool's /F seed sits under the input's own flags.
+      api('registerTool', [{ id: 'flagged-box', extends: 'square', flags: { print: false, locked: true } }]),
+      api('create', [{ page: pr(1), subtype: 'square', bounds: { x: 5, y: 5, width: 10, height: 10 }, tool: 'flagged-box', flags: { locked: false, hidden: true } }]),
     ],
   },
   {
@@ -500,10 +504,12 @@ const cases: ScenarioCase[] = [
       ...[
         ['down', 100, 100],
         ['move', 150, 100],
-        ['up', 244, 100],
       ].map(([phase, x, y]) =>
         ix('dispatch', [{ phase, viewport: { x, y }, page: { ref: pr(1), point: { x, y }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
       ),
+      // Dragging the endpoints is not placing the offset.
+      api('distanceCreationPage'),
+      ix('dispatch', [{ phase: 'up', viewport: { x: 244, y: 100 }, page: { ref: pr(1), point: { x: 244, y: 100 }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
       api('distanceCreationPage'),
       api('getCreationDraft'),
       ix('dispatch', [{ phase: 'move', viewport: { x: 170, y: 80 }, page: { ref: pr(1), point: { x: 170, y: 80 }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
@@ -524,6 +530,44 @@ const cases: ScenarioCase[] = [
       api('createPointer', ['calibrate', 'down', pr(1), { x: 10, y: 10 }]),
       api('createPointer', ['calibrate', 'move', pr(1), { x: 60, y: 10 }]),
       api('createPointer', ['calibrate', 'up', pr(1), { x: 110, y: 10 }]),
+      api('list'),
+    ],
+  },
+  {
+    name: 'dimension-drafts-continue-without-viewports',
+    covers:
+      'A dimension draft already under way keeps taking clicks on its own page after the viewports are withdrawn, for the perimeter and the distance tools; a click on another page, which has none, starts nothing.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(polyline(41, { intent: 'PolyLineDimension', measure: METRES, caption: { enabled: true } })) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(dimensionLine(42)) },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      api('setPageViewports', [pr(1), [{ bbox: { left: 0, bottom: 0, right: 600, top: 800 }, measure: METRES, owned: true }], METRES]),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 400, y: 400 }]),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 500, y: 400 }]),
+      api('setPageViewports', [pr(1), undefined, METRES]),
+      api('createPointer', ['perimeter', 'down', pr(2), { x: 10, y: 10 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 500, y: 500 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 450, y: 550 }, true]),
+      api('setPageViewports', [pr(1), [{ bbox: { left: 0, bottom: 0, right: 600, top: 800 }, measure: METRES, owned: true }], METRES]),
+      api('createPointer', ['distance', 'down', pr(1), { x: 100, y: 100 }]),
+      api('createPointer', ['distance', 'move', pr(1), { x: 150, y: 100 }]),
+      api('createPointer', ['distance', 'up', pr(1), { x: 244, y: 100 }]),
+      api('setPageViewports', [pr(1), undefined, METRES]),
+      api('createPointer', ['distance', 'down', pr(2), { x: 10, y: 10 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['distance', 'down', pr(1), { x: 170, y: 70 }]),
+      api('getCreationDraft'),
       api('list'),
     ],
   },
