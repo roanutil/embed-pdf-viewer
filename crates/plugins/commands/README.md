@@ -84,6 +84,9 @@ a string, a boolean or a list of strings, so an object always equals itself by v
 
 ## Mutation testing
 
-Mutation numbers are pre-v3, rerun pending. `cargo mutants -p epdf-plugin-commands --test-package
-epdf-plugin-commands` caught 107 of 113 viable mutants in the v2 crate and timed out on 4, all in
-the live registry walk that v3 replaced with a snapshot of the ids.
+`scripts/mutants.sh -p epdf-plugin-commands --test-package epdf-plugin-commands --file <file>`,
+file by file over every module but `harness.rs`, catches 107 of 108 viable mutants (107 caught, 0
+timeouts; 25 unviable). No new cases were needed. The one survivor is in `src/contract.rs`:
+`<impl fmt::Debug for CommandDef>::fmt` replaced with `Ok(Default::default())`. The impl exists
+because `run` holds a closure that cannot derive `Debug`. The TypeScript has no counterpart, and
+nothing in the crate formats a definition, so no vector can see its output.
