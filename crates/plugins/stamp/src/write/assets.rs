@@ -301,7 +301,9 @@ impl StampCapability {
                 vec![Value::Array(refs)],
             ))
             .await?;
-            let input = AddAssetInput { source: Some(exported), mark: None, size: None, ..input };
+            // `addAsset({ ...input, source })`: a `mark` or `size` the caller
+            // passed rides along, as the spread carries it.
+            let input = AddAssetInput { source: Some(exported), ..input };
             adopt(this.create_asset(input)).await
         })
     }

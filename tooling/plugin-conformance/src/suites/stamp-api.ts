@@ -188,11 +188,11 @@ const marks: ScenarioCase[] = [
   {
     name: 'marks-that-are-refused',
     covers:
-      "Both a source and a mark, or neither, reject InvalidArg; a colour that is not #rrggbb and an ink mark with no points reject InvalidArg after the scratch document closes; a PDF mark's missing page rejects InvalidArg naming the page count. An identifier that is empty or holds '=' rejects InvalidArg.",
+      "Both a source and a mark, or neither, reject InvalidArg; a colour that is not #rrggbb (a name, five hex digits, six that are not hex) and an ink mark with no points reject InvalidArg after the scratch document closes; a PDF mark's missing page, a negative index included, rejects InvalidArg naming the page count. An identifier that is empty or holds '=' rejects InvalidArg.",
     plugins: STAMP(),
     engine: {
-      documents: { a: scratchDoc(), b: scratchDoc(), c: assetDoc(ONE) },
-      responses: opens('a', 'b', 'c'),
+      documents: { a: scratchDoc(), b: scratchDoc(), c: assetDoc(ONE), d: scratchDoc(), e: scratchDoc(), f: assetDoc(ONE) },
+      responses: opens('a', 'b', 'c', 'd', 'e', 'f'),
     },
     steps: [
       start,
@@ -203,6 +203,9 @@ const marks: ScenarioCase[] = [
       stamp('createAsset', [{ name: 'X', mark: { kind: 'pdf', source: PDF, pageIndex: 4 } }]),
       stamp('createAsset', [{ name: '', source: png() }]),
       stamp('createAsset', [{ name: 'a=b', source: png() }]),
+      stamp('createAsset', [{ name: 'X', mark: { kind: 'text', text: 'x', fontFamily: 'Helvetica', color: '#12345' } }]),
+      stamp('createAsset', [{ name: 'X', mark: { kind: 'text', text: 'x', fontFamily: 'Helvetica', color: '#zzzzzz' } }]),
+      stamp('createAsset', [{ name: 'X', mark: { kind: 'pdf', source: PDF, pageIndex: -1 } }]),
       stamp('listLibraries'),
     ],
   },
@@ -338,7 +341,7 @@ const assets: ScenarioCase[] = [
   {
     name: 'an-asset-from-annotations',
     covers:
-      "createAssetFromAnnotations exports the selected annotations' appearance from the open document as the source of a new asset; a document that is not open rejects NotFound.",
+      "createAssetFromAnnotations exports the selected annotations' appearance from the open document as the source of a new asset; a mark passed beside it rides the spread into createAsset, which rejects InvalidArg for a source and a mark; a document that is not open rejects NotFound.",
     plugins: PLACEMENT(),
     engine: {
       documents: {
@@ -354,6 +357,7 @@ const assets: ScenarioCase[] = [
       start,
       openDoc('a'),
       stamp('createAssetFromAnnotations', ['a', page(1), [objRef(7)], { name: 'Selection', kind: 'signature' }]),
+      stamp('createAssetFromAnnotations', ['a', page(1), [objRef(7)], { name: 'Both', mark: { kind: 'image', source: png() } }]),
       stamp('createAssetFromAnnotations', ['closed', page(1), [objRef(7)], { name: 'Nowhere' }]),
       stamp('listAssets'),
     ],
@@ -499,6 +503,25 @@ const persistence: ScenarioCase[] = [
       persist('stop'),
       persist('rows'),
       stamp('createLibrary', ['C', { id: 'c' }]),
+      { op: 'advance', ms: 1000 },
+      persist('rows'),
+    ],
+  },
+  {
+    name: 'stop-flushes-a-write-still-pending-behind-another',
+    covers:
+      "A write that fires drops only its own pending timer, and a library changed while another is pending gets its own timer: after one library's write lands, stopping flushes the other's pending write at once, and nothing is written twice.",
+    plugins: PERSIST(),
+    steps: [
+      start,
+      persist('persist', [{ debounceMs: 100 }]),
+      stamp('createLibrary', ['A', { id: 'a' }]),
+      { op: 'advance', ms: 50 },
+      stamp('createLibrary', ['B', { id: 'b' }]),
+      { op: 'advance', ms: 50 },
+      persist('rows'),
+      persist('stop'),
+      persist('rows'),
       { op: 'advance', ms: 1000 },
       persist('rows'),
     ],

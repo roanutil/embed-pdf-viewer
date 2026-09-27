@@ -133,21 +133,43 @@ impl StampCapability {
     pub(crate) fn random(&self) -> f64 {
         match &self.0.config.host.random {
             Some(random) => random(),
-            None => {
-                // A small xorshift, seeded from the clock: the default host
-                // has no better entropy to offer without a dependency.
-                thread_local! {
-                    static STATE: Cell<u64> = const { Cell::new(0x9E37_79B9_7F4A_7C15) };
-                }
-                STATE.with(|s| {
-                    let mut x = s.get() ^ (rt::now() as u64);
-                    x ^= x << 13;
-                    x ^= x >> 7;
-                    x ^= x << 17;
-                    s.set(x);
-                    (x >> 11) as f64 / (1u64 << 53) as f64
-                })
-            }
+            None => clock_random(),
         }
+    }
+}
+
+/// The default `random`: a small xorshift, seeded from the clock. The
+/// default host has no better entropy to offer without a dependency.
+fn clock_random() -> f64 {
+    thread_local! {
+        static STATE: Cell<u64> = const { Cell::new(0x9E37_79B9_7F4A_7C15) };
+    }
+    STATE.with(|s| {
+        let mut x = s.get() ^ (rt::now() as u64);
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        s.set(x);
+        (x >> 11) as f64 / (1u64 << 53) as f64
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::clock_random;
+
+    /// The vectors always answer `random`, so the default is pinned here:
+    /// `Math.random`'s contract, draws in [0, 1), spread over the interval.
+    #[test]
+    fn the_default_random_spreads_over_the_unit_interval() {
+        let draws: Vec<f64> = (0..10_000).map(|_| clock_random()).collect();
+        assert!(draws.iter().all(|x| (0.0..1.0).contains(x)), "a draw left [0, 1)");
+        let mean = draws.iter().sum::<f64>() / draws.len() as f64;
+        assert!((0.45..0.55).contains(&mean), "mean {mean}");
+        let mut tenths = [0usize; 10];
+        for x in &draws {
+            tenths[(x * 10.0) as usize] += 1;
+        }
+        assert!(tenths.iter().all(|&n| n > 800), "{tenths:?}");
     }
 }
