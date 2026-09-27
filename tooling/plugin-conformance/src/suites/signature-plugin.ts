@@ -373,6 +373,48 @@ const reads: ScenarioCase[] = [
     ],
   },
   {
+    name: 'signed-by-truthiness',
+    covers:
+      "The lists split on the truthiness of `signed`, whatever its type: null, 0 and '' are unsigned; 1, 'x', {} and [] are signed.",
+    plugins: FORM_SIG(),
+    engine: {
+      documents: {
+        a: docOf({
+          signatures: [
+            dto(0, 1, 'Null', { signed: null }),
+            dto(1, 2, 'Zero', { signed: 0 }),
+            dto(2, 3, 'Empty', { signed: '' }),
+            dto(3, 4, 'One', { signed: 1 }),
+            dto(4, 5, 'Text', { signed: 'x' }),
+            dto(5, 6, 'Object', { signed: {} }),
+            dto(6, 7, 'Array', { signed: [] }),
+          ],
+        }),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, sig('listSignatures'), sig('listUnsignedFields')],
+  },
+  {
+    name: 'get-signature-edges',
+    covers:
+      "A widget the snapshot carries but the form plugin doesn't know is found by the snapshot alone. An objectNumber address with neither a widget nor a field object number is not a field ref, so it answers null even against a signature whose field ref lacks the number too.",
+    plugins: FORM_SIG(),
+    engine: {
+      documents: {
+        a: docOf({
+          signatures: [
+            SIG1,
+            dto(1, 2, 'Sig2', { widget: { ref: { kind: 'objectNumber', page: { kind: 'objectNumber', pageObjectNumber: 1 }, annotObjectNumber: 150 }, annotObjectNumber: 150, page: { kind: 'objectNumber', pageObjectNumber: 1 } } }),
+            dto(2, 0, 'Odd', { field: { kind: 'objectNumber' }, widget: null }),
+          ],
+        }),
+      },
+    },
+    snapshot: 'none',
+    steps: [...boot, sig('getSignature', { annotObjectNumber: 150 }), sig('getSignature', { kind: 'objectNumber' })],
+  },
+  {
     name: 'nothing-signed-reads',
     covers:
       'A snapshot with nothing signed lands without a validation, so getVerdict answers null from no verdicts at all.',
@@ -661,6 +703,7 @@ const fills: ScenarioCase[] = [
       listen('onTargetChanged'),
       listen('onInspectionRequested'),
       sig('setTarget', ref(2)),
+      sig('getTarget'),
       sig('setTarget', ref(2)),
       sig('setTarget', fqn('Sig2')),
       sig('setTarget', fqn('Sig2')),
@@ -937,6 +980,33 @@ const armed: ScenarioCase[] = [
       up(150, 288),
       ix('activateTool', 'pan'),
       down(150, 288),
+    ],
+  },
+  {
+    name: 'an-armed-mark-reports-its-handler',
+    covers: "The press that drops a mark into a field is the handler's gesture: onGestureStarted names signature:armed-mark-on-field.",
+    plugins: FULL({ mode: 'ask' }),
+    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    snapshot: 'none',
+    steps: [...boot, ix('onGestureStarted', fn('started')), importSignatures, arm, down(150, 288), up(150, 288)],
+  },
+  {
+    name: 'a-legacy-stamp-tool-keeps-the-arm',
+    covers:
+      "A tool enabling the legacy annotation-stamp tag keeps the stamp armed, but it is not the armed-stamp tool, so the handler is not asked and the annotation plugin's stamp placement runs over the field.",
+    plugins: FULL({ mode: 'ask' }),
+    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      listen('onSignRequested'),
+      importSignatures,
+      arm,
+      ix('registerTool', { id: 'legacy-stamp', cursor: 'copy', enables: { $set: ['annotation-stamp'] } }),
+      ix('activateTool', 'legacy-stamp'),
+      anno('hasArmedStamp'),
+      down(150, 288),
+      up(150, 288),
     ],
   },
   {

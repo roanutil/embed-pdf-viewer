@@ -924,6 +924,34 @@ const manipulationCases: ScenarioCase[] = [
 
 const mutationEdgeCases: ScenarioCase[] = [
   {
+    name: 'double-tap-rungs-exactly-1.1-apart',
+    covers:
+      'A rung exactly 1.1 times the one below it is deduped: fit-width 1100/1000 over an automatic of 1 leaves two rungs, so the tap from 1 climbs to 2.5.',
+    plugins: stage({ scrollBehavior: 'instant', responsive: [] }),
+    engine: engine([page(1, 0, 1000, 800), page(2, 1, 1000, 800)]),
+    steps: [start, open, vp(1148, 700), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel')],
+    snapshot: 'none',
+  },
+  {
+    name: 'double-tap-at-the-rung-edges',
+    covers:
+      'The ladder\'s nearness test is strict at both ends: a zoom of exactly the rung times 1.1, or the rung over 1.1, is off the ladder and resets to the base rung.',
+    plugins: stage({ scrollBehavior: 'instant' }),
+    engine: engine([page(1, 0, 1200, 800), page(2, 1, 1200, 800)]),
+    steps: [
+      ...boot,
+      st('zoomTo', { level: (952 / 1200) * 1.1 }),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+      st('zoomTo', { level: 952 / 1200 / 1.1 }),
+      st('zoomLevel'),
+      st('doubleTapZoom', { x: 100, y: 100 }),
+      st('zoomLevel'),
+    ],
+    snapshot: 'none',
+  },
+  {
     name: 'scroller-memo-per-field',
     covers: 'The scroller memo answers the new metrics when any one of its six numbers moves alone: top, height, width, client height and client width.',
     plugins: stage({ scrollBehavior: 'instant' }),
@@ -1121,6 +1149,20 @@ const responsiveCases: ScenarioCase[] = [
     }),
     engine: engine(),
     steps: [...boot, st('goToPage', 3), vp(400, 700), st('flow'), st('currentPage'), vp(1000, 700), st('flow'), vp(1200, 700), st('spread')],
+    snapshot: SNAP,
+  },
+  {
+    name: 'a-rule-moves-a-quantized-setting',
+    covers:
+      'A rule that changes a px gap by less than the scene key quantizes (1 to 1.4 px at zoom 1 both key as 1) still rebuilds the scene: a resize whose strongest effect is scene invalidates the cache.',
+    plugins: stage({
+      scrollBehavior: 'instant',
+      zoom: { level: 1 },
+      gap: { px: 1 },
+      responsive: [{ name: 'narrow', when: { maxWidth: 700 }, settings: { gap: { px: 1.4 } } }],
+    }),
+    engine: engine(),
+    steps: [...boot, st('scrollMetrics'), vp(650, 700), st('gap'), st('scrollMetrics'), vp(1000, 700), st('scrollMetrics')],
     snapshot: SNAP,
   },
   {
@@ -1567,6 +1609,21 @@ const feedCases: ScenarioCase[] = [
       ix('dispatchPointer', sample('move', 45, 290, false)),
       ix('dispatchPointer', sample('up', 45, 290, false)),
       st('camera'),
+    ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'pan-handler-gesture-id',
+    covers: 'A gesture the scroll handler captures reports its handler id, stage-scroll, on the hub\'s gesture events.',
+    plugins: [interaction, ...stage({ scrollBehavior: 'instant' }), { factory: 'stage-scroll' }],
+    engine: engine(),
+    steps: [
+      ...boot,
+      ix('onGestureStarted', fnSpec('started')),
+      ix('onGestureEnded', fnSpec('ended')),
+      ix('dispatchPointer', sample('down', 5, 300, false)),
+      ix('dispatchPointer', sample('move', 5, 200, false)),
+      ix('dispatchPointer', sample('up', 5, 200, false)),
     ],
     snapshot: SNAP,
   },

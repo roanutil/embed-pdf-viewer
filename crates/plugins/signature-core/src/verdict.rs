@@ -21,6 +21,17 @@ pub struct ValidateOptions {
     pub until: Option<String>,
 }
 
+/// JavaScript truthiness of a JSON value (`!signature.signed`).
+fn truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(b) => *b,
+        Value::Number(n) => n.as_f64().is_some_and(|n| n != 0.0 && !n.is_nan()),
+        Value::String(s) => !s.is_empty(),
+        _ => !epdf_kernel::is_undefined(value),
+    }
+}
+
 fn text(value: &Value, key: &str) -> Option<String> {
     value.get(key).and_then(Value::as_str).map(str::to_string)
 }
@@ -38,7 +49,7 @@ pub async fn validate_signatures(
     for signature in
         snapshot.get("signatures").and_then(Value::as_array).cloned().unwrap_or_default()
     {
-        if signature.get("signed").and_then(Value::as_bool) != Some(true) {
+        if !signature.get("signed").is_some_and(truthy) {
             continue;
         }
         verdicts.push(validate_one(&doc, &snapshot, &signature, &options).await?);
