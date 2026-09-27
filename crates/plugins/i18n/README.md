@@ -67,9 +67,20 @@ to something that isn't a locale rejects in Rust and is dispatched as `LOAD_FAIL
 TypeScript throws inside its `then`. `addTranslations('toString', ...)` passes the TypeScript's
 registered check and merges into a pack made from a function; the Rust reducer ignores it.
 
-Mutation numbers are pre-v3, rerun pending. `cargo mutants -p epdf-plugin-i18n --test-package epdf-plugin-i18n` caught 280 of 284 viable
-mutants (277 caught, 3 timeouts, which are loops the mutant makes infinite). The four survivors
-are equivalent. Three are in `number_to_string` (`js.rs:186`, `188`, `201`): `>` or `<` becoming
-`>=` or `<=` on a value that can't be zero there (the infinity arm, the sign after the zero
-return, and an exponent that is at least 21 or at most -7). The fourth replaces the record
-deserializer's `expecting`, which only words a parse error.
+`scripts/mutants.sh -p epdf-plugin-i18n --test-package epdf-plugin-i18n --file <file>`, file by file
+over every module but `harness.rs`, catches 298 of 303 viable mutants (295 caught, 3 timeouts,
+which are loops the mutant makes infinite; 36 unviable). No new cases were needed. The five
+survivors are equivalent:
+
+- `src/controller.rs:162`: `==` to `!=` in `set_locale`'s search of the pending loads.
+  `supersede()` empties the list on the line before, so the search never finds anything and the
+  `Some` arm is unreachable under either operator. The TypeScript's `pending.set` has the same
+  shape.
+- `src/js.rs:191`: `>` to `>=` in `number_to_string`'s infinity arm, where `n` is never 0.
+- `src/js.rs:193`: `<` to `<=` for the sign, after the `n == 0.0` return.
+- `src/js.rs:206`: `<` to `<=` for the exponent's sign. That branch only runs with an exponent of
+  at least 21 or at most -7, never 0.
+- `src/js.rs:167`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
+  words a serde error for a non-object, which surfaces only as an `[i18n harness]` error. The one
+  route from a plugin flow is a loader resolving to something that isn't a locale, the divergence
+  described above, which no vector records.
