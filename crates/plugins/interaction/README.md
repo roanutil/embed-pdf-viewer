@@ -68,10 +68,13 @@ downstream crates register next to their own when their vectors drive the hub.
 
 ## Mutation testing
 
-Pre-v3, rerun pending. `cargo mutants -p epdf-plugin-interaction --test-package
-epdf-plugin-interaction` caught 82 of 89 viable mutants, and one more timed out (an infinite loop in
-`CallbackSet::for_each`). The 7 that survived were equivalent. Four of them were in `CallbackSet`,
-which is gone: the selection port no longer needs it, and the hub fires kernel event hooks. The
-other 3 are on the `Greater` arm of the priority comparator in `eligible` (now in
-`controller.rs`). The stable sort only asks whether one handler sorts before another, so `Greater`
-and `Equal` both leave a pair in registration order.
+`scripts/mutants.sh -p epdf-plugin-interaction --test-package epdf-plugin-interaction --file
+<file>`, file by file over every module but `harness.rs`, catches 87 of 90 viable mutants (87 caught,
+0 timeouts; 26 unviable). One of those is killed by `a_nullable_page_ref_round_trips` in
+`tests/api.rs`, checked by applying it by hand: `page_ref_json::nullable::deserialize` replaced with
+`Ok(None)`. Only `GestureEvent` uses that module, and it only serializes, so no vector decodes one.
+
+The three survivors are all in `src/controller.rs:197`, the `Greater` arm of the priority
+comparator in `eligible`: `>` becoming `==`, `<` or `>=`. `sort_by` is a stable sort that only asks
+whether the comparator returned `Less`. `Greater` and `Equal` both leave a pair in registration
+order, so every one of the three orders handlers the same way.
