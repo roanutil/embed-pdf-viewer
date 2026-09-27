@@ -2774,6 +2774,250 @@
       ]
     },
     {
+      "name": "sign-raw-sha1-prepared",
+      "covers": "A raw signer over a document prepared with SHA-1 is refused by the build.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "engine": {
+        "documents": {
+          "d": {
+            "pages": [],
+            "services": [
+              "signatures"
+            ],
+            "responses": [
+              {
+                "path": "signatures.prepare",
+                "value": {
+                  "signingId": "signing-1",
+                  "digest": {
+                    "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
+                  },
+                  "algorithm": "sha1",
+                  "byteRange": [
+                    0,
+                    100,
+                    8292,
+                    50
+                  ],
+                  "contentsSize": 8192,
+                  "subFilter": "ETSI.CAdES.detached",
+                  "expectedVersion": {
+                    "baseSha256": "base",
+                    "editsVersion": 0
+                  },
+                  "expiresAt": null
+                }
+              },
+              {
+                "path": "signatures.abort",
+                "value": {
+                  "status": "aborted"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "d",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "sign",
+          "args": [
+            "d",
+            {
+              "field": {
+                "kind": "name",
+                "name": "Sig1"
+              },
+              "signer": {
+                "kind": "raw",
+                "certificateChain": [
+                  {
+                    "$bytes": "MIIDRjCCAjCgAwIBAgIBAzALBgkqhkiG9w0BAQswQzFBMBsGA1UEChMURW1iZWRQREYgQ29uZm9ybWFuY2UwIgYDVQQDDBtDb25mb3JtYW5jZSBJbnRlcm1lZGlhdGUgQ0EwHhcNMjAwMTAxMDAwMDAwWhcNNDUwMTAxMDAwMDAwWjA6MTgwGwYDVQQKExRFbWJlZFBERiBDb25mb3JtYW5jZTAZBgNVBAMMEkNvbmZvcm1hbmNlIFNpZ25lcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPeKPj9TJcxS0zj9NnEOe1DoGx1RzL9Nk1OyGh47oQEQCSS2sY/h4MUlDS97CdqNqK2vIVLE0paaakGfX0sA3J1g0J2bzBN8YIae2guFW+6DYakUP7TCRKdLuvksaWz1ijCHVsGdO3mTMNanudpJMgSP96qxxdeUZiM6DQZ/wFo+BUDe7sGB1mAs4zIVsSn6g1s/3egjjk6YqlSEX5SswKWp4LE6YUmsN3L1UVN3xl5NeNpgx2WBWaUHDIwMOo9DuQRkvmqlpD6L3uIHArfu1OPuJaMPYsmxE2fgcsk5yDFpUWtLwSU8I0c+FZGwioDNX4aXbNCuNlsE9CbAbwQCG6cCAwEAAaNSMFAwDgYDVR0PAQH/BAQDAgbAMB0GA1UdDgQWBBRr65kjpWjqPafMjFpA1UTWEyncZTAfBgNVHSMEGDAWgBTirliUBZGrAQHyeoyueVhEujJbxzALBgkqhkiG9w0BAQsDggEBALqwYUqKUeCGrgvl7FSlEA/EnlrWz2nQde4J6LrXFGX+0ubW2lvVsE2oaIij2rMOhOWot8PBDwz7bcUjRmrQS6oPBuJhvTHMHJPzoWkqxLw8Lt1mYqsst9c6s7IaNOfNZs6BweJ8BxY/Sr2AOps3XMOEBQd8/MQYm18flyel4+Eus77glc0D/iLDlCTatSjlI8zKepw20DV9ld0kUiWV2pWIsX+71DSadwcp6M6dtWZ+ja/P0f9JHQfRJcpZ50+eEyfAOvKaHl9THxPofDvrwrSawHiT8kMGLk4TJLaEOIXWmY+D+MTmSWAdKFAk23N5yxKS4rrgDjofRU0gmi+fYt8="
+                  },
+                  {
+                    "$bytes": "MIIDWDCCAkKgAwIBAgIBAjALBgkqhkiG9w0BAQswOzE5MBsGA1UEChMURW1iZWRQREYgQ29uZm9ybWFuY2UwGgYDVQQDDBNDb25mb3JtYW5jZSBSb290IENBMB4XDTIwMDEwMTAwMDAwMFoXDTQ1MDEwMTAwMDAwMFowQzFBMBsGA1UEChMURW1iZWRQREYgQ29uZm9ybWFuY2UwIgYDVQQDDBtDb25mb3JtYW5jZSBJbnRlcm1lZGlhdGUgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDbSht5FtM4VuKDlpMatHNruB2LVfqFJoPzY2X9o+Bp2o/wl3GUCG+dFZs1ZbyOBN85e4p+3b2g6YwNDXj0YP0MQaAJeGEKGE0bYA4S3fI4qjiQUbrkQqBdmWV9WWOC8Ce20wDXZJGPg4L/q5j/+7bUpIyrTZ2vJKpug8myA2bCE8UsWCU+bwtfFnqZ58m5YmDVtqyGVYQncNA2gKFa1sEpzJbJJXfNk+xg23eYPtcmV0y/4a6so9PdLl8MslKuipnUQB9bLqoYEPbTe0wkRfin2z+0Ap2O8uwcNnh6ehDGgDgdwNFlTOQTsj8s4UQMitTbBtxHnsj06hPMQybi3USXAgMBAAGjYzBhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBTirliUBZGrAQHyeoyueVhEujJbxzAfBgNVHSMEGDAWgBT+xHEynvF09Z+O+SN8zJhOWO/v2jALBgkqhkiG9w0BAQsDggEBAMMDGDFcrrLqf0G9LjTHZkRDEW7CTJJAJRdI7RCJ02+JaoSSXg4NdOdlrLWZlAIj1ltg0GYeYlUrr3bwJVEgpmyfRXwepZlxdVOYp0JaQf9nbmjNiezJIyZwrkxVR2d/wPSfYG5Vs3JVnw4pASTRhIfo7+8AIrsfU8kOOTCg/MSFCnxoP9vMhdrRBGfTfl8BpgO3hpkincMDDUMWmhPGCboNIV7sB5qMuhRYglusBKKsBfPS/OmuM4abhl6YXw71ys7rjvOhF5GjD4xC6Uwv8AtXtGLnAY5TIFqIRBCFjkdrtXi5aM6Vi5mowwHAVqn2p4+rrll6F9XythDe0/uSbzY="
+                  }
+                ],
+                "algorithm": "RSA-PKCS1-v1_5",
+                "hash": "sha256",
+                "sign": {
+                  "$fn": "raw.sign",
+                  "resolves": {
+                    "$bytes": ""
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "d"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "d",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "d",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "d": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "Error",
+                  "message": "digest is 32 bytes; sha1 needs 20"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "d",
+              "path": "signatures.prepare",
+              "args": [
+                {
+                  "field": {
+                    "kind": "name",
+                    "name": "Sig1"
+                  },
+                  "subFilter": "ETSI.CAdES.detached",
+                  "digest": "sha256"
+                }
+              ]
+            },
+            {
+              "doc": "d",
+              "path": "signatures.abort",
+              "args": [
+                "signing-1"
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "d": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
       "name": "sign-build-throws",
       "covers": "A raw signer whose build throws aborts.",
       "plugins": [

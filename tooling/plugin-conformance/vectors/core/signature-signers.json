@@ -1922,6 +1922,741 @@
       ]
     },
     {
+      "name": "self-signed-rsa-sha1",
+      "covers": "An RSA key hashing with SHA-1 signs its certificate with sha1WithRSAEncryption.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "selfSignedCertificate",
+          "args": [
+            {
+              "key": {
+                "fixture": "leaf",
+                "algorithm": {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": "SHA-1"
+                }
+              },
+              "commonName": "Sha One",
+              "hash": "sha256"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$bytes": "MIICxTCCAa+gAwIBAgIIWlpaWlpaWlowCwYJKoZIhvcNAQEFMBIxEDAOBgNVBAMMB1NoYSBPbmUwHhcNMjYwMTE0MDAwMDAwWhcNMjcwMTE1MDAwMDAwWjASMRAwDgYDVQQDDAdTaGEgT25lMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA94o+P1MlzFLTOP02cQ57UOgbHVHMv02TU7IaHjuhARAJJLaxj+HgxSUNL3sJ2o2ora8hUsTSlppqQZ9fSwDcnWDQnZvME3xghp7aC4Vb7oNhqRQ/tMJEp0u6+SxpbPWKMIdWwZ07eZMw1qe52kkyBI/3qrHF15RmIzoNBn/AWj4FQN7uwYHWYCzjMhWxKfqDWz/d6COOTpiqVIRflKzApangsTphSaw3cvVRU3fGXk142mDHZYFZpQcMjAw6j0O5BGS+aqWkPove4gcCt+7U4+4low9iybETZ+ByyTnIMWlRa0vBJTwjRz4VkbCKgM1fhpds0K42WwT0JsBvBAIbpwIDAQABoyMwITAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIChDALBgkqhkiG9w0BAQUDggEBAOZ71dcMk03DduB+97JzH5NfiOF9VJQTwcOdbj8eJrRMdYgYRgRHyOP20q6zs0hLHBQxT3LsecdGr6yWnW3fmlyjTtVfQurU574FMvr/xHSzOb3BWgrSKZkCMPjZSTmRwqOVBpAzqq0Rn6G6+f+p55JFVdUEYKD7CX6LB5AGH7RcWxBPoXR064BVFDRxKTlJgcMotMLY5Fqo77aTRvwp8BU26ONCrAKODe3FmXFGgLAARjiapbQycPV0wqfNtDDe2BYNpy+BN9aKxLm+uw9PoJe/f4VVFDqVB/MwKOLEg4GlRXMJnmJ19zLTRwKLf+LU4voc8hzwZZyLwN44hWo4Pwk="
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "webcrypto.getRandomValues",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "webcrypto.exportKey",
+              "args": [
+                "jwk",
+                {
+                  "type": "public",
+                  "extractable": true,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 2048,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-1"
+                    }
+                  },
+                  "usages": [
+                    "verify"
+                  ]
+                }
+              ]
+            },
+            {
+              "fn": "webcrypto.sign",
+              "args": [
+                {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": {
+                    "name": "SHA-1"
+                  }
+                },
+                {
+                  "type": "private",
+                  "extractable": false,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 2048,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-1"
+                    }
+                  },
+                  "usages": [
+                    "sign"
+                  ]
+                },
+                {
+                  "$bytes": "MIIBr6ADAgECAghaWlpaWlpaWjALBgkqhkiG9w0BAQUwEjEQMA4GA1UEAwwHU2hhIE9uZTAeFw0yNjAxMTQwMDAwMDBaFw0yNzAxMTUwMDAwMDBaMBIxEDAOBgNVBAMMB1NoYSBPbmUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQD3ij4/UyXMUtM4/TZxDntQ6BsdUcy/TZNTshoeO6EBEAkktrGP4eDFJQ0vewnajaitryFSxNKWmmpBn19LANydYNCdm8wTfGCGntoLhVvug2GpFD+0wkSnS7r5LGls9Yowh1bBnTt5kzDWp7naSTIEj/eqscXXlGYjOg0Gf8BaPgVA3u7BgdZgLOMyFbEp+oNbP93oI45OmKpUhF+UrMClqeCxOmFJrDdy9VFTd8ZeTXjaYMdlgVmlBwyMDDqPQ7kEZL5qpaQ+i97iBwK37tTj7iWjD2LJsRNn4HLJOcgxaVFrS8ElPCNHPhWRsIqAzV+Gl2zQrjZbBPQmwG8EAhunAgMBAAGjIzAhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKE"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "self-signed-validity-past-2100",
+      "covers": "A validity that ends after 2099 writes notAfter without its year, as asn1js does.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "selfSignedCertificate",
+          "args": [
+            {
+              "key": {
+                "fixture": "leaf",
+                "algorithm": {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": "SHA-256"
+                }
+              },
+              "commonName": "Far Future",
+              "hash": "sha256",
+              "validityDays": 30000
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$bytes": "MIICyTCCAbOgAwIBAgIIWlpaWlpaWlowCwYJKoZIhvcNAQELMBUxEzARBgNVBAMMCkZhciBGdXR1cmUwHBcNMjYwMTE0MDAwMDAwWhcLMDMwNjAwMDAwMFowFTETMBEGA1UEAwwKRmFyIEZ1dHVyZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPeKPj9TJcxS0zj9NnEOe1DoGx1RzL9Nk1OyGh47oQEQCSS2sY/h4MUlDS97CdqNqK2vIVLE0paaakGfX0sA3J1g0J2bzBN8YIae2guFW+6DYakUP7TCRKdLuvksaWz1ijCHVsGdO3mTMNanudpJMgSP96qxxdeUZiM6DQZ/wFo+BUDe7sGB1mAs4zIVsSn6g1s/3egjjk6YqlSEX5SswKWp4LE6YUmsN3L1UVN3xl5NeNpgx2WBWaUHDIwMOo9DuQRkvmqlpD6L3uIHArfu1OPuJaMPYsmxE2fgcsk5yDFpUWtLwSU8I0c+FZGwioDNX4aXbNCuNlsE9CbAbwQCG6cCAwEAAaMjMCEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQwCwYJKoZIhvcNAQELA4IBAQD1JDg+hxggBY/PwWTNEEWoI1zj8Q4hSPko8nV8BYZIy0m3MeZFzPiFJg6uTvUI/xRgseN2J7G/bKuKerjnABPeAZQzxoJw14aehKwMqBw1AcfrIskqDIW6smu5Dby+g1HLMlLVbkjMBu3z5PGhvcgIt3VwgJlG37455sSxhasabnwIPlnr+c85ZRI/l9FcCAvcTL0YrTLnKaZ0kN/XhOAaX/CGtNGAzSVhMYA4DLs1yBxSaJWfwDZVyXnwNKqJhQu1n3nSC1pjjHclrB52ypTCjcuvE4mKIMRRy0OAP3go6Dfcer/WJJw5jlBf+VJgzVyTybvpiadGV1SI0WIJBmfA"
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "webcrypto.getRandomValues",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "webcrypto.exportKey",
+              "args": [
+                "jwk",
+                {
+                  "type": "public",
+                  "extractable": true,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 2048,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-256"
+                    }
+                  },
+                  "usages": [
+                    "verify"
+                  ]
+                }
+              ]
+            },
+            {
+              "fn": "webcrypto.sign",
+              "args": [
+                {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": {
+                    "name": "SHA-256"
+                  }
+                },
+                {
+                  "type": "private",
+                  "extractable": false,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 2048,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-256"
+                    }
+                  },
+                  "usages": [
+                    "sign"
+                  ]
+                },
+                {
+                  "$bytes": "MIIBs6ADAgECAghaWlpaWlpaWjALBgkqhkiG9w0BAQswFTETMBEGA1UEAwwKRmFyIEZ1dHVyZTAcFw0yNjAxMTQwMDAwMDBaFwswMzA2MDAwMDAwWjAVMRMwEQYDVQQDDApGYXIgRnV0dXJlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA94o+P1MlzFLTOP02cQ57UOgbHVHMv02TU7IaHjuhARAJJLaxj+HgxSUNL3sJ2o2ora8hUsTSlppqQZ9fSwDcnWDQnZvME3xghp7aC4Vb7oNhqRQ/tMJEp0u6+SxpbPWKMIdWwZ07eZMw1qe52kkyBI/3qrHF15RmIzoNBn/AWj4FQN7uwYHWYCzjMhWxKfqDWz/d6COOTpiqVIRflKzApangsTphSaw3cvVRU3fGXk142mDHZYFZpQcMjAw6j0O5BGS+aqWkPove4gcCt+7U4+4low9iybETZ+ByyTnIMWlRa0vBJTwjRz4VkbCKgM1fhpds0K42WwT0JsBvBAIbpwIDAQABoyMwITAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIChA=="
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "self-signed-rsa-3072",
+      "covers": "A 3072-bit key: its 384-byte modulus survives the power-of-two rounding of the JWK import.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "selfSignedCertificate",
+          "args": [
+            {
+              "key": {
+                "fixture": "rsa3072",
+                "algorithm": {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": "SHA-256"
+                }
+              },
+              "commonName": "Long Key",
+              "hash": "sha256"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$bytes": "MIIDxzCCAjGgAwIBAgIIWlpaWlpaWlowCwYJKoZIhvcNAQELMBMxETAPBgNVBAMMCExvbmcgS2V5MB4XDTI2MDExNDAwMDAwMFoXDTI3MDExNTAwMDAwMFowEzERMA8GA1UEAwwITG9uZyBLZXkwggGiMA0GCSqGSIb3DQEBAQUAA4IBjwAwggGKAoIBgQCry+2YYdioR/BZ6+Gf0GxEsbfh9POYj+CFRdAavaa3zSCs0WjBTRU4eAP+rqYu28OWdNnHHFRZdwuIkjt82XyPPMwUkfwYM4TBVIo+3MLRhqGPCMOqRpg8ZwR8ELTriZBcD+q1Iwtkx3TDSvuBTpTseaTKYgC6u0u1lGPPb1Cj9x+jWMIsCslYy1Bdho6dE2ukDW+6byMyrWuxcn2pVl1NAr8QKRRQ7M0o63SMWmpI2bCcFB1sJ0zWVO5aLXdYCTctfjNssbtPoHEVgqCoHZ77MgwIKXQBz/xfwIEZZmqjx4i4TZY7dANME0s/n3jOungofbB2oJPTLRHglDTpjVBu55RvbhMOmFRBpY4JDIYxTo7M2274hk48fZhYnrYze3f5f96bC5hJk0v/BxnobrTpplO5PoeikBi082mRiXy2s8sBFfRi9FffB2hmW+DECUYyncIi/61T+SlOkaoBneRWrp0LkT/VybmH2IOAaatwrY7609aiKPw3BulsZWbDti8CAwEAAaMjMCEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQwCwYJKoZIhvcNAQELA4IBgQCJeudxPYtEMjxQyHv1lavstLRcGG7yN1HeJs9UyrFpsAcsmYYSj/U76e0S5fB4enLxhbzfk3D3RoB/szDW1F3j/42BIW4Xf49xYIOqxdcl96r+TsIrANK16Co2HL4cLOEGsuxbytFvGh9+jqRXiuHlc1k5Cbkmw3bjiKVvcwghuO+2XiKIfC5mZiBefpDQ27+CZ4Cy/cbPU9bo26fMYRUldaQoTYk7zwK3/16LKcp5Kl4EMqmGztTrLj4xrDAjleh2f/aIzSxgCBBCw9kMUpyuYjvSbWRaULFkadIhFBljAyFtYyBLZriGQIu0ssmUWf4RSL4vy2DzX07gnegPJ/40csD+O2CcegWFQ+S3zMEenJRtl0HcKVZ5qnhhirZTNXcfLXh3DTeCKXvWQ3rVkazb7piHwjYLxRSI0kF9hjlI/U8iAXFKI3TzTduaqDe0O83R+LPJxrhh3VR8hoGNCDNT+572Ox4DdfRTzE2+VUWaJeK7oFI5I9iheYLkZDfD/k4="
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "webcrypto.getRandomValues",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "webcrypto.exportKey",
+              "args": [
+                "jwk",
+                {
+                  "type": "public",
+                  "extractable": true,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 3072,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-256"
+                    }
+                  },
+                  "usages": [
+                    "verify"
+                  ]
+                }
+              ]
+            },
+            {
+              "fn": "webcrypto.sign",
+              "args": [
+                {
+                  "name": "RSASSA-PKCS1-v1_5",
+                  "hash": {
+                    "name": "SHA-256"
+                  }
+                },
+                {
+                  "type": "private",
+                  "extractable": false,
+                  "algorithm": {
+                    "name": "RSASSA-PKCS1-v1_5",
+                    "modulusLength": 3072,
+                    "publicExponent": {
+                      "$bytes": "AQAB"
+                    },
+                    "hash": {
+                      "name": "SHA-256"
+                    }
+                  },
+                  "usages": [
+                    "sign"
+                  ]
+                },
+                {
+                  "$bytes": "MIICMaADAgECAghaWlpaWlpaWjALBgkqhkiG9w0BAQswEzERMA8GA1UEAwwITG9uZyBLZXkwHhcNMjYwMTE0MDAwMDAwWhcNMjcwMTE1MDAwMDAwWjATMREwDwYDVQQDDAhMb25nIEtleTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCCAYoCggGBAKvL7Zhh2KhH8Fnr4Z/QbESxt+H085iP4IVF0Bq9prfNIKzRaMFNFTh4A/6upi7bw5Z02cccVFl3C4iSO3zZfI88zBSR/BgzhMFUij7cwtGGoY8Iw6pGmDxnBHwQtOuJkFwP6rUjC2THdMNK+4FOlOx5pMpiALq7S7WUY89vUKP3H6NYwiwKyVjLUF2Gjp0Ta6QNb7pvIzKta7FyfalWXU0CvxApFFDszSjrdIxaakjZsJwUHWwnTNZU7lotd1gJNy1+M2yxu0+gcRWCoKgdnvsyDAgpdAHP/F/AgRlmaqPHiLhNljt0A0wTSz+feM66eCh9sHagk9MtEeCUNOmNUG7nlG9uEw6YVEGljgkMhjFOjszbbviGTjx9mFietjN7d/l/3psLmEmTS/8HGehutOmmU7k+h6KQGLTzaZGJfLazywEV9GL0V98HaGZb4MQJRjKdwiL/rVP5KU6RqgGd5FaunQuRP9XJuYfYg4Bpq3CtjvrT1qIo/DcG6WxlZsO2LwIDAQABoyMwITAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIChA=="
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "self-signed-ecdsa-P-384",
+      "covers": "A self-signed certificate over a P-384 key.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "selfSignedCertificate",
+          "args": [
+            {
+              "key": {
+                "algorithm": {
+                  "name": "ECDSA",
+                  "namedCurve": "P-384"
+                }
+              },
+              "commonName": "EC Person",
+              "hash": "sha384"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$bytes": "MIIBfjCCAQSgAwIBAgIIWlpaWlpaWlowCgYIKoZIzj0EAwMwFDESMBAGA1UEAwwJRUMgUGVyc29uMB4XDTI2MDExNDAwMDAwMFoXDTI3MDExNTAwMDAwMFowFDESMBAGA1UEAwwJRUMgUGVyc29uMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8sSWV9CmKUtrh3jS+EfH0gHycJnI+bf0EKjMpGsL4KuSyHK2Tpa3wKB4FQ77Mamp4UdOOM1w2yYnJhL6a5lm5Qiy9xB7nXS9b/zsp7PklTRbPXVSOeD4oUTdjVGq+e7CoyMwITAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIChDAKBggqhkjOPQQDAwNoADBlAjABBAcKDRATFhkcHyIlKCsuMTQ3Oj1AQ0ZJTE9SVVhbXmFkZ2ptcHN2eXx/goWIi44CMQCRlJeanaCjpqmsr7K1uLu+wcTHys3Q09bZ3N/i5ejr7vH09/r9AAMGCQwPEhUYGx4="
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "webcrypto.getRandomValues",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "webcrypto.exportKey",
+              "args": [
+                "jwk",
+                {
+                  "type": "public",
+                  "extractable": true,
+                  "algorithm": {
+                    "name": "ECDSA",
+                    "namedCurve": "P-384"
+                  },
+                  "usages": [
+                    "verify"
+                  ]
+                }
+              ]
+            },
+            {
+              "fn": "webcrypto.sign",
+              "args": [
+                {
+                  "name": "ECDSA",
+                  "hash": {
+                    "name": "SHA-384"
+                  }
+                },
+                {
+                  "type": "private",
+                  "extractable": false,
+                  "algorithm": {
+                    "name": "ECDSA",
+                    "namedCurve": "P-384"
+                  },
+                  "usages": [
+                    "sign"
+                  ]
+                },
+                {
+                  "$bytes": "MIIBBKADAgECAghaWlpaWlpaWjAKBggqhkjOPQQDAzAUMRIwEAYDVQQDDAlFQyBQZXJzb24wHhcNMjYwMTE0MDAwMDAwWhcNMjcwMTE1MDAwMDAwWjAUMRIwEAYDVQQDDAlFQyBQZXJzb24wdjAQBgcqhkjOPQIBBgUrgQQAIgNiAATyxJZX0KYpS2uHeNL4R8fSAfJwmcj5t/QQqMykawvgq5LIcrZOlrfAoHgVDvsxqanhR044zXDbJicmEvprmWblCLL3EHuddL1v/Oyns+SVNFs9dVI54PihRN2NUar57sKjIzAhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKE"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "self-signed-ecdsa-P-521",
+      "covers": "A self-signed certificate over a P-521 key.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "selfSignedCertificate",
+          "args": [
+            {
+              "key": {
+                "algorithm": {
+                  "name": "ECDSA",
+                  "namedCurve": "P-521"
+                }
+              },
+              "commonName": "EC Person",
+              "hash": "sha384"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "$bytes": "MIIByjCCASqgAwIBAgIIWlpaWlpaWlowCgYIKoZIzj0EAwMwFDESMBAGA1UEAwwJRUMgUGVyc29uMB4XDTI2MDExNDAwMDAwMFoXDTI3MDExNTAwMDAwMFowFDESMBAGA1UEAwwJRUMgUGVyc29uMIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAZ7kVKhKM8+HLlWyBSiSdda52Z7HuUmTJgVJ6CZvogiOqiHLeaztiK7XGE9tRTVMzzwNg89e+EoXap/8Rkb5RCuABjVq41i43lGsXgim7GSVjif8G0jIszqD3cUkM3Ak1l+J3IqmT60b0weIxvYX2b3j4cpON6Jnqpne8IYdjw565oT6jIzAhMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKEMAoGCCqGSM49BAMDA4GNADCBiQJCAQQHCg0QExYZHB8iJSgrLjE0Nzo9QENGSUxPUlVYW15hZGdqbXBzdnl8f4KFiIuOkZSXmp2go6aprK+ytbi7vsHEAkMAx8rN0NPW2dzf4uXo6+7x9Pf6/QADBgkMDxIVGBseISQnKi0wMzY5PD9CRUhLTlFUV1pdYGNmaWxvcnV4e36BhIeK"
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "webcrypto.getRandomValues",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "webcrypto.exportKey",
+              "args": [
+                "jwk",
+                {
+                  "type": "public",
+                  "extractable": true,
+                  "algorithm": {
+                    "name": "ECDSA",
+                    "namedCurve": "P-521"
+                  },
+                  "usages": [
+                    "verify"
+                  ]
+                }
+              ]
+            },
+            {
+              "fn": "webcrypto.sign",
+              "args": [
+                {
+                  "name": "ECDSA",
+                  "hash": {
+                    "name": "SHA-384"
+                  }
+                },
+                {
+                  "type": "private",
+                  "extractable": false,
+                  "algorithm": {
+                    "name": "ECDSA",
+                    "namedCurve": "P-521"
+                  },
+                  "usages": [
+                    "sign"
+                  ]
+                },
+                {
+                  "$bytes": "MIIBKqADAgECAghaWlpaWlpaWjAKBggqhkjOPQQDAzAUMRIwEAYDVQQDDAlFQyBQZXJzb24wHhcNMjYwMTE0MDAwMDAwWhcNMjcwMTE1MDAwMDAwWjAUMRIwEAYDVQQDDAlFQyBQZXJzb24wgZswEAYHKoZIzj0CAQYFK4EEACMDgYYABABnuRUqEozz4cuVbIFKJJ11rnZnse5SZMmBUnoJm+iCI6qIct5rO2IrtcYT21FNUzPPA2Dz174Shdqn/xGRvlEK4AGNWrjWLjeUaxeCKbsZJWOJ/wbSMizOoPdxSQzcCTWX4nciqZPrRvTB4jG9hfZvePhyk43omeqmd7whh2PDnrmhPqMjMCEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAoQ="
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
       "name": "self-signed-pss",
       "covers": "A self-signed certificate over an RSA-PSS key.",
       "plugins": [

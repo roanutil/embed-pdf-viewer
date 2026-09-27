@@ -263,18 +263,16 @@ pub fn verify_with_public_key(
     let key = import(name, curve, spki)?;
     match key {
         Key::Rsa(ref rsa) if name == "RSA-PSS" => {
+            // pkijs looks the parameters' hash up (an unknown one throws) and
+            // passes its name to `verify`, but WebCrypto verifies RSA-PSS with
+            // the hash the key was imported with: `sha`, the CMS digest
+            // algorithm for a signer, the parameters' hash for a certificate.
             let params = pss_params(signature_algorithm)?;
+            if let Some(oid) = &params.hash {
+                algorithm_name(oid).ok_or_else(|| unsupported_identifier(oid))?;
+            }
             let salt = params.salt.unwrap_or(20) as usize;
-            let hash = match params.hash {
-                Some(oid) => match algorithm_name(&oid) {
-                    Some(n) => {
-                        Digest::from_webcrypto(n).ok_or_else(|| format!("Unrecognized name {n}"))?
-                    }
-                    None => return Err(unsupported_identifier(&oid)),
-                },
-                None => Digest::Sha1,
-            };
-            Ok(rsa.verify(pss(hash, salt), &hash.hash(data), signature).is_ok())
+            Ok(rsa.verify(pss(sha, salt), &sha.hash(data), signature).is_ok())
         }
         Key::Rsa(ref rsa) => Ok(rsa.verify(pkcs1(sha), &sha.hash(data), signature).is_ok()),
         ref ec => {
