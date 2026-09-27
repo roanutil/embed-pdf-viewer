@@ -2187,6 +2187,85 @@
       }
     },
     {
+      "name": "add-takes-the-first-holder-in-property-order",
+      "fn": "viewManagerReducer",
+      "args": [
+        {
+          "panes": {
+            "0": {
+              "id": "0",
+              "documentIds": [
+                "x",
+                "y"
+              ],
+              "activeDocumentId": "x"
+            },
+            "1": {
+              "id": "1",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
+            },
+            "b": {
+              "id": "b",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "0",
+            "1",
+            "b"
+          ],
+          "focusedPaneId": "0",
+          "seq": 3
+        },
+        {
+          "type": "ADD_DOC",
+          "paneId": "b",
+          "documentId": "x"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "same": false,
+          "next": {
+            "panes": {
+              "0": {
+                "id": "0",
+                "documentIds": [
+                  "y"
+                ],
+                "activeDocumentId": "y"
+              },
+              "1": {
+                "id": "1",
+                "documentIds": [
+                  "x"
+                ],
+                "activeDocumentId": "x"
+              },
+              "b": {
+                "id": "b",
+                "documentIds": [
+                  "x"
+                ],
+                "activeDocumentId": "x"
+              }
+            },
+            "order": [
+              "0",
+              "1",
+              "b"
+            ],
+            "focusedPaneId": "0",
+            "seq": 3
+          }
+        }
+      }
+    },
+    {
       "name": "remove-doc-inactive",
       "fn": "viewManagerReducer",
       "args": [

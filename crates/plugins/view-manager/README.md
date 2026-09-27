@@ -52,6 +52,19 @@ reports. A Rust reducer has no error path, and it treats those ids as absent. Th
 `order` entry with no pane, which only a hand-built state can contain. `splitPane`'s `from` option
 is accepted and ignored by the TypeScript, so the Rust `split_pane` does not take it.
 
-Mutation numbers are pre-v3, rerun pending. `cargo mutants -p epdf-plugin-view-manager
---test-package epdf-plugin-view-manager` caught 97 of 99 viable mutants in the v2 crate; both
-survivors were equivalent.
+`scripts/mutants.sh -p epdf-plugin-view-manager --test-package epdf-plugin-view-manager --file
+<file>`, file by file over every module but `harness.rs`, catches 137 of 140 viable mutants (137
+caught, 0 timeouts; 26 unviable). Four of those are killed by new tests, checked by applying each by
+hand. The reducer case `add-takes-the-first-holder-in-property-order` gives a document two holders
+keyed `0` and `1`, which kills `>` to `>=` in `array_index`. `tests/record.rs` kills the three
+`JsRecord::keys` replacements: the plugin never calls `keys`, because the TypeScript only reads
+`Object.values(panes)`. The three survivors are equivalent:
+
+- `src/model.rs`: `initial_view_manager_state()` replaced with `Default::default()`. Its body is
+  `ViewManagerState::default()`.
+- `src/model.rs`: `||` to `&&` in `js_max`. Both callers pass `0.0` as `a`, so the mutant differs
+  only when `b` is NaN, returning 0 where the original returns NaN. Both results go straight into
+  `slice_end`, which maps NaN and 0 to the same position.
+- `src/record.rs`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
+  words a serde error for a non-object, which surfaces only as a harness error that no TypeScript
+  outcome is compared with.
