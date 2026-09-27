@@ -136,6 +136,43 @@ const cases: ScenarioCase[] = [
     steps: [...boot, sel('ensurePage', [1]), tool('replace-text'), sel('select', [range([1, 0], [1, 2])]), sel('end'), call('list', [1])],
   },
   {
+    name: 'create-from-selection-anchors-at-the-end-glyph',
+    covers:
+      'createFromSelection anchors a replace-text caret at the end glyph too, over the same line whose tall first glyph makes its segment taller than the glyph it ends on.',
+    plugins,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          {
+            path: 'page.geometry.read',
+            pon: 1,
+            value: {
+              runs: [
+                run(0, [
+                  { looseBox: { left: 50, bottom: 726, right: 62, top: 750 }, flags: 0 },
+                  { looseBox: { left: 62, bottom: 738, right: 68, top: 750 }, flags: 0 },
+                  { looseBox: { left: 68, bottom: 738, right: 74, top: 750 }, flags: 0 },
+                ]),
+              ],
+            },
+          },
+          { path: 'page.text.read', pon: 1, value: { text: 'Abc', charCount: 3 } },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(caret(61, { intent: 'replace' })) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(markup('strikeout', 62, { intent: 'strikeout-text-edit', inReplyTo: objRef(61), replyType: 'group' })) },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      sel('ensurePage', [1]),
+      sel('select', [range([1, 0], [1, 2])]),
+      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'createFromSelection', args: ['replace-text', { preset: 'replace-text' }] },
+      call('list', [1]),
+    ],
+  },
+  {
     name: 'replace-text-across-pages',
     covers: 'A selection spanning two pages under replace-text anchors each non-end page at its last segment’s trailing edge.',
     plugins,

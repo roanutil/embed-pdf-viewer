@@ -132,7 +132,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'page-space-reads',
     covers:
-      'get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.',
+      'get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space even with a selection; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([{ path: 'annotations.listRawAll', defer: 'hydrate' }]) } },
     snapshot: 'none',
@@ -162,6 +162,7 @@ const cases: ScenarioCase[] = [
       api('hitTestAt', [pr(1), { x: 5, y: 5 }]),
       api('select', [objRef(3)]),
       api('hitTestAt', [pr(1), { x: 300, y: 400 }]),
+      api('hitTestAt', [pr(1), { x: 5, y: 5 }]),
       api('listSelected'),
       api('listSelected'),
       api('getSelection'),
@@ -196,6 +197,7 @@ const cases: ScenarioCase[] = [
           { path: 'page.annotations.create', pon: 1, times: 1, error: { name: 'EngineError', message: 'full', code: 'Refused' } },
           { path: 'page.annotations.create', pon: 2, times: 1, value: created(square(40, { pageObjectNumber: 2 })) },
           { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(41)) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(42)) },
         ]),
       },
     },
@@ -225,6 +227,9 @@ const cases: ScenarioCase[] = [
         ],
       ]),
       api('list'),
+      // A tool's /F seed sits under the input's own flags.
+      api('registerTool', [{ id: 'flagged-box', extends: 'square', flags: { print: false, locked: true } }]),
+      api('create', [{ page: pr(1), subtype: 'square', bounds: { x: 5, y: 5, width: 10, height: 10 }, tool: 'flagged-box', flags: { locked: false, hidden: true } }]),
     ],
   },
   {
@@ -348,6 +353,14 @@ const cases: ScenarioCase[] = [
       api('selectInRect', [pr(1), { x: 290, y: 390, width: 20, height: 20 }, { add: true }]),
       api('selectInRect', [pr(1), { x: 590, y: 790, width: 5, height: 5 }]),
       api('getSelection'),
+      // Sharing only a band (x or y) with an annotation is no hit, and a
+      // rect on page 2 never reaches page 1's annotations.
+      api('selectInRect', [pr(1), { x: 500, y: 150, width: 20, height: 20 }]),
+      api('getSelection'),
+      api('selectInRect', [pr(1), { x: 150, y: 700, width: 20, height: 20 }]),
+      api('getSelection'),
+      api('selectInRect', [pr(2), { x: 300, y: 400, width: 100, height: 100 }]),
+      api('getSelection'),
       api('select', [[objRef(1), objRef(2)]]),
       api('rotateSelectionBy', [-90]),
       api('resetSelectionRotation'),
@@ -361,9 +374,48 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'set-contents-settles-with-the-engine',
+    covers: 'setContents and setRichText settle with the engine write they commit: a refused write rejects them.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({ 1: [freeText(2)] }),
+          { path: 'page.annotations.update', pon: 1, error: { name: 'EngineError', message: 'read-only', code: 'Refused' } },
+        ]),
+      },
+    },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      api('setContents', [objRef(2), 'plain']),
+      api('setRichText', [objRef(2), { paragraphs: [{ runs: [{ text: 'a' }] }] }]),
+    ],
+  },
+  {
+    name: 'text-range-needs-an-active-edit',
+    covers:
+      'getSelectionProps reads the range keys from the runs only while the ranged annotation is being edited and the range is not a bare caret; otherwise they come from the body.',
+    plugins: PLUGINS,
+    // The /DA size disagrees with the rich body's, so a body read and a
+    // range read differ even where no run has a size of its own.
+    engine: { documents: { a: doc([hydrate({ 1: [richFree(1, { fontSize: 20 })] })]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      api('select', [objRef(1)]),
+      api('setTextSelection', [objRef(1), { start: 3, end: 5 }]),
+      api('getSelectionProps'),
+      api('beginTextEdit', [objRef(1)]),
+      api('getSelectionProps'),
+      api('setTextSelection', [objRef(1), { start: 4, end: 4 }]),
+      api('getSelectionProps'),
+    ],
+  },
+  {
     name: 'rich-text-editing',
     covers:
-      'setContents and setRichText commit through the one debounced text write immediately; draftRichText stages a paragraph edit and schedules the write; setTextSelection stores the editor range (a repeat is a no-op, null clears) and the range keys of getSelectionProps then read the runs it covers; updateSelection restyles those runs as a delta (flushing first) while the other keys restyle the body; toggleTextFormat flips a format from the current value; endTextEdit flushes and drops the range; getEditingRef and getCssFontFamily read back.',
+      'setContents and setRichText commit through the one debounced text write immediately; draftRichText stages a paragraph edit and schedules the write; setTextSelection stores the editor range (a repeat is a no-op, null clears, a change of start alone is a change) and the range keys of getSelectionProps then read the runs it covers; updateSelection restyles those runs as a delta (flushing first) while the other keys restyle the body; toggleTextFormat flips a format from the current value; endTextEdit flushes and drops the range; getEditingRef and getCssFontFamily read back.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -389,6 +441,9 @@ const cases: ScenarioCase[] = [
       api('getSelectionProps'),
       api('updateSelection', [{ fontSize: 18, fontColor: '#00ff00', bold: false, opacity: 0.5 }]),
       api('getSelectionProps'),
+      // A new range that keeps only the end is still a change.
+      api('setTextSelection', [objRef(1), { start: 2, end: 4 }]),
+      api('setTextSelection', [objRef(1), { start: 1, end: 4 }]),
       api('toggleTextFormat', ['italic']),
       api('draftRichText', [objRef(1), { paragraphs: [{ runs: [{ text: 'Hello there' }] }] }]),
       advance(100),
@@ -476,10 +531,12 @@ const cases: ScenarioCase[] = [
       ...[
         ['down', 100, 100],
         ['move', 150, 100],
-        ['up', 244, 100],
       ].map(([phase, x, y]) =>
         ix('dispatch', [{ phase, viewport: { x, y }, page: { ref: pr(1), point: { x, y }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
       ),
+      // Dragging the endpoints is not placing the offset.
+      api('distanceCreationPage'),
+      ix('dispatch', [{ phase: 'up', viewport: { x: 244, y: 100 }, page: { ref: pr(1), point: { x: 244, y: 100 }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
       api('distanceCreationPage'),
       api('getCreationDraft'),
       ix('dispatch', [{ phase: 'move', viewport: { x: 170, y: 80 }, page: { ref: pr(1), point: { x: 170, y: 80 }, scale: 1 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false } }]),
@@ -500,6 +557,44 @@ const cases: ScenarioCase[] = [
       api('createPointer', ['calibrate', 'down', pr(1), { x: 10, y: 10 }]),
       api('createPointer', ['calibrate', 'move', pr(1), { x: 60, y: 10 }]),
       api('createPointer', ['calibrate', 'up', pr(1), { x: 110, y: 10 }]),
+      api('list'),
+    ],
+  },
+  {
+    name: 'dimension-drafts-continue-without-viewports',
+    covers:
+      'A dimension draft already under way keeps taking clicks on its own page after the viewports are withdrawn, for the perimeter and the distance tools; a click on another page, which has none, starts nothing.',
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate(),
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(polyline(41, { intent: 'PolyLineDimension', measure: METRES, caption: { enabled: true } })) },
+          { path: 'page.annotations.create', pon: 1, times: 1, value: created(dimensionLine(42)) },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      api('setPageViewports', [pr(1), [{ bbox: { left: 0, bottom: 0, right: 600, top: 800 }, measure: METRES, owned: true }], METRES]),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 400, y: 400 }]),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 500, y: 400 }]),
+      api('setPageViewports', [pr(1), undefined, METRES]),
+      api('createPointer', ['perimeter', 'down', pr(2), { x: 10, y: 10 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 500, y: 500 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['perimeter', 'down', pr(1), { x: 450, y: 550 }, true]),
+      api('setPageViewports', [pr(1), [{ bbox: { left: 0, bottom: 0, right: 600, top: 800 }, measure: METRES, owned: true }], METRES]),
+      api('createPointer', ['distance', 'down', pr(1), { x: 100, y: 100 }]),
+      api('createPointer', ['distance', 'move', pr(1), { x: 150, y: 100 }]),
+      api('createPointer', ['distance', 'up', pr(1), { x: 244, y: 100 }]),
+      api('setPageViewports', [pr(1), undefined, METRES]),
+      api('createPointer', ['distance', 'down', pr(2), { x: 10, y: 10 }]),
+      api('getCreationDraft'),
+      api('createPointer', ['distance', 'down', pr(1), { x: 170, y: 70 }]),
+      api('getCreationDraft'),
       api('list'),
     ],
   },

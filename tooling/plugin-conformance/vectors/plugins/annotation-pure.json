@@ -13997,6 +13997,45 @@
       }
     },
     {
+      "name": "fontForFace/registered-tie",
+      "fn": "fontForFace",
+      "args": [
+        {
+          "family": "Inter",
+          "weight": 550
+        },
+        [
+          {
+            "key": "inter-regular",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": false
+          },
+          {
+            "key": "inter-bold",
+            "familyName": "Inter",
+            "weight": 700,
+            "italic": false
+          },
+          {
+            "key": "inter-italic",
+            "familyName": "Inter",
+            "weight": 400,
+            "italic": true
+          },
+          {
+            "key": "noto-sans-light",
+            "familyName": "Noto Sans",
+            "weight": 300,
+            "italic": false
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": "inter-regular"
+      }
+    },
+    {
       "name": "fontForFace/standard-regular",
       "fn": "fontForFace",
       "args": [
@@ -14536,6 +14575,33 @@
           "weight": 400,
           "italic": false,
           "size": 12,
+          "color": "#EF4444",
+          "decoration": [],
+          "script": "normal",
+          "letterSpacing": 0,
+          "horizontalScale": 1,
+          "align": "left",
+          "dir": "ltr"
+        }
+      }
+    },
+    {
+      "name": "bodyFromTextStyle/huge-size",
+      "fn": "bodyFromTextStyle",
+      "args": [
+        {
+          "fontFamily": "helvetica",
+          "fontSize": 100000000000000000000,
+          "fontColor": "#ef4444",
+          "textAlign": "left"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "family": "Helvetica",
+          "weight": 400,
+          "italic": false,
+          "size": 100000000000000000000,
           "color": "#EF4444",
           "decoration": [],
           "script": "normal",
@@ -16145,6 +16211,113 @@
       }
     },
     {
+      "name": "runsInRange/second-run",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 3,
+          "end": 5
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "weight": 700
+          }
+        ]
+      }
+    },
+    {
+      "name": "runsInRange/empty-run-inside",
+      "fn": "runsInRange",
+      "args": [
+        {
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab"
+                },
+                {
+                  "text": "",
+                  "style": {
+                    "weight": 700
+                  }
+                },
+                {
+                  "text": "cd",
+                  "style": {
+                    "italic": true
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 4
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {},
+          {
+            "italic": true
+          }
+        ]
+      }
+    },
+    {
       "name": "rangeProps/mixed",
       "fn": "rangeProps",
       "args": [
@@ -16643,6 +16816,175 @@
             "message": "bounds must be a finite, non-negative rectangle",
             "code": "invalid-input",
             "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-zero-width",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 0,
+            "height": 40
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 0,
+              "height": 40
+            },
+            "ellipse": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-zero-height",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 0
+            },
+            "ellipse": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-negative-height",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": -1
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite, non-negative rectangle",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-rotation-zero",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          },
+          "rotation": 0
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "ellipse": false
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/square-rotation-nan",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "bounds": {
+            "x": 10,
+            "y": 20,
+            "width": 30,
+            "height": 40
+          },
+          "rotation": {
+            "$number": "NaN"
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 10,
+              "y": 20,
+              "width": 30,
+              "height": 40
+            },
+            "ellipse": false
           }
         }
       }
@@ -17191,6 +17533,37 @@
             "y": 20,
             "width": 30,
             "height": 0
+          }
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "PluginError",
+            "message": "bounds must be a finite rectangle with positive size",
+            "code": "invalid-input",
+            "capability": "annotation"
+          }
+        }
+      }
+    },
+    {
+      "name": "geometryFromInput/redact-area-nan",
+      "fn": "geometryFromInput",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "redact",
+          "bounds": {
+            "x": {
+              "$number": "NaN"
+            },
+            "y": 20,
+            "width": 30,
+            "height": 40
           }
         }
       ],

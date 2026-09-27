@@ -11144,6 +11144,403 @@
       }
     },
     {
+      "name": "fromDTO/square-rotation-nan",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 90
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "index": 90,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "square",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "borderStyle": "solid",
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "rotation": {
+            "$number": "NaN"
+          },
+          "unrotatedRect": {
+            "left": 110,
+            "bottom": 610,
+            "right": 190,
+            "top": 690
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:90",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 90
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 90
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 90,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "NaN"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/square-rotation-infinite",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 91
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "index": 91,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "square",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "borderStyle": "solid",
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "rotation": {
+            "$number": "Infinity"
+          },
+          "unrotatedRect": {
+            "left": 110,
+            "bottom": 610,
+            "right": 190,
+            "top": 690
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "returned": {
+          "id": "obj:91",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 91
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "baked",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 91
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 91,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "Infinity"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 110,
+            "y": 110,
+            "width": 80,
+            "height": 80
+          },
+          "apRot": 0
+        }
+      }
+    },
+    {
       "name": "fromDTO/caret-unrotated-box-no-rotation",
       "fn": "fromDTO",
       "args": [
@@ -41718,6 +42115,949 @@
           "strokeWidth": 1,
           "intent": "free-text",
           "contents": "Hello",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/square-rotation-nan",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:90",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 90
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 90
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 90,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "NaN"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-rotation-nan/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:90",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 90
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 90
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 90,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "NaN"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/square-rotation-nan",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:90",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 90
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 90
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 90,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "NaN"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 100,
+            "y": 100,
+            "width": 100,
+            "height": 100
+          }
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid",
+          "nm": "00000000-0000-4000-8000-000000000001",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "toPatch/square-rotation-infinite",
+      "fn": "toPatch",
+      "args": [
+        {
+          "id": "obj:91",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 91
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 91
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 91,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "Infinity"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 110,
+            "y": 110,
+            "width": 80,
+            "height": 80
+          },
+          "apRot": 0
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid"
+        }
+      }
+    },
+    {
+      "name": "toScopedPatch/square-rotation-infinite/geometry",
+      "fn": "toScopedPatch",
+      "args": [
+        {
+          "id": "obj:91",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 91
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 91
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 91,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "Infinity"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 110,
+            "y": 110,
+            "width": 80,
+            "height": 80
+          },
+          "apRot": 0
+        },
+        {
+          "kind": "geometry"
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null
+        }
+      }
+    },
+    {
+      "name": "toCreateDraft/square-rotation-infinite",
+      "fn": "toCreateDraft",
+      "args": [
+        {
+          "id": "obj:91",
+          "ref": {
+            "kind": "objectNumber",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "annotObjectNumber": 91
+          },
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "subtype": "square",
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "source": "vector",
+          "data": {
+            "ref": {
+              "kind": "objectNumber",
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "annotObjectNumber": 91
+            },
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            },
+            "index": 91,
+            "identityQuality": "durable",
+            "nm": null,
+            "flags": {
+              "invisible": false,
+              "hidden": false,
+              "print": true,
+              "noZoom": false,
+              "noRotate": false,
+              "noView": false,
+              "readOnly": false,
+              "locked": false,
+              "toggleNoView": false,
+              "lockedContents": false
+            },
+            "rect": {
+              "left": 100,
+              "bottom": 600,
+              "right": 200,
+              "top": 700
+            },
+            "contents": null,
+            "subject": null,
+            "author": null,
+            "created": null,
+            "modified": null,
+            "blendMode": "normal",
+            "inReplyTo": null,
+            "replyType": null,
+            "subtype": "square",
+            "color": {
+              "r": 239,
+              "g": 68,
+              "b": 68
+            },
+            "interiorColor": null,
+            "opacity": 1,
+            "strokeWidth": 2,
+            "borderStyle": "solid",
+            "cloudyIntensity": null,
+            "rectDifferences": null,
+            "rotation": {
+              "$number": "Infinity"
+            },
+            "unrotatedRect": {
+              "left": 110,
+              "bottom": 610,
+              "right": 190,
+              "top": 690
+            }
+          },
+          "style": {
+            "color": "#ef4444",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "geom": {
+            "t": "rect",
+            "rect": {
+              "x": 100,
+              "y": 100,
+              "width": 100,
+              "height": 100
+            },
+            "ellipse": false
+          },
+          "apBox": {
+            "x": 110,
+            "y": 110,
+            "width": 80,
+            "height": 80
+          },
+          "apRot": 0
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "subtype": "square",
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "rotation": null,
+          "unrotatedRect": null,
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "cloudyIntensity": null,
+          "rectDifferences": null,
+          "borderStyle": "solid",
           "nm": "00000000-0000-4000-8000-000000000001",
           "flags": {
             "invisible": false,
