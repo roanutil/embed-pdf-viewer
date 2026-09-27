@@ -522,9 +522,17 @@ struct StyleProbe {
 fn range_has_style_fn(a: &[Value]) -> Out {
     let d = doc(a, 0)?;
     let probe: StyleProbe = arg(a, 2)?;
+    // `JSON.stringify` equality: a Rust `f64` weight serializes as `700.0`,
+    // which `Value`'s own `==` tells apart from the vector's `700`.
     let predicate = |delta: &RichTextStyleDelta| {
         let v = to_value(delta);
-        v.get(&probe.key) == probe.value.as_ref()
+        match (v.get(&probe.key), probe.value.as_ref()) {
+            (None, None) => true,
+            (Some(actual), Some(expected)) => {
+                plugin_conformance::canonical::equal(expected, actual)
+            }
+            _ => false,
+        }
     };
     ok(range_has_style(&d.paragraphs, arg(a, 1)?, &predicate))
 }

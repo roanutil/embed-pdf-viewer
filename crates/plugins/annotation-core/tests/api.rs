@@ -35,3 +35,27 @@ fn click_create_segment_is_a_segment_policy() {
     let b = ClickCreate::boxed(10.0, 20.0, None);
     assert!(!b.is_segment() && b.has_width());
 }
+
+#[test]
+fn same_page_compares_the_object_number() {
+    let a = PageRef::new(7);
+    assert!(a.same_page(&PageRef::new(7)));
+    assert!(!a.same_page(&PageRef::new(8)));
+}
+
+#[test]
+fn measurement_appearance_is_polygon_only_for_a_polygon_shape() {
+    let parse = |intent: &str| -> MeasurementAppearance {
+        serde_json::from_value(serde_json::json!({
+            "intent": intent,
+            "measure": null,
+            "caption": { "enabled": true },
+            "crop": { "left": 0, "bottom": 0, "right": 612, "top": 792 },
+            "text": "",
+        }))
+        .expect("an appearance")
+    };
+    assert!(parse("PolygonDimension").is_polygon());
+    assert!(!parse("PolyLineDimension").is_polygon());
+    assert!(!parse("LineDimension").is_polygon());
+}
