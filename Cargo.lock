@@ -556,6 +556,7 @@ dependencies = [
 name = "epdf-plugin-page-edit"
 version = "0.0.0"
 dependencies = [
+ "epdf-geometry",
  "epdf-kernel",
  "plugin-conformance",
  "serde",

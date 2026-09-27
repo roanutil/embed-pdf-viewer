@@ -6,11 +6,12 @@
  * Three harness shims live here, and `crates/plugins/render/src/harness.rs`
  * mirrors each:
  *
- *   - `renderPage`'s `signal`. A vector cannot carry an `AbortSignal`, so the
- *     `render` factory wraps the capability: an option `signal:
- *     {"$abortSignal": name}` becomes the signal of a controller named `name`,
- *     and the `signals` test plugin's `abort(name)` aborts it (no reason, so
- *     the reason is the platform's `AbortError` DOMException).
+ *   - The `signal` of `renderPage` and `renderThumbnail`. A vector cannot
+ *     carry an `AbortSignal`, so the `render` factory wraps the capability:
+ *     an option `signal: {"$abortSignal": name}` becomes the signal of a
+ *     controller named `name`, and the `signals` test plugin's `abort(name)`
+ *     aborts it (no reason, so the reason is the platform's `AbortError`
+ *     DOMException).
  *   - `console.warn` and `console.debug`. The plugin's one-shot warnings and
  *     its `debug: true` diagnostics are behaviour a developer reads, so while
  *     a render factory is current they log as callbacks named `console.warn`
@@ -54,6 +55,7 @@ const withSignals = (capability: RenderHostCapability): RenderHostCapability => 
   ...capability,
   renderSource: (page, options) => capability.renderSource(page, { ...options, signal: signalOf(options) }),
   renderPage: (page, options) => capability.renderPage(page, { ...options, signal: signalOf(options) }),
+  renderThumbnail: (page, options) => capability.renderThumbnail(page, { ...options, signal: signalOf(options) }),
 });
 
 registerPlugin('render', {
@@ -434,6 +436,14 @@ const capabilityCases: ScenarioCase[] = [
       settle('r0'),
       cap('renderPage', 11, { scale: 0.5, signal: signal('s1') }),
     ],
+  },
+  {
+    name: 'signal-reaches-a-thumbnail',
+    covers: "renderThumbnail hands its signal to the page render: aborting it rejects the thumbnail with the signal's reason.",
+    plugins: withSignalsPlugin(),
+    engine: { documents: { a: doc() } },
+    snapshot: 'none',
+    steps: [start, open(), v3('renderThumbnail', pr(11), { maxWidth: 40, signal: signal('s1') }), abortSignal('s1'), settle('r0')],
   },
   {
     name: 'signal-after-resolution-is-a-no-op',
@@ -846,6 +856,11 @@ const capabilityCases: ScenarioCase[] = [
       cap('invalidate'),
       emit({ type: 'annotation.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
       emit({ type: 'form.imported' }),
+      // A falsy origin is no origin; any other value goes through originOf. (A non-empty string
+      // would too, but originOf reads its `sub`, String.prototype.sub, as the actor.)
+      emit({ type: 'form.imported', origin: '' }),
+      emit({ type: 'form.imported', origin: 0 }),
+      emit({ type: 'form.imported', origin: 7 }),
       emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }, widget(6, 33)], origin: LOCAL }),
       emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }], origin: LOCAL }),
       emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }], origin: { ...LOCAL, sub: 'bob' } }),

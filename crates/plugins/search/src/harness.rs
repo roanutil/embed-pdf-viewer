@@ -3,7 +3,7 @@
 //! table the reducer suite calls by its TypeScript names.
 //!
 //! It mirrors the shim in `tooling/plugin-conformance/src/suites/search.ts`:
-//! a `findAll` option `signal: {"$abortSignal": name}` is the signal of a
+//! a `findAll` or `search` option `signal: {"$abortSignal": name}` is the signal of a
 //! controller named `name`, which the `search-signals` test plugin's
 //! `abort(name, reason?)` aborts, with the platform's `AbortError`
 //! DOMException when no reason is given.
@@ -184,9 +184,10 @@ impl Search {
             "canSearch" => Outcome::Returned(json!(cap.can_search(mode_arg(present(args, 0))))),
             "search" => {
                 let options = present(args, 1).filter(|v| !v.is_null());
-                // The generator's shim converts `findAll`'s signal only.
-                let options =
-                    SearchOptions { start_page: page_member(options, "startPage"), signal: None };
+                let options = SearchOptions {
+                    start_page: page_member(options, "startPage"),
+                    signal: signal_member(options),
+                };
                 Outcome::promise(cap.search(query_arg(args)?, options))
             }
             "refresh" => Outcome::promise(cap.refresh(OperationOptions::default())),

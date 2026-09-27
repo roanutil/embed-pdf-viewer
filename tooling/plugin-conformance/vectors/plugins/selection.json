@@ -47259,7 +47259,7 @@
     },
     {
       "name": "handler-priority",
-      "covers": "The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines.",
+      "covers": "The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines. Each gesture names its handler, the text handler as 'text-select'.",
       "plugins": [
         {
           "factory": "interaction"
@@ -48105,6 +48105,20 @@
             "token": "interaction",
             "doc": "a"
           },
+          "method": "onGestureStarted",
+          "args": [
+            {
+              "$fn": "started",
+              "returns": null
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "interaction",
+            "doc": "a"
+          },
           "method": "registerHandler",
           "args": [
             {
@@ -48545,6 +48559,39 @@
         },
         {
           "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "loaded": {
+                  "1": true,
+                  "5": true,
+                  "9": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "actions": [
             {
               "slice": "selection::a",
@@ -48577,6 +48624,19 @@
                       "link-nav"
                     ]
                   }
+                }
+              ]
+            },
+            {
+              "fn": "started",
+              "args": [
+                {
+                  "handlerId": "text-select",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "pointerType": "mouse"
                 }
               ]
             }
@@ -48719,6 +48779,19 @@
                     "ctrl": false,
                     "meta": false
                   }
+                }
+              ]
+            },
+            {
+              "fn": "started",
+              "args": [
+                {
+                  "handlerId": "below",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "pointerType": "mouse"
                 }
               ]
             }
@@ -52320,6 +52393,1693 @@
                         "x": 100,
                         "y": 200,
                         "width": 12,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                },
+                "loaded": {
+                  "1": true,
+                  "5": true,
+                  "9": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-crop-change-re-derives-the-seam",
+      "covers": "The seam is keyed by the rotation, userUnit and crop box: a registry change that moves a page crop box re-derives it from the cached layout, so the recomputed segments land in the new content space.",
+      "plugins": [
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "selection"
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 90,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 610,
+                    "top": 820
+                  },
+                  "crop": {
+                    "left": 10,
+                    "bottom": 20,
+                    "right": 610,
+                    "top": 820
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 9
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": [
+                "doc.text.select",
+                "doc.text.copy"
+              ]
+            },
+            "responses": [
+              {
+                "path": "page.geometry.read",
+                "pon": 1,
+                "value": {
+                  "runs": [
+                    {
+                      "rect": {
+                        "left": 50,
+                        "bottom": 738,
+                        "right": 116,
+                        "top": 750
+                      },
+                      "charStart": 0,
+                      "glyphs": [
+                        {
+                          "looseBox": {
+                            "left": 50,
+                            "bottom": 738,
+                            "right": 56,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 50.5,
+                            "bottom": 739,
+                            "right": 55.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 56,
+                            "bottom": 738,
+                            "right": 62,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 56.5,
+                            "bottom": 739,
+                            "right": 61.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 62,
+                            "bottom": 738,
+                            "right": 68,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 62.5,
+                            "bottom": 739,
+                            "right": 67.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 68,
+                            "bottom": 738,
+                            "right": 74,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 68.5,
+                            "bottom": 739,
+                            "right": 73.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 74,
+                            "bottom": 738,
+                            "right": 80,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 74.5,
+                            "bottom": 739,
+                            "right": 79.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 80,
+                            "bottom": 738,
+                            "right": 86,
+                            "top": 750
+                          },
+                          "flags": 1
+                        },
+                        {
+                          "looseBox": {
+                            "left": 86,
+                            "bottom": 738,
+                            "right": 92,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 86.5,
+                            "bottom": 739,
+                            "right": 91.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 92,
+                            "bottom": 738,
+                            "right": 98,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 92.5,
+                            "bottom": 739,
+                            "right": 97.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 98,
+                            "bottom": 738,
+                            "right": 104,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 98.5,
+                            "bottom": 739,
+                            "right": 103.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 104,
+                            "bottom": 738,
+                            "right": 110,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 104.5,
+                            "bottom": 739,
+                            "right": 109.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 110,
+                            "bottom": 738,
+                            "right": 116,
+                            "top": 750
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 110.5,
+                            "bottom": 739,
+                            "right": 115.5,
+                            "top": 749
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 0,
+                            "top": 0
+                          },
+                          "flags": 2
+                        },
+                        {
+                          "looseBox": {
+                            "left": 0,
+                            "bottom": 0,
+                            "right": 0,
+                            "top": 0
+                          },
+                          "flags": 2
+                        }
+                      ],
+                      "fontSize": 12
+                    },
+                    {
+                      "rect": {
+                        "left": 50,
+                        "bottom": 718,
+                        "right": 116,
+                        "top": 730
+                      },
+                      "charStart": 13,
+                      "glyphs": [
+                        {
+                          "looseBox": {
+                            "left": 50,
+                            "bottom": 718,
+                            "right": 56,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 50.5,
+                            "bottom": 719,
+                            "right": 55.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 56,
+                            "bottom": 718,
+                            "right": 62,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 56.5,
+                            "bottom": 719,
+                            "right": 61.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 62,
+                            "bottom": 718,
+                            "right": 68,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 62.5,
+                            "bottom": 719,
+                            "right": 67.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 68,
+                            "bottom": 718,
+                            "right": 74,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 68.5,
+                            "bottom": 719,
+                            "right": 73.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 74,
+                            "bottom": 718,
+                            "right": 80,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 74.5,
+                            "bottom": 719,
+                            "right": 79.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 80,
+                            "bottom": 718,
+                            "right": 86,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 80.5,
+                            "bottom": 719,
+                            "right": 85.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 86,
+                            "bottom": 718,
+                            "right": 92,
+                            "top": 730
+                          },
+                          "flags": 1
+                        },
+                        {
+                          "looseBox": {
+                            "left": 92,
+                            "bottom": 718,
+                            "right": 98,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 92.5,
+                            "bottom": 719,
+                            "right": 97.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 98,
+                            "bottom": 718,
+                            "right": 104,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 98.5,
+                            "bottom": 719,
+                            "right": 103.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 104,
+                            "bottom": 718,
+                            "right": 110,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 104.5,
+                            "bottom": 719,
+                            "right": 109.5,
+                            "top": 729
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 110,
+                            "bottom": 718,
+                            "right": 116,
+                            "top": 730
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 110.5,
+                            "bottom": 719,
+                            "right": 115.5,
+                            "top": 729
+                          }
+                        }
+                      ],
+                      "fontSize": 12
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.geometry.read",
+                "pon": 5,
+                "value": {
+                  "runs": [
+                    {
+                      "rect": {
+                        "left": 40,
+                        "bottom": 688,
+                        "right": 118,
+                        "top": 700
+                      },
+                      "charStart": 0,
+                      "glyphs": [
+                        {
+                          "looseBox": {
+                            "left": 40,
+                            "bottom": 688,
+                            "right": 46,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 40.5,
+                            "bottom": 689,
+                            "right": 45.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 46,
+                            "bottom": 688,
+                            "right": 52,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 46.5,
+                            "bottom": 689,
+                            "right": 51.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 52,
+                            "bottom": 688,
+                            "right": 58,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 52.5,
+                            "bottom": 689,
+                            "right": 57.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 58,
+                            "bottom": 688,
+                            "right": 64,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 58.5,
+                            "bottom": 689,
+                            "right": 63.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 64,
+                            "bottom": 688,
+                            "right": 70,
+                            "top": 700
+                          },
+                          "flags": 1
+                        },
+                        {
+                          "looseBox": {
+                            "left": 70,
+                            "bottom": 688,
+                            "right": 76,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 70.5,
+                            "bottom": 689,
+                            "right": 75.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 76,
+                            "bottom": 688,
+                            "right": 82,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 76.5,
+                            "bottom": 689,
+                            "right": 81.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 82,
+                            "bottom": 688,
+                            "right": 88,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 82.5,
+                            "bottom": 689,
+                            "right": 87.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 88,
+                            "bottom": 688,
+                            "right": 94,
+                            "top": 700
+                          },
+                          "flags": 1
+                        },
+                        {
+                          "looseBox": {
+                            "left": 94,
+                            "bottom": 688,
+                            "right": 100,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 94.5,
+                            "bottom": 689,
+                            "right": 99.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 100,
+                            "bottom": 688,
+                            "right": 106,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 100.5,
+                            "bottom": 689,
+                            "right": 105.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 106,
+                            "bottom": 688,
+                            "right": 112,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 106.5,
+                            "bottom": 689,
+                            "right": 111.5,
+                            "top": 699
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 112,
+                            "bottom": 688,
+                            "right": 118,
+                            "top": 700
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 112.5,
+                            "bottom": 689,
+                            "right": 117.5,
+                            "top": 699
+                          }
+                        }
+                      ],
+                      "fontSize": 12
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.geometry.read",
+                "pon": 9,
+                "value": {
+                  "runs": [
+                    {
+                      "rect": {
+                        "left": 100,
+                        "bottom": 588,
+                        "right": 118,
+                        "top": 600
+                      },
+                      "charStart": 0,
+                      "glyphs": [
+                        {
+                          "looseBox": {
+                            "left": 100,
+                            "bottom": 588,
+                            "right": 106,
+                            "top": 600
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 100.5,
+                            "bottom": 589,
+                            "right": 105.5,
+                            "top": 599
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 106,
+                            "bottom": 588,
+                            "right": 112,
+                            "top": 600
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 106.5,
+                            "bottom": 589,
+                            "right": 111.5,
+                            "top": 599
+                          }
+                        },
+                        {
+                          "looseBox": {
+                            "left": 112,
+                            "bottom": 588,
+                            "right": 118,
+                            "top": 600
+                          },
+                          "flags": 0,
+                          "tightBox": {
+                            "left": 112.5,
+                            "bottom": 589,
+                            "right": 117.5,
+                            "top": 599
+                          }
+                        }
+                      ],
+                      "fontSize": 12
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "page.text.read",
+                "pon": 1,
+                "value": {
+                  "text": "Hello world\r\nSecond line",
+                  "charCount": 24
+                }
+              },
+              {
+                "path": "page.text.read",
+                "pon": 5,
+                "value": {
+                  "text": "Page two text",
+                  "charCount": 13
+                }
+              },
+              {
+                "path": "page.text.read",
+                "pon": 9,
+                "value": {
+                  "text": "A😀B",
+                  "charCount": 3,
+                  "charMap": [
+                    [
+                      2,
+                      3
+                    ]
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "selection::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 5
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "pageObjectNumber": 9
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "select",
+          "args": [
+            {
+              "start": {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "index": 0
+              },
+              "end": {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "index": 5
+              }
+            }
+          ]
+        },
+        {
+          "op": "emit",
+          "doc": "a",
+          "event": {
+            "type": "pages.rotated",
+            "layout": {
+              "pageCount": 3,
+              "pages": [
+                {
+                  "index": 0,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "label": null,
+                  "size": {
+                    "width": 600,
+                    "height": 800
+                  },
+                  "rotation": 0,
+                  "userUnit": 1,
+                  "boxes": {
+                    "media": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 610,
+                      "top": 820
+                    },
+                    "crop": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 610,
+                      "top": 820
+                    }
+                  }
+                },
+                {
+                  "index": 1,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "label": null,
+                  "size": {
+                    "width": 600,
+                    "height": 800
+                  },
+                  "rotation": 90,
+                  "userUnit": 1,
+                  "boxes": {
+                    "media": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 610,
+                      "top": 820
+                    },
+                    "crop": {
+                      "left": 10,
+                      "bottom": 20,
+                      "right": 610,
+                      "top": 820
+                    }
+                  }
+                },
+                {
+                  "index": 2,
+                  "ref": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 9
+                  },
+                  "label": null,
+                  "size": {
+                    "width": 600,
+                    "height": 800
+                  },
+                  "rotation": 0,
+                  "userUnit": 1,
+                  "boxes": {
+                    "media": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 600,
+                      "top": 800
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "getSnapshot",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "loaded": {},
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "selection::a",
+              "action": {
+                "type": "pageLoaded",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.geometry.read",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "loaded": {
+                  "1": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "selection::a",
+              "action": {
+                "type": "pageLoaded",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.geometry.read",
+              "pon": 5,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "loaded": {
+                  "1": true,
+                  "5": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "selection::a",
+              "action": {
+                "type": "pageLoaded",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 9
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.geometry.read",
+              "pon": 9,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": null,
+                "segments": {},
+                "loaded": {
+                  "1": true,
+                  "5": true,
+                  "9": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "selection::a",
+              "action": {
+                "type": "set",
+                "selection": {
+                  "anchor": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 0
+                  },
+                  "focus": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 4
+                  }
+                },
+                "segments": {
+                  "1": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 50,
+                          "y": 50
+                        },
+                        "upperEnd": {
+                          "x": 80,
+                          "y": 50
+                        },
+                        "lowerStart": {
+                          "x": 50,
+                          "y": 62
+                        },
+                        "lowerEnd": {
+                          "x": 80,
+                          "y": 62
+                        }
+                      },
+                      "rect": {
+                        "x": 50,
+                        "y": 50,
+                        "width": 30,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": {
+                  "anchor": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 0
+                  },
+                  "focus": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 4
+                  }
+                },
+                "segments": {
+                  "1": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 50,
+                          "y": 50
+                        },
+                        "upperEnd": {
+                          "x": 80,
+                          "y": 50
+                        },
+                        "lowerStart": {
+                          "x": 50,
+                          "y": 62
+                        },
+                        "lowerEnd": {
+                          "x": 80,
+                          "y": 62
+                        }
+                      },
+                      "rect": {
+                        "x": 50,
+                        "y": 50,
+                        "width": 30,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                },
+                "loaded": {
+                  "1": true,
+                  "5": true,
+                  "9": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "selection::a",
+              "action": {
+                "type": "set",
+                "selection": {
+                  "anchor": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 0
+                  },
+                  "focus": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 4
+                  }
+                },
+                "segments": {
+                  "1": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 40,
+                          "y": 70
+                        },
+                        "upperEnd": {
+                          "x": 70,
+                          "y": 70
+                        },
+                        "lowerStart": {
+                          "x": 40,
+                          "y": 82
+                        },
+                        "lowerEnd": {
+                          "x": 70,
+                          "y": 82
+                        }
+                      },
+                      "rect": {
+                        "x": 40,
+                        "y": 70,
+                        "width": 30,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-pages-updated"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": {
+                  "anchor": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 0
+                  },
+                  "focus": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 4
+                  }
+                },
+                "segments": {
+                  "1": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 40,
+                          "y": 70
+                        },
+                        "upperEnd": {
+                          "x": 70,
+                          "y": 70
+                        },
+                        "lowerStart": {
+                          "x": 40,
+                          "y": 82
+                        },
+                        "lowerEnd": {
+                          "x": 70,
+                          "y": 82
+                        }
+                      },
+                      "rect": {
+                        "x": 40,
+                        "y": 70,
+                        "width": 30,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                },
+                "loaded": {
+                  "1": true,
+                  "5": true,
+                  "9": true
+                },
+                "highlightHidden": false,
+                "gestureActive": false
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "pages": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 40,
+                          "y": 70
+                        },
+                        "upperEnd": {
+                          "x": 70,
+                          "y": 70
+                        },
+                        "lowerStart": {
+                          "x": 40,
+                          "y": 82
+                        },
+                        "lowerEnd": {
+                          "x": 70,
+                          "y": 82
+                        }
+                      },
+                      "rect": {
+                        "x": 40,
+                        "y": 70,
+                        "width": 30,
+                        "height": 12
+                      },
+                      "advance": 1
+                    }
+                  ]
+                }
+              ],
+              "start": {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "glyphQuad": {
+                  "upperStart": {
+                    "x": 40,
+                    "y": 70
+                  },
+                  "upperEnd": {
+                    "x": 46,
+                    "y": 70
+                  },
+                  "lowerStart": {
+                    "x": 40,
+                    "y": 82
+                  },
+                  "lowerEnd": {
+                    "x": 46,
+                    "y": 82
+                  }
+                },
+                "advance": 1,
+                "rect": {
+                  "x": 40,
+                  "y": 70,
+                  "width": 6,
+                  "height": 12
+                }
+              },
+              "end": {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "glyphQuad": {
+                  "upperStart": {
+                    "x": 64,
+                    "y": 70
+                  },
+                  "upperEnd": {
+                    "x": 70,
+                    "y": 70
+                  },
+                  "lowerStart": {
+                    "x": 64,
+                    "y": 82
+                  },
+                  "lowerEnd": {
+                    "x": 70,
+                    "y": 82
+                  }
+                },
+                "advance": 1,
+                "rect": {
+                  "x": 64,
+                  "y": 70,
+                  "width": 6,
+                  "height": 12
+                }
+              },
+              "direction": "forward",
+              "range": {
+                "start": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "index": 0
+                },
+                "end": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "index": 5
+                }
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "selection::a": {
+                "selection": {
+                  "anchor": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 0
+                  },
+                  "focus": {
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "glyph": 4
+                  }
+                },
+                "segments": {
+                  "1": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 40,
+                          "y": 70
+                        },
+                        "upperEnd": {
+                          "x": 70,
+                          "y": 70
+                        },
+                        "lowerStart": {
+                          "x": 40,
+                          "y": 82
+                        },
+                        "lowerEnd": {
+                          "x": 70,
+                          "y": 82
+                        }
+                      },
+                      "rect": {
+                        "x": 40,
+                        "y": 70,
+                        "width": 30,
                         "height": 12
                       },
                       "advance": 1
@@ -64629,7 +66389,7 @@
     },
     {
       "name": "read-text-in-range",
-      "covers": "readTextInRange reads any range without touching the selection: an empty or backward range is \"\", an end at index 0 stops at the previous page, a negative start clamps, a range spans pages; a page outside the document rejects not-found and a caller without doc.text.copy permission-denied. Options without a signal read normally.",
+      "covers": "readTextInRange reads any range without touching the selection: an empty or backward range is \"\" without reading the page, an end at index 0 stops at the previous page, a negative start clamps, a range spans pages; a page outside the document rejects not-found and a caller without doc.text.copy permission-denied. Options without a signal read normally.",
       "plugins": [
         {
           "factory": "interaction"
@@ -66212,6 +67972,32 @@
               "start": {
                 "page": {
                   "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "index": 3
+              },
+              "end": {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "index": 3
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "selection",
+            "doc": "a"
+          },
+          "method": "readTextInRange",
+          "args": [
+            {
+              "start": {
+                "page": {
+                  "kind": "objectNumber",
                   "pageObjectNumber": 1
                 },
                 "index": 6
@@ -66609,18 +68395,11 @@
           "settled": [
             {
               "promise": 3,
-              "resolved": "world"
+              "resolved": ""
             }
           ],
           "actions": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "page.text.read",
-              "pon": 1,
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -66640,11 +68419,18 @@
           "settled": [
             {
               "promise": 4,
-              "resolved": ""
+              "resolved": "world"
             }
           ],
           "actions": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.text.read",
+              "pon": 1,
+              "args": []
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -66688,7 +68474,7 @@
           "settled": [
             {
               "promise": 6,
-              "resolved": "Second line"
+              "resolved": ""
             }
           ],
           "actions": [],
@@ -66712,7 +68498,7 @@
           "settled": [
             {
               "promise": 7,
-              "resolved": "Hel"
+              "resolved": "Second line"
             }
           ],
           "actions": [],
@@ -66736,6 +68522,30 @@
           "settled": [
             {
               "promise": 8,
+              "resolved": "Hel"
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            },
+            "b": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 8
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 9,
               "resolved": "line\nPage two text\nA😀"
             }
           ],
@@ -66766,13 +68576,13 @@
             }
           },
           "outcome": {
-            "promise": 8
+            "promise": 9
           }
         },
         {
           "settled": [
             {
-              "promise": 9,
+              "promise": 10,
               "rejected": {
                 "$error": {
                   "name": "PluginError",
@@ -66797,13 +68607,13 @@
             }
           },
           "outcome": {
-            "promise": 9
+            "promise": 10
           }
         },
         {
           "settled": [
             {
-              "promise": 10,
+              "promise": 11,
               "rejected": {
                 "$error": {
                   "name": "PluginError",
@@ -66828,7 +68638,7 @@
             }
           },
           "outcome": {
-            "promise": 10
+            "promise": 11
           }
         },
         {
@@ -66968,7 +68778,7 @@
         {
           "settled": [
             {
-              "promise": 11,
+              "promise": 12,
               "resolved": "Hello"
             }
           ],
@@ -66986,13 +68796,13 @@
             }
           },
           "outcome": {
-            "promise": 11
+            "promise": 12
           }
         },
         {
           "settled": [
             {
-              "promise": 12,
+              "promise": 13,
               "rejected": {
                 "$error": {
                   "name": "PluginError",
@@ -67020,7 +68830,7 @@
             }
           },
           "outcome": {
-            "promise": 12
+            "promise": 13
           }
         }
       ]

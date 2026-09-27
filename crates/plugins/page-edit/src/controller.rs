@@ -10,6 +10,7 @@
 use std::future::Future;
 use std::rc::Rc;
 
+use epdf_geometry::js::number_to_string;
 use epdf_kernel::bytes::Bytes;
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
@@ -35,19 +36,6 @@ pub fn js_number(n: f64) -> Value {
         json!({ "$number": if n > 0.0 { "Infinity" } else { "-Infinity" } })
     } else {
         json!(n)
-    }
-}
-
-/// `String(n)` for the numbers an index can be.
-fn js_string(n: f64) -> String {
-    if n.is_nan() {
-        "NaN".into()
-    } else if n.is_infinite() {
-        if n > 0.0 { "Infinity".into() } else { "-Infinity".into() }
-    } else if n.fract() == 0.0 && n.abs() < 1e21 {
-        format!("{}", n as i64)
-    } else {
-        format!("{n}")
     }
 }
 
@@ -384,7 +372,7 @@ impl PageEditCapability {
                             plugin_error(
                                 code::NOT_FOUND,
                                 CAPABILITY,
-                                format!("the PDF has no page {}", js_string(index)),
+                                format!("the PDF has no page {}", number_to_string(index)),
                                 None,
                                 None,
                             )

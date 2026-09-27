@@ -2,7 +2,7 @@
 
 `packages/plugin/render` in Rust, plus `engine-core`'s render-policy snaps (`snapFullPageViewport`,
 `snapAppearanceScale`, `snapTileScale`, `CONTINUOUS_RENDER_POLICY`), which the plugin's arithmetic
-rests on. All 1,449 cases in six vector files replay identically (`cargo test -p
+rests on. All 1,450 cases in six vector files replay identically (`cargo test -p
 epdf-plugin-render`):
 
 | File | Kind | Cases | Covers |
@@ -11,7 +11,7 @@ epdf-plugin-render`):
 | `vectors/plugins/render-strategy.json` | function | 457 | `resolveRenderOptions`, `resolveStrategy` over 6 policies × 20 option sets, `baseAskWidth` |
 | `vectors/plugins/render-policy.json` | function | 180 | the three snaps, 31 of them throwing `InvalidArg` |
 | `vectors/plugins/render-ledger.json` | function | 33 | `reduceRender` and `annotatedPons` |
-| `vectors/plugins/render-capability.json` | scenario | 37 | both render doors, keys, conformance, the raster store (singleflight, refcounted aborts, LRU by cost), batches, epochs, the three events, permission refusals, close |
+| `vectors/plugins/render-capability.json` | scenario | 38 | both render doors, keys, conformance, the raster store (singleflight, refcounted aborts, LRU by cost), batches, epochs, the three events, permission refusals, close |
 | `vectors/plugins/render-tile-plane.json` | scenario | 41 | the tile manager behind `createViewDemand`: engagement, levels, retention, settle timers, backpressure, views, handle refcounts |
 
 `tests/api.rs` covers the typed surface the vectors can't reach: `ViewDemand` identity, the store and
@@ -62,9 +62,9 @@ never touches an `ImageBitmap` or object URL. It costs a handle from its `source
 ## Harness shims
 
 Three things in `tooling/plugin-conformance/src/suites/render.ts` exist only for the vectors, and
-`src/harness.rs` mirrors each. A `renderSource` or `renderPage` option `signal: {"$abortSignal":
-name}` is the signal of a controller the `signals` test plugin aborts. `renderThumbnail` and
-`renderPages` are not wrapped, so their cases carry no signal. The plugin's warnings and debug
+`src/harness.rs` mirrors each. A `renderSource`, `renderPage` or `renderThumbnail` option `signal:
+{"$abortSignal": name}` is the signal of a controller the `signals` test plugin aborts.
+`renderPages` is not wrapped, so its cases carry no signal. The plugin's warnings and debug
 lines log as callbacks named `console.warn` and `console.debug`, so their text and their one-shot
 flags are compared. Every `page.render.image` call defers under its own label, `r0`, `r1`, ..., so a step
 settles exactly the call it means.
@@ -138,21 +138,47 @@ have no entry there.
 
 ## Mutation testing
 
-Pre-v3, rerun pending. The run below predates the controller split; `capability.rs` and
-`reducer.rs` are gone, so their entries are dropped, and the line numbers of the rest may have
-moved. `cargo mutants -p epdf-plugin-render --test-package epdf-plugin-render` tested 575 mutants:
-500 caught, 6 timeouts, 54 unviable, 15 missed. The misses whose code remains were equivalent:
+`scripts/mutants.sh -p epdf-plugin-render --test-package epdf-plugin-render --file <file>`, file by
+file over every module but `harness.rs`, catches 527 of 543 viable mutants (521 caught, 6
+timeouts; 98 unviable). Five of those are killed by new cases, checked by applying each by hand.
+Three origins on `form.imported` in `events-reach-listeners`, the falsy `''` and `0` and the truthy
+`7`, kill four of the five `origin_of_event` guard mutants. `signal-reaches-a-thumbnail` kills deleting
+`signal` from `render_thumbnail`'s options, which needed the harness shim to wrap `renderThumbnail`
+on both sides.
 
-- The three guard and `==` mutants at `tile_manager.rs:174` (the strategy memo). The policy doesn't
-  change within a document, so recomputing or never recomputing gives the same strategy.
-- `tile_manager.rs:353` and `:678`, `bleed > 0` to `>= 0`. Bleeding by zero points returns the same
-  rect, because a tile's paint rect is already clamped to the page.
-- `tile_manager.rs:464`, the fresh-state epoch sentinel `-1` to `1`. A first plan at epoch 1 skips a
-  reset that would have cleared an empty state.
-- `tile_manager.rs:610`, both `&&` to `||` in the settle-cancel test. The mutated condition differs
-  only when no timer is armed, where cancelling clears `pending_level`, which only an armed timer
-  reads.
-- `tile_manager.rs:851`, `same_value_zero`'s NaN arm. A NaN level never reaches the paint list: its
-  rects are NaN and fail the visibility test.
-- `js.rs:68`, `+` to `*` in the non-ASCII collation rank. Both keep non-ASCII after ASCII and
-  ordered by code point.
+The 16 survivors are equivalent or out of a vector's reach.
+
+`src/controller.rs`:
+
+- `:71`, the empty-string guard replaced with `true`. The mutant sends every string origin to the
+  system origin. Only a non-empty string tells them apart, and for one the TypeScript's `originOf`
+  reads `origin.sub` as `String.prototype.sub`, a function, which a Rust `Value` cannot hold.
+- `:174`, `==` to `!=` in the policy memo, and the three guard and `==` mutants at `:187`, the
+  strategy memo. The kernel reads the policy once at bring-up and a document-scoped instance never
+  sees another, so recomputing gives the same value and never recomputing is never stale. The
+  one-shot flag keeps the format warning from repeating.
+
+`src/tile_manager.rs`:
+
+- `:175`, the same three strategy-memo mutants in the tile manager, for the same reason.
+- `:353` and `:678`, `bleed > 0` to `>=`. Bleeding a tile's paint rect by zero points returns the
+  same rect, because the rect is already clamped to the page; `(x + w) - x` can differ from `w` by
+  one rounding, far under the vectors' 1e-12 tolerance.
+- `:464`, the fresh-state epoch sentinel `-1` to `1`. A first plan at epoch 1 skips a reset that
+  would have cleared an already empty state.
+- `:610`, both `&&` to `||` in the settle-cancel test. `abort_all` clears the timer whenever the
+  level is cleared, and a timer is only armed when `settleMs > 0`, so a timer never coexists with a
+  first engagement or with a level change at this line. The mutated condition therefore differs
+  only when no timer is armed, where it clears `pending_level`, which only an armed timer reads.
+- `:845`, `same_value_zero`'s `&&` to `||`. Both sides are scales of paint sources. A NaN scale
+  makes `tiles_in_rect` yield no coordinates, so no entry and no paint source ever carries one.
+
+`src/js.rs`:
+
+- `:68`, `+` to `*` in the non-ASCII collation rank. Both keep non-ASCII after ASCII and ordered by
+  code point, and the plugin's keys are ASCII.
+
+`src/model.rs`:
+
+- `:34`, `initial_render_state()` replaced with `Default::default()`. Its body is
+  `RenderState::default()`.

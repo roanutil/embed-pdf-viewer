@@ -707,13 +707,14 @@ const cases: ScenarioCase[] = [
   },
   {
     name: 'handler-priority',
-    covers: 'The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines.',
+    covers: "The text handler sits at priority 60: a capturing handler at 59 only gets the downs it declines. Each gesture names its handler, the text handler as 'text-select'.",
     plugins,
     engine: { documents: { a: doc() } },
     snapshot: slice,
     steps: [
       ...opened,
       ...loadAll,
+      hub('onGestureStarted', { $fn: 'started', returns: null }),
       hub('registerHandler', {
         id: 'below',
         priority: 59,
@@ -753,6 +754,24 @@ const cases: ScenarioCase[] = [
       emit({ type: 'pages.inserted', layout: { pageCount: 3, pages: [layout(0, 1), layout(1, 5), layout(2, 9)] } }),
       sel('snapshot'),
       sel('ensurePage', 5),
+    ],
+  },
+  {
+    name: 'a-crop-change-re-derives-the-seam',
+    covers:
+      'The seam is keyed by the rotation, userUnit and crop box: a registry change that moves a page crop box re-derives it from the cached layout, so the recomputed segments land in the new content space.',
+    plugins,
+    engine: { documents: { a: doc() } },
+    snapshot: slice,
+    steps: [
+      ...opened,
+      ...loadAll,
+      sel('select', { start: { pon: 1, index: 0 }, end: { pon: 1, index: 5 } }),
+      emit({
+        type: 'pages.rotated',
+        layout: { pageCount: 3, pages: [layout(0, 1, { boxes: { media: offset, crop: offset } }), pages[1], pages[2]] },
+      }),
+      sel('snapshot'),
     ],
   },
   {
@@ -880,7 +899,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'read-text-in-range',
     covers:
-      'readTextInRange reads any range without touching the selection: an empty or backward range is "", an end at index 0 stops at the previous page, a negative start clamps, a range spans pages; a page outside the document rejects not-found and a caller without doc.text.copy permission-denied. Options without a signal read normally.',
+      'readTextInRange reads any range without touching the selection: an empty or backward range is "" without reading the page, an end at index 0 stops at the previous page, a negative start clamps, a range spans pages; a page outside the document rejects not-found and a caller without doc.text.copy permission-denied. Options without a signal read normally.',
     plugins,
     engine: {
       documents: {
@@ -893,6 +912,8 @@ const cases: ScenarioCase[] = [
       start,
       openDoc('a'),
       openDoc('b'),
+      // Empty on a page whose text was never read: no read goes out.
+      sel('readTextInRange', { start: { page: pr(5), index: 3 }, end: { page: pr(5), index: 3 } }),
       sel('readTextInRange', { start: { page: pr(1), index: 6 }, end: { page: pr(1), index: 11 } }),
       sel('readTextInRange', { start: { page: pr(1), index: 5 }, end: { page: pr(1), index: 5 } }),
       sel('readTextInRange', { start: { page: pr(5), index: 0 }, end: { page: pr(1), index: 3 } }),
@@ -1155,7 +1176,12 @@ const zeroFirst: PageGeometrySnapshot = {
     run(1, glyphs('cd', 20, 97)),
   ],
 };
-const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst, handedness };
+/** A zero-width glyph, then real ones 7pt past it: the average width is 0
+ *  when the second glyph is weighed, so the gap never splits the run. */
+const zeroLead: PageGeometrySnapshot = {
+  runs: [run(0, [{ looseBox: { left: 13, bottom: 88, right: 13, top: 100 }, flags: 0 }, ...glyphs('cd', 20, 100)])],
+};
+const sweepFixtures: Record<string, PageGeometrySnapshot> = { geo1, tilted, lines, gaps, zeroFirst, handedness, zeroLead };
 
 /** Two upright runs, the second shifted by `dx` past the first's end,
  *  raised by `dy`, `h2` tall, `n2` glyphs, at font size `fs2`: the merge
@@ -1193,6 +1219,8 @@ const maps: Record<string, PageTextSnapshot> = {
   emoji: { text: 'a😀b😀c😀d', charCount: 7, charMap: [[2, 3], [4, 6], [6, 9]] },
   dropped: { text: 'abcd', charCount: 7, charMap: [[2, 1], [4, 2], [6, 3]] },
   mixed: { text: 'x😀yz', charCount: 6, charMap: [[1, 1], [2, 3], [3, 3], [5, 4]] },
+  // Five anchors: enough that the binary search takes a third step.
+  emojiRow: { text: 'a😀b😀c😀d😀e😀f', charCount: 11, charMap: [[2, 3], [4, 6], [6, 9], [8, 12], [10, 15]] },
 };
 
 /** `textSegmentsForRange` from every start in [-1, n] for a spread of
@@ -1294,6 +1322,9 @@ const geometryCases: FunctionCase[] = [
     HANDEDNESS_PHIS.map((phi) => fc('buildPageTextLayout', `handedness-${theta}-${phi}`, { runs: [shearedRun(0, theta, phi)] })),
   ),
   fc('buildPageTextLayout', 'handedness-all', handedness),
+  // Exactly vertical baselines (cos 90 degrees rounds away against x = 200), so each ascent has
+  // y = 0; two cells of each direction still share one frame.
+  fc('buildPageTextLayout', 'vertical-baselines', { runs: [shearedRun(0, 90, 90), shearedRun(1, 90, 90), shearedRun(2, 270, 90), shearedRun(3, 270, 90)] }),
   ...[
     ['inside-tight', { x: 14, y: 95 }],
     ['gap-between-glyphs-tolerance', { x: 45, y: 95 }],
@@ -1310,6 +1341,17 @@ const geometryCases: FunctionCase[] = [
   fc('textGlyphAt', 'empty-layout', empty, { x: 0, y: 0 }),
   fc('textGlyphAt', 'only-empty-glyphs', { runs: [{ rect: { left: 0, bottom: 0, right: 10, top: 10 }, charStart: 0, glyphs: [{ looseBox: ZERO, flags: 2 }] }] }, { x: 20, y: 5 }),
   fc('textGlyphAt', 'page-1-line-1', geo1, { x: 53, y: 744 }),
+  // A loose-only glyph filling its run: a point exactly half a tolerance outside the run rect is
+  // still a candidate (half = 12 * 1 / 2 = 6).
+  ...[
+    ['on-the-left-tolerance-edge', { x: 14, y: 94 }],
+    ['on-the-right-tolerance-edge', { x: 34, y: 94 }],
+  ].map(([label, p]) =>
+    fc('textGlyphAt', label as string, { runs: [{ rect: { left: 20, bottom: 88, right: 28, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 20, bottom: 88, right: 28, top: 100 }, flags: 0 }] }] }, p, 1),
+  ),
+  // A run rect that does not cover its glyph: the run-rect prefilter rejects the point before the
+  // glyph test could accept it.
+  fc('textGlyphAt', 'run-rect-prefilters-the-glyph', { runs: [{ rect: { left: 20, bottom: 88, right: 28, top: 100 }, charStart: 0, glyphs: [{ looseBox: { left: 20, bottom: 50, right: 28, top: 62 }, flags: 0 }] }] }, { x: 24, y: 56 }, 1),
   ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) => fc('expandTextRangeToWord', `varied-${i - 1}`, varied, i - 1)),
   ...Array.from({ length: allGlyphs(varied) + 2 }, (_, i) => fc('expandTextRangeToLine', `varied-${i - 1}`, varied, i - 1)),
   fc('expandTextRangeToWord', 'page-1', geo1, 8),
@@ -1341,6 +1383,10 @@ const geometryCases: FunctionCase[] = [
   ].map(([from, count]) => fc('textSegmentsForRange', `varied-${from}-${count}`, varied, from, count)),
   fc('textSegmentsForRange', 'empty-layout', empty, 0, 3),
   fc('textSegmentsForRange', 'page-1-both-lines', geo1, 6, 12),
+  // A run whose charStart overhangs the glyphs the layout holds: the range clamps to the last glyph.
+  fc('textSegmentsForRange', 'char-start-past-the-glyphs', { runs: [run(1, glyphs('ab', 0, 100))] }, 0, 5),
+  // Right to left near the float limit: the centres halve sums that doubling would overflow.
+  fc('textSegmentsForRange', 'rtl-near-the-float-limit', { runs: [{ rect: { left: 6e307, bottom: 88, right: 8e307, top: 100 }, charStart: 0, glyphs: [8e307, 6e307].map((x) => ({ looseBox: { left: x, bottom: 88, right: x, top: 100 }, flags: 0 })) }] }, 0, 2),
   fc('textSegmentsForRange', 'far-glyph-splits-the-run', { runs: [run(0, [...glyphs('ab', 0, 100), ...glyphs('c', 200, 100)])] }, 0, 3),
   fc('textSegmentsForRange', 'zero-width-glyphs', { runs: [{ rect: { left: 0, bottom: 0, right: 0, top: 10 }, charStart: 0, glyphs: [g8(0, 0, 0, 0, 10), g8(0, 0, 0, 0, 10)] }] }, 0, 2),
   fc('textSegmentsForRange', 'mixed-all', mixed, 0, 5),
@@ -1367,6 +1413,8 @@ const geometryCases: FunctionCase[] = [
   ].map(([from, to]) => fc('sliceTextByChars', `char-map-${from}-${to}`, text9, from, to)),
   fc('sliceTextByChars', 'dropped-char', { text: 'AB', charCount: 3, charMap: [[2, 1]] }, 0, 3),
   fc('sliceTextByChars', 'empty-map-is-identity', { text: 'xyz', charCount: 3, charMap: [] }, 1, 3),
+  // A map whose first anchor sits at a negative text offset: slice counts it from the end.
+  fc('sliceTextByChars', 'negative-text-offset', { text: 'abcdef', charCount: 6, charMap: [[0, -5], [3, 4]] }, 0, 3),
   fc('sliceTextByChars', 'short-text', { text: 'ab', charCount: 5 }, 0, 5),
   fc('initialSelectionState', 'empty'),
   fc('reduceSelection', 'page-loaded', state(), { type: 'pageLoaded', page: pr(3) }),

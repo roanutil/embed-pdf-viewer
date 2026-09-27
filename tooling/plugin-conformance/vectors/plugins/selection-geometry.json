@@ -5124,6 +5124,272 @@
       }
     },
     {
+      "name": "buildPageTextLayout/vertical-baselines",
+      "fn": "buildPageTextLayout",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 190,
+                "bottom": 200,
+                "right": 200,
+                "top": 208
+              },
+              "charStart": 0,
+              "rotation": 1.5707963267948966,
+              "ascentFlip": false,
+              "glyphs": [
+                {
+                  "looseQuad": {
+                    "p1": {
+                      "x": 190,
+                      "y": 200
+                    },
+                    "p2": {
+                      "x": 190,
+                      "y": 208
+                    },
+                    "p3": {
+                      "x": 200,
+                      "y": 200
+                    },
+                    "p4": {
+                      "x": 200,
+                      "y": 208
+                    }
+                  },
+                  "flags": 0
+                }
+              ]
+            },
+            {
+              "rect": {
+                "left": 210,
+                "bottom": 200,
+                "right": 220,
+                "top": 208
+              },
+              "charStart": 1,
+              "rotation": 1.5707963267948966,
+              "ascentFlip": false,
+              "glyphs": [
+                {
+                  "looseQuad": {
+                    "p1": {
+                      "x": 210,
+                      "y": 200
+                    },
+                    "p2": {
+                      "x": 210,
+                      "y": 208
+                    },
+                    "p3": {
+                      "x": 220,
+                      "y": 200
+                    },
+                    "p4": {
+                      "x": 220,
+                      "y": 208
+                    }
+                  },
+                  "flags": 0
+                }
+              ]
+            },
+            {
+              "rect": {
+                "left": 240,
+                "bottom": 192,
+                "right": 250,
+                "top": 200
+              },
+              "charStart": 2,
+              "rotation": 4.71238898038469,
+              "ascentFlip": false,
+              "glyphs": [
+                {
+                  "looseQuad": {
+                    "p1": {
+                      "x": 250,
+                      "y": 200
+                    },
+                    "p2": {
+                      "x": 250,
+                      "y": 192
+                    },
+                    "p3": {
+                      "x": 240,
+                      "y": 200
+                    },
+                    "p4": {
+                      "x": 240,
+                      "y": 192
+                    }
+                  },
+                  "flags": 0
+                }
+              ]
+            },
+            {
+              "rect": {
+                "left": 260,
+                "bottom": 192,
+                "right": 270,
+                "top": 200
+              },
+              "charStart": 3,
+              "rotation": 4.71238898038469,
+              "ascentFlip": false,
+              "glyphs": [
+                {
+                  "looseQuad": {
+                    "p1": {
+                      "x": 270,
+                      "y": 200
+                    },
+                    "p2": {
+                      "x": 270,
+                      "y": 192
+                    },
+                    "p3": {
+                      "x": 260,
+                      "y": 200
+                    },
+                    "p4": {
+                      "x": 260,
+                      "y": 192
+                    }
+                  },
+                  "flags": 0
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "glyphs": [
+            {
+              "loose": {
+                "left": 200,
+                "bottom": -200,
+                "right": 208,
+                "top": -190
+              },
+              "flags": 0
+            },
+            {
+              "loose": {
+                "left": 200,
+                "bottom": -220,
+                "right": 208,
+                "top": -210
+              },
+              "flags": 0
+            },
+            {
+              "loose": {
+                "left": -200,
+                "bottom": 240,
+                "right": -192,
+                "top": 250
+              },
+              "flags": 0
+            },
+            {
+              "loose": {
+                "left": -200,
+                "bottom": 260,
+                "right": -192,
+                "top": 270
+              },
+              "flags": 0
+            }
+          ],
+          "runs": [
+            {
+              "charStart": 0,
+              "count": 1,
+              "rect": {
+                "left": 200,
+                "bottom": -200,
+                "right": 208,
+                "top": -190
+              },
+              "frame": 1
+            },
+            {
+              "charStart": 1,
+              "count": 1,
+              "rect": {
+                "left": 200,
+                "bottom": -220,
+                "right": 208,
+                "top": -210
+              },
+              "frame": 1
+            },
+            {
+              "charStart": 2,
+              "count": 1,
+              "rect": {
+                "left": -200,
+                "bottom": 240,
+                "right": -192,
+                "top": 250
+              },
+              "frame": 2
+            },
+            {
+              "charStart": 3,
+              "count": 1,
+              "rect": {
+                "left": -200,
+                "bottom": 260,
+                "right": -192,
+                "top": 270
+              },
+              "frame": 2
+            }
+          ],
+          "frames": [
+            {
+              "baseline": {
+                "x": 1,
+                "y": 0
+              },
+              "ascent": {
+                "x": 0,
+                "y": 1
+              }
+            },
+            {
+              "baseline": {
+                "x": 0,
+                "y": 1
+              },
+              "ascent": {
+                "x": -1,
+                "y": 0
+              }
+            },
+            {
+              "baseline": {
+                "x": 0,
+                "y": -1
+              },
+              "ascent": {
+                "x": 1,
+                "y": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "textGlyphAt/inside-tight",
       "fn": "textGlyphAt",
       "args": [
@@ -10580,6 +10846,120 @@
       ],
       "outcome": {
         "returned": 0
+      }
+    },
+    {
+      "name": "textGlyphAt/on-the-left-tolerance-edge",
+      "fn": "textGlyphAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 20,
+                "bottom": 88,
+                "right": 28,
+                "top": 100
+              },
+              "charStart": 0,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 20,
+                    "bottom": 88,
+                    "right": 28,
+                    "top": 100
+                  },
+                  "flags": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "x": 14,
+          "y": 94
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "textGlyphAt/on-the-right-tolerance-edge",
+      "fn": "textGlyphAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 20,
+                "bottom": 88,
+                "right": 28,
+                "top": 100
+              },
+              "charStart": 0,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 20,
+                    "bottom": 88,
+                    "right": 28,
+                    "top": 100
+                  },
+                  "flags": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "x": 34,
+          "y": 94
+        },
+        1
+      ],
+      "outcome": {
+        "returned": 0
+      }
+    },
+    {
+      "name": "textGlyphAt/run-rect-prefilters-the-glyph",
+      "fn": "textGlyphAt",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 20,
+                "bottom": 88,
+                "right": 28,
+                "top": 100
+              },
+              "charStart": 0,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 20,
+                    "bottom": 50,
+                    "right": 28,
+                    "top": 62
+                  },
+                  "flags": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "x": 24,
+          "y": 56
+        },
+        1
+      ],
+      "outcome": {
+        "returned": null
       }
     },
     {
@@ -52656,6 +53036,163 @@
       }
     },
     {
+      "name": "textSegmentsForRange/char-start-past-the-glyphs",
+      "fn": "textSegmentsForRange",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 0,
+                "bottom": 88,
+                "right": 12,
+                "top": 100
+              },
+              "charStart": 1,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 0,
+                    "bottom": 88,
+                    "right": 6,
+                    "top": 100
+                  },
+                  "flags": 0,
+                  "tightBox": {
+                    "left": 0.5,
+                    "bottom": 89,
+                    "right": 5.5,
+                    "top": 99
+                  }
+                },
+                {
+                  "looseBox": {
+                    "left": 6,
+                    "bottom": 88,
+                    "right": 12,
+                    "top": 100
+                  },
+                  "flags": 0,
+                  "tightBox": {
+                    "left": 6.5,
+                    "bottom": 89,
+                    "right": 11.5,
+                    "top": 99
+                  }
+                }
+              ],
+              "fontSize": 12
+            }
+          ]
+        },
+        0,
+        5
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "quad": {
+              "p1": {
+                "x": 6,
+                "y": 100
+              },
+              "p2": {
+                "x": 12,
+                "y": 100
+              },
+              "p3": {
+                "x": 6,
+                "y": 88
+              },
+              "p4": {
+                "x": 12,
+                "y": 88
+              }
+            },
+            "rect": {
+              "left": 6,
+              "bottom": 88,
+              "right": 12,
+              "top": 100
+            },
+            "advance": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "textSegmentsForRange/rtl-near-the-float-limit",
+      "fn": "textSegmentsForRange",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 6e+307,
+                "bottom": 88,
+                "right": 8e+307,
+                "top": 100
+              },
+              "charStart": 0,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 8e+307,
+                    "bottom": 88,
+                    "right": 8e+307,
+                    "top": 100
+                  },
+                  "flags": 0
+                },
+                {
+                  "looseBox": {
+                    "left": 6e+307,
+                    "bottom": 88,
+                    "right": 6e+307,
+                    "top": 100
+                  },
+                  "flags": 0
+                }
+              ]
+            }
+          ]
+        },
+        0,
+        2
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "quad": {
+              "p1": {
+                "x": 6e+307,
+                "y": 100
+              },
+              "p2": {
+                "x": 8e+307,
+                "y": 100
+              },
+              "p3": {
+                "x": 6e+307,
+                "y": 88
+              },
+              "p4": {
+                "x": 8e+307,
+                "y": 88
+              }
+            },
+            "rect": {
+              "left": 6e+307,
+              "bottom": 88,
+              "right": 8e+307,
+              "top": 100
+            },
+            "advance": -1
+          }
+        ]
+      }
+    },
+    {
       "name": "textSegmentsForRange/far-glyph-splits-the-run",
       "fn": "textSegmentsForRange",
       "args": [
@@ -53735,6 +54272,31 @@
       ],
       "outcome": {
         "returned": "yz"
+      }
+    },
+    {
+      "name": "sliceTextByChars/negative-text-offset",
+      "fn": "sliceTextByChars",
+      "args": [
+        {
+          "text": "abcdef",
+          "charCount": 6,
+          "charMap": [
+            [
+              0,
+              -5
+            ],
+            [
+              3,
+              4
+            ]
+          ]
+        },
+        0,
+        3
+      ],
+      "outcome": {
+        "returned": "bcd"
       }
     },
     {
@@ -88348,6 +88910,722 @@
               "p4": {
                 "x": 508.9513403437079,
                 "y": 184.49582372885698
+              }
+            },
+            null
+          ]
+        }
+      }
+    },
+    {
+      "name": "layoutSweep/zeroLead",
+      "fn": "layoutSweep",
+      "args": [
+        {
+          "runs": [
+            {
+              "rect": {
+                "left": 13,
+                "bottom": 88,
+                "right": 32,
+                "top": 100
+              },
+              "charStart": 0,
+              "glyphs": [
+                {
+                  "looseBox": {
+                    "left": 13,
+                    "bottom": 88,
+                    "right": 13,
+                    "top": 100
+                  },
+                  "flags": 0
+                },
+                {
+                  "looseBox": {
+                    "left": 20,
+                    "bottom": 88,
+                    "right": 26,
+                    "top": 100
+                  },
+                  "flags": 0,
+                  "tightBox": {
+                    "left": 20.5,
+                    "bottom": 89,
+                    "right": 25.5,
+                    "top": 99
+                  }
+                },
+                {
+                  "looseBox": {
+                    "left": 26,
+                    "bottom": 88,
+                    "right": 32,
+                    "top": 100
+                  },
+                  "flags": 0,
+                  "tightBox": {
+                    "left": 26.5,
+                    "bottom": 89,
+                    "right": 31.5,
+                    "top": 99
+                  }
+                }
+              ],
+              "fontSize": 12
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "segments": [
+            [],
+            [],
+            [],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 26,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 26,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [],
+            [],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 26,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 26,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 13,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 13,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 13,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 20,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 20,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 26,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 20,
+                  "bottom": 88,
+                  "right": 26,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 20,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 20,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 20,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 20,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 20,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 20,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 20,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 20,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 20,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 20,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 20,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 20,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 26,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 26,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 26,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 26,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 26,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 26,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 26,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 26,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [
+              {
+                "quad": {
+                  "p1": {
+                    "x": 26,
+                    "y": 100
+                  },
+                  "p2": {
+                    "x": 32,
+                    "y": 100
+                  },
+                  "p3": {
+                    "x": 26,
+                    "y": 88
+                  },
+                  "p4": {
+                    "x": 32,
+                    "y": 88
+                  }
+                },
+                "rect": {
+                  "left": 26,
+                  "bottom": 88,
+                  "right": 32,
+                  "top": 100
+                },
+                "advance": 1
+              }
+            ],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+          ],
+          "words": [
+            [
+              -1,
+              -1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              3
+            ]
+          ],
+          "lines": [
+            [
+              -1,
+              -1
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              0,
+              2
+            ],
+            [
+              3,
+              3
+            ]
+          ],
+          "quads": [
+            null,
+            null,
+            {
+              "p1": {
+                "x": 20,
+                "y": 100
+              },
+              "p2": {
+                "x": 26,
+                "y": 100
+              },
+              "p3": {
+                "x": 20,
+                "y": 88
+              },
+              "p4": {
+                "x": 26,
+                "y": 88
+              }
+            },
+            {
+              "p1": {
+                "x": 26,
+                "y": 100
+              },
+              "p2": {
+                "x": 32,
+                "y": 100
+              },
+              "p3": {
+                "x": 26,
+                "y": 88
+              },
+              "p4": {
+                "x": 32,
+                "y": 88
               }
             },
             null
@@ -135800,6 +137078,147 @@
           "",
           "z",
           "z",
+          "",
+          "",
+          ""
+        ]
+      }
+    },
+    {
+      "name": "sliceSweep/emojiRow",
+      "fn": "sliceSweep",
+      "args": [
+        {
+          "text": "a😀b😀c😀d😀e😀f",
+          "charCount": 11,
+          "charMap": [
+            [
+              2,
+              3
+            ],
+            [
+              4,
+              6
+            ],
+            [
+              6,
+              9
+            ],
+            [
+              8,
+              12
+            ],
+            [
+              10,
+              15
+            ]
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": [
+          "",
+          "",
+          "a",
+          "a😀",
+          "a😀b",
+          "a😀b😀",
+          "a😀b😀c",
+          "a😀b😀c😀",
+          "a😀b😀c😀d",
+          "a😀b😀c😀d😀",
+          "a😀b😀c😀d😀e",
+          "a😀b😀c😀d😀e😀",
+          "a😀b😀c😀d😀e😀f",
+          "a😀b😀c😀d😀e😀f",
+          "",
+          "a",
+          "a😀",
+          "a😀b",
+          "a😀b😀",
+          "a😀b😀c",
+          "a😀b😀c😀",
+          "a😀b😀c😀d",
+          "a😀b😀c😀d😀",
+          "a😀b😀c😀d😀e",
+          "a😀b😀c😀d😀e😀",
+          "a😀b😀c😀d😀e😀f",
+          "a😀b😀c😀d😀e😀f",
+          "",
+          "😀",
+          "😀b",
+          "😀b😀",
+          "😀b😀c",
+          "😀b😀c😀",
+          "😀b😀c😀d",
+          "😀b😀c😀d😀",
+          "😀b😀c😀d😀e",
+          "😀b😀c😀d😀e😀",
+          "😀b😀c😀d😀e😀f",
+          "😀b😀c😀d😀e😀f",
+          "",
+          "b",
+          "b😀",
+          "b😀c",
+          "b😀c😀",
+          "b😀c😀d",
+          "b😀c😀d😀",
+          "b😀c😀d😀e",
+          "b😀c😀d😀e😀",
+          "b😀c😀d😀e😀f",
+          "b😀c😀d😀e😀f",
+          "",
+          "😀",
+          "😀c",
+          "😀c😀",
+          "😀c😀d",
+          "😀c😀d😀",
+          "😀c😀d😀e",
+          "😀c😀d😀e😀",
+          "😀c😀d😀e😀f",
+          "😀c😀d😀e😀f",
+          "",
+          "c",
+          "c😀",
+          "c😀d",
+          "c😀d😀",
+          "c😀d😀e",
+          "c😀d😀e😀",
+          "c😀d😀e😀f",
+          "c😀d😀e😀f",
+          "",
+          "😀",
+          "😀d",
+          "😀d😀",
+          "😀d😀e",
+          "😀d😀e😀",
+          "😀d😀e😀f",
+          "😀d😀e😀f",
+          "",
+          "d",
+          "d😀",
+          "d😀e",
+          "d😀e😀",
+          "d😀e😀f",
+          "d😀e😀f",
+          "",
+          "😀",
+          "😀e",
+          "😀e😀",
+          "😀e😀f",
+          "😀e😀f",
+          "",
+          "e",
+          "e😀",
+          "e😀f",
+          "e😀f",
+          "",
+          "😀",
+          "😀f",
+          "😀f",
+          "",
+          "f",
+          "f",
           "",
           "",
           ""

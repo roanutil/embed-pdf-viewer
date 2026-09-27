@@ -90,6 +90,9 @@ const reducerCases: FunctionCase[] = [
   r('add-unknown-view-is-ignored', { type: 'ADD_DOC', paneId: 'nope', documentId: 'e' }),
   r('add-moves-from-its-holder', { type: 'ADD_DOC', paneId: 'pane-1', documentId: 'd', index: 0 }),
   r('add-moves-into-an-empty-pane', { type: 'ADD_DOC', paneId: 'pane-3', documentId: 'b' }),
+  // Two holders (a state the reducer never builds): `find` walks `Object.values`, which puts
+  // integer-like keys first, so pane '0' is the holder, not '1'.
+  r('add-takes-the-first-holder-in-property-order', { type: 'ADD_DOC', paneId: 'b', documentId: 'x' }, st([view('0', ['x', 'y']), view('1', ['x']), view('b', [])])),
   r('remove-doc-inactive', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'a' }),
   r('remove-doc-active-picks-the-next', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'b' }),
   r('remove-doc-active-last-picks-the-previous', { type: 'REMOVE_DOC', paneId: 'pane-1', documentId: 'c' }, st([view('pane-1', ['a', 'b', 'c'], 'c')])),

@@ -338,6 +338,56 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'insert-a-subset-names-the-missing-index',
+    covers:
+      "The source id is Date.now() in base 36. A pageIndexes entry that is negative, fractional or not finite names no page and rejects not-found, the message spelling the index as String() does (1e+21, 1e-7 and all).",
+    plugins,
+    snapshot: 'none',
+    engine: {
+      defaultDocument: 'src',
+      documents: {
+        a: doc({ responses: answering }),
+        src: {
+          pages: [page(5, 0, 0, 10, 20), page(6, 1, 0, 30, 40), page(7, 2, 0, 50, 60)],
+          responses: [{ path: 'pages.extract', value: { $bytes: 'BAUG' } }],
+        },
+      },
+    },
+    steps: [
+      start,
+      open('a'),
+      { op: 'advance', ms: 1234567890 },
+      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [1] }]),
+      ...[
+        -1,
+        1.5,
+        -0.5,
+        { $number: 'Infinity' },
+        { $number: '-Infinity' },
+        { $number: 'NaN' },
+        1e20,
+        1e21,
+        1e-7,
+      ].map((index) => edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [index] }])),
+    ],
+  },
+  {
+    name: 'rotate-by-a-page-without-a-rotation',
+    covers:
+      'A registry page with no rotation turns into NaN, which is its own Map key: the numbered pages still group apart from it, one engine call per group.',
+    plugins,
+    snapshot: 'none',
+    engine: {
+      documents: {
+        a: doc({
+          pages: [three[0], { ...three[1], rotation: undefined }, three[2]],
+          responses: answering,
+        }),
+      },
+    },
+    steps: [start, open('a'), edit('rotateBy', [[pr(10), pr(20), pr(30)], 90])],
+  },
+  {
     name: 'insert-from-another-document',
     covers:
       "insertFromDocument extracts the pages from the other open document's handle and inserts the bytes at the placement ('end' by default); a document that is not open rejects not-found; a refused extract rejects with the mapped error.",

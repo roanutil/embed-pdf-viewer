@@ -1,6 +1,6 @@
 # epdf-plugin-page-edit
 
-`packages/plugin/page-edit` in Rust, at the v3 contract. All 17 cases in
+`packages/plugin/page-edit` in Rust, at the v3 contract. All 19 cases in
 `vectors/plugins/page-edit.json` replay identically (`cargo test -p epdf-plugin-page-edit`).
 
 The crate has the TypeScript's shape: `contract.rs` and `controller.rs`, with
@@ -58,5 +58,14 @@ A placement object with none of `index`, `after` or `before` is not ported. The 
 `placement.before` as `undefined` and throws reading its `pageObjectNumber`; `PagePlacement` is an
 enum and cannot express it.
 
-Mutation numbers are pre-v3, rerun pending. `cargo mutants -p epdf-plugin-page-edit --test-package
-epdf-plugin-page-edit` caught all 45 viable mutants of the v2 crate.
+`scripts/mutants.sh -p epdf-plugin-page-edit --test-package epdf-plugin-page-edit --file <file>`,
+file by file over every module but `harness.rs`, catches 58 of 66 viable mutants (58 caught, 0
+timeouts; 63 unviable). Nine of those are killed by the `insert-a-subset-names-the-missing-index` and
+`rotate-by-a-page-without-a-rotation` cases, checked by applying each mutant by hand: the seven in
+`base36` (the run's clock sat at 0, which returns before the loop) and the two `&&` to `||` swaps in
+`rotate_by`'s NaN grouping and `insert_from_bytes`'s index check. No mutant survives.
+
+The other eight were in the crate's own `js_string`, which no longer exists. The new case showed it
+was wrong: it cast every integer below `1e21` to `i64`, so index `1e20` printed as
+`9223372036854775807`, and it printed `1e21` and `1e-7` in plain notation. The error message now
+uses `epdf_geometry::js::number_to_string`, whose mutants are counted in `epdf-geometry`.

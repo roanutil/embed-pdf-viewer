@@ -3,7 +3,7 @@
 //! the function table the pure suites call by their TypeScript names.
 //!
 //! It mirrors the shims in `tooling/plugin-conformance/src/suites/render.ts`:
-//! a `renderSource` or `renderPage` option `signal: {"$abortSignal": name}`
+//! a `renderSource`, `renderPage` or `renderThumbnail` option `signal: {"$abortSignal": name}`
 //! is the signal of a controller named `name`, which the `signals` test
 //! plugin's `abort(name)` aborts; the plugin's `console.warn` and
 //! `console.debug` lines log as callbacks of those names; and the frame
@@ -171,7 +171,7 @@ impl Render {
                 let options = RenderThumbnailOptions {
                     max_width: number(options, "maxWidth").unwrap_or(f64::NAN),
                     include_annotations: include_annotations(options),
-                    signal: None,
+                    signal: signal_of(options),
                 };
                 Outcome::promise(cap.render_thumbnail(page_arg(args, 0)?, options))
             }

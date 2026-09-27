@@ -127,3 +127,13 @@ fn tool_tags_are_a_set() {
     assert!(tool.enables("b"));
     assert!(!tool.enables("c"));
 }
+
+/// `page_ref_json::nullable` reads back what it writes. Only `GestureEvent`
+/// uses it, and that type is serialize-only, so no vector decodes one.
+#[test]
+fn a_nullable_page_ref_round_trips() {
+    let page = json!({ "kind": "objectNumber", "pageObjectNumber": 7 });
+    assert_eq!(page_ref_json::nullable::deserialize(page).unwrap(), Some(PageRef::new(7)));
+    assert_eq!(page_ref_json::nullable::deserialize(json!(null)).unwrap(), None);
+    assert!(page_ref_json::nullable::deserialize(json!({ "kind": "index" })).is_err());
+}

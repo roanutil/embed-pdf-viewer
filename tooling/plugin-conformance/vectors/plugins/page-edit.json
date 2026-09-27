@@ -10089,6 +10089,1521 @@
       ]
     },
     {
+      "name": "insert-a-subset-names-the-missing-index",
+      "covers": "The source id is Date.now() in base 36. A pageIndexes entry that is negative, fractional or not finite names no page and rejects not-found, the message spelling the index as String() does (1e+21, 1e-7 and all).",
+      "plugins": [
+        {
+          "factory": "page-edit"
+        }
+      ],
+      "snapshot": "none",
+      "engine": {
+        "defaultDocument": "src",
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 10
+                },
+                "label": null,
+                "size": {
+                  "width": 100,
+                  "height": 200
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 200
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 200
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 20
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "rotation": 90,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 400
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 400
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 30
+                },
+                "label": null,
+                "size": {
+                  "width": 500,
+                  "height": 600
+                },
+                "rotation": 270,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 500,
+                    "top": 600
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 500,
+                    "top": 600
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": [
+                "doc.pages.assemble"
+              ]
+            },
+            "responses": [
+              {
+                "path": "pages.rotate",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.move",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 99
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 77
+                    },
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 78
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "src": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "label": null,
+                "size": {
+                  "width": 10,
+                  "height": 20
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 10,
+                    "top": 20
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 10,
+                    "top": 20
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 6
+                },
+                "label": null,
+                "size": {
+                  "width": 30,
+                  "height": 40
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 30,
+                    "top": 40
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 30,
+                    "top": 40
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "label": null,
+                "size": {
+                  "width": 50,
+                  "height": 60
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 50,
+                    "top": 60
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 50,
+                    "top": 60
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.extract",
+                "value": {
+                  "$bytes": "BAUG"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "advance",
+          "ms": 1234567890
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                1
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                -1
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                1.5
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                -0.5
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                {
+                  "$number": "Infinity"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                {
+                  "$number": "-Infinity"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                {
+                  "$number": "NaN"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                100000000000000000000
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                1e+21
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "insertFromBytes",
+          "args": [
+            {
+              "$bytes": "AQID"
+            },
+            {
+              "pageIndexes": [
+                1e-7
+              ]
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "insertedPages": [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 77
+                  },
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 78
+                  }
+                ]
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "pages.extract",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 6
+                  }
+                ]
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.insert",
+              "args": [
+                {
+                  "$bytes": "BAUG"
+                },
+                {
+                  "$undefined": true
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page -1",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page 1.5",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page -0.5",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 5
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page Infinity",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 6
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page -Infinity",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 7
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page NaN",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 8
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 9,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page 100000000000000000000",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 9
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 10,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page 1e+21",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 10
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 11,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "the PDF has no page 1e-7",
+                  "code": "not-found",
+                  "capability": "page-edit"
+                }
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "page-edit-source-kf12oi",
+                  "bytes": {
+                    "$bytes": "AQID"
+                  }
+                },
+                {
+                  "scope": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "doc": "src",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "src",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            },
+            "src": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 11
+          }
+        }
+      ]
+    },
+    {
+      "name": "rotate-by-a-page-without-a-rotation",
+      "covers": "A registry page with no rotation turns into NaN, which is its own Map key: the numbered pages still group apart from it, one engine call per group.",
+      "plugins": [
+        {
+          "factory": "page-edit"
+        }
+      ],
+      "snapshot": "none",
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 10
+                },
+                "label": null,
+                "size": {
+                  "width": 100,
+                  "height": 200
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 200
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 100,
+                    "top": 200
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 20
+                },
+                "label": null,
+                "size": {
+                  "width": 300,
+                  "height": 400
+                },
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 400
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 300,
+                    "top": 400
+                  }
+                }
+              },
+              {
+                "index": 2,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 30
+                },
+                "label": null,
+                "size": {
+                  "width": 500,
+                  "height": 600
+                },
+                "rotation": 270,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 500,
+                    "top": 600
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 500,
+                    "top": 600
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": [
+                "doc.pages.assemble"
+              ]
+            },
+            "responses": [
+              {
+                "path": "pages.rotate",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.move",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.delete",
+                "value": {
+                  "ok": true
+                }
+              },
+              {
+                "path": "pages.insertBlank",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 99
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "pages.insert",
+                "value": {
+                  "insertedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 77
+                    },
+                    {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 78
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "page-edit",
+            "doc": "a"
+          },
+          "method": "rotateBy",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 10
+              },
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 20
+              },
+              {
+                "kind": "objectNumber",
+                "pageObjectNumber": 30
+              }
+            ],
+            90
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "ok": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "pages.rotate",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 10
+                  }
+                ],
+                90
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.rotate",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 20
+                  }
+                ],
+                {
+                  "$number": "NaN"
+                }
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.rotate",
+              "args": [
+                [
+                  {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 30
+                  }
+                ],
+                0
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
       "name": "insert-from-another-document",
       "covers": "insertFromDocument extracts the pages from the other open document's handle and inserts the bytes at the placement ('end' by default); a document that is not open rejects not-found; a refused extract rejects with the mapped error.",
       "plugins": [

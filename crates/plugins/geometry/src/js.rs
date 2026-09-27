@@ -189,4 +189,15 @@ mod tests {
         assert!(min(0.0, -0.0).is_sign_negative());
         assert_eq!(min_of(&[]), f64::INFINITY);
     }
+
+    /// Only `normalizeQuad` calls `sign` inside this crate, never with 0;
+    /// the downstream ports (annotation-core, stage) can pass either zero.
+    #[test]
+    fn sign_keeps_signed_zeros_and_nan() {
+        assert_eq!(sign(3.0), 1.0);
+        assert_eq!(sign(-3.0), -1.0);
+        assert!(sign(0.0) == 0.0 && sign(0.0).is_sign_positive());
+        assert!(sign(-0.0) == 0.0 && sign(-0.0).is_sign_negative());
+        assert!(sign(f64::NAN).is_nan());
+    }
 }

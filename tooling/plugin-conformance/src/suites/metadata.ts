@@ -272,6 +272,21 @@ const cases: ScenarioCase[] = [
       call('getSnapshot'),
     ],
   },
+  {
+    name: 'changed-keys-beyond-the-info-dict',
+    covers:
+      'changedKeys compares every key but custom with !==: an equal number is unchanged and a different one changed, while an object or array member always counts as changed, even with the same contents.',
+    plugins,
+    snapshot: 'none',
+    engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', value: meta({ pages: 3, ratio: 1.5, extra: { x: 1 }, list: [1] }) }] }) } },
+    steps: [
+      start,
+      open('a'),
+      call('onUpdated', [{ $fn: 'updated', returns: null }]),
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ pages: 3, ratio: 2.5, extra: { x: 1 }, list: [1] }), origin: local } },
+      { op: 'emit', doc: 'a', event: { type: 'metadata.updated', metadata: meta({ pages: 4, ratio: 2.5, extra: 'x', list: 'y' }), origin: local } },
+    ],
+  },
 ];
 
 export const suites: Suite[] = [
