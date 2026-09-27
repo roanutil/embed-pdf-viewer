@@ -2,9 +2,9 @@
 
 `packages/core/signature` in Rust: parse, verify and build detached CMS signatures, the completion
 gate, certificate chain validation, `sign()` and `validateSignatures()` over a document handle, and
-the signer ports. All 297 cases in the five `vectors/core/signature-*.json` files replay identically
-(`cargo test -p epdf-signature-core`): 116 parse cases, 70 for verify, build and the gate, 55 for
-trust, 33 for signing and validation over a document, and 23 for the signers.
+the signer ports. All 455 cases in the five `vectors/core/signature-*.json` files replay identically
+(`cargo test -p epdf-signature-core`): 202 parse cases, 95 for verify, build and the gate, 96 for
+trust, 34 for signing and validation over a document, and 28 for the signers.
 
 ## What ports and what the host supplies
 
@@ -51,9 +51,20 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   child lists no policies, fails with a `TypeError` text as the chain's reason
   (`trust-policy-mappingUnknownIssuer`, `trust-policy-mappingNoPolicies`).
 - `selfSignedCertificate` writes both validity times as UTCTime, which reads back as 19xx for a
-  validity that reaches 2050.
+  validity that reaches 2050. From 2100 on, and before 1890, asn1js's `padNumber` drops the year
+  altogether (`self-signed-validity-past-2100`, `build-signing-times`).
+- A GeneralizedTime year from 0000 to 0099 goes through `Date.UTC` and reads as 1900 to 1999
+  (`parse-signingTimeYear0050`).
+- An OBJECT IDENTIFIER whose last byte carries the continuation bit fails the whole BER parse
+  (`parse-signatureOidTruncated`).
+- asn1js 3.0.10's `Integer.convertFromDER` drops one leading zero whatever follows it, so an ECDSA
+  `r` padded to one byte past the curve size still verifies (`verify-ecdsaRPadded`).
+- WebCrypto verifies RSA-PSS with the hash the key was imported with. For a CMS signer that is the
+  digest algorithm; the parameters' hash is only looked up. A SHA-1 PSS signature under a SHA-256
+  digest is `invalid`, and SHA-1 parameters over a SHA-256 signature are `valid`
+  (`verify-pssSha1`, `verify-pssSha1ParamsOverSha256`).
 
-## Deliberate differences
+## Deliberate deviations from the TypeScript
 
 - Malformed input outside the vectors can refuse with different text. pkijs validates the whole
   SignedData against one schema and reports "Object's schema was not verified against input data
@@ -65,6 +76,13 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   otherwise refuse it.
 - RSA keys go through `rsa::RsaPublicKey::new`, which refuses moduli above 4,096 bits. WebCrypto
   in Node accepts up to 16,384. Such a signature verifies as `invalid` here.
+- Two CA certificates that issue each other send pkijs's `buildPath` into a recursion that never
+  returns: `validateChain` hangs. A straight port overflows the stack instead, which aborts the
+  process, and a hostile PDF can carry such a chain. `ChainEngine::build_path` refuses an issuer
+  it was reached from, and the chain is `untrusted` with "Certificate issuers form a cycle". No
+  vector can pin a hang, so `tests/chain_cycle.rs` checks this over the `cyclicIssuers` fixture;
+  before the guard, that test aborted with a stack overflow. The cost: a chain pkijs would never
+  finish gets a verdict here that the TypeScript cannot confirm.
 
 ## Coverage
 
@@ -85,7 +103,69 @@ they can't reach:
 The fixture set is `tooling/plugin-conformance/fixtures/signature/fixtures.json`, generated once
 by `generate.ts` beside it (the README there says why). It includes three CMS blobs from third-party
 signers in `packages/engine/main/test/fixtures`, one of them with the OpenSSL-style
-`rsaEncryption` signature algorithm, and 25 chains that exercise the chain engine's policy and
-name-constraint half.
+`rsaEncryption` signature algorithm, and 49 chains, up to four CAs deep, that exercise the chain
+engine's policy and name-constraint half.
 
-Mutation testing has not been run on this crate yet.
+## Mutation testing
+
+`scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
+file over every module but `harness.rs`, catches 1,770 of 1,813 viable mutants (1,766 caught, 4
+timeouts; 91 unviable). 169 of the caught were killed by cases added for this count, each confirmed
+by applying the mutant by hand. Six more sat in code since replaced and are not counted: three in
+`integer_from_der`, rewritten to match asn1js (above), and three in `number_text`, which now calls
+`epdf_geometry::js::number_to_string`. The same pass fixed four other divergences the new cases
+exposed: the OID termination check in `der::read`, the two-digit GeneralizedTime year, the UTCTime
+year `padNumber` drops, and the RSA-PSS hash. None of the 43 survivors lets a bad signature or chain
+pass.
+
+`cert.rs`
+
+- `AlgId::encode` (3) and `Certificate::subject_key_identifier` (4): nothing in the workspace calls
+  either.
+
+`cms.rs`
+
+- The `"cades-b"` arm of `Profile::from_name`: its only caller is the harness, whose fallback is
+  `Profile::CadesB`.
+
+`crypto.rs`
+
+- Deleting `!` in `curve_of`: with parameters missing, both versions throw, only with different
+  text, and neither text marks the signature `unsupported`.
+
+`der.rs`
+
+- `|` to `^` in `decode_oid`, `context` and `oid` (3): the bits OR'd in never overlap the ones
+  already set.
+- `-` to `+` and `/` in `decode_oid`'s truncation check (2): `read` now refuses such an OID before
+  anything decodes it.
+- `||` to `&&` in `integer`: every caller passes a value from 1 to 127.
+- `-` to `+` and `/` in `days_from_civil`'s negative-era branch (2): parsed years are 1900 or later.
+- `generalized_time` returning `vec![]`, `vec![0]` or `vec![1]` (3): nothing calls it.
+
+`policy.rs`
+
+- `explicit_start` starting at `1` instead of `-1`: it is only read when `explicit` is set, which
+  always sets it.
+- The `!inhibit_any` guard as `true`: once set, `inhibit_any` never clears, and the pending count
+  it would update is never read again.
+- `>` to `>=` in the three minimum updates (lines 270, 278 and 290), and `+` to `*` in line 278's
+  comparison: they differ only where the value assigned equals the value held.
+- `&&` to `||` in the mapping and any-policy countdowns (2): the extra decrements start from `0`
+  and go negative until a constraint resets them, or run after the flag is already set.
+- `<` to `<=` in the anyPolicy clearing loop: `explicit_start` is always below `slots`.
+- The six mutants of the anyPolicy early exit on line 370: slots before `explicit_start` are
+  already cleared for anyPolicy, so it is never found there either way, and a found anyPolicy
+  implies every other policy is found, so `authConstrPolicies` is empty in both or neither.
+- `==` to `!=` on line 387: `userConstrPolicies` is only tested for emptiness, and a one-element
+  `authConstrPolicies` is non-empty either way.
+
+`signers.rs`
+
+- `||` to `&&` in `spki_from_jwk`'s RSA check, and the five mutants of the EC coordinate padding:
+  WebCrypto always exports `n`, `e` and full-length coordinates, on both sides of the harness.
+
+`trust.rs`
+
+- The self-signed guard in `verify_signature` as `true`: its only call without an issuer is
+  already behind the same test.

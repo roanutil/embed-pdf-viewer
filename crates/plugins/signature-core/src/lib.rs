@@ -43,14 +43,7 @@ pub use sign::{CmsSignRequest, CmsSigner, SignerPort, profile_for, sign};
 pub use trust::{TrustPort, TrustStatus, TrustVerdict, ValidationTime, validate_chain};
 pub use verdict::{ValidateOptions, validate_signatures};
 
-/// A number as JavaScript's `String(n)` prints it, for the whole numbers
-/// the messages carry.
+/// A number as JavaScript's `String(n)` prints it.
 pub fn number_text(n: f64) -> String {
-    if n.is_nan() {
-        "NaN".into()
-    } else if n.fract() == 0.0 && n.abs() < 1e21 {
-        format!("{}", n as i64)
-    } else {
-        format!("{n}")
-    }
+    epdf_geometry::js::number_to_string(n)
 }

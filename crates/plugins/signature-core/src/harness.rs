@@ -104,8 +104,8 @@ fn rsa_parts(spki: &[u8]) -> Option<(Vec<u8>, Vec<u8>)> {
 }
 
 /// The fixture pair for a WebCrypto algorithm: `p256`/`p384`/`p521` for
-/// ECDSA, `leaf` for either RSA algorithm.
-fn fixture_pair(params: &Value, extractable: bool) -> CryptoKeyPair {
+/// ECDSA, `rsa` (the `leaf` key unless named) for either RSA algorithm.
+fn fixture_pair(params: &Value, extractable: bool, rsa: &str) -> CryptoKeyPair {
     let name = params.get("name").and_then(Value::as_str).unwrap_or_default();
     let key = |key_type: &str, extractable: bool, algorithm: Value, usage: &str, fixture: &str| {
         CryptoKey {
@@ -134,10 +134,10 @@ fn fixture_pair(params: &Value, extractable: bool) -> CryptoKeyPair {
         Some(h) => h.get("name").and_then(Value::as_str).unwrap_or("SHA-256").to_string(),
         None => "SHA-256".into(),
     };
-    let algorithm = rsa_algorithm(name, &hash, &fixture_key("leaf", "spki"));
+    let algorithm = rsa_algorithm(name, &hash, &fixture_key(rsa, "spki"));
     CryptoKeyPair {
-        private_key: key("private", extractable, algorithm.clone(), "sign", "leaf"),
-        public_key: key("public", true, algorithm, "verify", "leaf"),
+        private_key: key("private", extractable, algorithm.clone(), "sign", rsa),
+        public_key: key("public", true, algorithm, "verify", rsa),
     }
 }
 
@@ -156,7 +156,7 @@ impl WebCrypto for ScriptedWebCrypto {
     ) -> Promise<CryptoKeyPair> {
         self.harness
             .log("webcrypto.generateKey", vec![params.clone(), json!(extractable), json!(usages)]);
-        Promise::resolved(fixture_pair(&params, extractable))
+        Promise::resolved(fixture_pair(&params, extractable, "leaf"))
     }
 
     fn sign(&self, params: Value, key: &CryptoKey, data: Vec<u8>) -> Promise<Vec<u8>> {
@@ -538,7 +538,8 @@ impl SignatureCapability {
             "selfSignedCertificate" => {
                 let crypto = self.crypto();
                 let input = arg(0);
-                let pair = fixture_pair(&input["key"]["algorithm"], false);
+                let rsa = input["key"]["fixture"].as_str().unwrap_or("leaf");
+                let pair = fixture_pair(&input["key"]["algorithm"], false, rsa);
                 spawn(async move {
                     let der = self_signed_certificate(
                         crypto,

@@ -188,6 +188,15 @@ fn read(bytes: &[u8], start: usize) -> Option<(Node, usize)> {
                 return None;
             }
             let body = &bytes[at..end];
+            // asn1js decodes an OBJECT IDENTIFIER as it reads it, and fails the
+            // whole parse on one whose last arc runs off the end.
+            if class == UNIVERSAL
+                && !constructed
+                && tag == OID
+                && body.last().is_some_and(|b| b & 0x80 != 0)
+            {
+                return None;
+            }
             let mut children = Vec::new();
             if constructed {
                 let mut cursor = 0;
@@ -357,13 +366,12 @@ pub fn integer_der(bytes: &[u8]) -> Vec<u8> {
     integer_bytes(&out)
 }
 
-/// `Integer.convertFromDER()`: a leading zero that only carried the sign is
-/// dropped.
+/// `Integer.convertFromDER()` as asn1js 3.0.10 has it: one leading zero is
+/// dropped, whatever follows it.
 pub fn integer_from_der(content: &[u8]) -> Vec<u8> {
-    if content.len() > 1 && content[0] == 0 && content[1] & 0x80 != 0 {
-        content[1..].to_vec()
-    } else {
-        content.to_vec()
+    match content.split_first() {
+        Some((0, rest)) => rest.to_vec(),
+        _ => content.to_vec(),
     }
 }
 
@@ -442,10 +450,12 @@ pub fn parse_utc_time(text: &str) -> Option<f64> {
     ))
 }
 
-/// `YYYYMMDDhhmmss[.fff]Z`.
+/// `YYYYMMDDhhmmss[.fff]Z`. asn1js builds the date with `Date.UTC`, which
+/// reads a year from 0 to 99 as 1900 to 1999.
 pub fn parse_generalized_time(text: &str) -> Option<f64> {
+    let year = digits(text, 0, 4)?;
     let base = epoch_ms(
-        digits(text, 0, 4)?,
+        if year < 100 { 1900 + year } else { year },
         digits(text, 4, 2)?,
         digits(text, 6, 2)?,
         digits(text, 8, 2)?,
@@ -462,10 +472,15 @@ pub fn parse_generalized_time(text: &str) -> Option<f64> {
     Some(base + fraction.floor())
 }
 
-/// `new asn1js.UTCTime({ valueDate })`.
+/// `new asn1js.UTCTime({ valueDate })`. asn1js writes the year as `year - 1900`
+/// before 2000 and `year - 2000` from then on, through `padNumber(n, 2)`,
+/// which answers an empty string for a number wider than two characters: a
+/// date from 2100 on, or before 1890, loses its year.
 pub fn utc_time(ms: f64) -> Vec<u8> {
     let (y, mo, d, h, mi, s) = civil(ms);
-    tlv(0x17, format!("{:02}{mo:02}{d:02}{h:02}{mi:02}{s:02}Z", y % 100).as_bytes())
+    let year = (if y < 2000 { y - 1900 } else { y - 2000 }).to_string();
+    let year = if year.len() > 2 { String::new() } else { format!("{year:0>2}") };
+    tlv(0x17, format!("{year}{mo:02}{d:02}{h:02}{mi:02}{s:02}Z").as_bytes())
 }
 
 /// `new asn1js.GeneralizedTime({ valueDate })`, as pkijs's `Time` writes a

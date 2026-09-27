@@ -130,7 +130,7 @@ async function signatureFor(input: {
 type Log = PluginEnv['log'];
 type Subtle = Record<string, unknown>;
 
-async function fixtureKeyPair(params: { name: string; hash?: unknown; namedCurve?: string }, extractable: boolean) {
+async function fixtureKeyPair(params: { name: string; hash?: unknown; namedCurve?: string }, extractable: boolean, fixture = 'leaf') {
   const subtle = webcrypto.subtle;
   const hashName = typeof params.hash === 'string' ? params.hash : (params.hash as { name?: string } | undefined)?.name;
   if (params.name === 'ECDSA') {
@@ -143,8 +143,8 @@ async function fixtureKeyPair(params: { name: string; hash?: unknown; namedCurve
   }
   const algorithm = { name: params.name, hash: hashName ?? 'SHA-256' };
   return {
-    privateKey: await subtle.importKey('pkcs8', bytesOf(fixtures.keys.leaf.pkcs8), algorithm, extractable, ['sign']),
-    publicKey: await subtle.importKey('spki', bytesOf(fixtures.keys.leaf.spki), algorithm, true, ['verify']),
+    privateKey: await subtle.importKey('pkcs8', bytesOf(fixtures.keys[fixture].pkcs8), algorithm, extractable, ['sign']),
+    publicKey: await subtle.importKey('spki', bytesOf(fixtures.keys[fixture].spki), algorithm, true, ['verify']),
   };
 }
 
@@ -285,10 +285,7 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
         validityDays?: number;
       }) =>
         withWebCrypto(env.log, async () => {
-          const pair = await fixtureKeyPair(
-            { ...input.key.algorithm, hash: input.key.algorithm.hash },
-            false,
-          );
+          const pair = await fixtureKeyPair({ ...input.key.algorithm, hash: input.key.algorithm.hash }, false, input.key.fixture);
           return selfSignedCertificate({
             publicKey: pair.publicKey,
             privateKey: pair.privateKey,
@@ -350,7 +347,10 @@ const parseCases: FunctionCase[] = [
   },
   { name: 'profile-pkcs7', fn: 'profileFor', args: ['adbe.pkcs7.detached'] },
   { name: 'profile-cades', fn: 'profileFor', args: ['ETSI.CAdES.detached'] },
-  ...['leaf', 'root', 'corpus', 'noCommonName', 'emptyCommonName', 'integerCommonName', 'bmpCommonName', 'leafP256'].map((name) => ({
+  ...[
+    'leaf', 'root', 'corpus', 'noCommonName', 'emptyCommonName', 'integerCommonName', 'bmpCommonName', 'leafP256',
+    'universalStringCommonName', 'utf8AccentedCommonName', 'rdnSequence', 'attributeAsSet', 'attributeOneMember', 'signatureAsOctets',
+  ].map((name) => ({
     name: `common-name-${name}`,
     fn: 'certificateCommonName',
     args: [certArg(name)],
@@ -420,6 +420,10 @@ const verifyNames = [
   'ecP256NotSequence', 'rsaShortSignature', 'essMismatch', 'essExplicitSha256', 'essSha1', 'essNoHash',
   'contentTypeNotData', 'contentTypeEmpty', 'noSignedAttrs', 'unknownDigest', 'twoSigners', 'noCertificates',
   'notSignedData', 'truncated', 'unknownCurve', 'ecNoParams', 'dsaKey',
+  // Keys labelled with algorithms that are not key algorithms, then ECDSA and RSA-PSS encodings.
+  'rsaKeyAsSha256WithRsa', 'rsaKeyAsOaep', 'rsaKeyAsEcdh', 'rsaKeyAsAesCbc', 'rsaKeyAsAesGcm', 'rsaKeyAsAesCfb', 'rsaKeyAsAesKw',
+  'rsaKeyAsHmac', 'rsaKeyAsDh', 'rsaKeyAsSha1', 'rsaKeyAsPbkdf2', 'ecKeyAsEcdsaSha512', 'ecdsaSAsOctets', 'ecdsaRPadded',
+  'ecdsaZeroIntegers', 'ecP521Sha384', 'pssSaltZero', 'pssSalt256', 'pssSha1', 'pssSha1ParamsOverSha256', 'pssUnknownHash',
 ];
 const verifyCases: ScenarioCase[] = verifyNames.map((name) =>
   scenario(`verify-${name}`, `verifyCmsSignature over the ${name} fixture.`, [call('verifyCmsSignature', cmsArg(name))]),
@@ -462,6 +466,19 @@ const buildInput = async (over: {
 };
 
 const SEPT_2026 = Date.UTC(2026, 8, 11);
+const SIGNING_TIMES = [
+  Date.UTC(1950, 0, 1, 0, 0, 1), Date.UTC(1970, 0, 1), Date.UTC(1984, 1, 29, 6, 7, 8), Date.UTC(1999, 11, 31, 23, 59, 59, 999),
+  Date.UTC(2000, 0, 1), Date.UTC(2000, 1, 29, 13, 45, 27), Date.UTC(2000, 2, 1, 1, 2, 3), Date.UTC(2023, 11, 31, 12),
+  Date.UTC(2024, 0, 1), Date.UTC(2024, 1, 28), Date.UTC(2024, 1, 29), Date.UTC(2024, 2, 1), Date.UTC(2049, 11, 31, 23, 59, 59),
+  ...Array.from({ length: 12 }, (_, month) => Date.UTC(1988, month, 1, month, month * 5, month * 4)),
+  ...Array.from({ length: 12 }, (_, month) => Date.UTC(2037, month, 31 - (month % 3), 23 - month, 59 - month, 1 + month)),
+  // Outside 1900 to 2099 asn1js writes a year of more than two characters as nothing, or a negative one.
+  Date.UTC(2100, 0, 1, 1, 1, 1), Date.UTC(1899, 11, 31, 22, 58, 57), Date.UTC(1890, 5, 15),
+  // Before 1 March of year 0 the day count is negative.
+  Date.UTC(-5, 6, 20, 3, 4, 5), Date.UTC(-1, 1, 28, 12),
+];
+// A PKCS#7 build whose signer answers nothing: only the attributes matter.
+const PKCS7_NO_SIGNATURE = await buildInput({ profile: 'pkcs7', answer: { resolves: $b('') } });
 const buildCases: ScenarioCase[] = [
   scenario('build-rsa-cades', 'A CAdES-B CMS: content-type, message-digest and ESS signing-certificate-v2, signed over the attribute SET.', [
     call('buildDetachedCms', await buildInput({})),
@@ -512,6 +529,14 @@ const buildCases: ScenarioCase[] = [
   scenario('build-signer-rejects', 'A signer that rejects rejects the build with its error.', [
     call('buildDetachedCms', await buildInput({ answer: { rejects: { name: 'NotAllowedError', message: 'user cancelled' } } })),
   ]),
+  scenario('build-signature-128-bytes', 'A 128-byte signature takes a long-form length.', [
+    call('buildDetachedCms', await buildInput({ answer: { resolves: $b(b64(new Uint8Array(128).map((_, i) => i))) } })),
+  ]),
+  scenario(
+    'build-signing-times',
+    'Signing times across the UTCTime range: leap days, era and month edges, and a time of day.',
+    SIGNING_TIMES.map((signingTime) => call('buildDetachedCms', { ...PKCS7_NO_SIGNATURE, signingTime })),
+  ),
   scenario('build-bad-certificate', 'A chain entry that is not a certificate throws pkijs\'s error.', [
     call('buildDetachedCms', {
       ...(await buildInput({ answer: { resolves: $b('') } })),
@@ -554,6 +579,12 @@ const gateCases: ScenarioCase[] = [
   scenario('gate-cades-with-time', 'PAdES forbids signing-time; checked after the ESS attribute.', [gate(cmsArg('cadesWithTime'), 'cades-b')]),
   scenario('gate-pkcs7-with-time', 'The same CMS is refused for its signature, not its profile, under PKCS#7.', [gate(cmsArg('generalizedTime'), 'pkcs7')]),
   scenario('gate-signature-invalid', 'A signature that does not verify.', [gate(cmsArg('rsaCadesTampered'), 'cades-b')]),
+  scenario('gate-exact-size', 'A CMS exactly as large as the reserved /Contents fits.', [
+    gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: bytesOf(fixtures.cms.rsaCades).length }),
+  ]),
+  scenario('gate-fractional-size', 'A reserved size that is not whole prints as JavaScript prints it.', [
+    gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: 100.5 }),
+  ]),
   scenario('gate-signature-unsupported', 'An unsupported algorithm is refused with its own detail.', [gate(cmsArg('unknownCurve'), 'cades-b')]),
 ];
 
@@ -622,6 +653,44 @@ for (const name of Object.keys(fixtures.cms).filter((n) => n.startsWith('policy-
     scenario(`trust-${name}`, `Certificate policies and name constraints: the ${name.slice(7)} chain.`, [chain(name, anchors('root'))]),
   );
 }
+
+// The chain engine's rules one at a time, and its policy half on paths the loop above does not build.
+const genTime = (ms: number) => ({ kind: 'timestamp', genTime: ms, tokenVerified: true });
+trustCases.push(
+  scenario('trust-at-not-before', 'A validation time exactly at notBefore is inside the window.', [
+    chain('rsaCades', anchors('root'), genTime(Date.UTC(2020, 0, 1))),
+  ]),
+  scenario('trust-at-not-after', 'A validation time exactly at notAfter is inside the window.', [
+    chain('rsaCades', anchors('root'), genTime(Date.UTC(2045, 0, 1))),
+  ]),
+  scenario('trust-tampered-signer', 'A signer whose certificate signature does not verify has no issuer.', [chain('leafTampered', anchors('inter'))]),
+  scenario('trust-self-signed-twin', 'A valid self-signature makes the certificate its only issuer, even when an anchor holds its key and name.', [
+    chain('selfSigned', anchors('selfSignedTwin')),
+  ]),
+  scenario('trust-self-named-other-key', 'A certificate named as its own issuer whose self-signature fails is issued by the anchor of that name.', [
+    chain('twinCaLeaf', anchors('twinCaAnchor')),
+  ]),
+  scenario('trust-empty-aki', 'An empty authority key identifier finds the issuer by name.', [chain('leafEmptyAki', anchors('inter'))]),
+  scenario('trust-aki-issuer-only', 'An authority key identifier naming only the issuer matches nothing.', [chain('leafAkiIssuerOnly', anchors('inter'))]),
+  scenario('trust-ca-critical-not-ber', 'A CA whose critical extension does not parse is not a CA.', [
+    chain('underUnknownLeaf', anchors('interCriticalNotBer')),
+  ]),
+  scenario('trust-sha1-certificate', 'A certificate signed with sha1WithRSAEncryption verifies against its issuer.', [chain('leafSha1Signed', anchors('inter'))]),
+  scenario('trust-sha384-certificate', 'A certificate signed with sha384WithRSAEncryption.', [chain('leafSha384Signed', anchors('inter'))]),
+  scenario('trust-sha512-certificate', 'A certificate signed with sha512WithRSAEncryption.', [chain('leafSha512Signed', anchors('inter'))]),
+  scenario('trust-ec-issuer', 'An RSA signer issued by an EC CA: the issuer key\'s curve comes from its parameters.', [
+    chain('leafUnderEc', anchors('selfSignedP256')),
+  ]),
+  scenario('trust-ca-path-length-only', 'BasicConstraints with a path length and no cA is no CA.', [
+    chain('underNoBasicLeaf', anchors('interPathLengthOnly')),
+  ]),
+  scenario('trust-two-anchor-issuers', 'Two anchors issue the signer: the first shortest path wins.', [chain('leafOnly', anchors('inter', 'interTwin'))]),
+  scenario('trust-shorter-path', 'An anchor issuer and a carried issuer: the shorter path wins.', [
+    chain('leafLastCarried', anchors('root', 'interSelfSigned')),
+  ]),
+  scenario('trust-policy-two-certificates', 'A two-certificate path still runs the policy checks.', [chain('leafInhibitsOwnMapping', anchors('inter'))]),
+  scenario('trust-anchor-constraints-ignored', 'The anchor\'s own name constraints are not applied.', [chain('leafOnly', anchors('interExcludingLeaf'))]),
+);
 
 // ── sign ─────────────────────────────────────────────────────────────────────
 
@@ -703,6 +772,12 @@ const signCases: ScenarioCase[] = [
   scenario('sign-prepare-rejects', 'A failed prepare rejects without an abort.', [
     signCall({ signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
   ], signDoc([{ path: 'signatures.prepare', error: { name: 'EngineError', message: 'field is signed', code: 'Conflict' } }])),
+  scenario('sign-raw-sha1-prepared', 'A raw signer over a document prepared with SHA-1 is refused by the build.', [
+    signCall({ signer: rawSignerArg(leafChain, 'RSA-PKCS1-v1_5', 'sha256', { resolves: $b('') }) }),
+  ], signDoc([
+    { path: 'signatures.prepare', value: prepared({ algorithm: 'sha1' }) },
+    { path: 'signatures.abort', value: { status: 'aborted' } },
+  ])),
   scenario('sign-build-throws', 'A raw signer whose build throws aborts.', [
     signCall({ signer: rawSignerArg([], 'RSA-PKCS1-v1_5', 'sha256', { resolves: $b('') }) }),
   ], signDoc([
@@ -922,6 +997,20 @@ const signerCases: ScenarioCase[] = [
   scenario('self-signed-rsa-sha512-days', 'The key\'s own hash wins over the one passed; a custom validity.', [
     call('selfSignedCertificate', { key: rsaKey('SHA-512'), commonName: 'Grace Hopper', hash: 'sha256', validityDays: 30 }),
   ]),
+  scenario('self-signed-rsa-sha1', 'An RSA key hashing with SHA-1 signs its certificate with sha1WithRSAEncryption.', [
+    call('selfSignedCertificate', { key: rsaKey('SHA-1'), commonName: 'Sha One', hash: 'sha256' }),
+  ]),
+  scenario('self-signed-validity-past-2100', 'A validity that ends after 2099 writes notAfter without its year, as asn1js does.', [
+    call('selfSignedCertificate', { key: rsaKey(), commonName: 'Far Future', hash: 'sha256', validityDays: 30000 }),
+  ]),
+  scenario('self-signed-rsa-3072', 'A 3072-bit key: its 384-byte modulus survives the power-of-two rounding of the JWK import.', [
+    call('selfSignedCertificate', { key: { ...rsaKey(), fixture: 'rsa3072' }, commonName: 'Long Key', hash: 'sha256' }),
+  ]),
+  ...(['P-384', 'P-521'] as const).map((namedCurve) =>
+    scenario(`self-signed-ecdsa-${namedCurve}`, `A self-signed certificate over a ${namedCurve} key.`, [
+      call('selfSignedCertificate', { key: { algorithm: { name: 'ECDSA', namedCurve } }, commonName: 'EC Person', hash: 'sha384' }),
+    ]),
+  ),
   scenario('self-signed-pss', 'A self-signed certificate over an RSA-PSS key.', [
     call('selfSignedCertificate', { key: rsaKey('SHA-384', 'RSA-PSS'), commonName: 'PSS Person', hash: 'sha384' }),
   ]),
