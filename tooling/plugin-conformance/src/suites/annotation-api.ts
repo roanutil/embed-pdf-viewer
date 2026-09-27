@@ -132,7 +132,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'page-space-reads',
     covers:
-      'get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.',
+      'get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space even with a selection; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([{ path: 'annotations.listRawAll', defer: 'hydrate' }]) } },
     snapshot: 'none',
@@ -162,6 +162,7 @@ const cases: ScenarioCase[] = [
       api('hitTestAt', [pr(1), { x: 5, y: 5 }]),
       api('select', [objRef(3)]),
       api('hitTestAt', [pr(1), { x: 300, y: 400 }]),
+      api('hitTestAt', [pr(1), { x: 5, y: 5 }]),
       api('listSelected'),
       api('listSelected'),
       api('getSelection'),
@@ -361,9 +362,29 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'text-range-needs-an-active-edit',
+    covers:
+      'getSelectionProps reads the range keys from the runs only while the ranged annotation is being edited and the range is not a bare caret; otherwise they come from the body.',
+    plugins: PLUGINS,
+    // The /DA size disagrees with the rich body's, so a body read and a
+    // range read differ even where no run has a size of its own.
+    engine: { documents: { a: doc([hydrate({ 1: [richFree(1, { fontSize: 20 })] })]) } },
+    snapshot: 'none',
+    steps: [
+      ...boot,
+      api('select', [objRef(1)]),
+      api('setTextSelection', [objRef(1), { start: 3, end: 5 }]),
+      api('getSelectionProps'),
+      api('beginTextEdit', [objRef(1)]),
+      api('getSelectionProps'),
+      api('setTextSelection', [objRef(1), { start: 4, end: 4 }]),
+      api('getSelectionProps'),
+    ],
+  },
+  {
     name: 'rich-text-editing',
     covers:
-      'setContents and setRichText commit through the one debounced text write immediately; draftRichText stages a paragraph edit and schedules the write; setTextSelection stores the editor range (a repeat is a no-op, null clears) and the range keys of getSelectionProps then read the runs it covers; updateSelection restyles those runs as a delta (flushing first) while the other keys restyle the body; toggleTextFormat flips a format from the current value; endTextEdit flushes and drops the range; getEditingRef and getCssFontFamily read back.',
+      'setContents and setRichText commit through the one debounced text write immediately; draftRichText stages a paragraph edit and schedules the write; setTextSelection stores the editor range (a repeat is a no-op, null clears, a change of start alone is a change) and the range keys of getSelectionProps then read the runs it covers; updateSelection restyles those runs as a delta (flushing first) while the other keys restyle the body; toggleTextFormat flips a format from the current value; endTextEdit flushes and drops the range; getEditingRef and getCssFontFamily read back.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -389,6 +410,9 @@ const cases: ScenarioCase[] = [
       api('getSelectionProps'),
       api('updateSelection', [{ fontSize: 18, fontColor: '#00ff00', bold: false, opacity: 0.5 }]),
       api('getSelectionProps'),
+      // A new range that keeps only the end is still a change.
+      api('setTextSelection', [objRef(1), { start: 2, end: 4 }]),
+      api('setTextSelection', [objRef(1), { start: 1, end: 4 }]),
       api('toggleTextFormat', ['italic']),
       api('draftRichText', [objRef(1), { paragraphs: [{ runs: [{ text: 'Hello there' }] }] }]),
       advance(100),

@@ -221,6 +221,7 @@ for (const [label, face] of [
   ['registered-exact', { family: 'Inter', weight: 700 }],
   ['registered-closest', { family: 'inter', weight: 600, italic: true }],
   ['registered-italic-penalty', { family: 'Noto_Sans', italic: true }],
+  ['registered-tie', { family: 'Inter', weight: 550 }],
   ['standard-regular', { family: 'Arial' }],
   ['standard-bold-italic', { family: 'Times New Roman', weight: 700, italic: true }],
   ['standard-one-face', { family: 'Symbol', weight: 700 }],
@@ -241,6 +242,8 @@ cases.push(
   c('bodyFromTextStyle', 'toggles', { ...TEXT_STYLE, fontFamily: 'times-italic', bold: true, underline: true, textAlign: 'center' }),
   c('bodyFromTextStyle', 'registered', { ...TEXT_STYLE, fontFamily: 'inter-italic' }, FONTS),
   c('bodyFromTextStyle', 'unknown-font', { ...TEXT_STYLE, fontFamily: 'MyFont', italic: false }),
+  // An integral size past i64 stays the number it is.
+  c('bodyFromTextStyle', 'huge-size', { ...TEXT_STYLE, fontSize: 1e20 }),
   c('richDocOf', 'dto-rich', richTexts[0]),
   c('richDocOf', 'dto-plain', a(freeText(14, { contents: 'one\rtwo' }))),
   c('richDocOf', 'no-text-style', { ...a(freeText(15)), text: undefined, data: undefined }),
@@ -256,6 +259,10 @@ cases.push(
   c('runsInRange', 'reversed', { paragraphs: PARAS }, { start: 9, end: 2 }),
   c('runsInRange', 'empty', { paragraphs: PARAS }, { start: 4, end: 4 }),
   c('runsInRange', 'to-the-end', { paragraphs: PARAS }, { start: 0, end: 12 }),
+  // A range that starts on a run boundary skips the run before it; an empty
+  // run inside a range contributes nothing.
+  c('runsInRange', 'second-run', { paragraphs: PARAS }, { start: 3, end: 5 }),
+  c('runsInRange', 'empty-run-inside', { paragraphs: [{ runs: [{ text: 'ab' }, { text: '', style: { weight: 700 } }, { text: 'cd', style: { italic: true } }] }] }, { start: 0, end: 4 }),
   c('rangeProps', 'mixed', { body: body(400, false, []), paragraphs: PARAS }, { start: 2, end: 9 }),
   c('rangeProps', 'one-run', { body: body(400, false, []), paragraphs: PARAS }, { start: 0, end: 2 }),
   c('rangeProps', 'caret', { body: body(700, true, ['underline']), paragraphs: PARAS }, { start: 3, end: 3 }),
