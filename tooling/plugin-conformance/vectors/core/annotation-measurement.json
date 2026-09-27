@@ -5023,6 +5023,1017 @@
       }
     },
     {
+      "name": "distanceLabel/fraction-denominator-non-integer",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2.5
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "stored"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-fraction-denominator-non-integer",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 372
+            },
+            {
+              "x": 100,
+              "y": 372
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2.5
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 2.0000000298023224,
+          "label": "2 m²"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-fraction-denominator-non-integer",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 350,
+              "y": 300
+            },
+            {
+              "x": 450,
+              "y": 350
+            },
+            {
+              "x": 550,
+              "y": 300
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2.5
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "invalid-format"
+        }
+      }
+    },
+    {
+      "name": "distanceLabel/fraction-denominator-zero",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 0
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "stored"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-fraction-denominator-zero",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 372
+            },
+            {
+              "x": 100,
+              "y": 372
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 0
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 2.0000000298023224,
+          "label": "2 m²"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-fraction-denominator-zero",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 350,
+              "y": 300
+            },
+            {
+              "x": 450,
+              "y": 350
+            },
+            {
+              "x": 550,
+              "y": 300
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 0
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "invalid-format"
+        }
+      }
+    },
+    {
+      "name": "distanceLabel/fraction-denominator-max",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483647
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "2 32/2147483647 in"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-fraction-denominator-max",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 372
+            },
+            {
+              "x": 100,
+              "y": 372
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483647
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 2.0000000298023224,
+          "label": "2 m²",
+          "perimeter": "6 96/2147483647 in"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-fraction-denominator-max",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 350,
+              "y": 300
+            },
+            {
+              "x": 450,
+              "y": 350
+            },
+            {
+              "x": 550,
+              "y": 300
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483647
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "perimeter",
+          "value": 3.1056499918886034,
+          "label": "3 226881630/2147483647 in"
+        }
+      }
+    },
+    {
+      "name": "distanceLabel/fraction-denominator-over-max",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483648
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "stored"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-fraction-denominator-over-max",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 372
+            },
+            {
+              "x": 100,
+              "y": 372
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483648
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 2.0000000298023224,
+          "label": "2 m²"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-fraction-denominator-over-max",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 350,
+              "y": 300
+            },
+            {
+              "x": 450,
+              "y": 350
+            },
+            {
+              "x": 550,
+              "y": 300
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction",
+                "precision": 2147483648
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "invalid-format"
+        }
+      }
+    },
+    {
+      "name": "distanceLabel/y-axis-both-negative",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 100,
+            "y": 100
+          },
+          "b": {
+            "x": 244,
+            "y": 100
+          },
+          "ends": {
+            "start": "closed-arrow",
+            "end": "closed-arrow"
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ],
+            "y": [
+              {
+                "unit": "m",
+                "conversion": -0.027777777777777776
+              }
+            ],
+            "cyx": -0.5
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "stored"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-y-axis-both-negative",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 100,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 300
+            },
+            {
+              "x": 244,
+              "y": 372
+            },
+            {
+              "x": 100,
+              "y": 372
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ],
+            "y": [
+              {
+                "unit": "m",
+                "conversion": -0.027777777777777776
+              }
+            ],
+            "cyx": -0.5
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "no-scale"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/perimeter-y-axis-both-negative",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 350,
+              "y": 300
+            },
+            {
+              "x": 450,
+              "y": 350
+            },
+            {
+              "x": 550,
+              "y": 300
+            }
+          ],
+          "closed": false
+        },
+        {
+          "intent": "PolyLineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ],
+            "y": [
+              {
+                "unit": "m",
+                "conversion": -0.027777777777777776
+              }
+            ],
+            "cyx": -0.5
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "no-scale"
+        }
+      }
+    },
+    {
       "name": "distanceLabel/overflow",
       "fn": "distanceLabel",
       "args": [
@@ -6107,6 +7118,691 @@
       ],
       "outcome": {
         "returned": "2 m"
+      }
+    },
+    {
+      "name": "distanceLabel/round-exponent",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 1e+38,
+            "y": 0
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 1e+38
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1e+30,
+                "fraction": "round"
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "9.999,999,511,046,047e+105 m"
+      }
+    },
+    {
+      "name": "distanceLabel/fraction-under-one",
+      "fn": "distanceLabel",
+      "args": [
+        {
+          "t": "line",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 36,
+            "y": 0
+          }
+        },
+        {
+          "intent": "LineDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "in",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "in",
+                "conversion": 1,
+                "fraction": "fraction"
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": "1/2 in"
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-left-of-origin",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": -150,
+              "y": 792
+            },
+            {
+              "x": -100,
+              "y": 792
+            },
+            {
+              "x": -50,
+              "y": 792
+            },
+            {
+              "x": -100,
+              "y": 742
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.4822530936058841,
+          "label": "0.48 m²",
+          "perimeter": "3.35 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-across-origin-x",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": -75,
+              "y": 792
+            },
+            {
+              "x": -25,
+              "y": 792
+            },
+            {
+              "x": 25,
+              "y": 792
+            },
+            {
+              "x": 75,
+              "y": 792
+            },
+            {
+              "x": 0,
+              "y": 742
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.7233796404088262,
+          "label": "0.72 m²",
+          "perimeter": "4.59 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-leftward",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 50,
+              "y": 792
+            },
+            {
+              "x": 0,
+              "y": 792
+            },
+            {
+              "x": -50,
+              "y": 792
+            },
+            {
+              "x": 0,
+              "y": 742
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.4822530936058841,
+          "label": "0.48 m²",
+          "perimeter": "3.35 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-downward",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 742
+            },
+            {
+              "x": 0,
+              "y": 792
+            },
+            {
+              "x": 0,
+              "y": 842
+            },
+            {
+              "x": 50,
+              "y": 792
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.4822530936058841,
+          "label": "0.48 m²",
+          "perimeter": "3.35 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-below-origin",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 942
+            },
+            {
+              "x": 0,
+              "y": 892
+            },
+            {
+              "x": 0,
+              "y": 842
+            },
+            {
+              "x": 50,
+              "y": 892
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.4822530936058841,
+          "label": "0.48 m²",
+          "perimeter": "3.35 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-across-origin-y",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 867
+            },
+            {
+              "x": 0,
+              "y": 817
+            },
+            {
+              "x": 0,
+              "y": 767
+            },
+            {
+              "x": 0,
+              "y": 717
+            },
+            {
+              "x": 50,
+              "y": 792
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.7233796404088262,
+          "label": "0.72 m²",
+          "perimeter": "4.59 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-straight-steep",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 0,
+              "y": 792
+            },
+            {
+              "x": 10,
+              "y": 742
+            },
+            {
+              "x": 20,
+              "y": 692
+            },
+            {
+              "x": -50,
+              "y": 692
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "area",
+          "value": 0.6751543310482377,
+          "label": "0.68 m²",
+          "perimeter": "3.94 m"
+        }
+      }
+    },
+    {
+      "name": "shapeMeasurementReadout/area-bowtie-offset",
+      "fn": "shapeMeasurementReadout",
+      "args": [
+        {
+          "t": "poly",
+          "points": [
+            {
+              "x": 200,
+              "y": 200
+            },
+            {
+              "x": 300,
+              "y": 300
+            },
+            {
+              "x": 300,
+              "y": 200
+            },
+            {
+              "x": 200,
+              "y": 260
+            }
+          ],
+          "closed": true
+        },
+        {
+          "intent": "PolygonDimension",
+          "measure": {
+            "subtype": "RL",
+            "ratio": "1 in = 1 m",
+            "x": [
+              {
+                "unit": "m",
+                "conversion": 0.013888888888888888
+              }
+            ],
+            "distance": [
+              {
+                "unit": "m",
+                "conversion": 1
+              }
+            ],
+            "area": [
+              {
+                "unit": "m²",
+                "conversion": 1
+              }
+            ]
+          },
+          "caption": {
+            "enabled": true
+          },
+          "crop": {
+            "left": 0,
+            "bottom": 0,
+            "right": 612,
+            "top": 792
+          },
+          "text": "stored"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "unavailable": "invalid-geometry"
+        }
       }
     },
     {

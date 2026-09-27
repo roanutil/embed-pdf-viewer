@@ -100,6 +100,11 @@ const MEASURES: [string, unknown][] = [
   ['invalid-precision', measureWith({ distance: [nf('m', 1, { precision: 3 })] }), ],
   ['invalid-fraction-denominator', measureWith({ distance: [nf('in', 1, { fraction: 'fraction', precision: 0.5 })] })],
   ['invalid-conversion', measureWith({ distance: [nf('m', -1)] })],
+  ['fraction-denominator-non-integer', measureWith({ distance: [nf('in', 1, { fraction: 'fraction', precision: 2.5 })] })],
+  ['fraction-denominator-zero', measureWith({ distance: [nf('in', 1, { fraction: 'fraction', precision: 0 })] })],
+  ['fraction-denominator-max', measureWith({ distance: [nf('in', 1, { fraction: 'fraction', precision: 2147483647 })] })],
+  ['fraction-denominator-over-max', measureWith({ distance: [nf('in', 1, { fraction: 'fraction', precision: 2147483648 })] })],
+  ['y-axis-both-negative', measureWith({ y: [nf('m', -2 / 72)], cyx: -0.5 })],
   ['overflow', measureWith({ distance: [nf('m', 1e38), nf('cm', 1e38)] })],
   ['cascade-exact', measureWith({ x: [nf('ft', 1 / 72)], distance: [nf('ft', 1), nf('in', 12)] })],
   ['huge-value', measureWith({ x: [nf('mm', 1e20)], distance: [nf('mm', 1)] })],
@@ -241,6 +246,23 @@ measurementCases.push(
   c('distanceLabel', 'long-line-feet', gLine(v(0, 0), v(1e6, 0)), dist({ measure: measure('feet-inches') as never })),
   c('distanceLabel', 'rounds-up-inch', gLine(v(0, 0), v(71.999, 0)), dist({ measure: measure('feet-inches') as never })),
   c('distanceLabel', 'offset-crop', LINE, dist({ crop: OFFSET_CROP })),
+  // A three-digit exponent after the sign starts at a word boundary: no separator.
+  c('distanceLabel', 'round-exponent', gLine(v(0, 0), v(1e38, 0)), dist({ measure: measureWith({ x: [nf('m', 1e38)], distance: [nf('m', 1e30, { fraction: 'round' })] }) as never })),
+  c('distanceLabel', 'fraction-under-one', gLine(v(0, 0), v(36, 0)), dist({ measure: measure('fraction-only') as never })),
+  // Straight-through vertices in PDF space, off the origin and on both sides
+  // of it: none of them doubles back, so every boundary is valid.
+  ...([
+    ['left-of-origin', [[-150, 0], [-100, 0], [-50, 0], [-100, 50]]],
+    ['across-origin-x', [[-75, 0], [-25, 0], [25, 0], [75, 0], [0, 50]]],
+    ['leftward', [[50, 0], [0, 0], [-50, 0], [0, 50]]],
+    ['downward', [[0, 50], [0, 0], [0, -50], [50, 0]]],
+    ['below-origin', [[0, -150], [0, -100], [0, -50], [50, -100]]],
+    ['across-origin-y', [[0, -75], [0, -25], [0, 25], [0, 75], [50, 0]]],
+    ['steep', [[0, 0], [10, 50], [20, 100], [-50, 100]]],
+  ] as [string, [number, number][]][]).map(([name, pdf]) =>
+    c('shapeMeasurementReadout', `area-straight-${name}`, gPoly(pdf.map(([x, y]) => v(x, CROP.top - y)), true), area()),
+  ),
+  c('shapeMeasurementReadout', 'area-bowtie-offset', gPoly([v(200, 200), v(300, 300), v(300, 200), v(200, 260)], true), area()),
   c('shapeMeasurementReadout', 'area-two-points', gPoly([v(0, 0), v(10, 10)], true), area()),
   c('shapeMeasurementReadout', 'area-closing-repeat', gPoly([...AREA_POINTS, AREA_POINTS[0]], true), area()),
   c('shapeMeasurementReadout', 'area-bowtie', gPoly([v(0, 0), v(100, 100), v(100, 0), v(0, 100)], true), area()),
