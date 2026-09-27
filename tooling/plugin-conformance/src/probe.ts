@@ -272,11 +272,12 @@ function createApi(config: ProbeConfig, env: PluginEnv, ctx: ControllerContext<u
     /** A synchronous read through the guard: `ctx.doc.security.allows(cap)`. */
     allows: (capability: string) => ctx.doc.security.allows(capability as never),
     docId: () => ctx.doc.id,
-    /** A synchronous member read through the guard, by path. */
-    docRead: (path: string) => {
+    /** A synchronous member read through the guard, by path. A method at the
+     *  end of the path is called with the remaining arguments. */
+    docRead: (path: string, ...args: unknown[]) => {
       let value: unknown = ctx.doc;
       for (const member of path.split('.')) value = (value as Record<string, unknown>)[member];
-      return value;
+      return typeof value === 'function' ? (value as (...a: unknown[]) => unknown)(...args) : value;
     },
     /** Subscribe a logging listener to this instance's event source,
      *  optionally tied to a named AbortController. */
@@ -379,6 +380,8 @@ function describeSpace(space: ReturnType<ControllerContext<unknown>['geometry'][
     height: space.height,
     pdfToPage: space.pdfToPage({ x: 10, y: 20 }),
     pageToPdf: space.pageToPdf({ x: 10, y: 20 }),
+    pdfOriginToPage: space.pdfToPage({ x: 0, y: 0 }),
+    pageOriginToPdf: space.pageToPdf({ x: 0, y: 0 }),
     pdfRectToPage: space.pdfRectToPage({ left: 10, bottom: 20, right: 30, top: 60 }),
     pageRectToPdf: space.pageRectToPdf({ x: 10, y: 20, width: 20, height: 40 }),
     pdfQuadToPage: space.pdfQuadToPage(quad),

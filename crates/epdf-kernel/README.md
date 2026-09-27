@@ -1,7 +1,7 @@
 # epdf-kernel
 
 `packages/core/main` in Rust: the kernel, its store, the plugin plan, resource scopes, the document
-lifecycle and the v3 controller contract. All 91 cases in `vectors/kernel/lifecycle.json` and all
+lifecycle and the v3 controller contract. All 96 cases in `vectors/kernel/lifecycle.json` and all
 70 in `vectors/kernel/utils.json` replay identically (`cargo test -p plugin-conformance`), and
 `tests/runtime.rs` pins what a vector can't see.
 
@@ -93,4 +93,70 @@ cannot be reached from the public surface:
 - `context.ts:93`, the workspace arm of the no-lease message, and `env.ts:15`, the `catch` in
   `isDev`.
 
-Mutation testing has not been rerun for this port.
+## Mutation testing
+
+`scripts/mutants.sh -p epdf-kernel --test-package epdf-kernel --test-package plugin-conformance --file <file>`,
+file by file over every module, catches 613 of 644 viable mutants (608 caught, 5 timeouts; 361
+unviable). The run measured only the kernel's own tests and vectors, not the plugin crates that
+also exercise it. 67 of those kills come from new tests, each checked by applying the mutant by
+hand. Five more mutants no longer exist, because the code they mutated was wrong and is rewritten.
+
+The new vectors in `kernel.ts`:
+
+- `a-rekey-onto-a-closing-id-refuses`: a ticket whose input names a document still tearing down.
+  Only `sessions.has` knows the id then, since the slot has already left the store. Kills `||` to
+  `&&` at `kernel.rs:419`.
+- `a-rekeyed-ticket-lists-its-new-id-while-the-engine-opens` lists the slot between the re-key and
+  the engine's answer. Kills dropping `id` from the re-keyed `PendingMeta` (`kernel.rs:432`).
+- `page-space-at-the-origin`: `describeSpace` now also maps the origin both ways, and the case
+  adds a crop whose top is 0 and registry refs of 1.5 and -1. Kills `geometry.rs:33` (both `&&`),
+  `:83` (both `*` to `/`) and `:90:36`, each of which turns a zero into NaN or names a page the
+  TypeScript does not.
+- `lane-cancel-reasons`: `latestCancel` with null, numbers, `true`, `{}` and a nested array, plus
+  a `latestRunning` read after a superseded run finishes. Kills both `lanes.rs:113` mutants, the
+  `$undefined` guard replaced with `true` (`:40`), and `AbortSignal::same` replaced with `true`.
+- `guarded-handle-security-reads`: `docRead` now calls a method at the end of its path, so the
+  probe reads identity, current, the password prompt, the three annotation checks and
+  `events.lastServerId` through the guard, on two documents with opposite answers. Kills 11
+  mutants in `guarded.rs` and both `Some` replacements of the default `last_server_id` in
+  `engine.rs`.
+
+The lane case exposed a port bug. `js_string` printed integers through `x as i64`, so a reason of
+`1e20` read as `9223372036854775807`, and it never used exponent notation (`1e+21`, `1.5e-7`). It
+also printed `undefined` inside an array, where `Array.prototype.join` prints nothing. It now
+uses `js::number_to_string`, a copy of the one in `epdf-geometry`, which depends on this crate and
+so cannot be depended on. The five mutants of the old integer test at `lanes.rs:29` went with it.
+
+The rest are Rust tests, because they reach what the TypeScript has no counterpart for.
+`plugin-conformance/tests/kernel.rs` drives a typed document plugin and a typed workspace plugin
+through a real kernel, which kills every survivor in `plugin.rs`, `Kernel::try_capability`,
+`Kernel::core`, `dyn Action::downcast` (through the reducer) and `LifecycleEvents::dispose`.
+`tests/runtime.rs` adds three `Set` iteration cases for the store's listener lists
+(`store.rs:59`, `:66`, `:91`), lease accessors, `get_slice` and `dispatch_to`, a stub handle for
+the guard's `has` and `last_server_id` pass-throughs, `listener_count`, `Error::from_spec`
+members and `PageRef::to_json`. The `js.rs` unit tests add `number`, tuple and struct variants,
+the enum reader and the decode message.
+
+The 26 survivors:
+
+- `geometry.rs:83:24`, `:88` (three), `:89` (nine) and `:90:31`. Every page-space matrix is
+  `[1, 0, 0, -1, -left, top]`, so `b` and `c` are 0 and `det` is -1. Each mutant then computes the
+  same number, or the same zero with the other sign, and the harness compares `-0` equal to `0`
+  as the TypeScript's JSON does.
+- `js.rs:57`, `>` to `>=` in `non_finite`. It only sees infinities and NaN, never 0.
+- `js.rs:268` and `:286`, `skip_field` replaced with `Ok(())`. That is what `serde_json`'s value
+  serializer does for it.
+- `js.rs:421`, the three `size_hint` replacements. Serde uses the hint only to size an allocation.
+- `kernel.rs:420`, the second `||` to `&&` in `rekey_session`. Every id in `documents` or
+  `pending` also has a session (a session is set before its slot is published and deleted after
+  it is unpublished), so `sessions.has` already answers.
+- `kernel.rs:500`, `unwrap_or(-1)` to `unwrap_or(1)`. The active id is always in `order`, so the
+  fallback is never taken.
+- `lanes.rs:40`, the `$undefined` guard replaced with `false`. `cancel` turns an undefined reason
+  into `'cancelled'` and arrays now print it as nothing, so `js_string` never sees one at the top.
+- `rt.rs:480`, `Promise::ignore` replaced with `()`. The runtime has no unhandled-rejection
+  report, so the task that awaits and discards does nothing anyone can see.
+- `store.rs:90`, both mutants of `walking - 1`. The counter then never returns to 0 and tombstones
+  are never compacted. A walk skips tombstones either way, so only memory differs.
+- `token.rs:49`, `Hash` replaced with `()`. Every token hashes alike, but equality still tells them
+  apart, so sets and maps hold the same entries.

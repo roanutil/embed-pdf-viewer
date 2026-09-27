@@ -40,6 +40,50 @@ pub fn number(value: f64) -> Value {
     }
 }
 
+/// `Number.prototype.toString()` (ECMAScript `Number::toString`, radix 10):
+/// the shortest round-trip digits, laid out in plain notation for exponents
+/// from -7 to 20 and scientific (`1e+21`, `1.5e-7`) outside it. Rust's `{}`
+/// never switches to scientific notation and prints `-0` as `-0`.
+/// `epdf_geometry::js` carries the same function; that crate depends on this
+/// one, so the kernel keeps its own copy.
+pub fn number_to_string(x: f64) -> String {
+    if x.is_nan() {
+        return "NaN".into();
+    }
+    if x == 0.0 {
+        return "0".into();
+    }
+    if x < 0.0 {
+        return format!("-{}", number_to_string(-x));
+    }
+    if x.is_infinite() {
+        return "Infinity".into();
+    }
+    // `{:e}` gives the shortest round-trip digits as `d[.ddd]e<exp>`.
+    let sci = format!("{x:e}");
+    let (mantissa, exponent) = sci.split_once('e').expect("LowerExp has an exponent");
+    let digits: String = mantissa.chars().filter(|c| *c != '.').collect();
+    let k = digits.len() as i32;
+    let n = exponent.parse::<i32>().expect("integer exponent") + 1;
+    if k <= n && n <= 21 {
+        format!("{digits}{}", "0".repeat((n - k) as usize))
+    } else if 0 < n && n <= 21 {
+        let (int, frac) = digits.split_at(n as usize);
+        format!("{int}.{frac}")
+    } else if -6 < n && n <= 0 {
+        format!("0.{}{digits}", "0".repeat((-n) as usize))
+    } else {
+        let e = n - 1;
+        let sign = if e < 0 { '-' } else { '+' };
+        let (first, rest) = digits.split_at(1);
+        if rest.is_empty() {
+            format!("{first}e{sign}{}", e.abs())
+        } else {
+            format!("{first}.{rest}e{sign}{}", e.abs())
+        }
+    }
+}
+
 struct Js<'a, T: ?Sized>(&'a T);
 
 impl<T: Serialize + ?Sized> Serialize for Js<'_, T> {
@@ -518,6 +562,74 @@ mod tests {
         let nan: P = from_value(&json!({"x": {"$number": "NaN"}})).unwrap();
         assert!(nan.x.is_nan() && nan.y.is_none());
         assert_eq!(to_value(&[f64::NAN]), json!([{"$number": "NaN"}]));
+    }
+
+    #[test]
+    fn number_to_string_matches_javascript() {
+        let cases: &[(f64, &str)] = &[
+            (1.0, "1"),
+            (-0.0, "0"),
+            (0.1, "0.1"),
+            (1e20, "100000000000000000000"),
+            (1e21, "1e+21"),
+            (1.5e21, "1.5e+21"),
+            (0.000001, "0.000001"),
+            (1e-7, "1e-7"),
+            (1.2345e-7, "1.2345e-7"),
+            (f64::INFINITY, "Infinity"),
+            (f64::NEG_INFINITY, "-Infinity"),
+            (f64::NAN, "NaN"),
+            (-12.5, "-12.5"),
+        ];
+        for (x, want) in cases {
+            assert_eq!(number_to_string(*x), *want, "{x}");
+        }
+    }
+
+    #[test]
+    fn number_spells_the_non_finite_values() {
+        assert_eq!(number(f64::NAN), json!({"$number": "NaN"}));
+        assert_eq!(number(f64::INFINITY), json!({"$number": "Infinity"}));
+        assert_eq!(number(f64::NEG_INFINITY), json!({"$number": "-Infinity"}));
+        assert_eq!(number(1.5), json!(1.5));
+    }
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    struct Pair(f64, f64);
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    enum Shape {
+        Unit,
+        Point(f64),
+        Pair(f64, f64),
+        Named { x: f64 },
+    }
+
+    #[test]
+    fn every_compound_carries_its_members() {
+        assert_eq!(to_value(&Pair(1.0, f64::NAN)), json!([1.0, {"$number": "NaN"}]));
+        assert_eq!(to_value(&Shape::Pair(1.0, 2.0)), json!({"Pair": [1.0, 2.0]}));
+        assert_eq!(
+            to_value(&Shape::Named { x: f64::INFINITY }),
+            json!({"Named": {"x": {"$number": "Infinity"}}})
+        );
+    }
+
+    #[test]
+    fn sequences_and_enums_read_back() {
+        let list: Vec<f64> = from_value(&json!([1, {"$number": "NaN"}, 3])).unwrap();
+        assert_eq!((list.len(), list[0], list[2]), (3, 1.0, 3.0));
+        assert!(list[1].is_nan());
+        assert_eq!(from_value::<Pair>(&json!([1, 2])).unwrap(), Pair(1.0, 2.0));
+        assert_eq!(from_value::<Shape>(&json!("Unit")).unwrap(), Shape::Unit);
+        assert_eq!(from_value::<Shape>(&json!({"Point": 4})).unwrap(), Shape::Point(4.0));
+        assert_eq!(
+            from_value::<Shape>(&json!({"Named": {"x": 2}})).unwrap(),
+            Shape::Named { x: 2.0 }
+        );
+        // An enum is one key; two is not a variant, whichever comes first.
+        let error = from_value::<Shape>(&json!({"Point": 4, "Unit": null})).unwrap_err();
+        assert!(error.message.contains("expected an enum"), "{}", error.message);
     }
 
     #[test]

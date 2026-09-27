@@ -16,25 +16,21 @@ use crate::error::{Error, code, plugin_error, to_plugin_error};
 use crate::rt::Promise;
 use crate::signal::AbortSignal;
 
+fn is_absent(value: &Value) -> bool {
+    value.is_null() || crate::is_undefined(value)
+}
+
 /// JavaScript's `String(value)` for the reasons a lane is aborted with.
 pub fn js_string(value: &Value) -> String {
     match value {
         Value::String(s) => s.clone(),
         Value::Null => "null".into(),
         Value::Bool(b) => b.to_string(),
-        // Integers and the shortest round-trip form, which is what JavaScript
-        // prints for every reason a lane is given in practice.
-        Value::Number(n) => {
-            let x = n.as_f64().unwrap_or(f64::NAN);
-            if x.fract() == 0.0 && x.abs() < 1e21 {
-                format!("{}", x as i64)
-            } else {
-                format!("{x}")
-            }
-        }
+        Value::Number(n) => crate::js::number_to_string(n.as_f64().unwrap_or(f64::NAN)),
+        // `Array.prototype.join` prints null and undefined as nothing.
         Value::Array(items) => items
             .iter()
-            .map(|v| if v.is_null() { String::new() } else { js_string(v) })
+            .map(|v| if is_absent(v) { String::new() } else { js_string(v) })
             .collect::<Vec<_>>()
             .join(","),
         Value::Object(o) if o.contains_key("$undefined") => "undefined".into(),

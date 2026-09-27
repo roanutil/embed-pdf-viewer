@@ -8,15 +8,20 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::rc::Rc;
 
+use epdf_kernel::Action;
 use epdf_kernel::action::CoreAction;
 use epdf_kernel::bytes::Bytes;
+use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, EngineCall};
 use epdf_kernel::error::Error;
+use epdf_kernel::event_hook::EventHookSource;
+use epdf_kernel::geometry::PageRef;
+use epdf_kernel::guarded::{GuardedLifetime, guard_handle};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::scope::Scope;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Store;
 use epdf_kernel::token::{AnyToken, Token};
-use serde_json::json;
+use serde_json::{Value, json};
 
 fn log() -> Rc<RefCell<Vec<String>>> {
     Rc::default()
@@ -314,6 +319,82 @@ fn unsubscribing_one_listener_leaves_every_other() {
 }
 
 #[test]
+fn a_listener_that_removes_itself_mid_pass_keeps_its_next_sibling() {
+    // `Set.prototype.delete` of the entry being visited does not shift the
+    // ones after it.
+    let (store, _) = change_store();
+    let seen = log();
+    let own: Rc<RefCell<Option<epdf_kernel::Unsubscribe>>> = Rc::default();
+    let (s1, s2, s3, me) = (seen.clone(), seen.clone(), seen.clone(), own.clone());
+    *own.borrow_mut() = Some(store.subscribe(Rc::new(move || {
+        s1.borrow_mut().push("first".into());
+        if let Some(off) = me.borrow_mut().take() {
+            off.call();
+        }
+        Ok(())
+    })));
+    store.subscribe(Rc::new(move || {
+        s2.borrow_mut().push("second".into());
+        Ok(())
+    }));
+    store.subscribe(Rc::new(move || {
+        s3.borrow_mut().push("third".into());
+        Ok(())
+    }));
+    bump(&store);
+    assert_eq!(*seen.borrow(), ["first", "second", "third"]);
+}
+
+#[test]
+fn a_listener_subscribed_after_destroy_mid_pass_runs_in_that_pass() {
+    // `Set.prototype.clear` empties the entries in place, so `forEach` still
+    // reaches one added after it.
+    let (store, _) = change_store();
+    let seen = log();
+    let (s, st) = (seen.clone(), store.clone());
+    store.subscribe(Rc::new(move || {
+        s.borrow_mut().push("first".into());
+        st.destroy();
+        let s2 = s.clone();
+        st.subscribe(Rc::new(move || {
+            s2.borrow_mut().push("late".into());
+            Ok(())
+        }));
+        Ok(())
+    }));
+    bump(&store);
+    assert_eq!(*seen.borrow(), ["first", "late"]);
+}
+
+#[test]
+fn a_nested_action_pass_leaves_the_outer_pass_whole() {
+    // A listener that removes itself and dispatches: the nested `forEach`
+    // ends while the outer one is still walking, and the outer one must
+    // still reach every sibling.
+    let (store, _) = change_store();
+    let seen = log();
+    let own: Rc<RefCell<Option<epdf_kernel::Unsubscribe>>> = Rc::default();
+    let (s1, me, st) = (seen.clone(), own.clone(), store.clone());
+    *own.borrow_mut() = Some(store.subscribe_action(Rc::new(move |_: &dyn Action| {
+        s1.borrow_mut().push("a".into());
+        if let Some(off) = me.borrow_mut().take() {
+            off.call();
+            st.set_core(|_| {}, &CoreAction { kind: "@@nested" });
+        }
+        Ok(())
+    })));
+    for name in ["b", "c"] {
+        let s = seen.clone();
+        store.subscribe_action(Rc::new(move |action: &dyn Action| {
+            s.borrow_mut().push(format!("{name}:{}", action.action_type()));
+            Ok(())
+        }));
+    }
+    bump(&store);
+    assert_eq!(*seen.borrow(), ["a", "b:@@nested", "c:@@nested", "b:@@test", "c:@@test"]);
+}
+
+#[test]
 fn a_listener_that_fails_is_reported_and_the_pass_continues() {
     let (store, reported) = change_store();
     let seen = log();
@@ -366,8 +447,32 @@ fn slices_register_read_and_remove() {
     assert!(!store.has_slice("other"));
     assert_eq!(store.slice_json("k"), Some(json!({ "n": 1 })));
     assert_eq!(store.slice_json("other"), None);
+    assert!(store.get_slice("k").is_some());
+    assert!(store.get_slice("other").is_none());
     store.remove_slice("k");
     assert!(!store.has_slice("k"));
+}
+
+#[test]
+fn dispatch_to_commits_through_the_current_lease() {
+    let (store, _) = change_store();
+    let to_json: epdf_kernel::store::SliceJson =
+        Rc::new(|s: &dyn std::any::Any| s.downcast_ref::<Value>().unwrap().clone());
+    let lease = store.lease(
+        "k",
+        Rc::new(|_, action| Some(Rc::new(json!({ "last": action.action_type() })) as _)),
+        Rc::new(json!({})),
+        to_json,
+        None,
+    );
+    assert_eq!(lease.key(), "k");
+    assert_eq!(lease.instance_id(), "k#1");
+    assert!(lease.live());
+    store.dispatch_to("k", &CoreAction { kind: "ping" });
+    assert_eq!(store.slice_json("k"), Some(json!({ "last": "ping" })));
+    store.dispatch_to("other", &CoreAction { kind: "lost" });
+    lease.revoke();
+    assert!(!lease.live());
 }
 
 // ── signals and scopes ────────────────────────────────────────────────────────
@@ -387,6 +492,24 @@ fn a_signal_aborts_once_and_forgets_removed_listeners() {
     signal.abort(Error::new("again"));
     assert_eq!(*seen.borrow(), ["a:why", "c"]);
     assert_eq!(signal.reason().unwrap().message, "why");
+}
+
+#[test]
+fn signals_compare_by_controller() {
+    let signal = AbortSignal::new();
+    assert!(signal.same(&signal.clone()));
+    assert!(!signal.same(&AbortSignal::new()));
+}
+
+#[test]
+fn an_event_hook_counts_its_listeners_until_disposed() {
+    let hook = EventHookSource::<Value>::new(None);
+    assert_eq!(hook.listener_count(), 0);
+    hook.on(|_| Ok(()));
+    hook.on(|_| Ok(()));
+    assert_eq!(hook.listener_count(), 2);
+    hook.dispose();
+    assert_eq!(hook.listener_count(), 0);
 }
 
 #[test]
@@ -456,6 +579,67 @@ fn error_shapes_match_their_javascript_classes() {
     assert_eq!(parsed.to_canonical(), json!({ "$error": spec }));
     assert_eq!(Error::from_spec(&parsed.to_canonical()), parsed);
     assert_eq!(Error::from_spec(&json!("not an object")).name, "Error");
+    // `name` and `message` are the error's own fields, never members.
+    let read = Error::from_spec(&json!({ "name": "E", "message": "m", "k": 1 }));
+    assert_eq!((read.member("name"), read.member("message")), (None, None));
+    assert_eq!(read.member("k"), Some(&json!(1)));
+}
+
+#[test]
+fn an_action_downcasts_to_what_it_is() {
+    let action: &dyn Action = &CoreAction { kind: "x" };
+    assert_eq!(action.downcast::<CoreAction>().map(|a| a.kind), Some("x"));
+    assert!(action.downcast::<u8>().is_none());
+}
+
+#[test]
+fn a_page_ref_prints_as_an_object_number() {
+    let value = PageRef::new(7).to_json();
+    assert_eq!(value, json!({ "kind": "objectNumber", "pageObjectNumber": 7 }));
+    assert_eq!(PageRef::from_json(&value), Some(PageRef::new(7)));
+}
+
+// ── the guarded handle's pass-throughs ─────────────────────────────────────────
+
+/// A handle with only the members the guard passes straight through.
+struct Passthrough;
+
+impl DocumentHandle for Passthrough {
+    fn id(&self) -> String {
+        "p".into()
+    }
+    fn capabilities(&self) -> Value {
+        json!({})
+    }
+    fn security(&self) -> Rc<dyn DocumentSecurity> {
+        unimplemented!()
+    }
+    fn has(&self, member: &str) -> bool {
+        member == "render"
+    }
+    fn call(&self, _: &str, _: Option<u32>, _: Vec<Value>) -> EngineCall<Value> {
+        unimplemented!()
+    }
+    fn page_index(&self, _: u32) -> Result<u32, Error> {
+        unimplemented!()
+    }
+    fn subscribe(&self, _: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
+        epdf_kernel::Unsubscribe::noop()
+    }
+    fn last_server_id(&self) -> Option<String> {
+        Some("server-1".into())
+    }
+}
+
+#[test]
+fn the_guard_passes_feature_checks_and_the_server_id_through() {
+    // The TypeScript guard is a Proxy, so every member it does not wrap
+    // reads through untouched; the Rust guard forwards each one by hand.
+    let lifetime = GuardedLifetime { signal: AbortSignal::new(), instance_id: "p#1".into() };
+    let guarded = guard_handle(Rc::new(Passthrough), lifetime, "probe");
+    assert!(guarded.has("render"));
+    assert!(!guarded.has("fonts"));
+    assert_eq!(guarded.last_server_id().as_deref(), Some("server-1"));
 }
 
 #[test]
