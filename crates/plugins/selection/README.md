@@ -7,8 +7,8 @@ and the `canSelect` / `canCopy` twins. Every case in the three vector files repl
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/plugins/selection.json` | 33 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events with their origins, registry and content invalidation, permissions, the `dragThreshold` option |
-| `vectors/plugins/selection-geometry.json` | 281 | the coordinate seam, the engine-core text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceTextByChars`, the reducer |
+| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events with their origins, registry and content invalidation, permissions, the `dragThreshold` option |
+| `vectors/plugins/selection-geometry.json` | 290 | the coordinate seam, the engine-core text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceTextByChars`, the reducer |
 | `vectors/plugins/selection-handles.json` | 43 | `selectionHandleGeom`, the handle drag session, the handle constants |
 
 Geometry and text reach the plugin from the fake engine's response table in the `engine-core`
@@ -72,28 +72,65 @@ type.
 
 ## Mutation testing
 
-Not rerun for the v3 port. The last run, before it, caught 678 of 722 viable mutants with 6 timeouts.
-`capability.rs`, `reducer.rs` and the old handler are gone, so the survivors recorded there no
-longer describe anything. What survived in code that is still here, pre-v3 and rerun pending:
+`scripts/mutants.sh -p epdf-plugin-selection --test-package epdf-plugin-selection --file <file>`,
+file by file over every module but `harness.rs`, catches 699 of 716 viable mutants (693 caught, 6
+timeouts; 79 unviable). Sixteen of those are killed by new cases, each checked by applying the
+mutant by hand; one of them, `(lo + hi)` to `(lo * hi)` in `anchor_at_or_before`, now loops forever
+instead of passing.
 
-- `text_layout.rs`, equivalent, 16: `:124` (`1 ^ 2` is `1 | 2`), `:228:77` (two ascents within half
-  a degree never have a zero dot product), `:439` (restarting the forward line walk at the anchor
-  re-reads the anchor itself), `:523` twice (with finite boxes `left` is infinite exactly when
-  nothing accumulated), `:551` and `:563` (the `hi < lo` guard and an empty `s..=e` loop catch what
-  the mutated condition lets through), `:555` twice (`hi` is clamped per run by `run_end`), `:576`
-  three times and `:578` (`prev_right` is finite whenever a glyph has accumulated, and a zero
-  average width never splits), `:582` (doubling the centre instead of halving it keeps
-  `last_x >= first_x`), `:742` twice (text offsets are never negative).
-- The run-rect prefilter in `textGlyphAt`, 4 (`text_layout.rs:350` to `:353`). The per-glyph test
-  that follows repeats it with boxes inside the run rect, so loosening it only costs time.
-- Sign-only arithmetic in `frame_for_run`, 7 (`text_layout.rs:223` to `:228`). These survived
-  because no fixture sat where a mutated product flips sign. The `handedness-*` cases in
-  `selection-geometry.json` are that fixture now: sixteen sheared cells whose ascent edge is within
-  8 degrees of the baseline, at baselines of 30, 100, 200 and 300 degrees and both handednesses,
-  where the two terms of the cross product have opposite signs. Whether they kill all 7 waits on the
-  rerun.
-- `text_layout.rs:709`, the binary search midpoint, 1. `lo * hi >> 1` still lands on the right
-  anchor for maps of up to four anchors, which is all the vectors carry.
-- `text_layout.rs:693`, 1: `min(top) / max(bottom)` for the overlap height happens to agree with
-  the subtraction on every fixture pair's side of the 0.5 and 0.8 thresholds.
-- `handles.rs:131`, 1, `rotation.abs() < 0.05` against `<=`: no fixture tilts by exactly 0.05°.
+- `vertical-baselines`: `*` to `/` in `frame_for_run`'s handedness dot (`text_layout.rs:228:66`).
+  At exactly 90 and 270 degrees each ascent has `y = 0`, so the mutant divides zero by zero.
+- `on-the-left-tolerance-edge` and `on-the-right-tolerance-edge`: the three boundary mutants of the
+  run-rect prefilter in `text_glyph_at` (`:350` twice, `:351`). `run-rect-prefilters-the-glyph`,
+  a run rect that misses its own glyph, kills the `||` to `&&` at `:353`.
+- `emojiRow` in the char-map sweep: five anchors, so the binary search takes a third step (`:709`).
+- `negative-text-offset`: both mutants of `len + v` in `slice_utf16` (`:742`).
+- `zeroLead` in the layout sweep: `avg > 0.0` to `>=` (`:578`).
+- `char-start-past-the-glyphs`: both mutants of the `len - 1` clamp in `text_segments_for_range`
+  (`:555`), which then index past the last glyph.
+- `rtl-near-the-float-limit`: `/ 2.0` to `* 2.0` for a glyph centre (`:582`), which overflows both
+  centres to infinity and flips the advance.
+- `a-crop-change-re-derives-the-seam`: `==` to `!=` in the seam memo (`controller.rs:301`).
+- An empty `readTextInRange` on a page whose text was never read: `||` to `&&` at
+  `controller.rs:808`, which reads the page anyway.
+- `handler-priority` now listens to `onGestureStarted`: both replacements of the handler's `id`
+  (`handler.rs:71`).
+
+The old README hoped the rotated handedness fixture would kill the seven sign-only mutants in
+`frame_for_run`. It killed four. Of the three the run left, `vertical-baselines` kills one and the
+other two are equivalent (below).
+
+The 17 survivors:
+
+`src/text_layout.rs`, 12:
+
+- `:124`, `|` to `^` in `is_boundary`: `1 ^ 2` is `1 | 2`.
+- `:225:41` and `:225:63`, `* sign` to `/ sign` for the ascent. `sign` is 1 or -1, and dividing by
+  either is exact.
+- `:228:77`, `> 0.0` to `>=` in the handedness dot. It only counts when the baselines are within
+  the frame tolerance of parallel, so the ascents are near parallel or antiparallel and their dot
+  is near 1 or -1, never 0.
+- `:439`, `ri + 1` to `ri * 1`: the forward line walk restarts at the anchor. A zero anchor is
+  skipped, a zero-height one breaks at once just as it breaks on the next run, and any other
+  overlaps itself and sets `to` to what it already was.
+- `:523` twice, `>` to `>=` and `&&` to `||` in `flush`. With finite boxes `left` is infinite
+  exactly when nothing accumulated. JSON cannot carry an infinite coordinate, and the snapshot
+  decoder reads plain JSON numbers.
+- `:551`, `||` to `&&`, and `:563`, `||` to `&&`. What the mutated guard lets through meets the
+  `hi < lo` return or an empty `s..=e` loop.
+- `:576` three times: `char_count > 0` to `>=`, `&&` to `||`, and `prev_right > -inf` to `>=`.
+  `prev_right` is `-inf` exactly when nothing accumulated or the last glyph's right edge is `-inf`;
+  in that second case the width sum is `-inf` or NaN, so `avg > 0.0` fails and nothing splits.
+
+`src/controller.rs`, 3:
+
+- `:209:73`, the `-1` revision default to `1`. `connect` runs during bring-up, after the kernel
+  staged the document's meta at revision 0, so `revision()` is never `None` there.
+- `:427:86` twice, `len - 1` to `len + 1` or `len / 1` for an interior page's last glyph. The count
+  it feeds is clamped to the last glyph inside `text_segments_for_range`.
+
+`src/handles.rs:131`, `rotation.abs() < 0.05` to `<=`. The rotation is `degrees - 90` with the
+degrees near 90, so it is a multiple of 2^-46, and 0.05 is not; the two comparisons never differ.
+
+`src/model.rs:78`, `initial_selection_state()` replaced with `Default::default()`. Its body is
+`SelectionState::default()`.
