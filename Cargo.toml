@@ -16,6 +16,7 @@ members = [
   "crates/epdf-engine",
   "crates/epdf-uniffi",
   "crates/epdf-wasm",
+  "crates/epdf-web",
   "crates/epdf-node",
   "crates/test-support",
   "crates/uniffi-bindgen",

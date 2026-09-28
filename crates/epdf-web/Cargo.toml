@@ -1,0 +1,39 @@
+[package]
+name = "epdf-web"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Evaluation only: the kernel and plugins on the browser main thread, over wasm-bindgen."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+epdf-kernel = { path = "../epdf-kernel" }
+plugin-conformance = { path = "../plugin-conformance" }
+epdf-plugin-actions = { path = "../plugins/actions" }
+epdf-plugin-annotation = { path = "../plugins/annotation" }
+epdf-plugin-commands = { path = "../plugins/commands" }
+epdf-plugin-form = { path = "../plugins/form" }
+epdf-plugin-i18n = { path = "../plugins/i18n" }
+epdf-plugin-interaction = { path = "../plugins/interaction" }
+epdf-plugin-link = { path = "../plugins/link" }
+epdf-plugin-measurement = { path = "../plugins/measurement" }
+epdf-plugin-metadata = { path = "../plugins/metadata" }
+epdf-plugin-page-edit = { path = "../plugins/page-edit" }
+epdf-plugin-redaction = { path = "../plugins/redaction" }
+epdf-plugin-render = { path = "../plugins/render" }
+epdf-plugin-search = { path = "../plugins/search" }
+epdf-plugin-selection = { path = "../plugins/selection" }
+epdf-plugin-shell = { path = "../plugins/shell" }
+epdf-plugin-signature = { path = "../plugins/signature" }
+epdf-plugin-stage = { path = "../plugins/stage" }
+epdf-plugin-stamp = { path = "../plugins/stamp" }
+epdf-plugin-view-manager = { path = "../plugins/view-manager" }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
