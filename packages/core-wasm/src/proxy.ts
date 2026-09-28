@@ -24,6 +24,14 @@
  *     `{"$host": n}` the engine bridge's live value, `$set` and `$map` the
  *     collections, and the command context's `{"$kernel": ...}` markers
  *     closures over this wire.
+ *   - A closed document's capabilities come back from `take_evicted` as
+ *     the texts they described to (`evict`): each proxy leaves the cache,
+ *     and its refs, no longer pinned, are held weakly and released like
+ *     any other.
+ *   - Once the kernel is freed (`dispose`), a call through this wire throws
+ *     `[core-wasm] kernel destroyed`, and what the engine or a timer runs
+ *     later (a finalizer's release, an abort, the kernel's own releases)
+ *     does nothing.
  *
  * Reference stability. React selectors compare by reference, so a getter
  * that answers a fresh object on every call loops `useSyncExternalStore`.
@@ -60,6 +68,9 @@ export interface RustKernel {
   documents(): string;
   invoke_ref(id: number, argsJson: string): string;
   release_ref(id: number): void;
+  /** The description texts of closed documents' capabilities, as a JSON
+   *  array, each handed out once. */
+  take_evicted(): string;
   promise(id: number): Promise<unknown>;
   abort_promise(id: number, reasonJson?: string | null): void;
   state_json(): string;
@@ -71,6 +82,8 @@ export interface RustKernel {
   destroy(): Promise<unknown>;
   /** The harness's live-table counts plus `described`, as JSON text. */
   debug_counts(): string;
+  /** wasm-bindgen's: drop the Rust side. Nothing may call it again. */
+  free(): void;
 }
 
 export type RustKernelClass = new (
@@ -111,6 +124,18 @@ const isRef = (value: unknown): value is { $ref: number; pinned?: boolean } =>
   typeof value === 'object' &&
   typeof (value as { $ref?: unknown }).$ref === 'number';
 
+/** Every pinned ref id in a parsed description. */
+function pinnedIds(value: unknown, out: number[] = []): number[] {
+  if (isRef(value)) {
+    if (value.pinned === true) out.push(value.$ref);
+  } else if (value !== null && typeof value === 'object') {
+    for (const member of Object.values(value)) pinnedIds(member, out);
+  }
+  return out;
+}
+
+const DESTROYED = '[core-wasm] kernel destroyed';
+
 /** A canonical `{"$error": {...}}` (or anything thrown) as an `Error` with
  *  its `name`, `code` and other members. */
 export function toError(thrown: unknown): Error {
@@ -133,7 +158,9 @@ export function rusty<T>(run: () => T): T {
 }
 
 export class Wire {
-  private rust!: RustKernel;
+  private attached!: RustKernel;
+  /** Set by `dispose`, once the kernel is freed. */
+  private dead = false;
   private version = 0;
   /** Every function the kernel may still call, by id, until `releaseJs`. */
   private readonly fns = new Map<number, Fn>();
@@ -150,8 +177,9 @@ export class Wire {
    *  to the kernel once the function is collected. */
   private readonly loose = new Map<number, WeakRef<Fn>>();
   private readonly released = new FinalizationRegistry<number>((id) => {
+    if (this.dead) return;
     this.loose.delete(id);
-    this.rust.release_ref(id);
+    this.attached.release_ref(id);
   });
   private readonly proxies = new Map<string, object>();
   private results = new Map<string, unknown>();
@@ -174,7 +202,60 @@ export class Wire {
 
   /** The kernel, once it is built (it needs `callJs` to build). */
   attach(rust: RustKernel): void {
-    this.rust = rust;
+    this.attached = rust;
+  }
+
+  /** The kernel, for an explicit call: throws once it is freed, rather than
+   *  letting wasm-bindgen answer with a null pointer. */
+  get rust(): RustKernel {
+    if (this.dead) throw new Error(DESTROYED);
+    return this.attached;
+  }
+
+  /** The kernel is freed: forget everything it handed over or was handed,
+   *  and make every later call throw. */
+  dispose(): void {
+    this.dead = true;
+    this.fns.clear();
+    this.fnIds.clear();
+    this.inFlight.clear();
+    this.pinned.clear();
+    this.loose.clear();
+    this.proxies.clear();
+    this.results = new Map();
+    this.answers = new Map();
+    this.slices = new Map();
+    this.state = undefined;
+  }
+
+  /** Drop the proxies of closed documents' capabilities (`take_evicted`),
+   *  and the answers their members' calls left for reuse. Their refs are
+   *  unpinned in the kernel, so each function here is held weakly from now
+   *  on and released once collected, as a loose ref's is; one that was
+   *  never decoded is released at once. */
+  evict(): void {
+    if (this.dead) return;
+    const texts = JSON.parse(this.attached.take_evicted()) as string[];
+    const evicted = new Set<number>();
+    for (const text of texts) {
+      this.proxies.delete(text);
+      for (const id of pinnedIds(JSON.parse(text))) {
+        evicted.add(id);
+        const fn = this.pinned.get(id);
+        this.pinned.delete(id);
+        if (!fn) {
+          this.attached.release_ref(id);
+          continue;
+        }
+        this.loose.set(id, new WeakRef(fn));
+        this.released.register(fn, id);
+      }
+    }
+    if (evicted.size === 0) return;
+    // Keyed `${ref}:${argument JSON}` (see `call`).
+    const stale = (key: string) => evicted.has(Number(key.slice(0, key.indexOf(':'))));
+    for (const key of [...this.answers.keys()]) if (stale(key)) this.answers.delete(key);
+    for (const key of [...this.results.keys()]) if (stale(key)) this.results.delete(key);
   }
 
   /** The store changed: every cached result is stale. */
@@ -229,16 +310,21 @@ export class Wire {
 
   /** `release_js`: no callback in the kernel holds function `id` any more. */
   readonly releaseJs = (id: string): void => {
+    if (this.dead) return;
     const n = Number(id);
     if (this.inFlight.has(n)) return;
     const fn = this.fns.get(n);
-    if (!fn) return;
+    if (!fn) {
+      if (n < this.nextFn) console.warn(`[core-wasm] release_js(${id}): already released`);
+      return;
+    }
     this.fns.delete(n);
     this.fnIds.delete(fn);
   };
 
   /** `call_js`: a `$fn` callback's call from the kernel. */
   readonly callJs = (id: string, argsJson: string): unknown => {
+    if (this.dead) throw new Error(DESTROYED);
     // A callback from inside a kernel call: the store may have moved since
     // anything was cached, with its notification still to come.
     this.bump();
@@ -329,11 +415,14 @@ export class Wire {
         throw toError(error);
       },
     ) as Promise<unknown> & { abort(reason?: unknown): void };
-    out.abort = (reason?: unknown) =>
-      this.rust.abort_promise(
+    // A no-op once the kernel is freed: an `AbortSignal` can fire long after.
+    out.abort = (reason?: unknown) => {
+      if (this.dead) return;
+      this.attached.abort_promise(
         id,
         reason === undefined ? null : JSON.stringify(this.encode(reason)),
       );
+    };
     return out;
   }
 

@@ -79,6 +79,10 @@ export interface EngineBridge {
    *  release site for why). Throws for an id this bridge does not hold, and
    *  for one already released. */
   release(n: number): void;
+  /** The kernel over this bridge is freed: delete every entry this bridge
+   *  still holds from the shared table, and forget its documents. Another
+   *  bridge's entries stay. A `release` after this does nothing. */
+  dispose(): void;
   /** Entries not yet deleted: this bridge's in the host table (`hosts`),
    *  every bridge's (`allHosts`), and its documents, for the eval build's
    *  memory soak test. */
@@ -361,6 +365,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
   /** A rendered image's host id to its `$hostBytes` id, so releasing the
    *  image releases its bytes too. */
   const imageBytes = new Map<number, number>();
+  let disposed = false;
 
   const hold = (value: unknown): number => {
     const n = nextHostId++;
@@ -376,6 +381,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     return allHosts.get(n);
   };
   const release = (n: number): void => {
+    if (disposed) return;
     if (pendingRelease.has(n) || wasReleased(n)) {
       throw releasedError(`[engine-bridge] host value ${n} was already released`);
     }
@@ -545,6 +551,16 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     hostBytes: bridgeHostBytes,
     hold,
     release,
+    dispose() {
+      disposed = true;
+      for (const n of ownHosts) {
+        allHosts.delete(n);
+        pendingRelease.delete(n);
+      }
+      ownHosts.clear();
+      imageBytes.clear();
+      documents.clear();
+    },
     counts() {
       return { hosts: ownHosts.size, allHosts: allHosts.size, documents: documents.size };
     },

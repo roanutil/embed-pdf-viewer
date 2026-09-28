@@ -338,3 +338,42 @@ mod typed {
         assert_eq!((events.opened.listener_count(), events.closed.listener_count()), (0, 0));
     }
 }
+
+/// A document plugin's capability that keeps its context, as most do.
+struct Holds {
+    _ctx: epdf_kernel::Ctx<Value, Value>,
+}
+
+static HOLDS: std::sync::LazyLock<epdf_kernel::Token<Rc<Holds>>> =
+    std::sync::LazyLock::new(|| epdf_kernel::Token::new("holds"));
+
+/// A closed document's capabilities are the kernel's no longer: once
+/// nothing outside holds one, it is dropped. Its context holds the
+/// document's session, and the session held the capability, so without the
+/// close letting go this is a cycle that outlives the kernel.
+#[test]
+fn a_closed_documents_capability_is_dropped() {
+    use epdf_kernel::rt;
+    use epdf_kernel::{Kernel, KernelOptions, OpenOptions, OpenSource, define};
+
+    rt::reset();
+    let fake = plugin_conformance::fake_engine::FakeEngine::new(json!({
+        "documents": { "a": { "pages": [] } },
+    }));
+    let plugin = define::<Value, Value>("holds")
+        .document_scoped()
+        .capability(&HOLDS, |ctx| Ok(Rc::new(Holds { _ctx: ctx })))
+        .build();
+    let engine = Rc::new(plugin_conformance::fake_engine::AsEngine(fake));
+    let kernel = Kernel::new(engine, vec![plugin], KernelOptions::default()).unwrap();
+    let _ = kernel.start();
+    let input = json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } });
+    let _ = kernel.documents().open(OpenSource::Input(input), OpenOptions::default());
+    rt::run_until_stalled();
+
+    let capability = Rc::downgrade(&kernel.capability(&HOLDS, Some("a")).unwrap());
+    assert!(capability.upgrade().is_some());
+    let _ = kernel.documents().close("a");
+    rt::run_until_stalled();
+    assert!(capability.upgrade().is_none(), "the closed session still holds its capability");
+}

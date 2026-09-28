@@ -359,6 +359,10 @@ struct ScriptedBehavior {
     spec: Value,
     matches: Option<Callback>,
     engaged: Option<Callback>,
+    /// A callback for every `$fn` member, made at registration, by member:
+    /// [`behavior_json`] restarts these rather than making new ones from
+    /// `spec`, whose functions a live host may have forgotten by then.
+    members: HashMap<String, Callback>,
 }
 
 impl Behavior for ScriptedBehavior {
@@ -381,11 +385,19 @@ impl Behavior for ScriptedBehavior {
 fn scripted_behavior(spec: &Value, h: &Harness) -> ScriptedBehavior {
     let member =
         |name: &str| spec.get(name).filter(|v| v.get("$fn").is_some()).map(|v| h.callback(v));
+    let members = spec
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter(|(_, v)| v.get("$fn").is_some())
+        .map(|(key, v)| (key.clone(), h.callback(v)))
+        .collect();
     ScriptedBehavior {
         id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
         spec: spec.clone(),
         matches: member("matches"),
         engaged: member("engaged"),
+        members,
     }
 }
 
@@ -402,8 +414,8 @@ fn behavior_json(
     };
     let mut out = Map::new();
     for (key, value) in scripted.spec.as_object().into_iter().flatten() {
-        if value.get("$fn").is_some() {
-            let callback = h.callback(value);
+        if let Some(callback) = scripted.members.get(key) {
+            let callback = callback.restarted();
             out.insert(
                 key.clone(),
                 h.register_fn(Rc::new(move |args| match callback.call(args) {

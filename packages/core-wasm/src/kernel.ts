@@ -25,7 +25,7 @@ import type {
 } from '@embedpdf/core';
 import { createEngineBridge, type EngineBridge } from './engine-bridge';
 import { isRustPlugin, type RustPluginDef } from './plugins';
-import { rusty, toError, Wire, type RustKernel, type RustKernelClass } from './proxy';
+import { rusty, toError, Wire, type RustKernelClass } from './proxy';
 
 let RustKernel: RustKernelClass | undefined;
 
@@ -45,10 +45,10 @@ export function setWasmMemoryBytes(fn: () => number): void {
 }
 
 /** Each kernel this module built, by the object `createKernel` returned, so
- *  `kernelCounts` can reach its Rust handle, bridge and wire without
- *  widening the public `Kernel` type. Dev-only, for the eval build's memory
- *  soak test. */
-const tables = new WeakMap<Kernel, { rust: RustKernel; bridge: EngineBridge; wire: Wire }>();
+ *  `kernelCounts` can reach its bridge and wire (and through the wire its
+ *  Rust handle) without widening the public `Kernel` type. Dev-only, for the
+ *  eval build's memory soak test. */
+const tables = new WeakMap<Kernel, { bridge: EngineBridge; wire: Wire }>();
 
 /** Every kernel `createKernel` built and has not yet destroyed, so a debug
  *  hook that has no reference of its own (`examples/rust-kernel-eval`'s
@@ -87,7 +87,7 @@ export function kernelCounts(kernel?: Kernel): Record<string, number> {
   }
   const entry = tables.get(kernel);
   if (!entry) throw new Error('[core-wasm] kernelCounts: not a kernel createKernel built');
-  const harness = JSON.parse(rusty(() => entry.rust.debug_counts())) as Record<string, number>;
+  const harness = JSON.parse(rusty(() => entry.wire.rust.debug_counts())) as Record<string, number>;
   const { refs: wireRefs, ...wireRest } = entry.wire.counts();
   const wasmBytes = wasmMemoryBytes ? wasmMemoryBytes() : NaN;
   return { ...harness, ...entry.bridge.counts(), ...wireRest, wireRefs, wasmBytes };
@@ -153,13 +153,16 @@ export function createKernel(opts: {
   wire.attach(rust);
 
   const listeners = new Set<() => void>();
-  rust.subscribe(() => {
+  const subscription = rust.subscribe(() => {
     wire.changes++;
     wire.bump();
     for (const listener of [...listeners]) listener();
   });
 
   const documents = wire.documents() as DocumentsCapability;
+  // After the kernel's own listener, which evicted the closed document's
+  // capabilities from its memo.
+  documents.onClosed(() => wire.evict());
   const name = (token: CapabilityToken<unknown>) => token.name;
 
   // ── init-only JS plugins ──
@@ -218,29 +221,35 @@ export function createKernel(opts: {
       wire.capability(name(token), documentId) as T,
     tryCapability: <T>(token: CapabilityToken<T>, documentId?: string) =>
       wire.tryCapability(name(token), documentId) as T | null,
-    scopeOf: (token) => rusty(() => rust.scope_of(name(token))) as PluginScope,
+    scopeOf: (token) => rusty(() => wire.rust.scope_of(name(token))) as PluginScope,
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
     getState: () => wire.getState() as GlobalState,
-    status: () => rusty(() => rust.status()) as KernelStatus,
+    status: () => rusty(() => wire.rust.status()) as KernelStatus,
     start: () =>
-      (started ??= rust.start().then(startJsPlugins, (error) => {
+      (started ??= wire.rust.start().then(startJsPlugins, (error) => {
         throw toError(error);
       })),
+    // Frees the Rust side once its destroy settles; every call after that
+    // throws `[core-wasm] kernel destroyed` (`Wire.rust`).
     destroy: () =>
       (destroyed ??= (async () => {
         liveKernels.delete(kernel);
         for (const doc of [...cleanups.keys()]) runCleanups(doc);
+        rust.unsubscribe(subscription);
         try {
           await rust.destroy();
         } catch (error) {
           report(toError(error));
         }
+        rust.free();
+        wire.dispose();
+        bridge.dispose();
       })()),
   };
-  tables.set(kernel, { rust, bridge, wire });
+  tables.set(kernel, { bridge, wire });
   liveKernels.add(kernel);
   return kernel;
 }

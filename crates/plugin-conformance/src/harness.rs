@@ -314,6 +314,36 @@ impl Harness {
         }
     }
 
+    /// Undo [`pin_ref`](Self::pin_ref): ref `id` is released like any
+    /// other from now on. For a capability whose description will not be
+    /// handed out again (its document closed).
+    pub fn unpin_ref(&self, id: u32) {
+        if let RefTable::Live { pinned, .. } = &mut *self.0.refs.borrow_mut() {
+            pinned.remove(&id);
+        }
+    }
+
+    /// Drop every ref and promise a live harness still holds, pinned or
+    /// not, for a host that is done with it. The refs hold capabilities,
+    /// and a plugin's store can hold callbacks that hold this harness, so
+    /// until this runs the two keep each other alive. Ids still never
+    /// repeat. A no-op on a scripted harness.
+    pub fn clear_live(&self) {
+        let refs = match &mut *self.0.refs.borrow_mut() {
+            RefTable::Live { slots, pinned, .. } => {
+                pinned.clear();
+                std::mem::take(slots)
+            }
+            RefTable::Scripted(_) => HashMap::new(),
+        };
+        let promises = match &mut *self.0.promises.borrow_mut() {
+            PromiseTable::Live { slots, .. } => std::mem::take(slots),
+            PromiseTable::Scripted(_) => HashMap::new(),
+        };
+        // Dropped once no table is borrowed: a drop can reach back in.
+        drop((refs, promises));
+    }
+
     /// Free ref `id` on a live harness, once nothing on the caller's side
     /// can call it again. A pinned id, an unknown or already released one,
     /// and any id on a scripted harness are left alone.
@@ -458,6 +488,13 @@ impl Harness {
     /// spec itself. On a harness made with
     /// [`live_with_release`](Self::live_with_release), a named spec's
     /// callback also holds its function until its last clone drops.
+    ///
+    /// So an adapter makes its callbacks when the spec arrives, and never
+    /// keeps a `$fn` spec to make one from later: once the callbacks made
+    /// from a name are gone, the host may have forgotten the function, and
+    /// a callback made from it then calls a released id. To call a stored
+    /// callback afresh, with its own `seq` count, use
+    /// [`Callback::restarted`].
     pub fn callback(&self, spec: &Value) -> Callback {
         let name = spec.get("$fn").and_then(Value::as_str);
         let guard = match (&self.0.release, name) {
@@ -549,6 +586,13 @@ pub struct Callback {
 }
 
 impl Callback {
+    /// The same function, holding it as this callback does, with its calls
+    /// counted from zero: what [`Harness::callback`] on the same spec made,
+    /// without reading the spec again.
+    pub fn restarted(&self) -> Callback {
+        Callback { calls: Rc::new(RefCell::new(0)), ..self.clone() }
+    }
+
     pub fn name(&self) -> &str {
         self.spec.get("$fn").and_then(Value::as_str).unwrap_or_default()
     }

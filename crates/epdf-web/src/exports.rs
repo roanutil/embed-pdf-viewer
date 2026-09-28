@@ -10,8 +10,8 @@
 //! taken from the harness's table exactly once: a second call throws. A ref
 //! lives until [`WasmKernel::release_ref`], which the shim calls once the
 //! function it built from the ref is garbage. A capability's own refs are
-//! pinned and never released: its description prints each as
-//! `{"$ref": n, "pinned": true}`.
+//! pinned, never released while its document is open: its description
+//! prints each as `{"$ref": n, "pinned": true}`.
 //!
 //! A JavaScript function in a plugin config or a call's arguments arrives as
 //! `{"$fn": "js:<id>"}`. Calling it calls `call_js(id, argsJson)` with the
@@ -21,6 +21,8 @@
 //! outermost export or event it happened in: a callback dropped and made
 //! again within one call keeps its function. JavaScript may then forget
 //! the function; the same function passed again crosses under a new id.
+//! On an idle kernel, a release queued outside any entry waits for the
+//! next outermost entry: nothing else runs the sweep.
 //!
 //! A command function's context arrives with markers where the TypeScript
 //! has functions and a live object: `ctx.core`, `ctx.get` and `ctx.tryGet`
@@ -33,10 +35,21 @@
 //! The same capability object always describes to the same text, with the
 //! same refs: [`WasmKernel`] memoizes each description by the capability's
 //! `Rc`, which the cache holds so its address is never reused. That is why
-//! its refs are pinned: the memo hands the same ids out again.
+//! its refs are pinned: the memo hands the same ids out again. Once a
+//! document closes, its capabilities leave the memo and their refs are
+//! unpinned, so they release like any other; the texts they described to
+//! wait in [`WasmKernel::take_evicted`] for the shim to drop its proxies.
 //!
 //! Every export's body runs as a [`runtime::entry`], so the kernel's queue
 //! drains and its timers stay armed once the outermost one returns.
+//!
+//! `free()` (wasm-bindgen's, once [`destroy`](WasmKernel::destroy) has
+//! settled) drops the memo and every ref and promise the harness still
+//! holds: a plugin's store can hold callbacks that hold the harness, whose
+//! refs hold the capabilities that hold the store, and only this breaks
+//! that loop. Everything else the runtime keeps (its armed timeout, its
+//! queue, its exit hooks) belongs to the wasm instance, not to one kernel,
+//! and goes on serving any other kernel in it.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -187,7 +200,45 @@ fn thenable(value: &JsValue) -> Option<js_sys::Promise> {
 
 /// A capability's description, with the capability that owns the address
 /// it is keyed by.
-type Described = HashMap<*const (), (Rc<dyn Any>, String)>;
+struct Described {
+    /// Held, so the address is never reused while the entry lives.
+    _capability: Rc<dyn Any>,
+    /// The document it was resolved for; `None` for a workspace capability.
+    doc: Option<String>,
+    text: String,
+    /// The refs the text pins.
+    refs: Vec<u32>,
+}
+
+/// [`WasmKernel::describe`]'s memo, by capability address. The documents'
+/// closed listener holds it weakly and evicts from it.
+struct Memo {
+    harness: Harness,
+    described: RefCell<HashMap<*const (), Described>>,
+    /// The texts of evicted descriptions, until
+    /// [`take_evicted`](WasmKernel::take_evicted).
+    evicted: RefCell<Vec<String>>,
+}
+
+impl Memo {
+    /// Drop every description of a capability of document `doc`, and unpin
+    /// its refs.
+    fn evict(&self, doc: &str) {
+        let gone: Vec<Described> = {
+            let mut described = self.described.borrow_mut();
+            let keys: Vec<*const ()> = described
+                .iter()
+                .filter(|(_, entry)| entry.doc.as_deref() == Some(doc))
+                .map(|(key, _)| *key)
+                .collect();
+            keys.iter().filter_map(|key| described.remove(key)).collect()
+        };
+        for entry in &gone {
+            entry.refs.iter().for_each(|id| self.harness.unpin_ref(*id));
+        }
+        self.evicted.borrow_mut().extend(gone.into_iter().map(|entry| entry.text));
+    }
+}
 
 /// The kernel and every plugin, built from specs and driven by name.
 #[wasm_bindgen]
@@ -199,7 +250,9 @@ pub struct WasmKernel {
     subscriptions: RefCell<HashMap<u32, Unsubscribe>>,
     next_subscription: Cell<u32>,
     /// Descriptions by capability address.
-    described: RefCell<Described>,
+    memo: Rc<Memo>,
+    /// The documents' closed listener that evicts from `memo`.
+    on_closed: Option<Unsubscribe>,
     /// `kernel.documents()`, made once so its description memoizes too.
     documents: Rc<dyn Any>,
     /// A taken promise's abort handle, by id, kept until it settles:
@@ -284,12 +337,28 @@ impl WasmKernel {
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
         let documents: Rc<dyn Any> = Rc::new(kernel.documents());
+        let memo = Rc::new(Memo {
+            harness: harness.clone(),
+            described: RefCell::new(HashMap::new()),
+            evicted: RefCell::new(Vec::new()),
+        });
+        let on_closed = kernel.documents().events().map(|events| {
+            let memo = Rc::downgrade(&memo);
+            events.closed.on(move |event: &Value| {
+                let doc = event.get("documentId").and_then(Value::as_str);
+                if let (Some(memo), Some(doc)) = (memo.upgrade(), doc) {
+                    memo.evict(doc);
+                }
+                Ok(())
+            })
+        });
         Ok(WasmKernel {
             kernel,
             harness,
             subscriptions: RefCell::new(HashMap::new()),
             next_subscription: Cell::new(0),
-            described: RefCell::new(HashMap::new()),
+            memo,
+            on_closed,
             documents,
             aborts: Rc::new(RefCell::new(HashMap::new())),
             _release_fns: release_fns,
@@ -300,8 +369,21 @@ impl WasmKernel {
         entry(|| runtime::to_js(self.kernel.start().map(|_| Ok(undefined()))))
     }
 
+    /// `kernel.destroy()`. The shim calls `free()` once this settles, and
+    /// nothing on this kernel after that.
     pub fn destroy(&self) -> js_sys::Promise {
         entry(|| runtime::to_js(self.kernel.destroy().map(|_| Ok(undefined()))))
+    }
+
+    /// The description texts evicted since the last call, as a JSON array:
+    /// the capabilities of documents that have closed. Their refs are no
+    /// longer pinned, so the shim drops the proxy it built from each text
+    /// and releases the refs once their functions are collected.
+    pub fn take_evicted(&self) -> String {
+        entry(|| {
+            let texts = std::mem::take(&mut *self.memo.evicted.borrow_mut());
+            Value::from(texts).to_string()
+        })
     }
 
     /// `kernel.capability(token, documentId?)`, described. Throws the
@@ -313,9 +395,10 @@ impl WasmKernel {
     ) -> Result<String, JsValue> {
         entry(|| {
             let token = self.harness.token(&token_name, None);
+            let doc = self.document_of(&token, doc_id.as_deref());
             self.kernel
                 .capability_any(&token, doc_id.as_deref())
-                .map(|capability| self.describe(capability))
+                .map(|capability| self.describe(capability, doc))
                 .map_err(|e| thrown(&e))
         })
     }
@@ -330,9 +413,10 @@ impl WasmKernel {
     ) -> Result<Option<String>, JsValue> {
         entry(|| {
             let token = self.harness.token(&token_name, None);
+            let doc = self.document_of(&token, doc_id.as_deref());
             self.kernel
                 .try_capability_any(&token, doc_id.as_deref())
-                .map(|capability| capability.map(|c| self.describe(c)))
+                .map(|capability| capability.map(|c| self.describe(c, doc)))
                 .map_err(|e| thrown(&e))
         })
     }
@@ -356,7 +440,7 @@ impl WasmKernel {
     /// `kernel.documents()`, described as [`capability`](Self::capability)
     /// describes one.
     pub fn documents(&self) -> String {
-        entry(|| self.describe(self.documents.clone()))
+        entry(|| self.describe(self.documents.clone(), None))
     }
 
     /// Call a ref with canonical JSON arguments. Throws only if the
@@ -469,7 +553,7 @@ impl WasmKernel {
     pub fn debug_counts(&self) -> String {
         entry(|| {
             let mut counts = self.harness.counts();
-            counts["described"] = json!(self.described.borrow().len());
+            counts["described"] = json!(self.memo.described.borrow().len());
             counts["aborts"] = json!(self.aborts.borrow().len());
             counts.to_string()
         })
@@ -477,35 +561,70 @@ impl WasmKernel {
 }
 
 impl WasmKernel {
-    /// The harness's description of `capability`, made once per capability,
-    /// with every ref in it pinned.
-    fn describe(&self, capability: Rc<dyn Any>) -> String {
+    /// The document a capability of `token` asked for with `doc_id`
+    /// resolves to: `doc_id`, or the active document for a document
+    /// plugin's token, and `None` for a workspace plugin's.
+    fn document_of(&self, token: &AnyToken, doc_id: Option<&str>) -> Option<String> {
+        match self.kernel.scope_of(token) {
+            PluginScope::Workspace => None,
+            PluginScope::Document => {
+                doc_id.map(str::to_string).or_else(|| self.kernel.documents().get_active_id())
+            }
+        }
+    }
+
+    /// The harness's description of `capability` (of document `doc`), made
+    /// once per capability, with every ref in it pinned.
+    fn describe(&self, capability: Rc<dyn Any>, doc: Option<String>) -> String {
         let key = Rc::as_ptr(&capability) as *const ();
-        if let Some((_, text)) = self.described.borrow().get(&key) {
-            return text.clone();
+        if let Some(entry) = self.memo.described.borrow().get(&key) {
+            return entry.text.clone();
         }
         let mut description =
             self.harness.describe(capability.clone()).unwrap_or_else(|| json!({}));
-        self.pin_refs(&mut description);
+        let mut refs = Vec::new();
+        self.pin_refs(&mut description, &mut refs);
         let text = description.to_string();
-        self.described.borrow_mut().insert(key, (capability, text.clone()));
+        let entry = Described { _capability: capability, doc, text: text.clone(), refs };
+        self.memo.described.borrow_mut().insert(key, entry);
         text
     }
 
-    /// Pin every `{"$ref": n}` in `value` and mark it `"pinned": true`, so
-    /// the shim does not ask to release it.
-    fn pin_refs(&self, value: &mut Value) {
+    /// Pin every `{"$ref": n}` in `value`, into `refs`, and mark it
+    /// `"pinned": true`, so the shim does not ask to release it.
+    fn pin_refs(&self, value: &mut Value, refs: &mut Vec<u32>) {
         match value {
             Value::Object(object) => {
                 if let Some(id) = object.get("$ref").and_then(Value::as_u64) {
                     self.harness.pin_ref(id as u32);
+                    refs.push(id as u32);
                     object.insert("pinned".into(), Value::Bool(true));
                     return;
                 }
-                object.values_mut().for_each(|member| self.pin_refs(member));
+                object.values_mut().for_each(|member| self.pin_refs(member, refs));
             }
-            Value::Array(items) => items.iter_mut().for_each(|item| self.pin_refs(item)),
+            Value::Array(items) => items.iter_mut().for_each(|item| self.pin_refs(item, refs)),
             _ => {}
         }
+    }
+}
+
+/// What `free()` runs: the listeners come off, and the memo, the abort
+/// table and the harness's refs and promises go, so nothing this kernel
+/// built keeps the rest alive (see the module's doc).
+impl Drop for WasmKernel {
+    fn drop(&mut self) {
+        entry(|| {
+            if let Some(off) = self.on_closed.take() {
+                off.call();
+            }
+            let subscriptions = std::mem::take(&mut *self.subscriptions.borrow_mut());
+            subscriptions.values().for_each(Unsubscribe::call);
+            let described = std::mem::take(&mut *self.memo.described.borrow_mut());
+            let aborts = std::mem::take(&mut *self.aborts.borrow_mut());
+            self.memo.evicted.borrow_mut().clear();
+            drop((described, aborts, subscriptions));
+            self.harness.clear_live();
+        })
     }
 }

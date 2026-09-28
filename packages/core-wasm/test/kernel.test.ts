@@ -11,6 +11,8 @@ import { ShellToken } from '@embedpdf/plugin-shell';
 import { AnnotationToken } from '@embedpdf/plugin-annotation';
 import { SearchToken } from '@embedpdf/plugin-search';
 
+import { RenderToken } from '@embedpdf/plugin-render/contract/host';
+
 import { WasmKernel } from '../wasm-node/epdf_web.js';
 import {
   annotationPlugin,
@@ -24,6 +26,8 @@ import {
   setWasmKernel,
   shellPlugin,
   stagePlugin,
+  type EngineBridge,
+  type RustKernelClass,
 } from '../src';
 import { demoToolsPlugin } from '../../viewer/chrome/src/config/demo-tools.plugin';
 
@@ -325,5 +329,94 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(() => createKernel({ engine, plugins: [plugin] })).toThrow(
       '[core-wasm] JS plugin "mine" has reduce; only init-only JS plugins run in the eval build',
     );
+  });
+});
+
+/** Open `id` (the fixture's bytes) in a started kernel and wait for it. */
+async function openDocument(k: Kernel, id: string): Promise<void> {
+  const ready = new Promise<void>((done) => {
+    const off = k.documents.onOpened((event) => {
+      if (event.documentId !== id) return;
+      off();
+      done();
+    });
+  });
+  k.documents.openAll([{ source: { kind: 'bytes', id, bytes }, scope: ['*'] }]);
+  await ready;
+}
+
+describe('closed documents and destroyed kernels', () => {
+  test("a closed document's capabilities leave the memo and the proxy cache", async () => {
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    k.capability(StageToken);
+    const before = kernelCounts(k);
+
+    await openDocument(k, 'second');
+    const stage = k.capability(StageToken, 'second');
+    expect(k.capability(StageToken, 'second')).toBe(stage);
+    const open = kernelCounts(k);
+    expect(open.described).toBe(before.described + 1);
+    expect(open.proxies).toBe(before.proxies + 1);
+
+    await k.documents.close('second');
+    const closed = kernelCounts(k);
+    expect(closed.described).toBe(before.described);
+    expect(closed.proxies).toBe(before.proxies);
+    // The open document's capability is still the one it was.
+    expect(k.capability(StageToken)).toBe(k.capability(StageToken, 'fixture'));
+  });
+
+  test('a destroyed kernel throws its own error on every later call', async () => {
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    await k.destroy();
+    const destroyed = '[core-wasm] kernel destroyed';
+    expect(() => k.capability(StageToken)).toThrow(destroyed);
+    expect(() => k.tryCapability(StageToken)).toThrow(destroyed);
+    expect(() => k.status()).toThrow(destroyed);
+    expect(() => k.scopeOf(StageToken)).toThrow(destroyed);
+    expect(() => k.getState()).toThrow(destroyed);
+    expect(() => kernelCounts(k)).toThrow(destroyed);
+    await k.destroy();
+  });
+
+  test('destroying one of two kernels frees its hosts and leaves the other working', async () => {
+    const bridges: EngineBridge[] = [];
+    const Capturing = function (...args: ConstructorParameters<RustKernelClass>) {
+      bridges.push(args[1]);
+      return new WasmKernel(...args);
+    } as unknown as RustKernelClass;
+    setWasmKernel(Capturing);
+    try {
+      const plugins = () => [stagePlugin(), interactionPlugin(), renderPlugin()];
+      const other = await openFixture(plugins());
+      const k = await openFixture(plugins());
+      const [, bridge] = bridges;
+      const stage = k.capability(StageToken);
+      stage.setViewportSize({ width: 800, height: 600 });
+      const page = stage.listVisiblePages()[0].ref;
+      await k.capability(RenderToken).renderPage(page, { width: 100, format: 'bmp' });
+      expect(bridge.counts().hosts).toBeGreaterThan(0);
+
+      const release = vi.spyOn(bridge, 'release');
+      await k.destroy();
+      // The raster store's images went back to the bridge as the kernel
+      // went: nothing in Rust kept the store alive past `free()`.
+      expect(release).toHaveBeenCalled();
+      expect(bridge.counts().hosts).toBe(0);
+      const counts = kernelCounts(other);
+      expect(counts.allHosts).toBe(counts.hosts);
+
+      kernel = other;
+      const otherStage = other.capability(StageToken);
+      otherStage.setViewportSize({ width: 800, height: 600 });
+      const otherPage = otherStage.listVisiblePages()[0].ref;
+      const image = await other.capability(RenderToken).renderPage(otherPage, {
+        width: 100,
+        format: 'bmp',
+      });
+      expect(image).toBeDefined();
+    } finally {
+      setWasmKernel(WasmKernel);
+    }
   });
 });

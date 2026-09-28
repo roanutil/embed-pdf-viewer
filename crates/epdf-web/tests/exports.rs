@@ -558,3 +558,169 @@ async fn a_callback_dropped_and_remade_in_one_call_keeps_its_function() {
     let counts = counts.call0(&k).unwrap().as_string().unwrap();
     assert_eq!(parse(&counts)["heldFns"], json!(2), "js:1 and the command's js:run");
 }
+
+fn count(kernel: &WasmKernel, table: &str) -> u64 {
+    parse(&kernel.debug_counts())[table].as_u64().unwrap()
+}
+
+/// Closing a document drops its capabilities from the memo, and their refs
+/// are no longer pinned: a release frees them, as it frees any other ref.
+#[wasm_bindgen_test]
+async fn closing_a_document_drops_its_capabilities_from_the_memo() {
+    reset();
+    let plugins = json!([{ "factory": "shell" }]).to_string();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
+    start_with_document(&kernel).await;
+    let documents = parse(&kernel.documents());
+    let before = count(&kernel, "described");
+    // Once with the document's id and once through the active document: the
+    // same capability, so one entry.
+    let shell = parse(&kernel.capability("shell".into(), Some("doc-1".into())).unwrap());
+    kernel.capability("shell".into(), None).unwrap();
+    assert_eq!(count(&kernel, "described"), before + 1);
+
+    let outcome = invoke(&kernel, ref_of(&documents, "close"), r#"["doc-1"]"#);
+    JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
+
+    assert_eq!(count(&kernel, "described"), before);
+    let refs = count(&kernel, "refs");
+    kernel.release_ref(ref_of(&shell, "isOpen"));
+    assert_eq!(count(&kernel, "refs"), refs - 1, "the closed document's refs are unpinned");
+    kernel.release_ref(ref_of(&documents, "getCount"));
+    assert_eq!(count(&kernel, "refs"), refs - 1, "the documents capability stays pinned");
+}
+
+/// Two kernels share one instance's runtime (its armed timeout, its ready
+/// queue, its exit hooks). Destroying and dropping one, as `free()` does,
+/// leaves the other opening documents and firing timers.
+#[wasm_bindgen_test]
+async fn a_dropped_kernel_leaves_another_in_the_instance_working() {
+    reset();
+    let plugins = json!([{ "factory": "shell" }]).to_string();
+    let make = || {
+        WasmKernel::new(
+            &plugins,
+            stub_engine(),
+            call_js(&js_sys::Array::new(), "() => 0"),
+            no_release(),
+        )
+        .unwrap()
+    };
+    let (first, second) = (make(), make());
+    start_with_document(&first).await;
+    start_with_document(&second).await;
+    let fired = std::rc::Rc::new(std::cell::Cell::new(false));
+    let flag = fired.clone();
+    rt::set_timeout(20.0, move || flag.set(true));
+    // An entry, so the timeout is armed before the kernel goes.
+    first.status();
+
+    JsFuture::from(first.destroy()).await.unwrap();
+    drop(first);
+
+    let documents = parse(&second.documents());
+    let outcome = invoke(&second, ref_of(&documents, "open"), r#"[{"id":"doc-2"}]"#);
+    let opened = JsFuture::from(second.promise(promise_of(&outcome)).unwrap()).await.unwrap();
+    assert_eq!(opened.as_string().as_deref(), Some("doc-2"));
+    let shell = parse(&second.capability("shell".into(), Some("doc-2".into())).unwrap());
+    assert_eq!(invoke(&second, ref_of(&shell, "isOpen"), r#"["panel"]"#)["returned"], false);
+    let wait = js_sys::Promise::new(&mut |resolve, _| {
+        let global = js_sys::global();
+        let set_timeout: js_sys::Function =
+            js_sys::Reflect::get(&global, &"setTimeout".into()).unwrap().unchecked_into();
+        set_timeout.call2(&JsValue::NULL, &resolve, &JsValue::from(60)).unwrap();
+    });
+    JsFuture::from(wait).await.unwrap();
+    assert!(fired.get(), "the instance's armed timeout still fires");
+}
+
+/// Every `$ref` id in a description.
+fn ref_ids(value: &Value, out: &mut Vec<u32>) {
+    match value {
+        Value::Object(object) => match object.get("$ref").and_then(Value::as_u64) {
+            Some(id) => out.push(id as u32),
+            None => object.values().for_each(|member| ref_ids(member, out)),
+        },
+        Value::Array(items) => items.iter().for_each(|item| ref_ids(item, out)),
+        _ => {}
+    }
+}
+
+/// A closed document's plugins go once JavaScript lets go of their refs:
+/// a handler registered on its interaction capability hands its function
+/// back. Nothing but the refs may keep them, the kernel's own session
+/// included.
+#[wasm_bindgen_test]
+async fn a_closed_documents_plugins_go_once_their_refs_are_released() {
+    reset();
+    let plugins = json!([{ "factory": "interaction" }]).to_string();
+    let log = js_sys::Array::new();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => undefined"),
+        release_into(&log),
+    )
+    .unwrap();
+    start_with_document(&kernel).await;
+    let interaction =
+        parse(&kernel.capability("interaction".into(), Some("doc-1".into())).unwrap());
+    let registered = invoke(
+        &kernel,
+        ref_of(&interaction, "registerHandler"),
+        r#"[{"id":"a","priority":1,"onDown":{"$fn":"js:1"}}]"#,
+    );
+
+    let documents = parse(&kernel.documents());
+    let outcome = invoke(&kernel, ref_of(&documents, "close"), r#"["doc-1"]"#);
+    JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
+    assert!(released(&log).is_empty(), "the refs still hold the handler");
+
+    let mut refs = Vec::new();
+    ref_ids(&interaction, &mut refs);
+    ref_ids(&registered, &mut refs);
+    for id in refs {
+        kernel.release_ref(id);
+    }
+    assert_eq!(released(&log), vec!["1"]);
+}
+
+/// `getBehaviorFor` describes a registered behavior with fresh refs each
+/// time, from the callbacks made when it was registered: releasing one
+/// answer's refs gives back none of the behavior's functions, and the next
+/// answer still calls them.
+#[wasm_bindgen_test]
+async fn a_behavior_described_again_keeps_its_functions() {
+    reset();
+    let plugins = json!([{ "factory": "interaction" }, { "factory": "annotation" }]).to_string();
+    let calls = js_sys::Array::new();
+    let log = js_sys::Array::new();
+    let kernel =
+        WasmKernel::new(&plugins, stub_engine(), call_js(&calls, "() => true"), release_into(&log))
+            .unwrap();
+    start_with_document(&kernel).await;
+    let annotation = parse(&kernel.capability("annotation".into(), None).unwrap());
+    let behavior =
+        r#"[{"id":"b","matches":{"$fn":"js:m"},"engaged":{"$fn":"js:e"},"extra":{"$fn":"js:x"}}]"#;
+    invoke(&kernel, ref_of(&annotation, "registerBehavior"), behavior);
+    let get = ref_of(&annotation, "getBehaviorFor");
+    let query = r#"[{"subtype":"square","ref":null}]"#;
+
+    let first = invoke(&kernel, get, query)["returned"].clone();
+    let mut refs = Vec::new();
+    ref_ids(&first, &mut refs);
+    assert_eq!(refs.len(), 3, "{first}");
+    refs.into_iter().for_each(|id| kernel.release_ref(id));
+    assert!(released(&log).is_empty(), "released {:?}", released(&log));
+
+    let second = invoke(&kernel, get, query)["returned"].clone();
+    assert_eq!(invoke(&kernel, ref_of(&second, "extra"), "[]"), json!({ "returned": true }));
+    let last = js_sys::Array::from(&calls.get(calls.length() - 1));
+    assert_eq!(last.get(0).as_string().as_deref(), Some("x"));
+}

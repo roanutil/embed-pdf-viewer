@@ -485,6 +485,13 @@ impl Inner {
                 this.sessions.borrow_mut().delete(&id);
             }
             this.events.closed.emit(&serde_json::json!({ "documentId": id }));
+            // Each capability's context holds this session, so while the
+            // session holds the capabilities (and their connects) the two
+            // keep each other alive past the close, and past the kernel.
+            // Nothing resolves a closing session's capabilities again.
+            let capabilities = std::mem::take(&mut *s.capabilities.borrow_mut());
+            let connectors = std::mem::take(&mut *s.connectors.borrow_mut());
+            drop((capabilities, connectors));
             Ok(())
         });
         *session.closing.borrow_mut() = Some(closing.clone());

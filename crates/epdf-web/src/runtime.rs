@@ -21,7 +21,8 @@
 //! [`at_exit`] registers work for the end of every outermost entry, after
 //! the queue drains: `WasmKernel` releases the JavaScript functions its
 //! callbacks let go of there, once nothing left in the entry can still make
-//! a new callback from one.
+//! a new callback from one. Nothing else runs them: on an idle kernel, a
+//! release queued outside any entry waits for the next outermost entry.
 
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};

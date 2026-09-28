@@ -12,6 +12,7 @@ import { createLocalEngine } from '@embedpdf/engine';
 import type { Kernel } from '@embedpdf/core';
 import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
+import { RenderToken } from '@embedpdf/plugin-render/contract/host';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
 import {
@@ -22,7 +23,7 @@ import {
   setWasmKernel,
   stagePlugin,
 } from '../src';
-import { Wire, type RustKernel } from '../src/proxy';
+import { Wire, type RustKernel, type RustKernelClass } from '../src/proxy';
 import type { EngineBridge } from '../src/engine-bridge';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -145,6 +146,93 @@ describe('releasing JavaScript functions Rust has dropped', () => {
     wire.releaseJs(id);
     expect(() => wire.callJs(id, '[]')).toThrow(`[core-wasm] js function ${id} was released`);
     expect(error).toHaveBeenCalled();
+  });
+
+  test('a release while a promise carries the function waits for the next task', async () => {
+    const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
+    const f = () => 2;
+    const spec = wire.encode(() => Promise.resolve(f)) as { $fn: string };
+    const answer = (await wire.callJs(spec.$fn.slice('js:'.length), '[]')) as { $fn: string };
+    const id = answer.$fn.slice('js:'.length);
+
+    // The kernel has not read the settled value yet: its release of the
+    // same function, from some other call, leaves `f` where it is.
+    wire.releaseJs(id);
+    expect(wire.callJs(id, '[]')).toBe(2);
+
+    await new Promise((r) => setTimeout(r, 0));
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    wire.releaseJs(id);
+    expect(() => wire.callJs(id, '[]')).toThrow(`[core-wasm] js function ${id} was released`);
+    expect(error).toHaveBeenCalled();
+  });
+
+  test('a second release of one id warns', () => {
+    const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const spec = wire.encode(() => 1) as { $fn: string };
+    const id = spec.$fn.slice('js:'.length);
+    wire.releaseJs(id);
+    expect(warn).not.toHaveBeenCalled();
+    wire.releaseJs(id);
+    expect(warn).toHaveBeenCalledWith(`[core-wasm] release_js(${id}): already released`);
+  });
+});
+
+describe('a closed document', () => {
+  test('gives its images back once its capabilities are collected', async () => {
+    const bridges: EngineBridge[] = [];
+    setWasmKernel(function (...args: ConstructorParameters<RustKernelClass>) {
+      bridges.push(args[1]);
+      return new WasmKernel(...args);
+    } as unknown as RustKernelClass);
+    try {
+      const k = await openFixture();
+      const [bridge] = bridges;
+      const ready = new Promise<void>((done) => {
+        const off = k.documents.onOpened((event) => {
+          if (event.documentId !== 'second') return;
+          off();
+          done();
+        });
+      });
+      k.documents.openAll([{ source: { kind: 'bytes', id: 'second', bytes }, scope: ['*'] }]);
+      await ready;
+      // In a function of its own, so nothing here outlives it.
+      const render = async () => {
+        const stage = k.capability(StageToken, 'second');
+        stage.setViewportSize({ width: 800, height: 600 });
+        const page = stage.listVisiblePages()[0].ref;
+        await k.capability(RenderToken, 'second').renderPage(page, { width: 100, format: 'bmp' });
+      };
+      await render();
+      await new Promise((r) => setTimeout(r, 0));
+      const held = bridge.counts().hosts;
+      expect(held).toBeGreaterThan(0);
+
+      const release = vi.spyOn(bridge, 'release');
+      await k.documents.close('second');
+      expect(await collectUntil(() => release.mock.calls.length > 0)).toBe(true);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(bridge.counts().hosts).toBeLessThan(held);
+    } finally {
+      setWasmKernel(WasmKernel);
+    }
+  });
+});
+
+describe('a destroyed kernel', () => {
+  test('ignores the refs JavaScript drops after it is freed', async () => {
+    const k = await openFixture();
+    const stage = k.capability(StageToken);
+    // Refs nothing keeps, still registered with the wire's finalizer.
+    for (let i = 0; i < 50; i++) stage.onPageChanged(() => {});
+    await k.destroy();
+    kernel = undefined;
+
+    const releaseRef = vi.spyOn(WasmKernel.prototype, 'release_ref');
+    await collectUntil(() => false);
+    expect(releaseRef).not.toHaveBeenCalled();
   });
 });
 
