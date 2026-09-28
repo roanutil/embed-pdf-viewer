@@ -33,6 +33,9 @@ og-preview/
 # Rust
 /target
 mutants.out*/
+# crates/epdf-web/scripts/build.sh output
+packages/core-wasm/wasm/
+packages/core-wasm/wasm-node/
 
 tmp/
 

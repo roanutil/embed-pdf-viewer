@@ -185,7 +185,8 @@ impl Harness {
         json!({ "$ref": refs.len() - 1 })
     }
 
-    pub(crate) fn ref_fn(&self, id: usize) -> Option<RefFn> {
+    /// The function [`register_fn`](Self::register_fn) numbered `id`.
+    pub fn ref_fn(&self, id: usize) -> Option<RefFn> {
         self.0.refs.borrow().get(id).cloned()
     }
 
@@ -214,7 +215,8 @@ impl Harness {
         json!({ "$promise": id })
     }
 
-    pub(crate) fn promise(&self, id: usize) -> Option<Promise<Value>> {
+    /// The promise [`track`](Self::track) numbered `id`.
+    pub fn promise(&self, id: usize) -> Option<Promise<Value>> {
         self.0.promises.borrow().get(id).cloned()
     }
 
