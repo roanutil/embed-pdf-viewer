@@ -19,6 +19,7 @@ describe('the engine bridge over the local engine', () => {
   let bridge: EngineBridge;
   let docId: string;
   let firstPon: number;
+  let pagesList: { pageCount: number; pages: unknown[] };
 
   beforeAll(async () => {
     engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
@@ -30,6 +31,8 @@ describe('the engine bridge over the local engine', () => {
         JSON.stringify({ scope: ['*'] }),
       ),
     );
+    pagesList = JSON.parse(await bridge.call(docId, 'pages.list', null, '[]'));
+    firstPon = (pagesList.pages[0] as { ref: { pageObjectNumber: number } }).ref.pageObjectNumber;
   });
   afterAll(async () => {
     await bridge.destroy();
@@ -39,11 +42,9 @@ describe('the engine bridge over the local engine', () => {
     expect(docId).toBe('fixture');
   });
 
-  test('pages.list answers the fixture page count as canonical JSON', async () => {
-    const list = JSON.parse(await bridge.call(docId, 'pages.list', null, '[]'));
-    expect(list.pageCount).toBe(2);
-    expect(list.pages).toHaveLength(2);
-    firstPon = list.pages[0].ref.pageObjectNumber;
+  test('pages.list answers the fixture page count as canonical JSON', () => {
+    expect(pagesList.pageCount).toBe(2);
+    expect(pagesList.pages).toHaveLength(2);
     expect(typeof firstPon).toBe('number');
   });
 
@@ -111,9 +112,20 @@ describe('the engine bridge over the local engine', () => {
     expect(events.length).toBe(seen);
   });
 
-  test('close forgets the document', async () => {
+  test('close resolves again on a second call, matching the real handle', async () => {
     expect(JSON.parse(await bridge.call(docId, 'close', null, '[]'))).toEqual({ $undefined: true });
-    expect(bridge.has(docId, 'render')).toBe(false);
+    // `LocalDocumentHandle.close()` on an already-closed handle resolves
+    // `undefined` rather than rejecting; the bridge keeps the document in
+    // its table after close so every later call, including a second
+    // `close`, reaches the real handle instead of a bridge-invented error.
+    expect(JSON.parse(await bridge.call(docId, 'close', null, '[]'))).toEqual({ $undefined: true });
+  });
+
+  test("a call after close answers the real handle's DocNotOpen refusal", async () => {
+    const afterClose = bridge.call(docId, 'pages.list', null, '[]');
+    await expect(afterClose).rejects.toEqual({
+      $error: expect.objectContaining({ name: 'EngineError', code: 'DocNotOpen' }),
+    });
   });
 });
 

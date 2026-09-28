@@ -154,7 +154,9 @@ function canonical(
 }
 
 /** Canonical JSON back to live values: `$bytes` to a `Uint8Array`, `$host`
- *  to the held value, `$undefined` and `$number` to their numbers. */
+ *  to the held value, `$undefined` and `$number` to their numbers. `$date`,
+ *  `$map`, `$set` and `$bigint` are not reversed: nothing the kernel sends
+ *  in produces them. */
 function decode(value: unknown, host: (n: number) => unknown): unknown {
   if (Array.isArray(value)) return value.map((item) => decode(item, host));
   if (value === null || typeof value !== 'object') return value;
@@ -280,10 +282,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
             throw new TypeError(`[engine-bridge] ${path} is not a function`);
           return (fn as (...a: unknown[]) => unknown).apply(target, decodeArgs(argsJson));
         },
-        (value) => {
-          if (path === 'close' && pon == null) documents.delete(docId);
-          return encode(value);
-        },
+        (value) => encode(value),
       );
     },
 
@@ -300,11 +299,15 @@ export function createEngineBridge(engine: Engine): EngineBridge {
         }
         segments.shift();
       }
-      for (const segment of segments) {
-        if (target === null || target === undefined) return false;
-        target = (target as Record<string, unknown>)[segment];
+      try {
+        for (const segment of segments) {
+          if (target === null || target === undefined) return false;
+          target = (target as Record<string, unknown>)[segment];
+        }
+        return target !== undefined;
+      } catch {
+        return false;
       }
-      return target !== undefined;
     },
 
     capabilities(docId) {

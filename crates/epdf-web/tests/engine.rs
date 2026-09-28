@@ -57,7 +57,10 @@ return {
     }
     return Promise.resolve('{"$undefined":true}');
   },
-  has(doc, member) { return member === 'render'; },
+  has(doc, member) {
+    if (member === 'throws') throw new Error('has blew up');
+    return member === 'render';
+  },
   capabilities(doc) { return '{"pageEditSessions":"supported"}'; },
   security(doc, member, args) {
     log.push(['security', member, args]);
@@ -77,6 +80,7 @@ return {
   },
   lastServerId(doc) { return '42'; },
   subscribe(doc, l) {
+    if (doc === 'refuses-subscribe') throw new Error('no listener for you');
     listener = l;
     return () => { listener = null; log.push(['off']); };
   },
@@ -164,6 +168,8 @@ async fn synchronous_reads_go_to_the_bridge_each_time() {
     let doc = open(&stub).await;
     assert!(doc.has("render"));
     assert!(!doc.has("redaction"));
+    // A bridge `has` that throws answers `false` rather than propagating.
+    assert!(!doc.has("throws"));
     assert_eq!(doc.capabilities(), json!({"pageEditSessions": "supported"}));
     let security = doc.security();
     assert!(security.allows("doc.render"));
@@ -204,6 +210,39 @@ async fn events_arrive_parsed_until_unsubscribed() {
     emit.call1(&stub, &r#"{"type":"again"}"#.into()).unwrap();
     assert_eq!(seen.borrow().len(), 1);
     assert_eq!(log(&stub).as_array().unwrap().last().unwrap(), &json!(["off"]));
+}
+
+#[wasm_bindgen_test]
+async fn a_subscribe_that_throws_logs_and_answers_a_noop() {
+    reset();
+    let stub = stub();
+    let engine = JsEngine::new(stub.clone().unchecked_into::<EngineBridge>());
+    let opened = engine.open(json!({"kind": "bytes", "id": "refuses-subscribe"}), None);
+    js_sleep(0.0).await;
+    let Some(Ok(doc)) = opened.peek() else { panic!("open did not resolve") };
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let s = seen.clone();
+    let off = doc.subscribe(Rc::new(move |event: &Value| s.borrow_mut().push(event.clone())));
+    // A bridge that throws on subscribe answers a no-op unsubscribe rather
+    // than panicking; the failure itself is only logged (`console.error`).
+    off.call();
+    assert!(seen.borrow().is_empty());
+}
+
+#[wasm_bindgen_test]
+async fn a_malformed_event_is_logged_and_dropped() {
+    reset();
+    let stub = stub();
+    let doc = open(&stub).await;
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let s = seen.clone();
+    let _off = doc.subscribe(Rc::new(move |event: &Value| s.borrow_mut().push(event.clone())));
+    let emit =
+        js_sys::Reflect::get(&stub, &"emit".into()).unwrap().unchecked_into::<js_sys::Function>();
+    // Text that does not parse as JSON is dropped (and logged), not
+    // delivered to the listener.
+    emit.call1(&stub, &"not json".into()).unwrap();
+    assert!(seen.borrow().is_empty());
 }
 
 #[wasm_bindgen_test]

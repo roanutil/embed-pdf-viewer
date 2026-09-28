@@ -48,8 +48,8 @@ extern "C" {
         pon: Option<u32>,
         args: &str,
     ) -> Result<js_sys::Promise, JsValue>;
-    #[wasm_bindgen(method)]
-    fn has(this: &EngineBridge, doc: &str, member: &str) -> bool;
+    #[wasm_bindgen(method, catch)]
+    fn has(this: &EngineBridge, doc: &str, member: &str) -> Result<bool, JsValue>;
     #[wasm_bindgen(method, catch)]
     fn capabilities(this: &EngineBridge, doc: &str) -> Result<String, JsValue>;
     #[wasm_bindgen(method, catch)]
@@ -71,6 +71,12 @@ extern "C" {
     ) -> Result<js_sys::Function, JsValue>;
     #[wasm_bindgen(method, catch)]
     fn destroy(this: &EngineBridge) -> Result<js_sys::Promise, JsValue>;
+}
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console, js_name = error)]
+    fn console_error(message: &str);
 }
 
 /// What `page_index` answers for a page the engine does not index. The
@@ -114,6 +120,12 @@ fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
     });
     let Some(abort) = abort else { return promise };
     promise.with_abort(move |reason| {
+        // The kernel's promise may have already settled from `on_settle`
+        // above by the time the abort handle runs; do not call the bridge's
+        // `abort` (or reject a second time) once the race is decided.
+        if resolver.promise().is_settled() {
+            return;
+        }
         let why = reason.as_ref().map_or(JsValue::UNDEFINED, value_to_js);
         let _ = abort.call1(&js, &why);
         resolver.reject(Error::abort(reason));
@@ -195,7 +207,7 @@ impl DocumentHandle for JsDocumentHandle {
     }
 
     fn has(&self, member: &str) -> bool {
-        self.bridge.has(&self.id, member)
+        self.bridge.has(&self.id, member).unwrap_or(false)
     }
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
@@ -214,8 +226,11 @@ impl DocumentHandle for JsDocumentHandle {
         // An event is a JavaScript entry into the kernel, so it ends with
         // `after_entry` like an export does.
         let closure = Closure::<dyn FnMut(String)>::new(move |text: String| {
-            if let Ok(event) = serde_json::from_str::<Value>(&text) {
-                listener(&event);
+            match serde_json::from_str::<Value>(&text) {
+                Ok(event) => listener(&event),
+                Err(error) => {
+                    console_error(&format!("[engine-bridge] malformed event {text:?}: {error}"))
+                }
             }
             after_entry();
         });
@@ -224,7 +239,13 @@ impl DocumentHandle for JsDocumentHandle {
                 let subscription = Subscription { off, _listener: closure };
                 Unsubscribe::new(move || drop(subscription))
             }
-            Err(_) => Unsubscribe::noop(),
+            Err(thrown) => {
+                console_error(&format!(
+                    "[engine-bridge] subscribe failed: {}",
+                    js_to_error(&thrown)
+                ));
+                Unsubscribe::noop()
+            }
         }
     }
 
