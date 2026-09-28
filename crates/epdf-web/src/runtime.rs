@@ -57,8 +57,9 @@ thread_local! {
     static DEPTH: Cell<u32> = const { Cell::new(0) };
 }
 
-/// One entry on the stack, counted while it lives, so a panic cannot leave
-/// the count stuck.
+/// One entry on the stack, counted while it lives. On wasm32 a panic aborts
+/// without running `drop`, so the count stays up and every later
+/// [`after_entry`] is a no-op; the instance is poisoned and needs a reload.
 struct Entry {
     outermost: bool,
 }
