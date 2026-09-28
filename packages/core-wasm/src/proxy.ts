@@ -53,14 +53,7 @@
  * `undefined`, a throw or a promise. A call during which the store changed
  * is not cached, and a callback from the kernel (`callJs`) clears the cache.
  */
-import {
-  canonical,
-  decode,
-  errorSpec,
-  readBlobs,
-  type DecodeHook,
-  type EngineBridge,
-} from './engine-bridge';
+import { canonical, decode, errorSpec, type DecodeHook, type EngineBridge } from './engine-bridge';
 import { hasBlob, prepareArgs, readBinarySources, rehydrate } from './rehydrate';
 
 /** What this package uses of `WasmKernel` (`wasm/epdf_web.d.ts`). */
@@ -362,7 +355,9 @@ export class Wire {
     }
     if (!isThenable(out)) return this.encode(out);
     return Promise.resolve(out).then(
-      async (value) => this.encodeInFlight(await readBlobs(value)),
+      // `readBinarySources`, not `readBlobs`: the file picker answers
+      // `{ data: file }`, and an attachment needs the file's name.
+      async (value) => this.encodeInFlight(await readBinarySources(value)),
       (error) => {
         throw errorSpec(error, (v) => this.encode(v));
       },

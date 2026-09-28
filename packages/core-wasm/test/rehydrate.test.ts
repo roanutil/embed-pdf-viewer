@@ -58,3 +58,20 @@ describe('a Blob argument', () => {
     expect(error).toHaveBeenCalled();
   });
 });
+
+describe('a Blob a callback answers', () => {
+  // The default file picker (`filePickerProvider` in
+  // `packages/framework/react/src/annotation.tsx`) answers `{ data: file }`;
+  // an attachment needs the file's name from it.
+  test("a picker's File reaches Rust as bytes with its name and type", async () => {
+    const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
+    const file = new File([new Uint8Array([7, 8])], 'notes.txt', { type: 'text/plain' });
+    const picker = wire.encode(() => Promise.resolve({ data: file })) as { $fn: string };
+    const answer = await wire.callJs(picker.$fn.slice('js:'.length), '[]');
+    expect(answer).toEqual({
+      data: { $bytes: btoa(String.fromCharCode(7, 8)) },
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+    });
+  });
+});
