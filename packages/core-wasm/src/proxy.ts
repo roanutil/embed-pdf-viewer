@@ -1,0 +1,298 @@
+/**
+ * The wire between JavaScript values and `WasmKernel`'s canonical JSON
+ * (`crates/epdf-web/src/exports.rs` has the protocol):
+ *
+ *   - A capability arrives described, member name to `{"$ref": n}`. It
+ *     becomes one object per description, so one per (plugin, document):
+ *     the kernel memoizes descriptions, so the same capability always
+ *     describes to the same text.
+ *   - A `$ref` becomes a function that encodes its arguments, calls
+ *     `invoke_ref` and maps the outcome. A function argument becomes
+ *     `{"$fn": "js:<id>"}` in a table that only grows; an `AbortSignal`
+ *     argument is taken out and aborts the call's promise instead.
+ *   - `{"$promise": n}` becomes a promise with an `abort(reason)`,
+ *     `{"$host": n}` the engine bridge's live value, `$set` and `$map` the
+ *     collections, and the command context's `{"$kernel": ...}` markers
+ *     closures over this wire.
+ *
+ * Reference stability. React selectors compare by reference, so a getter
+ * that answers a fresh object on every call loops `useSyncExternalStore`.
+ * Every call's decoded result is cached by (ref, argument JSON) until the
+ * store changes (`bump`). A call that changed the store during itself, or
+ * whose member makes something new (`create*`, `register*`, `on*`), is not
+ * cached; neither is `undefined`, a throw or a promise.
+ */
+import {
+  canonical,
+  decode,
+  errorSpec,
+  readBlobs,
+  type DecodeHook,
+  type EngineBridge,
+} from './engine-bridge';
+import { prepareArgs, rehydrate } from './rehydrate';
+
+/** What this package uses of `WasmKernel` (`wasm/epdf_web.d.ts`). */
+export interface RustKernel {
+  capability(tokenName: string, docId?: string | null): string;
+  try_capability(tokenName: string, docId?: string | null): string | undefined;
+  documents(): string;
+  invoke_ref(id: number, argsJson: string): string;
+  promise(id: number): Promise<unknown>;
+  abort_promise(id: number, reasonJson?: string | null): void;
+  state_json(): string;
+  subscribe(listener: () => void): number;
+  unsubscribe(id: number): void;
+  status(): string;
+  scope_of(tokenName: string): string;
+  start(): Promise<unknown>;
+  destroy(): Promise<unknown>;
+}
+
+export type RustKernelClass = new (
+  pluginsJson: string,
+  engine: EngineBridge,
+  callJs: (id: string, argsJson: string) => unknown,
+) => RustKernel;
+
+type Fn = (...args: unknown[]) => unknown;
+type Outcome = { returned: unknown } | { threw: unknown } | { promise: number };
+
+/** Members whose result is something new on every call. */
+const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> =>
+  value !== null &&
+  (typeof value === 'object' || typeof value === 'function') &&
+  typeof (value as { then?: unknown }).then === 'function';
+
+const isRef = (value: unknown): value is { $ref: number } =>
+  value !== null &&
+  typeof value === 'object' &&
+  typeof (value as { $ref?: unknown }).$ref === 'number';
+
+/** A canonical `{"$error": {...}}` (or anything thrown) as an `Error` with
+ *  its `name`, `code` and other members. */
+export function toError(thrown: unknown): Error {
+  const spec = (thrown as { $error?: Record<string, unknown> } | null)?.$error;
+  if (!spec) return thrown instanceof Error ? thrown : new Error(String(thrown));
+  const { name, message, ...members } = spec;
+  const error = new Error(typeof message === 'string' ? message : String(message));
+  if (typeof name === 'string') error.name = name;
+  Object.assign(error, members);
+  return error;
+}
+
+export class Wire {
+  private rust!: RustKernel;
+  private version = 0;
+  private readonly fns: Fn[] = [];
+  private readonly fnIds = new Map<Fn, number>();
+  private readonly refs = new Map<number, Fn>();
+  private readonly proxies = new Map<string, object>();
+  private results = new Map<string, unknown>();
+  private state: { version: number; value: unknown } | undefined;
+
+  constructor(private readonly bridge: EngineBridge) {}
+
+  /** The kernel, once it is built (it needs `callJs` to build). */
+  attach(rust: RustKernel): void {
+    this.rust = rust;
+  }
+
+  /** The store changed: every cached result is stale. */
+  bump(): void {
+    this.version++;
+    this.results = new Map();
+  }
+
+  /** `value` as canonical JSON (an object, not text). */
+  encode(value: unknown, signals?: AbortSignal[]): unknown {
+    return canonical(value, {
+      hold: this.bridge.hold,
+      fn: (f) => ({ $fn: `js:${this.fnId(f)}` }),
+      signal: signals ? (s) => signals.push(s) : undefined,
+    });
+  }
+
+  decode(value: unknown): unknown {
+    return decode(value, this.bridge.host, this.hook);
+  }
+
+  /** `call_js`: a `$fn` callback's call from the kernel. */
+  readonly callJs = (id: string, argsJson: string): unknown => {
+    const fn = this.fns[Number(id)];
+    if (!fn) throw new Error(`[core-wasm] no JavaScript function ${id}`);
+    const args = this.decode(JSON.parse(argsJson)) as unknown[];
+    let out: unknown;
+    try {
+      out = fn(...args);
+    } catch (error) {
+      throw errorSpec(error, (v) => this.encode(v));
+    }
+    if (!isThenable(out)) return this.encode(out);
+    return Promise.resolve(out).then(
+      async (value) => this.encode(await readBlobs(value)),
+      (error) => {
+        throw errorSpec(error, (v) => this.encode(v));
+      },
+    );
+  };
+
+  /** `kernel.capability(token, doc)` as its proxy. */
+  capability(tokenName: string, doc?: string | null): object {
+    return this.proxy(this.rusty(() => this.rust.capability(tokenName, doc ?? null)));
+  }
+
+  tryCapability(tokenName: string, doc?: string | null): object | null {
+    const text = this.rusty(() => this.rust.try_capability(tokenName, doc ?? null));
+    return text === undefined || text === null ? null : this.proxy(text);
+  }
+
+  documents(): object {
+    return this.proxy(this.rust.documents());
+  }
+
+  /** The kernel's state, parsed once per store change. */
+  getState(): unknown {
+    if (this.state?.version !== this.version) {
+      this.state = {
+        version: this.version,
+        value: this.decode(JSON.parse(this.rust.state_json())),
+      };
+    }
+    return this.state.value;
+  }
+
+  /** A promise id as a promise of its decoded value, with `abort`. */
+  promise(id: number): Promise<unknown> & { abort(reason?: unknown): void } {
+    const out = this.rust.promise(id).then(
+      (value) => this.decode(value),
+      (error) => {
+        throw toError(error);
+      },
+    ) as Promise<unknown> & { abort(reason?: unknown): void };
+    out.abort = (reason?: unknown) =>
+      this.rust.abort_promise(
+        id,
+        reason === undefined ? null : JSON.stringify(this.encode(reason)),
+      );
+    return out;
+  }
+
+  /** Run a kernel export, turning its canonical throw into an `Error`. */
+  private rusty<T>(run: () => T): T {
+    try {
+      return run();
+    } catch (error) {
+      throw toError(error);
+    }
+  }
+
+  private proxy(text: string): object {
+    let proxy = this.proxies.get(text);
+    if (!proxy) {
+      proxy = this.decode(JSON.parse(text)) as object;
+      this.proxies.set(text, proxy);
+    }
+    return proxy;
+  }
+
+  private fnId(f: Fn): number {
+    let id = this.fnIds.get(f);
+    if (id === undefined) {
+      id = this.fns.push(f) - 1;
+      this.fnIds.set(f, id);
+    }
+    return id;
+  }
+
+  /** The function behind ref `id`, one per ref. `member` names it for the
+   *  cache's rules and the rehydration table. */
+  private ref(id: number, member: string): Fn {
+    let fn = this.refs.get(id);
+    if (!fn) {
+      fn = (...args: unknown[]) => this.call(id, member, args);
+      this.refs.set(id, fn);
+    }
+    return fn;
+  }
+
+  private call(id: number, member: string, args: unknown[]): unknown {
+    const signals: AbortSignal[] = [];
+    const json = JSON.stringify(this.encode(prepareArgs(member, args), signals));
+    const key = `${id}:${json}`;
+    if (this.results.has(key)) return this.results.get(key);
+    const before = this.version;
+    const outcome = JSON.parse(this.rusty(() => this.rust.invoke_ref(id, json))) as Outcome;
+    if ('threw' in outcome) throw toError(outcome.threw);
+    if ('promise' in outcome) {
+      const promise = this.promise(outcome.promise);
+      for (const signal of signals) {
+        if (signal.aborted) promise.abort(signal.reason);
+        else signal.addEventListener('abort', () => promise.abort(signal.reason), { once: true });
+      }
+      return promise;
+    }
+    const value = rehydrate(member, this.decode(outcome.returned));
+    if (value !== undefined && this.version === before && !MAKES_NEW.test(member)) {
+      this.results.set(key, value);
+    }
+    return value;
+  }
+
+  /** The command context's markers (`epdf_plugin_commands::harness`). */
+  private marker(kind: unknown, doc: string | null): unknown {
+    type Token = { name: string };
+    switch (kind) {
+      case 'get':
+        return (token: Token) => this.capability(token.name, doc);
+      case 'tryGet':
+        return (token: Token) => {
+          try {
+            return this.tryCapability(token.name, doc);
+          } catch {
+            return null;
+          }
+        };
+      case 'core':
+        return () => (this.getState() as { core: unknown }).core;
+      default:
+        throw new Error(`[core-wasm] unknown kernel marker ${String(kind)}`);
+    }
+  }
+
+  private readonly hook: DecodeHook = (object, recur) => {
+    if ('$host' in object || '$undefined' in object || '$bytes' in object || '$number' in object) {
+      return undefined;
+    }
+    if (isRef(object)) return { value: this.ref(object.$ref, '') };
+    if (typeof object.$promise === 'number') return { value: this.promise(object.$promise) };
+    if ('$kernel' in object) {
+      return { value: this.marker(object.$kernel, (object.doc as string | null) ?? null) };
+    }
+    if (Array.isArray(object.$set)) return { value: new Set(object.$set.map(recur)) };
+    if (Array.isArray(object.$map)) {
+      return {
+        value: new Map(
+          (object.$map as [unknown, unknown][]).map(([k, v]) => [recur(k), recur(v)] as const),
+        ),
+      };
+    }
+    if (object.$signal && typeof object.$signal === 'object') {
+      const controller = new AbortController();
+      if ((object.$signal as { aborted?: boolean }).aborted) controller.abort();
+      return { value: controller.signal };
+    }
+    // An object with refs among its members: each becomes a function named
+    // after its member.
+    const members = Object.entries(object);
+    if (!members.some(([, member]) => isRef(member))) return undefined;
+    const out: Record<string, unknown> = {};
+    for (const [key, member] of members) {
+      const live = isRef(member) ? this.ref(member.$ref, key) : recur(member);
+      if (live !== undefined) out[key] = live;
+    }
+    return { value: out };
+  };
+}

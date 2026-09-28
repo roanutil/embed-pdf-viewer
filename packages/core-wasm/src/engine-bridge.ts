@@ -53,6 +53,8 @@ export interface EngineBridge {
   destroy(): BridgeCall;
   /** The live value behind a `{"$host": n}`. */
   host(n: number): unknown;
+  /** Keep a live value in the host table; answers its `n`. */
+  hold(value: unknown): number;
 }
 
 // ── canonical JSON ────────────────────────────────────────────────────────────
@@ -83,7 +85,7 @@ function isPlain(object: object): boolean {
 }
 
 /** `canonicalError`: `name`, `message`, then every own enumerable member. */
-function errorSpec(error: unknown, encode: (value: unknown) => unknown): unknown {
+export function errorSpec(error: unknown, encode: (value: unknown) => unknown): unknown {
   const e = error as Record<string, unknown> | null;
   const out: Record<string, unknown> = {
     name: typeof e?.name === 'string' ? e.name : 'Error',
@@ -98,13 +100,29 @@ function errorSpec(error: unknown, encode: (value: unknown) => unknown): unknown
   return { $error: out };
 }
 
-/** Canonical form of `value`; `hold` registers what JSON cannot carry and
- *  answers its host id. */
-function canonical(
+/** How [`canonical`] encodes what JSON cannot carry. */
+export interface EncodeHooks {
+  /** Register a live value; answers its host id. */
+  hold(value: unknown): number;
+  /** Encode a function, member functions included. Without it a function is
+   *  held, and a member function is dropped and marks its object live. */
+  fn?(value: (...args: unknown[]) => unknown): unknown;
+  /** Take an `AbortSignal` out of the value: it encodes as `undefined`. */
+  signal?(value: AbortSignal): void;
+}
+
+/** Canonical form of `value`; `hooks.hold` registers what JSON cannot carry
+ *  and answers its host id. */
+export function canonical(
   value: unknown,
-  hold: (value: unknown) => number,
+  hooks: EncodeHooks | ((value: unknown) => number),
   seen = new Set<object>(),
 ): unknown {
+  const h = typeof hooks === 'function' ? { hold: hooks } : hooks;
+  if (h.signal && typeof AbortSignal !== 'undefined' && value instanceof AbortSignal) {
+    h.signal(value);
+    return { $undefined: true };
+  }
   if (value === undefined) return { $undefined: true };
   if (value === null) return null;
   switch (typeof value) {
@@ -121,10 +139,10 @@ function canonical(
     case 'symbol':
       return { $symbol: value.description ?? '' };
     case 'function':
-      return { $host: hold(value) };
+      return h.fn ? h.fn(value as (...args: unknown[]) => unknown) : { $host: h.hold(value) };
   }
   const object = value as object;
-  const recur = (v: unknown) => canonical(v, hold, seen);
+  const recur = (v: unknown) => canonical(v, h, seen);
   if (object instanceof Error) return errorSpec(object, recur);
   if (object instanceof Uint8Array) return { $bytes: base64(object) };
   if (ArrayBuffer.isView(object)) {
@@ -140,34 +158,51 @@ function canonical(
       return { $map: [...object.entries()].map(([k, v]) => [recur(k), recur(v)]) };
     if (object instanceof Set) return { $set: [...object].map(recur) };
     const members = Object.entries(object);
-    const live = !isPlain(object) || members.some(([, member]) => typeof member === 'function');
+    const dropsFns = !h.fn;
+    const live =
+      !isPlain(object) || (dropsFns && members.some(([, member]) => typeof member === 'function'));
     const out: Record<string, unknown> = {};
     for (const [key, member] of members) {
-      if (member === undefined || typeof member === 'function') continue;
+      if (member === undefined || (dropsFns && typeof member === 'function')) continue;
+      if (h.signal && typeof AbortSignal !== 'undefined' && member instanceof AbortSignal) {
+        h.signal(member);
+        continue;
+      }
       out[key] = recur(member);
     }
-    if (live) out.$host = hold(object);
+    if (live) out.$host = h.hold(object);
     return out;
   } finally {
     seen.delete(object);
   }
 }
 
+/** A decoder's own markers: `{ value }` when `object` is one, else
+ *  `undefined` to fall through to the default rules. `recur` decodes a
+ *  nested value with the same hook. */
+export type DecodeHook = (
+  object: Record<string, unknown>,
+  recur: (value: unknown) => unknown,
+) => { value: unknown } | undefined;
+
 /** Canonical JSON back to live values: `$bytes` to a `Uint8Array`, `$host`
  *  to the held value, `$undefined` and `$number` to their numbers. `$date`,
  *  `$map`, `$set` and `$bigint` are not reversed: nothing the kernel sends
- *  in produces them. */
-function decode(value: unknown, host: (n: number) => unknown): unknown {
-  if (Array.isArray(value)) return value.map((item) => decode(item, host));
+ *  in produces them. `hook` sees every object first. */
+export function decode(value: unknown, host: (n: number) => unknown, hook?: DecodeHook): unknown {
+  const recur = (item: unknown) => decode(item, host, hook);
+  if (Array.isArray(value)) return value.map(recur);
   if (value === null || typeof value !== 'object') return value;
   const object = value as Record<string, unknown>;
+  const special = hook?.(object, recur);
+  if (special) return special.value;
   if (object.$undefined === true) return undefined;
   if (typeof object.$bytes === 'string') return unbase64(object.$bytes);
   if (typeof object.$number === 'string') return Number(object.$number);
   if (typeof object.$host === 'number') return host(object.$host);
   const out: Record<string, unknown> = {};
   for (const [key, member] of Object.entries(object)) {
-    const live = decode(member, host);
+    const live = recur(member);
     if (live !== undefined) out[key] = live;
   }
   return out;
@@ -179,6 +214,15 @@ function decode(value: unknown, host: (n: number) => unknown): unknown {
  * hands in from a file picker. Anything else JSON cannot carry is refused.
  */
 export async function encodeInput(value: unknown): Promise<string> {
+  const refuse = (): number => {
+    throw new TypeError('[engine-bridge] input is not JSON-serializable');
+  };
+  return JSON.stringify(canonical(await readBlobs(value), refuse));
+}
+
+/** `value` with every `Blob` in it, however deep in plain objects and
+ *  arrays, read to a `Uint8Array`. */
+export async function readBlobs(value: unknown): Promise<unknown> {
   const read = async (v: unknown): Promise<unknown> => {
     if (typeof Blob !== 'undefined' && v instanceof Blob)
       return new Uint8Array(await v.arrayBuffer());
@@ -190,10 +234,7 @@ export async function encodeInput(value: unknown): Promise<string> {
     }
     return v;
   };
-  const refuse = (): number => {
-    throw new TypeError('[engine-bridge] input is not JSON-serializable');
-  };
-  return JSON.stringify(canonical(await read(value), refuse));
+  return read(value);
 }
 
 // ── the bridge ────────────────────────────────────────────────────────────────
@@ -345,5 +386,6 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     host,
+    hold,
   };
 }
