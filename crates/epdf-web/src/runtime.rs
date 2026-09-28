@@ -1,10 +1,13 @@
 //! The kernel's runtime on a JavaScript event loop.
 //!
 //! `rt` only moves when a host drains it and advances its clock. Here the
-//! host is the page: every export ends with [`after_entry`], which drains the
-//! ready queue and arms one real `setTimeout` for the earliest virtual timer.
-//! When that fires, the virtual clock advances by the real time that passed.
-//! The virtual clock trails wall time by at most one timer's lateness.
+//! host is the page. [`start_clock`] moves the virtual clock to `Date.now()`
+//! once, so `rt::now()` reads as a real date. Every export then ends with
+//! [`after_entry`], which catches the virtual clock up to `Date.now()`
+//! (firing whatever timers came due on the way), drains the ready queue, and
+//! arms one real `setTimeout` for the earliest virtual timer left. When that
+//! fires it runs [`after_entry`] again. Between entries the virtual clock
+//! stands still; at each entry it is wall time, to the millisecond.
 //!
 //! Promises cross in both directions as JSON values, with a rejection as the
 //! kernel's canonical `{"$error": {name, message, ...}}`. A JavaScript `await`
@@ -12,7 +15,7 @@
 //! Rust ready queue, so ordering across the boundary is not the order the
 //! vectors pin.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, is_undefined, undefined};
@@ -27,8 +30,9 @@ extern "C" {
     fn set_timeout(handler: &Closure<dyn FnMut()>, ms: f64) -> JsValue;
     #[wasm_bindgen(js_name = clearTimeout)]
     fn clear_timeout(handle: &JsValue);
-    #[wasm_bindgen(js_namespace = performance, js_name = now)]
-    fn performance_now() -> f64;
+    /// `String(value)`.
+    #[wasm_bindgen(js_name = String)]
+    fn js_string(value: &JsValue) -> String;
 }
 
 /// The one armed `setTimeout`.
@@ -42,11 +46,32 @@ struct Armed {
 
 thread_local! {
     static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) };
+    /// Whether [`start_clock`] has run, so entries follow `Date.now()`.
+    static STARTED: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Call at the end of every export: drain the ready queue, then make sure a
-/// real timeout is armed for the earliest virtual timer, if there is one.
+/// Move the virtual clock forward to `Date.now()`, and keep it following
+/// wall time at every [`after_entry`] from here on. Call once, when the
+/// kernel is created, so what plugins timestamp with `rt::now()` is a date.
+pub fn start_clock() {
+    STARTED.with(|started| started.set(true));
+    catch_up();
+}
+
+fn catch_up() {
+    if STARTED.with(Cell::get) {
+        let behind = js_sys::Date::now() - rt::now();
+        if behind > 0.0 {
+            rt::advance(behind);
+        }
+    }
+}
+
+/// Call at the end of every export: catch the clock up to wall time once it
+/// is started, drain the ready queue, then make sure a real timeout is armed
+/// for the earliest virtual timer, if there is one.
 pub fn after_entry() {
+    catch_up();
     rt::run_until_stalled();
     let next = rt::next_deadline();
     let keep = ARMED.with(|armed| {
@@ -63,19 +88,17 @@ pub fn after_entry() {
         clear_timeout(&stale.handle);
     }
     let Some(deadline) = next else { return };
-    let armed_at = performance_now();
-    let virtual_at = rt::now();
     let callback = Closure::<dyn FnMut()>::new(move || {
         // Dropped at the end, not while this closure is still running.
         let spent = ARMED.with(|armed| armed.borrow_mut().take());
-        // A timeout can fire a little early; the timer it was armed for is
-        // due either way.
-        let elapsed = (performance_now() - armed_at).max(deadline - virtual_at);
-        rt::advance((virtual_at + elapsed - rt::now()).max(0.0));
+        // The timer this was armed for is due, even if the timeout came back
+        // a little early or the clock was never started; `after_entry` then
+        // catches up the rest of the way to wall time.
+        rt::advance((deadline - rt::now()).max(0.0));
         after_entry();
         drop(spent);
     });
-    let handle = set_timeout(&callback, (deadline - virtual_at).max(0.0));
+    let handle = set_timeout(&callback, (deadline - rt::now()).max(0.0));
     ARMED.with(|armed| {
         *armed.borrow_mut() = Some(Armed { handle, deadline, _callback: callback });
     });
@@ -97,12 +120,16 @@ pub fn to_js(p: Promise<Value>) -> js_sys::Promise {
 }
 
 /// A JavaScript promise as a Rust one. Its settlement arrives on the
-/// JavaScript microtask queue, which then runs [`after_entry`].
+/// JavaScript microtask queue, which then runs [`after_entry`]. A value JSON
+/// cannot carry (a `BigInt`, a cycle) rejects it with a `TypeError`.
 pub fn from_js(p: js_sys::Promise) -> Promise<Value> {
     let (promise, resolver) = Promise::pending();
     wasm_bindgen_futures::spawn_local(async move {
-        let result = JsFuture::from(p).await;
-        resolver.settle(result.map(|value| js_to_value(&value)).map_err(|e| js_to_error(&e)));
+        let result = match JsFuture::from(p).await {
+            Ok(value) => js_to_value(&value),
+            Err(thrown) => Err(js_to_error(&thrown)),
+        };
+        resolver.settle(result);
         after_entry();
     });
     promise
@@ -116,35 +143,46 @@ fn value_to_js(value: &Value) -> JsValue {
     js_sys::JSON::parse(&json).expect("JSON.parse reads what serde_json wrote")
 }
 
-fn js_to_value(value: &JsValue) -> Value {
-    if value.is_undefined() {
-        return undefined();
+/// A JavaScript value as JSON. `undefined` and a function (which
+/// `JSON.stringify` drops) are the kernel's `undefined`; anything else JSON
+/// cannot carry is a `TypeError`.
+fn js_to_value(value: &JsValue) -> Result<Value, Error> {
+    if value.is_undefined() || value.is_function() {
+        return Ok(undefined());
     }
-    js_sys::JSON::stringify(value)
-        .ok()
-        .and_then(|json| json.as_string())
-        .and_then(|json| serde_json::from_str(&json).ok())
-        .unwrap_or_else(undefined)
+    let json = js_sys::JSON::stringify(value).map_err(|thrown| {
+        let message = match thrown.dyn_ref::<js_sys::Error>() {
+            Some(error) => String::from(error.message()),
+            None => js_string(&thrown),
+        };
+        Error::named("TypeError", message)
+    })?;
+    let json = json.as_string().ok_or_else(|| {
+        Error::named("TypeError", format!("{} is not JSON-serializable", js_string(value)))
+    })?;
+    serde_json::from_str(&json).map_err(|e| Error::named("TypeError", e.to_string()))
 }
 
 /// What a JavaScript promise rejected with: a canonical `{"$error": ...}`,
-/// an `Error` (its `name`, `message` and any `code`), or anything else as
-/// an `Error` whose message is the value.
+/// an `Error` or any object with a string `message` (its `name`, `message`
+/// and any `code`), or anything else as an `Error` whose message is
+/// `String(value)`.
 fn js_to_error(value: &JsValue) -> Error {
-    if let Some(error) = value.dyn_ref::<js_sys::Error>() {
-        let mut out = Error::named(String::from(error.name()), String::from(error.message()));
-        let code = js_sys::Reflect::get(value, &JsValue::from_str("code")).ok();
-        if let Some(code) = code.filter(|c| !c.is_undefined()) {
-            out = out.with("code", js_to_value(&code));
-        }
-        return out;
+    let spec = js_to_value(value).ok();
+    if let Some(spec) = spec.as_ref().filter(|spec| spec.get("$error").is_some()) {
+        return Error::from_spec(spec);
     }
-    let spec = js_to_value(value);
-    if spec.get("$error").is_some() {
-        return Error::from_spec(&spec);
+    let member = |key: &str| {
+        js_sys::Reflect::get(value, &JsValue::from_str(key)).ok().filter(|v| !v.is_undefined())
+    };
+    let message = value.is_object().then(|| member("message")).flatten();
+    let Some(message) = message.and_then(|m| m.as_string()) else {
+        return Error::new(js_string(value));
+    };
+    let name = member("name").and_then(|n| n.as_string()).unwrap_or_else(|| "Error".into());
+    let mut out = Error::named(name, message);
+    if let Some(code) = member("code") {
+        out = out.with("code", js_to_value(&code).unwrap_or_else(|_| js_string(&code).into()));
     }
-    Error::new(match spec {
-        Value::String(message) => message,
-        other => other.to_string(),
-    })
+    out
 }

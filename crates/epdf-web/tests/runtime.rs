@@ -1,5 +1,7 @@
 //! The runtime driven by real JavaScript timers. Runs under Node with
-//! `wasm-bindgen-test-runner`; Node has `setTimeout` and `performance`.
+//! `wasm-bindgen-test-runner`; Node has `setTimeout`. The clock is never
+//! started here (tests/clock.rs does that, in its own instance), so the
+//! virtual clock only moves as timers come due.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -27,6 +29,7 @@ async fn js_sleep(ms: f64) {
 
 #[wasm_bindgen_test]
 async fn a_virtual_sleep_finishes_on_real_time() {
+    rt::reset();
     let done = Rc::new(Cell::new(false));
     let d = done.clone();
     rt::spawn(async move {
@@ -42,6 +45,7 @@ async fn a_virtual_sleep_finishes_on_real_time() {
 
 #[wasm_bindgen_test]
 async fn promises_cross_both_ways() {
+    rt::reset();
     let resolved = JsFuture::from(to_js(Promise::resolved(json!({"a": [1, "b"]})))).await.unwrap();
     assert_eq!(js_sys::JSON::stringify(&resolved).unwrap(), r#"{"a":[1,"b"]}"#);
 
@@ -61,4 +65,43 @@ async fn promises_cross_both_ways() {
     js_sleep(0.0).await;
     let error = back.peek().unwrap().unwrap_err();
     assert_eq!((error.name.as_str(), error.message.as_str()), ("Error", "nope"));
+}
+
+#[wasm_bindgen_test]
+async fn a_task_awaiting_a_js_promise_resumes_when_it_resolves() {
+    rt::reset();
+    let later = js_sys::Promise::new(&mut |resolve, _| {
+        set_timeout(&resolve, 10.0);
+    });
+    let done = Rc::new(Cell::new(false));
+    let d = done.clone();
+    rt::spawn(async move {
+        from_js(later).await.unwrap();
+        d.set(true);
+    });
+    assert!(!done.get());
+    // Nothing but `from_js` drains the ready queue once the promise resolves.
+    js_sleep(30.0).await;
+    assert!(done.get());
+}
+
+#[wasm_bindgen_test]
+async fn a_value_json_cannot_carry_rejects_with_a_type_error() {
+    rt::reset();
+    let big = js_sys::BigInt::from(1u64);
+    let back = from_js(js_sys::Promise::resolve(&JsValue::from(big)));
+    js_sleep(0.0).await;
+    let error = back.peek().unwrap().unwrap_err();
+    assert_eq!(error.name, "TypeError");
+}
+
+#[wasm_bindgen_test]
+async fn a_rejection_object_keeps_its_name_and_message() {
+    rt::reset();
+    let thrown = js_sys::JSON::parse(r#"{"name":"RangeError","message":"far","code":3}"#).unwrap();
+    let back = from_js(js_sys::Promise::reject(&thrown));
+    js_sleep(0.0).await;
+    let error = back.peek().unwrap().unwrap_err();
+    assert_eq!((error.name.as_str(), error.message.as_str()), ("RangeError", "far"));
+    assert_eq!(error.member("code"), Some(&json!(3)));
 }
