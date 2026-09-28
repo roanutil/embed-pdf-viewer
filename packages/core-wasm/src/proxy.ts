@@ -2,12 +2,17 @@
  * The wire between JavaScript values and `WasmKernel`'s canonical JSON
  * (`crates/epdf-web/src/exports.rs` has the protocol):
  *
- *   - A capability arrives described, member name to `{"$ref": n}`. It
- *     becomes one object per description, so one per (plugin, document):
- *     the kernel memoizes descriptions, so the same capability always
- *     describes to the same text.
+ *   - A capability arrives described, member name to
+ *     `{"$ref": n, "pinned": true}`. It becomes one object per description,
+ *     so one per (plugin, document): the kernel memoizes descriptions, so
+ *     the same capability always describes to the same text, and pins
+ *     their refs.
  *   - A `$ref` becomes a function that encodes its arguments, calls
- *     `invoke_ref` and maps the outcome. A function argument becomes
+ *     `invoke_ref` and maps the outcome. Once a function made from an
+ *     unpinned ref is garbage, a `FinalizationRegistry` asks the kernel to
+ *     `release_ref` it; the engine runs that callback when it chooses, so
+ *     this bounds the kernel's ref table over time, not at once. A released
+ *     id showing up again throws. A function argument becomes
  *     `{"$fn": "js:<id>"}` in a table that only grows; an `AbortSignal`
  *     argument is taken out and aborts the call's promise instead.
  *   - `{"$promise": n}` becomes a promise with an `abort(reason)`,
@@ -25,6 +30,9 @@
  * last answer for the same (ref, argument JSON), ref ids aside, reuses the
  * value that answer decoded to, so two getters read in turn (`useSurface`
  * reads `isOpen` and `getSurface`) do not cost each other their references.
+ * The new answer's own ref ids are then never decoded, so no function made
+ * from them can ever be collected to release them: they are released on
+ * the spot instead.
  * `getState` does the same per slice. A call whose member makes something
  * new (`create*`, `register*`, `on*`) is not cached or reused; neither is
  * `undefined`, a throw or a promise. A call during which the store changed
@@ -46,6 +54,7 @@ export interface RustKernel {
   try_capability(tokenName: string, docId?: string | null): string | undefined;
   documents(): string;
   invoke_ref(id: number, argsJson: string): string;
+  release_ref(id: number): void;
   promise(id: number): Promise<unknown>;
   abort_promise(id: number, reasonJson?: string | null): void;
   state_json(): string;
@@ -78,13 +87,20 @@ const ANSWERS_KEPT = 4096;
 // by its answer's text (ref ids blanked) or by live state it reads afresh on
 // each call, never by which physical ref id it happens to hold.
 const REF_ID = /\{"\$ref":\d+\}/g;
+/** The same, capturing the id. A pinned ref (`"pinned":true` after the id)
+ *  matches neither, so answer reuse compares it as text and never releases
+ *  it. */
+const REF_IDS = /\{"\$ref":(\d+)\}/g;
+
+const refIds = (text: string): Set<number> =>
+  new Set(Array.from(text.matchAll(REF_IDS), (match) => Number(match[1])));
 
 const isThenable = (value: unknown): value is PromiseLike<unknown> =>
   value !== null &&
   (typeof value === 'object' || typeof value === 'function') &&
   typeof (value as { then?: unknown }).then === 'function';
 
-const isRef = (value: unknown): value is { $ref: number } =>
+const isRef = (value: unknown): value is { $ref: number; pinned?: boolean } =>
   value !== null &&
   typeof value === 'object' &&
   typeof (value as { $ref?: unknown }).$ref === 'number';
@@ -115,14 +131,23 @@ export class Wire {
   private version = 0;
   private readonly fns: Fn[] = [];
   private readonly fnIds = new Map<Fn, number>();
-  private readonly refs = new Map<number, Fn>();
+  /** A capability's own refs, kept for good, as the kernel keeps them. */
+  private readonly pinned = new Map<number, Fn>();
+  /** Every other ref's function, held weakly: `released` hands the id back
+   *  to the kernel once the function is collected. */
+  private readonly loose = new Map<number, WeakRef<Fn>>();
+  private readonly released = new FinalizationRegistry<number>((id) => {
+    this.loose.delete(id);
+    this.rust.release_ref(id);
+  });
   private readonly proxies = new Map<string, object>();
   private results = new Map<string, unknown>();
   /** Each (ref, argument JSON)'s last answer, ref ids blanked, and the value
    *  it decoded to, kept across `bump`: an answer whose text has not changed
-   *  decodes to the value it did last time. Cleared whole past
+   *  decodes to the value it did last time. `text` is the answer `value`
+   *  was decoded from, whose refs it holds. Cleared whole past
    *  `ANSWERS_KEPT` keys. */
-  private answers = new Map<string, { shape: string; value: unknown }>();
+  private answers = new Map<string, { shape: string; text: string; value: unknown }>();
   private state: { version: number; text: string; value: unknown } | undefined;
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
@@ -254,7 +279,8 @@ export class Wire {
    *  soak test: `fns` handed to Rust, `refs` handed back from it, and
    *  cached `proxies`. */
   counts(): { fns: number; refs: number; proxies: number } {
-    return { fns: this.fns.length, refs: this.refs.size, proxies: this.proxies.size };
+    const refs = this.pinned.size + this.loose.size;
+    return { fns: this.fns.length, refs, proxies: this.proxies.size };
   }
 
   private proxy(text: string): object {
@@ -276,13 +302,29 @@ export class Wire {
   }
 
   /** The function behind ref `id`, one per ref. `member` names it for the
-   *  cache's rules and the rehydration table. */
-  private ref(id: number, member: string): Fn {
-    let fn = this.refs.get(id);
-    if (!fn) {
-      fn = (...args: unknown[]) => this.call(id, member, args);
-      this.refs.set(id, fn);
+   *  cache's rules and the rehydration table. An unpinned ref's function is
+   *  released once it is collected; its id decoding again after that is a
+   *  bug in whoever kept the text, and throws. */
+  private ref(id: number, member: string, pinned: boolean): Fn {
+    if (pinned) {
+      let fn = this.pinned.get(id);
+      if (!fn) {
+        fn = (...args: unknown[]) => this.call(id, member, args);
+        this.pinned.set(id, fn);
+      }
+      return fn;
     }
+    const weak = this.loose.get(id);
+    if (weak) {
+      const live = weak.deref();
+      if (live) return live;
+      const error = new Error(`[core-wasm] ref ${id} decoded again after it was dropped`);
+      console.error(error);
+      throw error;
+    }
+    const fn = (...args: unknown[]) => this.call(id, member, args);
+    this.loose.set(id, new WeakRef(fn));
+    this.released.register(fn, id);
     return fn;
   }
 
@@ -327,14 +369,24 @@ export class Wire {
     // last answer holds are still live and stand in the same places.
     const shape = text.replace(REF_ID, '{"$ref":0}');
     const last = this.answers.get(key);
-    const value =
-      last?.shape === shape ? last.value : rehydrate(member, this.decode(outcome.returned));
+    let value: unknown;
+    let decoded = text;
+    if (last?.shape === shape) {
+      value = last.value;
+      decoded = last.text;
+      // Nothing decodes this answer's fresh refs, so nothing would ever
+      // release them. One the kept answer holds too is still live.
+      const kept = refIds(last.text);
+      for (const id of refIds(text)) if (!kept.has(id)) this.rust.release_ref(id);
+    } else {
+      value = rehydrate(member, this.decode(outcome.returned));
+    }
     if (value !== undefined) {
       // A call that changed the store (`search.nextHit`, `link.activate`)
       // answers anew next time, even with nothing between.
       if (this.changes === changes) this.results.set(key, value);
       if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
-      this.answers.set(key, { shape, value });
+      this.answers.set(key, { shape, text: decoded, value });
     }
     return value;
   }
@@ -364,7 +416,7 @@ export class Wire {
     if ('$host' in object || '$undefined' in object || '$bytes' in object || '$number' in object) {
       return undefined;
     }
-    if (isRef(object)) return { value: this.ref(object.$ref, '') };
+    if (isRef(object)) return { value: this.ref(object.$ref, '', object.pinned === true) };
     if (typeof object.$promise === 'number') return { value: this.promise(object.$promise) };
     if ('$kernel' in object) {
       return { value: this.marker(object.$kernel, (object.doc as string | null) ?? null) };
@@ -388,7 +440,9 @@ export class Wire {
     if (!members.some(([, member]) => isRef(member))) return undefined;
     const out: Record<string, unknown> = {};
     for (const [key, member] of members) {
-      const live = isRef(member) ? this.ref(member.$ref, key) : recur(member);
+      const live = isRef(member)
+        ? this.ref(member.$ref, key, member.pinned === true)
+        : recur(member);
       if (live !== undefined) out[key] = live;
     }
     return { value: out };

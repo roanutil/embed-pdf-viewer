@@ -250,6 +250,36 @@ async fn the_same_capability_describes_to_the_same_text() {
     assert_eq!(kernel.documents(), kernel.documents());
 }
 
+/// A capability's description pins its refs, so `release_ref` leaves them
+/// callable, while a ref a call handed out is freed: calling it afterwards
+/// throws, it does not answer.
+#[wasm_bindgen_test]
+async fn release_ref_frees_a_returned_ref_and_ignores_a_pinned_one() {
+    reset();
+    let plugins = json!([{ "factory": "shell" }]).to_string();
+    let kernel =
+        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
+            .unwrap();
+    start_with_document(&kernel).await;
+    let refs = |kernel: &WasmKernel| parse(&kernel.debug_counts())["refs"].as_u64().unwrap();
+
+    let shell = parse(&kernel.capability("shell".into(), None).unwrap());
+    assert_eq!(shell["isOpen"]["pinned"], json!(true), "{shell}");
+    let outcome = invoke(&kernel, ref_of(&shell, "onSurfaceOpened"), r#"[{"$fn":"js:listener"}]"#);
+    let off = outcome["returned"]["$ref"].as_u64().unwrap() as u32;
+    assert!(outcome["returned"].get("pinned").is_none(), "{outcome}");
+    let before = refs(&kernel);
+
+    kernel.release_ref(ref_of(&shell, "isOpen"));
+    assert_eq!(refs(&kernel), before, "a pinned ref is not released");
+    assert_eq!(invoke(&kernel, ref_of(&shell, "isOpen"), r#"["panel"]"#)["returned"], false);
+
+    kernel.release_ref(off);
+    assert_eq!(refs(&kernel), before - 1);
+    let called = invoke(&kernel, off, "[]");
+    assert!(called["threw"].to_string().contains("after its release"), "{called}");
+}
+
 #[wasm_bindgen_test]
 async fn status_scope_and_try_capability_follow_the_kernel() {
     reset();

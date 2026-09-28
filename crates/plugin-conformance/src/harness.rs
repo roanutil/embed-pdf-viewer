@@ -3,7 +3,7 @@
 
 use std::any::Any;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use epdf_kernel::rt::Promise;
@@ -87,11 +87,8 @@ pub(crate) struct Entry {
     pub reports: Vec<Value>,
 }
 
-/// A table's count of what it still holds live, not how far it has grown.
-/// Today `refs` and `promises` are `Vec`s that only ever push, so this is
-/// just their length; a later switch to a map or slot table (freed at
-/// unregistration) keeps [`Harness::counts`] accurate by changing only the
-/// impl here.
+/// A table's count of what it still holds live, not how far it has grown:
+/// a scripted table's `Vec` length, a live table's slot count.
 trait LiveCount {
     fn live_count(&self) -> usize;
 }
@@ -123,13 +120,33 @@ impl LiveCount for PromiseTable {
 
 pub type RefFn = Rc<dyn Fn(Vec<Value>) -> Outcome>;
 
+/// `refs`' storage, split as [`PromiseTable`] is: a scripted harness keeps
+/// the growing `Vec` a vector's `{"ref": n}` targets index. A live harness
+/// keeps a slot table, so [`Harness::release_ref`] can free a function
+/// JavaScript has dropped, and a `pinned` set of the ids it must never
+/// free: a capability's description, which `WasmKernel` memoizes and hands
+/// out again with the same ids.
+pub(crate) enum RefTable {
+    Scripted(Vec<RefFn>),
+    Live { next: u32, slots: HashMap<u32, RefFn>, pinned: HashSet<u32> },
+}
+
+impl LiveCount for RefTable {
+    fn live_count(&self) -> usize {
+        match self {
+            RefTable::Scripted(vec) => vec.len(),
+            RefTable::Live { slots, .. } => slots.len(),
+        }
+    }
+}
+
 /// A live callback: the `$fn` spec (so the host can find its function by
 /// id) and the call's arguments, answered synchronously.
 pub type LiveFn = Rc<dyn Fn(&Value, Vec<Value>) -> Answer>;
 
 pub(crate) struct Inner {
     pub entry: RefCell<Entry>,
-    pub refs: RefCell<Vec<RefFn>>,
+    pub refs: RefCell<RefTable>,
     pub promises: RefCell<PromiseTable>,
     pub tokens: RefCell<HashMap<String, AnyToken>>,
     pub fake: RefCell<Option<Rc<FakeEngine>>>,
@@ -154,14 +171,17 @@ impl Harness {
         tokens: HashMap<String, AnyToken>,
         live: Option<LiveFn>,
     ) -> Harness {
-        let promises = if live.is_some() {
-            PromiseTable::Live { next: 0, slots: HashMap::new() }
+        let (refs, promises) = if live.is_some() {
+            (
+                RefTable::Live { next: 0, slots: HashMap::new(), pinned: HashSet::new() },
+                PromiseTable::Live { next: 0, slots: HashMap::new() },
+            )
         } else {
-            PromiseTable::Scripted(Vec::new())
+            (RefTable::Scripted(Vec::new()), PromiseTable::Scripted(Vec::new()))
         };
         Harness(Rc::new(Inner {
             entry: RefCell::new(Entry::default()),
-            refs: RefCell::new(Vec::new()),
+            refs: RefCell::new(refs),
             promises: RefCell::new(promises),
             tokens: RefCell::new(tokens),
             fake: RefCell::new(None),
@@ -224,16 +244,63 @@ impl Harness {
         token
     }
 
-    /// Register a function handed back to the caller; `{"$ref": n}`.
+    /// Register a function handed back to the caller; `{"$ref": n}`. A live
+    /// harness never reuses an id, released or not.
     pub fn register_fn(&self, f: RefFn) -> Value {
-        let mut refs = self.0.refs.borrow_mut();
-        refs.push(f);
-        json!({ "$ref": refs.len() - 1 })
+        let id = match &mut *self.0.refs.borrow_mut() {
+            RefTable::Scripted(vec) => {
+                vec.push(f);
+                (vec.len() - 1) as u32
+            }
+            RefTable::Live { next, slots, .. } => {
+                let id = *next;
+                *next += 1;
+                slots.insert(id, f);
+                id
+            }
+        };
+        json!({ "$ref": id })
     }
 
-    /// The function [`register_fn`](Self::register_fn) numbered `id`.
+    /// The function [`register_fn`](Self::register_fn) numbered `id`;
+    /// `None` if it was never registered or has been released.
     pub fn ref_fn(&self, id: usize) -> Option<RefFn> {
-        self.0.refs.borrow().get(id).cloned()
+        match &*self.0.refs.borrow() {
+            RefTable::Scripted(vec) => vec.get(id).cloned(),
+            RefTable::Live { slots, .. } => {
+                u32::try_from(id).ok().and_then(|id| slots.get(&id).cloned())
+            }
+        }
+    }
+
+    /// Keep ref `id` for the life of this harness:
+    /// [`release_ref`](Self::release_ref) ignores it from now on. A no-op on
+    /// a scripted harness, which never releases anything.
+    pub fn pin_ref(&self, id: u32) {
+        if let RefTable::Live { pinned, .. } = &mut *self.0.refs.borrow_mut() {
+            pinned.insert(id);
+        }
+    }
+
+    /// Free ref `id` on a live harness, once nothing on the caller's side
+    /// can call it again. A pinned id, an unknown or already released one,
+    /// and any id on a scripted harness are left alone.
+    pub fn release_ref(&self, id: u32) {
+        if let RefTable::Live { slots, pinned, .. } = &mut *self.0.refs.borrow_mut()
+            && !pinned.contains(&id)
+        {
+            slots.remove(&id);
+        }
+    }
+
+    /// Whether a live harness handed out `id` and has since released it:
+    /// ids only ever increase, so any id below the next one that is not in
+    /// the table was released. Always `false` on a scripted harness.
+    pub fn ref_was_released(&self, id: u32) -> bool {
+        match &*self.0.refs.borrow() {
+            RefTable::Live { next, slots, .. } => id < *next && !slots.contains_key(&id),
+            RefTable::Scripted(_) => false,
+        }
     }
 
     /// Track a promise handed back to the caller; `{"$promise": n}`. Its
@@ -485,5 +552,46 @@ mod tests {
         // `take_promise` is a live-only operation; a scripted harness has no
         // slot table for it to take from.
         assert!(harness.take_promise(id as u32).is_none());
+    }
+
+    fn unit() -> RefFn {
+        Rc::new(|_| Outcome::undefined())
+    }
+
+    fn ref_id(value: &Value) -> u32 {
+        value["$ref"].as_u64().unwrap() as u32
+    }
+
+    #[test]
+    fn a_live_harness_releases_a_ref_but_never_a_pinned_one() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let harness = Harness::live(Vec::new(), HashMap::new(), live);
+
+        let loose = ref_id(&harness.register_fn(unit()));
+        let kept = ref_id(&harness.register_fn(unit()));
+        harness.pin_ref(kept);
+        assert_eq!(harness.counts()["refs"], json!(2));
+
+        harness.release_ref(loose);
+        harness.release_ref(kept);
+        assert_eq!(harness.counts()["refs"], json!(1), "only the loose ref is freed");
+        assert!(harness.ref_fn(loose as usize).is_none());
+        assert!(harness.ref_was_released(loose));
+        assert!(harness.ref_fn(kept as usize).is_some(), "a pinned ref survives release");
+
+        // Ids are never reused, so a released id cannot come back as a
+        // different function.
+        let next = ref_id(&harness.register_fn(unit()));
+        assert!(next > kept);
+        assert!(!harness.ref_was_released(next + 1), "an id never handed out");
+    }
+
+    #[test]
+    fn a_scripted_harness_keeps_every_ref() {
+        let harness = Harness::new(Vec::new(), HashMap::new());
+        let id = ref_id(&harness.register_fn(unit()));
+        harness.release_ref(id);
+        assert!(harness.ref_fn(id as usize).is_some());
+        assert_eq!(harness.counts()["refs"], json!(1));
     }
 }

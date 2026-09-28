@@ -61,20 +61,19 @@ const liveKernels = new Set<Kernel>();
 /** Live entries in every table this session's memory tasks are chasing, for
  *  `kernel` (built by [`createKernel`]; defaults to the sole live kernel,
  *  throwing if there is none or more than one): the harness's
- *  `refs`/`promises`, `described` capabilities, the engine bridge's
+ *  `refs`/`promises`, `described` capabilities, `aborts`, the engine bridge's
  *  `hosts` (its own entries), `allHosts` (every bridge's: the one table
  *  they share) and `documents`, the wire's `fns`/`wireRefs`/`proxies`, and
  *  `wasmBytes`, the wasm module's own linear memory.
  *
  *  `refs` is the harness's table, not the wire's: the two are not the same
- *  count. A capability's own refs decode into the wire the moment
- *  `describe()` returns them, so those stay in step; a call whose answer
- *  differs only in freshly registered refs (`listVisiblePages`, one
- *  transform per visible page every frame) is served from the wire's answer
- *  cache without ever decoding the new ones (`proxy.ts`'s "an answer that
- *  differs only in fresh refs keeps its object"), so the harness's count
- *  keeps climbing while the wire's does not. Both are reported, under
- *  different keys, so a merge can never hide that gap. */
+ *  count. The wire holds an unpinned ref's function weakly and drops its
+ *  entry when a `FinalizationRegistry` callback releases it in the kernel,
+ *  so the two only agree once the engine has run those callbacks; an answer
+ *  the wire reuses releases its undecoded fresh refs at once (`proxy.ts`).
+ *  Both are reported, under different keys, so a merge can never hide a
+ *  gap between them. `aborts` is `WasmKernel`'s table of taken promises
+ *  still abortable. */
 export function kernelCounts(kernel?: Kernel): Record<string, number> {
   if (kernel === undefined) {
     if (liveKernels.size === 0) throw new Error('[core-wasm] kernelCounts: no live kernel');

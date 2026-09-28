@@ -207,9 +207,15 @@ fn lens_token(h: &Harness, name: &str) -> Token<StageCapability> {
 // ── printing ──────────────────────────────────────────────────────────────────
 
 /// A laid-out page as the TypeScript prints it: the transform's six
-/// methods are functions, registered as refs in member order.
+/// methods are functions, registered as refs in member order. A live
+/// harness prints the transform's data alone: its host rebuilds the six
+/// methods from it (`packages/core-wasm/src/rehydrate.ts`), so refs made
+/// here would only pile up, six per page on every read.
 fn visible_page_json(h: &Harness, page: &VisiblePage) -> Value {
     let mut out = to_value(page);
+    if h.is_live() {
+        return out;
+    }
     let transform = Rc::new(page.transform.clone());
     let point_fn = |f: fn(&epdf_geometry::PageTransform, Point) -> Point| {
         let t = transform.clone();

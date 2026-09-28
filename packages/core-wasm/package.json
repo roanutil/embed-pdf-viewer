@@ -10,7 +10,8 @@
   "scripts": {
     "build:wasm": "bash ../../crates/epdf-web/scripts/build.sh",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:wasm": "vitest run"
+    "test:wasm": "vitest run && pnpm run test:gc",
+    "test:gc": "vitest run -c vitest.gc.config.ts"
   },
   "dependencies": {
     "@embedpdf/core": "workspace:*",

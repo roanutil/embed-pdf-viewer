@@ -29,18 +29,17 @@ const TRANSFORM_DATA = [
 
 /**
  * A laid-out page's transform, rebuilt with `pageTransform` so its six
- * methods run in JavaScript instead of calling into the kernel. The inputs
- * come back out of the page: its display box over `contentScale` is the
- * page size in points (rounded to a millionth, which undoes the division's
- * last-bit error for any size a PDF writes), and `deviceWidth / contentWidth`
- * is the device pixel ratio. If the rebuilt transform differs from the
- * kernel's in any member, the kernel's (whose methods are refs) stays; that
- * fallback warns once, since a silent one would hide a real drift between
- * this rebuild and the kernel's own math.
+ * methods run in JavaScript: a live kernel prints the transform's data
+ * without them (`visible_page_json` in `crates/plugins/stage/src/harness.rs`).
+ * The inputs come back out of the page: its display box over
+ * `contentScale` is the page size in points (rounded to a millionth, which
+ * undoes the division's last-bit error for any size a PDF writes), and
+ * `deviceWidth / contentWidth` is the device pixel ratio. A rebuilt
+ * transform that differs from the kernel's in any member is a real drift
+ * between this rebuild and the kernel's own math, with no ref-backed
+ * transform to fall back on, so it throws.
  */
 const points = (n: number) => Math.round(n * 1e6) / 1e6;
-
-let warnedFallback = false;
 
 function withPageTransform(page: Obj): Obj {
   const t = page.transform as Obj & PageTransform;
@@ -56,18 +55,20 @@ function withPageTransform(page: Obj): Obj {
     baseScale: t.baseScale,
     dpr: t.deviceWidth / t.contentWidth,
   });
-  const same = TRANSFORM_DATA.every((key) => rebuilt[key] === t[key]);
-  if (!same && !warnedFallback) {
-    warnedFallback = true;
-    console.warn(
-      "[core-wasm] listVisiblePages: a rebuilt pageTransform differs from the kernel's; falling back to the ref-backed transform",
+  const differs = TRANSFORM_DATA.filter((key) => rebuilt[key] !== t[key]);
+  if (differs.length > 0) {
+    const error = new Error(
+      `[core-wasm] a rebuilt pageTransform differs from the kernel's in ${differs.join(', ')}`,
     );
+    console.error(error, { kernel: t, rebuilt });
+    throw error;
   }
-  return same ? { ...page, transform: rebuilt } : page;
+  return { ...page, transform: rebuilt };
 }
 
 const REHYDRATE: Partial<Record<string, (value: unknown) => unknown>> = {
   listVisiblePages: (pages) => (pages as Obj[]).map(withPageTransform),
+  getPageFrame: (page) => withPageTransform(page as Obj),
 };
 
 export function rehydrate(member: string, value: unknown): unknown {

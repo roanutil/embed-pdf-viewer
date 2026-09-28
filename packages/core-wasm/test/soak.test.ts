@@ -70,6 +70,7 @@ const COUNTER_KEYS = [
   'refs',
   'promises',
   'described',
+  'aborts',
   'hosts',
   'allHosts',
   'documents',

@@ -7,9 +7,11 @@
 //! `{"$ref": n}` or a plain value. A ref is called with [`WasmKernel::invoke_ref`],
 //! whose outcome is `{"returned": v}`, `{"threw": e}` or `{"promise": n}`,
 //! and a promise id becomes a JavaScript promise with [`WasmKernel::promise`],
-//! taken from the harness's table exactly once: a second call throws. The
-//! harness still keeps every ref forever; for a session of manual testing
-//! that is fine.
+//! taken from the harness's table exactly once: a second call throws. A ref
+//! lives until [`WasmKernel::release_ref`], which the shim calls once the
+//! function it built from the ref is garbage. A capability's own refs are
+//! pinned and never released: its description prints each as
+//! `{"$ref": n, "pinned": true}`.
 //!
 //! A JavaScript function in a plugin config or a call's arguments arrives as
 //! `{"$fn": "js:<id>"}`. Calling it calls `call_js(id, argsJson)` with the
@@ -25,7 +27,8 @@
 //!
 //! The same capability object always describes to the same text, with the
 //! same refs: [`WasmKernel`] memoizes each description by the capability's
-//! `Rc`, which the cache holds so its address is never reused.
+//! `Rc`, which the cache holds so its address is never reused. That is why
+//! its refs are pinned: the memo hands the same ids out again.
 //!
 //! Every export's body runs as a [`runtime::entry`], so the kernel's queue
 //! drains and its timers stay armed once the outermost one returns.
@@ -180,7 +183,9 @@ pub struct WasmKernel {
     /// [`promise`](Self::promise) takes the promise out of the harness's own
     /// table, so [`abort_promise`](Self::abort_promise) needs somewhere else
     /// to find it. `Rc`-wrapped so the `on_settle` closure that clears an
-    /// entry can outlive the call that registered it.
+    /// entry can outlive the call that registered it. The entry of a
+    /// promise that never settles stays, by design: it is still abortable,
+    /// and nothing else can tell it is abandoned.
     aborts: Rc<RefCell<HashMap<u32, Promise<Value>>>>,
 }
 
@@ -319,10 +324,26 @@ impl WasmKernel {
             let args = parse_args(&args_json).map_err(|e| thrown(&e))?;
             let outcome = match self.harness.ref_fn(id as usize) {
                 Some(f) => f(args),
-                None => Outcome::Threw(Error::new(format!("[epdf-web] no ref {id}"))),
+                None => {
+                    let error = if self.harness.ref_was_released(id) {
+                        Error::new(format!("[epdf-web] ref {id} was called after its release"))
+                    } else {
+                        Error::new(format!("[epdf-web] no ref {id}"))
+                    };
+                    console_error("[epdf-web]", &runtime::error_to_js(&error));
+                    Outcome::Threw(error)
+                }
             };
             Ok(self.harness.outcome_json_raw(outcome).to_string())
         })
+    }
+
+    /// Free ref `id`: the shim calls this once the function it built from
+    /// the ref has been garbage collected, so nothing can call it again. A
+    /// pinned ref (a capability's own member) and an unknown or already
+    /// released id are ignored.
+    pub fn release_ref(&self, id: u32) {
+        entry(|| self.harness.release_ref(id))
     }
 
     /// A promise id as a JavaScript promise, taken from the harness's live
@@ -398,28 +419,50 @@ impl WasmKernel {
     }
 
     /// The harness's live-table counts plus how many capabilities this
-    /// kernel has described (`describe`'s memo): `{"refs": n, "promises":
-    /// n, "described": n}`. Dev-only, for the eval build's memory soak
-    /// test.
+    /// kernel has described (`describe`'s memo) and how many taken promises
+    /// it keeps abortable (`aborts`, which holds a never-settling promise's
+    /// entry for good): `{"refs": n, "promises": n, "described": n,
+    /// "aborts": n}`. Dev-only, for the eval build's memory soak test.
     pub fn debug_counts(&self) -> String {
         entry(|| {
             let mut counts = self.harness.counts();
             counts["described"] = json!(self.described.borrow().len());
+            counts["aborts"] = json!(self.aborts.borrow().len());
             counts.to_string()
         })
     }
 }
 
 impl WasmKernel {
-    /// The harness's description of `capability`, made once per capability.
+    /// The harness's description of `capability`, made once per capability,
+    /// with every ref in it pinned.
     fn describe(&self, capability: Rc<dyn Any>) -> String {
         let key = Rc::as_ptr(&capability) as *const ();
         if let Some((_, text)) = self.described.borrow().get(&key) {
             return text.clone();
         }
-        let text =
-            self.harness.describe(capability.clone()).unwrap_or_else(|| json!({})).to_string();
+        let mut description =
+            self.harness.describe(capability.clone()).unwrap_or_else(|| json!({}));
+        self.pin_refs(&mut description);
+        let text = description.to_string();
         self.described.borrow_mut().insert(key, (capability, text.clone()));
         text
+    }
+
+    /// Pin every `{"$ref": n}` in `value` and mark it `"pinned": true`, so
+    /// the shim does not ask to release it.
+    fn pin_refs(&self, value: &mut Value) {
+        match value {
+            Value::Object(object) => {
+                if let Some(id) = object.get("$ref").and_then(Value::as_u64) {
+                    self.harness.pin_ref(id as u32);
+                    object.insert("pinned".into(), Value::Bool(true));
+                    return;
+                }
+                object.values_mut().for_each(|member| self.pin_refs(member));
+            }
+            Value::Array(items) => items.iter_mut().for_each(|item| self.pin_refs(item)),
+            _ => {}
+        }
     }
 }

@@ -17,6 +17,7 @@ import {
   commandsPlugin,
   createKernel,
   interactionPlugin,
+  kernelCounts,
   renderPlugin,
   searchPlugin,
   setHosts,
@@ -81,8 +82,7 @@ describe('the Kernel shim over the Rust kernel', () => {
     const { viewScale } = visible[0].transform;
 
     // Proves the rehydration path: a `pageTransform(...)` rebuilt from the
-    // page's own data runs `toPixels` in JavaScript, never falling back to
-    // the ref-backed kernel call `withPageTransform` keeps for a mismatch.
+    // page's own data runs `toPixels` in JavaScript, with no kernel call.
     const invokeRef = vi.spyOn(WasmKernel.prototype, 'invoke_ref');
     const callsBefore = invokeRef.mock.calls.length;
     expect(visible[0].transform.toPixels({ x: 10, y: 20 })).toEqual({
@@ -114,7 +114,7 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(shell.getSurface('thumbnails')).not.toBe(surface);
   });
 
-  test('an answer that differs only in fresh refs keeps its object', async () => {
+  test("listVisiblePages keeps its object across another getter's call", async () => {
     const k = await openFixture([
       stagePlugin(),
       interactionPlugin(),
@@ -124,11 +124,33 @@ describe('the Kernel shim over the Rust kernel', () => {
     const stage = k.capability(StageToken);
     stage.setViewportSize({ width: 800, height: 600 });
 
-    // Each `listVisiblePages` describes the page transforms with newly
-    // registered refs, so no two answers have the same text.
+    // `listVisiblePages` answers the same text at a fixed camera; the wire's
+    // reuse of an answer whose fresh refs differ is `release.test.ts`'s.
     const visible = stage.listVisiblePages();
     k.capability(ShellToken).isOpen('sidebar');
     expect(stage.listVisiblePages()).toBe(visible);
+  });
+
+  test('listVisiblePages at a fixed camera registers no refs', async () => {
+    const k = await openFixture([
+      stagePlugin(),
+      interactionPlugin(),
+      renderPlugin(),
+      shellPlugin(),
+    ]);
+    const stage = k.capability(StageToken);
+    const shell = k.capability(ShellToken);
+    stage.setViewportSize({ width: 800, height: 600 });
+    expect(stage.listVisiblePages().length).toBeGreaterThan(0);
+
+    // A real call between reads, so each `listVisiblePages` reaches the
+    // kernel instead of the wire's result cache.
+    const before = kernelCounts(k).refs;
+    for (let i = 0; i < 100; i++) {
+      shell.isOpen('sidebar');
+      stage.listVisiblePages();
+    }
+    expect(kernelCounts(k).refs).toBe(before);
   });
 
   test('getState keeps its object, and every unchanged slice, across other calls', async () => {
