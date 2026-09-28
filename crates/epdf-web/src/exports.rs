@@ -135,6 +135,28 @@ pub fn set_host_bytes_source(f: js_sys::Function) {
     });
 }
 
+/// Install `f` as what `epdf_kernel::bytes::release_host` calls, for the
+/// life of this wasm instance: `f(n)` with the value's `$host` id, and
+/// nothing for a value without one. Installed next to
+/// [`set_host_bytes_source`], and for the same reason once per instance
+/// rather than per kernel: `f` is the module-level `releaseHost` from
+/// `engine-bridge.ts`, which finds whichever bridge holds `n`. A throw (a
+/// double release, which `f` has already reported with `console.error`)
+/// cannot cross back into the plugin that released, so it is logged here
+/// too. A call after the first is a no-op.
+#[wasm_bindgen]
+pub fn set_host_release(f: js_sys::Function) {
+    static INSTALLED: Once = Once::new();
+    INSTALLED.call_once(|| {
+        epdf_kernel::bytes::set_host_releaser(Some(Rc::new(move |value: &Value| {
+            let Some(n) = value.get("$host").and_then(Value::as_u64) else { return };
+            if let Err(error) = f.call1(&JsValue::NULL, &JsValue::from_f64(n as f64)) {
+                console_error("[epdf-web] releaseHost threw:", &error);
+            }
+        })));
+    });
+}
+
 fn parse_args(args_json: &str) -> Result<Vec<Value>, Error> {
     match serde_json::from_str(args_json) {
         Ok(Value::Array(args)) => Ok(args),

@@ -10,6 +10,7 @@ import {
   decode,
   encodeInput,
   hostBytes,
+  releaseHost,
   type EngineBridge,
 } from '../src/engine-bridge';
 
@@ -331,6 +332,34 @@ describe('release', () => {
     const { n } = await renderOne(bridge);
     bridge.dispose();
     expect(() => bridge.release(n)).not.toThrow();
+  });
+
+  test('releaseHost releases through the owning bridge, whichever that is', async () => {
+    // What `epdf_kernel::bytes::release_host` reaches, with no bridge in
+    // hand: the image and its bytes both go, on the next macrotask.
+    const owner = createEngineBridge(imageEngine());
+    const other = createEngineBridge(imageEngine());
+    const { n, m } = await renderOne(owner);
+    releaseHost(n);
+    expect(owner.host(n)).toBeInstanceOf(FakeImage);
+    await macrotask();
+    expect(owner.counts().hosts).toBe(0);
+    expect(other.counts().hosts).toBe(0);
+    expect(() => hostBytes(m)).toThrow(`[engine-bridge] host bytes ${m} was released`);
+  });
+
+  test('a second releaseHost throws loudly, whether the first is pending or done', async () => {
+    const bridge = createEngineBridge(imageEngine());
+    const { n } = await renderOne(bridge);
+    releaseHost(n);
+    expect(() => releaseHost(n)).toThrow(`[engine-bridge] host value ${n} was already released`);
+    await macrotask();
+    expect(() => releaseHost(n)).toThrow(`[engine-bridge] host value ${n} was already released`);
+    expect(errors).toHaveBeenCalledTimes(2);
+  });
+
+  test('releaseHost throws for an id nothing ever held', () => {
+    expect(() => releaseHost(999999)).toThrow('[engine-bridge] no host value 999999');
   });
 });
 

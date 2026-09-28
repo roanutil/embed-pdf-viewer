@@ -180,12 +180,20 @@ reading of wasm memory, which is why `wasmBytes` is read separately.
 
 These still grow, or can:
 
-- Stamp previews. The stamp plugin calls `page.render.image` on the engine itself
-  (`crates/plugins/stamp/src/services/asset_engine.rs:205`, `ghosts.rs:39`,
-  `write/placement.rs:218`), so those images never enter the raster store and their host ids are
-  never released. Importing `packages/default-stamps/en/stamps.pdf` (17 stamps) adds 34 host
-  entries holding 1,634,402 bytes of BMP over the Node engine, and each further import adds the
-  same again.
+- Stamp previews no longer grow. The stamp plugin calls `page.render.image` on the engine itself
+  (`crates/plugins/stamp/src/services/asset_engine.rs:210`, `ghosts.rs:39`,
+  `write/placement.rs:218`), so those images never enter the raster store. All three go through
+  `image_to_preview` (`asset_engine.rs:96`), which now copies the bytes out and then hands the
+  render back through `epdf_kernel::bytes::release_host`. The wasm build installs that hook once
+  per instance (`set_host_release`, called from `initWasm()`) over the bridge's module-level
+  `releaseHost`, which frees both entries a macrotask later, like `bridge.release`. A render whose
+  bytes did not resolve is kept, and a native build installs no hook. Before, importing
+  `packages/default-stamps/en/stamps.pdf` (17 stamps) added 34 host entries holding 1,634,402
+  bytes of BMP over the Node engine, and each further import added the same again. Now the Node
+  test in `packages/core-wasm/test/stamp-preview.test.ts` reads `allHosts` at 0 before the import
+  and 0 after, where the same test read 34 without the stamp change. In the eval app, an import
+  of the same file through the stamp capability left `allHosts` at 59 before and after, with 17
+  previews of 10,643 bytes or more.
 - The bridge's document table (`documents` in `createEngineBridge`,
   `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
   included, until `dispose()`. That is one small handle per open. A stamp library import opens one

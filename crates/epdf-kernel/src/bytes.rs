@@ -3,7 +3,9 @@
 //! sender chose to keep as a live value instead of inlining it (a rendered
 //! image's pixels: see `packages/core-wasm/src/engine-bridge.ts`'s
 //! `canonical`). `n` means nothing on its own; it resolves only through
-//! [`set_host_bytes_resolver`].
+//! [`set_host_bytes_resolver`]. An engine result that carries such a
+//! payload also carries `$host`, its own host id, which [`release_host`]
+//! hands back once Rust is done with it.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -31,6 +33,31 @@ thread_local! {
 /// `None`, exactly like any other shape `from_json` does not recognize.
 pub fn set_host_bytes_resolver(resolver: Option<Rc<dyn Fn(u32) -> Option<Vec<u8>>>>) {
     HOST_BYTES_RESOLVER.with(|cell| *cell.borrow_mut() = resolver);
+}
+
+thread_local! {
+    /// What [`release_host`] calls. `None` until a host installs one (the
+    /// wasm build's `set_host_releaser`, over its engine bridge's module-
+    /// level release); a native build never does.
+    static HOST_RELEASER: RefCell<Option<Rc<dyn Fn(&Value)>>> = const { RefCell::new(None) };
+}
+
+/// Install (or, with `None`, clear) what [`release_host`] calls.
+pub fn set_host_releaser(releaser: Option<Rc<dyn Fn(&Value)>>) {
+    HOST_RELEASER.with(|cell| *cell.borrow_mut() = releaser);
+}
+
+/// Hand an engine result that carries `$host` back to its host, which lets
+/// go of the live value behind it (and of its `$hostBytes` payload, for a
+/// rendered image). Call it once Rust is done with `value`, and never while
+/// `value`, or anything that forwards it, can still reach JavaScript: the
+/// host's copy is gone after this, and a `$host` id that comes back fails.
+/// Does nothing with no releaser installed.
+pub fn release_host(value: &Value) {
+    let releaser = HOST_RELEASER.with(|cell| cell.borrow().clone());
+    if let Some(release) = releaser {
+        release(value);
+    }
 }
 
 impl Bytes {
@@ -82,5 +109,24 @@ mod tests {
         assert_eq!(Bytes::from_json(&json!({ "$hostBytes": 7 })), Some(Bytes(vec![1, 2, 3])));
         assert_eq!(Bytes::from_json(&json!({ "$hostBytes": 8 })), None);
         set_host_bytes_resolver(None);
+    }
+
+    #[test]
+    fn release_host_does_nothing_with_no_releaser_installed() {
+        set_host_releaser(None);
+        release_host(&json!({ "$host": 7 }));
+    }
+
+    #[test]
+    fn release_host_calls_an_installed_releaser_with_the_value() {
+        let seen = Rc::new(RefCell::new(Vec::new()));
+        let record = seen.clone();
+        set_host_releaser(Some(Rc::new(move |value: &Value| {
+            record.borrow_mut().push(value.clone())
+        })));
+        release_host(&json!({ "$host": 7 }));
+        set_host_releaser(None);
+        release_host(&json!({ "$host": 8 }));
+        assert_eq!(*seen.borrow(), vec![json!({ "$host": 7 })]);
     }
 }

@@ -21,7 +21,9 @@
  *     a `Blob`) is kept in a host table and crosses as its data members plus
  *     `$host: n`; `host(n)` returns the original. `release(n)` lets go of a
  *     rendered image once the render plugin's last Rust handle to it drops
- *     (`RenderHost::release_image`); everything else stays for the session.
+ *     (`RenderHost::release_image`), and the module-level [`releaseHost`]
+ *     does the same for one the stamp plugin rendered and copied into a
+ *     preview; everything else stays for the session.
  *   - A `PageImageHandle`'s `source.bytes` crosses as
  *     `{"$hostBytes": n, "$byteLength": len}`, not the encoded image. `n` is
  *     a second, separate host-table entry for the raw `Uint8Array` itself,
@@ -355,6 +357,27 @@ export function hostBytes(n: number): Uint8Array {
   return value;
 }
 
+/** Every bridge not yet disposed, so [`releaseHost`] can find the one
+ *  that owns an id. */
+const liveBridges = new Set<{ owns(n: number): boolean; release(n: number): void }>();
+
+/** `bridge.release(n)` on whichever live bridge holds `n`: both entries of
+ *  a rendered image, deleted on the next macrotask. This is the one
+ *  function `set_host_release` installs into the wasm module, for a Rust
+ *  caller that read an engine result itself (the stamp plugin's previews,
+ *  `epdf_kernel::bytes::release_host`) rather than through a bridge it
+ *  holds. Throws, loudly, for an id already released; plainly for one
+ *  nothing ever held. A disposed bridge's ids count as released: Rust only
+ *  releases right after resolving the same image's `$hostBytes`, which a
+ *  disposed bridge would already have refused. */
+export function releaseHost(n: number): void {
+  for (const bridge of liveBridges) {
+    if (bridge.owns(n)) return bridge.release(n);
+  }
+  if (wasReleased(n)) throw releasedError(`[engine-bridge] host value ${n} was already released`);
+  throw new Error(`[engine-bridge] no host value ${n}`);
+}
+
 export function createEngineBridge(engine: Engine): EngineBridge {
   const documents = new Map<string, DocumentHandle>();
   /** This bridge's own ids into `allHosts`, for `counts()` and a later
@@ -425,6 +448,8 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     }
     return value;
   };
+  const registered = { owns: (n: number) => ownHosts.has(n), release };
+  liveBridges.add(registered);
   const hooks: EncodeHooks = { hold, image: (n, bytes) => imageBytes.set(n, bytes) };
   const encode = (value: unknown) => JSON.stringify(canonical(value, hooks));
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
@@ -564,6 +589,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     release,
     dispose() {
       disposed = true;
+      liveBridges.delete(registered);
       for (const n of ownHosts) {
         allHosts.delete(n);
         pendingRelease.delete(n);

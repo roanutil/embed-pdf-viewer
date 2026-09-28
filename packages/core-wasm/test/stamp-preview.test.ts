@@ -11,6 +11,12 @@
  * canvas plain Node lacks, so the engine here encodes every image as BMP
  * (the encoder's own canvas-free path). The bytes still come from a real
  * render; only their container differs.
+ *
+ * A preview copies its bytes out of the render, so the render's two host
+ * entries (the handle and its `$hostBytes`) must go once it has: the stamp
+ * plugin hands the result back through `epdf_kernel::bytes::release_host`,
+ * which reaches `releaseHost` because this file installs it
+ * (`set_host_release`), as `initWasm()` does in the browser.
  */
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -20,12 +26,13 @@ import { BrowserImageEncoder, createLocalEngine, type LocalImageEncoder } from '
 import type { Kernel } from '@embedpdf/core';
 import { StampToken } from '@embedpdf/plugin-stamp';
 
-import { WasmKernel, set_host_bytes_source } from '../wasm-node/epdf_web.js';
-import { hostBytes } from '../src/engine-bridge';
+import { WasmKernel, set_host_bytes_source, set_host_release } from '../wasm-node/epdf_web.js';
+import { hostBytes, releaseHost } from '../src/engine-bridge';
 import {
   annotationPlugin,
   createKernel,
   interactionPlugin,
+  kernelCounts,
   renderPlugin,
   setWasmKernel,
   stagePlugin,
@@ -50,37 +57,46 @@ function bmpEncoder(): LocalImageEncoder {
 beforeAll(() => {
   setWasmKernel(WasmKernel);
   set_host_bytes_source(hostBytes);
+  set_host_release(releaseHost);
 });
 afterEach(async () => {
   await kernel?.destroy();
   kernel = undefined;
 });
 
+/** A started kernel with stamp and what it depends on, `ebook.pdf` open. */
+async function stampKernel(): Promise<Kernel> {
+  const engine = createLocalEngine({ runtime: { prefer: 'wasm' }, imageEncoder: bmpEncoder() });
+  const k = createKernel({
+    engine,
+    plugins: [
+      stagePlugin(),
+      interactionPlugin(),
+      annotationPlugin(),
+      renderPlugin(),
+      stampPlugin(),
+    ],
+  });
+  kernel = k;
+  await k.start();
+  const ready = new Promise<void>((done) => {
+    const off = k.documents.onOpened(() => {
+      off();
+      done();
+    });
+  });
+  const bytes = new Uint8Array(await readFile(ebook));
+  k.documents.openAll([{ source: { kind: 'bytes', id: 'ebook', bytes }, scope: ['*'] }]);
+  await ready;
+  return k;
+}
+
+/** One macrotask: what `release` waits before it deletes. */
+const macrotask = () => new Promise<void>((done) => setTimeout(done, 0));
+
 describe('stamp asset previews over the real engine', () => {
   test('an imported library asset has a preview with its rendered bytes', async () => {
-    const engine = createLocalEngine({ runtime: { prefer: 'wasm' }, imageEncoder: bmpEncoder() });
-    const k = createKernel({
-      engine,
-      plugins: [
-        stagePlugin(),
-        interactionPlugin(),
-        annotationPlugin(),
-        renderPlugin(),
-        stampPlugin(),
-      ],
-    });
-    kernel = k;
-    await k.start();
-    const ready = new Promise<void>((done) => {
-      const off = k.documents.onOpened(() => {
-        off();
-        done();
-      });
-    });
-    const bytes = new Uint8Array(await readFile(ebook));
-    k.documents.openAll([{ source: { kind: 'bytes', id: 'ebook', bytes }, scope: ['*'] }]);
-    await ready;
-
+    const k = await stampKernel();
     const stamp = k.capability(StampToken);
     await stamp.importLibrary(new Uint8Array(await readFile(library)));
     const assets = stamp.listAssets();
@@ -89,5 +105,22 @@ describe('stamp asset previews over the real engine', () => {
     const preview = stamp.getAssetPreview(assets[0].id);
     expect(preview?.bytes).toBeInstanceOf(Uint8Array);
     expect(preview!.bytes!.byteLength).toBeGreaterThan(0);
+  }, 60_000);
+
+  test('an import leaves the engine bridge host table where it started', async () => {
+    const k = await stampKernel();
+    const stamp = k.capability(StampToken);
+    await macrotask();
+    const before = kernelCounts(k).allHosts;
+
+    await stamp.importLibrary(new Uint8Array(await readFile(library)));
+    await macrotask();
+
+    expect(kernelCounts(k).allHosts).toBe(before);
+    const assets = stamp.listAssets();
+    expect(assets.length).toBeGreaterThan(0);
+    for (const asset of assets) {
+      expect(stamp.getAssetPreview(asset.id)!.bytes!.byteLength).toBeGreaterThan(0);
+    }
   }, 60_000);
 });
