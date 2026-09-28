@@ -33,6 +33,7 @@ use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::sync::Once;
 
 use epdf_kernel::types::PluginScope;
 use epdf_kernel::{
@@ -51,6 +52,20 @@ use crate::runtime::{self, entry, js_to_error, js_to_value, value_to_js};
 extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
     fn console_error(prefix: &str, error: &JsValue);
+}
+
+/// Hand every panic's message and location to `console.error`, once per
+/// instance. Without it a panic reaches the page only as the bare
+/// `RuntimeError: unreachable` its abort throws.
+fn report_panics() {
+    static HOOK: Once = Once::new();
+    HOOK.call_once(|| {
+        let previous = std::panic::take_hook();
+        std::panic::set_hook(Box::new(move |info| {
+            console_error("[epdf-web] panic:", &js_sys::Error::new(&info.to_string()).into());
+            previous(info);
+        }));
+    });
 }
 
 /// An error as JavaScript sees it thrown: the canonical `{"$error": ...}`.
@@ -136,6 +151,7 @@ impl WasmKernel {
         engine: JsValue,
         call_js: js_sys::Function,
     ) -> Result<WasmKernel, JsValue> {
+        report_panics();
         // Before anything can schedule a timer.
         runtime::start_clock();
         entry(|| WasmKernel::build(plugins_json, engine, call_js).map_err(|e| thrown(&e)))
