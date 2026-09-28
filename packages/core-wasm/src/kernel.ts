@@ -84,6 +84,7 @@ export function createKernel(opts: {
 
   const listeners = new Set<() => void>();
   rust.subscribe(() => {
+    wire.changes++;
     wire.bump();
     for (const listener of [...listeners]) listener();
   });

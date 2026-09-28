@@ -9,6 +9,7 @@ import { StageToken } from '@embedpdf/plugin-stage';
 import { CommandsToken } from '@embedpdf/plugin-commands';
 import { ShellToken } from '@embedpdf/plugin-shell';
 import { AnnotationToken } from '@embedpdf/plugin-annotation';
+import { SearchToken } from '@embedpdf/plugin-search';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
 import {
@@ -17,6 +18,7 @@ import {
   createKernel,
   interactionPlugin,
   renderPlugin,
+  searchPlugin,
   setHosts,
   setWasmKernel,
   shellPlugin,
@@ -42,8 +44,11 @@ afterEach(async () => {
   setHosts({});
 });
 
-/** Start `plugins` over the local engine and open the fixture. */
-async function openFixture(plugins: Parameters<typeof createKernel>[0]['plugins']) {
+/** Start `plugins` over the local engine and open the fixture (or `file`). */
+async function openFixture(
+  plugins: Parameters<typeof createKernel>[0]['plugins'],
+  file?: Uint8Array,
+) {
   const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
   const k = createKernel({ engine, plugins });
   kernel = k;
@@ -54,7 +59,9 @@ async function openFixture(plugins: Parameters<typeof createKernel>[0]['plugins'
       done();
     });
   });
-  k.documents.openAll([{ source: { kind: 'bytes', id: 'fixture', bytes }, scope: ['*'] }]);
+  k.documents.openAll([
+    { source: { kind: 'bytes', id: 'fixture', bytes: file ?? bytes }, scope: ['*'] },
+  ]);
   await ready;
   return k;
 }
@@ -147,6 +154,22 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(after.plugins['stage::fixture']).not.toBe(state.plugins['stage::fixture']);
     expect(after.plugins['shell::fixture']).toBeDefined();
     expect(after.plugins['shell::fixture']).toBe(state.plugins['shell::fixture']);
+  });
+
+  test('a call that changes the store is not answered from the cache', async () => {
+    const hello = new Uint8Array(await readFile(resolve(fixtures, 'hello_world.pdf')));
+    const k = await openFixture([stagePlugin(), interactionPlugin(), searchPlugin()], hello);
+    const search = k.capability(SearchToken, 'fixture');
+    const result = await search.search({ text: 'l' });
+    expect(result.hitCount).toBeGreaterThan(2);
+
+    // The same member with the same (no) arguments twice: each moves the
+    // active hit, so the second must reach the kernel too.
+    const first = search.nextHit();
+    const second = search.nextHit();
+    expect(first).not.toBeNull();
+    expect(second).not.toBeNull();
+    expect(second!.charStart).not.toBe(first!.charStart);
   });
 
   test('a getter inside a subscribe listener sees a mutation made in that listener', async () => {

@@ -27,7 +27,8 @@
  * reads `isOpen` and `getSurface`) do not cost each other their references.
  * `getState` does the same per slice. A call whose member makes something
  * new (`create*`, `register*`, `on*`) is not cached or reused; neither is
- * `undefined`, a throw or a promise.
+ * `undefined`, a throw or a promise. A call during which the store changed
+ * is not cached, and a callback from the kernel (`callJs`) clears the cache.
  */
 import {
   canonical,
@@ -121,6 +122,10 @@ export class Wire {
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; value: unknown }>();
   private state: { version: number; text: string; value: unknown } | undefined;
+  /** How many times the kernel's `subscribe` listener has fired
+   *  (`kernel.ts` counts them). A call during which it moved changed the
+   *  store, so its answer is not cached. */
+  changes = 0;
   /** Each slice's JSON text and decoded value, by path (`core`,
    *  `plugins.stage`), from the last `getState` that parsed. */
   private slices = new Map<string, { text: string; value: unknown }>();
@@ -153,6 +158,9 @@ export class Wire {
 
   /** `call_js`: a `$fn` callback's call from the kernel. */
   readonly callJs = (id: string, argsJson: string): unknown => {
+    // A callback from inside a kernel call: the store may have moved since
+    // anything was cached, with its notification still to come.
+    this.bump();
     const fn = this.fns[Number(id)];
     if (!fn) throw new Error(`[core-wasm] no JavaScript function ${id}`);
     const args = this.decode(JSON.parse(argsJson)) as unknown[];
@@ -274,6 +282,7 @@ export class Wire {
     const json = JSON.stringify(this.encode(prepareArgs(member, args), signals));
     const key = `${id}:${json}`;
     if (this.results.has(key)) return this.results.get(key);
+    const changes = this.changes;
     const text = rusty(() => this.rust.invoke_ref(id, json));
     const outcome = JSON.parse(text) as Outcome;
     // A real call, not a cache hit: the store may have deferred its change
@@ -301,7 +310,9 @@ export class Wire {
     const value =
       last?.shape === shape ? last.value : rehydrate(member, this.decode(outcome.returned));
     if (value !== undefined) {
-      this.results.set(key, value);
+      // A call that changed the store (`search.nextHit`, `link.activate`)
+      // answers anew next time, even with nothing between.
+      if (this.changes === changes) this.results.set(key, value);
       if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
       this.answers.set(key, { shape, value });
     }
