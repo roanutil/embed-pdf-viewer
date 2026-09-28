@@ -4,7 +4,9 @@
  * `REHYDRATE` fixes a decoded result. A `{"$host": n}` needs no entry: the
  * decoder swaps every one for the engine bridge's live value, which is what
  * render's `getPlan` handles need. `PREPARE` fixes arguments before they are
- * encoded. Task 9 adds entries as the UI reaches more members.
+ * encoded. Task 9 adds entries as the UI reaches more members. Arguments
+ * that still hold a `Blob` after `PREPARE` are read by `readBinarySources`
+ * (`Wire.call` in `proxy.ts`).
  */
 import { pageTransform, type PageRotation, type PageTransform } from '@embedpdf/core-geometry';
 import { readBlobs } from './engine-bridge';
@@ -76,18 +78,57 @@ export function rehydrate(member: string, value: unknown): unknown {
   return fix && value !== undefined && value !== null ? fix(value) : value;
 }
 
-const hasBlob = (value: unknown): boolean => {
-  if (typeof Blob !== 'undefined' && value instanceof Blob) return true;
+const isBlob = (value: unknown): value is Blob =>
+  typeof Blob !== 'undefined' && value instanceof Blob;
+
+const isPlainObject = (value: unknown): value is Obj =>
+  value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype;
+
+/** Whether a `Blob` sits anywhere in `value`'s arrays and plain objects. */
+export const hasBlob = (value: unknown): boolean => {
+  if (isBlob(value)) return true;
   if (Array.isArray(value)) return value.some(hasBlob);
-  if (
-    value !== null &&
-    typeof value === 'object' &&
-    Object.getPrototypeOf(value) === Object.prototype
-  ) {
-    return Object.values(value).some(hasBlob);
-  }
+  if (isPlainObject(value)) return Object.values(value).some(hasBlob);
   return false;
 };
+
+/** A `Blob`'s `type` as `mimeType` and a `File`'s `name`, where they are set. */
+const blobFacts = (blob: Blob): Obj => {
+  const name = (blob as File).name;
+  return {
+    ...(blob.type ? { mimeType: blob.type } : {}),
+    ...(typeof name === 'string' && name.length > 0 ? { name } : {}),
+  };
+};
+
+const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
+
+/**
+ * `value` with every `Blob` in its arrays and plain objects read to bytes,
+ * keeping what `resolveBinarySource` (`@embedpdf/engine-core`,
+ * `resource/BinarySource.ts`) would take from it. A `Blob` in a member
+ * named `data` (a `BinaryPayload`'s, or an `AttachmentFileSource`'s) becomes
+ * its bytes, and its type and file name fill the object's `mimeType` and
+ * `name` where those are absent. Any other `Blob` is a whole `BinarySource`
+ * and becomes the payload `{data, mimeType?, name?}`. Every capability
+ * member that takes a `Blob` takes it in one of those two places.
+ */
+export async function readBinarySources(value: unknown): Promise<unknown> {
+  if (isBlob(value)) return { data: await bytesOf(value), ...blobFacts(value) };
+  if (Array.isArray(value)) return Promise.all(value.map(readBinarySources));
+  if (!isPlainObject(value)) return value;
+  const out: Obj = {};
+  for (const [key, member] of Object.entries(value)) {
+    out[key] =
+      key === 'data' && isBlob(member) ? await bytesOf(member) : await readBinarySources(member);
+  }
+  if (isBlob(value.data)) {
+    for (const [key, fact] of Object.entries(blobFacts(value.data))) {
+      if (out[key] === undefined) out[key] = fact;
+    }
+  }
+  return out;
+}
 
 /** An open source holding a `Blob` (a picked `File`) as a thunk that reads
  *  it: the kernel takes a source thunk's promise, and a `Blob` cannot cross

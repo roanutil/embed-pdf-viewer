@@ -19,7 +19,9 @@
  *     means all of them). The same function passed after that crosses
  *     under a new id; the kernel calling a released id throws. An
  *     `AbortSignal` argument is taken out and aborts the call's promise
- *     instead.
+ *     instead. A `Blob` argument (a picked `File`) is read to bytes first
+ *     (`readBinarySources`), so its call waits for the read and answers a
+ *     promise; a `Blob` that reaches the encoder anyway throws.
  *   - `{"$promise": n}` becomes a promise with an `abort(reason)`,
  *     `{"$host": n}` the engine bridge's live value, `$set` and `$map` the
  *     collections, and the command context's `{"$kernel": ...}` markers
@@ -59,7 +61,7 @@ import {
   type DecodeHook,
   type EngineBridge,
 } from './engine-bridge';
-import { prepareArgs, rehydrate } from './rehydrate';
+import { hasBlob, prepareArgs, readBinarySources, rehydrate } from './rehydrate';
 
 /** What this package uses of `WasmKernel` (`wasm/epdf_web.d.ts`). */
 export interface RustKernel {
@@ -135,6 +137,14 @@ function pinnedIds(value: unknown, out: number[] = []): number[] {
 }
 
 const DESTROYED = '[core-wasm] kernel destroyed';
+
+/** A `Blob` at the encoder: `Wire.call` reads every one it can reach
+ *  first, so this one sits somewhere `readBinarySources` does not look. */
+function unprepared(member: string | undefined): never {
+  const error = new Error(`[core-wasm] a Blob reached the encoder unprepared: ${member ?? ''}`);
+  console.error(error);
+  throw error;
+}
 
 /** A canonical `{"$error": {...}}` (or anything thrown) as an `Error` with
  *  its `name`, `code` and other members. */
@@ -266,12 +276,14 @@ export class Wire {
     this.results = new Map();
   }
 
-  /** `value` as canonical JSON (an object, not text). */
-  encode(value: unknown, signals?: AbortSignal[]): unknown {
+  /** `value` as canonical JSON (an object, not text). `member` names the
+   *  call it is encoded for in the error a `Blob` throws. */
+  encode(value: unknown, signals?: AbortSignal[], member?: string): unknown {
     return canonical(value, {
       hold: this.bridge.hold,
       fn: (f) => ({ $fn: `js:${this.fnId(f)}` }),
       signal: signals ? (s) => signals.push(s) : undefined,
+      blob: () => unprepared(member),
     });
   }
 
@@ -291,6 +303,7 @@ export class Wire {
     const ids: number[] = [];
     const out = canonical(value, {
       hold: this.bridge.hold,
+      blob: () => unprepared('a callback value'),
       fn: (f) => {
         const id = this.fnId(f);
         ids.push(id);
@@ -494,8 +507,45 @@ export class Wire {
   }
 
   private call(id: number, member: string, args: unknown[]): unknown {
+    const prepared = prepareArgs(member, args);
+    return hasBlob(prepared)
+      ? this.callWithBlobs(id, member, prepared)
+      : this.invoke(id, member, prepared);
+  }
+
+  /** A call with a `Blob` among its arguments, made once `readBinarySources`
+   *  has read them: a `Blob` has no synchronous read, and holding it as a
+   *  `$host` gives Rust nothing it can read. Every member whose signature
+   *  takes one answers a promise, so this changes when the call happens,
+   *  not what it answers; one that answers anything else throws. */
+  private callWithBlobs(
+    id: number,
+    member: string,
+    args: unknown[],
+  ): Promise<unknown> & { abort(reason?: unknown): void } {
+    let inner: { abort(reason?: unknown): void } | undefined;
+    let early: { reason: unknown } | undefined;
+    const out = readBinarySources(args).then((read) => {
+      const answer = this.invoke(id, member, read as unknown[]);
+      if (!isThenable(answer)) {
+        const error = new Error(`[core-wasm] ${member} took a Blob but did not answer a promise`);
+        console.error(error);
+        throw error;
+      }
+      inner = answer as unknown as { abort(reason?: unknown): void };
+      if (early) inner.abort(early.reason);
+      return answer;
+    }) as Promise<unknown> & { abort(reason?: unknown): void };
+    out.abort = (reason?: unknown) => {
+      if (inner) inner.abort(reason);
+      else early = { reason };
+    };
+    return out;
+  }
+
+  private invoke(id: number, member: string, args: unknown[]): unknown {
     const signals: AbortSignal[] = [];
-    const json = JSON.stringify(this.encode(prepareArgs(member, args), signals));
+    const json = JSON.stringify(this.encode(args, signals, member));
     const key = `${id}:${json}`;
     if (this.results.has(key)) return this.results.get(key);
     const changes = this.changes;

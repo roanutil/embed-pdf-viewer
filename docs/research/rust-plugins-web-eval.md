@@ -195,11 +195,8 @@ These still grow, or can:
   of the same file through the stamp capability left `allHosts` at 59 before and after, with 17
   previews of 10,643 bytes or more. Only the import path (`render_thumbnail`) has a test; the
   ghost and dynamic placement paths release through the same function but are untested.
-- The stamps sidebar's "Import PDF…" button does not work on the Rust kernel. It passes a picked
-  `File`, which crosses as a `$host` object, and `crates/plugins/annotation/src/binary.rs` reads
-  only `$bytes`, so the import fails with `TypeError: Cannot read properties of undefined (reading
-  'arrayBuffer')` and leaves one host entry behind per attempt. Importing through
-  `importLibrary(bytes)` with a `Uint8Array` works. This predates the release work.
+- Fixed: "Import PDF…" works, since `Wire.call` reads a `File` argument to bytes before it crosses
+  (commit "Read Blob arguments to bytes before they cross to Rust").
 - The bridge's document table (`documents` in `createEngineBridge`,
   `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
   included, until `dispose()`. That is one small handle per open. A stamp library import opens one

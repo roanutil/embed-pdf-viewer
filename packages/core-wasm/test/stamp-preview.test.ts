@@ -123,4 +123,26 @@ describe('stamp asset previews over the real engine', () => {
       expect(stamp.getAssetPreview(asset.id)!.bytes!.byteLength).toBeGreaterThan(0);
     }
   }, 60_000);
+
+  // The stamps sidebar's "Import PDF…" passes the picked `File` itself
+  // (`packages/viewer/chrome/src/ui/stamps-panel.tsx`), which the wire reads
+  // to bytes before it crosses.
+  test('a picked File imports, and leaves the host table where it started', async () => {
+    const k = await stampKernel();
+    const stamp = k.capability(StampToken);
+    await macrotask();
+    const before = kernelCounts(k).allHosts;
+
+    const file = new File([await readFile(library)], 'stamps.pdf', { type: 'application/pdf' });
+    const id = await stamp.importLibrary(file, { name: 'stamps' });
+    await macrotask();
+
+    expect(kernelCounts(k).allHosts).toBe(before);
+    expect(stamp.getLibrary(id)).not.toBeNull();
+    const assets = stamp.listAssets({ libraryId: id });
+    expect(assets.length).toBeGreaterThan(0);
+    for (const asset of assets) {
+      expect(stamp.getAssetPreview(asset.id)!.bytes!.byteLength).toBeGreaterThan(0);
+    }
+  }, 60_000);
 });

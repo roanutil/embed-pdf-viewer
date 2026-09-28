@@ -153,6 +153,8 @@ export interface EncodeHooks {
   fn?(value: (...args: unknown[]) => unknown): unknown;
   /** Take an `AbortSignal` out of the value: it encodes as `undefined`. */
   signal?(value: AbortSignal): void;
+  /** Encode a `Blob`. Without it a `Blob` is held, as any live value is. */
+  blob?(value: Blob): unknown;
 }
 
 /** Canonical form of `value`; `hooks.hold` registers what JSON cannot carry
@@ -186,6 +188,7 @@ export function canonical(
       return h.fn ? h.fn(value as (...args: unknown[]) => unknown) : { $host: h.hold(value) };
   }
   const object = value as object;
+  if (h.blob && typeof Blob !== 'undefined' && object instanceof Blob) return h.blob(object);
   const recur = (v: unknown) => canonical(v, h, seen);
   if (object instanceof Error) return errorSpec(object, recur);
   if (object instanceof Uint8Array) return { $bytes: base64(object) };

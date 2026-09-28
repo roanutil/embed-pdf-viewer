@@ -5,7 +5,9 @@
 import { describe, expect, test, vi } from 'vitest';
 import { pageTransform } from '@embedpdf/core-geometry';
 
-import { rehydrate } from '../src/rehydrate';
+import type { EngineBridge } from '../src/engine-bridge';
+import { Wire } from '../src/proxy';
+import { readBinarySources, rehydrate } from '../src/rehydrate';
 
 const transform = pageTransform({
   pageSize: { width: 612, height: 792 },
@@ -26,5 +28,33 @@ describe('rehydrating a page transform', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const drifted = { ...page, transform: { ...transform, zoom: transform.zoom + 0.5 } };
     expect(() => rehydrate('getPageFrame', drifted)).toThrow(/differs from the kernel's in zoom/);
+  });
+});
+
+describe('a Blob argument', () => {
+  test('a File is read to a payload with its bytes, type and name', async () => {
+    const file = new File([new Uint8Array([1, 2, 3])], 'mark.png', { type: 'image/png' });
+    expect(await readBinarySources([file, { width: 1 }])).toEqual([
+      { data: new Uint8Array([1, 2, 3]), mimeType: 'image/png', name: 'mark.png' },
+      { width: 1 },
+    ]);
+  });
+
+  test("a payload's or attachment's Blob data lends its type and name where they are absent", async () => {
+    const file = new File([new Uint8Array([4])], 'notes.txt', { type: 'text/plain' });
+    expect(await readBinarySources({ data: file, name: 'kept.txt' })).toEqual({
+      data: new Uint8Array([4]),
+      name: 'kept.txt',
+      mimeType: 'text/plain',
+    });
+  });
+
+  test('one that reaches the encoder unprepared throws', () => {
+    const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => wire.encode([new Blob(['x'])], undefined, 'importLibrary')).toThrow(
+      '[core-wasm] a Blob reached the encoder unprepared: importLibrary',
+    );
+    expect(error).toHaveBeenCalled();
   });
 });
