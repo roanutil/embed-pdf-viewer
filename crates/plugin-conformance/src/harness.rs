@@ -113,9 +113,12 @@ pub(crate) struct Inner {
 pub struct Harness(pub(crate) Rc<Inner>);
 
 impl Harness {
-    pub(crate) fn new(
+    /// Shared by `new` and `live`: every field but `live` starts the same
+    /// way regardless of which one a run wants.
+    fn with_live(
         adapters: Vec<Rc<dyn HarnessPlugin>>,
         tokens: HashMap<String, AnyToken>,
+        live: Option<LiveFn>,
     ) -> Harness {
         Harness(Rc::new(Inner {
             entry: RefCell::new(Entry::default()),
@@ -125,8 +128,15 @@ impl Harness {
             fake: RefCell::new(None),
             adapters,
             built: RefCell::new(HashMap::new()),
-            live: None,
+            live,
         }))
+    }
+
+    pub(crate) fn new(
+        adapters: Vec<Rc<dyn HarnessPlugin>>,
+        tokens: HashMap<String, AnyToken>,
+    ) -> Harness {
+        Harness::with_live(adapters, tokens, None)
     }
 
     /// A harness whose callbacks call straight into `live` instead of
@@ -138,16 +148,7 @@ impl Harness {
         tokens: HashMap<String, AnyToken>,
         live: LiveFn,
     ) -> Harness {
-        Harness(Rc::new(Inner {
-            entry: RefCell::new(Entry::default()),
-            refs: RefCell::new(Vec::new()),
-            promises: RefCell::new(Vec::new()),
-            tokens: RefCell::new(tokens),
-            fake: RefCell::new(None),
-            adapters,
-            built: RefCell::new(HashMap::new()),
-            live: Some(live),
-        }))
+        Harness::with_live(adapters, tokens, Some(live))
     }
 
     /// Log a callback into the current trace entry. Skipped on a live
@@ -336,5 +337,23 @@ impl Callback {
             return Answer::Promise(Promise::resolved(value.clone()));
         }
         Answer::Returns(answer.get("returns").cloned().unwrap_or_else(undefined))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_live_harness_does_not_record_into_the_trace() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let harness = Harness::live(Vec::new(), HashMap::new(), live);
+
+        harness.log("demo", vec![json!("x")]);
+        harness.track(Promise::resolved(json!(1)));
+
+        let entry = harness.0.entry.borrow();
+        assert!(entry.callbacks.is_empty());
+        assert!(entry.settled.is_empty());
     }
 }
