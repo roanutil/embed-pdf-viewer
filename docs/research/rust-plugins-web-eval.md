@@ -28,7 +28,7 @@ timed.
 | Images | works | annotation | | Clicking with the Image tool opens the picker (`accept="image/png,image/jpeg"`); a 120 x 60 PNG becomes a 120 x 60 `stamp`. |
 | Form fill | works | form, actions | | `action_form_fixture.pdf`: text, checkbox, radio, dropdown, Hide/Show Field, Reset All and Next Page behave identically. |
 | Validate and calculate scripts | works | actions, acrojs | | An invalid email raises the same `alert` text; `calcsum` follows `calc1 + calc2` (1284.5). |
-| Format scripts | works | actions, acrojs | | Neither viewer reformats anything in the fixtures available. See "Form scripts". |
+| Format scripts | works | actions, acrojs | | `action_form_fixture.pdf`: typing `1234.5` into Venue (`calc1`) and tabbing out gives `1,234.50` in both viewers, matching the README. See "Form scripts". |
 | Document open action | works | actions | | `action_doc_events.pdf` writes "Open" to `eventLog` in both. |
 | Links | works | link, actions | | `annots_action_handling.pdf`: GoTo lands on `scrollTop` 1161.33 in both, and the URI link opens a tab. `link_javascript.pdf` raises `alert('embedpdf')`. |
 | Redact and apply | works | redaction | | Same mark bounds, same dialog ("2 other annotations will also be removed"), same annotations left afterwards. |
@@ -73,13 +73,28 @@ test `a_reported_error_is_a_live_error_with_its_members` is in `crates/epdf-web/
 ## Form scripts
 
 Validate, calculate, hide/show, reset and the document open action all ran through QuickJS and
-matched the TypeScript. Format scripts are unproven. `README.md` in the eval app says typing
-`1234.5` into Venue shows `1,234.50`. Neither viewer does that: `calc1` keeps `1234.5`. A search of
-every fixture's decompressed streams finds no `AFNumber_Format`, so the README describes a script
-`action_form_fixture.pdf` does not have. The only format script in the fixtures is
-`AFDate_FormatEx("yyyy-mm-dd")` in `packages/engine/main/test/fixtures/annot_javascript.pdf`, and
-typing `3/14/2026` there leaves the value unformatted in both viewers. A fixture with a working
-format script is needed before this row can say more than "same as TypeScript".
+matched the TypeScript. Format scripts do too. `action_form_fixture.pdf` carries
+`AFNumber_Format(2, 0, 0, 0, "", true)` and `AFNumber_Keystroke(2, 0, 0, 0, "", true)` on `calc1`
+and `calc2`, and `AFSimple_Calculate("SUM", ["calc1", "calc2"])` on `calcsum`. These sit in
+uncompressed objects, not inside the page's Flate/ASCII85 content stream, so an earlier pass that
+searched only every fixture's decompressed streams missed them; `strings
+packages/plugin/form/test/fixtures/action_form_fixture.pdf | grep AFNumber` finds all four. The
+README's claim stands.
+
+Typing `1234.5` into Venue (`calc1`) and pressing Tab gives `1,234.50` in both the Rust eval app
+and the TS viewer; typing `250` into Catering (`calc2`) gives `250.00`, and the total (`calcsum`)
+reads `1484.5` in both.
+
+The MCP `fill` tool sets a field's value directly and does not itself fire the blur that runs
+`AFNumber_Format`: filling Venue with `1234.5` leaves it showing `1234.5` and the total at `0`
+until something blurs the field, a real `Tab` press or a click elsewhere. Once that blur fires,
+the filled value reformats the same as typed input does. Reading a filled field before any blur,
+or never blurring it, is what produces a false "doesn't reformat" result, and is the likely cause
+of the earlier negative finding here.
+
+`AFDate_FormatEx("yyyy-mm-dd")` is also on a fixture,
+`packages/engine/main/test/fixtures/annot_javascript.pdf`; typing `3/14/2026` there was reported
+leaving the value unformatted in both viewers. That finding was not retested here.
 
 ## How gestures were driven
 
