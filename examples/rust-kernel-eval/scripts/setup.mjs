@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * Fresh-worktree setup for this eval app: the gitignored build output that
- * `pnpm dev` assumes but does not produce itself.
+ * Fresh-worktree setup for this eval app (`pnpm bootstrap`): the gitignored
+ * build output that `pnpm eval` assumes but does not produce itself.
  *
- * `pnpm dev` already runs `pnpm --filter @embedpdf/core-wasm build:wasm`,
+ * `pnpm eval` already runs `pnpm --filter @embedpdf/core-wasm build:wasm`,
  * which builds the Rust kernel. Everything below is the REST of the viewer
  * chrome's dev-time dependencies, none of which that build touches:
  *
@@ -14,9 +14,9 @@
  *     this script only CHECKS for them — see the error below for how to get
  *     them)
  *
- * Run once per checkout, before `pnpm dev`. Kept separate from `dev` rather
+ * Run once per checkout, before `pnpm eval`. Kept separate from `eval` rather
  * than chained in front of it: the engine rebuild alone costs ~15-20s with
- * no cache, on every single `pnpm dev` (see examples/rust-kernel-eval/README.md).
+ * no cache, on every single `pnpm eval` (see examples/rust-kernel-eval/README.md).
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, statSync } from 'node:fs';
