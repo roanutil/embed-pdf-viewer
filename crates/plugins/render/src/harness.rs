@@ -8,7 +8,8 @@
 //! plugin's `abort(name)` aborts; the plugin's `console.warn` and
 //! `console.debug` lines log as callbacks of those names; and the frame
 //! scheduler is the TypeScript's Node fallback, `setTimeout(cb, 16)`. On a
-//! live harness, `host: {requestFrame, warn, debug}` replaces them.
+//! live harness, `host: {requestFrame, warn, debug, releaseImage}` replaces
+//! them.
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -36,11 +37,14 @@ use crate::*;
 
 // ── a live host ───────────────────────────────────────────────────────────────
 
-/// A live host's globals: `host: {requestFrame, warn, debug}` in the config,
-/// each a `$fn` the host answers (`requestAnimationFrame`, `console.warn`
-/// and `console.debug` in a browser). `requestFrame` receives the frame as
-/// a ref the host calls once. Only a live harness reads it; a vector's
-/// config never has one.
+/// A live host's globals: `host: {requestFrame, warn, debug, releaseImage}`
+/// in the config, each a `$fn` the host answers (`requestAnimationFrame`,
+/// `console.warn` and `console.debug` in a browser). `requestFrame` receives
+/// the frame as a ref the host calls once. `releaseImage` receives the
+/// `$host` id of a handle whose last Rust clone dropped, as a bare number:
+/// the handle's JSON itself would decode back to the live image on the way
+/// out, id and all. A handle with no `$host` id has nothing to release.
+/// Only a live harness reads it; a vector's config never has one.
 fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
     if !h.is_live() {
         return;
@@ -69,6 +73,13 @@ fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
         host.debug = Rc::new(move |message| {
             let _ = debug.call(vec![json!(message)]);
         });
+    }
+    if let Some(release) = spec("releaseImage").map(|f| h.callback(f)) {
+        host.release_image = Some(Rc::new(move |image: &Value| {
+            if let Some(id) = image.get("$host").filter(|id| id.is_number()) {
+                let _ = release.call(vec![id.clone()]);
+            }
+        }));
     }
 }
 
@@ -351,6 +362,7 @@ impl HarnessPlugin for Render {
             }),
             warn: Rc::new(move |message| warn_h.log("console.warn", vec![json!(message)])),
             debug: Rc::new(move |message| debug_h.log("console.debug", vec![json!(message)])),
+            release_image: None,
         };
         live_host(&mut host, raw, h);
         Ok(render_plugin_with_host(config, host))

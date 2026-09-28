@@ -22,24 +22,61 @@ use indexmap::IndexMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
+/// A live host's hook for a handle whose last clone dropped: the handle's
+/// JSON, so the host can let go of what its `$host` id names (see
+/// `RenderHost::release_image`).
+pub type ReleaseImage = Rc<dyn Fn(&Value)>;
+
 /// A `PageImageHandle` as the engine answered it: the result JSON (`source`
 /// as `{kind: 'bytes', bytes}` or `{kind: 'url', url}`, `width`, `height`,
-/// and whatever else the engine put there). Cheap to clone.
-#[derive(Clone, Debug, PartialEq)]
-pub struct PageImageHandle(Rc<Value>);
+/// and whatever else the engine put there). Cheap to clone. A handle made
+/// [`with_release`](Self::with_release) calls its hook once, when the last
+/// clone drops: store eviction, and the paint plans that still held it.
+#[derive(Clone)]
+pub struct PageImageHandle(Rc<HandleInner>);
+
+struct HandleInner {
+    value: Value,
+    release: Option<ReleaseImage>,
+}
+
+impl Drop for HandleInner {
+    fn drop(&mut self) {
+        if let Some(release) = &self.release {
+            release(&self.value);
+        }
+    }
+}
+
+impl std::fmt::Debug for PageImageHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("PageImageHandle").field(&self.0.value).finish()
+    }
+}
+
+impl PartialEq for PageImageHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.value == other.0.value
+    }
+}
 
 impl PageImageHandle {
     pub fn new(value: Value) -> Self {
-        PageImageHandle(Rc::new(value))
+        PageImageHandle(Rc::new(HandleInner { value, release: None }))
+    }
+
+    /// A handle that calls `release(&value)` when its last clone drops.
+    pub fn with_release(value: Value, release: ReleaseImage) -> Self {
+        PageImageHandle(Rc::new(HandleInner { value, release: Some(release) }))
     }
 
     pub fn json(&self) -> &Value {
-        &self.0
+        &self.0.value
     }
 
     /// The encoded bytes, when the handle carries them (local engines).
     pub fn bytes(&self) -> Option<Bytes> {
-        let source = self.0.get("source")?;
+        let source = self.0.value.get("source")?;
         if source.get("kind").and_then(Value::as_str) != Some("bytes") {
             return None;
         }
@@ -49,7 +86,7 @@ impl PageImageHandle {
     /// Approximate memory cost: encoded bytes when known, the pixel count as
     /// a decoded-order estimate for URL handles, 1 when nothing is known.
     pub fn cost(&self) -> f64 {
-        let source = self.0.get("source");
+        let source = self.0.value.get("source");
         if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("bytes") {
             // The host keeps the pixels on the JS side and crosses only a
             // byte count (see engine-bridge.ts); fall back to decoding
@@ -63,7 +100,7 @@ impl PageImageHandle {
             }
             return self.bytes().map_or(f64::NAN, |b| b.0.len() as f64);
         }
-        match (self.0.get("width"), self.0.get("height")) {
+        match (self.0.value.get("width"), self.0.value.get("height")) {
             (Some(width), Some(height)) => js_number(width) * js_number(height),
             _ => 1.0,
         }
@@ -82,7 +119,7 @@ fn js_number(value: &Value) -> f64 {
 
 impl Serialize for PageImageHandle {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        self.0.serialize(s)
+        self.0.value.serialize(s)
     }
 }
 
@@ -101,25 +138,40 @@ struct Inner {
     tick: Cell<u64>,
     total: Cell<f64>,
     max_cost: f64,
+    /// Given to every handle this store makes; `None` makes plain ones.
+    release: Option<ReleaseImage>,
 }
 
 /// `RasterStore`. Cheap to clone; clones share the store.
 #[derive(Clone)]
 pub struct RasterStore(Rc<Inner>);
 
+/// The default budget, ~bytes.
+pub const DEFAULT_MAX_COST: f64 = 128.0 * 1024.0 * 1024.0;
+
 impl Default for RasterStore {
     fn default() -> Self {
-        RasterStore::new(128.0 * 1024.0 * 1024.0)
+        RasterStore::new(DEFAULT_MAX_COST)
     }
 }
 
 impl RasterStore {
     pub fn new(max_cost: f64) -> Self {
+        RasterStore::build(max_cost, None)
+    }
+
+    /// A store whose handles call `release` when their last clone drops.
+    pub fn with_release(max_cost: f64, release: ReleaseImage) -> Self {
+        RasterStore::build(max_cost, Some(release))
+    }
+
+    fn build(max_cost: f64, release: Option<ReleaseImage>) -> Self {
         RasterStore(Rc::new(Inner {
             entries: RefCell::new(IndexMap::new()),
             tick: Cell::new(0),
             total: Cell::new(0.0),
             max_cost,
+            release,
         }))
     }
 
@@ -163,7 +215,10 @@ impl RasterStore {
         let promise = Promise::spawn(async move {
             match task.await {
                 Ok(value) => {
-                    let handle = PageImageHandle::new(value);
+                    let handle = match &store.0.release {
+                        Some(release) => PageImageHandle::with_release(value, release.clone()),
+                        None => PageImageHandle::new(value),
+                    };
                     *settled.handle.borrow_mut() = Some(handle.clone());
                     let cost = handle.cost();
                     settled.cost.set(Some(cost));

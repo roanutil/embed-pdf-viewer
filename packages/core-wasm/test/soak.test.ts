@@ -2,9 +2,12 @@
  * Memory soak test: pans through `ebook.pdf` 300 times over the real Node
  * engine and records `kernelCounts` (every table `packages/core-wasm` and
  * the harness grow across the JS/Rust boundary) plus `process.memoryUsage()
- * .heapUsed` at iterations 50 and 300. This is the baseline other tasks
- * measure bounded growth against; no assertion here bounds growth (see
- * `docs/superpowers/sdd/task-1-report.md` for the two samples).
+ * .heapUsed` at iterations 50 and 300. The one bound asserted is the
+ * engine bridge's host table: every render gets a new width, so the render
+ * plugin's raster store fills its budget and evicts, and each eviction
+ * releases the image's two host entries (`RenderHost::release_image`,
+ * `bridge.release`). Everything else is still the baseline later tasks
+ * measure against (see `docs/superpowers/sdd/task-1-report.md`).
  *
  * Two deviations from the obvious reading of "pan and read the plan", both
  * found by running this and checking what actually moved:
@@ -34,6 +37,7 @@ import { createLocalEngine } from '@embedpdf/engine';
 import type { Kernel } from '@embedpdf/core';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { RenderToken } from '@embedpdf/plugin-render/contract/host';
+import type { PageImage } from '@embedpdf/plugin-render';
 
 import { WasmKernel, wasm_memory_bytes } from '../wasm-node/epdf_web.js';
 import {
@@ -50,16 +54,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ebook = resolve(here, '..', '..', 'viewer', 'main', 'public', 'ebook.pdf');
 const ITERATIONS = 300;
 const SAMPLE_AT = [50, 300];
-/** `renderPage`'s width: a thumbnail-sized raster, not the full 800px
- *  viewport. `harness.rs`'s promise table keeps every settled promise's
- *  value forever (uncompressed BMP bytes, `format: 'bmp'` below), so a full
- *  fixed-viewport-width render on every one of ~900 calls (300 iterations x
- *  up to ~3 visible pages) runs the wasm module itself out of memory before
- *  this test can finish — the harness promise leak this baseline exists to
- *  surface, encountered head first. A thumbnail keeps the same leak shape
- *  (the count still only grows) survivable for a soak test that must
- *  finish in well under a minute. */
-const THUMBNAIL_WIDTH = 96;
+/** `renderPage`'s width at iteration `i` is `BASE_WIDTH + i`: a new raster
+ *  key on every call, so nothing is a cache hit and the ~900 uncompressed
+ *  BMP renders (300 iterations x up to ~3 visible pages, each 200px wide
+ *  or more, about 200 KB and up) overflow the raster store's 128 MiB
+ *  budget (`DEFAULT_MAX_COST` in `raster_store.rs`) several times over.
+ *  The encoded bytes stay on the JS side (the bridge's `$hostBytes`), so
+ *  the harness's promise table holds only small JSON. */
+const BASE_WIDTH = 200;
+/** `RasterStore`'s default budget, in the ~bytes `cost()` counts. */
+const RASTER_BUDGET = 128 * 1024 * 1024;
 /** Every counter `kernelCounts` reports, so a sample's shape is checked
  *  without hard-coding which tables exist. */
 const COUNTER_KEYS = [
@@ -67,6 +71,7 @@ const COUNTER_KEYS = [
   'promises',
   'described',
   'hosts',
+  'allHosts',
   'documents',
   'fns',
   'wireRefs',
@@ -124,17 +129,26 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
     const renderFailures: unknown[] = [];
     const isAbort = (error: unknown): boolean =>
       (error as { code?: string } | null)?.code === 'operation-cancelled';
+    let renders = 0;
+    let smallest = Infinity;
+    let mostVisible = 0;
 
     for (let i = 1; i <= ITERATIONS; i++) {
       stage.panBy(0, -40);
       const visible = stage.listVisiblePages();
+      mostVisible = Math.max(mostVisible, visible.length);
       for (const page of visible) {
         view.getPlan(page.ref);
-        void render
-          .renderPage(page.ref, { width: THUMBNAIL_WIDTH, format: 'bmp' })
-          .catch((error: unknown) => {
+        renders++;
+        void render.renderPage(page.ref, { width: BASE_WIDTH + i, format: 'bmp' }).then(
+          (image: PageImage) => {
+            const source = image.source as { kind: string; bytes?: Uint8Array };
+            if (source.bytes) smallest = Math.min(smallest, source.bytes.byteLength);
+          },
+          (error: unknown) => {
             if (!isAbort(error)) renderFailures.push(error);
-          });
+          },
+        );
       }
       // Drain the microtask queue so this iteration's renders (and the
       // subscribe listener their store changes fire) settle before the
@@ -155,6 +169,18 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
     console.log('[soak] samples:', JSON.stringify(samples, null, 2));
 
     expect(renderFailures, `render failures: ${JSON.stringify(renderFailures)}`).toHaveLength(0);
+
+    // Two host entries per image (the handle and its bytes). The store keeps
+    // at most its budget's worth of images, counted at the smallest image
+    // rendered, plus the ones still on screen; the bound must be one that
+    // an unreleased table would break, or it proves nothing.
+    const budgetImages = Math.floor(RASTER_BUDGET / smallest);
+    const bound = 2 * (budgetImages + mostVisible);
+    const final = samples[samples.length - 1].counts;
+    console.log('[soak] host bound:', { renders, smallest, budgetImages, mostVisible, bound });
+    expect(2 * renders, 'the soak renders enough to overflow the bound').toBeGreaterThan(bound);
+    expect(final.allHosts).toBeLessThanOrEqual(bound);
+    expect(final.hosts).toBeLessThanOrEqual(bound);
 
     expect(samples).toHaveLength(SAMPLE_AT.length);
     for (const sample of samples) {

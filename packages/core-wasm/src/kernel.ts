@@ -62,7 +62,8 @@ const liveKernels = new Set<Kernel>();
  *  `kernel` (built by [`createKernel`]; defaults to the sole live kernel,
  *  throwing if there is none or more than one): the harness's
  *  `refs`/`promises`, `described` capabilities, the engine bridge's
- *  `hosts`/`documents`, the wire's `fns`/`wireRefs`/`proxies`, and
+ *  `hosts` (its own entries), `allHosts` (every bridge's: the one table
+ *  they share) and `documents`, the wire's `fns`/`wireRefs`/`proxies`, and
  *  `wasmBytes`, the wasm module's own linear memory.
  *
  *  `refs` is the harness's table, not the wire's: the two are not the same
@@ -106,6 +107,15 @@ function checkJsPlugin(plugin: AnyPlugin): void {
 
 type Cleanup = () => void;
 
+/** Render's live `host.releaseImage`: the render plugin's raster store
+ *  reports the `$host` id of each image its last Rust handle let go of, and
+ *  this kernel's bridge releases it. Added here, not in `renderPlugin`
+ *  (`./plugins`): the factory runs before there is a bridge. */
+function withReleaseImage(config: unknown, bridge: EngineBridge): unknown {
+  const base = (config ?? {}) as { host?: Record<string, unknown> };
+  return { ...base, host: { ...base.host, releaseImage: (n: number) => bridge.release(n) } };
+}
+
 export function createKernel(opts: {
   engine: Engine;
   plugins: AnyPlugin[];
@@ -128,7 +138,10 @@ export function createKernel(opts: {
 
   const bridge = createEngineBridge(engine as never);
   const wire = new Wire(bridge);
-  const specs = rustPlugins.map((p) => ({ factory: p.$rust, config: wire.encode(p.config) }));
+  const specs = rustPlugins.map((p) => ({
+    factory: p.$rust,
+    config: wire.encode(p.$rust === 'render' ? withReleaseImage(p.config, bridge) : p.config),
+  }));
   const Rust = RustKernel;
   const rust = (() => {
     try {

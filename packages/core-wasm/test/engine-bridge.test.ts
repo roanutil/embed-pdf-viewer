@@ -1,11 +1,17 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
-import { createEngineBridge, encodeInput, hostBytes, type EngineBridge } from '../src/engine-bridge';
+import {
+  createEngineBridge,
+  decode,
+  encodeInput,
+  hostBytes,
+  type EngineBridge,
+} from '../src/engine-bridge';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = resolve(here, '..', '..', 'engine', 'main', 'test', 'fixtures');
@@ -163,6 +169,115 @@ describe('two bridges share one host table', () => {
     const notBytes = bridge.hold({ not: 'bytes' });
     expect(() => hostBytes(notBytes)).toThrow('[engine-bridge] no host bytes');
     expect(() => hostBytes(999999)).toThrow('[engine-bridge] no host bytes');
+  });
+});
+
+/** A rendered image as the engine hands one back: a class instance (so it
+ *  crosses as `$host`) whose `source` carries its encoded bytes. */
+class FakeImage {
+  source = { kind: 'bytes' as const, bytes: new Uint8Array([1, 2, 3]) };
+  width = 1;
+  height = 1;
+  objectUrl(): string {
+    return 'blob:fake';
+  }
+}
+
+/** Just enough of an `Engine` for `open` and `page.render.image`. */
+function imageEngine(): Engine {
+  const doc = {
+    id: 'doc',
+    page: () => ({ render: { image: async () => new FakeImage() } }),
+  };
+  return { open: async () => doc } as unknown as Engine;
+}
+
+/** Render one image through `bridge`: its canonical JSON text, `$host` id
+ *  and `$hostBytes` id. */
+async function renderOne(bridge: EngineBridge) {
+  await bridge.open(JSON.stringify('input'));
+  const json = await bridge.call('doc', 'page.render.image', 1, '[]');
+  const answer = JSON.parse(json) as { $host: number; source: { bytes: { $hostBytes: number } } };
+  return { json, n: answer.$host, m: answer.source.bytes.$hostBytes };
+}
+
+const macrotask = () => new Promise((done) => setTimeout(done, 0));
+
+describe('release', () => {
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  afterEach(() => errors.mockClear());
+  afterAll(() => errors.mockRestore());
+
+  test('marks the image and its bytes now, and deletes both on the next macrotask', async () => {
+    const bridge = createEngineBridge(imageEngine());
+    const { n, m } = await renderOne(bridge);
+    expect(bridge.counts().hosts).toBe(2);
+    const shared = bridge.counts().allHosts;
+
+    bridge.release(n);
+    // Marked, not yet deleted: both still resolve, and the counts still
+    // count them.
+    expect(bridge.host(n)).toBeInstanceOf(FakeImage);
+    expect(hostBytes(m)).toEqual(new Uint8Array([1, 2, 3]));
+    expect(bridge.counts()).toMatchObject({ hosts: 2, allHosts: shared });
+
+    await macrotask();
+    expect(bridge.counts()).toMatchObject({ hosts: 0, allHosts: shared - 2 });
+    expect(() => bridge.host(n)).toThrow(`[engine-bridge] host value ${n} was released`);
+    expect(() => bridge.hostBytes(m)).toThrow(`[engine-bridge] host value ${m} was released`);
+    expect(() => hostBytes(m)).toThrow(`[engine-bridge] host bytes ${m} was released`);
+    // A released id that comes back is reported loudly, not only thrown.
+    expect(errors).toHaveBeenCalledTimes(3);
+  });
+
+  test('a decode queued before the release still gets the image', async () => {
+    // The race `runtime::to_js` sets up: Rust resolves the promise with the
+    // image's JSON, and drops its last handle, in one entry; the shim's
+    // decode is a `.then` reaction that runs after.
+    const bridge = createEngineBridge(imageEngine());
+    const { json, n } = await renderOne(bridge);
+    let resolve!: (text: string) => void;
+    const promise = new Promise<string>((done) => (resolve = done));
+    const decoded = promise.then((text) => decode(JSON.parse(text), bridge.host));
+    resolve(json);
+    bridge.release(n);
+
+    expect(await decoded).toBeInstanceOf(FakeImage);
+    await macrotask();
+    expect(() => bridge.host(n)).toThrow(`[engine-bridge] host value ${n} was released`);
+  });
+
+  test('releases every image released in one turn with one timeout', async () => {
+    const bridge = createEngineBridge(imageEngine());
+    const first = await renderOne(bridge);
+    const second = await renderOne(bridge);
+    const timeouts = vi.spyOn(globalThis, 'setTimeout');
+    bridge.release(first.n);
+    bridge.release(second.n);
+    expect(timeouts).toHaveBeenCalledTimes(1);
+    timeouts.mockRestore();
+    await macrotask();
+    expect(bridge.counts().hosts).toBe(0);
+  });
+
+  test('a second release throws, whether the first is pending or done', async () => {
+    const bridge = createEngineBridge(imageEngine());
+    const { n } = await renderOne(bridge);
+    bridge.release(n);
+    expect(() => bridge.release(n)).toThrow(`[engine-bridge] host value ${n} was already released`);
+    await macrotask();
+    expect(() => bridge.release(n)).toThrow(`[engine-bridge] host value ${n} was already released`);
+    expect(errors).toHaveBeenCalledTimes(2);
+  });
+
+  test("releasing an id this bridge does not hold throws, and leaves the owner's alone", async () => {
+    const owner = createEngineBridge(imageEngine());
+    const other = createEngineBridge(imageEngine());
+    const { n } = await renderOne(owner);
+    expect(() => other.release(n)).toThrow(`[engine-bridge] no host value ${n}`);
+    expect(() => other.release(999999)).toThrow('[engine-bridge] no host value 999999');
+    await macrotask();
+    expect(owner.host(n)).toBeInstanceOf(FakeImage);
   });
 });
 

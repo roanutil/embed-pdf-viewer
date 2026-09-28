@@ -19,7 +19,9 @@
  *     `required` and `context` reach the kernel intact.
  *   - A value JSON cannot carry (a `PageImageHandle` with its `objectUrl()`,
  *     a `Blob`) is kept in a host table and crosses as its data members plus
- *     `$host: n`; `host(n)` returns the original. The table only grows.
+ *     `$host: n`; `host(n)` returns the original. `release(n)` lets go of a
+ *     rendered image once the render plugin's last Rust handle to it drops
+ *     (`RenderHost::release_image`); everything else stays for the session.
  *   - A `PageImageHandle`'s `source.bytes` crosses as
  *     `{"$hostBytes": n, "$byteLength": len}`, not the encoded image. `n` is
  *     a second, separate host-table entry for the raw `Uint8Array` itself,
@@ -72,9 +74,15 @@ export interface EngineBridge {
   hostBytes(n: number): Uint8Array;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
-  /** Live entries in the host and document tables, for the eval build's
+  /** Let go of host value `n`, and of its `$hostBytes` entry when it is a
+   *  rendered image: marked now, deleted on the next macrotask (see the
+   *  release site for why). Throws for an id this bridge does not hold, and
+   *  for one already released. */
+  release(n: number): void;
+  /** Entries not yet deleted: this bridge's in the host table (`hosts`),
+   *  every bridge's (`allHosts`), and its documents, for the eval build's
    *  memory soak test. */
-  counts(): { hosts: number; documents: number };
+  counts(): { hosts: number; allHosts: number; documents: number };
 }
 
 // ── canonical JSON ────────────────────────────────────────────────────────────
@@ -132,6 +140,8 @@ export function errorSpec(error: unknown, encode: (value: unknown) => unknown): 
 export interface EncodeHooks {
   /** Register a live value; answers its host id. */
   hold(value: unknown): number;
+  /** A rendered image held as `host`, whose raw bytes were held as `bytes`. */
+  image?(host: number, bytes: number): void;
   /** Encode a function, member functions included. Without it a function is
    *  held, and a member function is dropped and marks its object live. */
   fn?(value: (...args: unknown[]) => unknown): unknown;
@@ -190,6 +200,7 @@ export function canonical(
     const live =
       !isPlain(object) || (dropsFns && members.some(([, member]) => typeof member === 'function'));
     const out: Record<string, unknown> = {};
+    let bytesId: number | undefined;
     for (const [key, member] of members) {
       if (member === undefined || (dropsFns && typeof member === 'function')) continue;
       if (h.signal && typeof AbortSignal !== 'undefined' && member instanceof AbortSignal) {
@@ -203,15 +214,19 @@ export function canonical(
       // raw `Uint8Array`, which only a caller that actually needs pixels
       // resolves, through `hostBytes(n)`.
       if (live && key === 'source' && isByteImageSource(member)) {
+        bytesId = h.hold(member.bytes);
         out[key] = {
           kind: 'bytes',
-          bytes: { $hostBytes: h.hold(member.bytes), $byteLength: member.bytes.byteLength },
+          bytes: { $hostBytes: bytesId, $byteLength: member.bytes.byteLength },
         };
         continue;
       }
       out[key] = recur(member);
     }
-    if (live) out.$host = h.hold(object);
+    if (live) {
+      out.$host = h.hold(object);
+      if (bytesId !== undefined) h.image?.(out.$host as number, bytesId);
+    }
     return out;
   } finally {
     seen.delete(object);
@@ -291,6 +306,36 @@ export async function readBlobs(value: unknown): Promise<unknown> {
 const allHosts = new Map<number, unknown>();
 let nextHostId = 1;
 
+/** Ids `release` marked, not yet deleted, each with the owning bridge's
+ *  `ownHosts` so the deletion clears that too. */
+const pendingRelease = new Map<number, Set<number>>();
+let releaseScheduled = false;
+
+/** Delete every pending release in one go: `release`'s macrotask. */
+function flushReleases(): void {
+  releaseScheduled = false;
+  for (const [n, owner] of pendingRelease) {
+    allHosts.delete(n);
+    owner.delete(n);
+  }
+  pendingRelease.clear();
+}
+
+/** Whether `n` was handed out and has since been deleted. Ids are never
+ *  reused and nothing but a release deletes, so an id below the counter the
+ *  table no longer has is a released one: no tombstones to keep. */
+function wasReleased(n: number): boolean {
+  return Number.isInteger(n) && n > 0 && n < nextHostId && !allHosts.has(n);
+}
+
+/** A released id that came back: a bug, reported loudly (`console.error`
+ *  plus the throw), never a silent `undefined`. */
+function releasedError(message: string): Error {
+  const error = new Error(message);
+  console.error(error);
+  return error;
+}
+
 /** The live `Uint8Array` behind a `{"$hostBytes": n}`, from whichever
  *  bridge holds it. This is the one function `set_host_bytes_source`
  *  installs into the wasm module: it does not matter which `WasmKernel`
@@ -300,6 +345,7 @@ let nextHostId = 1;
 export function hostBytes(n: number): Uint8Array {
   const value = allHosts.get(n);
   if (!(value instanceof Uint8Array)) {
+    if (wasReleased(n)) throw releasedError(`[engine-bridge] host bytes ${n} was released`);
     throw new Error(`[engine-bridge] no host bytes ${n}`);
   }
   return value;
@@ -312,6 +358,9 @@ export function createEngineBridge(engine: Engine): EngineBridge {
    *  membership here only answers "does this bridge own `n`", which a
    *  foreign id fails, the same as a genuinely unknown one. */
   const ownHosts = new Set<number>();
+  /** A rendered image's host id to its `$hostBytes` id, so releasing the
+   *  image releases its bytes too. */
+  const imageBytes = new Map<number, number>();
 
   const hold = (value: unknown): number => {
     const n = nextHostId++;
@@ -320,8 +369,33 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     return n;
   };
   const host = (n: number): unknown => {
-    if (!ownHosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
+    if (!ownHosts.has(n)) {
+      if (wasReleased(n)) throw releasedError(`[engine-bridge] host value ${n} was released`);
+      throw new Error(`[engine-bridge] no host value ${n}`);
+    }
     return allHosts.get(n);
+  };
+  const release = (n: number): void => {
+    if (pendingRelease.has(n) || wasReleased(n)) {
+      throw releasedError(`[engine-bridge] host value ${n} was already released`);
+    }
+    if (!ownHosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
+    pendingRelease.set(n, ownHosts);
+    const bytes = imageBytes.get(n);
+    if (bytes !== undefined) {
+      imageBytes.delete(n);
+      pendingRelease.set(bytes, ownHosts);
+    }
+    // Deleted on the next macrotask, not now. Rust drops its last handle
+    // inside a Rust entry, and a promise that entry resolved with the same
+    // image (`runtime::to_js`) has not been decoded yet: the shim's decode
+    // is a `.then` reaction, already queued. Reactions queued before this
+    // call run in the same microtask checkpoint, so they always finish
+    // before the next macrotask; until then `host(n)` still answers.
+    if (!releaseScheduled) {
+      releaseScheduled = true;
+      setTimeout(flushReleases, 0);
+    }
   };
   const bridgeHostBytes = (n: number): Uint8Array => {
     const value = host(n);
@@ -330,7 +404,8 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     }
     return value;
   };
-  const encode = (value: unknown) => JSON.stringify(canonical(value, hold));
+  const hooks: EncodeHooks = { hold, image: (n, bytes) => imageBytes.set(n, bytes) };
+  const encode = (value: unknown) => JSON.stringify(canonical(value, hooks));
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
   const reason = (error: unknown) => errorSpec(error, (v) => canonical(v, hold));
 
@@ -465,8 +540,9 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     host,
     hostBytes: bridgeHostBytes,
     hold,
+    release,
     counts() {
-      return { hosts: ownHosts.size, documents: documents.size };
+      return { hosts: ownHosts.size, allHosts: allHosts.size, documents: documents.size };
     },
   };
 }
