@@ -157,6 +157,40 @@ fn a_store_releases_a_handle_once_its_last_clone_drops() {
 }
 
 #[test]
+fn a_clone_held_outside_the_store_defers_release_until_it_drops() {
+    rt::reset();
+    let seen: Rc<RefCell<Vec<Value>>> = Rc::default();
+    let record = seen.clone();
+    // A budget of one ten-byte image.
+    let store = RasterStore::with_release(
+        10.0,
+        Rc::new(move |v: &Value| record.borrow_mut().push(v.clone())),
+    );
+    let image = |id: &str| json!({ "id": id, "source": { "kind": "bytes", "bytes": { "$byteLength": 10 } } });
+    let fetch = |id: &str| {
+        let value = image(id);
+        store.acquire(id, move |_| Ok(Promise::resolved(value)), None).expect("acquire")
+    };
+
+    let a = fetch("a");
+    rt::run_until_stalled();
+    // A tile plan or paint promise holding its own clone, outside the store.
+    let held = store.peek("a").expect("resolved");
+    drop(a);
+
+    // Fill the one-image budget with "b": the store evicts "a" from its own
+    // map, but `held` still keeps its last clone alive.
+    let b = fetch("b");
+    rt::run_until_stalled();
+    drop(b);
+    assert_eq!(store.size(), 1, "a was evicted from the store");
+    assert!(seen.borrow().is_empty(), "a's clone outside the store is still live");
+
+    drop(held);
+    assert_eq!(*seen.borrow(), vec![image("a")], "the last clone dropping released a");
+}
+
+#[test]
 fn a_handle_without_a_hook_releases_nothing() {
     // `PageImageHandle::new` keeps today's shape: no hook, nothing to call.
     let handle = PageImageHandle::new(json!({ "width": 1 }));

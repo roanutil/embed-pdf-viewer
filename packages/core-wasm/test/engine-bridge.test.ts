@@ -247,6 +247,23 @@ describe('release', () => {
     expect(() => bridge.host(n)).toThrow(`[engine-bridge] host value ${n} was released`);
   });
 
+  test('a release before the resolve still lets the decode read the image', async () => {
+    // The other order `runtime::to_js` produces: `render_pages` and an
+    // already-evicted handle drop the last Rust clone (`release`) just
+    // before `resolver.settle` resolves the promise that carried it.
+    const bridge = createEngineBridge(imageEngine());
+    const { json, n } = await renderOne(bridge);
+    let resolve!: (text: string) => void;
+    const promise = new Promise<string>((done) => (resolve = done));
+    const decoded = promise.then((text) => decode(JSON.parse(text), bridge.host));
+    bridge.release(n);
+    resolve(json);
+
+    expect(await decoded).toBeInstanceOf(FakeImage);
+    await macrotask();
+    expect(() => bridge.host(n)).toThrow(`[engine-bridge] host value ${n} was released`);
+  });
+
   test('releases every image released in one turn with one timeout', async () => {
     const bridge = createEngineBridge(imageEngine());
     const first = await renderOne(bridge);

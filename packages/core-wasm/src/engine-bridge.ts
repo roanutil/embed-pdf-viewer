@@ -386,11 +386,15 @@ export function createEngineBridge(engine: Engine): EngineBridge {
       imageBytes.delete(n);
       pendingRelease.set(bytes, ownHosts);
     }
-    // Deleted on the next macrotask, not now. Rust drops its last handle
-    // inside a Rust entry, and a promise that entry resolved with the same
-    // image (`runtime::to_js`) has not been decoded yet: the shim's decode
-    // is a `.then` reaction, already queued. Reactions queued before this
-    // call run in the same microtask checkpoint, so they always finish
+    // Deleted on the next macrotask, not now. The real invariant is not
+    // that the decode is queued before this call: `render_pages` and an
+    // already-evicted handle drop their last Rust clone (this call) just
+    // before `resolver.settle` resolves the promise that carried the same
+    // image (`runtime::to_js`), so there the decode is queued after. What
+    // always holds is that the resolve happens in the same synchronous
+    // stretch as the drop, or in an earlier one whose decode already ran.
+    // Either way, the shim's `.then` decode reaction (a microtask) is
+    // queued by the time this stretch ends, and queued microtasks all run
     // before the next macrotask; until then `host(n)` still answers.
     if (!releaseScheduled) {
       releaseScheduled = true;

@@ -75,9 +75,12 @@ fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
         });
     }
     if let Some(release) = spec("releaseImage").map(|f| h.callback(f)) {
+        let warn = host.warn.clone();
         host.release_image = Some(Rc::new(move |image: &Value| {
-            if let Some(id) = image.get("$host").filter(|id| id.is_number()) {
-                let _ = release.call(vec![id.clone()]);
+            if let Some(id) = image.get("$host").filter(|id| id.is_number())
+                && let Answer::Throws(error) = release.call(vec![id.clone()])
+            {
+                warn(&format!("[render] releaseImage threw: {error}"));
             }
         }));
     }
