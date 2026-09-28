@@ -157,13 +157,16 @@ with no abort handle. A promise made with `map` (`rt.rs:476-482`) has none unles
 carries it over with `abort_handle`.
 
 Session memory is bounded for scrolling and rendering, measured at `3d4199d10`.
-`packages/core-wasm/test/soak.test.ts` pans `ebook.pdf` 300 times over the Node engine and fails if
-any counter grows between iterations 50 and 300. Before the release work (`cc1266800`) the harness's
-`refs` went from 1271 to 5915 and its `promises` from 190 to 964 over that span, and the wasm
-module's linear memory (`wasmBytes`) from 16.3 MB to 66.8 MB at a 96 px render width, or from 232
-MB to 1088 MB at 400 px. Now `refs` stays at 130, `promises` at 0 and `wasmBytes` at 12,582,912
-bytes at both samples. The engine bridge's host table is capped by the raster store's 128 MiB
-budget instead: 380 entries at iteration 50, 222 at 300.
+`packages/core-wasm/test/soak.test.ts` pans `ebook.pdf` 300 times over the Node engine and checks
+each counter against its own rule between iterations 50 and 300: `promises`, `aborts`, `described`,
+`documents` and `proxies` must not grow at all; `refs`, `wireRefs`, `fns` and `heldFns` may grow by
+up to 64 (`LAGGING_SLACK`), since their release can lag a sample; `hosts` and `allHosts` are
+bounded, not flat; and `wasmBytes` may grow by up to 2 MiB. Before the release work
+(`cc1266800`) the harness's `refs` went from 1271 to 5915 and its `promises` from 190 to 964 over
+that span, and the wasm module's linear memory (`wasmBytes`) from 16.3 MB to 66.8 MB at a 96 px
+render width, or from 232 MB to 1088 MB at 400 px. Now `refs` stays at 130, `promises` at 0 and
+`wasmBytes` at 12,582,912 bytes at both samples. The engine bridge's host table is capped by the
+raster store's 128 MiB budget instead: 380 entries at iteration 50, 222 at 300.
 
 The browser agrees. Five round trips from the top of `ebook.pdf` to the bottom and back at 300%
 zoom left `wasmBytes` at 9,437,184 bytes before and after, `refs` at 654 then 650, and `promises`
@@ -199,10 +202,14 @@ doc of `crates/epdf-web/src/exports.rs`), so the callbacks it covers outlive the
 long. `abort_promise` does nothing for a live caller, because no outer promise is wired with an
 abort handle (see "Cancellation is partial" above). Releasing an evicted tile has no automated
 test: the soak evicts full-page renders, and the browser pass never reaches the budget, so the
-tile path was checked only by hand against a build with `DEFAULT_MAX_COST` set to 4 MiB. And when
-a handler calls its own `off()` inside `onDown`, the live build and the TypeScript disagree about
-which handler owns the rest of the gesture. The live build is the one that lets go sooner, so the
-difference cannot keep anything alive, but it is a divergence and has not been fixed.
+tile path was checked only by hand against a build with `DEFAULT_MAX_COST` set to 4 MiB. In the
+live build only, a handler that calls its own `off()` twice around `onDown` does not get `owner`
+cleared on the second call: `unregister_ref` (`crates/plugins/interaction/src/harness.rs`) drops
+the `Unregister` the first time it runs, to free the handler's callbacks once JavaScript is done
+with it. `dispatch_pointer` sets `owner` to that handler only after `on_down` returns true, so the
+second `off()` arrives too late to find anything to call, and the removed handler stays `owner`
+until the next `up` or `cancel`, receiving `move` events for the rest of the gesture. Found by
+tracing the code, not reproduced in the browser.
 
 Closing a document drops its session's capabilities only because `epdf-web` sets
 `KernelOptions.release_closed_sessions` (`crates/epdf-kernel/src/kernel.rs`). The flag defaults
@@ -221,6 +228,13 @@ so `examples/rust-kernel-eval/src/hosts.ts` over real `requestAnimationFrame` an
 `packages/core-wasm/src/proxy.ts`), were only exercised by hand. And the `LiveSandbox` in
 `crates/plugins/actions/src/harness.rs` has no error-path tests: a sandbox member that is not a
 function, one that answers a promise, and a `boot` or `run` that throws are all unexercised.
+
+The rehydrated transform's drift check (`withPageTransform` in
+`packages/core-wasm/src/rehydrate.ts`) follows the same fail-loudly rule as the release paths
+above: it throws rather than hand back a transform that differs from the kernel's, even by the
+rebuild's last bit. A real PDF whose page size or scale lands on that last bit would break
+`listVisiblePages` outright, and only one fixture (`packages/core-wasm/test/rehydrate.test.ts`)
+pins the rebuild against the kernel's own math.
 
 ## Commits made during the pass
 

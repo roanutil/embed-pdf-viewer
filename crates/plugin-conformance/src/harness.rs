@@ -206,10 +206,11 @@ impl Harness {
         }))
     }
 
-    pub(crate) fn new(
-        adapters: Vec<Rc<dyn HarnessPlugin>>,
-        tokens: HashMap<String, AnyToken>,
-    ) -> Harness {
+    /// A scripted harness: callbacks replay a `$fn` spec's recorded answer
+    /// instead of reaching a live host, and the trace accumulates as
+    /// `scenario::run` expects. Public so a plugin crate's own tests can
+    /// build one directly, the way its harness module does at replay time.
+    pub fn new(adapters: Vec<Rc<dyn HarnessPlugin>>, tokens: HashMap<String, AnyToken>) -> Harness {
         Harness::with_live(adapters, tokens, None, None)
     }
 
@@ -348,11 +349,12 @@ impl Harness {
     /// can call it again. A pinned id, an unknown or already released one,
     /// and any id on a scripted harness are left alone.
     pub fn release_ref(&self, id: u32) {
-        if let RefTable::Live { slots, pinned, .. } = &mut *self.0.refs.borrow_mut()
-            && !pinned.contains(&id)
-        {
-            slots.remove(&id);
-        }
+        let removed = match &mut *self.0.refs.borrow_mut() {
+            RefTable::Live { slots, pinned, .. } if !pinned.contains(&id) => slots.remove(&id),
+            _ => None,
+        };
+        // Dropped once no table is borrowed: a drop can reach back in.
+        drop(removed);
     }
 
     /// Whether a live harness handed out `id` and has since released it:
@@ -751,5 +753,38 @@ mod tests {
         harness.release_ref(id);
         assert!(harness.ref_fn(id as usize).is_some());
         assert_eq!(harness.counts()["refs"], json!(1));
+    }
+
+    /// A ref whose last strong count drops during `release_ref` can run
+    /// arbitrary code, including code that reaches back into this harness
+    /// (a capability's drop glue releasing another ref of its own). That
+    /// must not panic on a `RefCell` already borrowed by `release_ref`
+    /// itself: the removed `RefFn` has to drop only after the borrow it
+    /// was found under ends.
+    #[test]
+    fn releasing_a_ref_whose_drop_reenters_the_harness_does_not_panic() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let harness = Harness::live(Vec::new(), HashMap::new(), live);
+        let inner = ref_id(&harness.register_fn(unit()));
+
+        /// Drops into another `release_ref` call on the same harness.
+        struct ReentrantDrop {
+            harness: Harness,
+            inner: u32,
+        }
+        impl Drop for ReentrantDrop {
+            fn drop(&mut self) {
+                self.harness.release_ref(self.inner);
+            }
+        }
+        let reenter = ReentrantDrop { harness: harness.clone(), inner };
+        let outer = ref_id(&harness.register_fn(Rc::new(move |_| {
+            let _ = &reenter; // held only so releasing `outer` drops it
+            Outcome::undefined()
+        })));
+
+        harness.release_ref(outer);
+        assert!(harness.ref_fn(outer as usize).is_none());
+        assert!(harness.ref_fn(inner as usize).is_none(), "the reentrant release still ran");
     }
 }

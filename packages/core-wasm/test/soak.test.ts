@@ -2,13 +2,20 @@
  * Memory soak test: pans through `ebook.pdf` 300 times over the real Node
  * engine and records `kernelCounts` (every table `packages/core-wasm` and
  * the harness grow across the JS/Rust boundary) at iterations 50 and 300,
- * then asserts that none of them grows between the two samples. Every
- * render gets a new width, so the render plugin's raster store fills its
- * budget and evicts, and each eviction releases the image's two host
- * entries (`RenderHost::release_image`, `bridge.release`); the host table
- * is bounded by that budget rather than held flat. `heapUsed` is logged
- * but not asserted: it cannot see wasm linear memory, which is where the
- * baseline's growth was (`wasmBytes`; the measured numbers are in
+ * then checks each counter against its own rule, not one blanket "must not
+ * grow": `promises`, `aborts`, `described`, `documents` and `proxies` must
+ * not grow at all (`EXACT_KEYS`); `refs`, `wireRefs`, `fns` and `heldFns`
+ * may grow by up to `LAGGING_SLACK` (64) because their release can lag a
+ * sample; `hosts` and `allHosts` are bounded rather than flat, since every
+ * render gets a new width, so the raster store fills its budget and
+ * evicts, and each eviction releases the image's two host entries
+ * (`RenderHost::release_image`, `bridge.release`); and `wasmBytes` may grow
+ * by up to `WASM_GROWTH_BOUND` (2 MiB). `fns` and `heldFns` were flat in
+ * the baseline too, so their slack here is a regression guard, not an
+ * allowance earned by this change; `release.test.ts` is what proves the
+ * release path they guard. `heapUsed` is logged but not asserted: it
+ * cannot see wasm linear memory, which is where the baseline's growth was
+ * (`wasmBytes`; the measured numbers are in
  * `docs/research/rust-plugins-web-eval.md`).
  *
  * Two deviations from the obvious reading of "pan and read the plan", both

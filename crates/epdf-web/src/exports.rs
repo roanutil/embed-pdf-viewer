@@ -124,10 +124,13 @@ pub fn set_host_bytes_source(f: js_sys::Function) {
     static INSTALLED: Once = Once::new();
     INSTALLED.call_once(|| {
         epdf_kernel::bytes::set_host_bytes_resolver(Some(Rc::new(move |n: u32| {
-            f.call1(&JsValue::NULL, &JsValue::from_f64(f64::from(n)))
-                .ok()
-                .and_then(|v| v.dyn_into::<js_sys::Uint8Array>().ok())
-                .map(|array| array.to_vec())
+            match f.call1(&JsValue::NULL, &JsValue::from_f64(f64::from(n))) {
+                Ok(v) => v.dyn_into::<js_sys::Uint8Array>().ok().map(|array| array.to_vec()),
+                Err(error) => {
+                    console_error("[epdf-web] hostBytes threw:", &error);
+                    None
+                }
+            }
         })));
     });
 }
