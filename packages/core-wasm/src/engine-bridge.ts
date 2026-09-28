@@ -20,6 +20,9 @@
  *   - A value JSON cannot carry (a `PageImageHandle` with its `objectUrl()`,
  *     a `Blob`) is kept in a host table and crosses as its data members plus
  *     `$host: n`; `host(n)` returns the original. The table only grows.
+ *   - A `PageImageHandle`'s `source.bytes` crosses as `{"$byteLength": n}`,
+ *     not the encoded image: the host table above already keeps the real
+ *     bytes, and Rust only needs the count to cost the entry.
  *
  * Every asynchronous method answers a promise with an `abort(reason)` when
  * the engine's promise had one, which the Rust side calls from
@@ -85,6 +88,14 @@ function unbase64(text: string): Uint8Array {
 function isPlain(object: object): boolean {
   const proto = Object.getPrototypeOf(object);
   return proto === Object.prototype || proto === null;
+}
+
+/** `PageImageSource`'s `{ kind: 'bytes', bytes: Uint8Array }` case: the
+ *  shape whose bytes stay on the JS side (see `canonical`'s `live` branch). */
+function isByteImageSource(value: unknown): value is { kind: 'bytes'; bytes: Uint8Array } {
+  if (value === null || typeof value !== 'object') return false;
+  const source = value as { kind?: unknown; bytes?: unknown };
+  return source.kind === 'bytes' && source.bytes instanceof Uint8Array;
 }
 
 /** `canonicalError`: `name`, `message`, then every own enumerable member. */
@@ -169,6 +180,13 @@ export function canonical(
       if (member === undefined || (dropsFns && typeof member === 'function')) continue;
       if (h.signal && typeof AbortSignal !== 'undefined' && member instanceof AbortSignal) {
         h.signal(member);
+        continue;
+      }
+      // A rendered image crosses into Rust as a byte count, not the bytes:
+      // the host table (below) already keeps the live object, bytes and
+      // all, for `objectUrl()` and a later `host(n)`.
+      if (live && key === 'source' && isByteImageSource(member)) {
+        out[key] = { kind: 'bytes', bytes: { $byteLength: member.bytes.byteLength } };
         continue;
       }
       out[key] = recur(member);

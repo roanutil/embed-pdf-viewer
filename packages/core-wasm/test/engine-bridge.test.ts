@@ -48,20 +48,23 @@ describe('the engine bridge over the local engine', () => {
     expect(typeof firstPon).toBe('number');
   });
 
-  test('a page render answers its data with a $host key for the live handle', async () => {
-    const answer = JSON.parse(
-      await bridge.call(
-        docId,
-        'page.render.image',
-        firstPon,
-        JSON.stringify([{ width: 64, format: 'bmp' }]),
-      ),
+  test('a page render answers a byte count, not the bytes, with a $host key for the live handle', async () => {
+    const json = await bridge.call(
+      docId,
+      'page.render.image',
+      firstPon,
+      JSON.stringify([{ width: 64, format: 'bmp' }]),
     );
+    expect(json).not.toContain('$bytes');
+    const answer = JSON.parse(json);
     expect(answer.format).toBe('bmp');
     expect(answer.source.kind).toBe('bytes');
-    expect(typeof answer.source.bytes.$bytes).toBe('string');
     expect(typeof answer.$host).toBe('number');
-    const live = bridge.host(answer.$host) as { objectUrl?: unknown };
+    const live = bridge.host(answer.$host) as {
+      objectUrl?: unknown;
+      source: { bytes: Uint8Array };
+    };
+    expect(answer.source.bytes.$byteLength).toBe(live.source.bytes.byteLength);
     expect(typeof live.objectUrl).toBe('function');
   });
 

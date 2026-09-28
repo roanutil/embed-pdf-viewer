@@ -93,6 +93,11 @@ fn handle_costs() {
         4.0
     );
     assert_eq!(
+        cost(json!({ "source": { "kind": "bytes", "bytes": { "$byteLength": 4096 } },
+            "width": 10, "height": 10 })),
+        4096.0
+    );
+    assert_eq!(
         cost(json!({ "source": { "kind": "url", "url": "x" }, "width": 3, "height": 5 })),
         15.0
     );

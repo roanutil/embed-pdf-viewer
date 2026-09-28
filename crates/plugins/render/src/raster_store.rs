@@ -51,6 +51,16 @@ impl PageImageHandle {
     pub fn cost(&self) -> f64 {
         let source = self.0.get("source");
         if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("bytes") {
+            // The host keeps the pixels on the JS side and crosses only a
+            // byte count (see engine-bridge.ts); fall back to decoding
+            // base64 bytes for engines that still send them inline.
+            if let Some(len) = source
+                .and_then(|s| s.get("bytes"))
+                .and_then(|b| b.get("$byteLength"))
+                .and_then(Value::as_f64)
+            {
+                return len;
+            }
             return self.bytes().map_or(f64::NAN, |b| b.0.len() as f64);
         }
         match (self.0.get("width"), self.0.get("height")) {
