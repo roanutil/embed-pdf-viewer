@@ -87,6 +87,21 @@ pub(crate) struct Entry {
     pub reports: Vec<Value>,
 }
 
+/// A table's count of what it still holds live, not how far it has grown.
+/// Today `refs` and `promises` are `Vec`s that only ever push, so this is
+/// just their length; a later switch to a map or slot table (freed at
+/// unregistration) keeps [`Harness::counts`] accurate by changing only the
+/// impl here.
+trait LiveCount {
+    fn live_count(&self) -> usize;
+}
+
+impl<T> LiveCount for Vec<T> {
+    fn live_count(&self) -> usize {
+        self.len()
+    }
+}
+
 pub type RefFn = Rc<dyn Fn(Vec<Value>) -> Outcome>;
 
 /// A live callback: the `$fn` spec (so the host can find its function by
@@ -225,6 +240,15 @@ impl Harness {
     /// The promise [`track`](Self::track) numbered `id`.
     pub fn promise(&self, id: usize) -> Option<Promise<Value>> {
         self.0.promises.borrow().get(id).cloned()
+    }
+
+    /// Live entries by table, for the eval build's memory soak test:
+    /// `{"refs": n, "promises": n}`.
+    pub fn counts(&self) -> Value {
+        json!({
+            "refs": self.0.refs.borrow().live_count(),
+            "promises": self.0.promises.borrow().live_count(),
+        })
     }
 
     /// A promise a `settle` step with this label settles.

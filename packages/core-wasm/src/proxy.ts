@@ -55,6 +55,8 @@ export interface RustKernel {
   scope_of(tokenName: string): string;
   start(): Promise<unknown>;
   destroy(): Promise<unknown>;
+  /** The harness's live-table counts plus `described`, as JSON text. */
+  debug_counts(): string;
 }
 
 export type RustKernelClass = new (
@@ -246,6 +248,13 @@ export class Wire {
         reason === undefined ? null : JSON.stringify(this.encode(reason)),
       );
     return out;
+  }
+
+  /** Live entries in this wire's own tables, for the eval build's memory
+   *  soak test: `fns` handed to Rust, `refs` handed back from it, and
+   *  cached `proxies`. */
+  counts(): { fns: number; refs: number; proxies: number } {
+    return { fns: this.fns.length, refs: this.refs.size, proxies: this.proxies.size };
   }
 
   private proxy(text: string): object {

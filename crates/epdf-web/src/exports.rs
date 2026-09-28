@@ -337,6 +337,18 @@ impl WasmKernel {
             }
         })
     }
+
+    /// The harness's live-table counts plus how many capabilities this
+    /// kernel has described (`describe`'s memo): `{"refs": n, "promises":
+    /// n, "described": n}`. Dev-only, for the eval build's memory soak
+    /// test.
+    pub fn debug_counts(&self) -> String {
+        entry(|| {
+            let mut counts = self.harness.counts();
+            counts["described"] = json!(self.described.borrow().len());
+            counts.to_string()
+        })
+    }
 }
 
 impl WasmKernel {

@@ -55,6 +55,9 @@ export interface EngineBridge {
   host(n: number): unknown;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
+  /** Live entries in the host and document tables, for the eval build's
+   *  memory soak test. */
+  counts(): { hosts: number; documents: number };
 }
 
 // ── canonical JSON ────────────────────────────────────────────────────────────
@@ -387,5 +390,8 @@ export function createEngineBridge(engine: Engine): EngineBridge {
 
     host,
     hold,
+    counts() {
+      return { hosts: hosts.size, documents: documents.size };
+    },
   };
 }
