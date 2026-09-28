@@ -24,7 +24,7 @@ timed.
 | Markup, ink, free text, note, caret and replace tools | works | annotation | | The same synthetic gestures create the same annotations with the same bounds in both viewers. |
 | Shape, callout and link tools | works | annotation | | Same results from the same `createPointer` sequences, props included. The UI gestures for polygon and callout were not driven successfully in either viewer. |
 | Annotation edit and delete | works | annotation | | Moving a note by 60 x 30 px gives the same new bounds (`x` 12.5 to 57.5). Color from the Style panel and Delete from the strip both apply. |
-| Stamps | works | stamp, annotation | | Placing "Approved" gives a 164 x 50 pt stamp in both. |
+| Stamps | works | stamp, annotation | | Placing "Approved" gives a 164 x 50 pt stamp in both. "Import PDF…" works since `f303fafb5`, which reads a `File` argument to bytes before it crosses; before that it failed on the Rust kernel. |
 | Images | works | annotation | | Clicking with the Image tool opens the picker (`accept="image/png,image/jpeg"`); a 120 x 60 PNG becomes a 120 x 60 `stamp`. |
 | Form fill | works | form, actions | | `action_form_fixture.pdf`: text, checkbox, radio, dropdown, Hide/Show Field, Reset All and Next Page behave identically. |
 | Validate and calculate scripts | works | actions, acrojs | | An invalid email raises the same `alert` text; `calcsum` follows `calc1 + calc2` (1284.5). |
@@ -195,8 +195,6 @@ These still grow, or can:
   of the same file through the stamp capability left `allHosts` at 59 before and after, with 17
   previews of 10,643 bytes or more. Only the import path (`render_thumbnail`) has a test; the
   ghost and dynamic placement paths release through the same function but are untested.
-- Fixed: "Import PDF…" works, since `Wire.call` reads a `File` argument to bytes before it crosses
-  (commit "Read Blob arguments to bytes before they cross to Rust").
 - The bridge's document table (`documents` in `createEngineBridge`,
   `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
   included, until `dispose()`. That is one small handle per open. A stamp library import opens one
