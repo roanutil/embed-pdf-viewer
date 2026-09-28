@@ -29,6 +29,7 @@ import type { signaturePlugin as SignaturePlugin } from '@embedpdf/plugin-signat
 import type { Scheduler, stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
 import type { stampPlugin as StampPlugin } from '@embedpdf/plugin-stamp';
 import type { viewManagerPlugin as ViewManagerPlugin } from '@embedpdf/plugin-view-manager';
+import { createSandboxBridge } from './sandbox';
 
 /** A Rust plugin, as the kernel's plugin list carries it. */
 export interface RustPluginDef {
@@ -117,7 +118,20 @@ export const annotationPlugin: typeof AnnotationPlugin = (config = {}) =>
 export const stampPlugin: typeof StampPlugin = (config = {}) =>
   rust('stamp', { previewWidth: config.previewWidth, dynamic: config.dynamic });
 
-export const actionsPlugin: typeof ActionsPlugin = (config) => rust('actions', config);
+/**
+ * With scripting on, the sandbox is `sandboxFactory` or, as in the
+ * TypeScript, the QuickJS one, handed to the adapter as the live `sandbox`
+ * it calls back (`./sandbox`).
+ */
+export const actionsPlugin: typeof ActionsPlugin = (config) => {
+  const javascript = config?.javascript;
+  if (!javascript?.enabled) return rust('actions', config);
+  const { sandboxFactory, ...settings } = javascript;
+  return rust('actions', {
+    ...config,
+    javascript: { ...settings, sandbox: createSandboxBridge(sandboxFactory) },
+  });
+};
 /** The adapter builds the form plugin from no config. */
 export const formPlugin: typeof FormPlugin = (config = {}) => rust('form', config);
 export const signaturePlugin: typeof SignaturePlugin = (config = {}) => rust('signature', config);

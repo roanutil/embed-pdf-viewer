@@ -9,7 +9,8 @@ use epdf_acrojs::harness::{
     answer_promise, scripted_callback, scripted_sandbox_factory, to_json, typed, untyped,
 };
 use epdf_acrojs::{
-    IdentityOverrides, PartialScriptIdentity, ScriptEventInput, ScriptEventKind, ScriptTransaction,
+    IdentityOverrides, PartialScriptIdentity, ScriptBudget, ScriptEventInput, ScriptEventKind,
+    ScriptInput, ScriptOutput, ScriptSandbox, ScriptSandboxFactory, ScriptTransaction,
     ScriptWorldInput,
 };
 use epdf_kernel::engine::decode;
@@ -87,9 +88,101 @@ fn scripted(spec: &Value, h: &Harness) -> Callback {
     scripted_callback(spec.get("$fn").and_then(Value::as_str).unwrap_or_default(), spec, h)
 }
 
+// ── a live sandbox ────────────────────────────────────────────────────────────
+
+/// A live host's sandbox: `sandbox: {"$fn": ...}` in the `javascript`
+/// config, a factory whose promise resolves to `{disposed, boot, run,
+/// dispose}`, each a `$fn` the host answers synchronously (the eval build's
+/// QuickJS sandbox, `packages/core-wasm/src/sandbox.ts`). Only a live
+/// harness reads it; a vector's sandbox is never a `$fn`.
+fn live_sandbox_factory(spec: &Value, h: &Harness) -> ScriptSandboxFactory {
+    let factory = h.callback(spec);
+    let h = h.clone();
+    Rc::new(move || {
+        let sandbox = match factory.call(Vec::new()) {
+            Answer::Returns(value) => Promise::resolved(value),
+            Answer::Throws(error) => Promise::rejected(error),
+            Answer::Promise(promise) => promise,
+        };
+        let h = h.clone();
+        sandbox.map(move |value| LiveSandbox::from_host(&value, &h))
+    })
+}
+
+struct LiveSandbox {
+    disposed: Callback,
+    boot: Callback,
+    run: Callback,
+    dispose: Callback,
+}
+
+impl LiveSandbox {
+    fn from_host(value: &Value, h: &Harness) -> Result<Rc<dyn ScriptSandbox>, Error> {
+        let member = |name: &str| match value.get(name).filter(|f| f.get("$fn").is_some()) {
+            Some(spec) => Ok(h.callback(spec)),
+            None => Err(Error::named("TypeError", format!("sandbox.{name} is not a function"))),
+        };
+        Ok(Rc::new(LiveSandbox {
+            disposed: member("disposed")?,
+            boot: member("boot")?,
+            run: member("run")?,
+            dispose: member("dispose")?,
+        }))
+    }
+
+    /// `boot` or `run`: the budget is left off when `None`, as the
+    /// TypeScript host passes `undefined`.
+    fn output(
+        callback: &Callback,
+        mut args: Vec<Value>,
+        budget: Option<&ScriptBudget>,
+    ) -> Result<ScriptOutput, Error> {
+        args.extend(budget.map(to_json));
+        match callback.call(args) {
+            Answer::Returns(value) => decode(value),
+            Answer::Throws(error) => Err(error),
+            Answer::Promise(_) => Err(Error::named(
+                "TypeError",
+                format!("sandbox.{} answered a promise", callback.name()),
+            )),
+        }
+    }
+}
+
+impl ScriptSandbox for LiveSandbox {
+    fn disposed(&self) -> bool {
+        matches!(self.disposed.call(Vec::new()), Answer::Returns(Value::Bool(true)))
+    }
+
+    fn boot(
+        &self,
+        sources: &[String],
+        input: &ScriptInput,
+        budget: Option<&ScriptBudget>,
+    ) -> Result<ScriptOutput, Error> {
+        LiveSandbox::output(&self.boot, vec![json!(sources), to_json(input)], budget)
+    }
+
+    fn run(
+        &self,
+        source: &str,
+        input: &ScriptInput,
+        budget: Option<&ScriptBudget>,
+    ) -> Result<ScriptOutput, Error> {
+        LiveSandbox::output(&self.run, vec![json!(source), to_json(input)], budget)
+    }
+
+    fn dispose(&self) {
+        let _ = self.dispose.call(Vec::new());
+    }
+}
+
 fn javascript_config(spec: &Value, h: &Harness) -> Result<JavaScriptConfig, Error> {
     let enabled = spec.get("enabled").and_then(Value::as_bool).unwrap_or(false);
     let sandbox_factory = match spec.get("sandbox") {
+        Some(sandbox) if h.is_live() && sandbox.get("$fn").is_some() => {
+            Some(live_sandbox_factory(sandbox, h))
+        }
         Some(sandbox) if !sandbox.is_null() => Some(scripted_sandbox_factory(sandbox, h)),
         // `null`: a host with no sandbox at all.
         _ => None,

@@ -15,6 +15,7 @@
   "dependencies": {
     "@embedpdf/core": "workspace:*",
     "@embedpdf/core-geometry": "workspace:*",
+    "@embedpdf/core-js-sandbox": "workspace:*",
     "@embedpdf/engine-core": "workspace:*",
     "@embedpdf/plugin-actions": "workspace:*",
     "@embedpdf/plugin-annotation": "workspace:*",

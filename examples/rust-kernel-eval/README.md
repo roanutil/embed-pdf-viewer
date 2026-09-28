@@ -54,8 +54,12 @@ A first load right after Vite has re-optimized dependencies sometimes does not b
 the page itself when this happens; a second load works normally. This is not specific to the Rust
 kernel.
 
-Form scripting is not wired up yet: it lands with Task 8. Until then the script sandbox behaves
-as disabled, the same as before that task exists.
+Form scripting runs. The chrome's `actionsPlugin({ javascript: { enabled: true } })` gets the
+QuickJS sandbox from `@embedpdf/core-js-sandbox` by default, as the TypeScript does, and the Rust
+actions plugin calls it synchronously through the shim (`packages/core-wasm/src/sandbox.ts`).
+Format, keystroke, validate and calculate scripts all go through it. To try it, open
+`packages/plugin/form/test/fixtures/action_form_fixture.pdf`: typing `1234.5` into Venue and
+tabbing out shows `1,234.50`, and the calculated total follows.
 
 Signatures run with no signer: neither `WebCrypto` nor a `PersonalKeyStore` is wired into this
 app's hosts, so the signatures rung is dropped from its config entirely. Clicking Insert →
