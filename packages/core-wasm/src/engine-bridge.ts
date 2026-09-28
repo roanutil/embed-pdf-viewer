@@ -22,10 +22,15 @@
  *     `$host: n`; `host(n)` returns the original. The table only grows.
  *   - A `PageImageHandle`'s `source.bytes` crosses as
  *     `{"$hostBytes": n, "$byteLength": len}`, not the encoded image. `n` is
- *     a second, separate host-table entry for the raw `Uint8Array` itself;
- *     `hostBytes(n)` resolves it, for a Rust caller that actually needs the
- *     pixels (a stamp preview, a ghost). The render raster store only ever
- *     reads `$byteLength` and never calls `hostBytes`.
+ *     a second, separate host-table entry for the raw `Uint8Array` itself,
+ *     from the one table every bridge this module builds shares (see
+ *     `allHosts` below), so `n` is unique across bridges, not just within
+ *     one. The module-level [`hostBytes`] resolves it and is the one
+ *     function the wasm side installs, once per instance
+ *     (`set_host_bytes_source`, called from `browser.ts`), not once per
+ *     kernel: two live kernels (two viewers on a page, or a remount) must
+ *     not race to overwrite each other's resolver. The render raster store
+ *     only ever reads `$byteLength` and never calls `hostBytes`.
  *
  * Every asynchronous method answers a promise with an `abort(reason)` when
  * the engine's promise had one, which the Rust side calls from
@@ -57,10 +62,13 @@ export interface EngineBridge {
   subscribe(docId: string, listener: (eventJson: string) => void): () => void;
   /** `engine.destroy()`. */
   destroy(): BridgeCall;
-  /** The live value behind a `{"$host": n}`. */
+  /** The live value behind a `{"$host": n}` this bridge holds; throws for
+   *  an id another bridge holds. */
   host(n: number): unknown;
-  /** The live `Uint8Array` behind a `{"$hostBytes": n}`; throws if `n` is
-   *  not a bytes entry. */
+  /** The live `Uint8Array` behind a `{"$hostBytes": n}` this bridge holds;
+   *  throws if `n` is not a bytes entry this bridge holds. The module-level
+   *  [`hostBytes`] is what Rust actually calls; this is the same lookup,
+   *  scoped to one bridge, for this bridge's own callers. */
   hostBytes(n: number): Uint8Array;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
@@ -221,7 +229,9 @@ export type DecodeHook = (
 /** Canonical JSON back to live values: `$bytes` to a `Uint8Array`, `$host`
  *  to the held value, `$undefined` and `$number` to their numbers. `$date`,
  *  `$map`, `$set` and `$bigint` are not reversed: nothing the kernel sends
- *  in produces them. `hook` sees every object first. */
+ *  in produces them. Neither is `$hostBytes`: it only ever flows JS to
+ *  Rust (`canonical`'s encoder), never the other way, so `decode` never
+ *  sees one. `hook` sees every object first. */
 export function decode(value: unknown, host: (n: number) => unknown, hook?: DecodeHook): unknown {
   const recur = (item: unknown) => decode(item, host, hook);
   if (Array.isArray(value)) return value.map(recur);
@@ -272,21 +282,48 @@ export async function readBlobs(value: unknown): Promise<unknown> {
 
 // ── the bridge ────────────────────────────────────────────────────────────────
 
+/** The live value behind every `$host`/`$hostBytes` id, for every bridge
+ *  this module builds: one table, one counter (`nextHostId`), so an id is
+ *  unique across bridges, not just within the bridge that made it. A
+ *  bridge still tracks which ids are its own (`createEngineBridge`'s
+ *  `ownHosts`), for `counts()` and for a later release/destroy hook to
+ *  clear only its entries; this table is what a lookup actually reads. */
+const allHosts = new Map<number, unknown>();
+let nextHostId = 1;
+
+/** The live `Uint8Array` behind a `{"$hostBytes": n}`, from whichever
+ *  bridge holds it. This is the one function `set_host_bytes_source`
+ *  installs into the wasm module: it does not matter which `WasmKernel`
+ *  calls it, or how many are live, because every bridge's ids come from
+ *  the one shared table above. Throws `[engine-bridge] no host bytes n`
+ *  for an id nothing holds, or that is not bytes. */
+export function hostBytes(n: number): Uint8Array {
+  const value = allHosts.get(n);
+  if (!(value instanceof Uint8Array)) {
+    throw new Error(`[engine-bridge] no host bytes ${n}`);
+  }
+  return value;
+}
+
 export function createEngineBridge(engine: Engine): EngineBridge {
   const documents = new Map<string, DocumentHandle>();
-  const hosts = new Map<number, unknown>();
-  let nextHost = 1;
+  /** This bridge's own ids into `allHosts`, for `counts()` and a later
+   *  release/destroy hook. Lookups below still read `allHosts` directly:
+   *  membership here only answers "does this bridge own `n`", which a
+   *  foreign id fails, the same as a genuinely unknown one. */
+  const ownHosts = new Set<number>();
 
   const hold = (value: unknown): number => {
-    const n = nextHost++;
-    hosts.set(n, value);
+    const n = nextHostId++;
+    allHosts.set(n, value);
+    ownHosts.add(n);
     return n;
   };
   const host = (n: number): unknown => {
-    if (!hosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
-    return hosts.get(n);
+    if (!ownHosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
+    return allHosts.get(n);
   };
-  const hostBytes = (n: number): Uint8Array => {
+  const bridgeHostBytes = (n: number): Uint8Array => {
     const value = host(n);
     if (!(value instanceof Uint8Array)) {
       throw new Error(`[engine-bridge] host value ${n} is not bytes`);
@@ -426,10 +463,10 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     host,
-    hostBytes,
+    hostBytes: bridgeHostBytes,
     hold,
     counts() {
-      return { hosts: hosts.size, documents: documents.size };
+      return { hosts: ownHosts.size, documents: documents.size };
     },
   };
 }

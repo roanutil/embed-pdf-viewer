@@ -85,6 +85,31 @@ pub fn wasm_memory_bytes() -> f64 {
     buffer.byte_length() as f64
 }
 
+/// Install `f` as the one resolver every `{"$hostBytes": n}` value goes
+/// through (`epdf_kernel::bytes::Bytes::from_json`), for the life of this
+/// wasm instance. Called once, by the shim right after the module loads
+/// (`packages/core-wasm/src/browser.ts`'s `initWasm`), with the module-
+/// level `hostBytes` from `engine-bridge.ts`: not a `WasmKernel` method,
+/// because a `WasmKernel` is not who should own this. A resolver installed
+/// per kernel let a second live kernel (two viewers on a page, or a
+/// remount) silently overwrite the first kernel's resolver; `f` here
+/// already knows how to find any bridge's ids, because every bridge
+/// `engine-bridge.ts` builds shares one host table. A call after the first
+/// is a no-op: nothing about which resolver is right changes from kernel
+/// to kernel.
+#[wasm_bindgen]
+pub fn set_host_bytes_source(f: js_sys::Function) {
+    static INSTALLED: Once = Once::new();
+    INSTALLED.call_once(|| {
+        epdf_kernel::bytes::set_host_bytes_resolver(Some(Rc::new(move |n: u32| {
+            f.call1(&JsValue::NULL, &JsValue::from_f64(f64::from(n)))
+                .ok()
+                .and_then(|v| v.dyn_into::<js_sys::Uint8Array>().ok())
+                .map(|array| array.to_vec())
+        })));
+    });
+}
+
 fn parse_args(args_json: &str) -> Result<Vec<Value>, Error> {
     match serde_json::from_str(args_json) {
         Ok(Value::Array(args)) => Ok(args),
@@ -204,7 +229,6 @@ impl WasmKernel {
             on_dispatch: None,
         };
         let bridge: EngineBridge = engine.unchecked_into();
-        crate::engine::install_host_bytes_resolver(&bridge);
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
         let documents: Rc<dyn Any> = Rc::new(kernel.documents());
         Ok(WasmKernel {

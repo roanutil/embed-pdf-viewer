@@ -63,8 +63,6 @@ extern "C" {
     fn page_index(this: &EngineBridge, doc: &str, pon: u32) -> Result<f64, JsValue>;
     #[wasm_bindgen(method, catch, js_name = lastServerId)]
     fn last_server_id(this: &EngineBridge, doc: &str) -> Result<Option<String>, JsValue>;
-    #[wasm_bindgen(method, catch, js_name = hostBytes)]
-    fn host_bytes(this: &EngineBridge, n: u32) -> Result<js_sys::Uint8Array, JsValue>;
     #[wasm_bindgen(method, catch)]
     fn subscribe(
         this: &EngineBridge,
@@ -93,19 +91,6 @@ fn refused(error: Error) -> Error {
 
 fn args_json(args: &[Value]) -> String {
     Value::Array(args.to_vec()).to_string()
-}
-
-/// Point `epdf_kernel::bytes::Bytes::from_json`'s `{"$hostBytes": n}` at
-/// this bridge's `hostBytes(n)`: a caller that actually needs pixels (a
-/// stamp preview, a ghost) fetches them synchronously through the bridge's
-/// live `Uint8Array` table. The render raster store never calls
-/// `Bytes::from_json` on this shape (it reads `$byteLength` directly), so
-/// it never pays for the copy `to_vec` makes here.
-pub(crate) fn install_host_bytes_resolver(bridge: &EngineBridge) {
-    let bridge = bridge.clone();
-    epdf_kernel::bytes::set_host_bytes_resolver(Some(Rc::new(move |n: u32| {
-        bridge.host_bytes(n).ok().map(|array| array.to_vec())
-    })));
 }
 
 /// A bridge call as an engine call: the answer's JSON text parsed, a

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
-import { createEngineBridge, encodeInput, type EngineBridge } from '../src/engine-bridge';
+import { createEngineBridge, encodeInput, hostBytes, type EngineBridge } from '../src/engine-bridge';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = resolve(here, '..', '..', 'engine', 'main', 'test', 'fixtures');
@@ -131,6 +131,38 @@ describe('the engine bridge over the local engine', () => {
     await expect(afterClose).rejects.toEqual({
       $error: expect.objectContaining({ name: 'EngineError', code: 'DocNotOpen' }),
     });
+  });
+});
+
+describe('two bridges share one host table', () => {
+  test('ids are unique across bridges, and the module-level hostBytes resolves either', () => {
+    // Two independent bridges, as two live `WasmKernel`s would each build
+    // one (two viewers on a page, or a remount that has not torn the first
+    // one down yet). Neither `engine` argument is used by `hold`/`host`.
+    const bridgeA = createEngineBridge({} as Engine);
+    const bridgeB = createEngineBridge({} as Engine);
+    const idA = bridgeA.hold(new Uint8Array([1, 2, 3]));
+    const idB = bridgeB.hold(new Uint8Array([4, 5, 6, 7]));
+
+    expect(idA).not.toBe(idB);
+    // The module-level function, what a Rust resolver installed once for
+    // the whole wasm instance actually calls: it resolves either bridge's
+    // id, regardless of which bridge made it or which was built last.
+    expect(hostBytes(idA)).toEqual(new Uint8Array([1, 2, 3]));
+    expect(hostBytes(idB)).toEqual(new Uint8Array([4, 5, 6, 7]));
+    // Each bridge's own `hostBytes`/`host` stay scoped to what it made.
+    expect(bridgeA.hostBytes(idA)).toEqual(new Uint8Array([1, 2, 3]));
+    expect(() => bridgeA.hostBytes(idB)).toThrow(/no host value/);
+    expect(() => bridgeA.host(idB)).toThrow(/no host value/);
+    expect(bridgeA.counts().hosts).toBe(1);
+    expect(bridgeB.counts().hosts).toBe(1);
+  });
+
+  test('hostBytes throws for an id nothing holds, or one that is not bytes', () => {
+    const bridge = createEngineBridge({} as Engine);
+    const notBytes = bridge.hold({ not: 'bytes' });
+    expect(() => hostBytes(notBytes)).toThrow('[engine-bridge] no host bytes');
+    expect(() => hostBytes(999999)).toThrow('[engine-bridge] no host bytes');
   });
 });
 
