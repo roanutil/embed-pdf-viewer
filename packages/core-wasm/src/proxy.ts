@@ -100,7 +100,10 @@ const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
  *  `page.annotations.renderAppearanceImages` images straight through
  *  (`crates/plugins/annotation/src/read/render.rs`), and the viewer reads
  *  each one's `objectUrl()` off the live handle, which keeps its own bytes.
- *  Their entries are released once the answer is decoded (`promise`). */
+ *  Their entries are released once the answer is decoded (`promise`).
+ *  Only outermost `$host` ids are released (`hostIds`), so a member added
+ *  here must answer no live value nested inside another: that inner one
+ *  would stay in the table. */
 const RELEASES_HOSTS = new Set(['renderAppearances']);
 
 /** Every `$host` id in a canonical value. One inside another `$host` is
