@@ -25,7 +25,7 @@ import type {
 } from '@embedpdf/core';
 import { createEngineBridge } from './engine-bridge';
 import { isRustPlugin, type RustPluginDef } from './plugins';
-import { toError, Wire, type RustKernelClass } from './proxy';
+import { rusty, toError, Wire, type RustKernelClass } from './proxy';
 
 let RustKernel: RustKernelClass | undefined;
 
@@ -147,13 +147,13 @@ export function createKernel(opts: {
       wire.capability(name(token), documentId) as T,
     tryCapability: <T>(token: CapabilityToken<T>, documentId?: string) =>
       wire.tryCapability(name(token), documentId) as T | null,
-    scopeOf: (token) => rust.scope_of(name(token)) as PluginScope,
+    scopeOf: (token) => rusty(() => rust.scope_of(name(token))) as PluginScope,
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
     getState: () => wire.getState() as GlobalState,
-    status: () => rust.status() as KernelStatus,
+    status: () => rusty(() => rust.status()) as KernelStatus,
     start: () =>
       (started ??= rust.start().then(startJsPlugins, (error) => {
         throw toError(error);

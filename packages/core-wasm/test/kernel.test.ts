@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeAll, describe, expect, test } from 'vitest';
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
 import type { Kernel } from '@embedpdf/core';
 import { InteractionToken } from '@embedpdf/plugin-interaction';
@@ -65,13 +65,47 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(stage.listVisiblePages()).toBe(visible);
     expect(typeof visible[0].transform.toPixels).toBe('function');
     const { viewScale } = visible[0].transform;
+
+    // Proves the rehydration path: a `pageTransform(...)` rebuilt from the
+    // page's own data runs `toPixels` in JavaScript, never falling back to
+    // the ref-backed kernel call `withPageTransform` keeps for a mismatch.
+    const invokeRef = vi.spyOn(WasmKernel.prototype, 'invoke_ref');
+    const callsBefore = invokeRef.mock.calls.length;
     expect(visible[0].transform.toPixels({ x: 10, y: 20 })).toEqual({
       x: 10 * viewScale,
       y: 20 * viewScale,
     });
+    expect(invokeRef.mock.calls.length).toBe(callsBefore);
+    invokeRef.mockRestore();
 
     stage.panBy(0, 100);
     expect(stage.listVisiblePages()).not.toBe(visible);
+  });
+
+  test('a getter inside a subscribe listener sees a mutation made in that listener', async () => {
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 600 });
+
+    // The Rust store defers a change notification made from inside a
+    // change listener: a dispatch from there only sets `pending`
+    // (`crates/epdf-kernel/src/store.rs:206-219`), so `bump` cannot wait
+    // for the next `subscribe` firing. Both calls below run inside the one
+    // `kernel.subscribe` listener the outer `panBy` triggers, so the cache
+    // entry `listVisiblePages` makes right before the nested `panBy` must
+    // not still be the one the getter answers with right after it.
+    let seenBeforeMutation: unknown;
+    let seenAfterMutation: unknown;
+    const off = k.subscribe(() => {
+      off();
+      seenBeforeMutation = stage.listVisiblePages();
+      stage.panBy(0, 50);
+      seenAfterMutation = stage.listVisiblePages();
+    });
+    stage.panBy(0, 50);
+
+    expect(seenBeforeMutation).not.toBeUndefined();
+    expect(seenAfterMutation).not.toBe(seenBeforeMutation);
   });
 
   test('an init-only JS plugin registers through the Rust capabilities', async () => {

@@ -17,10 +17,13 @@
  *
  * Reference stability. React selectors compare by reference, so a getter
  * that answers a fresh object on every call loops `useSyncExternalStore`.
- * Every call's decoded result is cached by (ref, argument JSON) until the
- * store changes (`bump`). A call that changed the store during itself, or
- * whose member makes something new (`create*`, `register*`, `on*`), is not
- * cached; neither is `undefined`, a throw or a promise.
+ * Every call's decoded result is cached by (ref, argument JSON), but only
+ * while no other real call has landed since: any `invoke_ref` that is not
+ * itself served from the cache clears every entry first (the store's change
+ * notification can lag behind a mutation made from inside a change listener,
+ * so caching cannot wait for it). A call whose member makes something new
+ * (`create*`, `register*`, `on*`) is not cached; neither is `undefined`, a
+ * throw or a promise.
  */
 import {
   canonical,
@@ -83,6 +86,15 @@ export function toError(thrown: unknown): Error {
   return error;
 }
 
+/** Run a kernel export, turning its canonical throw into an `Error`. */
+export function rusty<T>(run: () => T): T {
+  try {
+    return run();
+  } catch (error) {
+    throw toError(error);
+  }
+}
+
 export class Wire {
   private rust!: RustKernel;
   private version = 0;
@@ -141,16 +153,16 @@ export class Wire {
 
   /** `kernel.capability(token, doc)` as its proxy. */
   capability(tokenName: string, doc?: string | null): object {
-    return this.proxy(this.rusty(() => this.rust.capability(tokenName, doc ?? null)));
+    return this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
   }
 
   tryCapability(tokenName: string, doc?: string | null): object | null {
-    const text = this.rusty(() => this.rust.try_capability(tokenName, doc ?? null));
+    const text = rusty(() => this.rust.try_capability(tokenName, doc ?? null));
     return text === undefined || text === null ? null : this.proxy(text);
   }
 
   documents(): object {
-    return this.proxy(this.rust.documents());
+    return this.proxy(rusty(() => this.rust.documents()));
   }
 
   /** The kernel's state, parsed once per store change. */
@@ -178,15 +190,6 @@ export class Wire {
         reason === undefined ? null : JSON.stringify(this.encode(reason)),
       );
     return out;
-  }
-
-  /** Run a kernel export, turning its canonical throw into an `Error`. */
-  private rusty<T>(run: () => T): T {
-    try {
-      return run();
-    } catch (error) {
-      throw toError(error);
-    }
   }
 
   private proxy(text: string): object {
@@ -223,8 +226,13 @@ export class Wire {
     const json = JSON.stringify(this.encode(prepareArgs(member, args), signals));
     const key = `${id}:${json}`;
     if (this.results.has(key)) return this.results.get(key);
-    const before = this.version;
-    const outcome = JSON.parse(this.rusty(() => this.rust.invoke_ref(id, json))) as Outcome;
+    const outcome = JSON.parse(rusty(() => this.rust.invoke_ref(id, json))) as Outcome;
+    // A real call, not a cache hit: the store may have deferred its change
+    // notification (a dispatch from inside a change listener only sets
+    // `pending`, `crates/epdf-kernel/src/store.rs:206-219`), so `bump` can't
+    // wait for `subscribe` to fire. Only two calls with no real call between
+    // them may share a cache entry.
+    this.bump();
     if ('threw' in outcome) throw toError(outcome.threw);
     if ('promise' in outcome) {
       const promise = this.promise(outcome.promise);
@@ -235,7 +243,7 @@ export class Wire {
       return promise;
     }
     const value = rehydrate(member, this.decode(outcome.returned));
-    if (value !== undefined && this.version === before && !MAKES_NEW.test(member)) {
+    if (value !== undefined && !MAKES_NEW.test(member)) {
       this.results.set(key, value);
     }
     return value;

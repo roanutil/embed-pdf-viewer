@@ -34,9 +34,13 @@ const TRANSFORM_DATA = [
  * page size in points (rounded to a millionth, which undoes the division's
  * last-bit error for any size a PDF writes), and `deviceWidth / contentWidth`
  * is the device pixel ratio. If the rebuilt transform differs from the
- * kernel's in any member, the kernel's (whose methods are refs) stays.
+ * kernel's in any member, the kernel's (whose methods are refs) stays; that
+ * fallback warns once, since a silent one would hide a real drift between
+ * this rebuild and the kernel's own math.
  */
 const points = (n: number) => Math.round(n * 1e6) / 1e6;
+
+let warnedFallback = false;
 
 function withPageTransform(page: Obj): Obj {
   const t = page.transform as Obj & PageTransform;
@@ -53,6 +57,12 @@ function withPageTransform(page: Obj): Obj {
     dpr: t.deviceWidth / t.contentWidth,
   });
   const same = TRANSFORM_DATA.every((key) => rebuilt[key] === t[key]);
+  if (!same && !warnedFallback) {
+    warnedFallback = true;
+    console.warn(
+      "[core-wasm] listVisiblePages: a rebuilt pageTransform differs from the kernel's; falling back to the ref-backed transform",
+    );
+  }
   return same ? { ...page, transform: rebuilt } : page;
 }
 
