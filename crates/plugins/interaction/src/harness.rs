@@ -8,6 +8,7 @@
 //! [`tool_json`], [`ScriptedHandler`]).
 
 use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_geometry::Point;
@@ -336,9 +337,17 @@ impl PlatformFeedback for LoggingFeedback {
     }
 }
 
+/// The unregister as a ref. Its first call runs it and drops it, since a
+/// second does nothing anyway: the `Unregister` holds the handler it
+/// removes, so keeping it would keep the handler's callbacks (and a live
+/// host's functions) alive until the ref itself is released.
 fn unregister_ref(h: &Harness, unregister: crate::Unregister) -> Outcome {
+    let unregister = RefCell::new(Some(unregister));
     Outcome::Returned(h.register_fn(Rc::new(move |_| {
-        unregister.call();
+        let taken = unregister.borrow_mut().take();
+        if let Some(unregister) = taken {
+            unregister.call();
+        }
         Outcome::undefined()
     })))
 }

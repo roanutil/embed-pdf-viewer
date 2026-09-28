@@ -43,6 +43,17 @@ fn call_js(log: &js_sys::Array, answer: &str) -> js_sys::Function {
     make.call1(&JsValue::NULL, log).unwrap().into()
 }
 
+/// A `release_js` that ignores every release.
+fn no_release() -> js_sys::Function {
+    js_sys::Function::new_no_args("")
+}
+
+/// A `release_js` that logs each id it is handed into `log`.
+fn release_into(log: &js_sys::Array) -> js_sys::Function {
+    let make = js_sys::Function::new_with_args("log", "return (id) => { log.push(id); };");
+    make.call1(&JsValue::NULL, log).unwrap().into()
+}
+
 fn parse(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
 }
@@ -80,7 +91,8 @@ async fn a_getter_ref_returns() {
     let plugins = json!([{ "factory": "metadata" }, { "factory": "shell" }]).to_string();
     let log = js_sys::Array::new();
     let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&log, "() => undefined")).unwrap();
+        WasmKernel::new(&plugins, stub_engine(), call_js(&log, "() => undefined"), no_release())
+            .unwrap();
     start_with_document(&kernel).await;
 
     let shell = parse(&kernel.capability("shell".into(), None).unwrap());
@@ -97,9 +109,13 @@ async fn a_getter_ref_returns() {
 async fn a_document_capability_with_no_document_throws() {
     reset();
     let plugins = json!([{ "factory": "shell" }]).to_string();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
 
     let thrown = kernel.capability("shell".into(), None).unwrap_err();
@@ -117,9 +133,13 @@ async fn a_config_callback_calls_into_javascript_and_its_promise_resolves() {
     }])
     .to_string();
     let log = js_sys::Array::new();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&log, "() => Promise.resolve(7)"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&log, "() => Promise.resolve(7)"),
+        no_release(),
+    )
+    .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
 
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
@@ -152,6 +172,7 @@ async fn a_promise_is_taken_once_and_a_second_take_throws() {
         &plugins,
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
+        no_release(),
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -192,6 +213,7 @@ async fn abort_promise_after_the_take_is_still_a_safe_call() {
         &plugins,
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
+        no_release(),
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -212,9 +234,13 @@ async fn abort_promise_after_the_take_is_still_a_safe_call() {
 async fn a_subscriber_hears_a_store_change_until_it_unsubscribes() {
     reset();
     let plugins = json!([{ "factory": "shell" }]).to_string();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
     start_with_document(&kernel).await;
     let heard = js_sys::Array::new();
     let listener: js_sys::Function =
@@ -239,9 +265,13 @@ async fn a_subscriber_hears_a_store_change_until_it_unsubscribes() {
 async fn the_same_capability_describes_to_the_same_text() {
     reset();
     let plugins = json!([{ "factory": "commands" }]).to_string();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
 
     let first = kernel.capability("commands".into(), None).unwrap();
@@ -257,9 +287,13 @@ async fn the_same_capability_describes_to_the_same_text() {
 async fn release_ref_frees_a_returned_ref_and_ignores_a_pinned_one() {
     reset();
     let plugins = json!([{ "factory": "shell" }]).to_string();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
     start_with_document(&kernel).await;
     let refs = |kernel: &WasmKernel| parse(&kernel.debug_counts())["refs"].as_u64().unwrap();
 
@@ -284,9 +318,13 @@ async fn release_ref_frees_a_returned_ref_and_ignores_a_pinned_one() {
 async fn status_scope_and_try_capability_follow_the_kernel() {
     reset();
     let plugins = json!([{ "factory": "commands" }, { "factory": "shell" }]).to_string();
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&js_sys::Array::new(), "() => 0"))
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => 0"),
+        no_release(),
+    )
+    .unwrap();
     assert_eq!(kernel.status(), "created");
     assert_eq!(kernel.scope_of("shell".into()), "document");
     assert_eq!(kernel.scope_of("commands".into()), "workspace");
@@ -313,6 +351,7 @@ async fn a_throw_in_javascript_is_the_callback_throwing() {
         &plugins,
         stub_engine(),
         call_js(&log, "() => { throw new TypeError('boom'); }"),
+        no_release(),
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -348,7 +387,7 @@ async fn a_run_callback_reenters_the_kernel_through_its_ctx_marker() {
       log.isOpen = k.invoke_ref(shell.isOpen.$ref, '["panel"]');
       return undefined;
     }"#;
-    let kernel = WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer));
+    let kernel = WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer), no_release());
     let kernel = kernel.unwrap();
     start_with_document(&kernel).await;
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
@@ -392,7 +431,8 @@ async fn an_export_reentered_from_a_callback_leaves_timers_and_the_queue_to_the_
       log.push('nested returned');
       return undefined;
     }"#;
-    let kernel = WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer)).unwrap();
+    let kernel =
+        WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer), no_release()).unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
     let execute = ref_of(&commands, "execute");
@@ -426,4 +466,95 @@ async fn an_export_reentered_from_a_callback_leaves_timers_and_the_queue_to_the_
         })
         .collect();
     assert_eq!(seen, ["run", "nested returned", "timer", "task", "outer returned"]);
+}
+
+/// The ids `release_js` was handed, in order.
+fn released(log: &js_sys::Array) -> Vec<String> {
+    log.iter().map(|id| id.as_string().unwrap()).collect()
+}
+
+#[wasm_bindgen_test]
+async fn an_unregistered_handler_releases_its_functions_once_each() {
+    reset();
+    let plugins = json!([{ "factory": "interaction" }]).to_string();
+    let log = js_sys::Array::new();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => undefined"),
+        release_into(&log),
+    )
+    .unwrap();
+    start_with_document(&kernel).await;
+    let interaction = parse(&kernel.capability("interaction".into(), None).unwrap());
+    let register = ref_of(&interaction, "registerHandler");
+
+    // `js:1` backs both handlers, as one function passed twice would.
+    let first = invoke(
+        &kernel,
+        register,
+        r#"[{"id":"a","priority":1,"onDown":{"$fn":"js:1"},"onMove":{"$fn":"js:2"}}]"#,
+    );
+    let second = invoke(&kernel, register, r#"[{"id":"b","priority":1,"onDown":{"$fn":"js:1"}}]"#);
+    let held = |kernel: &WasmKernel| parse(&kernel.debug_counts())["heldFns"].as_u64().unwrap();
+    assert_eq!(held(&kernel), 2);
+
+    let unregister = |outcome: &Value| outcome["returned"]["$ref"].as_u64().unwrap() as u32;
+    invoke(&kernel, unregister(&first), "[]");
+    assert_eq!(released(&log), vec!["2"], "js:1 still backs the second handler");
+    invoke(&kernel, unregister(&second), "[]");
+    assert_eq!(released(&log), vec!["2", "1"]);
+    assert_eq!(held(&kernel), 0);
+}
+
+/// A command whose `run` drops the last callback on `js:1` (unregistering
+/// its handler) and makes a new one from it (registering another handler
+/// with it), both from inside the one outermost call: the release, due at
+/// that call's end, finds `js:1` held again and leaves it.
+#[wasm_bindgen_test]
+async fn a_callback_dropped_and_remade_in_one_call_keeps_its_function() {
+    reset();
+    let plugins = json!([
+        { "factory": "interaction" },
+        { "factory": "commands", "config": { "commands": [
+            { "id": "swap", "labelKey": "swap", "run": { "$fn": "js:run" } },
+        ] } },
+    ])
+    .to_string();
+    let holder = js_sys::Array::new();
+    let answer = r#"(id) => {
+      if (id !== 'run') return undefined;
+      log.k.invoke_ref(log.off, '[]');
+      log.k.invoke_ref(log.register, '[{"id":"b","priority":1,"onDown":{"$fn":"js:1"}}]');
+      return undefined;
+    }"#;
+    let log = js_sys::Array::new();
+    let kernel =
+        WasmKernel::new(&plugins, stub_engine(), call_js(&holder, answer), release_into(&log))
+            .unwrap();
+    start_with_document(&kernel).await;
+    let interaction = parse(&kernel.capability("interaction".into(), None).unwrap());
+    let register = ref_of(&interaction, "registerHandler");
+    let first = invoke(&kernel, register, r#"[{"id":"a","priority":1,"onDown":{"$fn":"js:1"}}]"#);
+    let off = first["returned"]["$ref"].as_u64().unwrap() as u32;
+    let commands = parse(&kernel.capability("commands".into(), None).unwrap());
+    let execute = ref_of(&commands, "execute");
+
+    let k: JsValue = kernel.into();
+    js_sys::Reflect::set(&holder, &"k".into(), &k).unwrap();
+    js_sys::Reflect::set(&holder, &"off".into(), &off.into()).unwrap();
+    js_sys::Reflect::set(&holder, &"register".into(), &register.into()).unwrap();
+    let run = js_sys::Function::new_with_args(
+        "k, execute",
+        "return k.promise(JSON.parse(k.invoke_ref(execute, '[\"swap\"]')).promise);",
+    );
+    let pending: js_sys::Promise = run.call2(&JsValue::NULL, &k, &execute.into()).unwrap().into();
+    let resolved = JsFuture::from(pending).await.unwrap();
+
+    assert_eq!(js_json(&resolved), json!({ "status": "executed" }));
+    assert!(released(&log).is_empty(), "released {:?}", released(&log));
+    let debug_counts = js_sys::Reflect::get(&k, &"debug_counts".into()).unwrap();
+    let counts: js_sys::Function = debug_counts.unchecked_into();
+    let counts = counts.call0(&k).unwrap().as_string().unwrap();
+    assert_eq!(parse(&counts)["heldFns"], json!(2), "js:1 and the command's js:run");
 }

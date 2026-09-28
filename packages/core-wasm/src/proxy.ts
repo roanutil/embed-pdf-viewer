@@ -13,8 +13,13 @@
  *     `release_ref` it; the engine runs that callback when it chooses, so
  *     this bounds the kernel's ref table over time, not at once. A released
  *     id showing up again throws. A function argument becomes
- *     `{"$fn": "js:<id>"}` in a table that only grows; an `AbortSignal`
- *     argument is taken out and aborts the call's promise instead.
+ *     `{"$fn": "js:<id>"}`, one id per function however often it crosses,
+ *     and stays in the table until the kernel's `release_js(id)` says no
+ *     callback holds it (the kernel counts those per id, so one release
+ *     means all of them). The same function passed after that crosses
+ *     under a new id; the kernel calling a released id throws. An
+ *     `AbortSignal` argument is taken out and aborts the call's promise
+ *     instead.
  *   - `{"$promise": n}` becomes a promise with an `abort(reason)`,
  *     `{"$host": n}` the engine bridge's live value, `$set` and `$map` the
  *     collections, and the command context's `{"$kernel": ...}` markers
@@ -72,6 +77,7 @@ export type RustKernelClass = new (
   pluginsJson: string,
   engine: EngineBridge,
   callJs: (id: string, argsJson: string) => unknown,
+  releaseJs: (id: string) => void,
 ) => RustKernel;
 
 type Fn = (...args: unknown[]) => unknown;
@@ -129,8 +135,15 @@ export function rusty<T>(run: () => T): T {
 export class Wire {
   private rust!: RustKernel;
   private version = 0;
-  private readonly fns: Fn[] = [];
+  /** Every function the kernel may still call, by id, until `releaseJs`. */
+  private readonly fns = new Map<number, Fn>();
   private readonly fnIds = new Map<Fn, number>();
+  /** Ids are never reused, so one below this that `fns` lacks was released. */
+  private nextFn = 0;
+  /** Ids in a promise's settled value, encoded but not yet read by the
+   *  kernel, with how many such values carry each: `releaseJs` leaves these
+   *  alone (see `encodeInFlight`). */
+  private readonly inFlight = new Map<number, number>();
   /** A capability's own refs, kept for good, as the kernel keeps them. */
   private readonly pinned = new Map<number, Fn>();
   /** Every other ref's function, held weakly: `released` hands the id back
@@ -183,13 +196,62 @@ export class Wire {
     return decode(value, this.bridge.host, this.hook);
   }
 
+  /** `encode` for a value the kernel reads later, not during the call that
+   *  encodes it: a `callJs` promise's settled value, which Rust's `from_js`
+   *  takes on a microtask of its own. Until then, a release of one of its
+   *  ids (the kernel dropping the last callback on the same function, from
+   *  some other call in between) must not forget the function the value is
+   *  about to hand over; the kernel says `release_js` again once it drops
+   *  the callbacks it makes from this value. The next task runs after every
+   *  microtask, so the kernel has read the value by then. */
+  private encodeInFlight(value: unknown): unknown {
+    const ids: number[] = [];
+    const out = canonical(value, {
+      hold: this.bridge.hold,
+      fn: (f) => {
+        const id = this.fnId(f);
+        ids.push(id);
+        this.inFlight.set(id, (this.inFlight.get(id) ?? 0) + 1);
+        return { $fn: `js:${id}` };
+      },
+    });
+    if (ids.length > 0) {
+      setTimeout(() => {
+        for (const id of ids) {
+          const left = (this.inFlight.get(id) ?? 1) - 1;
+          if (left > 0) this.inFlight.set(id, left);
+          else this.inFlight.delete(id);
+        }
+      }, 0);
+    }
+    return out;
+  }
+
+  /** `release_js`: no callback in the kernel holds function `id` any more. */
+  readonly releaseJs = (id: string): void => {
+    const n = Number(id);
+    if (this.inFlight.has(n)) return;
+    const fn = this.fns.get(n);
+    if (!fn) return;
+    this.fns.delete(n);
+    this.fnIds.delete(fn);
+  };
+
   /** `call_js`: a `$fn` callback's call from the kernel. */
   readonly callJs = (id: string, argsJson: string): unknown => {
     // A callback from inside a kernel call: the store may have moved since
     // anything was cached, with its notification still to come.
     this.bump();
-    const fn = this.fns[Number(id)];
-    if (!fn) throw new Error(`[core-wasm] no JavaScript function ${id}`);
+    const n = Number(id);
+    const fn = this.fns.get(n);
+    if (!fn) {
+      if (n < this.nextFn) {
+        const error = new Error(`[core-wasm] js function ${id} was released`);
+        console.error(error);
+        throw error;
+      }
+      throw new Error(`[core-wasm] no JavaScript function ${id}`);
+    }
     const args = this.decode(JSON.parse(argsJson)) as unknown[];
     let out: unknown;
     try {
@@ -199,7 +261,7 @@ export class Wire {
     }
     if (!isThenable(out)) return this.encode(out);
     return Promise.resolve(out).then(
-      async (value) => this.encode(await readBlobs(value)),
+      async (value) => this.encodeInFlight(await readBlobs(value)),
       (error) => {
         throw errorSpec(error, (v) => this.encode(v));
       },
@@ -280,7 +342,7 @@ export class Wire {
    *  cached `proxies`. */
   counts(): { fns: number; refs: number; proxies: number } {
     const refs = this.pinned.size + this.loose.size;
-    return { fns: this.fns.length, refs, proxies: this.proxies.size };
+    return { fns: this.fns.size, refs, proxies: this.proxies.size };
   }
 
   private proxy(text: string): object {
@@ -295,7 +357,8 @@ export class Wire {
   private fnId(f: Fn): number {
     let id = this.fnIds.get(f);
     if (id === undefined) {
-      id = this.fns.push(f) - 1;
+      id = this.nextFn++;
+      this.fns.set(id, f);
       this.fnIds.set(f, id);
     }
     return id;

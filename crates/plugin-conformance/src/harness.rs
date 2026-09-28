@@ -144,6 +144,13 @@ impl LiveCount for RefTable {
 /// id) and the call's arguments, answered synchronously.
 pub type LiveFn = Rc<dyn Fn(&Value, Vec<Value>) -> Answer>;
 
+/// A live host's hook for a function the Rust side no longer holds: called
+/// with a `$fn` name once the last [`Callback`] made from a spec naming it
+/// has dropped. The same name can back several callbacks at once (the host
+/// passed one function twice), so the harness counts them per name and
+/// calls this only when the count reaches zero.
+pub type ReleaseFn = Rc<dyn Fn(&str)>;
+
 pub(crate) struct Inner {
     pub entry: RefCell<Entry>,
     pub refs: RefCell<RefTable>,
@@ -157,6 +164,11 @@ pub(crate) struct Inner {
     /// answer, and the trace does not accumulate: `log` and `track`'s
     /// settlement recording are skipped.
     pub live: Option<LiveFn>,
+    /// Set on a live harness that can release functions: every callback
+    /// made from a named `$fn` spec then holds a [`FnGuard`].
+    pub release: Option<ReleaseFn>,
+    /// Live callbacks by `$fn` name, counted by their guards.
+    pub held: RefCell<HashMap<String, usize>>,
 }
 
 /// The per-run harness. Cheap to clone.
@@ -170,6 +182,7 @@ impl Harness {
         adapters: Vec<Rc<dyn HarnessPlugin>>,
         tokens: HashMap<String, AnyToken>,
         live: Option<LiveFn>,
+        release: Option<ReleaseFn>,
     ) -> Harness {
         let (refs, promises) = if live.is_some() {
             (
@@ -188,6 +201,8 @@ impl Harness {
             adapters,
             built: RefCell::new(HashMap::new()),
             live,
+            release,
+            held: RefCell::new(HashMap::new()),
         }))
     }
 
@@ -195,7 +210,7 @@ impl Harness {
         adapters: Vec<Rc<dyn HarnessPlugin>>,
         tokens: HashMap<String, AnyToken>,
     ) -> Harness {
-        Harness::with_live(adapters, tokens, None)
+        Harness::with_live(adapters, tokens, None, None)
     }
 
     /// A harness whose callbacks call straight into `live` instead of
@@ -207,7 +222,24 @@ impl Harness {
         tokens: HashMap<String, AnyToken>,
         live: LiveFn,
     ) -> Harness {
-        Harness::with_live(adapters, tokens, Some(live))
+        Harness::with_live(adapters, tokens, Some(live), None)
+    }
+
+    /// [`live`](Self::live), and `release` hears about each `$fn` name once
+    /// no callback made from it is left (see [`ReleaseFn`]).
+    pub fn live_with_release(
+        adapters: Vec<Rc<dyn HarnessPlugin>>,
+        tokens: HashMap<String, AnyToken>,
+        live: LiveFn,
+        release: ReleaseFn,
+    ) -> Harness {
+        Harness::with_live(adapters, tokens, Some(live), Some(release))
+    }
+
+    /// Whether a live callback made from a spec naming `name` is still
+    /// alive.
+    pub fn holds_fn(&self, name: &str) -> bool {
+        self.0.held.borrow().contains_key(name)
     }
 
     /// Whether this harness was made with [`live`](Self::live): callbacks
@@ -363,11 +395,13 @@ impl Harness {
     }
 
     /// Live entries by table, for the eval build's memory soak test:
-    /// `{"refs": n, "promises": n}`.
+    /// `{"refs": n, "promises": n, "heldFns": n}`, `heldFns` being the
+    /// `$fn` names some live callback still holds.
     pub fn counts(&self) -> Value {
         json!({
             "refs": self.0.refs.borrow().live_count(),
             "promises": self.0.promises.borrow().live_count(),
+            "heldFns": self.0.held.borrow().len(),
         })
     }
 
@@ -421,12 +455,20 @@ impl Harness {
 
     /// A scripted callback from a `$fn` spec: each call logs `{fn, args}`
     /// and answers with the next `seq` element (the last repeats) or the
-    /// spec itself.
+    /// spec itself. On a harness made with
+    /// [`live_with_release`](Self::live_with_release), a named spec's
+    /// callback also holds its function until its last clone drops.
     pub fn callback(&self, spec: &Value) -> Callback {
+        let name = spec.get("$fn").and_then(Value::as_str);
+        let guard = match (&self.0.release, name) {
+            (Some(_), Some(name)) => Some(Rc::new(FnGuard::new(self.clone(), name))),
+            _ => None,
+        };
         Callback {
             harness: self.clone(),
             spec: Rc::new(spec.clone()),
             calls: Rc::new(RefCell::new(0)),
+            _guard: guard,
         }
     }
 
@@ -463,11 +505,47 @@ pub enum Answer {
     Promise(Promise<Value>),
 }
 
+/// One live callback's hold on its `$fn` name: counted in
+/// [`Inner::held`] while it lives, and the harness's [`ReleaseFn`] called
+/// when the last hold on that name drops. A [`Callback`]'s clones share one.
+struct FnGuard {
+    harness: Harness,
+    name: String,
+}
+
+impl FnGuard {
+    fn new(harness: Harness, name: &str) -> FnGuard {
+        *harness.0.held.borrow_mut().entry(name.to_string()).or_insert(0) += 1;
+        FnGuard { harness, name: name.to_string() }
+    }
+}
+
+impl Drop for FnGuard {
+    fn drop(&mut self) {
+        let last = {
+            let mut held = self.harness.0.held.borrow_mut();
+            let count = held.get_mut(&self.name).expect("a guard's name is counted");
+            *count -= 1;
+            let last = *count == 0;
+            if last {
+                held.remove(&self.name);
+            }
+            last
+        };
+        if let (true, Some(release)) = (last, &self.harness.0.release) {
+            release(&self.name);
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Callback {
     harness: Harness,
     spec: Rc<Value>,
     calls: Rc<RefCell<usize>>,
+    /// `None` on a scripted harness, and on a live one with no
+    /// [`ReleaseFn`].
+    _guard: Option<Rc<FnGuard>>,
 }
 
 impl Callback {
@@ -584,6 +662,42 @@ mod tests {
         let next = ref_id(&harness.register_fn(unit()));
         assert!(next > kept);
         assert!(!harness.ref_was_released(next + 1), "an id never handed out");
+    }
+
+    #[test]
+    fn a_function_is_released_once_its_last_callback_drops() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let released = Rc::new(RefCell::new(Vec::<String>::new()));
+        let log = released.clone();
+        let release: ReleaseFn = Rc::new(move |name| log.borrow_mut().push(name.to_string()));
+        let harness = Harness::live_with_release(Vec::new(), HashMap::new(), live, release);
+        let spec = json!({ "$fn": "js:1" });
+
+        // Two callbacks from one name (the host passed one function twice),
+        // and a clone of the first.
+        let first = harness.callback(&spec);
+        let clone = first.clone();
+        let second = harness.callback(&spec);
+        assert_eq!(harness.counts()["heldFns"], json!(1));
+
+        drop(first);
+        drop(second);
+        assert!(released.borrow().is_empty(), "the clone still holds it");
+        assert!(harness.holds_fn("js:1"));
+
+        drop(clone);
+        assert_eq!(*released.borrow(), vec!["js:1".to_string()]);
+        assert!(!harness.holds_fn("js:1"));
+        assert_eq!(harness.counts()["heldFns"], json!(0));
+    }
+
+    #[test]
+    fn a_scripted_callback_holds_nothing() {
+        let harness = Harness::new(Vec::new(), HashMap::new());
+        let callback = harness.callback(&json!({ "$fn": "demo" }));
+        assert!(!harness.holds_fn("demo"));
+        drop(callback);
+        assert_eq!(harness.counts()["heldFns"], json!(0));
     }
 
     #[test]

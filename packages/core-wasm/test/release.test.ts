@@ -2,7 +2,7 @@
  * Refs JavaScript has dropped are released, and a capability's own
  * (pinned) refs never are. A `FinalizationRegistry` callback runs when the
  * engine chooses, so these force it: this file's vitest project runs with
- * `--expose-gc` (`vitest.workspace.ts`).
+ * `--expose-gc` (`vitest.gc.config.ts`).
  */
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
 import type { Kernel } from '@embedpdf/core';
+import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
@@ -83,6 +84,10 @@ describe('releasing refs JavaScript has dropped', () => {
     expect(description.getCamera).toMatchObject({ pinned: true });
     const camera = stage.getCamera();
 
+    // Let whatever the setup left behind go first: `openFixture`'s
+    // `onOpened` listener holds its own `off`, which is collected (and its
+    // ref released) only once the kernel has released the listener.
+    await collectUntil(() => false);
     const before = kernelCounts(k).refs;
     // Dropped as soon as this statement ends: nothing keeps the function.
     stage.onPageChanged(() => {});
@@ -96,6 +101,50 @@ describe('releasing refs JavaScript has dropped', () => {
     await collectUntil(() => false);
     expect(kernelCounts(k).refs).toBe(before);
     expect(stage.getCamera()).toEqual(camera);
+  });
+});
+
+describe('releasing JavaScript functions Rust has dropped', () => {
+  test('an unregistered handler gives its functions back, however many times', async () => {
+    const k = await openFixture();
+    const interaction = k.capability(InteractionToken);
+    const start = kernelCounts(k).fns;
+    for (let i = 0; i < 200; i++) {
+      const off = interaction.registerHandler({
+        id: `probe-${i}`,
+        priority: 1,
+        onDown: () => {},
+        onMove: () => {},
+      });
+      if (i === 0) expect(kernelCounts(k).fns).toBe(start + 2);
+      off();
+    }
+    expect(kernelCounts(k).fns).toBe(start);
+  });
+
+  test('a function passed twice lives until Rust drops both', async () => {
+    const k = await openFixture();
+    const interaction = k.capability(InteractionToken);
+    const start = kernelCounts(k).fns;
+    const onDown = () => {};
+    const first = interaction.registerHandler({ id: 'a', priority: 1, onDown });
+    const second = interaction.registerHandler({ id: 'b', priority: 1, onDown });
+    expect(kernelCounts(k).fns).toBe(start + 1);
+    first();
+    expect(kernelCounts(k).fns).toBe(start + 1);
+    second();
+    expect(kernelCounts(k).fns).toBe(start);
+  });
+
+  test('a released id called from Rust throws loudly', () => {
+    const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const spec = wire.encode(() => 1) as { $fn: string };
+    const id = spec.$fn.slice('js:'.length);
+    expect(wire.callJs(id, '[]')).toBe(1);
+    wire.releaseJs(id);
+    expect(() => wire.callJs(id, '[]')).toThrow(`[core-wasm] js function ${id} was released`);
+    expect(error).toHaveBeenCalled();
   });
 });
 

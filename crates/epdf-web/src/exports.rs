@@ -16,6 +16,11 @@
 //! A JavaScript function in a plugin config or a call's arguments arrives as
 //! `{"$fn": "js:<id>"}`. Calling it calls `call_js(id, argsJson)` with the
 //! `<id>` text; its return value, throw or promise is the callback's answer.
+//! Once no callback made from `js:<id>` is left (the same function can back
+//! several at once), the kernel calls `release_js(id)`, at the end of the
+//! outermost export or event it happened in: a callback dropped and made
+//! again within one call keeps its function. JavaScript may then forget
+//! the function; the same function passed again crosses under a new id.
 //!
 //! A command function's context arrives with markers where the TypeScript
 //! has functions and a live object: `ctx.core`, `ctx.get` and `ctx.tryGet`
@@ -43,7 +48,7 @@ use epdf_kernel::types::PluginScope;
 use epdf_kernel::{
     AnyToken, DOCUMENTS, Error, Kernel, KernelOptions, Promise, Unsubscribe, undefined,
 };
-use plugin_conformance::{Answer, Harness, LiveFn, Outcome};
+use plugin_conformance::{Answer, Harness, LiveFn, Outcome, ReleaseFn};
 use serde_json::{Value, json};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
@@ -150,6 +155,24 @@ fn live(call_js: js_sys::Function) -> LiveFn {
     })
 }
 
+/// Call `release_js(id)` for each `js:<id>` name in `released` that no
+/// callback holds any more. Run at the end of an outermost entry, so a name
+/// whose callbacks were dropped and remade within it is still held.
+fn release_fns(harness: &Harness, released: &RefCell<Vec<String>>, release_js: &js_sys::Function) {
+    let mut names = std::mem::take(&mut *released.borrow_mut());
+    names.sort();
+    names.dedup();
+    for name in names {
+        if harness.holds_fn(&name) {
+            continue;
+        }
+        let Some(id) = name.strip_prefix("js:") else { continue };
+        if let Err(error) = release_js.call1(&JsValue::NULL, &JsValue::from_str(id)) {
+            console_error("[epdf-web] release_js threw:", &error);
+        }
+    }
+}
+
 /// A promise, or any object with a callable `then`, as a promise.
 fn thenable(value: &JsValue) -> Option<js_sys::Promise> {
     if let Some(promise) = value.dyn_ref::<js_sys::Promise>() {
@@ -187,29 +210,39 @@ pub struct WasmKernel {
     /// promise that never settles stays, by design: it is still abortable,
     /// and nothing else can tell it is abandoned.
     aborts: Rc<RefCell<HashMap<u32, Promise<Value>>>>,
+    /// [`release_fns`] for this kernel, registered with
+    /// [`runtime::at_exit`], which holds it weakly: it runs for as long as
+    /// this kernel lives.
+    _release_fns: Rc<dyn Fn()>,
 }
 
 #[wasm_bindgen]
 impl WasmKernel {
     /// `plugins_json` is `[{"factory": ..., "config": ...}, ...]`; `engine`
-    /// is the object `createEngineBridge` returns. Throws the canonical
-    /// error if a plugin does not build or the kernel refuses the list.
+    /// is the object `createEngineBridge` returns; `call_js(id, argsJson)`
+    /// calls a `{"$fn": "js:<id>"}` function and `release_js(id)` says the
+    /// kernel holds it no more. Throws the canonical error if a plugin does
+    /// not build or the kernel refuses the list.
     #[wasm_bindgen(constructor)]
     pub fn new(
         plugins_json: &str,
         engine: JsValue,
         call_js: js_sys::Function,
+        release_js: js_sys::Function,
     ) -> Result<WasmKernel, JsValue> {
         report_panics();
         // Before anything can schedule a timer.
         runtime::start_clock();
-        entry(|| WasmKernel::build(plugins_json, engine, call_js).map_err(|e| thrown(&e)))
+        entry(|| {
+            WasmKernel::build(plugins_json, engine, call_js, release_js).map_err(|e| thrown(&e))
+        })
     }
 
     fn build(
         plugins_json: &str,
         engine: JsValue,
         call_js: js_sys::Function,
+        release_js: js_sys::Function,
     ) -> Result<WasmKernel, Error> {
         let adapters = adapters();
         let mut tokens: HashMap<String, AnyToken> = HashMap::new();
@@ -219,7 +252,15 @@ impl WasmKernel {
                 tokens.insert(token.name().to_string(), token);
             }
         }
-        let harness = Harness::live(adapters.clone(), tokens, live(call_js));
+        let released = Rc::new(RefCell::new(Vec::new()));
+        let pending = released.clone();
+        let release: ReleaseFn = Rc::new(move |name| pending.borrow_mut().push(name.to_string()));
+        let harness = Harness::live_with_release(adapters.clone(), tokens, live(call_js), release);
+        let release_fns: Rc<dyn Fn()> = {
+            let harness = harness.clone();
+            Rc::new(move || release_fns(&harness, &released, &release_js))
+        };
+        runtime::at_exit(&release_fns);
 
         let specs: Vec<Value> = serde_json::from_str(plugins_json)
             .map_err(|e| Error::named("TypeError", format!("malformed plugin list: {e}")))?;
@@ -251,6 +292,7 @@ impl WasmKernel {
             described: RefCell::new(HashMap::new()),
             documents,
             aborts: Rc::new(RefCell::new(HashMap::new())),
+            _release_fns: release_fns,
         })
     }
 
@@ -421,8 +463,9 @@ impl WasmKernel {
     /// The harness's live-table counts plus how many capabilities this
     /// kernel has described (`describe`'s memo) and how many taken promises
     /// it keeps abortable (`aborts`, which holds a never-settling promise's
-    /// entry for good): `{"refs": n, "promises": n, "described": n,
-    /// "aborts": n}`. Dev-only, for the eval build's memory soak test.
+    /// entry for good): `{"refs": n, "promises": n, "heldFns": n,
+    /// "described": n, "aborts": n}`. Dev-only, for the eval build's memory
+    /// soak test.
     pub fn debug_counts(&self) -> String {
         entry(|| {
             let mut counts = self.harness.counts();
