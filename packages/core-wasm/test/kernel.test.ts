@@ -7,6 +7,7 @@ import type { Kernel } from '@embedpdf/core';
 import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { CommandsToken } from '@embedpdf/plugin-commands';
+import { ShellToken } from '@embedpdf/plugin-shell';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
 import {
@@ -15,6 +16,7 @@ import {
   interactionPlugin,
   renderPlugin,
   setWasmKernel,
+  shellPlugin,
   stagePlugin,
 } from '../src';
 import { demoToolsPlugin } from '../../viewer/chrome/src/config/demo-tools.plugin';
@@ -58,7 +60,8 @@ describe('the Kernel shim over the Rust kernel', () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
     const stage = k.capability(StageToken);
     expect(k.capability(StageToken, 'fixture')).toBe(stage);
-    stage.setViewportSize({ width: 800, height: 600 });
+    // 120 px tall, the fixture overflows, so a pan really moves the camera.
+    stage.setViewportSize({ width: 800, height: 120 });
 
     const visible = stage.listVisiblePages();
     expect(visible.length).toBeGreaterThan(0);
@@ -78,14 +81,74 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(invokeRef.mock.calls.length).toBe(callsBefore);
     invokeRef.mockRestore();
 
-    stage.panBy(0, 100);
+    stage.panBy(0, -100);
     expect(stage.listVisiblePages()).not.toBe(visible);
+  });
+
+  test('two getters read in turn keep answering the same objects', async () => {
+    const k = await openFixture([shellPlugin()]);
+    const shell = k.capability(ShellToken);
+    shell.open('thumbnails', { props: { from: 'test' } });
+
+    // A `useSyncExternalStore` snapshot per getter, as `useSurface` reads
+    // `isOpen` and `getSurface(...).props` on every render: each getter's
+    // real call must not cost the other its reference.
+    const surface = shell.getSurface('thumbnails');
+    expect(shell.isOpen('thumbnails')).toBe(true);
+    expect(shell.getSurface('thumbnails')).toBe(surface);
+    expect(shell.isOpen('thumbnails')).toBe(true);
+    expect(shell.getSurface('thumbnails')).toBe(surface);
+
+    shell.open('thumbnails', { props: { from: 'again' } });
+    expect(shell.getSurface('thumbnails')).not.toBe(surface);
+  });
+
+  test('an answer that differs only in fresh refs keeps its object', async () => {
+    const k = await openFixture([
+      stagePlugin(),
+      interactionPlugin(),
+      renderPlugin(),
+      shellPlugin(),
+    ]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 600 });
+
+    // Each `listVisiblePages` describes the page transforms with newly
+    // registered refs, so no two answers have the same text.
+    const visible = stage.listVisiblePages();
+    k.capability(ShellToken).isOpen('sidebar');
+    expect(stage.listVisiblePages()).toBe(visible);
+  });
+
+  test('getState keeps its object, and every unchanged slice, across other calls', async () => {
+    const k = await openFixture([
+      stagePlugin(),
+      interactionPlugin(),
+      renderPlugin(),
+      shellPlugin(),
+    ]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 120 });
+
+    // `useT` reads `getState().plugins.i18n` as a snapshot: a real getter
+    // call from another component must not hand it a fresh object.
+    const state = k.getState();
+    stage.listVisiblePages();
+    k.capability(ShellToken).isOpen('sidebar');
+    expect(k.getState()).toBe(state);
+
+    stage.panBy(0, -100);
+    const after = k.getState();
+    expect(after).not.toBe(state);
+    expect(after.plugins['stage::fixture']).not.toBe(state.plugins['stage::fixture']);
+    expect(after.plugins['shell::fixture']).toBeDefined();
+    expect(after.plugins['shell::fixture']).toBe(state.plugins['shell::fixture']);
   });
 
   test('a getter inside a subscribe listener sees a mutation made in that listener', async () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
     const stage = k.capability(StageToken);
-    stage.setViewportSize({ width: 800, height: 600 });
+    stage.setViewportSize({ width: 800, height: 120 });
 
     // The Rust store defers a change notification made from inside a
     // change listener: a dispatch from there only sets `pending`
@@ -99,10 +162,10 @@ describe('the Kernel shim over the Rust kernel', () => {
     const off = k.subscribe(() => {
       off();
       seenBeforeMutation = stage.listVisiblePages();
-      stage.panBy(0, 50);
+      stage.panBy(0, -50);
       seenAfterMutation = stage.listVisiblePages();
     });
-    stage.panBy(0, 50);
+    stage.panBy(0, -50);
 
     expect(seenBeforeMutation).not.toBeUndefined();
     expect(seenAfterMutation).not.toBe(seenBeforeMutation);

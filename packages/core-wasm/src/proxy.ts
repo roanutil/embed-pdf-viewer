@@ -21,9 +21,13 @@
  * while no other real call has landed since: any `invoke_ref` that is not
  * itself served from the cache clears every entry first (the store's change
  * notification can lag behind a mutation made from inside a change listener,
- * so caching cannot wait for it). A call whose member makes something new
- * (`create*`, `register*`, `on*`) is not cached; neither is `undefined`, a
- * throw or a promise.
+ * so caching cannot wait for it). A real call whose answer text matches the
+ * last answer for the same (ref, argument JSON), ref ids aside, reuses the
+ * value that answer decoded to, so two getters read in turn (`useSurface`
+ * reads `isOpen` and `getSurface`) do not cost each other their references.
+ * `getState` does the same per slice. A call whose member makes something
+ * new (`create*`, `register*`, `on*`) is not cached or reused; neither is
+ * `undefined`, a throw or a promise.
  */
 import {
   canonical,
@@ -64,6 +68,11 @@ type Outcome = { returned: unknown } | { threw: unknown } | { promise: number };
 /** Members whose result is something new on every call. */
 const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
 
+/** How many distinct calls keep their last answer for reuse. */
+const ANSWERS_KEPT = 4096;
+
+const REF_ID = /\{"\$ref":\d+\}/g;
+
 const isThenable = (value: unknown): value is PromiseLike<unknown> =>
   value !== null &&
   (typeof value === 'object' || typeof value === 'function') &&
@@ -103,7 +112,15 @@ export class Wire {
   private readonly refs = new Map<number, Fn>();
   private readonly proxies = new Map<string, object>();
   private results = new Map<string, unknown>();
-  private state: { version: number; value: unknown } | undefined;
+  /** Each (ref, argument JSON)'s last answer, ref ids blanked, and the value
+   *  it decoded to, kept across `bump`: an answer whose text has not changed
+   *  decodes to the value it did last time. Cleared whole past
+   *  `ANSWERS_KEPT` keys. */
+  private answers = new Map<string, { shape: string; value: unknown }>();
+  private state: { version: number; text: string; value: unknown } | undefined;
+  /** Each slice's JSON text and decoded value, by path (`core`,
+   *  `plugins.stage`), from the last `getState` that parsed. */
+  private slices = new Map<string, { text: string; value: unknown }>();
 
   constructor(private readonly bridge: EngineBridge) {}
 
@@ -167,13 +184,41 @@ export class Wire {
 
   /** The kernel's state, parsed once per store change. */
   getState(): unknown {
-    if (this.state?.version !== this.version) {
-      this.state = {
-        version: this.version,
-        value: this.decode(JSON.parse(this.rust.state_json())),
-      };
+    if (this.state?.version === this.version) return this.state.value;
+    // `version` also moves on every real call (see `call`), which does not
+    // mean the store changed: the same text keeps the same object, and a
+    // changed store keeps every slice whose text did not change, as the
+    // TypeScript store keeps an untouched plugin's slice.
+    const text = this.rust.state_json();
+    if (this.state?.text === text) {
+      this.state.version = this.version;
+      return this.state.value;
     }
-    return this.state.value;
+    const raw = JSON.parse(text) as Record<string, unknown>;
+    const slices = new Map<string, { text: string; value: unknown }>();
+    const share = (path: string, slice: unknown) => {
+      const sliceText = JSON.stringify(slice) ?? 'undefined';
+      const last = this.slices.get(path);
+      const entry =
+        last?.text === sliceText ? last : { text: sliceText, value: this.decode(slice) };
+      slices.set(path, entry);
+      return entry.value;
+    };
+    const value: Record<string, unknown> = {};
+    for (const [key, slice] of Object.entries(raw)) {
+      if (key === 'plugins' && slice !== null && typeof slice === 'object') {
+        const plugins: Record<string, unknown> = {};
+        for (const [id, plugin] of Object.entries(slice)) {
+          plugins[id] = share(`plugins.${id}`, plugin);
+        }
+        value[key] = plugins;
+      } else {
+        value[key] = share(key, slice);
+      }
+    }
+    this.slices = slices;
+    this.state = { version: this.version, text, value };
+    return value;
   }
 
   /** A promise id as a promise of its decoded value, with `abort`. */
@@ -226,7 +271,8 @@ export class Wire {
     const json = JSON.stringify(this.encode(prepareArgs(member, args), signals));
     const key = `${id}:${json}`;
     if (this.results.has(key)) return this.results.get(key);
-    const outcome = JSON.parse(rusty(() => this.rust.invoke_ref(id, json))) as Outcome;
+    const text = rusty(() => this.rust.invoke_ref(id, json));
+    const outcome = JSON.parse(text) as Outcome;
     // A real call, not a cache hit: the store may have deferred its change
     // notification (a dispatch from inside a change listener only sets
     // `pending`, `crates/epdf-kernel/src/store.rs:206-219`), so `bump` can't
@@ -242,9 +288,19 @@ export class Wire {
       }
       return promise;
     }
-    const value = rehydrate(member, this.decode(outcome.returned));
-    if (value !== undefined && !MAKES_NEW.test(member)) {
+    if (MAKES_NEW.test(member)) return rehydrate(member, this.decode(outcome.returned));
+    // Compared with its ref ids blanked: some members describe what they
+    // return with newly registered refs on every call (stage's
+    // `listVisiblePages` does, for each page transform), and the refs the
+    // last answer holds are still live and stand in the same places.
+    const shape = text.replace(REF_ID, '{"$ref":0}');
+    const last = this.answers.get(key);
+    const value =
+      last?.shape === shape ? last.value : rehydrate(member, this.decode(outcome.returned));
+    if (value !== undefined) {
       this.results.set(key, value);
+      if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
+      this.answers.set(key, { shape, value });
     }
     return value;
   }
