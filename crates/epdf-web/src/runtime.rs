@@ -2,12 +2,15 @@
 //!
 //! `rt` only moves when a host drains it and advances its clock. Here the
 //! host is the page. [`start_clock`] moves the virtual clock to `Date.now()`
-//! once, so `rt::now()` reads as a real date. Every export then ends with
-//! [`after_entry`], which catches the virtual clock up to `Date.now()`
-//! (firing whatever timers came due on the way), drains the ready queue, and
-//! arms one real `setTimeout` for the earliest virtual timer left. When that
-//! fires it runs [`after_entry`] again. Between entries the virtual clock
-//! stands still; at each entry it is wall time, to the millisecond.
+//! once, so `rt::now()` reads as a real date. Every export then runs as an
+//! [`entry`], which ends with [`after_entry`]: that catches the virtual clock
+//! up to `Date.now()` (firing whatever timers came due on the way), drains
+//! the ready queue, and arms one real `setTimeout` for the earliest virtual
+//! timer left. When that fires it runs [`after_entry`] again. An entry
+//! reached from inside another (a callback into JavaScript that calls an
+//! export) leaves all of that to the outermost one. Between entries the
+//! virtual clock stands still; at each entry it is wall time, to the
+//! millisecond.
 //!
 //! Promises cross in both directions as JSON values, with a rejection as the
 //! kernel's canonical `{"$error": {name, message, ...}}`. A JavaScript `await`
@@ -48,9 +51,9 @@ thread_local! {
     static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) };
     /// Whether [`start_clock`] has run, so entries follow `Date.now()`.
     static STARTED: Cell<bool> = const { Cell::new(false) };
-    /// How many entries are on the stack. A timer's callback can reach
-    /// JavaScript, which can call an export, whose `after_entry` then runs
-    /// inside the outer one's `rt::advance`.
+    /// How many entries are on the stack. An export's body or a timer's
+    /// callback can reach JavaScript, which can call an export while the
+    /// outer Rust call is still running.
     static DEPTH: Cell<u32> = const { Cell::new(0) };
 }
 
@@ -116,14 +119,16 @@ fn catch_up() {
 /// is started, drain the ready queue, then make sure a real timeout is armed
 /// for the earliest virtual timer, if there is one.
 ///
-/// Called from inside another entry (a timer's callback reached an export),
-/// it only drains the queue. Catching up there would advance the clock
-/// inside the outer `rt::advance`, which then lands on its own, earlier
-/// target and turns the clock back; the outer entry catches up and arms.
+/// Called from inside another entry (a timer's callback, or a callback into
+/// JavaScript that reached an export), it does nothing. Catching up there
+/// would advance the clock inside the outer `rt::advance`, which then lands
+/// on its own, earlier target and turns the clock back; draining there could
+/// pop a task that is being polled further up the stack, and lose its wake.
+/// The outer entry drains, catches up and arms; `rt::advance` drains after
+/// each timer's callback itself.
 pub fn after_entry() {
     let entry = Entry::enter();
     if !entry.outermost {
-        rt::run_until_stalled();
         return;
     }
     catch_up();
@@ -162,6 +167,18 @@ pub fn after_entry() {
     });
 }
 
+/// Run one entry from JavaScript (an export's body, an engine event), then
+/// [`after_entry`]. The body counts as an entry while it runs, so an export
+/// it reaches through a callback into JavaScript is nested, not outermost.
+pub fn entry<T>(body: impl FnOnce() -> T) -> T {
+    let out = {
+        let _entry = Entry::enter();
+        body()
+    };
+    after_entry();
+    out
+}
+
 /// A Rust promise as a JavaScript one. A rejection carries the canonical
 /// `{"$error": ...}` object.
 pub fn to_js(p: Promise<Value>) -> js_sys::Promise {
@@ -178,7 +195,7 @@ pub fn to_js(p: Promise<Value>) -> js_sys::Promise {
 }
 
 /// A JavaScript promise as a Rust one. Its settlement arrives on the
-/// JavaScript microtask queue, which then runs [`after_entry`]. A value JSON
+/// JavaScript microtask queue, as an [`entry`]. A value JSON
 /// cannot carry (a `BigInt`, a cycle) rejects it with a `TypeError`.
 pub fn from_js(p: js_sys::Promise) -> Promise<Value> {
     let (promise, resolver) = Promise::pending();
@@ -187,8 +204,7 @@ pub fn from_js(p: js_sys::Promise) -> Promise<Value> {
             Ok(value) => js_to_value(&value),
             Err(thrown) => Err(js_to_error(&thrown)),
         };
-        resolver.settle(result);
-        after_entry();
+        entry(|| resolver.settle(result));
     });
     promise
 }

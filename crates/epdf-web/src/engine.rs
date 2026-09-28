@@ -26,7 +26,7 @@ use serde_json::{Value, json};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{self, after_entry, js_to_error, value_to_js};
+use crate::runtime::{self, js_to_error, value_to_js};
 
 #[wasm_bindgen]
 extern "C" {
@@ -223,16 +223,15 @@ impl DocumentHandle for JsDocumentHandle {
     }
 
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe {
-        // An event is a JavaScript entry into the kernel, so it ends with
-        // `after_entry` like an export does.
+        // An event is a JavaScript entry into the kernel, so it runs as an
+        // `entry` like an export does.
         let closure = Closure::<dyn FnMut(String)>::new(move |text: String| {
-            match serde_json::from_str::<Value>(&text) {
+            runtime::entry(|| match serde_json::from_str::<Value>(&text) {
                 Ok(event) => listener(&event),
                 Err(error) => {
                     console_error(&format!("[engine-bridge] malformed event {text:?}: {error}"))
                 }
-            }
-            after_entry();
+            })
         });
         match self.bridge.subscribe(&self.id, &closure) {
             Ok(off) => {

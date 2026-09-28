@@ -26,8 +26,8 @@
 //! same refs: [`WasmKernel`] memoizes each description by the capability's
 //! `Rc`, which the cache holds so its address is never reused.
 //!
-//! Every export ends with [`after_entry`], so the kernel's queue drains and
-//! its timers stay armed.
+//! Every export's body runs as a [`runtime::entry`], so the kernel's queue
+//! drains and its timers stay armed once the outermost one returns.
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -45,19 +45,12 @@ use wasm_bindgen::prelude::*;
 
 use crate::adapters::adapters;
 use crate::engine::{EngineBridge, JsEngine};
-use crate::runtime::{self, after_entry, js_to_error, js_to_value, value_to_js};
+use crate::runtime::{self, entry, js_to_error, js_to_value, value_to_js};
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
     fn console_error(prefix: &str, error: &JsValue);
-}
-
-/// Run one export's body, then [`after_entry`].
-fn entry<T>(body: impl FnOnce() -> T) -> T {
-    let out = body();
-    after_entry();
-    out
 }
 
 /// An error as JavaScript sees it thrown: the canonical `{"$error": ...}`.

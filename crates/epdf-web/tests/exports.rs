@@ -2,6 +2,7 @@
 //! over a stub engine bridge, its capabilities read as tables of refs, and
 //! refs called by id. The TypeScript shim over these exports is Task 6's.
 
+use epdf_kernel::rt::{self, Promise};
 use epdf_web::exports::WasmKernel;
 use epdf_web::runtime::reset;
 use serde_json::{Value, json};
@@ -270,4 +271,56 @@ async fn a_run_callback_reenters_the_kernel_through_its_ctx_marker() {
     assert_eq!(ctx["core"], json!({ "$kernel": "core", "doc": "doc-1" }));
     let is_open = js_sys::Reflect::get(&holder, &"isOpen".into()).unwrap();
     assert_eq!(parse(&is_open.as_string().unwrap()), json!({ "returned": false }));
+}
+
+/// An export called from JavaScript while another export's body is still on
+/// the stack is not an entry of its own: it leaves the due timer and the
+/// ready task alone, and the outer export runs both once it returns.
+#[wasm_bindgen_test]
+async fn an_export_reentered_from_a_callback_leaves_timers_and_the_queue_to_the_outer_one() {
+    reset();
+    let plugins = json!([{ "factory": "commands", "config": { "commands": [
+        { "id": "hello", "labelKey": "hello", "run": { "$fn": "js:run" } },
+    ] } }])
+    .to_string();
+    let order = js_sys::Array::new();
+    let answer = r#"(id, args) => {
+      log.k.status();
+      log.push('nested returned');
+      return undefined;
+    }"#;
+    let kernel = WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer)).unwrap();
+    JsFuture::from(kernel.start()).await.unwrap();
+    let commands = parse(&kernel.capability("commands".into(), None).unwrap());
+    let execute = ref_of(&commands, "execute");
+
+    // A timer due now, and a task woken but not yet polled.
+    let timer_order = order.clone();
+    rt::set_timeout(0.0, move || {
+        timer_order.push(&"timer".into());
+    });
+    let (woken, resolver) = Promise::<Value>::pending();
+    let task_order = order.clone();
+    rt::spawn(async move {
+        let _ = woken.await;
+        task_order.push(&"task".into());
+    });
+    resolver.settle(Ok(Value::Null));
+
+    let k: JsValue = kernel.into();
+    js_sys::Reflect::set(&order, &"k".into(), &k).unwrap();
+    let run = js_sys::Function::new_with_args(
+        "k, execute, order",
+        "k.invoke_ref(execute, '[\"hello\"]'); order.push('outer returned');",
+    );
+    run.call3(&JsValue::NULL, &k, &execute.into(), &order).unwrap();
+
+    let seen: Vec<String> = order
+        .iter()
+        .map(|entry| match entry.as_string() {
+            Some(text) => text,
+            None => js_sys::Array::from(&entry).get(0).as_string().unwrap(),
+        })
+        .collect();
+    assert_eq!(seen, ["run", "nested returned", "timer", "task", "outer returned"]);
 }
