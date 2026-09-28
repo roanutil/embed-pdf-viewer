@@ -70,7 +70,7 @@ async fn start_with_document(kernel: &WasmKernel) {
     JsFuture::from(kernel.start()).await.unwrap();
     let documents = parse(&kernel.documents());
     let outcome = invoke(kernel, ref_of(&documents, "open"), r#"[{"id":"doc-1"}]"#);
-    let opened = JsFuture::from(kernel.promise(promise_of(&outcome))).await.unwrap();
+    let opened = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
     assert_eq!(opened.as_string().as_deref(), Some("doc-1"));
 }
 
@@ -124,7 +124,7 @@ async fn a_config_callback_calls_into_javascript_and_its_promise_resolves() {
 
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
     let outcome = invoke(&kernel, ref_of(&commands, "execute"), r#"["hello"]"#);
-    let resolved = JsFuture::from(kernel.promise(promise_of(&outcome))).await.unwrap();
+    let resolved = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap();
 
     assert_eq!(js_json(&resolved), json!({ "status": "executed" }));
     assert_eq!(log.length(), 1);
@@ -133,6 +133,79 @@ async fn a_config_callback_calls_into_javascript_and_its_promise_resolves() {
     let args = parse(&call.get(1).as_string().unwrap());
     assert_eq!(args[0]["documentId"], Value::Null);
     assert_eq!(args[0]["tryGet"], json!({ "$kernel": "tryGet", "doc": null }));
+}
+
+/// A live harness's promise table gives up its entry the moment JavaScript
+/// takes it: `debug_counts().promises` drops by one, and a second take of
+/// the same id throws rather than answering again.
+#[wasm_bindgen_test]
+async fn a_promise_is_taken_once_and_a_second_take_throws() {
+    reset();
+    let plugins = json!([{
+        "factory": "commands",
+        "config": { "commands": [
+            { "id": "hello", "labelKey": "hello", "run": { "$fn": "js:run" } },
+        ] },
+    }])
+    .to_string();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
+    )
+    .unwrap();
+    JsFuture::from(kernel.start()).await.unwrap();
+
+    let commands = parse(&kernel.capability("commands".into(), None).unwrap());
+    let outcome = invoke(&kernel, ref_of(&commands, "execute"), r#"["hello"]"#);
+    let id = promise_of(&outcome);
+
+    let before = parse(&kernel.debug_counts())["promises"].as_u64().unwrap();
+    let promise = kernel.promise(id).unwrap();
+    let after = parse(&kernel.debug_counts())["promises"].as_u64().unwrap();
+    assert_eq!(after, before - 1, "the take drops the harness's live count by one");
+
+    let error = js_json(&kernel.promise(id).unwrap_err());
+    assert!(error.to_string().contains("was already taken"), "{error}");
+
+    let resolved = JsFuture::from(promise).await.unwrap();
+    assert_eq!(js_json(&resolved), json!({ "status": "executed" }));
+}
+
+/// `abort_promise` after the take still finds the promise, through
+/// `WasmKernel`'s own table rather than the harness's (which no longer has
+/// the entry): it does not throw or panic, before or after the promise
+/// settles. Nothing here is wired abortable, so this only proves the
+/// lookup is safe, not that an abort reaches anywhere; see the task report
+/// for why a genuine abort is not cheaply reachable in this harness.
+#[wasm_bindgen_test]
+async fn abort_promise_after_the_take_is_still_a_safe_call() {
+    reset();
+    let plugins = json!([{
+        "factory": "commands",
+        "config": { "commands": [
+            { "id": "hello", "labelKey": "hello", "run": { "$fn": "js:run" } },
+        ] },
+    }])
+    .to_string();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
+    )
+    .unwrap();
+    JsFuture::from(kernel.start()).await.unwrap();
+
+    let commands = parse(&kernel.capability("commands".into(), None).unwrap());
+    let outcome = invoke(&kernel, ref_of(&commands, "execute"), r#"["hello"]"#);
+    let id = promise_of(&outcome);
+    let promise = kernel.promise(id).unwrap();
+
+    kernel.abort_promise(id, None).unwrap();
+    JsFuture::from(promise).await.unwrap();
+    // Settled: the `on_settle` cleanup already dropped this kernel's own
+    // entry, so a call after that is still a harmless no-op.
+    kernel.abort_promise(id, None).unwrap();
 }
 
 #[wasm_bindgen_test]
@@ -216,7 +289,7 @@ async fn a_throw_in_javascript_is_the_callback_throwing() {
 
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
     let outcome = invoke(&kernel, ref_of(&commands, "execute"), r#"["boom"]"#);
-    let rejected = JsFuture::from(kernel.promise(promise_of(&outcome))).await.unwrap_err();
+    let rejected = JsFuture::from(kernel.promise(promise_of(&outcome)).unwrap()).await.unwrap_err();
 
     assert_eq!(log.length(), 1);
     let error = js_json(&rejected);

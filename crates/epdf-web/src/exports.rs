@@ -6,9 +6,10 @@
 //! capability reads as the harness describes it: member name to
 //! `{"$ref": n}` or a plain value. A ref is called with [`WasmKernel::invoke_ref`],
 //! whose outcome is `{"returned": v}`, `{"threw": e}` or `{"promise": n}`,
-//! and a promise id becomes a JavaScript promise with [`WasmKernel::promise`].
-//! The harness keeps every ref and promise forever; for a session of manual
-//! testing that is fine.
+//! and a promise id becomes a JavaScript promise with [`WasmKernel::promise`],
+//! taken from the harness's table exactly once: a second call throws. The
+//! harness still keeps every ref forever; for a session of manual testing
+//! that is fine.
 //!
 //! A JavaScript function in a plugin config or a call's arguments arrives as
 //! `{"$fn": "js:<id>"}`. Calling it calls `call_js(id, argsJson)` with the
@@ -175,6 +176,12 @@ pub struct WasmKernel {
     described: RefCell<Described>,
     /// `kernel.documents()`, made once so its description memoizes too.
     documents: Rc<dyn Any>,
+    /// A taken promise's abort handle, by id, kept until it settles:
+    /// [`promise`](Self::promise) takes the promise out of the harness's own
+    /// table, so [`abort_promise`](Self::abort_promise) needs somewhere else
+    /// to find it. `Rc`-wrapped so the `on_settle` closure that clears an
+    /// entry can outlive the call that registered it.
+    aborts: Rc<RefCell<HashMap<u32, Promise<Value>>>>,
 }
 
 #[wasm_bindgen]
@@ -238,6 +245,7 @@ impl WasmKernel {
             next_subscription: Cell::new(0),
             described: RefCell::new(HashMap::new()),
             documents,
+            aborts: Rc::new(RefCell::new(HashMap::new())),
         })
     }
 
@@ -317,21 +325,34 @@ impl WasmKernel {
         })
     }
 
-    /// A promise id as a JavaScript promise. It resolves with the value's
-    /// canonical form as a JavaScript value (a top-level `undefined` as
-    /// `undefined`) and rejects with the canonical `{"$error": ...}`.
-    pub fn promise(&self, id: u32) -> js_sys::Promise {
+    /// A promise id as a JavaScript promise, taken from the harness's live
+    /// table: `id` answers exactly once, so a second call throws
+    /// `[epdf-web] promise n was already taken` (also thrown for an id this
+    /// kernel never tracked). It resolves with the value's canonical form as
+    /// a JavaScript value (a top-level `undefined` as `undefined`) and
+    /// rejects with the canonical `{"$error": ...}`.
+    /// [`abort_promise`](Self::abort_promise) still works after the take:
+    /// this kernel keeps the taken promise's abort handle, until it settles,
+    /// in its own table.
+    pub fn promise(&self, id: u32) -> Result<js_sys::Promise, JsValue> {
         entry(|| {
-            let promise = self.harness.promise(id as usize).unwrap_or_else(|| {
-                Promise::rejected(Error::new(format!("[epdf-web] no promise {id}")))
+            let promise = self.harness.take_promise(id).ok_or_else(|| {
+                thrown(&Error::new(format!("[epdf-web] promise {id} was already taken")))
+            })?;
+            self.aborts.borrow_mut().insert(id, promise.clone());
+            let aborts = self.aborts.clone();
+            promise.on_settle(move |_| {
+                aborts.borrow_mut().remove(&id);
             });
-            runtime::to_js(promise)
+            Ok(runtime::to_js(promise))
         })
     }
 
     /// Abort a promise id, as its `AbortablePromise.abort(reason)` would.
-    /// `reason_json` is the reason's canonical JSON; an unknown id does
-    /// nothing. Throws a `TypeError` if `reason_json` is not JSON.
+    /// `reason_json` is the reason's canonical JSON; an id
+    /// [`promise`](Self::promise) has not been called for, or whose promise
+    /// already settled, does nothing. Throws a `TypeError` if `reason_json`
+    /// is not JSON.
     pub fn abort_promise(&self, id: u32, reason_json: Option<String>) -> Result<(), JsValue> {
         entry(|| {
             let reason = match reason_json {
@@ -340,7 +361,8 @@ impl WasmKernel {
                 })?),
                 None => None,
             };
-            if let Some(promise) = self.harness.promise(id as usize) {
+            let promise = self.aborts.borrow().get(&id).cloned();
+            if let Some(promise) = promise {
                 promise.abort(reason);
             }
             Ok(())

@@ -304,8 +304,19 @@ export class Wire {
     if ('promise' in outcome) {
       const promise = this.promise(outcome.promise);
       for (const signal of signals) {
-        if (signal.aborted) promise.abort(signal.reason);
-        else signal.addEventListener('abort', () => promise.abort(signal.reason), { once: true });
+        if (signal.aborted) {
+          promise.abort(signal.reason);
+          continue;
+        }
+        // `{ once: true }` only drops the listener once the signal actually
+        // fires; a call that never aborts would otherwise keep this closure
+        // (and the signal) alive on `signal` for as long as the caller holds
+        // it. Settling either way is the other half of "once": remove it
+        // then too.
+        const onAbort = () => promise.abort(signal.reason);
+        signal.addEventListener('abort', onAbort, { once: true });
+        const detach = () => signal.removeEventListener('abort', onAbort);
+        promise.then(detach, detach);
       }
       return promise;
     }

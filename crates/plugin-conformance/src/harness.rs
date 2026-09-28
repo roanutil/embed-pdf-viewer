@@ -102,6 +102,25 @@ impl<T> LiveCount for Vec<T> {
     }
 }
 
+/// `promises`' storage: a scripted harness keeps the growing `Vec` replay
+/// always had, since a vector's `nth` scripted assertions and `scenario.rs`
+/// expect. A live harness keeps a slot table instead, so
+/// [`Harness::take_promise`] can free a promise's slot the moment
+/// JavaScript takes it, rather than holding every settled value forever.
+pub(crate) enum PromiseTable {
+    Scripted(Vec<Promise<Value>>),
+    Live { next: u32, slots: HashMap<u32, Promise<Value>> },
+}
+
+impl LiveCount for PromiseTable {
+    fn live_count(&self) -> usize {
+        match self {
+            PromiseTable::Scripted(vec) => vec.len(),
+            PromiseTable::Live { slots, .. } => slots.len(),
+        }
+    }
+}
+
 pub type RefFn = Rc<dyn Fn(Vec<Value>) -> Outcome>;
 
 /// A live callback: the `$fn` spec (so the host can find its function by
@@ -111,7 +130,7 @@ pub type LiveFn = Rc<dyn Fn(&Value, Vec<Value>) -> Answer>;
 pub(crate) struct Inner {
     pub entry: RefCell<Entry>,
     pub refs: RefCell<Vec<RefFn>>,
-    pub promises: RefCell<Vec<Promise<Value>>>,
+    pub promises: RefCell<PromiseTable>,
     pub tokens: RefCell<HashMap<String, AnyToken>>,
     pub fake: RefCell<Option<Rc<FakeEngine>>>,
     pub adapters: Vec<Rc<dyn HarnessPlugin>>,
@@ -135,10 +154,15 @@ impl Harness {
         tokens: HashMap<String, AnyToken>,
         live: Option<LiveFn>,
     ) -> Harness {
+        let promises = if live.is_some() {
+            PromiseTable::Live { next: 0, slots: HashMap::new() }
+        } else {
+            PromiseTable::Scripted(Vec::new())
+        };
         Harness(Rc::new(Inner {
             entry: RefCell::new(Entry::default()),
             refs: RefCell::new(Vec::new()),
-            promises: RefCell::new(Vec::new()),
+            promises: RefCell::new(promises),
             tokens: RefCell::new(tokens),
             fake: RefCell::new(None),
             adapters,
@@ -214,12 +238,24 @@ impl Harness {
 
     /// Track a promise handed back to the caller; `{"$promise": n}`. Its
     /// settlement lands in whichever trace entry is current when it settles,
-    /// except on a live harness, where settlement records nothing.
+    /// except on a live harness, where settlement records nothing (and the
+    /// slot [`take_promise`](Self::take_promise) empties is not this: a
+    /// promise that settles before JavaScript takes it is still there to
+    /// take).
     pub fn track(&self, promise: Promise<Value>) -> Value {
         let id = {
-            let mut promises = self.0.promises.borrow_mut();
-            promises.push(promise.clone());
-            promises.len() - 1
+            match &mut *self.0.promises.borrow_mut() {
+                PromiseTable::Scripted(vec) => {
+                    vec.push(promise.clone());
+                    (vec.len() - 1) as u32
+                }
+                PromiseTable::Live { next, slots } => {
+                    let id = *next;
+                    *next += 1;
+                    slots.insert(id, promise.clone());
+                    id
+                }
+            }
         };
         let live = self.0.live.is_some();
         let h = Rc::downgrade(&self.0);
@@ -237,9 +273,26 @@ impl Harness {
         json!({ "$promise": id })
     }
 
-    /// The promise [`track`](Self::track) numbered `id`.
+    /// The promise [`track`](Self::track) numbered `id`, for a scripted
+    /// harness's replay: the `Vec` it never removes from. `None` on a live
+    /// harness, which never keeps a promise around to peek at; live code
+    /// calls [`take_promise`](Self::take_promise) instead.
     pub fn promise(&self, id: usize) -> Option<Promise<Value>> {
-        self.0.promises.borrow().get(id).cloned()
+        match &*self.0.promises.borrow() {
+            PromiseTable::Scripted(vec) => vec.get(id).cloned(),
+            PromiseTable::Live { .. } => None,
+        }
+    }
+
+    /// The promise [`track`](Self::track) numbered `id`, taken: a live
+    /// harness's table drops the slot, so nothing but the one JavaScript
+    /// promise this becomes keeps it (and its settled value) alive. `None`
+    /// if `id` is unknown, already taken, or this harness is scripted.
+    pub fn take_promise(&self, id: u32) -> Option<Promise<Value>> {
+        match &mut *self.0.promises.borrow_mut() {
+            PromiseTable::Live { slots, .. } => slots.remove(&id),
+            PromiseTable::Scripted(_) => None,
+        }
     }
 
     /// Live entries by table, for the eval build's memory soak test:
@@ -401,5 +454,36 @@ mod tests {
         let entry = harness.0.entry.borrow();
         assert!(entry.callbacks.is_empty());
         assert!(entry.settled.is_empty());
+    }
+
+    #[test]
+    fn a_live_harness_takes_a_promise_once_and_counts_it_gone() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let harness = Harness::live(Vec::new(), HashMap::new(), live);
+
+        let tracked = harness.track(Promise::resolved(json!(1)));
+        let id = tracked["$promise"].as_u64().unwrap() as u32;
+        assert_eq!(harness.counts()["promises"], json!(1));
+
+        let taken = harness.take_promise(id);
+        assert!(taken.is_some());
+        assert_eq!(harness.counts()["promises"], json!(0), "the take frees the slot");
+        assert!(harness.take_promise(id).is_none(), "a second take finds nothing");
+    }
+
+    #[test]
+    fn a_scripted_harness_keeps_its_vec_and_never_takes() {
+        let harness = Harness::new(Vec::new(), HashMap::new());
+        let tracked = harness.track(Promise::resolved(json!(1)));
+        let id = tracked["$promise"].as_u64().unwrap() as usize;
+
+        // The scripted path still peeks without removing, however many
+        // times something asks.
+        assert!(harness.promise(id).is_some());
+        assert!(harness.promise(id).is_some());
+        assert_eq!(harness.counts()["promises"], json!(1));
+        // `take_promise` is a live-only operation; a scripted harness has no
+        // slot table for it to take from.
+        assert!(harness.take_promise(id as u32).is_none());
     }
 }
