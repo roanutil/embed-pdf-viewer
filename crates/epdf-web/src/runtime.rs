@@ -193,7 +193,7 @@ pub fn from_js(p: js_sys::Promise) -> Promise<Value> {
     promise
 }
 
-fn value_to_js(value: &Value) -> JsValue {
+pub(crate) fn value_to_js(value: &Value) -> JsValue {
     if is_undefined(value) {
         return JsValue::UNDEFINED;
     }
@@ -204,7 +204,7 @@ fn value_to_js(value: &Value) -> JsValue {
 /// A JavaScript value as JSON. `undefined` and a function (which
 /// `JSON.stringify` drops) are the kernel's `undefined`; anything else JSON
 /// cannot carry is a `TypeError`.
-fn js_to_value(value: &JsValue) -> Result<Value, Error> {
+pub(crate) fn js_to_value(value: &JsValue) -> Result<Value, Error> {
     if value.is_undefined() || value.is_function() {
         return Ok(undefined());
     }
@@ -225,7 +225,7 @@ fn js_to_value(value: &JsValue) -> Result<Value, Error> {
 /// an `Error` or any object with a string `message` (its `name`, `message`
 /// and any `code`), or anything else as an `Error` whose message is
 /// `String(value)`.
-fn js_to_error(value: &JsValue) -> Error {
+pub(crate) fn js_to_error(value: &JsValue) -> Error {
     let spec = js_to_value(value).ok();
     if let Some(spec) = spec.as_ref().filter(|spec| spec.get("$error").is_some()) {
         return Error::from_spec(spec);

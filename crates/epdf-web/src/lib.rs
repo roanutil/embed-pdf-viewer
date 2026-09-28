@@ -3,4 +3,5 @@
 //!
 //! docs/superpowers/plans/2026-09-27-web-rust-plugins.md is the plan.
 
+pub mod engine;
 pub mod runtime;

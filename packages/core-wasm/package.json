@@ -1,0 +1,18 @@
+{
+  "name": "@embedpdf/core-wasm",
+  "private": true,
+  "type": "module",
+  "description": "Evaluation only: the Rust kernel and plugins (crates/epdf-web) behind the @embedpdf/core surface.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@embedpdf/engine-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@embedpdf/engine": "workspace:*",
+    "typescript": "^5.0.0",
+    "vitest": "^2.1.9"
+  }
+}
