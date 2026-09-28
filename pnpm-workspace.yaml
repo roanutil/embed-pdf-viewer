@@ -29,6 +29,10 @@ packages:
   - '!**/.vercel/**'
   # exclude the git submodule (and everything inside it)
   - '!packages/engine/runtime/runtime-src/**'
+  # exclude core-wasm's wasm-bindgen output: `wasm-node/package.json` is
+  # generated, gitignored, and not a workspace package.
+  - '!packages/core-wasm/wasm*'
+  - '!packages/core-wasm/wasm*/**'
   # exclude agent scratch trees: a git worktree created while cwd was a
   # subdirectory (e.g. cloudpdf/server) lands inside a glob'd path and re-adds a
   # whole second copy of every workspace package under a stale layout.

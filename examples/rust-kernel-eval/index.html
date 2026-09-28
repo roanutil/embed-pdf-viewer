@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust kernel eval</title>
+    <style>
+      body {
+        margin: 0;
+        font:
+          13px system-ui,
+          sans-serif;
+      }
+      #drive {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        background: #111827;
+        color: #e5e7eb;
+      }
+      #drive button {
+        font: inherit;
+      }
+      /* Screenshots name the kernel they were taken on. */
+      #badge {
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #b7410e;
+        color: #fff;
+        font-weight: 600;
+      }
+      #viewer {
+        height: calc(100vh - 36px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="drive">
+      <span id="badge">Rust kernel</span>
+      <button id="zoom-in">Zoom in</button>
+      <button id="zoom-out">Zoom out</button>
+      <span id="doc-label">loading the Rust kernel</span>
+    </div>
+    <div id="viewer"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

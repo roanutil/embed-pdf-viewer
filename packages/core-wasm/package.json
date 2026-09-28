@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "description": "Evaluation only: the Rust kernel and plugins (crates/epdf-web) behind the @embedpdf/core surface.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
+  },
   "scripts": {
     "build:wasm": "bash ../../crates/epdf-web/scripts/build.sh",
     "typecheck": "tsc -p tsconfig.json --noEmit",

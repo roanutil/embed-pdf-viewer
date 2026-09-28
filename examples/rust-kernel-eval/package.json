@@ -1,0 +1,22 @@
+{
+  "name": "@embedpdf/example-rust-kernel-eval",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evaluation only: the viewer chrome, from source, on the Rust kernel (@embedpdf/core-wasm). Imports of @embedpdf/core and @embedpdf/plugin-<id> resolve to packages/core-wasm/src/redirect.",
+  "scripts": {
+    "dev": "pnpm --filter @embedpdf/core-wasm build:wasm && vite",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@embedpdf/core-wasm": "workspace:*",
+    "preact": "^10.25.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^22.0.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  }
+}
