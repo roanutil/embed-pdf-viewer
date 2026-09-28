@@ -195,6 +195,20 @@ These still grow, or can:
   of the same file through the stamp capability left `allHosts` at 59 before and after, with 17
   previews of 10,643 bytes or more. Only the import path (`render_thumbnail`) has a test; the
   ghost and dynamic placement paths release through the same function but are untested.
+- Baked annotation appearances no longer grow. Annotation's `renderAppearances`
+  (`crates/plugins/annotation/src/read/render.rs:149`) hands the engine's
+  `page.annotations.renderAppearanceImages` images to JS as they came, two host entries each, and
+  the viewer only reads `objectUrl()` off the live handle, so nothing ever released them. Every
+  bake added 10 entries on `ebook.pdf`, including a bake at a scale seen before. The wire now
+  releases each image's entries once the answer is decoded (`RELEASES_HOSTS` in
+  `packages/core-wasm/src/proxy.ts`); the decoded handle keeps its own bytes. In the eval app, a
+  reload read `allHosts` at 50 before and 30 after. Twelve zoom-in steps then took it to 936
+  before and 796 after, and twelve zoom-out steps added 10 per step before (1056 at the end) and
+  nothing after (796). `packages/core-wasm/test/appearance-release.test.ts` bakes page object 181
+  three times over the Node engine and reads `allHosts` back at its start each time.
+- Render tiles fill the host table until the raster store's 128 MiB budget evicts. The 766 entries
+  above are all tiles, and they stay flat on the way back out because every scale is cached. None
+  were evicted.
 - The bridge's document table (`documents` in `createEngineBridge`,
   `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
   included, until `dispose()`. That is one small handle per open. A stamp library import opens one

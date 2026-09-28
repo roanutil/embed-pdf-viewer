@@ -94,6 +94,28 @@ type Outcome = { returned: unknown } | { threw: unknown } | { promise: number };
 /** Members whose result is something new on every call. */
 const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
 
+/** Members whose answer carries engine images (`$host`) nothing reads
+ *  through the host table again once they are decoded: annotation's
+ *  `renderAppearances` passes the engine's
+ *  `page.annotations.renderAppearanceImages` images straight through
+ *  (`crates/plugins/annotation/src/read/render.rs`), and the viewer reads
+ *  each one's `objectUrl()` off the live handle, which keeps its own bytes.
+ *  Their entries are released once the answer is decoded (`promise`). */
+const RELEASES_HOSTS = new Set(['renderAppearances']);
+
+/** Every `$host` id in a canonical value. One inside another `$host` is
+ *  never looked for: a held image's `$hostBytes` goes with its release. */
+function hostIds(value: unknown, out: number[] = []): number[] {
+  if (Array.isArray(value)) {
+    for (const item of value) hostIds(item, out);
+  } else if (value !== null && typeof value === 'object') {
+    const object = value as Record<string, unknown>;
+    if (typeof object.$host === 'number') out.push(object.$host);
+    else for (const member of Object.values(object)) hostIds(member, out);
+  }
+  return out;
+}
+
 /** How many distinct calls keep their last answer for reuse. */
 const ANSWERS_KEPT = 4096;
 
@@ -428,10 +450,19 @@ export class Wire {
     return value;
   }
 
-  /** A promise id as a promise of its decoded value, with `abort`. */
-  promise(id: number): Promise<unknown> & { abort(reason?: unknown): void } {
+  /** A promise id as a promise of its decoded value, with `abort`. A
+   *  `member` in `RELEASES_HOSTS` has the value's `$host` entries released
+   *  once it is decoded. A promise is never cached or reused (`invoke`), so
+   *  nothing decodes the same value twice. */
+  promise(id: number, member?: string): Promise<unknown> & { abort(reason?: unknown): void } {
     const out = this.rust.promise(id).then(
-      (value) => this.decode(value),
+      (value) => {
+        const live = this.decode(value);
+        if (member !== undefined && RELEASES_HOSTS.has(member)) {
+          for (const n of hostIds(value)) this.bridge.release(n);
+        }
+        return live;
+      },
       (error) => {
         throw toError(error);
       },
@@ -554,7 +585,7 @@ export class Wire {
     this.bump();
     if ('threw' in outcome) throw toError(outcome.threw);
     if ('promise' in outcome) {
-      const promise = this.promise(outcome.promise);
+      const promise = this.promise(outcome.promise, member);
       for (const signal of signals) {
         if (signal.aborted) {
           promise.abort(signal.reason);
