@@ -151,6 +151,13 @@ impl Harness {
         Harness::with_live(adapters, tokens, Some(live))
     }
 
+    /// Whether this harness was made with [`live`](Self::live): callbacks
+    /// reach a live host, so an adapter can hand them what a host can
+    /// resolve instead of a trace placeholder.
+    pub fn is_live(&self) -> bool {
+        self.0.live.is_some()
+    }
+
     /// Log a callback into the current trace entry. Skipped on a live
     /// harness.
     pub fn log(&self, name: &str, args: Vec<Value>) {
@@ -283,6 +290,19 @@ impl Harness {
     pub fn outcome_json(&self, outcome: Outcome) -> Value {
         match outcome {
             Outcome::Returned(value) => json!({ "returned": crate::scrub(&value) }),
+            Outcome::Threw(error) => json!({ "threw": error.to_canonical() }),
+            Outcome::Promise(promise) => {
+                let tracked = self.track(promise);
+                json!({ "promise": tracked["$promise"] })
+            }
+        }
+    }
+
+    /// [`outcome_json`](Self::outcome_json) without the scrub, for a live
+    /// host: members that are `undefined` stay `{"$undefined": true}`.
+    pub fn outcome_json_raw(&self, outcome: Outcome) -> Value {
+        match outcome {
+            Outcome::Returned(value) => json!({ "returned": value }),
             Outcome::Threw(error) => json!({ "threw": error.to_canonical() }),
             Outcome::Promise(promise) => {
                 let tracked = self.track(promise);

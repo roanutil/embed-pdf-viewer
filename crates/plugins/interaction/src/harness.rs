@@ -171,6 +171,13 @@ pub fn sample_from_json(
 
 /// A sample as the TypeScript prints it in a callback's arguments.
 pub fn sample_json(sample: &PointerSample) -> Value {
+    sample_members(sample, true)
+}
+
+/// A sample for a callback, `project` shown only when `with_project`. A live
+/// host gets no `project` at all: a placeholder would be non-nullish, and
+/// `samplePointOn` does `s.project?.(page) ?? ...`.
+fn sample_members(sample: &PointerSample, with_project: bool) -> Value {
     let mut out = Map::new();
     out.insert("phase".into(), serde_json::to_value(sample.phase).unwrap());
     out.insert("viewport".into(), serde_json::to_value(sample.viewport).unwrap());
@@ -190,7 +197,7 @@ pub fn sample_json(sample: &PointerSample) -> Value {
     if let Some(source) = &sample.source {
         out.insert("source".into(), json!(source));
     }
-    if sample.project.is_some() {
+    if with_project && sample.project.is_some() {
         out.insert("project".into(), json!({ "$function": true }));
     }
     Value::Object(out)
@@ -210,6 +217,8 @@ pub struct ScriptedHandler {
     on_cancel: Option<Callback>,
     on_hover: Option<Callback>,
     claims_touch: Option<Callback>,
+    /// Built on a live harness: samples go out without `project`.
+    live: bool,
 }
 
 impl ScriptedHandler {
@@ -226,18 +235,23 @@ impl ScriptedHandler {
             on_cancel: member("onCancel"),
             on_hover: member("onHover"),
             claims_touch: member("claimsTouch"),
+            live: h.is_live(),
+        }
+    }
+
+    fn sample(&self, sample: &PointerSample) -> Value {
+        sample_members(sample, !self.live)
+    }
+
+    fn tell(&self, callback: &Option<Callback>, sample: &PointerSample) {
+        if let Some(c) = callback {
+            c.call(vec![self.sample(sample)]);
         }
     }
 }
 
 fn ask(callback: &Option<Callback>, arg: Value) -> bool {
     callback.as_ref().is_some_and(|c| answer_truthy(c.call(vec![arg])))
-}
-
-fn tell(callback: &Option<Callback>, sample: &PointerSample) {
-    if let Some(c) = callback {
-        c.call(vec![sample_json(sample)]);
-    }
 }
 
 impl InteractionHandler for ScriptedHandler {
@@ -251,25 +265,25 @@ impl InteractionHandler for ScriptedHandler {
         ask(&self.enabled_for, tool_json(tool))
     }
     fn on_down(&self, sample: &PointerSample) -> bool {
-        ask(&self.on_down, sample_json(sample))
+        ask(&self.on_down, self.sample(sample))
     }
     fn on_move(&self, sample: &PointerSample) {
-        tell(&self.on_move, sample);
+        self.tell(&self.on_move, sample);
     }
     fn on_up(&self, sample: &PointerSample) {
-        tell(&self.on_up, sample);
+        self.tell(&self.on_up, sample);
     }
     fn on_cancel(&self, sample: &PointerSample) {
         match &self.on_cancel {
-            Some(_) => tell(&self.on_cancel, sample),
-            None => tell(&self.on_up, sample),
+            Some(_) => self.tell(&self.on_cancel, sample),
+            None => self.tell(&self.on_up, sample),
         }
     }
     fn on_hover(&self, sample: &PointerSample) {
-        tell(&self.on_hover, sample);
+        self.tell(&self.on_hover, sample);
     }
     fn claims_touch(&self, sample: &PointerSample) -> bool {
-        ask(&self.claims_touch, sample_json(sample))
+        ask(&self.claims_touch, self.sample(sample))
     }
 }
 

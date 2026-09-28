@@ -14,13 +14,27 @@
 //! `{"$fn": "js:<id>"}`. Calling it calls `call_js(id, argsJson)` with the
 //! `<id>` text; its return value, throw or promise is the callback's answer.
 //!
+//! A command function's context arrives with markers where the TypeScript
+//! has functions and a live object: `ctx.core`, `ctx.get` and `ctx.tryGet`
+//! are each `{"$kernel": "core" | "get" | "tryGet", "doc": <documentId or
+//! null>}` (`epdf_plugin_commands::harness`, `ctx_json`). The host resolves
+//! `get` to [`WasmKernel::capability`], `tryGet` to
+//! [`WasmKernel::try_capability`] and `core` to `state_json().core`, each
+//! with that `doc`.
+//!
+//! The same capability object always describes to the same text, with the
+//! same refs: [`WasmKernel`] memoizes each description by the capability's
+//! `Rc`, which the cache holds so its address is never reused.
+//!
 //! Every export ends with [`after_entry`], so the kernel's queue drains and
 //! its timers stay armed.
 
+use std::any::Any;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use epdf_kernel::types::PluginScope;
 use epdf_kernel::{
     AnyToken, DOCUMENTS, Error, Kernel, KernelOptions, Promise, Unsubscribe, undefined,
 };
@@ -99,6 +113,10 @@ fn thenable(value: &JsValue) -> Option<js_sys::Promise> {
     then.is_function().then(|| js_sys::Promise::resolve(value))
 }
 
+/// A capability's description, with the capability that owns the address
+/// it is keyed by.
+type Described = HashMap<*const (), (Rc<dyn Any>, String)>;
+
 /// The kernel and every plugin, built from specs and driven by name.
 #[wasm_bindgen]
 pub struct WasmKernel {
@@ -108,6 +126,10 @@ pub struct WasmKernel {
     /// `Unsubscribe` unsubscribes, so each lives here until `unsubscribe`.
     subscriptions: RefCell<HashMap<u32, Unsubscribe>>,
     next_subscription: Cell<u32>,
+    /// Descriptions by capability address.
+    described: RefCell<Described>,
+    /// `kernel.documents()`, made once so its description memoizes too.
+    documents: Rc<dyn Any>,
 }
 
 #[wasm_bindgen]
@@ -162,11 +184,14 @@ impl WasmKernel {
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
+        let documents: Rc<dyn Any> = Rc::new(kernel.documents());
         Ok(WasmKernel {
             kernel,
             harness,
             subscriptions: RefCell::new(HashMap::new()),
             next_subscription: Cell::new(0),
+            described: RefCell::new(HashMap::new()),
+            documents,
         })
     }
 
@@ -194,10 +219,43 @@ impl WasmKernel {
         })
     }
 
+    /// `kernel.tryCapability(token, documentId?)`, described, or `null`
+    /// while the document is not ready. Throws the canonical error the
+    /// kernel refuses with.
+    pub fn try_capability(
+        &self,
+        token_name: String,
+        doc_id: Option<String>,
+    ) -> Result<Option<String>, JsValue> {
+        entry(|| {
+            let token = self.harness.token(&token_name, None);
+            self.kernel
+                .try_capability_any(&token, doc_id.as_deref())
+                .map(|capability| capability.map(|c| self.describe(c)))
+                .map_err(|e| thrown(&e))
+        })
+    }
+
+    /// `kernel.scopeOf(token)`: `"document"` or `"workspace"`.
+    pub fn scope_of(&self, token_name: String) -> String {
+        entry(|| {
+            let token = self.harness.token(&token_name, None);
+            match self.kernel.scope_of(&token) {
+                PluginScope::Document => "document".into(),
+                PluginScope::Workspace => "workspace".into(),
+            }
+        })
+    }
+
+    /// `kernel.status()`.
+    pub fn status(&self) -> String {
+        entry(|| self.kernel.status().as_str().into())
+    }
+
     /// `kernel.documents()`, described as [`capability`](Self::capability)
     /// describes one.
     pub fn documents(&self) -> String {
-        entry(|| self.describe(Rc::new(self.kernel.documents())))
+        entry(|| self.describe(self.documents.clone()))
     }
 
     /// Call a ref with canonical JSON arguments. Throws only if the
@@ -209,7 +267,7 @@ impl WasmKernel {
                 Some(f) => f(args),
                 None => Outcome::Threw(Error::new(format!("[epdf-web] no ref {id}"))),
             };
-            Ok(self.outcome_json(outcome).to_string())
+            Ok(self.harness.outcome_json_raw(outcome).to_string())
         })
     }
 
@@ -227,13 +285,19 @@ impl WasmKernel {
 
     /// Abort a promise id, as its `AbortablePromise.abort(reason)` would.
     /// `reason_json` is the reason's canonical JSON; an unknown id does
-    /// nothing.
-    pub fn abort_promise(&self, id: u32, reason_json: Option<String>) {
+    /// nothing. Throws a `TypeError` if `reason_json` is not JSON.
+    pub fn abort_promise(&self, id: u32, reason_json: Option<String>) -> Result<(), JsValue> {
         entry(|| {
-            let reason = reason_json.and_then(|text| serde_json::from_str(&text).ok());
+            let reason = match reason_json {
+                Some(text) => Some(serde_json::from_str(&text).map_err(|e| {
+                    thrown(&Error::named("TypeError", format!("malformed abort reason: {e}")))
+                })?),
+                None => None,
+            };
             if let Some(promise) = self.harness.promise(id as usize) {
                 promise.abort(reason);
             }
+            Ok(())
         })
     }
 
@@ -267,19 +331,15 @@ impl WasmKernel {
 }
 
 impl WasmKernel {
-    fn describe(&self, capability: Rc<dyn std::any::Any>) -> String {
-        self.harness.describe(capability).unwrap_or_else(|| json!({})).to_string()
-    }
-
-    /// [`Harness::outcome_json`] without the scrub, so `undefined` members
-    /// survive.
-    fn outcome_json(&self, outcome: Outcome) -> Value {
-        match outcome {
-            Outcome::Returned(value) => json!({ "returned": value }),
-            Outcome::Threw(error) => json!({ "threw": error.to_canonical() }),
-            Outcome::Promise(promise) => {
-                json!({ "promise": self.harness.track(promise)["$promise"] })
-            }
+    /// The harness's description of `capability`, made once per capability.
+    fn describe(&self, capability: Rc<dyn Any>) -> String {
+        let key = Rc::as_ptr(&capability) as *const ();
+        if let Some((_, text)) = self.described.borrow().get(&key) {
+            return text.clone();
         }
+        let text =
+            self.harness.describe(capability.clone()).unwrap_or_else(|| json!({})).to_string();
+        self.described.borrow_mut().insert(key, (capability, text.clone()));
+        text
     }
 }

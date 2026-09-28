@@ -80,15 +80,23 @@ fn opt_string(object: &Map<String, Value>, key: &str) -> Option<String> {
 
 // ── scripted command functions ────────────────────────────────────────────────
 
-/// The canonical form of a `CommandCtx` in a callback's arguments.
-fn ctx_json(c: &CommandCtx) -> Value {
+/// The canonical form of a `CommandCtx` in a callback's arguments. On a
+/// live harness its `core`, `get` and `tryGet` are markers the host resolves
+/// against the kernel, `{"$kernel": member, "doc": documentId}`; a trace
+/// prints each as `{"$function": true}`.
+fn ctx_json(c: &CommandCtx, live: bool) -> Value {
     let mut out = Map::new();
     out.insert("documentId".into(), json!(c.document_id()));
     if let Some(args) = c.args() {
         out.insert("args".into(), args.clone());
     }
     for member in ["core", "get", "tryGet"] {
-        out.insert(member.into(), json!({ "$function": true }));
+        let shown = if live {
+            json!({ "$kernel": member, "doc": c.document_id() })
+        } else {
+            json!({ "$function": true })
+        };
+        out.insert(member.into(), shown);
     }
     Value::Object(out)
 }
@@ -169,7 +177,7 @@ fn scripted(spec: &Value, h: &Harness) -> Rc<dyn Fn(&CommandCtx) -> Answer> {
     let uses = spec.get("uses").and_then(Value::as_array).cloned();
     let h = h.clone();
     Rc::new(move |c: &CommandCtx| {
-        let answer = callback.call(vec![ctx_json(c)]);
+        let answer = callback.call(vec![ctx_json(c, h.is_live())]);
         if let Some(uses) = &uses {
             let results = uses.iter().map(|u| run_use(u, c, &h)).collect();
             h.log(&format!("{}:uses", callback.name()), results);
