@@ -93,11 +93,27 @@ fn args_json(args: &[Value]) -> String {
     Value::Array(args.to_vec()).to_string()
 }
 
+/// Hand every `$host` in `value` back through `release_host`, nested ones
+/// included. A `$hostBytes` carries no `$host` and goes with its image.
+fn release_hosts(value: &Value) {
+    match value {
+        Value::Array(items) => items.iter().for_each(release_hosts),
+        Value::Object(members) => {
+            if members.contains_key("$host") {
+                epdf_kernel::bytes::release_host(value);
+            }
+            members.values().for_each(release_hosts);
+        }
+        _ => {}
+    }
+}
+
 /// A bridge call as an engine call: the answer's JSON text parsed, a
 /// rejection mapped by [`refused`], and the bridge promise's `abort` wired
 /// to [`Promise::abort`]. An abort rejects at once with `AbortError`, as
 /// `AbortablePromise.abort` does, and the bridge's own later rejection is
-/// dropped.
+/// dropped. A later answer is dropped too, and nothing ever sees it, so its
+/// `$host` values are released rather than left in the bridge's table.
 fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
     let js = match started {
         Ok(js) => js,
@@ -109,6 +125,15 @@ fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
     let (promise, resolver) = Promise::<Value>::pending();
     let settle = resolver.clone();
     runtime::from_js(js.clone()).on_settle(move |result| {
+        // Only the abort below settles the promise before this does.
+        if settle.promise().is_settled() {
+            if let Ok(Value::String(text)) = result
+                && let Ok(late) = serde_json::from_str::<Value>(text)
+            {
+                release_hosts(&late);
+            }
+            return;
+        }
         settle.settle(match result {
             Ok(Value::String(text)) => serde_json::from_str(text)
                 .map_err(|e| Error::new(format!("[engine-bridge] malformed answer: {e}"))),

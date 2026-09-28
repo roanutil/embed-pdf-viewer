@@ -23,7 +23,7 @@ import type {
   PluginScope,
   Unsubscribe,
 } from '@embedpdf/core';
-import { createEngineBridge } from './engine-bridge';
+import { createEngineBridge, type EngineBridge } from './engine-bridge';
 import { isRustPlugin, type RustPluginDef } from './plugins';
 import { rusty, toError, Wire, type RustKernelClass } from './proxy';
 
@@ -33,6 +33,64 @@ let RustKernel: RustKernelClass | undefined;
  *  `init()`) in a browser, `wasm-node/` under Node. */
 export function setWasmKernel(kernel: RustKernelClass): void {
   RustKernel = kernel;
+}
+
+let wasmMemoryBytes: (() => number) | undefined;
+
+/** The wasm module's `wasm_memory_bytes` export (`crates/epdf-web/src/exports
+ *  .rs`), the whole module's linear memory in bytes. Set alongside
+ *  [`setWasmKernel`]: `wasm/` in a browser, `wasm-node/` under Node. */
+export function setWasmMemoryBytes(fn: () => number): void {
+  wasmMemoryBytes = fn;
+}
+
+/** Each kernel this module built, by the object `createKernel` returned, so
+ *  `kernelCounts` can reach its bridge and wire (and through the wire its
+ *  Rust handle) without widening the public `Kernel` type. Dev-only, for the
+ *  eval build's memory soak test. */
+const tables = new WeakMap<Kernel, { bridge: EngineBridge; wire: Wire }>();
+
+/** Every kernel `createKernel` built and has not yet destroyed, so a debug
+ *  hook that has no reference of its own (`examples/rust-kernel-eval`'s
+ *  `window.__epdfCounts`, called from a document the framework wrappers
+ *  built) can still read counts, and so a destroyed or ambiguous default
+ *  fails loudly instead of silently reporting the wrong (or a dead)
+ *  kernel's counts. */
+const liveKernels = new Set<Kernel>();
+
+/** Live entries in every table this session's memory tasks are chasing, for
+ *  `kernel` (built by [`createKernel`]; defaults to the sole live kernel,
+ *  throwing if there is none or more than one): the harness's
+ *  `refs`/`promises`/`heldFns` (the `$fn` ids some Rust callback still
+ *  holds), `described` capabilities, `aborts`, the engine bridge's
+ *  `hosts` (its own entries), `allHosts` (every bridge's: the one table
+ *  they share) and `documents`, the wire's `fns`/`wireRefs`/`proxies`, and
+ *  `wasmBytes`, the wasm module's own linear memory.
+ *
+ *  `refs` is the harness's table, not the wire's: the two are not the same
+ *  count. The wire holds an unpinned ref's function weakly and drops its
+ *  entry when a `FinalizationRegistry` callback releases it in the kernel,
+ *  so the two only agree once the engine has run those callbacks; an answer
+ *  the wire reuses releases its undecoded fresh refs at once (`proxy.ts`).
+ *  Both are reported, under different keys, so a merge can never hide a
+ *  gap between them. `aborts` is `WasmKernel`'s table of taken promises
+ *  still abortable. */
+export function kernelCounts(kernel?: Kernel): Record<string, number> {
+  if (kernel === undefined) {
+    if (liveKernels.size === 0) throw new Error('[core-wasm] kernelCounts: no live kernel');
+    if (liveKernels.size > 1) {
+      throw new Error(
+        `[core-wasm] kernelCounts: ${liveKernels.size} live kernels; pass one explicitly`,
+      );
+    }
+    [kernel] = liveKernels;
+  }
+  const entry = tables.get(kernel);
+  if (!entry) throw new Error('[core-wasm] kernelCounts: not a kernel createKernel built');
+  const harness = JSON.parse(rusty(() => entry.wire.rust.debug_counts())) as Record<string, number>;
+  const { refs: wireRefs, ...wireRest } = entry.wire.counts();
+  const wasmBytes = wasmMemoryBytes ? wasmMemoryBytes() : NaN;
+  return { ...harness, ...entry.bridge.counts(), ...wireRest, wireRefs, wasmBytes };
 }
 
 const UNSUPPORTED = ['initialState', 'reduce', 'capability', 'create', 'effects'] as const;
@@ -48,6 +106,15 @@ function checkJsPlugin(plugin: AnyPlugin): void {
 }
 
 type Cleanup = () => void;
+
+/** Render's live `host.releaseImage`: the render plugin's raster store
+ *  reports the `$host` id of each image its last Rust handle let go of, and
+ *  this kernel's bridge releases it. Added here, not in `renderPlugin`
+ *  (`./plugins`): the factory runs before there is a bridge. */
+function withReleaseImage(config: unknown, bridge: EngineBridge): unknown {
+  const base = (config ?? {}) as { host?: Record<string, unknown> };
+  return { ...base, host: { ...base.host, releaseImage: (n: number) => bridge.release(n) } };
+}
 
 export function createKernel(opts: {
   engine: Engine;
@@ -71,11 +138,14 @@ export function createKernel(opts: {
 
   const bridge = createEngineBridge(engine as never);
   const wire = new Wire(bridge);
-  const specs = rustPlugins.map((p) => ({ factory: p.$rust, config: wire.encode(p.config) }));
+  const specs = rustPlugins.map((p) => ({
+    factory: p.$rust,
+    config: wire.encode(p.$rust === 'render' ? withReleaseImage(p.config, bridge) : p.config),
+  }));
   const Rust = RustKernel;
   const rust = (() => {
     try {
-      return new Rust(JSON.stringify(specs), bridge, wire.callJs);
+      return new Rust(JSON.stringify(specs), bridge, wire.callJs, wire.releaseJs);
     } catch (error) {
       throw toError(error);
     }
@@ -83,13 +153,16 @@ export function createKernel(opts: {
   wire.attach(rust);
 
   const listeners = new Set<() => void>();
-  rust.subscribe(() => {
+  const subscription = rust.subscribe(() => {
     wire.changes++;
     wire.bump();
     for (const listener of [...listeners]) listener();
   });
 
   const documents = wire.documents() as DocumentsCapability;
+  // After the kernel's own listener, which evicted the closed document's
+  // capabilities from its memo.
+  documents.onClosed(() => wire.evict());
   const name = (token: CapabilityToken<unknown>) => token.name;
 
   // ── init-only JS plugins ──
@@ -141,32 +214,55 @@ export function createKernel(opts: {
   let started: Promise<void> | undefined;
   let destroyed: Promise<void> | undefined;
 
-  return {
+  const kernel: Kernel = {
     engine,
     documents,
     capability: <T>(token: CapabilityToken<T>, documentId?: string) =>
       wire.capability(name(token), documentId) as T,
     tryCapability: <T>(token: CapabilityToken<T>, documentId?: string) =>
       wire.tryCapability(name(token), documentId) as T | null,
-    scopeOf: (token) => rusty(() => rust.scope_of(name(token))) as PluginScope,
+    scopeOf: (token) => rusty(() => wire.rust.scope_of(name(token))) as PluginScope,
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
     getState: () => wire.getState() as GlobalState,
-    status: () => rusty(() => rust.status()) as KernelStatus,
+    status: () => rusty(() => wire.rust.status()) as KernelStatus,
     start: () =>
-      (started ??= rust.start().then(startJsPlugins, (error) => {
+      (started ??= wire.rust.start().then(startJsPlugins, (error) => {
         throw toError(error);
       })),
+    // Frees the Rust side once its destroy settles; every call after that
+    // throws `[core-wasm] kernel destroyed` (`Wire.rust`).
     destroy: () =>
       (destroyed ??= (async () => {
+        liveKernels.delete(kernel);
         for (const doc of [...cleanups.keys()]) runCleanups(doc);
         try {
           await rust.destroy();
         } catch (error) {
           report(toError(error));
         }
+        // After destroy settles, not before: `rust.destroy()` closes every
+        // session, and closing dispatches document-removed actions the
+        // shim's subscription (`wire.bump()`) still needs to see, matching
+        // the TS kernel's own order (`packages/core/main/src/kernel.ts`,
+        // closing sessions before it clears its own listeners).
+        rust.unsubscribe(subscription);
+        // `wire.dispose()` stays after `free()`, not before: `free()`'s own
+        // Drop cascade is what calls back into JS through `wire.callJs` to
+        // release the raster store's still-cached images (`withReleaseImage`
+        // in this file), through the same `fns` table `dispose()` clears and
+        // the same `dead` flag that makes `callJs` refuse to run at all. See
+        // the "Review fixes" deviation in `.superpowers/sdd/task-7-report.md`
+        // for why moving `wire.dispose()` earlier, as first proposed, is not
+        // safe here: it silently drops that release instead of throwing.
+        rust.free();
+        wire.dispose();
+        bridge.dispose();
       })()),
   };
+  tables.set(kernel, { bridge, wire });
+  liveKernels.add(kernel);
+  return kernel;
 }

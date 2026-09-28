@@ -24,7 +24,7 @@ timed.
 | Markup, ink, free text, note, caret and replace tools | works | annotation | | The same synthetic gestures create the same annotations with the same bounds in both viewers. |
 | Shape, callout and link tools | works | annotation | | Same results from the same `createPointer` sequences, props included. The UI gestures for polygon and callout were not driven successfully in either viewer. |
 | Annotation edit and delete | works | annotation | | Moving a note by 60 x 30 px gives the same new bounds (`x` 12.5 to 57.5). Color from the Style panel and Delete from the strip both apply. |
-| Stamps | works | stamp, annotation | | Placing "Approved" gives a 164 x 50 pt stamp in both. |
+| Stamps | works | stamp, annotation | | Placing "Approved" gives a 164 x 50 pt stamp in both. "Import PDF…" works since `f303fafb5`, which reads a `File` argument to bytes before it crosses; before that it failed on the Rust kernel. |
 | Images | works | annotation | | Clicking with the Image tool opens the picker (`accept="image/png,image/jpeg"`); a 120 x 60 PNG becomes a 120 x 60 `stamp`. |
 | Form fill | works | form, actions | | `action_form_fixture.pdf`: text, checkbox, radio, dropdown, Hide/Show Field, Reset All and Next Page behave identically. |
 | Validate and calculate scripts | works | actions, acrojs | | An invalid email raises the same `alert` text; `calcsum` follows `calc1 + calc2` (1284.5). |
@@ -156,14 +156,89 @@ other direction, `abort()` on a promise from the shim calls `abort_promise`, whi
 with no abort handle. A promise made with `map` (`rt.rs:476-482`) has none unless the plugin
 carries it over with `abort_handle`.
 
-Session memory only grows. The harness keeps every ref and promise it hands out
-(`refs` and `promises` in `crates/plugin-conformance/src/harness.rs:98-99`), and the engine bridge
-keeps every host value and document handle (`hosts` and `documents` in
-`createEngineBridge`, `packages/core-wasm/src/engine-bridge.ts`). Every render's bytes are held
-twice: as the `$bytes` base64 the Rust side keeps, and in the `PageImageHandle` the bridge's host
-table keeps. `destroy` in `packages/core-wasm/src/kernel.ts` awaits `rust.destroy()` but never
-calls `free()` on the `WasmKernel` or unsubscribes its store listener, so a destroyed kernel stays
-in wasm memory. For one tab of manual testing this is fine; reopening documents for an hour is not.
+Session memory is bounded for scrolling and rendering, measured at `3d4199d10`.
+`packages/core-wasm/test/soak.test.ts` pans `ebook.pdf` 300 times over the Node engine and checks
+each counter against its own rule between iterations 50 and 300: `promises`, `aborts`, `described`,
+`documents` and `proxies` must not grow at all; `refs`, `wireRefs`, `fns` and `heldFns` may grow by
+up to 64 (`LAGGING_SLACK`), since their release can lag a sample; `hosts` and `allHosts` are
+bounded, not flat; and `wasmBytes` may grow by up to 2 MiB. Before the release work
+(`cc1266800`) the harness's `refs` went from 1271 to 5915 and its `promises` from 190 to 964 over
+that span, and the wasm module's linear memory (`wasmBytes`) from 16.3 MB to 66.8 MB at a 96 px
+render width, or from 232 MB to 1088 MB at 400 px. Now `refs` stays at 130, `promises` at 0 and
+`wasmBytes` at 12,582,912 bytes at both samples. The engine bridge's host table is capped by the
+raster store's 128 MiB budget instead: 380 entries at iteration 50, 222 at 300.
+
+The browser agrees. Five round trips from the top of `ebook.pdf` to the bottom and back at 300%
+zoom left `wasmBytes` at 9,437,184 bytes before and after, `refs` at 654 then 650, and `promises`
+at 0. The JS heap snapshot grew 15.6 MiB in the eval app (78.9 to 94.5 MiB) and 13.3 MiB in the
+TypeScript viewer (133.5 to 146.7 MiB). Most of each delta is `ArrayBuffer` data, the encoded tiles
+each raster store keeps: 9.5 MiB over 546 more buffers in the eval app, 7.3 MiB over 521 in the
+TypeScript. The eval app's host table went from 60 entries to 1152, and three more round trips
+added 20, 10 and 10. That is the store filling toward its budget, which this document does not
+reach at 300% in either viewer, so nothing evicted in the browser. A heap snapshot is not a
+reading of wasm memory, which is why `wasmBytes` is read separately.
+
+These still grow, or can:
+
+- Stamp previews no longer grow. The stamp plugin calls `page.render.image` on the engine itself
+  (`crates/plugins/stamp/src/services/asset_engine.rs:210`, `ghosts.rs:39`,
+  `write/placement.rs:218`), so those images never enter the raster store. All three go through
+  `image_to_preview` (`asset_engine.rs:96`), which now copies the bytes out and then hands the
+  render back through `epdf_kernel::bytes::release_host`. The wasm build installs that hook once
+  per instance (`set_host_release`, called from `initWasm()`) over the bridge's module-level
+  `releaseHost`, which frees both entries a macrotask later, like `bridge.release`. A render whose
+  bytes did not resolve is kept, and a native build installs no hook. Before, importing
+  `packages/default-stamps/en/stamps.pdf` (17 stamps) added 34 host entries holding 1,634,402
+  bytes of BMP over the Node engine, and each further import added the same again. Now the Node
+  test in `packages/core-wasm/test/stamp-preview.test.ts` reads `allHosts` at 0 before the import
+  and 0 after, where the same test read 34 without the stamp change. In the eval app, an import
+  of the same file through the stamp capability left `allHosts` at 59 before and after, with 17
+  previews of 10,643 bytes or more. Only the import path (`render_thumbnail`) has a test; the
+  ghost and dynamic placement paths release through the same function but are untested.
+- Baked annotation appearances no longer grow. Annotation's `renderAppearances`
+  (`crates/plugins/annotation/src/read/render.rs:149`) hands the engine's
+  `page.annotations.renderAppearanceImages` images to JS as they came, two host entries each, and
+  the viewer only reads `objectUrl()` off the live handle, so nothing ever released them. Every
+  bake added 10 entries on `ebook.pdf`, including a bake at a scale seen before. The wire now
+  releases each image's entries once the answer is decoded (`RELEASES_HOSTS` in
+  `packages/core-wasm/src/proxy.ts`); the decoded handle keeps its own bytes. In the eval app, a
+  reload read `allHosts` at 50 before and 30 after. Twelve zoom-in steps then took it to 936
+  before and 796 after, and twelve zoom-out steps added 10 per step before (1056 at the end) and
+  nothing after (796). `packages/core-wasm/test/appearance-release.test.ts` bakes page object 181
+  three times over the Node engine and reads `allHosts` back at its start each time.
+- Render tiles fill the host table until the raster store's 128 MiB budget evicts. The 766 entries
+  above are all tiles, and they stay flat on the way back out because every scale is cached. None
+  were evicted.
+- The bridge's document table (`documents` in `createEngineBridge`,
+  `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
+  included, until `dispose()`. That is one small handle per open. A stamp library import opens one
+  too (the Node run above goes from 1 to 2 to 3 over two imports), and the eval app reads
+  `documents: 2` with one tab.
+- `aborts` keeps its entry for a promise that never settles. It read 0 in the soak and in the
+  browser.
+- Annotation's `BEHAVIORS` thread_local is shared by every kernel in one wasm instance, so a
+  destroyed kernel's behaviors, and the harness they hold, stay alive until the next annotation
+  build.
+
+A release queued while the kernel is idle waits for the next outermost call into it (the module
+doc of `crates/epdf-web/src/exports.rs`), so the callbacks it covers outlive their last use by that
+long. `abort_promise` does nothing for a live caller, because no outer promise is wired with an
+abort handle (see "Cancellation is partial" above). Releasing an evicted tile has no automated
+test: the soak evicts full-page renders, and the browser pass never reaches the budget, so the
+tile path was checked only by hand against a build with `DEFAULT_MAX_COST` set to 4 MiB. In the
+live build only, a handler that calls its own `off()` twice around `onDown` does not get `owner`
+cleared on the second call: `unregister_ref` (`crates/plugins/interaction/src/harness.rs`) drops
+the `Unregister` the first time it runs, to free the handler's callbacks once JavaScript is done
+with it. `dispatch_pointer` sets `owner` to that handler only after `on_down` returns true, so the
+second `off()` arrives too late to find anything to call, and the removed handler stays `owner`
+until the next `up` or `cancel`, receiving `move` events for the rest of the gesture. Found by
+tracing the code, not reproduced in the browser.
+
+Closing a document drops its session's capabilities only because `epdf-web` sets
+`KernelOptions.release_closed_sessions` (`crates/epdf-kernel/src/kernel.rs`). The flag defaults
+to `false`. Native callers and the conformance vectors rely on a closed session's deferred work
+going quiet through its `Weak` guards, not on the lists being emptied, and the default keeps their
+behavior exactly as it was.
 
 Destroy logs 16 `[kernel] capability("stage") on a destroying kernel` reports from a fresh
 `ebook.pdf` load, where the TypeScript logs 17. That is a faithful port of a TypeScript bug; see
@@ -176,6 +251,13 @@ so `examples/rust-kernel-eval/src/hosts.ts` over real `requestAnimationFrame` an
 `packages/core-wasm/src/proxy.ts`), were only exercised by hand. And the `LiveSandbox` in
 `crates/plugins/actions/src/harness.rs` has no error-path tests: a sandbox member that is not a
 function, one that answers a promise, and a `boot` or `run` that throws are all unexercised.
+
+The rehydrated transform's drift check (`withPageTransform` in
+`packages/core-wasm/src/rehydrate.ts`) follows the same fail-loudly rule as the release paths
+above: it throws rather than hand back a transform that differs from the kernel's, even by the
+rebuild's last bit. A real PDF whose page size or scale lands on that last bit would break
+`listVisiblePages` outright, and only one fixture (`packages/core-wasm/test/rehydrate.test.ts`)
+pins the rebuild against the kernel's own math.
 
 ## Commits made during the pass
 

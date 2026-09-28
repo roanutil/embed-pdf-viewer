@@ -8,6 +8,7 @@
 //! [`tool_json`], [`ScriptedHandler`]).
 
 use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_geometry::Point;
@@ -336,11 +337,32 @@ impl PlatformFeedback for LoggingFeedback {
     }
 }
 
+/// The unregister as a ref. On a live harness, its first call runs the
+/// `Unregister` and drops it: the `Unregister` holds the handler it
+/// removes, so keeping it would keep the handler's callbacks (and a live
+/// host's functions) alive until the ref itself is released. A scripted
+/// harness never drops it, and calls it on every invocation, exactly like
+/// the TypeScript closure: `dispatch_pointer` sets `owner` to a handler
+/// only after `on_down` returns, so a handler that unregisters itself
+/// inside `on_down` still needs a later call to clear `owner`. Taking the
+/// `Unregister` early would make that later call a no-op; only the live
+/// harness accepts that trade for the memory it frees.
 fn unregister_ref(h: &Harness, unregister: crate::Unregister) -> Outcome {
-    Outcome::Returned(h.register_fn(Rc::new(move |_| {
-        unregister.call();
-        Outcome::undefined()
-    })))
+    if h.is_live() {
+        let unregister = RefCell::new(Some(unregister));
+        Outcome::Returned(h.register_fn(Rc::new(move |_| {
+            let taken = unregister.borrow_mut().take();
+            if let Some(unregister) = taken {
+                unregister.call();
+            }
+            Outcome::undefined()
+        })))
+    } else {
+        Outcome::Returned(h.register_fn(Rc::new(move |_| {
+            unregister.call();
+            Outcome::undefined()
+        })))
+    }
 }
 
 fn not_a_function(method: &str) -> Outcome {
@@ -582,4 +604,62 @@ pub fn functions() -> FunctionTable {
         ("initialInteractionState", initial_state_fn),
         ("reduceInteraction", reducer_fn),
     ]
+}
+
+#[cfg(test)]
+mod unregister_ref_tests {
+    use std::cell::Cell;
+    use std::collections::HashMap;
+
+    use plugin_conformance::{Answer, LiveFn};
+
+    use super::*;
+
+    /// The ref `unregister_ref` handed back, called as JavaScript would call
+    /// it: with no arguments.
+    fn call_ref(h: &Harness, value: &Value) -> Outcome {
+        let id = value["$ref"].as_u64().unwrap() as usize;
+        (h.ref_fn(id).expect("the ref is still registered"))(Vec::new())
+    }
+
+    /// A scripted harness never takes the `Unregister`, so calling the ref
+    /// twice runs it twice, exactly like the TypeScript closure. This is
+    /// the case in the finding: a handler that unregisters itself inside
+    /// `on_down`, before `dispatch_pointer` sets `owner`, needs a second
+    /// call to reach the owner-clearing branch.
+    #[test]
+    fn a_scripted_ref_calls_unregister_every_time() {
+        let h = Harness::new(Vec::new(), HashMap::new());
+        let calls = Rc::new(Cell::new(0));
+        let counted = calls.clone();
+        let unregister = crate::Unregister::new(move || counted.set(counted.get() + 1));
+
+        let Outcome::Returned(value) = unregister_ref(&h, unregister) else {
+            panic!("unregister_ref always returns a ref");
+        };
+        call_ref(&h, &value);
+        call_ref(&h, &value);
+
+        assert_eq!(calls.get(), 2, "a second off() must still run the unregister, clearing owner");
+    }
+
+    /// A live harness takes the `Unregister` on the first call, so a
+    /// second call is a no-op: the documented live-only divergence from
+    /// the TypeScript (see docs/research/rust-plugins-web-eval.md).
+    #[test]
+    fn a_live_ref_calls_unregister_once() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        let h = Harness::live(Vec::new(), HashMap::new(), live);
+        let calls = Rc::new(Cell::new(0));
+        let counted = calls.clone();
+        let unregister = crate::Unregister::new(move || counted.set(counted.get() + 1));
+
+        let Outcome::Returned(value) = unregister_ref(&h, unregister) else {
+            panic!("unregister_ref always returns a ref");
+        };
+        call_ref(&h, &value);
+        call_ref(&h, &value);
+
+        assert_eq!(calls.get(), 1, "the live path drops the Unregister after its first call");
+    }
 }

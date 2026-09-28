@@ -19,7 +19,22 @@
  *     `required` and `context` reach the kernel intact.
  *   - A value JSON cannot carry (a `PageImageHandle` with its `objectUrl()`,
  *     a `Blob`) is kept in a host table and crosses as its data members plus
- *     `$host: n`; `host(n)` returns the original. The table only grows.
+ *     `$host: n`; `host(n)` returns the original. `release(n)` lets go of a
+ *     rendered image once the render plugin's last Rust handle to it drops
+ *     (`RenderHost::release_image`), and the module-level [`releaseHost`]
+ *     does the same for one the stamp plugin rendered and copied into a
+ *     preview; everything else stays for the session.
+ *   - A `PageImageHandle`'s `source.bytes` crosses as
+ *     `{"$hostBytes": n, "$byteLength": len}`, not the encoded image. `n` is
+ *     a second, separate host-table entry for the raw `Uint8Array` itself,
+ *     from the one table every bridge this module builds shares (see
+ *     `allHosts` below), so `n` is unique across bridges, not just within
+ *     one. The module-level [`hostBytes`] resolves it and is the one
+ *     function the wasm side installs, once per instance
+ *     (`set_host_bytes_source`, called from `browser.ts`), not once per
+ *     kernel: two live kernels (two viewers on a page, or a remount) must
+ *     not race to overwrite each other's resolver. The render raster store
+ *     only ever reads `$byteLength` and never calls `hostBytes`.
  *
  * Every asynchronous method answers a promise with an `abort(reason)` when
  * the engine's promise had one, which the Rust side calls from
@@ -51,10 +66,29 @@ export interface EngineBridge {
   subscribe(docId: string, listener: (eventJson: string) => void): () => void;
   /** `engine.destroy()`. */
   destroy(): BridgeCall;
-  /** The live value behind a `{"$host": n}`. */
+  /** The live value behind a `{"$host": n}` this bridge holds; throws for
+   *  an id another bridge holds. */
   host(n: number): unknown;
+  /** The live `Uint8Array` behind a `{"$hostBytes": n}` this bridge holds;
+   *  throws if `n` is not a bytes entry this bridge holds. The module-level
+   *  [`hostBytes`] is what Rust actually calls; this is the same lookup,
+   *  scoped to one bridge, for this bridge's own callers. */
+  hostBytes(n: number): Uint8Array;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
+  /** Let go of host value `n`, and of its `$hostBytes` entry when it is a
+   *  rendered image: marked now, deleted on the next macrotask (see the
+   *  release site for why). Throws for an id this bridge does not hold, and
+   *  for one already released. */
+  release(n: number): void;
+  /** The kernel over this bridge is freed: delete every entry this bridge
+   *  still holds from the shared table, and forget its documents. Another
+   *  bridge's entries stay. A `release` after this does nothing. */
+  dispose(): void;
+  /** Entries not yet deleted: this bridge's in the host table (`hosts`),
+   *  every bridge's (`allHosts`), and its documents, for the eval build's
+   *  memory soak test. */
+  counts(): { hosts: number; allHosts: number; documents: number };
 }
 
 // ── canonical JSON ────────────────────────────────────────────────────────────
@@ -84,6 +118,14 @@ function isPlain(object: object): boolean {
   return proto === Object.prototype || proto === null;
 }
 
+/** `PageImageSource`'s `{ kind: 'bytes', bytes: Uint8Array }` case: the
+ *  shape whose bytes stay on the JS side (see `canonical`'s `live` branch). */
+function isByteImageSource(value: unknown): value is { kind: 'bytes'; bytes: Uint8Array } {
+  if (value === null || typeof value !== 'object') return false;
+  const source = value as { kind?: unknown; bytes?: unknown };
+  return source.kind === 'bytes' && source.bytes instanceof Uint8Array;
+}
+
 /** `canonicalError`: `name`, `message`, then every own enumerable member. */
 export function errorSpec(error: unknown, encode: (value: unknown) => unknown): unknown {
   const e = error as Record<string, unknown> | null;
@@ -104,11 +146,15 @@ export function errorSpec(error: unknown, encode: (value: unknown) => unknown): 
 export interface EncodeHooks {
   /** Register a live value; answers its host id. */
   hold(value: unknown): number;
+  /** A rendered image held as `host`, whose raw bytes were held as `bytes`. */
+  image?(host: number, bytes: number): void;
   /** Encode a function, member functions included. Without it a function is
    *  held, and a member function is dropped and marks its object live. */
   fn?(value: (...args: unknown[]) => unknown): unknown;
   /** Take an `AbortSignal` out of the value: it encodes as `undefined`. */
   signal?(value: AbortSignal): void;
+  /** Encode a `Blob`. Without it a `Blob` is held, as any live value is. */
+  blob?(value: Blob): unknown;
 }
 
 /** Canonical form of `value`; `hooks.hold` registers what JSON cannot carry
@@ -142,6 +188,7 @@ export function canonical(
       return h.fn ? h.fn(value as (...args: unknown[]) => unknown) : { $host: h.hold(value) };
   }
   const object = value as object;
+  if (h.blob && typeof Blob !== 'undefined' && object instanceof Blob) return h.blob(object);
   const recur = (v: unknown) => canonical(v, h, seen);
   if (object instanceof Error) return errorSpec(object, recur);
   if (object instanceof Uint8Array) return { $bytes: base64(object) };
@@ -162,15 +209,33 @@ export function canonical(
     const live =
       !isPlain(object) || (dropsFns && members.some(([, member]) => typeof member === 'function'));
     const out: Record<string, unknown> = {};
+    let bytesId: number | undefined;
     for (const [key, member] of members) {
       if (member === undefined || (dropsFns && typeof member === 'function')) continue;
       if (h.signal && typeof AbortSignal !== 'undefined' && member instanceof AbortSignal) {
         h.signal(member);
         continue;
       }
+      // A rendered image crosses into Rust as a byte count plus a resolvable
+      // id, not the bytes themselves: the host table (below) already keeps
+      // the live object, bytes and all, for `objectUrl()` and a later
+      // `host(n)`; `h.hold(member.bytes)` registers a second entry for the
+      // raw `Uint8Array`, which only a caller that actually needs pixels
+      // resolves, through `hostBytes(n)`.
+      if (live && key === 'source' && isByteImageSource(member)) {
+        bytesId = h.hold(member.bytes);
+        out[key] = {
+          kind: 'bytes',
+          bytes: { $hostBytes: bytesId, $byteLength: member.bytes.byteLength },
+        };
+        continue;
+      }
       out[key] = recur(member);
     }
-    if (live) out.$host = h.hold(object);
+    if (live) {
+      out.$host = h.hold(object);
+      if (bytesId !== undefined) h.image?.(out.$host as number, bytesId);
+    }
     return out;
   } finally {
     seen.delete(object);
@@ -188,7 +253,9 @@ export type DecodeHook = (
 /** Canonical JSON back to live values: `$bytes` to a `Uint8Array`, `$host`
  *  to the held value, `$undefined` and `$number` to their numbers. `$date`,
  *  `$map`, `$set` and `$bigint` are not reversed: nothing the kernel sends
- *  in produces them. `hook` sees every object first. */
+ *  in produces them. Neither is `$hostBytes`: it only ever flows JS to
+ *  Rust (`canonical`'s encoder), never the other way, so `decode` never
+ *  sees one. `hook` sees every object first. */
 export function decode(value: unknown, host: (n: number) => unknown, hook?: DecodeHook): unknown {
   const recur = (item: unknown) => decode(item, host, hook);
   if (Array.isArray(value)) return value.map(recur);
@@ -239,21 +306,155 @@ export async function readBlobs(value: unknown): Promise<unknown> {
 
 // ── the bridge ────────────────────────────────────────────────────────────────
 
+/** The live value behind every `$host`/`$hostBytes` id, for every bridge
+ *  this module builds: one table, one counter (`nextHostId`), so an id is
+ *  unique across bridges, not just within the bridge that made it. A
+ *  bridge still tracks which ids are its own (`createEngineBridge`'s
+ *  `ownHosts`), for `counts()` and for a later release/destroy hook to
+ *  clear only its entries; this table is what a lookup actually reads. */
+const allHosts = new Map<number, unknown>();
+let nextHostId = 1;
+
+/** Ids `release` marked, not yet deleted, each with the owning bridge's
+ *  `ownHosts` so the deletion clears that too. */
+const pendingRelease = new Map<number, Set<number>>();
+let releaseScheduled = false;
+
+/** Delete every pending release in one go: `release`'s macrotask. */
+function flushReleases(): void {
+  releaseScheduled = false;
+  for (const [n, owner] of pendingRelease) {
+    allHosts.delete(n);
+    owner.delete(n);
+  }
+  pendingRelease.clear();
+}
+
+/** Whether `n` was handed out and has since been deleted. Ids are never
+ *  reused and nothing but a release deletes, so an id below the counter the
+ *  table no longer has is a released one: no tombstones to keep. */
+function wasReleased(n: number): boolean {
+  return Number.isInteger(n) && n > 0 && n < nextHostId && !allHosts.has(n);
+}
+
+/** A released id that came back: a bug, reported loudly (`console.error`
+ *  plus the throw), never a silent `undefined`. */
+function releasedError(message: string): Error {
+  const error = new Error(message);
+  console.error(error);
+  return error;
+}
+
+/** The live `Uint8Array` behind a `{"$hostBytes": n}`, from whichever
+ *  bridge holds it. This is the one function `set_host_bytes_source`
+ *  installs into the wasm module: it does not matter which `WasmKernel`
+ *  calls it, or how many are live, because every bridge's ids come from
+ *  the one shared table above. Throws `[engine-bridge] no host bytes n`
+ *  for an id nothing holds, or that is not bytes. */
+export function hostBytes(n: number): Uint8Array {
+  const value = allHosts.get(n);
+  if (!(value instanceof Uint8Array)) {
+    if (wasReleased(n)) throw releasedError(`[engine-bridge] host bytes ${n} was released`);
+    throw new Error(`[engine-bridge] no host bytes ${n}`);
+  }
+  return value;
+}
+
+/** Every bridge not yet disposed, so [`releaseHost`] can find the one
+ *  that owns an id. */
+const liveBridges = new Set<{ owns(n: number): boolean; release(n: number): void }>();
+
+/** `bridge.release(n)` on whichever live bridge holds `n`: both entries of
+ *  a rendered image, deleted on the next macrotask. This is the one
+ *  function `set_host_release` installs into the wasm module, for a Rust
+ *  caller that read an engine result itself (the stamp plugin's previews,
+ *  `epdf_kernel::bytes::release_host`) rather than through a bridge it
+ *  holds. Throws, loudly, for an id already released; plainly for one
+ *  nothing ever held. A disposed bridge's ids count as released: Rust only
+ *  releases right after resolving the same image's `$hostBytes`, which a
+ *  disposed bridge would already have refused. */
+export function releaseHost(n: number): void {
+  for (const bridge of liveBridges) {
+    if (bridge.owns(n)) return bridge.release(n);
+  }
+  if (wasReleased(n)) throw releasedError(`[engine-bridge] host value ${n} was already released`);
+  throw new Error(`[engine-bridge] no host value ${n}`);
+}
+
 export function createEngineBridge(engine: Engine): EngineBridge {
   const documents = new Map<string, DocumentHandle>();
-  const hosts = new Map<number, unknown>();
-  let nextHost = 1;
+  /** This bridge's own ids into `allHosts`, for `counts()` and a later
+   *  release/destroy hook. Lookups below still read `allHosts` directly:
+   *  membership here only answers "does this bridge own `n`", which a
+   *  foreign id fails, the same as a genuinely unknown one. */
+  const ownHosts = new Set<number>();
+  /** A rendered image's host id to its `$hostBytes` id, so releasing the
+   *  image releases its bytes too. */
+  const imageBytes = new Map<number, number>();
+  let disposed = false;
 
   const hold = (value: unknown): number => {
-    const n = nextHost++;
-    hosts.set(n, value);
+    const n = nextHostId++;
+    // An in-flight engine call can settle after `dispose()`: the encode
+    // that follows still calls `hold` for whatever live values the result
+    // carries. Storing them here would leak, since dispose already ran its
+    // one sweep and nothing calls it again. Handing out `n` without
+    // storing it makes `wasReleased(n)` true for that id from now on, so a
+    // later `host`/`release` on it fails the same way a real release would
+    // have: loudly, not with a silent `undefined`.
+    if (disposed) return n;
+    allHosts.set(n, value);
+    ownHosts.add(n);
     return n;
   };
   const host = (n: number): unknown => {
-    if (!hosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
-    return hosts.get(n);
+    if (!ownHosts.has(n)) {
+      if (wasReleased(n)) throw releasedError(`[engine-bridge] host value ${n} was released`);
+      throw new Error(`[engine-bridge] no host value ${n}`);
+    }
+    return allHosts.get(n);
   };
-  const encode = (value: unknown) => JSON.stringify(canonical(value, hold));
+  const release = (n: number): void => {
+    // Dispose already swept every id this bridge owned; a release that
+    // arrives afterwards (for one of those, or for an id `hold` declined to
+    // store post-dispose) has nothing left to do.
+    if (disposed) return;
+    if (pendingRelease.has(n) || wasReleased(n)) {
+      throw releasedError(`[engine-bridge] host value ${n} was already released`);
+    }
+    if (!ownHosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
+    pendingRelease.set(n, ownHosts);
+    const bytes = imageBytes.get(n);
+    if (bytes !== undefined) {
+      imageBytes.delete(n);
+      pendingRelease.set(bytes, ownHosts);
+    }
+    // Deleted on the next macrotask, not now. The real invariant is not
+    // that the decode is queued before this call: `render_pages` and an
+    // already-evicted handle drop their last Rust clone (this call) just
+    // before `resolver.settle` resolves the promise that carried the same
+    // image (`runtime::to_js`), so there the decode is queued after. What
+    // always holds is that the resolve happens in the same synchronous
+    // stretch as the drop, or in an earlier one whose decode already ran.
+    // Either way, the shim's `.then` decode reaction (a microtask) is
+    // queued by the time this stretch ends, and queued microtasks all run
+    // before the next macrotask; until then `host(n)` still answers.
+    if (!releaseScheduled) {
+      releaseScheduled = true;
+      setTimeout(flushReleases, 0);
+    }
+  };
+  const bridgeHostBytes = (n: number): Uint8Array => {
+    const value = host(n);
+    if (!(value instanceof Uint8Array)) {
+      throw new Error(`[engine-bridge] host value ${n} is not bytes`);
+    }
+    return value;
+  };
+  const registered = { owns: (n: number) => ownHosts.has(n), release };
+  liveBridges.add(registered);
+  const hooks: EncodeHooks = { hold, image: (n, bytes) => imageBytes.set(n, bytes) };
+  const encode = (value: unknown) => JSON.stringify(canonical(value, hooks));
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
   const reason = (error: unknown) => errorSpec(error, (v) => canonical(v, hold));
 
@@ -386,6 +587,22 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     host,
+    hostBytes: bridgeHostBytes,
     hold,
+    release,
+    dispose() {
+      disposed = true;
+      liveBridges.delete(registered);
+      for (const n of ownHosts) {
+        allHosts.delete(n);
+        pendingRelease.delete(n);
+      }
+      ownHosts.clear();
+      imageBytes.clear();
+      documents.clear();
+    },
+    counts() {
+      return { hosts: ownHosts.size, allHosts: allHosts.size, documents: documents.size };
+    },
   };
 }

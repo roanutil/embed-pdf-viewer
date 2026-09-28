@@ -73,7 +73,7 @@ Format, keystroke, validate and calculate scripts all go through it. To try it, 
 tabbing out shows `1,234.50`, and the calculated total follows.
 
 What the eval build leaves out (JS plugins beyond `init`, silent haptics, partial cancellation,
-memory that only grows) is listed under "Known gaps" in `docs/research/rust-plugins-web-eval.md`.
+the few tables that still grow) is listed under "Known gaps" in `docs/research/rust-plugins-web-eval.md`.
 
 Signatures run with no signer: neither `WebCrypto` nor a `PersonalKeyStore` is wired into this
 app's hosts, so the signatures rung is dropped from its config entirely. Clicking Insert →

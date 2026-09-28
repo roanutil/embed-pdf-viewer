@@ -4,7 +4,9 @@
  * `REHYDRATE` fixes a decoded result. A `{"$host": n}` needs no entry: the
  * decoder swaps every one for the engine bridge's live value, which is what
  * render's `getPlan` handles need. `PREPARE` fixes arguments before they are
- * encoded. Task 9 adds entries as the UI reaches more members.
+ * encoded. Task 9 adds entries as the UI reaches more members. Arguments
+ * that still hold a `Blob` after `PREPARE` are read by `readBinarySources`
+ * (`Wire.call` in `proxy.ts`).
  */
 import { pageTransform, type PageRotation, type PageTransform } from '@embedpdf/core-geometry';
 import { readBlobs } from './engine-bridge';
@@ -29,18 +31,17 @@ const TRANSFORM_DATA = [
 
 /**
  * A laid-out page's transform, rebuilt with `pageTransform` so its six
- * methods run in JavaScript instead of calling into the kernel. The inputs
- * come back out of the page: its display box over `contentScale` is the
- * page size in points (rounded to a millionth, which undoes the division's
- * last-bit error for any size a PDF writes), and `deviceWidth / contentWidth`
- * is the device pixel ratio. If the rebuilt transform differs from the
- * kernel's in any member, the kernel's (whose methods are refs) stays; that
- * fallback warns once, since a silent one would hide a real drift between
- * this rebuild and the kernel's own math.
+ * methods run in JavaScript: a live kernel prints the transform's data
+ * without them (`visible_page_json` in `crates/plugins/stage/src/harness.rs`).
+ * The inputs come back out of the page: its display box over
+ * `contentScale` is the page size in points (rounded to a millionth, which
+ * undoes the division's last-bit error for any size a PDF writes), and
+ * `deviceWidth / contentWidth` is the device pixel ratio. A rebuilt
+ * transform that differs from the kernel's in any member is a real drift
+ * between this rebuild and the kernel's own math, with no ref-backed
+ * transform to fall back on, so it throws.
  */
 const points = (n: number) => Math.round(n * 1e6) / 1e6;
-
-let warnedFallback = false;
 
 function withPageTransform(page: Obj): Obj {
   const t = page.transform as Obj & PageTransform;
@@ -56,18 +57,20 @@ function withPageTransform(page: Obj): Obj {
     baseScale: t.baseScale,
     dpr: t.deviceWidth / t.contentWidth,
   });
-  const same = TRANSFORM_DATA.every((key) => rebuilt[key] === t[key]);
-  if (!same && !warnedFallback) {
-    warnedFallback = true;
-    console.warn(
-      "[core-wasm] listVisiblePages: a rebuilt pageTransform differs from the kernel's; falling back to the ref-backed transform",
+  const differs = TRANSFORM_DATA.filter((key) => rebuilt[key] !== t[key]);
+  if (differs.length > 0) {
+    const error = new Error(
+      `[core-wasm] a rebuilt pageTransform differs from the kernel's in ${differs.join(', ')}`,
     );
+    console.error(error, { kernel: t, rebuilt });
+    throw error;
   }
-  return same ? { ...page, transform: rebuilt } : page;
+  return { ...page, transform: rebuilt };
 }
 
 const REHYDRATE: Partial<Record<string, (value: unknown) => unknown>> = {
   listVisiblePages: (pages) => (pages as Obj[]).map(withPageTransform),
+  getPageFrame: (page) => withPageTransform(page as Obj),
 };
 
 export function rehydrate(member: string, value: unknown): unknown {
@@ -75,18 +78,57 @@ export function rehydrate(member: string, value: unknown): unknown {
   return fix && value !== undefined && value !== null ? fix(value) : value;
 }
 
-const hasBlob = (value: unknown): boolean => {
-  if (typeof Blob !== 'undefined' && value instanceof Blob) return true;
+const isBlob = (value: unknown): value is Blob =>
+  typeof Blob !== 'undefined' && value instanceof Blob;
+
+const isPlainObject = (value: unknown): value is Obj =>
+  value !== null && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype;
+
+/** Whether a `Blob` sits anywhere in `value`'s arrays and plain objects. */
+export const hasBlob = (value: unknown): boolean => {
+  if (isBlob(value)) return true;
   if (Array.isArray(value)) return value.some(hasBlob);
-  if (
-    value !== null &&
-    typeof value === 'object' &&
-    Object.getPrototypeOf(value) === Object.prototype
-  ) {
-    return Object.values(value).some(hasBlob);
-  }
+  if (isPlainObject(value)) return Object.values(value).some(hasBlob);
   return false;
 };
+
+/** A `Blob`'s `type` as `mimeType` and a `File`'s `name`, where they are set. */
+const blobFacts = (blob: Blob): Obj => {
+  const name = (blob as File).name;
+  return {
+    ...(blob.type ? { mimeType: blob.type } : {}),
+    ...(typeof name === 'string' && name.length > 0 ? { name } : {}),
+  };
+};
+
+const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer());
+
+/**
+ * `value` with every `Blob` in its arrays and plain objects read to bytes,
+ * keeping what `resolveBinarySource` (`@embedpdf/engine-core`,
+ * `resource/BinarySource.ts`) would take from it. A `Blob` in a member
+ * named `data` (a `BinaryPayload`'s, or an `AttachmentFileSource`'s) becomes
+ * its bytes, and its type and file name fill the object's `mimeType` and
+ * `name` where those are absent. Any other `Blob` is a whole `BinarySource`
+ * and becomes the payload `{data, mimeType?, name?}`. Every capability
+ * member that takes a `Blob` takes it in one of those two places.
+ */
+export async function readBinarySources(value: unknown): Promise<unknown> {
+  if (isBlob(value)) return { data: await bytesOf(value), ...blobFacts(value) };
+  if (Array.isArray(value)) return Promise.all(value.map(readBinarySources));
+  if (!isPlainObject(value)) return value;
+  const out: Obj = {};
+  for (const [key, member] of Object.entries(value)) {
+    out[key] =
+      key === 'data' && isBlob(member) ? await bytesOf(member) : await readBinarySources(member);
+  }
+  if (isBlob(value.data)) {
+    for (const [key, fact] of Object.entries(blobFacts(value.data))) {
+      if (out[key] === undefined) out[key] = fact;
+    }
+  }
+  return out;
+}
 
 /** An open source holding a `Blob` (a picked `File`) as a thunk that reads
  *  it: the kernel takes a source thunk's promise, and a `Blob` cannot cross

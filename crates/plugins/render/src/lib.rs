@@ -61,7 +61,7 @@ pub use policy::{
     CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, LatticePolicy, PageRenderViewport, SnapOptions,
     snap_appearance_scale, snap_full_page_viewport, snap_tile_scale,
 };
-pub use raster_store::{PageImageHandle, RasterStore};
+pub use raster_store::{DEFAULT_MAX_COST, PageImageHandle, RasterStore, ReleaseImage};
 pub use strategy::{ResolvedStrategy, base_ask_width, resolve_strategy};
 pub use tile_manager::{TileManager, TileManagerDeps, TileStats};
 pub use tiles::{PageSizePt, TileCoord, TileGrid};

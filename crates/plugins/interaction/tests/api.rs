@@ -27,7 +27,7 @@ fn kernel() -> Kernel {
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake)),
         vec![interaction_plugin(InteractionConfig::default())],
-        KernelOptions { report: None, on_dispatch: None },
+        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
     )
     .unwrap();
     let _ = kernel.start();

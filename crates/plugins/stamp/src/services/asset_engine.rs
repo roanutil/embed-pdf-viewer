@@ -6,7 +6,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use epdf_kernel::bytes::Bytes;
+use epdf_kernel::bytes::{Bytes, release_host};
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, is_undefined, undefined};
@@ -88,7 +88,11 @@ pub(crate) fn render_options(width: f64, include_annotations: bool) -> Value {
 }
 
 /// `imageToPreview(image)`: the asset engine is local by definition, so a
-/// render's source is always inline bytes.
+/// render's source is always inline bytes. Once they are copied out, the
+/// render itself goes back to its host (`release_host`): every caller
+/// passes a `page.render.image` result it keeps nothing else of. When the
+/// bytes did not resolve (a host with no `$hostBytes` resolver), the render
+/// is kept: releasing it would drop pixels nothing has read.
 pub(crate) fn image_to_preview(image: &Value) -> Result<StampAssetPreview, Error> {
     if missing(Some(image)) {
         return Err(read_off(image, "source"));
@@ -103,10 +107,11 @@ pub(crate) fn image_to_preview(image: &Value) -> Result<StampAssetPreview, Error
             "[stamp] asset engine returned a URL-sourced render; asset engines must be local",
         ));
     }
-    Ok(StampAssetPreview {
-        bytes: get(&source, "bytes").and_then(bytes_of),
-        mime_type: str_of(image, "contentType").map(str::to_string),
-    })
+    let bytes = get(&source, "bytes").and_then(bytes_of);
+    if bytes.is_some() {
+        release_host(image);
+    }
+    Ok(StampAssetPreview { bytes, mime_type: str_of(image, "contentType").map(str::to_string) })
 }
 
 /// A document call.

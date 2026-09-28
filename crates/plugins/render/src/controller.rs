@@ -45,7 +45,7 @@ use crate::paint_plan::{
     resolve_render_options,
 };
 use crate::policy::{CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, PageRenderViewport};
-use crate::raster_store::{PageImageHandle, RasterStore};
+use crate::raster_store::{DEFAULT_MAX_COST, PageImageHandle, RasterStore};
 use crate::strategy::{ResolvedStrategy, base_ask_width, resolve_strategy};
 use crate::tile_manager::{TileManager, TileManagerDeps};
 use crate::tiles::PageSizePt;
@@ -890,7 +890,10 @@ pub fn create_render_controller(
     host: RenderHost,
 ) -> Result<(RenderCapability, Option<ConnectFn>), Error> {
     let resolved = Rc::new(resolve_render_options(config));
-    let store = RasterStore::default();
+    let store = match &host.release_image {
+        Some(release) => RasterStore::with_release(DEFAULT_MAX_COST, release.clone()),
+        None => RasterStore::default(),
+    };
     let invalidated = cx.event_source::<RenderInvalidatedEvent>();
     let render_completed = cx.event_source::<RenderCompletedEvent>();
     let render_failed = cx.event_source::<RenderFailedEvent>();

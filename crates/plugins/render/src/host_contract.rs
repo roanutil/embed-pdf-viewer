@@ -16,6 +16,7 @@ use epdf_kernel::types::PluginErrorInfo;
 use serde::{Deserialize, Serialize};
 
 use crate::contract::ser_page;
+use crate::raster_store::ReleaseImage;
 
 /// `PaintSettings`: resolved config the view layers need.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,11 +64,18 @@ pub struct RenderFailedEvent {
 /// `debug` are `console.warn` and `console.debug`: the one-shot
 /// misconfiguration hints and, with `debug: true`, the tile diagnostics. The
 /// default writes both to stderr.
+///
+/// `release_image` has no TypeScript counterpart: a host that keeps each
+/// engine image on its own side (the eval build's engine bridge, behind a
+/// `$host` id) hears when the raster store's last handle to one drops, with
+/// the handle's JSON, and lets go of it. `None`, the default, keeps nothing
+/// to release.
 #[derive(Clone)]
 pub struct RenderHost {
     pub request_frame: Rc<dyn Fn(Box<dyn FnOnce()>)>,
     pub warn: Rc<dyn Fn(&str)>,
     pub debug: Rc<dyn Fn(&str)>,
+    pub release_image: Option<ReleaseImage>,
 }
 
 impl Default for RenderHost {
@@ -78,6 +86,7 @@ impl Default for RenderHost {
             }),
             warn: Rc::new(|message| eprintln!("{message}")),
             debug: Rc::new(|message| eprintln!("{message}")),
+            release_image: None,
         }
     }
 }

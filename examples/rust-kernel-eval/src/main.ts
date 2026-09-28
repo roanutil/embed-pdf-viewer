@@ -8,6 +8,7 @@
  * plugin runs with no signer (no `WebCrypto` or `PersonalKeyStore` host), so
  * a mark is drawn without sealing.
  */
+import { kernelCounts } from '@embedpdf/core-wasm';
 import { initWasm } from '@embedpdf/core-wasm/browser';
 import EmbedPDF from '../../../packages/viewer/main/src/doors/local';
 import { installHosts } from './hosts';
@@ -16,6 +17,16 @@ import { installHosts } from './hosts';
 // hosts must be in place first.
 await initWasm();
 installHosts();
+
+// Live counts of every table this eval build's memory tasks are chasing
+// (`Harness::counts`, the engine bridge's hosts/documents, the wire's
+// fns/refs/proxies), read from the console: `__epdfCounts()`.
+declare global {
+  interface Window {
+    __epdfCounts?: () => Record<string, number>;
+  }
+}
+window.__epdfCounts = () => kernelCounts();
 
 const el = EmbedPDF.init({
   target: '#viewer',

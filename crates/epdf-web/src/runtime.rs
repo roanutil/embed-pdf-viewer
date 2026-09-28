@@ -17,8 +17,15 @@
 //! on a converted promise runs on the JavaScript microtask queue, not the
 //! Rust ready queue, so ordering across the boundary is not the order the
 //! vectors pin.
+//!
+//! [`at_exit`] registers work for the end of every outermost entry, after
+//! the queue drains: `WasmKernel` releases the JavaScript functions its
+//! callbacks let go of there, once nothing left in the entry can still make
+//! a new callback from one. Nothing else runs them: on an idle kernel, a
+//! release queued outside any entry waits for the next outermost entry.
 
 use std::cell::{Cell, RefCell};
+use std::rc::{Rc, Weak};
 
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, is_undefined, undefined};
@@ -55,6 +62,27 @@ thread_local! {
     /// callback can reach JavaScript, which can call an export while the
     /// outer Rust call is still running.
     static DEPTH: Cell<u32> = const { Cell::new(0) };
+    /// [`at_exit`]'s registrations, held weakly: each lives as long as
+    /// whoever registered it keeps the `Rc`.
+    static AT_EXIT: RefCell<Vec<Weak<dyn Fn()>>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Run `f` at the end of every outermost [`after_entry`], once the ready
+/// queue has drained, for as long as the caller keeps `f` alive.
+pub fn at_exit(f: &Rc<dyn Fn()>) {
+    AT_EXIT.with(|all| all.borrow_mut().push(Rc::downgrade(f)));
+}
+
+/// Every live [`at_exit`] registration, in order; the dead ones are dropped.
+fn run_at_exit() {
+    let live: Vec<Rc<dyn Fn()>> = AT_EXIT.with(|all| {
+        let mut all = all.borrow_mut();
+        all.retain(|f| f.strong_count() > 0);
+        all.iter().filter_map(Weak::upgrade).collect()
+    });
+    for f in live {
+        f();
+    }
 }
 
 /// One entry on the stack, counted while it lives. On wasm32 a panic aborts
@@ -89,6 +117,7 @@ pub fn reset() {
     }
     STARTED.with(|started| started.set(false));
     DEPTH.with(|d| d.set(0));
+    AT_EXIT.with(|all| all.borrow_mut().clear());
     rt::reset();
 }
 
@@ -117,8 +146,9 @@ fn catch_up() {
 }
 
 /// Call at the end of every export: catch the clock up to wall time once it
-/// is started, drain the ready queue, then make sure a real timeout is armed
-/// for the earliest virtual timer, if there is one.
+/// is started, drain the ready queue, run the [`at_exit`] registrations,
+/// then make sure a real timeout is armed for the earliest virtual timer, if
+/// there is one.
 ///
 /// Called from inside another entry (a timer's callback, or a callback into
 /// JavaScript that reached an export), it does nothing. Catching up there
@@ -134,6 +164,7 @@ pub fn after_entry() {
     }
     catch_up();
     rt::run_until_stalled();
+    run_at_exit();
     let next = rt::next_deadline();
     let keep = ARMED.with(|armed| {
         let armed = armed.borrow();
