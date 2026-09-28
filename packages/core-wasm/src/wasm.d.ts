@@ -13,5 +13,6 @@ declare module '*/wasm/epdf_web.js' {
   import type { RustKernelClass } from './proxy';
 
   export const WasmKernel: RustKernelClass;
+  export function wasm_memory_bytes(): number;
   export default function init(module_or_path?: unknown): Promise<unknown>;
 }

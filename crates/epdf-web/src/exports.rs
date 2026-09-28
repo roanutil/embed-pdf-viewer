@@ -73,6 +73,18 @@ fn thrown(error: &Error) -> JsValue {
     value_to_js(&error.to_canonical())
 }
 
+/// The wasm module's own linear memory, in bytes: `wasm_bindgen::memory()`'s
+/// buffer's `byteLength`. Dev-only, for the eval build's memory soak test.
+/// This is the number `process.memoryUsage().heapUsed` cannot see: the
+/// harness's `refs` and `promises` tables (and everything they hold) live
+/// here, not in V8's JS heap.
+#[wasm_bindgen]
+pub fn wasm_memory_bytes() -> f64 {
+    let memory: js_sys::WebAssembly::Memory = wasm_bindgen::memory().unchecked_into();
+    let buffer: js_sys::ArrayBuffer = memory.buffer().unchecked_into();
+    buffer.byte_length() as f64
+}
+
 fn parse_args(args_json: &str) -> Result<Vec<Value>, Error> {
     match serde_json::from_str(args_json) {
         Ok(Value::Array(args)) => Ok(args),

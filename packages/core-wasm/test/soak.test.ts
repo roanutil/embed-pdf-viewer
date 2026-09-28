@@ -35,13 +35,14 @@ import type { Kernel } from '@embedpdf/core';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { RenderToken } from '@embedpdf/plugin-render/contract/host';
 
-import { WasmKernel } from '../wasm-node/epdf_web.js';
+import { WasmKernel, wasm_memory_bytes } from '../wasm-node/epdf_web.js';
 import {
   createKernel,
   interactionPlugin,
   kernelCounts,
   renderPlugin,
   setWasmKernel,
+  setWasmMemoryBytes,
   stagePlugin,
 } from '../src';
 
@@ -70,6 +71,7 @@ const COUNTER_KEYS = [
   'fns',
   'wireRefs',
   'proxies',
+  'wasmBytes',
 ] as const;
 
 let bytes: Uint8Array;
@@ -77,6 +79,7 @@ let kernel: Kernel | undefined;
 
 beforeAll(async () => {
   setWasmKernel(WasmKernel);
+  setWasmMemoryBytes(wasm_memory_bytes);
   bytes = new Uint8Array(await readFile(ebook));
 });
 afterEach(async () => {
@@ -114,13 +117,24 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
     const view = render.createViewDemand('soak');
 
     const samples: Sample[] = [];
+    // `renderPage` rejects `operation-cancelled` on abort (`RenderCapability
+    // .renderPage`'s own doc comment); nothing here aborts a render, so any
+    // such rejection is expected shutdown noise, not a failure. Anything
+    // else is a real failure this test should not swallow.
+    const renderFailures: unknown[] = [];
+    const isAbort = (error: unknown): boolean =>
+      (error as { code?: string } | null)?.code === 'operation-cancelled';
 
     for (let i = 1; i <= ITERATIONS; i++) {
       stage.panBy(0, -40);
       const visible = stage.listVisiblePages();
       for (const page of visible) {
         view.getPlan(page.ref);
-        void render.renderPage(page.ref, { width: THUMBNAIL_WIDTH, format: 'bmp' }).catch(() => {});
+        void render
+          .renderPage(page.ref, { width: THUMBNAIL_WIDTH, format: 'bmp' })
+          .catch((error: unknown) => {
+            if (!isAbort(error)) renderFailures.push(error);
+          });
       }
       // Drain the microtask queue so this iteration's renders (and the
       // subscribe listener their store changes fire) settle before the
@@ -139,6 +153,8 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
     // The baseline this task exists to record (see the task report for the
     // two samples read from this run).
     console.log('[soak] samples:', JSON.stringify(samples, null, 2));
+
+    expect(renderFailures, `render failures: ${JSON.stringify(renderFailures)}`).toHaveLength(0);
 
     expect(samples).toHaveLength(SAMPLE_AT.length);
     for (const sample of samples) {

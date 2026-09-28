@@ -35,21 +35,35 @@ export function setWasmKernel(kernel: RustKernelClass): void {
   RustKernel = kernel;
 }
 
+let wasmMemoryBytes: (() => number) | undefined;
+
+/** The wasm module's `wasm_memory_bytes` export (`crates/epdf-web/src/exports
+ *  .rs`), the whole module's linear memory in bytes. Set alongside
+ *  [`setWasmKernel`]: `wasm/` in a browser, `wasm-node/` under Node. */
+export function setWasmMemoryBytes(fn: () => number): void {
+  wasmMemoryBytes = fn;
+}
+
 /** Each kernel this module built, by the object `createKernel` returned, so
  *  `kernelCounts` can reach its Rust handle, bridge and wire without
  *  widening the public `Kernel` type. Dev-only, for the eval build's memory
  *  soak test. */
 const tables = new WeakMap<Kernel, { rust: RustKernel; bridge: EngineBridge; wire: Wire }>();
 
-/** The most recently built kernel, so a debug hook that has no reference of
- *  its own (`examples/rust-kernel-eval`'s `window.__epdfCounts`, called from
- *  a document the framework wrappers built) can still read it. */
-let lastKernel: Kernel | undefined;
+/** Every kernel `createKernel` built and has not yet destroyed, so a debug
+ *  hook that has no reference of its own (`examples/rust-kernel-eval`'s
+ *  `window.__epdfCounts`, called from a document the framework wrappers
+ *  built) can still read counts, and so a destroyed or ambiguous default
+ *  fails loudly instead of silently reporting the wrong (or a dead)
+ *  kernel's counts. */
+const liveKernels = new Set<Kernel>();
 
 /** Live entries in every table this session's memory tasks are chasing, for
- *  `kernel` (built by [`createKernel`]; defaults to the kernel most recently
- *  built): the harness's `refs`/`promises`, `described` capabilities, the
- *  engine bridge's `hosts`/`documents`, and the wire's `fns`/`wireRefs`/`proxies`.
+ *  `kernel` (built by [`createKernel`]; defaults to the sole live kernel,
+ *  throwing if there is none or more than one): the harness's
+ *  `refs`/`promises`, `described` capabilities, the engine bridge's
+ *  `hosts`/`documents`, the wire's `fns`/`wireRefs`/`proxies`, and
+ *  `wasmBytes`, the wasm module's own linear memory.
  *
  *  `refs` is the harness's table, not the wire's: the two are not the same
  *  count. A capability's own refs decode into the wire the moment
@@ -60,12 +74,22 @@ let lastKernel: Kernel | undefined;
  *  differs only in fresh refs keeps its object"), so the harness's count
  *  keeps climbing while the wire's does not. Both are reported, under
  *  different keys, so a merge can never hide that gap. */
-export function kernelCounts(kernel: Kernel | undefined = lastKernel): Record<string, number> {
-  const entry = kernel && tables.get(kernel);
+export function kernelCounts(kernel?: Kernel): Record<string, number> {
+  if (kernel === undefined) {
+    if (liveKernels.size === 0) throw new Error('[core-wasm] kernelCounts: no live kernel');
+    if (liveKernels.size > 1) {
+      throw new Error(
+        `[core-wasm] kernelCounts: ${liveKernels.size} live kernels; pass one explicitly`,
+      );
+    }
+    [kernel] = liveKernels;
+  }
+  const entry = tables.get(kernel);
   if (!entry) throw new Error('[core-wasm] kernelCounts: not a kernel createKernel built');
   const harness = JSON.parse(rusty(() => entry.rust.debug_counts())) as Record<string, number>;
   const { refs: wireRefs, ...wireRest } = entry.wire.counts();
-  return { ...harness, ...entry.bridge.counts(), ...wireRest, wireRefs };
+  const wasmBytes = wasmMemoryBytes ? wasmMemoryBytes() : NaN;
+  return { ...harness, ...entry.bridge.counts(), ...wireRest, wireRefs, wasmBytes };
 }
 
 const UNSUPPORTED = ['initialState', 'reduce', 'capability', 'create', 'effects'] as const;
@@ -194,6 +218,7 @@ export function createKernel(opts: {
       })),
     destroy: () =>
       (destroyed ??= (async () => {
+        liveKernels.delete(kernel);
         for (const doc of [...cleanups.keys()]) runCleanups(doc);
         try {
           await rust.destroy();
@@ -203,6 +228,6 @@ export function createKernel(opts: {
       })()),
   };
   tables.set(kernel, { rust, bridge, wire });
-  lastKernel = kernel;
+  liveKernels.add(kernel);
   return kernel;
 }
