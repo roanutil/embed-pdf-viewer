@@ -8,13 +8,16 @@ import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { CommandsToken } from '@embedpdf/plugin-commands';
 import { ShellToken } from '@embedpdf/plugin-shell';
+import { AnnotationToken } from '@embedpdf/plugin-annotation';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
 import {
+  annotationPlugin,
   commandsPlugin,
   createKernel,
   interactionPlugin,
   renderPlugin,
+  setHosts,
   setWasmKernel,
   shellPlugin,
   stagePlugin,
@@ -36,6 +39,7 @@ beforeAll(async () => {
 afterEach(async () => {
   await kernel?.destroy();
   kernel = undefined;
+  setHosts({});
 });
 
 /** Start `plugins` over the local engine and open the fixture. */
@@ -200,6 +204,40 @@ describe('the Kernel shim over the Rust kernel', () => {
     const result = await k.capability(CommandsToken).execute('probe');
     expect(result).toEqual({ status: 'executed' });
     expect(typeof zoom).toBe('number');
+  });
+
+  test("the hosts' scheduler runs the stage's frames", async () => {
+    const frames: ((timestamp: number) => void)[] = [];
+    const raf = vi.fn((frame: (timestamp: number) => void) => frames.push(frame));
+    setHosts({ scheduler: { raf, caf: vi.fn() } });
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 120 });
+
+    stage.scrollTo({ top: 100, behavior: 'smooth' });
+    expect(raf).toHaveBeenCalled();
+    for (let t = 0; t < 2000 && frames.length > 0; t += 16) frames.shift()!(t);
+    expect(stage.getScrollMetrics().scrollTop).toBe(100);
+  });
+
+  test("the hosts' randomUuid names a new annotation", async () => {
+    const randomUuid = vi.fn(() => '5a1d2c3e-0000-4000-8000-00000000abcd');
+    setHosts({ annotation: { randomUuid } });
+    const k = await openFixture([
+      stagePlugin(),
+      interactionPlugin(),
+      renderPlugin(),
+      annotationPlugin(),
+    ]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 600 });
+    const page = stage.listVisiblePages()[0].ref;
+    await k.capability(AnnotationToken).create({
+      page,
+      subtype: 'square',
+      bounds: { x: 10, y: 10, width: 50, height: 50 },
+    });
+    expect(randomUuid).toHaveBeenCalled();
   });
 
   test('a JS plugin with its own reducer is refused', () => {

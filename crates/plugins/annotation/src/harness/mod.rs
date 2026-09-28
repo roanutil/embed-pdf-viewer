@@ -963,6 +963,35 @@ fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<O
     })
 }
 
+/// A live host's globals: `host: {randomUuid, consoleError}` in the config,
+/// each a `$fn` the host answers (`crypto.randomUUID` and `console.error` in
+/// a browser), so ids differ across sessions and swallowed failures reach
+/// the console. Only a live harness reads it; a vector's config never has
+/// one.
+fn live_host(host: &mut AnnotationHost, config: &Value, h: &Harness) {
+    if !h.is_live() {
+        return;
+    }
+    let Some(live) = config.get("host") else { return };
+    let spec = |name: &str| live.get(name).filter(|f| f.get("$fn").is_some());
+    if let Some(random_uuid) = spec("randomUuid").map(|f| h.callback(f)) {
+        let fallback = host.random_uuid.take();
+        host.random_uuid = Some(Rc::new(move || match random_uuid.call(Vec::new()) {
+            Answer::Returns(Value::String(uuid)) => uuid,
+            _ => fallback.as_ref().map(|f| f()).unwrap_or_default(),
+        }));
+    }
+    if let Some(console_error) = spec("consoleError").map(|f| h.callback(f)) {
+        host.console_error = Some(Rc::new(move |message: &str, error: Option<&Error>| {
+            let mut args = vec![json!(message)];
+            if let Some(error) = error {
+                args.push(error.to_canonical());
+            }
+            let _ = console_error.call(args);
+        }));
+    }
+}
+
 impl HarnessPlugin for Annotation {
     fn factories(&self) -> Vec<&'static str> {
         vec!["annotation", "annotation-lens", "annotation-signals"]
@@ -986,6 +1015,7 @@ impl HarnessPlugin for Annotation {
         }
         CONTROLLERS.with(|c| c.borrow_mut().clear());
         BEHAVIORS.with(|b| b.borrow_mut().clear());
+        let raw = config;
         let mut config: AnnotationConfig = if is_undefined(config) || config.is_null() {
             AnnotationConfig::default()
         } else {
@@ -1007,6 +1037,7 @@ impl HarnessPlugin for Annotation {
             })),
             fonts: None,
         };
+        live_host(&mut config.host, raw, h);
         Ok(annotation_plugin(config))
     }
 

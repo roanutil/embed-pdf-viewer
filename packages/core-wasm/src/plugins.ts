@@ -26,7 +26,7 @@ import type { searchPlugin as SearchPlugin } from '@embedpdf/plugin-search';
 import type { selectionPlugin as SelectionPlugin } from '@embedpdf/plugin-selection';
 import type { shellPlugin as ShellPlugin } from '@embedpdf/plugin-shell';
 import type { signaturePlugin as SignaturePlugin } from '@embedpdf/plugin-signature';
-import type { stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
+import type { Scheduler, stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
 import type { stampPlugin as StampPlugin } from '@embedpdf/plugin-stamp';
 import type { viewManagerPlugin as ViewManagerPlugin } from '@embedpdf/plugin-view-manager';
 
@@ -47,26 +47,59 @@ const rust = <T>(factory: string, config?: unknown): T =>
 type Def<F extends (...args: never[]) => unknown> = ReturnType<F>;
 
 /**
+ * The browser globals the TypeScript plugins reach for, which the Rust ones
+ * take as host inputs through their adapters' live config: stage's frame
+ * `scheduler`, render's `requestFrame` and console lines, and annotation's
+ * `randomUuid` and `consoleError`. Set once, before the factories run; each
+ * factory adds its part to the config it returns. Unset, stage is
+ * frameless, render schedules on the kernel's clock, and annotation ids
+ * count up from the same first id every session.
+ */
+export interface Hosts {
+  scheduler?: Scheduler;
+  render?: {
+    requestFrame?: (frame: () => void) => void;
+    warn?: (message: string) => void;
+    debug?: (message: string) => void;
+  };
+  annotation?: {
+    randomUuid?: () => string;
+    consoleError?: (message: string, error?: unknown) => void;
+  };
+}
+
+let hosts: Hosts = {};
+
+export function setHosts(next: Hosts): void {
+  hosts = next;
+}
+
+/**
  * `id` and `token` name one lens: the stage adapter takes a single `lens`
  * name for both (`crates/plugins/stage/src/harness.rs`, `stage_options`), so
- * a lens whose id and token name differ is refused. `scheduler` is dropped:
- * the Rust stage schedules on the kernel's clock.
+ * a lens whose id and token name differ is refused. `scheduler`, or the
+ * hosts' one, is the adapter's live `scheduler: {raf, caf}`.
  */
 export const stagePlugin: typeof StagePlugin = (options = {}) => {
-  const { id = 'stage', token, scheduler: _scheduler, ...settings } = options;
+  const { id = 'stage', token, scheduler = hosts.scheduler, ...settings } = options;
   const tokenName = token?.name ?? 'stage';
   if (id !== tokenName) {
     throw new Error(
       `[core-wasm] stagePlugin: id "${id}" and token "${tokenName}" differ; the Rust stage names both from one lens`,
     );
   }
-  return rust<Def<typeof StagePlugin>>(
-    'stage',
-    id === 'stage' ? settings : { ...settings, lens: id },
-  );
+  const frames = scheduler
+    ? { raf: scheduler.raf.bind(scheduler), caf: scheduler.caf.bind(scheduler) }
+    : undefined;
+  return rust<Def<typeof StagePlugin>>('stage', {
+    ...settings,
+    ...(id === 'stage' ? {} : { lens: id }),
+    ...(frames ? { scheduler: frames } : {}),
+  });
 };
 
-export const renderPlugin: typeof RenderPlugin = (config = {}) => rust('render', config);
+export const renderPlugin: typeof RenderPlugin = (config = {}) =>
+  rust('render', hosts.render ? { ...config, host: hosts.render } : config);
 export const pageEditPlugin: typeof PageEditPlugin = () => rust('page-edit');
 export const interactionPlugin: typeof InteractionPlugin = (config = {}) =>
   rust('interaction', config);
@@ -78,7 +111,7 @@ export const feedbackPlugin: typeof FeedbackPlugin = (options = {}) =>
 
 export const selectionPlugin: typeof SelectionPlugin = (config = {}) => rust('selection', config);
 export const annotationPlugin: typeof AnnotationPlugin = (config = {}) =>
-  rust('annotation', config);
+  rust('annotation', hosts.annotation ? { ...config, host: hosts.annotation } : config);
 
 /** `assetEngine` is not carried: the adapter only knows its scripted ones. */
 export const stampPlugin: typeof StampPlugin = (config = {}) =>

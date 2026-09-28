@@ -9,7 +9,8 @@
 //!   registers the plugin under id `name` with a token of that name; a
 //!   responsive rule's `when` may be a `$fn` spec, a scripted predicate
 //!   that logs the box; and the `stage-scroll` factory registers the scroll
-//!   handler with the hub, scoped to the lens.
+//!   handler with the hub, scoped to the lens. On a live harness,
+//!   `scheduler: {raf, caf}` gets [`LiveScheduler`] instead.
 //! - `stage-pure.ts`: `resolveResponsive` rules may carry `when:
 //!   {"$returns": v}`, the predicate `() => v`; `stageReducer` reports
 //!   `{state, same}`; `constants` prints the registry and motion constants.
@@ -29,7 +30,7 @@ use epdf_plugin_interaction::harness::{answer_truthy, truthy};
 use epdf_plugin_interaction::{INTERACTION, RegisterHandlerOptions};
 use epdf_stage_core::{Camera, ZoomSpec};
 use plugin_conformance::js::{arg, from_value, to_value};
-use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
 use crate::destination::{PageLayout, PdfDestination, destination_to_reveal};
@@ -69,6 +70,52 @@ impl Scheduler for FrameScheduler {
         if let Some(timer) = timer {
             rt::clear_timer(timer);
         }
+    }
+}
+
+/// A live host's frames: `scheduler: {raf, caf}` in the config, each a
+/// `$fn` the host answers (`requestAnimationFrame` and
+/// `cancelAnimationFrame` in a browser). `raf` receives the frame callback
+/// as a ref the host calls with the frame's timestamp, and answers the
+/// handle. Only a live harness reads it; a vector's config never has one.
+pub struct LiveScheduler {
+    h: Harness,
+    raf: Callback,
+    caf: Callback,
+}
+
+impl LiveScheduler {
+    fn from_config(config: &Value, h: &Harness) -> Option<LiveScheduler> {
+        if !h.is_live() {
+            return None;
+        }
+        let scheduler = config.get("scheduler")?;
+        let (raf, caf) = (scheduler.get("raf")?, scheduler.get("caf")?);
+        (raf.get("$fn").is_some() && caf.get("$fn").is_some()).then(|| LiveScheduler {
+            h: h.clone(),
+            raf: h.callback(raf),
+            caf: h.callback(caf),
+        })
+    }
+}
+
+impl Scheduler for LiveScheduler {
+    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64 {
+        let callback = RefCell::new(Some(callback));
+        let frame = self.h.register_fn(Rc::new(move |args: Vec<Value>| {
+            if let Some(callback) = callback.borrow_mut().take() {
+                callback(args.first().and_then(Value::as_f64).unwrap_or_else(rt::now));
+            }
+            Outcome::undefined()
+        }));
+        match self.raf.call(vec![frame]) {
+            Answer::Returns(handle) => handle.as_f64().map_or(0, |handle| handle as u64),
+            Answer::Throws(_) | Answer::Promise(_) => 0,
+        }
+    }
+
+    fn caf(&self, handle: u64) {
+        let _ = self.caf.call(vec![json!(handle)]);
     }
 }
 
@@ -136,9 +183,11 @@ fn stage_options(config: &Value, h: &Harness) -> Result<StagePluginOptions, Erro
     let config = if is_undefined(config) || config.is_null() { json!({}) } else { config.clone() };
     let settings: PartialSettings = from_value(&config)?;
     let lens = config.get("lens").and_then(Value::as_str);
-    let scheduler: Option<Rc<dyn Scheduler>> = (config.get("frames").and_then(Value::as_bool)
-        == Some(true))
-    .then(|| Rc::new(FrameScheduler::default()) as Rc<dyn Scheduler>);
+    let scheduler: Option<Rc<dyn Scheduler>> = match LiveScheduler::from_config(&config, h) {
+        Some(live) => Some(Rc::new(live)),
+        None => (config.get("frames").and_then(Value::as_bool) == Some(true))
+            .then(|| Rc::new(FrameScheduler::default()) as Rc<dyn Scheduler>),
+    };
     let responsive = match config.get("responsive") {
         None => None,
         Some(v) if is_undefined(v) => None,

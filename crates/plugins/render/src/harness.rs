@@ -7,7 +7,8 @@
 //! is the signal of a controller named `name`, which the `signals` test
 //! plugin's `abort(name)` aborts; the plugin's `console.warn` and
 //! `console.debug` lines log as callbacks of those names; and the frame
-//! scheduler is the TypeScript's Node fallback, `setTimeout(cb, 16)`.
+//! scheduler is the TypeScript's Node fallback, `setTimeout(cb, 16)`. On a
+//! live harness, `host: {requestFrame, warn, debug}` replaces them.
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -32,6 +33,44 @@ use crate::policy::{
 };
 use crate::tiles::{self, PageSizePt, TileCoord, TileGrid};
 use crate::*;
+
+// ── a live host ───────────────────────────────────────────────────────────────
+
+/// A live host's globals: `host: {requestFrame, warn, debug}` in the config,
+/// each a `$fn` the host answers (`requestAnimationFrame`, `console.warn`
+/// and `console.debug` in a browser). `requestFrame` receives the frame as
+/// a ref the host calls once. Only a live harness reads it; a vector's
+/// config never has one.
+fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
+    if !h.is_live() {
+        return;
+    }
+    let Some(live) = config.get("host") else { return };
+    let spec = |name: &str| live.get(name).filter(|f| f.get("$fn").is_some());
+    if let Some(request_frame) = spec("requestFrame").map(|f| h.callback(f)) {
+        let h = h.clone();
+        host.request_frame = Rc::new(move |frame| {
+            let frame = RefCell::new(Some(frame));
+            let frame = h.register_fn(Rc::new(move |_| {
+                if let Some(frame) = frame.borrow_mut().take() {
+                    frame();
+                }
+                Outcome::undefined()
+            }));
+            let _ = request_frame.call(vec![frame]);
+        });
+    }
+    if let Some(warn) = spec("warn").map(|f| h.callback(f)) {
+        host.warn = Rc::new(move |message| {
+            let _ = warn.call(vec![json!(message)]);
+        });
+    }
+    if let Some(debug) = spec("debug").map(|f| h.callback(f)) {
+        host.debug = Rc::new(move |message| {
+            let _ = debug.call(vec![json!(message)]);
+        });
+    }
+}
 
 // ── the scenario adapter ──────────────────────────────────────────────────────
 
@@ -298,6 +337,7 @@ impl HarnessPlugin for Render {
                 .build());
         }
         CONTROLLERS.with(|c| c.borrow_mut().clear());
+        let raw = config;
         let config: RenderConfig = if is_undefined(config) || config.is_null() {
             RenderConfig::default()
         } else {
@@ -305,13 +345,14 @@ impl HarnessPlugin for Render {
                 .map_err(|e| Error::new(format!("[render] bad config: {e}")))?
         };
         let (warn_h, debug_h) = (h.clone(), h.clone());
-        let host = RenderHost {
+        let mut host = RenderHost {
             request_frame: Rc::new(|frame| {
                 epdf_kernel::rt::set_timeout(16.0, frame);
             }),
             warn: Rc::new(move |message| warn_h.log("console.warn", vec![json!(message)])),
             debug: Rc::new(move |message| debug_h.log("console.debug", vec![json!(message)])),
         };
+        live_host(&mut host, raw, h);
         Ok(render_plugin_with_host(config, host))
     }
 
