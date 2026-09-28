@@ -132,6 +132,51 @@ white bands and no annotations where the TS was already complete; a second scree
 later was complete. Opening an uploaded PDF also looked slower on Rust: a snapshot straight after
 the upload showed the new tab on TS but not yet on Rust. Scrolling and zooming felt the same.
 
+## Known gaps
+
+These are known and left open. None of them blocked a row in the table above, and all of them would
+need fixing before this build did anything but manual evaluation.
+
+JS plugins are init-only. `createKernel` refuses a JS plugin with `initialState`, `reduce`,
+`capability`, `create` or `effects` (`UNSUPPORTED` in `packages/core-wasm/src/kernel.ts`), and the
+`ctx` its `init` gets (`runInit`, same file) has `get`, `tryGet`, `forDocument`, `tryForDocument`,
+`core` and `cleanup` but no `subscribe`, `watch`, `getState` or `onAction`. The chrome's
+`demoToolsPlugin` needs nothing more; a plugin that watches the store does.
+
+Feedback haptics are silent. `feedbackPlugin` in `packages/core-wasm/src/plugins.ts` hands the
+adapter only `provider: true`, which selects its logging provider, and a live kernel does not log.
+`stampPlugin` passes only `previewWidth` and `dynamic` and drops `assetEngine`, because the stamp
+adapter only knows its scripted asset engines. `formPlugin` passes its config through, but the form
+adapter ignores it (`_config` in `crates/plugins/form/src/harness.rs:473`).
+
+Cancellation is partial. A `$signal` argument decodes to a fresh `AbortController`'s signal,
+aborted only if it already was (`packages/core-wasm/src/proxy.ts`); nothing aborts it later. In the
+other direction, `abort()` on a promise from the shim calls `abort_promise`, which reaches
+`rt::Promise::abort` (`crates/epdf-kernel/src/rt.rs:459-467`), and that does nothing for a promise
+with no abort handle. A promise made with `map` (`rt.rs:476-482`) has none unless the plugin
+carries it over with `abort_handle`.
+
+Session memory only grows. The harness keeps every ref and promise it hands out
+(`refs` and `promises` in `crates/plugin-conformance/src/harness.rs:98-99`), and the engine bridge
+keeps every host value and document handle (`hosts` and `documents` in
+`createEngineBridge`, `packages/core-wasm/src/engine-bridge.ts`). Every render's bytes are held
+twice: as the `$bytes` base64 the Rust side keeps, and in the `PageImageHandle` the bridge's host
+table keeps. `destroy` in `packages/core-wasm/src/kernel.ts` awaits `rust.destroy()` but never
+calls `free()` on the `WasmKernel` or unsubscribes its store listener, so a destroyed kernel stays
+in wasm memory. For one tab of manual testing this is fine; reopening documents for an hour is not.
+
+Destroy logs 16 `[kernel] capability("stage") on a destroying kernel` reports from a fresh
+`ebook.pdf` load, where the TypeScript logs 17. That is a faithful port of a TypeScript bug; see
+"Stage reports at destroy".
+
+Test coverage has two holes. The browser hosts have no automated test: the vitest suite runs
+under Node with `vi.fn()` stand-ins through `setHosts` (`packages/core-wasm/test/kernel.test.ts`),
+so `examples/rust-kernel-eval/src/hosts.ts` over real `requestAnimationFrame` and
+`crypto.randomUUID`, and a `Blob` returned from a `callJs` callback (`readBlobs` in
+`packages/core-wasm/src/proxy.ts`), were only exercised by hand. And the `LiveSandbox` in
+`crates/plugins/actions/src/harness.rs` has no error-path tests: a sandbox member that is not a
+function, one that answers a promise, and a `boot` or `run` that throws are all unexercised.
+
 ## Commits made during the pass
 
 - `86ebbb78c` Read a KeyboardEvent's stroke members before matchStroke crosses to Rust
