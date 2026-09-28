@@ -9,12 +9,14 @@
  *     `console`;
  *   - annotation's `AnnotationHost` (`crates/plugins/annotation/src/contract.rs`):
  *     `randomUuid` over `crypto.randomUUID`, so new annotation ids differ
- *     across sessions, and `consoleError` over `console.error`.
+ *     across sessions, and `consoleError` over `console.error`, with the
+ *     canonical `{$error}` the Rust side sends as a live `Error`, as the
+ *     kernel reports.
  *
  * Not wired: signing's `WebCrypto` and `PersonalKeyStore`, so signatures run
  * with no signer and a mark is drawn without sealing.
  */
-import { setHosts } from '@embedpdf/core-wasm';
+import { setHosts, toError } from '@embedpdf/core-wasm';
 
 export function installHosts(): void {
   setHosts({
@@ -29,7 +31,8 @@ export function installHosts(): void {
     },
     annotation: {
       randomUuid: () => crypto.randomUUID(),
-      consoleError: (message, error) => console.error(message, error),
+      consoleError: (message, error) =>
+        error === undefined ? console.error(message) : console.error(message, toError(error)),
     },
   });
 }

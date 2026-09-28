@@ -6,7 +6,7 @@ channel = "1.98.0"
 # instead, and a build then fails with E0463 "can't find crate for `std`", which
 # reads like a missing NDK rather than a missing target.
 #
-# Cost: the first cargo command in a fresh checkout downloads six std copies.
+# Cost: the first cargo command in a fresh checkout downloads seven std copies.
 targets = [
   "aarch64-apple-darwin",
   "aarch64-apple-ios",
