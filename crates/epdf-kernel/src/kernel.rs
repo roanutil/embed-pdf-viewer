@@ -115,6 +115,12 @@ pub struct KernelOptions {
     /// Observe every plugin dispatch, with its slice key, before the reducer
     /// runs. For devtools and the conformance harness.
     pub on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
+    /// Once a session finishes closing, drop its capabilities and connectors
+    /// so nothing keeps their context (and the session) alive past the
+    /// close. Off by default: native callers rely on a closing session's
+    /// Weak-guarded deferred work going quiet on its own, not on the lists
+    /// being emptied. The web build turns this on.
+    pub release_closed_sessions: bool,
 }
 
 // ── sessions ──────────────────────────────────────────────────────────────────
@@ -208,6 +214,7 @@ struct Inner {
     ticket: Cell<u64>,
     report: Report,
     on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
+    release_closed_sessions: bool,
 }
 
 /// The kernel's lifecycle events, disposed at destroy.
@@ -488,10 +495,15 @@ impl Inner {
             // Each capability's context holds this session, so while the
             // session holds the capabilities (and their connects) the two
             // keep each other alive past the close, and past the kernel.
-            // Nothing resolves a closing session's capabilities again.
-            let capabilities = std::mem::take(&mut *s.capabilities.borrow_mut());
-            let connectors = std::mem::take(&mut *s.connectors.borrow_mut());
-            drop((capabilities, connectors));
+            // Nothing resolves a closing session's capabilities again, so
+            // dropping them here is safe; native callers still rely on
+            // Weak-guarded deferred work going quiet on its own, so this
+            // only runs when the caller opts in.
+            if this.release_closed_sessions {
+                let capabilities = std::mem::take(&mut *s.capabilities.borrow_mut());
+                let connectors = std::mem::take(&mut *s.connectors.borrow_mut());
+                drop((capabilities, connectors));
+            }
             Ok(())
         });
         *session.closing.borrow_mut() = Some(closing.clone());
@@ -1125,6 +1137,7 @@ impl Kernel {
             let events = events.clone();
             workspace_scope.defer_fn(move || events.dispose());
         }
+        let release_closed_sessions = options.release_closed_sessions;
         let inner = Rc::new_cyclic(|this| Inner {
             this: this.clone(),
             engine,
@@ -1145,6 +1158,7 @@ impl Kernel {
             ticket: Cell::new(0),
             report,
             on_dispatch: options.on_dispatch,
+            release_closed_sessions,
         });
         let documents: Rc<dyn Any> = Rc::new(Documents(Rc::downgrade(&inner)));
         inner.workspace_capabilities.borrow_mut().push((DOCUMENTS.any().clone(), documents));

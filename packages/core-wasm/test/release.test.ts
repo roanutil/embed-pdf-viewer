@@ -244,6 +244,8 @@ describe("the wire's answer reuse", () => {
       capability: () => '{"getThing":{"$ref":0,"pinned":true}}',
       invoke_ref: () => JSON.stringify({ returned: { size: 1, read: { $ref: next++ } } }),
       release_ref: (id: number) => released.push(id),
+      // `capability` drains this first (`Wire.evict`); nothing here closes.
+      take_evicted: () => '[]',
     } as unknown as RustKernel;
     const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
     wire.attach(rust);

@@ -449,6 +449,7 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
                 .actions
                 .push(json!({ "slice": slice, "action": scrub(&action.to_json()) }));
         })),
+        release_closed_sessions: false,
     };
     let kernel =
         match Kernel::new(Rc::new(crate::fake_engine::AsEngine(fake.clone())), plugins, options) {

@@ -238,12 +238,25 @@ export function createKernel(opts: {
       (destroyed ??= (async () => {
         liveKernels.delete(kernel);
         for (const doc of [...cleanups.keys()]) runCleanups(doc);
-        rust.unsubscribe(subscription);
         try {
           await rust.destroy();
         } catch (error) {
           report(toError(error));
         }
+        // After destroy settles, not before: `rust.destroy()` closes every
+        // session, and closing dispatches document-removed actions the
+        // shim's subscription (`wire.bump()`) still needs to see, matching
+        // the TS kernel's own order (`packages/core/main/src/kernel.ts`,
+        // closing sessions before it clears its own listeners).
+        rust.unsubscribe(subscription);
+        // `wire.dispose()` stays after `free()`, not before: `free()`'s own
+        // Drop cascade is what calls back into JS through `wire.callJs` to
+        // release the raster store's still-cached images (`withReleaseImage`
+        // in this file), through the same `fns` table `dispose()` clears and
+        // the same `dead` flag that makes `callJs` refuse to run at all. See
+        // the "Review fixes" deviation in `.superpowers/sdd/task-7-report.md`
+        // for why moving `wire.dispose()` earlier, as first proposed, is not
+        // safe here: it silently drops that release instead of throwing.
         rust.free();
         wire.dispose();
         bridge.dispose();

@@ -232,7 +232,9 @@ export class Wire {
    *  and the answers their members' calls left for reuse. Their refs are
    *  unpinned in the kernel, so each function here is held weakly from now
    *  on and released once collected, as a loose ref's is; one that was
-   *  never decoded is released at once. */
+   *  never decoded is released at once. Safe to call with nothing to
+   *  evict: `capability`/`tryCapability` also call this, so a text this
+   *  call already drained is the common case, not an error. */
   evict(): void {
     if (this.dead) return;
     const texts = JSON.parse(this.attached.take_evicted()) as string[];
@@ -354,12 +356,23 @@ export class Wire {
     );
   };
 
-  /** `kernel.capability(token, doc)` as its proxy. */
+  /** `kernel.capability(token, doc)` as its proxy. Drains `take_evicted`
+   *  first (see `evict`'s doc comment): a document close is picked up here
+   *  even if the kernel's own `closed` listener
+   *  (`crates/epdf-web/src/exports.rs`, which fills the evicted list) has
+   *  not yet run ahead of whatever registered this wire's `onClosed`
+   *  eviction. Not done in `bump`: that also runs inside `callJs`, called
+   *  reentrantly from a Rust callback already on the stack, where a second
+   *  call into the same wasm object throws "recursive use of an object".
+   *  `capability`/`tryCapability` are only ever called from outside such a
+   *  callback. */
   capability(tokenName: string, doc?: string | null): object {
+    this.evict();
     return this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
   }
 
   tryCapability(tokenName: string, doc?: string | null): object | null {
+    this.evict();
     const text = rusty(() => this.rust.try_capability(tokenName, doc ?? null));
     return text === undefined || text === null ? null : this.proxy(text);
   }

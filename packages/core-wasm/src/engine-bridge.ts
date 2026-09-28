@@ -369,6 +369,14 @@ export function createEngineBridge(engine: Engine): EngineBridge {
 
   const hold = (value: unknown): number => {
     const n = nextHostId++;
+    // An in-flight engine call can settle after `dispose()`: the encode
+    // that follows still calls `hold` for whatever live values the result
+    // carries. Storing them here would leak, since dispose already ran its
+    // one sweep and nothing calls it again. Handing out `n` without
+    // storing it makes `wasReleased(n)` true for that id from now on, so a
+    // later `host`/`release` on it fails the same way a real release would
+    // have: loudly, not with a silent `undefined`.
+    if (disposed) return n;
     allHosts.set(n, value);
     ownHosts.add(n);
     return n;
@@ -381,6 +389,9 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     return allHosts.get(n);
   };
   const release = (n: number): void => {
+    // Dispose already swept every id this bridge owned; a release that
+    // arrives afterwards (for one of those, or for an id `hold` declined to
+    // store post-dispose) has nothing left to do.
     if (disposed) return;
     if (pendingRelease.has(n) || wasReleased(n)) {
       throw releasedError(`[engine-bridge] host value ${n} was already released`);

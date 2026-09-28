@@ -296,6 +296,42 @@ describe('release', () => {
     await macrotask();
     expect(owner.host(n)).toBeInstanceOf(FakeImage);
   });
+
+  test('a call that settles after dispose does not store its result', async () => {
+    let settle!: (image: FakeImage) => void;
+    const doc = {
+      id: 'doc',
+      page: () => ({ render: { image: () => new Promise<FakeImage>((done) => (settle = done)) } }),
+    };
+    const engine = { open: async () => doc } as unknown as Engine;
+    const bridge = createEngineBridge(engine);
+    await bridge.open(JSON.stringify('input'));
+    const call = bridge.call('doc', 'page.render.image', 1, '[]');
+    const sharedBefore = bridge.counts().allHosts;
+
+    bridge.dispose();
+    settle(new FakeImage());
+    const json = await call;
+    const answer = JSON.parse(json) as { $host: number; source: { bytes: { $hostBytes: number } } };
+
+    // Encoding the late result still answers a `$host`/`$hostBytes` id (the
+    // caller's decode is untouched), but neither id was stored: this
+    // bridge's own count stays at zero and the shared table did not grow.
+    expect(bridge.counts()).toMatchObject({ hosts: 0, allHosts: sharedBefore, documents: 0 });
+    expect(() => bridge.host(answer.$host)).toThrow(
+      `[engine-bridge] host value ${answer.$host} was released`,
+    );
+    expect(() => bridge.hostBytes(answer.source.bytes.$hostBytes)).toThrow(
+      `[engine-bridge] host value ${answer.source.bytes.$hostBytes} was released`,
+    );
+  });
+
+  test('releasing an id from before dispose is a harmless no-op afterwards', async () => {
+    const bridge = createEngineBridge(imageEngine());
+    const { n } = await renderOne(bridge);
+    bridge.dispose();
+    expect(() => bridge.release(n)).not.toThrow();
+  });
 });
 
 describe('encodeInput', () => {

@@ -333,6 +333,7 @@ impl WasmKernel {
                 console_error("[kernel]", &runtime::error_to_js(error))
             })),
             on_dispatch: None,
+            release_closed_sessions: true,
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
@@ -342,6 +343,13 @@ impl WasmKernel {
             described: RefCell::new(HashMap::new()),
             evicted: RefCell::new(Vec::new()),
         });
+        // Registered before the shim subscribes its own `onClosed` (which
+        // reads `memo.evicted` back out via `take_evicted`), so on a native
+        // `EventHookSource` that calls listeners in registration order this
+        // one fills the list before that one drains it. `Wire.capability`/
+        // `tryCapability` in `packages/core-wasm/src/proxy.ts` also drain
+        // `take_evicted`, on the next capability lookup, so nothing on the
+        // JS side actually depends on this order holding.
         let on_closed = kernel.documents().events().map(|events| {
             let memo = Rc::downgrade(&memo);
             events.closed.on(move |event: &Value| {

@@ -398,11 +398,21 @@ describe('closed documents and destroyed kernels', () => {
       expect(bridge.counts().hosts).toBeGreaterThan(0);
 
       const release = vi.spyOn(bridge, 'release');
+      // `bridge.dispose()` clears every host this bridge owns on its own,
+      // so a bare `counts().hosts === 0` after destroy would hold even if
+      // the raster store released nothing. Stub it out, so the only way
+      // the count below can reach zero is a real `release` per held id (an
+      // image's release also frees its paired `$hostBytes` id, so this can
+      // be fewer calls than ids: `release`'s own tests cover that).
+      const dispose = vi.spyOn(bridge, 'dispose').mockImplementation(() => {});
       await k.destroy();
+      // `release` marks an id and deletes it on the next macrotask.
+      await new Promise((r) => setTimeout(r, 0));
       // The raster store's images went back to the bridge as the kernel
       // went: nothing in Rust kept the store alive past `free()`.
       expect(release).toHaveBeenCalled();
       expect(bridge.counts().hosts).toBe(0);
+      dispose.mockRestore();
       const counts = kernelCounts(other);
       expect(counts.allHosts).toBe(counts.hosts);
 
