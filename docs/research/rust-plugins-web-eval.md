@@ -156,14 +156,59 @@ other direction, `abort()` on a promise from the shim calls `abort_promise`, whi
 with no abort handle. A promise made with `map` (`rt.rs:476-482`) has none unless the plugin
 carries it over with `abort_handle`.
 
-Session memory only grows. The harness keeps every ref and promise it hands out
-(`refs` and `promises` in `crates/plugin-conformance/src/harness.rs:98-99`), and the engine bridge
-keeps every host value and document handle (`hosts` and `documents` in
-`createEngineBridge`, `packages/core-wasm/src/engine-bridge.ts`). Every render's bytes are held
-twice: as the `$bytes` base64 the Rust side keeps, and in the `PageImageHandle` the bridge's host
-table keeps. `destroy` in `packages/core-wasm/src/kernel.ts` awaits `rust.destroy()` but never
-calls `free()` on the `WasmKernel` or unsubscribes its store listener, so a destroyed kernel stays
-in wasm memory. For one tab of manual testing this is fine; reopening documents for an hour is not.
+Session memory is bounded for scrolling and rendering, measured at `3d4199d10`.
+`packages/core-wasm/test/soak.test.ts` pans `ebook.pdf` 300 times over the Node engine and fails if
+any counter grows between iterations 50 and 300. Before the release work (`cc1266800`) the harness's
+`refs` went from 1271 to 5915 and its `promises` from 190 to 964 over that span, and the wasm
+module's linear memory (`wasmBytes`) from 16.3 MB to 66.8 MB at a 96 px render width, or from 232
+MB to 1088 MB at 400 px. Now `refs` stays at 130, `promises` at 0 and `wasmBytes` at 12,582,912
+bytes at both samples. The engine bridge's host table is capped by the raster store's 128 MiB
+budget instead: 380 entries at iteration 50, 222 at 300.
+
+The browser agrees. Five round trips from the top of `ebook.pdf` to the bottom and back at 300%
+zoom left `wasmBytes` at 9,437,184 bytes before and after, `refs` at 654 then 650, and `promises`
+at 0. The JS heap snapshot grew 15.6 MiB in the eval app (78.9 to 94.5 MiB) and 13.3 MiB in the
+TypeScript viewer (133.5 to 146.7 MiB). Most of each delta is `ArrayBuffer` data, the encoded tiles
+each raster store keeps: 9.5 MiB over 546 more buffers in the eval app, 7.3 MiB over 521 in the
+TypeScript. The eval app's host table went from 60 entries to 1152, and three more round trips
+added 20, 10 and 10. That is the store filling toward its budget, which this document does not
+reach at 300% in either viewer, so nothing evicted in the browser. A heap snapshot is not a
+reading of wasm memory, which is why `wasmBytes` is read separately.
+
+These still grow, or can:
+
+- Stamp previews. The stamp plugin calls `page.render.image` on the engine itself
+  (`crates/plugins/stamp/src/services/asset_engine.rs:205`, `ghosts.rs:39`,
+  `write/placement.rs:218`), so those images never enter the raster store and their host ids are
+  never released. Importing `packages/default-stamps/en/stamps.pdf` (17 stamps) adds 34 host
+  entries holding 1,634,402 bytes of BMP over the Node engine, and each further import adds the
+  same again.
+- The bridge's document table (`documents` in `createEngineBridge`,
+  `packages/core-wasm/src/engine-bridge.ts`) keeps every `DocumentHandle` it opened, closed ones
+  included, until `dispose()`. That is one small handle per open. A stamp library import opens one
+  too (the Node run above goes from 1 to 2 to 3 over two imports), and the eval app reads
+  `documents: 2` with one tab.
+- `aborts` keeps its entry for a promise that never settles. It read 0 in the soak and in the
+  browser.
+- Annotation's `BEHAVIORS` thread_local is shared by every kernel in one wasm instance, so a
+  destroyed kernel's behaviors, and the harness they hold, stay alive until the next annotation
+  build.
+
+A release queued while the kernel is idle waits for the next outermost call into it (the module
+doc of `crates/epdf-web/src/exports.rs`), so the callbacks it covers outlive their last use by that
+long. `abort_promise` does nothing for a live caller, because no outer promise is wired with an
+abort handle (see "Cancellation is partial" above). Releasing an evicted tile has no automated
+test: the soak evicts full-page renders, and the browser pass never reaches the budget, so the
+tile path was checked only by hand against a build with `DEFAULT_MAX_COST` set to 4 MiB. And when
+a handler calls its own `off()` inside `onDown`, the live build and the TypeScript disagree about
+which handler owns the rest of the gesture. The live build is the one that lets go sooner, so the
+difference cannot keep anything alive, but it is a divergence and has not been fixed.
+
+Closing a document drops its session's capabilities only because `epdf-web` sets
+`KernelOptions.release_closed_sessions` (`crates/epdf-kernel/src/kernel.rs`). The flag defaults
+to `false`. Native callers and the conformance vectors rely on a closed session's deferred work
+going quiet through its `Weak` guards, not on the lists being emptied, and the default keeps their
+behavior exactly as it was.
 
 Destroy logs 16 `[kernel] capability("stage") on a destroying kernel` reports from a fresh
 `ebook.pdf` load, where the TypeScript logs 17. That is a faithful port of a TypeScript bug; see

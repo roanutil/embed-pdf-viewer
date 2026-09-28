@@ -1,13 +1,15 @@
 /**
  * Memory soak test: pans through `ebook.pdf` 300 times over the real Node
  * engine and records `kernelCounts` (every table `packages/core-wasm` and
- * the harness grow across the JS/Rust boundary) plus `process.memoryUsage()
- * .heapUsed` at iterations 50 and 300. The one bound asserted is the
- * engine bridge's host table: every render gets a new width, so the render
- * plugin's raster store fills its budget and evicts, and each eviction
- * releases the image's two host entries (`RenderHost::release_image`,
- * `bridge.release`). Everything else is still the baseline later tasks
- * measure against (see `docs/superpowers/sdd/task-1-report.md`).
+ * the harness grow across the JS/Rust boundary) at iterations 50 and 300,
+ * then asserts that none of them grows between the two samples. Every
+ * render gets a new width, so the render plugin's raster store fills its
+ * budget and evicts, and each eviction releases the image's two host
+ * entries (`RenderHost::release_image`, `bridge.release`); the host table
+ * is bounded by that budget rather than held flat. `heapUsed` is logged
+ * but not asserted: it cannot see wasm linear memory, which is where the
+ * baseline's growth was (`wasmBytes`; the measured numbers are in
+ * `docs/research/rust-plugins-web-eval.md`).
  *
  * Two deviations from the obvious reading of "pan and read the plan", both
  * found by running this and checking what actually moved:
@@ -69,6 +71,7 @@ const RASTER_BUDGET = 128 * 1024 * 1024;
 const COUNTER_KEYS = [
   'refs',
   'promises',
+  'heldFns',
   'described',
   'aborts',
   'hosts',
@@ -79,6 +82,29 @@ const COUNTER_KEYS = [
   'proxies',
   'wasmBytes',
 ] as const;
+/** Counters whose entries are released on a deterministic path (a
+ *  settled promise, a closed description, a dropped proxy), so the sample
+ *  at 300 must not exceed the one at 50 at all. */
+const EXACT_KEYS = ['promises', 'aborts', 'described', 'documents', 'proxies'] as const;
+/** Counters with a release that can lag the sample: `refs`/`wireRefs` for
+ *  a decoded loose ref wait on its `FinalizationRegistry` callback, which
+ *  runs only after a GC (this file runs without `--expose-gc`, so it cannot
+ *  force one), and `fns`/`heldFns` wait on the release sweep, which runs at
+ *  the end of the kernel's next outermost entry (`crates/epdf-web/src/
+ *  exports.rs`). They may
+ *  grow by `LAGGING_SLACK` at most. The baseline grew harness `refs` from
+ *  1271 to 5915 over the same 250 iterations, about 18 per iteration, so
+ *  it crossed this slack within four iterations. */
+const LAGGING_KEYS = ['refs', 'wireRefs', 'fns', 'heldFns'] as const;
+const LAGGING_SLACK = 64;
+/** Wasm linear memory only ever grows, in 64 KiB pages, so `wasmBytes` is a
+ *  high-water mark: any leak, and any one-off spike, shows up as a step
+ *  that never comes back. The fixed build reads the same 12,582,912 bytes
+ *  at both samples. The baseline grew 16,252,928 -> 66,846,720 bytes at a
+ *  96px render width, under half the smallest width rendered here: about
+ *  48 MiB of growth against this 2 MiB allowance (32 pages, room for
+ *  allocator fragmentation to shift with GC timing). */
+const WASM_GROWTH_BOUND = 2 * 1024 * 1024;
 
 let bytes: Uint8Array;
 let kernel: Kernel | undefined;
@@ -100,7 +126,7 @@ interface Sample {
 }
 
 describe('memory soak: 300 iterations of panning and rendering', () => {
-  test('kernelCounts and heapUsed at iterations 50 and 300', async () => {
+  test('kernelCounts stay bounded between iterations 50 and 300', async () => {
     const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
     const k = createKernel({
       engine,
@@ -165,8 +191,6 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
       }
     }
 
-    // The baseline this task exists to record (see the task report for the
-    // two samples read from this run).
     console.log('[soak] samples:', JSON.stringify(samples, null, 2));
 
     expect(renderFailures, `render failures: ${JSON.stringify(renderFailures)}`).toHaveLength(0);
@@ -191,7 +215,19 @@ describe('memory soak: 300 iterations of panning and rendering', () => {
         );
         expect(typeof sample.counts[key]).toBe('number');
       }
-      expect(sample.heapUsed).toBeGreaterThan(0);
     }
+
+    const [first, last] = samples.map((sample) => sample.counts);
+    for (const key of EXACT_KEYS) {
+      expect(last[key], `counter "${key}" grew from ${first[key]}`).toBeLessThanOrEqual(first[key]);
+    }
+    for (const key of LAGGING_KEYS) {
+      expect(last[key], `counter "${key}" grew from ${first[key]}`).toBeLessThanOrEqual(
+        first[key] + LAGGING_SLACK,
+      );
+    }
+    expect(last.wasmBytes - first.wasmBytes, 'wasmBytes growth').toBeLessThanOrEqual(
+      WASM_GROWTH_BOUND,
+    );
   }, 60_000);
 });
