@@ -130,9 +130,11 @@ impl LiveSandbox {
         }))
     }
 
-    /// `boot` or `run`: the budget is left off when `None`, as the
-    /// TypeScript host passes `undefined`.
+    /// `boot` or `run` (`member`), with the budget as the last argument.
+    /// Both hosts always pass one (`crates/plugins/acrojs/src/host.rs` and
+    /// `packages/core/acrojs/src/host.ts`); a `None` would leave it off.
     fn output(
+        member: &str,
         callback: &Callback,
         mut args: Vec<Value>,
         budget: Option<&ScriptBudget>,
@@ -141,10 +143,9 @@ impl LiveSandbox {
         match callback.call(args) {
             Answer::Returns(value) => decode(value),
             Answer::Throws(error) => Err(error),
-            Answer::Promise(_) => Err(Error::named(
-                "TypeError",
-                format!("sandbox.{} answered a promise", callback.name()),
-            )),
+            Answer::Promise(_) => {
+                Err(Error::named("TypeError", format!("sandbox.{member} answered a promise")))
+            }
         }
     }
 }
@@ -160,7 +161,7 @@ impl ScriptSandbox for LiveSandbox {
         input: &ScriptInput,
         budget: Option<&ScriptBudget>,
     ) -> Result<ScriptOutput, Error> {
-        LiveSandbox::output(&self.boot, vec![json!(sources), to_json(input)], budget)
+        LiveSandbox::output("boot", &self.boot, vec![json!(sources), to_json(input)], budget)
     }
 
     fn run(
@@ -169,7 +170,7 @@ impl ScriptSandbox for LiveSandbox {
         input: &ScriptInput,
         budget: Option<&ScriptBudget>,
     ) -> Result<ScriptOutput, Error> {
-        LiveSandbox::output(&self.run, vec![json!(source), to_json(input)], budget)
+        LiveSandbox::output("run", &self.run, vec![json!(source), to_json(input)], budget)
     }
 
     fn dispose(&self) {
