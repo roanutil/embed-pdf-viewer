@@ -15,7 +15,8 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
-const root = path.resolve(process.cwd(), '../..');
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '../..');
 const coreWasm = path.join(root, 'packages/core-wasm');
 const redirects = path.join(coreWasm, 'src/redirect');
 
@@ -31,7 +32,11 @@ function rustKernel(): Plugin {
     resolveId(id, importer) {
       const match = REDIRECTED.exec(id);
       if (!match || !importer) return null;
-      if (path.resolve(importer).startsWith(coreWasm + path.sep)) return null;
+      // Vite hands some importers back with a query suffix (`foo.ts?worker`)
+      // or a `\0` virtual-module prefix; strip both before treating the rest
+      // as a file path.
+      const importerPath = importer.replace(/^\0/, '').replace(/[?#].*$/, '');
+      if (path.resolve(importerPath).startsWith(coreWasm + path.sep)) return null;
       const target = path.join(redirects, `${match[1]}.ts`);
       if (!existsSync(target)) {
         throw new Error(`[rust-kernel] no redirect for ${id} (expected ${target})`);

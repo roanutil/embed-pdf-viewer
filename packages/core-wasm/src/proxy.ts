@@ -71,6 +71,9 @@ const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
 /** How many distinct calls keep their last answer for reuse. */
 const ANSWERS_KEPT = 4096;
 
+// Answer reuse (below) assumes a returned ref's behavior is fully determined
+// by its answer's text (ref ids blanked) or by live state it reads afresh on
+// each call, never by which physical ref id it happens to hold.
 const REF_ID = /\{"\$ref":\d+\}/g;
 
 const isThenable = (value: unknown): value is PromiseLike<unknown> =>
