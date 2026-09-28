@@ -206,6 +206,40 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(typeof zoom).toBe('number');
   });
 
+  test('matchStroke takes a KeyboardEvent-like stroke', async () => {
+    const k = await openFixture([
+      commandsPlugin({
+        commands: [{ id: 'probe', labelKey: 'probe', shortcut: 'ctrl+=', run: () => {} }],
+      }),
+    ]);
+    // `useCommandShortcuts` hands over the `KeyboardEvent` itself, whose
+    // stroke members are prototype getters that no own-property walk sees.
+    class Stroke {
+      get key() {
+        return '=';
+      }
+      get code() {
+        return 'Equal';
+      }
+      get ctrlKey() {
+        return true;
+      }
+      get metaKey() {
+        return false;
+      }
+      get altKey() {
+        return false;
+      }
+      get shiftKey() {
+        return false;
+      }
+    }
+    const commands = k.capability(CommandsToken) as unknown as {
+      matchStroke(stroke: unknown, options: { isMac: boolean }): string | null;
+    };
+    expect(commands.matchStroke(new Stroke(), { isMac: false })).toBe('probe');
+  });
+
   test("the hosts' scheduler runs the stage's frames", async () => {
     const frames: ((timestamp: number) => void)[] = [];
     const raf = vi.fn((frame: (timestamp: number) => void) => frames.push(frame));

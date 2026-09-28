@@ -93,7 +93,24 @@ const hasBlob = (value: unknown): boolean => {
  *  synchronously. */
 const readable = (source: unknown): unknown => (hasBlob(source) ? () => readBlobs(source) : source);
 
+/** A `KeyStroke`'s members, read off whatever carries them: the chrome's
+ *  `useCommandShortcuts` passes the `KeyboardEvent` itself, whose members
+ *  are prototype getters the encoder's own-property walk never sees. */
+const keyStroke = (event: unknown): unknown => {
+  if (event === null || typeof event !== 'object') return event;
+  const e = event as Obj;
+  return {
+    key: e.key,
+    ...(typeof e.code === 'string' ? { code: e.code } : {}),
+    ctrlKey: e.ctrlKey,
+    metaKey: e.metaKey,
+    altKey: e.altKey,
+    shiftKey: e.shiftKey,
+  };
+};
+
 const PREPARE: Partial<Record<string, (args: unknown[]) => unknown[]>> = {
+  matchStroke: ([stroke, ...rest]) => [keyStroke(stroke), ...rest],
   open: ([source, ...rest]) => [readable(source), ...rest],
   openAll: ([docs, ...rest]) => [
     Array.isArray(docs)
