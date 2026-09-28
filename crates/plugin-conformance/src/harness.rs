@@ -89,6 +89,10 @@ pub(crate) struct Entry {
 
 pub type RefFn = Rc<dyn Fn(Vec<Value>) -> Outcome>;
 
+/// A live callback: the `$fn` spec (so the host can find its function by
+/// id) and the call's arguments, answered synchronously.
+pub type LiveFn = Rc<dyn Fn(&Value, Vec<Value>) -> Answer>;
+
 pub(crate) struct Inner {
     pub entry: RefCell<Entry>,
     pub refs: RefCell<Vec<RefFn>>,
@@ -98,6 +102,10 @@ pub(crate) struct Inner {
     pub adapters: Vec<Rc<dyn HarnessPlugin>>,
     /// Plugins built in this run, by id, for a probe's `sameAs`.
     pub built: RefCell<HashMap<String, AnyPlugin>>,
+    /// When set, every callback calls this instead of replaying a scripted
+    /// answer, and the trace does not accumulate: `log` and `track`'s
+    /// settlement recording are skipped.
+    pub live: Option<LiveFn>,
 }
 
 /// The per-run harness. Cheap to clone.
@@ -117,11 +125,37 @@ impl Harness {
             fake: RefCell::new(None),
             adapters,
             built: RefCell::new(HashMap::new()),
+            live: None,
         }))
     }
 
-    /// Log a callback into the current trace entry.
+    /// A harness whose callbacks call straight into `live` instead of
+    /// replaying a scripted `$fn` spec. The trace does not accumulate: `log`
+    /// and `track`'s settlement recording are skipped, so a session of
+    /// manual testing does not grow it forever.
+    pub fn live(
+        adapters: Vec<Rc<dyn HarnessPlugin>>,
+        tokens: HashMap<String, AnyToken>,
+        live: LiveFn,
+    ) -> Harness {
+        Harness(Rc::new(Inner {
+            entry: RefCell::new(Entry::default()),
+            refs: RefCell::new(Vec::new()),
+            promises: RefCell::new(Vec::new()),
+            tokens: RefCell::new(tokens),
+            fake: RefCell::new(None),
+            adapters,
+            built: RefCell::new(HashMap::new()),
+            live: Some(live),
+        }))
+    }
+
+    /// Log a callback into the current trace entry. Skipped on a live
+    /// harness.
     pub fn log(&self, name: &str, args: Vec<Value>) {
+        if self.0.live.is_some() {
+            return;
+        }
         let args = args.into_iter().map(|a| crate::scrub(&a)).collect::<Vec<_>>();
         self.0.entry.borrow_mut().callbacks.push(json!({ "fn": name, "args": args }));
     }
@@ -155,15 +189,20 @@ impl Harness {
     }
 
     /// Track a promise handed back to the caller; `{"$promise": n}`. Its
-    /// settlement lands in whichever trace entry is current when it settles.
+    /// settlement lands in whichever trace entry is current when it settles,
+    /// except on a live harness, where settlement records nothing.
     pub fn track(&self, promise: Promise<Value>) -> Value {
         let id = {
             let mut promises = self.0.promises.borrow_mut();
             promises.push(promise.clone());
             promises.len() - 1
         };
+        let live = self.0.live.is_some();
         let h = Rc::downgrade(&self.0);
         promise.on_settle(move |result| {
+            if live {
+                return;
+            }
             let Some(h) = h.upgrade() else { return };
             let record = match result {
                 Ok(value) => json!({ "promise": id, "resolved": crate::scrub(value) }),
@@ -270,6 +309,9 @@ impl Callback {
     }
 
     pub fn call(&self, args: Vec<Value>) -> Answer {
+        if let Some(live) = self.harness.0.live.as_ref() {
+            return live(&self.spec, args);
+        }
         self.harness.log(self.name(), args);
         let index = {
             let mut calls = self.calls.borrow_mut();

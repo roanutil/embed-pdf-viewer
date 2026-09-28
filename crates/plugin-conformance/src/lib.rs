@@ -22,7 +22,7 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-pub use harness::{Answer, Callback, Harness, HarnessPlugin, Outcome};
+pub use harness::{Answer, Callback, Harness, HarnessPlugin, LiveFn, Outcome};
 pub use scenario::Registry;
 
 /// The envelope version the generator writes (`vectors.ts`).
