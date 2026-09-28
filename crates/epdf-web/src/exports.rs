@@ -50,7 +50,7 @@ use crate::runtime::{self, after_entry, js_to_error, js_to_value, value_to_js};
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console, js_name = error)]
-    fn console_error(message: &str);
+    fn console_error(prefix: &str, error: &JsValue);
 }
 
 /// Run one export's body, then [`after_entry`].
@@ -178,7 +178,7 @@ impl WasmKernel {
 
         let options = KernelOptions {
             report: Some(Rc::new(|error: &Error| {
-                console_error(&format!("[kernel] {}", error.to_canonical()))
+                console_error("[kernel]", &runtime::error_to_js(error))
             })),
             on_dispatch: None,
         };

@@ -221,6 +221,18 @@ pub(crate) fn js_to_value(value: &JsValue) -> Result<Value, Error> {
     serde_json::from_str(&json).map_err(|e| Error::named("TypeError", e.to_string()))
 }
 
+/// An error as a live JavaScript `Error` with its `name`, `message` and
+/// other members: what the TypeScript kernel hands `console.error` when it
+/// reports.
+pub fn error_to_js(error: &Error) -> JsValue {
+    let live = js_sys::Error::new(&error.message);
+    live.set_name(&error.name);
+    for (key, value) in error.members.iter() {
+        let _ = js_sys::Reflect::set(&live, &JsValue::from_str(key), &value_to_js(value));
+    }
+    live.into()
+}
+
 /// What a JavaScript promise rejected with: a canonical `{"$error": ...}`,
 /// an `Error` or any object with a string `message` (its `name`, `message`
 /// and any `code`), or anything else as an `Error` whose message is

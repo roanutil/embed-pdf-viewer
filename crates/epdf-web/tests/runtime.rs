@@ -8,8 +8,9 @@ use std::rc::Rc;
 
 use epdf_kernel::Error;
 use epdf_kernel::rt::{self, Promise};
-use epdf_web::runtime::{after_entry, from_js, reset, to_js};
+use epdf_web::runtime::{after_entry, error_to_js, from_js, reset, to_js};
 use serde_json::json;
+use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -104,4 +105,15 @@ async fn a_rejection_object_keeps_its_name_and_message() {
     let error = back.peek().unwrap().unwrap_err();
     assert_eq!((error.name.as_str(), error.message.as_str()), ("RangeError", "far"));
     assert_eq!(error.member("code"), Some(&json!(3)));
+}
+
+#[wasm_bindgen_test]
+fn a_reported_error_is_a_live_error_with_its_members() {
+    let error = Error::named("RangeError", "far").with("code", 3);
+    let live = error_to_js(&error);
+    let live = live.dyn_ref::<js_sys::Error>().expect("an Error instance");
+    assert_eq!(String::from(live.name()), "RangeError");
+    assert_eq!(String::from(live.message()), "far");
+    let code = js_sys::Reflect::get(live, &JsValue::from_str("code")).unwrap();
+    assert_eq!(code.as_f64(), Some(3.0));
 }
