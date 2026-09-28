@@ -31,9 +31,13 @@ epdf-plugin-stage = { path = "../plugins/stage" }
 epdf-plugin-stamp = { path = "../plugins/stamp" }
 epdf-plugin-view-manager = { path = "../plugins/view-manager" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
-js-sys = "0.3"
+# Pinned to the installed wasm-bindgen-cli, which must match exactly.
+wasm-bindgen = "=0.2.127"
+wasm-bindgen-futures = "=0.4.77"
+js-sys = "=0.3.104"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "=0.3.77"

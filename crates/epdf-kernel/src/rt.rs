@@ -250,6 +250,12 @@ pub fn pending_timers() -> usize {
     RT.with(|rt| rt.timers.borrow().len())
 }
 
+/// The earliest scheduled timer's deadline on the virtual clock, `None` when
+/// no timer is pending. For hosts arming one real timeout to wake up by.
+pub fn next_deadline() -> Option<f64> {
+    RT.with(|rt| rt.timers.borrow().keys().next().map(|&(bits, _)| f64::from_bits(bits)))
+}
+
 /// Reset this thread's runtime: drop every task and timer, and put the clock
 /// back to zero. For test harnesses running one case after another.
 pub fn reset() {
