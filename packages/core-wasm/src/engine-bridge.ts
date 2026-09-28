@@ -20,9 +20,12 @@
  *   - A value JSON cannot carry (a `PageImageHandle` with its `objectUrl()`,
  *     a `Blob`) is kept in a host table and crosses as its data members plus
  *     `$host: n`; `host(n)` returns the original. The table only grows.
- *   - A `PageImageHandle`'s `source.bytes` crosses as `{"$byteLength": n}`,
- *     not the encoded image: the host table above already keeps the real
- *     bytes, and Rust only needs the count to cost the entry.
+ *   - A `PageImageHandle`'s `source.bytes` crosses as
+ *     `{"$hostBytes": n, "$byteLength": len}`, not the encoded image. `n` is
+ *     a second, separate host-table entry for the raw `Uint8Array` itself;
+ *     `hostBytes(n)` resolves it, for a Rust caller that actually needs the
+ *     pixels (a stamp preview, a ghost). The render raster store only ever
+ *     reads `$byteLength` and never calls `hostBytes`.
  *
  * Every asynchronous method answers a promise with an `abort(reason)` when
  * the engine's promise had one, which the Rust side calls from
@@ -56,6 +59,9 @@ export interface EngineBridge {
   destroy(): BridgeCall;
   /** The live value behind a `{"$host": n}`. */
   host(n: number): unknown;
+  /** The live `Uint8Array` behind a `{"$hostBytes": n}`; throws if `n` is
+   *  not a bytes entry. */
+  hostBytes(n: number): Uint8Array;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
   /** Live entries in the host and document tables, for the eval build's
@@ -182,11 +188,17 @@ export function canonical(
         h.signal(member);
         continue;
       }
-      // A rendered image crosses into Rust as a byte count, not the bytes:
-      // the host table (below) already keeps the live object, bytes and
-      // all, for `objectUrl()` and a later `host(n)`.
+      // A rendered image crosses into Rust as a byte count plus a resolvable
+      // id, not the bytes themselves: the host table (below) already keeps
+      // the live object, bytes and all, for `objectUrl()` and a later
+      // `host(n)`; `h.hold(member.bytes)` registers a second entry for the
+      // raw `Uint8Array`, which only a caller that actually needs pixels
+      // resolves, through `hostBytes(n)`.
       if (live && key === 'source' && isByteImageSource(member)) {
-        out[key] = { kind: 'bytes', bytes: { $byteLength: member.bytes.byteLength } };
+        out[key] = {
+          kind: 'bytes',
+          bytes: { $hostBytes: h.hold(member.bytes), $byteLength: member.bytes.byteLength },
+        };
         continue;
       }
       out[key] = recur(member);
@@ -273,6 +285,13 @@ export function createEngineBridge(engine: Engine): EngineBridge {
   const host = (n: number): unknown => {
     if (!hosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
     return hosts.get(n);
+  };
+  const hostBytes = (n: number): Uint8Array => {
+    const value = host(n);
+    if (!(value instanceof Uint8Array)) {
+      throw new Error(`[engine-bridge] host value ${n} is not bytes`);
+    }
+    return value;
   };
   const encode = (value: unknown) => JSON.stringify(canonical(value, hold));
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
@@ -407,6 +426,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     host,
+    hostBytes,
     hold,
     counts() {
       return { hosts: hosts.size, documents: documents.size };

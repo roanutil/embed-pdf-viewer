@@ -66,6 +66,8 @@ describe('the engine bridge over the local engine', () => {
     };
     expect(answer.source.bytes.$byteLength).toBe(live.source.bytes.byteLength);
     expect(typeof live.objectUrl).toBe('function');
+    expect(typeof answer.source.bytes.$hostBytes).toBe('number');
+    expect(bridge.hostBytes(answer.source.bytes.$hostBytes)).toEqual(live.source.bytes);
   });
 
   test('synchronous reads: capabilities, security, has, pageIndex', () => {

@@ -204,6 +204,7 @@ impl WasmKernel {
             on_dispatch: None,
         };
         let bridge: EngineBridge = engine.unchecked_into();
+        crate::engine::install_host_bytes_resolver(&bridge);
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
         let documents: Rc<dyn Any> = Rc::new(kernel.documents());
         Ok(WasmKernel {
