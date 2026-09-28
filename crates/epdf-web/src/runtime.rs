@@ -48,14 +48,59 @@ thread_local! {
     static ARMED: RefCell<Option<Armed>> = const { RefCell::new(None) };
     /// Whether [`start_clock`] has run, so entries follow `Date.now()`.
     static STARTED: Cell<bool> = const { Cell::new(false) };
+    /// How many entries are on the stack. A timer's callback can reach
+    /// JavaScript, which can call an export, whose `after_entry` then runs
+    /// inside the outer one's `rt::advance`.
+    static DEPTH: Cell<u32> = const { Cell::new(0) };
+}
+
+/// One entry on the stack, counted while it lives, so a panic cannot leave
+/// the count stuck.
+struct Entry {
+    outermost: bool,
+}
+
+impl Entry {
+    fn enter() -> Entry {
+        let depth = DEPTH.with(|d| {
+            d.set(d.get() + 1);
+            d.get()
+        });
+        Entry { outermost: depth == 1 }
+    }
+}
+
+impl Drop for Entry {
+    fn drop(&mut self) {
+        DEPTH.with(|d| d.set(d.get().saturating_sub(1)));
+    }
+}
+
+/// Put this thread's runtime back to nothing: disarm the timeout, stop
+/// following wall time, and [`rt::reset`]. For tests running one case after
+/// another in one instance.
+pub fn reset() {
+    if let Some(armed) = ARMED.with(|armed| armed.borrow_mut().take()) {
+        clear_timeout(&armed.handle);
+    }
+    STARTED.with(|started| started.set(false));
+    DEPTH.with(|d| d.set(0));
+    rt::reset();
 }
 
 /// Move the virtual clock forward to `Date.now()`, and keep it following
 /// wall time at every [`after_entry`] from here on. Call once, when the
 /// kernel is created, so what plugins timestamp with `rt::now()` is a date.
+///
+/// Call it before anything schedules a timer. The jump is one
+/// `rt::advance` across decades, and an interval set before it would fire
+/// once for every period in the gap.
 pub fn start_clock() {
     STARTED.with(|started| started.set(true));
-    catch_up();
+    let entry = Entry::enter();
+    if entry.outermost {
+        catch_up();
+    }
 }
 
 fn catch_up() {
@@ -70,7 +115,17 @@ fn catch_up() {
 /// Call at the end of every export: catch the clock up to wall time once it
 /// is started, drain the ready queue, then make sure a real timeout is armed
 /// for the earliest virtual timer, if there is one.
+///
+/// Called from inside another entry (a timer's callback reached an export),
+/// it only drains the queue. Catching up there would advance the clock
+/// inside the outer `rt::advance`, which then lands on its own, earlier
+/// target and turns the clock back; the outer entry catches up and arms.
 pub fn after_entry() {
+    let entry = Entry::enter();
+    if !entry.outermost {
+        rt::run_until_stalled();
+        return;
+    }
     catch_up();
     rt::run_until_stalled();
     let next = rt::next_deadline();
@@ -94,7 +149,10 @@ pub fn after_entry() {
         // The timer this was armed for is due, even if the timeout came back
         // a little early or the clock was never started; `after_entry` then
         // catches up the rest of the way to wall time.
-        rt::advance((deadline - rt::now()).max(0.0));
+        {
+            let _entry = Entry::enter();
+            rt::advance((deadline - rt::now()).max(0.0));
+        }
         after_entry();
         drop(spent);
     });
