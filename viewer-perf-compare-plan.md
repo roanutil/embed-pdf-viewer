@@ -57,7 +57,7 @@ Comparing every arm against `main` gives a headline number but doesn't say why a
 | Pair | The one thing that differs | Question it answers |
 | --- | --- | --- |
 | `main` vs `main-aa` | Nothing | How big is a difference that means nothing? |
-| `main` vs `impl-ts` | The engine's wasm file now also contains the unused Rust code | Does carrying that code cost anything on its own? Expect a bigger download and maybe a slower start, and no change once a document is open. |
+| `main` vs `impl-ts` | Everything the impl branch changes with its Rust switch off | What does the impl branch cost by default? This is an aggregate, not the cost of the unused Rust code alone: between the two pins the branch also changes engine startup (`packages/engine/main/src/index.ts`), the worker bootstrap, runtime initialization (`packages/engine/runtime/src/wasm/wasm-runtime.ts`) and `WorkerHost`. Isolating the payload would need a sixth arm built from the impl pin with `EMBEDPDF_RUST_CORE=0`, which this plan doesn't include. |
 | `impl-ts` vs `impl-rust` | `pages.geometry` answered by Rust instead of TypeScript | Is the Rust geometry code faster in the real viewer? Expect a change in the select flow and nowhere else. |
 | `impl-ts` vs `plugins` | The kernel and plugins are Rust instead of TypeScript | What does moving the kernel to Rust cost or save, with the engine held the same? |
 | `main` vs `plugins` | Everything the plugins branch changes | The headline number for the plugins branch |
@@ -96,9 +96,9 @@ The plugins arm also records `window.__epdfCounts()`-style kernel table counts d
 | `scroll` | `large.pdf` | 60 wheel events of 240 px at 16 ms spacing from page 1 | Frame stats, `longTaskMs`, `settleMs` after the last wheel |
 | `jump` | `large.pdf` | `goToPageIndex(300)` | `settleMs` |
 | `zoom` | `ebook.pdf` | `zoomTo` 1 → 2 → 4 → 1, settling between | `settleMs` per step and summed |
-| `select` | `ebook.pdf` | Pointer drag across four text lines on page 2 | `settleMs` from `mouseup` to `readText()` resolving non-empty |
+| `select` | `ebook.pdf` | Pointer drag across four text lines on page 2 | `settleMs` from just before the pointer first enters page 2 to `readText()` resolving non-empty, so the hover and drag are inside the window |
 | `search` | `ebook.pdf` | `search({ text: 'the' })` | Time to the promise resolving; `hitCount` goes to the gate |
-| `annotate` | `ebook.pdf` | `execute('annotation:add-highlight')`, then drag across one line | Time from `mouseup` to the annotation list growing by one and the page settling |
+| `annotate` | `ebook.pdf` | `execute('annotation:add-highlight')`, then drag across one line | Time from just before the pointer first enters the page to the annotation list growing by one and the page settling |
 | `soak` | `ebook.pdf` | 30 cycles of `goToPageIndex(last)`, `zoomTo(3)`, `goToPageIndex(0)`, `zoomTo(1)` | `heapSoakSlopeBytes`, plus cycle-5 and cycle-30 totals |
 
 API-driven steps use the public `ViewerHandle` lenses (`StageToken`, `SearchToken`, `SelectionToken`, `AnnotationToken`), so they don't depend on pointer timing. `scroll`, `select` and `annotate` use Playwright input because the input path is part of what those flows measure.
@@ -110,6 +110,8 @@ We report median and p95. Never mean.
 Each round opens every arm once per flow, in an order rotated by round (round `r` starts at arm `r mod 5`). Each flow gets a fresh browser context. Inside it, the flow is put in a defined starting state, warmed up on pages or zoom levels the measured action won't touch, put back in the starting state, and only then measured (Task 7 has the per-flow table). `open`, `search` and `soak` have no separate warm-up, for reasons the table gives. The default is `R = 10` rounds; `--quick` is `R = 3` and its report is stamped "quick, not for publication".
 
 For each pair and metric the report gives the ratio `median(candidate) / median(reference)` and a 95% bootstrap interval (10,000 resamples, seeded, so a rerun of `report.mjs` over the same raw data prints the same numbers). The `main` vs `main-aa` pair is checked first, against a fixed tolerance that doesn't depend on its own data: it passes a metric when its interval includes 1.0 or its ratio is within 3% of 1.0. A metric whose A/A check fails means the harness treats two identical builds differently, and every other pair's row for that metric is printed as "unreliable (A/A failed)" instead of a verdict. For metrics that pass, the A/A interval's widest distance from 1.0 becomes the noise band. Another pair's verdict is "slower" or "faster" only when its interval excludes 1.0 and its ratio's distance from 1.0 is larger than that noise band, with a floor of 3%. Anything else is "no detectable difference".
+
+Metrics that can be zero or negative (the counts, `longTaskMs`, every `settleMs`, and `heapSoakSlopeBytes`) use the same procedure on the difference `median(candidate) - median(reference)` instead of the ratio. The A/A check and verdict then measure distance from 0, and the 3% floor is 3% of the reference median. A statistic that comes out non-finite is never turned into a verdict: the row prints `invalid` with the reason.
 
 ### Environment
 
@@ -406,10 +408,11 @@ git commit -m "Pin the three branches the viewer perf comparison builds"
 **Interfaces:**
 - Produces:
   - `summarize(values: number[]): { n, median, p95, min, max }`
-  - `bootstrapRatio(reference: number[], candidate: number[], opts?: { resamples?: number, seed?: number }): { ratio, lo, hi }`, where `ratio = median(candidate) / median(reference)`
-  - `noiseBand(interval: { lo, hi }): number`, the interval's widest distance from 1.0
-  - `verdict(interval: { ratio, lo, hi }, noise: number): 'slower' | 'faster' | 'same'`
-  - `calibrate(aaInterval: { ratio, lo, hi }): { ok: boolean, noise: number }`. `ok` is `verdict(aaInterval, 0) === 'same'`, so the A/A pair is judged against the fixed 3% floor and never against its own band.
+  - `bootstrapRatio(reference: number[], candidate: number[], opts?: { resamples?: number, seed?: number }): { kind: 'ratio', ratio, lo, hi }`, where `ratio = median(candidate) / median(reference)`. Throws unless every sample is positive.
+  - `bootstrapDifference(reference, candidate, opts?): { kind: 'difference', diff, lo, hi, scale }`, where `diff = median(candidate) - median(reference)` and `scale = |median(reference)|`. For metrics that can be zero or negative.
+  - `noiseBand(interval): number`, the interval's widest distance from 1.0 for a ratio, or from 0 for a difference
+  - `verdict(interval, noise: number): 'slower' | 'faster' | 'same'`. Throws on a non-finite point or bound. An interval without `kind` is a ratio.
+  - `calibrate(aaInterval): { ok: boolean, noise: number }`. `ok` is `verdict(aaInterval, 0) === 'same'`, so the A/A pair is judged against the fixed 3% floor and never against its own band.
   - `comparePair(interval, calibration): 'slower' | 'faster' | 'same' | 'unreliable'`
   - `slope(ys: number[]): number`, least squares against `x = 0..n-1`
 
@@ -418,7 +421,7 @@ git commit -m "Pin the three branches the viewer perf comparison builds"
 ```js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize, bootstrapRatio, noiseBand, verdict, calibrate, comparePair, slope } from '../lib/stats.mjs';
+import { summarize, bootstrapRatio, bootstrapDifference, noiseBand, verdict, calibrate, comparePair, slope } from '../lib/stats.mjs';
 
 test('summarize uses linear-interpolated quantiles', () => {
   const s = summarize([5, 1, 4, 2, 3]);
@@ -474,6 +477,30 @@ test('comparePair refuses a verdict when A/A failed', () => {
   const clear = { ratio: 2, lo: 1.8, hi: 2.2 };
   assert.equal(comparePair(clear, { ok: false, noise: 0 }), 'unreliable');
   assert.equal(comparePair(clear, { ok: true, noise: 0.04 }), 'slower');
+});
+
+test('a ratio refuses zero and negative samples', () => {
+  assert.throws(() => bootstrapRatio(Array(10).fill(0), Array(10).fill(0)), /positive/);
+  assert.throws(() => bootstrapRatio([1, 2, 3], [-1, 2, 3]), /positive/);
+});
+
+test('verdict refuses a non-finite interval', () => {
+  assert.throws(() => verdict({ ratio: NaN, lo: NaN, hi: NaN }, 0), /finite/);
+  assert.throws(() => calibrate({ kind: 'difference', diff: 0, lo: -Infinity, hi: 0, scale: 0 }), /finite/);
+});
+
+test('an all-zero A/A difference calibrates with no noise', () => {
+  const aa = bootstrapDifference(Array(10).fill(0), Array(10).fill(0));
+  assert.deepEqual(calibrate(aa), { ok: true, noise: 0 });
+  const worse = bootstrapDifference(Array(10).fill(0), Array(10).fill(40));
+  assert.equal(comparePair(worse, calibrate(aa)), 'slower');
+});
+
+test('a signed slope moving from -10 to -5 is worse, not better', () => {
+  // As a ratio this is 0.5, which used to read as "faster".
+  const d = bootstrapDifference(Array(10).fill(-10), Array(10).fill(-5));
+  assert.equal(d.diff, 5);
+  assert.equal(verdict(d, 0), 'slower');
 });
 
 test('noiseBand is the widest distance from 1', () => {
@@ -536,6 +563,9 @@ function resample(values, next) {
 }
 
 export function bootstrapRatio(reference, candidate, { resamples = 10_000, seed = 1 } = {}) {
+  if (![...reference, ...candidate].every((v) => v > 0)) {
+    throw new Error('A ratio needs positive samples; use bootstrapDifference');
+  }
   const next = rng(seed);
   const ratios = new Array(resamples);
   for (let i = 0; i < resamples; i++) {
@@ -543,18 +573,59 @@ export function bootstrapRatio(reference, candidate, { resamples = 10_000, seed 
   }
   ratios.sort((a, b) => a - b);
   return {
+    kind: 'ratio',
     ratio: median(candidate) / median(reference),
     lo: quantile(ratios, 0.025),
     hi: quantile(ratios, 0.975),
   };
 }
 
-export const noiseBand = ({ lo, hi }) => Math.max(Math.abs(1 - lo), Math.abs(hi - 1));
+// For metrics that can be zero (longTaskMs, settleMs, counts) or negative
+// (heapSoakSlopeBytes), where a ratio is undefined or points the wrong way.
+export function bootstrapDifference(reference, candidate, { resamples = 10_000, seed = 1 } = {}) {
+  const next = rng(seed);
+  const diffs = new Array(resamples);
+  for (let i = 0; i < resamples; i++) {
+    diffs[i] = median(resample(candidate, next)) - median(resample(reference, next));
+  }
+  diffs.sort((a, b) => a - b);
+  return {
+    kind: 'difference',
+    diff: median(candidate) - median(reference),
+    lo: quantile(diffs, 0.025),
+    hi: quantile(diffs, 0.975),
+    scale: Math.abs(median(reference)),
+  };
+}
 
-export function verdict({ ratio, lo, hi }, noise) {
+function checkFinite(interval) {
+  const point = interval.kind === 'difference' ? interval.diff : interval.ratio;
+  if (![point, interval.lo, interval.hi].every(Number.isFinite)) {
+    throw new Error(`Interval must be finite: ${JSON.stringify(interval)}`);
+  }
+}
+
+export function noiseBand(interval) {
+  const centre = interval.kind === 'difference' ? 0 : 1;
+  return Math.max(Math.abs(centre - interval.lo), Math.abs(interval.hi - centre));
+}
+
+// Every metric is lower-is-better, so "slower" means the candidate is worse,
+// whatever the unit.
+export function verdict(interval, noise) {
+  checkFinite(interval);
+  const { lo, hi } = interval;
+  if (interval.kind === 'difference') {
+    // The 3% floor is relative to the reference median. With a zero
+    // reference it is 0, and any difference the interval resolves counts.
+    const threshold = Math.max(FLOOR * interval.scale, noise);
+    if (lo > 0 && interval.diff > threshold) return 'slower';
+    if (hi < 0 && -interval.diff > threshold) return 'faster';
+    return 'same';
+  }
   const threshold = Math.max(FLOOR, noise);
-  if (lo > 1 && ratio - 1 > threshold) return 'slower';
-  if (hi < 1 && 1 - ratio > threshold) return 'faster';
+  if (lo > 1 && interval.ratio - 1 > threshold) return 'slower';
+  if (hi < 1 && 1 - interval.ratio > threshold) return 'faster';
   return 'same';
 }
 
@@ -583,12 +654,12 @@ export function slope(ys) {
 }
 ```
 
-`bootstrapRatio` divides by a resampled median, so a reference with a zero median (for example `jankFrames` on a smooth arm) would produce `Infinity`. `report.mjs` handles count metrics differently (Task 8), so that's never passed in here.
+`bootstrapRatio` divides by a resampled median, so it refuses any sample that isn't positive rather than returning `Infinity` or `NaN`. Metrics that can be zero or negative go through `bootstrapDifference` instead; Task 8 fixes which metric uses which. A difference's noise band is in the metric's own unit, so it only ever compares against the same metric's A/A difference.
 
 - [ ] **Step 4: Run the tests**
 
 Run: `cd perf-compare && node --test test/stats.test.mjs`
-Expected: 10 passing.
+Expected: 14 passing.
 
 - [ ] **Step 5: Commit**
 
@@ -606,7 +677,7 @@ git commit -m "Add the bootstrap ratio and noise-band verdict for perf reports"
 
 **Interfaces:**
 - Consumes: `loadConfig()` (Task 1).
-- Produces: `workDir(): string` (in `materialize.mjs`), which is `process.env.PERF_WORK_DIR ?? <repo>/perf-compare/.work`; `worktreePath(id): string` = `<workDir>/worktrees/<id>`; `materialize(config): void`.
+- Produces: `workDir(): string` (in `materialize.mjs`), which is `process.env.PERF_WORK_DIR ?? <repo>/perf-compare/.work`; `worktreePath(id): string` = `<workDir>/worktrees/<id>`; `assertPinned(id, sha): void`, which throws unless the worktree's `HEAD` is `sha`, no tracked file is modified, and every submodule is at its recorded commit with no tracked changes; `materialize(config): void`.
 
 - [ ] **Step 1: Write `scripts/doctor.mjs`**
 
@@ -683,6 +754,25 @@ const hasCommit = (sha) => {
   }
 };
 
+const dirtyTracked = (dir) => git(['status', '--porcelain', '--untracked-files=no', '--ignore-submodules=none'], dir);
+
+// Every build and every cached stamp is trusted only after this passes, so
+// meta.json's SHA always names the source that was built. Untracked files are
+// allowed, because the entry and kernel shim are untracked.
+export function assertPinned(id, sha) {
+  const dir = worktreePath(id);
+  const head = git(['rev-parse', 'HEAD'], dir);
+  if (head !== sha) throw new Error(`worktree ${id} is at ${head}, not the pinned ${sha}; run materialize.mjs`);
+  if (dirtyTracked(dir)) throw new Error(`worktree ${id} has tracked changes; remove ${dir} and rerun`);
+  // `git submodule status` prefixes `+` for a commit other than the recorded
+  // one, `-` for an uninitialized submodule and `U` for a conflict.
+  const subs = git(['submodule', 'status', '--recursive'], dir);
+  const subsDirty = git(['submodule', 'foreach', '--quiet', '--recursive', 'git status --porcelain --untracked-files=no'], dir);
+  if (/^[-+U]/m.test(subs) || subsDirty) {
+    throw new Error(`worktree ${id} has a modified submodule; remove ${dir} and rerun`);
+  }
+}
+
 export function materialize(config) {
   mkdirSync(path.join(workDir(), 'worktrees'), { recursive: true });
   for (const [id, w] of Object.entries(config.worktrees)) {
@@ -691,13 +781,14 @@ export function materialize(config) {
       if (!hasCommit(w.sha)) git(['fetch', '--quiet', 'origin', w.sha]);
       git(['worktree', 'add', '--detach', dir, w.sha]);
     }
-    const head = git(['rev-parse', 'HEAD'], dir);
-    if (head !== w.sha) {
-      const dirty = git(['status', '--porcelain', '--untracked-files=no'], dir);
-      if (dirty) throw new Error(`worktree ${id} has tracked changes; remove ${dir} and rerun`);
-      git(['checkout', '--quiet', '--detach', w.sha], dir);
-    }
+    // Checked on every run, not only when HEAD moved: a worktree at the pinned
+    // SHA with edited source would otherwise build that source while
+    // meta.json reports the pin. Checking before checkout also keeps a
+    // checkout from carrying edits across.
+    if (dirtyTracked(dir)) throw new Error(`worktree ${id} has tracked changes; remove ${dir} and rerun`);
+    if (git(['rev-parse', 'HEAD'], dir) !== w.sha) git(['checkout', '--quiet', '--detach', w.sha], dir);
     git(['submodule', 'update', '--init', '--recursive', '--quiet'], dir);
+    assertPinned(id, w.sha);
     console.log(`${id}: ${dir} at ${w.sha.slice(0, 9)}`);
   }
 }
@@ -753,7 +844,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../lib/config.mjs';
-import { workDir, worktreePath } from './materialize.mjs';
+import { assertPinned, workDir, worktreePath } from './materialize.mjs';
 
 const self = readFileSync(fileURLToPath(import.meta.url));
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
@@ -799,6 +890,8 @@ function payload(dir, { allowLocal }) {
 export function buildWorktree(id, config) {
   const w = config.worktrees[id];
   const dir = worktreePath(id);
+  // Before the cache check, so a stamp is never reused for edited source.
+  assertPinned(id, w.sha);
   const key = sha256(Buffer.concat([Buffer.from(w.sha + w.recipe), self]));
   const stampFile = path.join(workDir(), 'stamps', `${id}.json`);
   if (existsSync(stampFile)) {
@@ -1404,12 +1497,12 @@ A warm-up is there to warm code (JIT, lazily loaded modules, wasm tier-up), neve
 | `scroll` | Page index 0, zoom 1, pointer at the viewer's centre | 20 wheel events starting at page 200 | 60 wheel events of 240 px at 16 ms spacing | Last wheel sent (`doneAt`), then settle with `requireChange` from the first wheel | Only the starting pages (index 0 to 2) have tiles; the warm-up rendered pages near 200 |
 | `jump` | Page index 0, zoom 1 | `goToPageIndex(200)`, settle | `goToPageIndex(300)` | `currentPageIndex() === 300`, then settle with `requireChange` | Page 300 never rendered |
 | `zoom` | Page index 0, zoom 1 | `zoomTo(1.5)`, settle, `zoomTo(3)`, settle | `zoomTo` 2, then 4, then 1, settling between | `zoomLevel()` equals the target; `requireChange` for 2 and 4, not for the return to 1 | Tiles at 2 and 4 never rendered. The step back to 1 can be served from the starting state's tiles, and the report labels it `zoom / backTo1SettleMs` so nobody reads it as a cold render |
-| `select` | Page index 1, zoom 1, nothing selected | Drag across four lines of page index 2 | Drag across four lines of page index 1 | `readSelection()` resolves non-empty (`doneAt`), then settle without `requireChange` | Page 1's text geometry never requested |
+| `select` | Page index 1, zoom 1, nothing selected, pointer parked outside `#viewer` | Drag across four lines of page index 2 | Move the pointer onto page index 1, then drag across four of its lines | `t0` is read before the first move onto the page. Done is `readSelection()` resolving non-empty (`doneAt`), then settle without `requireChange` | Page 1's text geometry never requested. On `main` the selection handler's `onHover` calls `ensureLoaded()` (`packages/plugin/selection/src/handler.ts:110` at the `main` pin), so geometry is fetched on hover and during the drag, before `mouseup`. Timing from `mouseup` would miss exactly the work `impl-ts` vs `impl-rust` is meant to compare |
 | `search` | Page index 0, no query | None | `search('the')` | The promise resolves | Every page's extracted text cold. This flow has no warm-up on purpose: a warm-up search fills the text cache for every page, so the measured search would time the cache. The cost is that JIT warm-up is inside the number; it's the first search a user runs |
-| `annotate` | Page index 1, zoom 1, highlight tool off | Highlight across one line of page index 2 | `execute('annotation:add-highlight')`, drag across one line of page index 1 | `annotationCount(1)` grows by one (`doneAt`, 10 s timeout), then settle without `requireChange` | Page 1 has no annotations yet |
+| `annotate` | Page index 1, zoom 1, highlight tool off, pointer parked outside `#viewer` | Highlight across one line of page index 2 | `execute('annotation:add-highlight')`, then move the pointer onto page index 1 and drag across one of its lines | `t0` is read after the tool is on and before the first move onto the page. Done is `annotationCount(1)` growing by one (`doneAt`, 10 s timeout), then settle without `requireChange` | Page 1 has no annotations yet and its text geometry was never requested. The highlight tool rides the text-select gesture (`selection: { kind: 'markup' }` in `packages/plugin/annotation/src/tools/definitions.ts` at the `main` pin), so the same hover-time `ensureLoaded()` as `select` runs here |
 | `soak` | Page index 0, zoom 1 | None; cycles 1 to 4 are its warm-up | 30 cycles of `goToPageIndex(last)`, `zoomTo(3)`, `goToPageIndex(0)`, `zoomTo(1)` | Each step settles like `jump` and `zoom` | Reported over cycles 5 to 30 only |
 
-`start` for every flow calls `clearSearch()`, `clearSelection()`, `goToPageIndex(<start page>)` and `zoomTo(1)`, waits for `currentPageIndex()` and `zoomLevel()` to match, then settles.
+`start` for every flow calls `clearSearch()`, `clearSelection()`, `goToPageIndex(<start page>)` and `zoomTo(1)`, waits for `currentPageIndex()` and `zoomLevel()` to match, then settles. `select.start` and `annotate.start` also move the pointer to a point outside `#viewer` before settling, so no hover over page 1 can request its geometry before `t0`.
 
 Every measured time is page-clock minus page-clock (`performance.now()` read inside the page), never Node's clock. Every `measure` takes `metrics()` before and after its action and returns the deltas as `mainTaskMs` and `mainScriptMs`.
 
@@ -1526,7 +1619,9 @@ The report has these sections, in order, and each table's rows are `flow / metri
 6. Memory: `heapAfterOpenBytes`, `workerHeapAfterOpenBytes`, `heapSoakSlopeBytes` per arm, median and p95, labeled "JS heap only" when `meta.memorySource` is `cdp`.
 7. Diagnostics: the plugins arm's kernel counts at soak cycles 5 and 30.
 
-Count metrics (`jankFrames`, `longTasks`) are reported as median and p95 per arm with a difference of medians, not a ratio, because a median of zero makes the ratio undefined.
+Each metric's interval kind is fixed in `report.mjs`, never chosen from the data, so a metric's A/A calibration and its other pairs always use the same kind. `bootstrapDifference` is used for the count metrics (`jankFrames`, `longTasks`), for `longTaskMs`, for every metric whose name ends in `settleMs` or `SettleMs`, and for `heapSoakSlopeBytes`: each of those can be zero, and the slope can be negative. Every other metric uses `bootstrapRatio`. Difference rows print `diff [95% CI]` in the metric's unit where ratio rows print `ratio [95% CI]`.
+
+If `bootstrapRatio` or `verdict` throws for a metric (a ratio metric recorded a zero, say), that row prints `invalid: <message>` instead of a verdict. When the throw comes from the A/A pair, the metric's calibration is `{ ok: false }`, so every other pair prints `unreliable (A/A failed)` for it. The report never prints a verdict computed from a non-finite number.
 
 `--against <other>` refuses to run when `compatible()` returns anything, printing each differing key. It then prints one table per arm present in both runs, reference being the other run. This is the "did my change on the plugins branch help" mode, and why pins are commits: a developer moves the `plugins` pin, reruns, and compares.
 
