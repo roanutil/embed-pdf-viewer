@@ -18,6 +18,18 @@ const hasCommit = (sha) => {
   }
 };
 
+// A pin can live on any remote (a research branch pushed only to a private
+// fork, say), so each configured remote is tried until one has it.
+function fetchCommit(sha) {
+  for (const remote of git(['remote']).split('\n').filter(Boolean)) {
+    try {
+      git(['fetch', '--quiet', remote, sha]);
+      return;
+    } catch {}
+  }
+  throw new Error(`no remote has ${sha}; push its branch first`);
+}
+
 const dirtyTracked = (dir, submodules = 'none') =>
   git(['status', '--porcelain', '--untracked-files=no', `--ignore-submodules=${submodules}`], dir);
 
@@ -75,7 +87,7 @@ export function materialize(config) {
   for (const [id, w] of Object.entries(config.worktrees)) {
     const dir = worktreePath(id);
     if (!existsSync(dir)) {
-      if (!hasCommit(w.sha)) git(['fetch', '--quiet', 'origin', w.sha]);
+      if (!hasCommit(w.sha)) fetchCommit(w.sha);
       git(['worktree', 'add', '--detach', dir, w.sha]);
     }
     // Checked on every run, not only when HEAD moved: a worktree at the pinned

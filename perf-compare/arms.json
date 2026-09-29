@@ -9,12 +9,12 @@
     },
     "impl": {
       "ref": "research/multi-platform-rust-core-impl",
-      "sha": "27801926782369a067b2f9116b81a4c3ec5bcf03",
+      "sha": "c8085bd3ca876a3d3cf7705fdae8df1fc9a733bb",
       "recipe": "rust-core"
     },
     "plugins": {
       "ref": "research/multi-platform-rust-core-impl-plugins",
-      "sha": "17296a72681f364b5d94ddc7a52bc7b5e66348a2",
+      "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
       "recipe": "rust-kernel"
     }
   },
