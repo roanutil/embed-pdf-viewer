@@ -153,10 +153,24 @@ export function createKernel(opts: {
   wire.attach(rust);
 
   const listeners = new Set<() => void>();
+  // One notification per burst of store changes, after the Rust call that
+  // made them returns. The Rust store notifies synchronously on every
+  // reducer change, and each notification ran every subscribed hook from
+  // inside that call: a camera move made several passes over hundreds of
+  // hooks. The caches still invalidate at once, so a read in between sees
+  // the new state.
+  let flushing = false;
+  const flush = () => {
+    flushing = false;
+    for (const listener of [...listeners]) listener();
+  };
   const subscription = rust.subscribe(() => {
     wire.changes++;
     wire.bump();
-    for (const listener of [...listeners]) listener();
+    if (!flushing) {
+      flushing = true;
+      queueMicrotask(flush);
+    }
   });
 
   const documents = wire.documents() as DocumentsCapability;

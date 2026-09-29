@@ -1269,6 +1269,16 @@ impl Kernel {
         self.0.store.state_json()
     }
 
+    /// `getState()` as canonical JSON text, cached per store revision.
+    pub fn state_text(&self) -> Rc<str> {
+        self.0.store.state_text()
+    }
+
+    /// Moves whenever [`state_json`](Self::state_json) could change.
+    pub fn state_revision(&self) -> u64 {
+        self.0.store.revision()
+    }
+
     pub fn core(&self) -> Rc<CoreState> {
         self.0.store.core()
     }

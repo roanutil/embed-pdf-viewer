@@ -69,6 +69,8 @@ export interface RustKernel {
   promise(id: number): Promise<unknown>;
   abort_promise(id: number, reasonJson?: string | null): void;
   state_json(): string;
+  /** Moves whenever `state_json` could answer differently. */
+  state_revision(): number;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
   status(): string;
@@ -217,7 +219,7 @@ export class Wire {
    *  was decoded from, whose refs it holds. Cleared whole past
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; text: string; value: unknown }>();
-  private state: { version: number; text: string; value: unknown } | undefined;
+  private state: { revision: number; text: string; value: unknown } | undefined;
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
    *  store, so its answer is not cached. */
@@ -416,14 +418,18 @@ export class Wire {
 
   /** The kernel's state, parsed once per store change. */
   getState(): unknown {
-    if (this.state?.version === this.version) return this.state.value;
-    // `version` also moves on every real call (see `call`), which does not
-    // mean the store changed: the same text keeps the same object, and a
-    // changed store keeps every slice whose text did not change, as the
-    // TypeScript store keeps an untouched plugin's slice.
+    // Keyed on the store's own revision, not `version`: `version` also moves
+    // on every real call (see `call`) and every callback, which does not
+    // mean the store changed, and re-reading the whole state for each of
+    // those made one store change cost a full serialization per reader.
+    const revision = this.rust.state_revision();
+    if (this.state?.revision === revision) return this.state.value;
+    // The same text keeps the same object, and a changed store keeps every
+    // slice whose text did not change, as the TypeScript store keeps an
+    // untouched plugin's slice.
     const text = this.rust.state_json();
     if (this.state?.text === text) {
-      this.state.version = this.version;
+      this.state.revision = revision;
       return this.state.value;
     }
     const raw = JSON.parse(text) as Record<string, unknown>;
@@ -449,7 +455,7 @@ export class Wire {
       }
     }
     this.slices = slices;
-    this.state = { version: this.version, text, value };
+    this.state = { revision, text, value };
     return value;
   }
 

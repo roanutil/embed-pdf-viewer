@@ -219,9 +219,31 @@ describe('the Kernel shim over the Rust kernel', () => {
       seenAfterMutation = stage.listVisiblePages();
     });
     stage.panBy(0, -50);
+    // Listeners hear of a burst of changes once, in a microtask after the
+    // call that made them.
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
 
     expect(seenBeforeMutation).not.toBeUndefined();
     expect(seenAfterMutation).not.toBe(seenBeforeMutation);
+  });
+
+  test('a burst of store changes in one call notifies each listener once, after it returns', async () => {
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 120 });
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+
+    let calls = 0;
+    const off = k.subscribe(() => calls++);
+    const before = k.getState();
+    stage.panBy(0, -50);
+    stage.panBy(0, -50);
+    expect(calls).toBe(0);
+    // The caches don't wait for the notification.
+    expect(k.getState()).not.toBe(before);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    expect(calls).toBe(1);
+    off();
   });
 
   test('an init-only JS plugin registers through the Rust capabilities', async () => {
