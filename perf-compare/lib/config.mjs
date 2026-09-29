@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const DEFAULT = fileURLToPath(new URL('../arms.json', import.meta.url));
-const RECIPES = new Set(['typescript', 'rust-core', 'rust-kernel']);
+const RECIPES = new Set(['typescript', 'rust-core', 'rust-kernel', 'rust-kernel-lto']);
 const KERNELS = new Set(['typescript', 'rust']);
 
 export function loadConfig(file = DEFAULT) {

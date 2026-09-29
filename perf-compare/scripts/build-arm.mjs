@@ -202,6 +202,18 @@ export function buildWorktree(id, config) {
     sh('pnpm --filter @embedpdf/core-wasm build:wasm', dir);
     sh('pnpm bootstrap', path.join(dir, 'examples/rust-kernel-eval'));
   }
+  if (w.recipe === 'rust-kernel-lto') {
+    // crates/epdf-web/scripts/build.sh with the crate built as a cdylib only.
+    // Its Cargo.toml declares ["cdylib", "rlib"], and with an rlib in the set
+    // Cargo passes no `-C lto`, so `lto = true` in [profile.release] never
+    // applies. `cargo rustc --crate-type` overrides the set for this build
+    // without editing the branch.
+    const kernel = 'target/wasm32-unknown-unknown/release/epdf_web.wasm';
+    sh('cargo rustc -p epdf-web --release --target wasm32-unknown-unknown -j 4 --crate-type cdylib', dir);
+    sh(`wasm-bindgen --target web --out-dir packages/core-wasm/wasm ${kernel}`, dir);
+    sh(`wasm-bindgen --target experimental-nodejs-module --out-dir packages/core-wasm/wasm-node ${kernel}`, dir);
+    sh('pnpm bootstrap', path.join(dir, 'examples/rust-kernel-eval'));
+  }
   const engineWasm = wasmPath(dir);
   const stamp = { key, source, fork, rustCore, engineWasm, engineWasmSha256: sha256(readFileSync(engineWasm)) };
   mkdirSync(path.dirname(stampFile), { recursive: true });

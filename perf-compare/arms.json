@@ -16,6 +16,11 @@
       "ref": "research/multi-platform-rust-core-impl-plugins",
       "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
       "recipe": "rust-kernel"
+    },
+    "plugins-lto": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -43,6 +48,11 @@
       "worktree": "plugins",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-lto": {
+      "worktree": "plugins-lto",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -65,6 +75,10 @@
     [
       "main",
       "plugins"
+    ],
+    [
+      "plugins",
+      "plugins-lto"
     ]
   ]
 }

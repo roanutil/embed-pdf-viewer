@@ -24,7 +24,7 @@ This directory isn't a pnpm workspace member. Keep it out of `pnpm-workspace.yam
 
 ## What it compares
 
-Five arms, defined in `arms.json`, which is the only file that knows which branches exist:
+Six arms, defined in `arms.json`, which is the only file that knows which branches exist:
 
 | Arm | Branch | Kernel | Engine requests |
 | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ Five arms, defined in `arms.json`, which is the only file that knows which branc
 | `impl-ts` | `research/multi-platform-rust-core-impl` | TypeScript | TypeScript, Rust core linked but unused |
 | `impl-rust` | same | TypeScript | `pages.geometry` in Rust (`rustRouting: { rustReads: true }`) |
 | `plugins` | `research/multi-platform-rust-core-impl-plugins` | Rust (`packages/core-wasm`) | TypeScript |
+| `plugins-lto` | same | Rust, kernel built with LTO | TypeScript |
 
 The report compares each pair in `arms.json`. `main` vs `main-aa` comes first: it's the A/A
 check, and its interval sets the noise band every other pair has to clear. `impl-ts` vs
@@ -40,6 +41,16 @@ check, and its interval sets the noise band every other pair has to clear. `impl
 with the engine held the same (both arms run the byte-identical engine wasm). `main` vs `impl-ts`
 is the aggregate cost of the impl branch with its switch off, not the cost of the unused Rust code
 alone.
+
+`plugins` vs `plugins-lto` isolates link-time optimization of the wire kernel. The branch sets
+`lto = true` in `[profile.release]`, but `crates/epdf-web/Cargo.toml` declares
+`crate-type = ["cdylib", "rlib"]`, and with an `rlib` in the set Cargo passes no `-C lto`, so the
+kernel `plugins` ships was never link-time optimized. `plugins-lto` is the same commit with the
+kernel built by `cargo rustc --crate-type cdylib`, which does get `-C lto`. A quick run on
+2026-09-29 put the gain at about 10% where the kernel is the bottleneck (`open(large) / openedMs`
+1384 to 1273 ms, `scroll / longTaskMs` 9.6 to 8.3 s) and nothing detectable on `select`, `search`,
+`annotate` or `jump`, for a kernel 0.9 MiB larger. The Rust engine core (`crates/epdf-wasm`,
+`["staticlib", "rlib"]`) has the same problem, and no arm measures it yet.
 
 Every arm runs one shared entry page (`entry/`), built with Vite from each worktree's own
 `packages/viewer/main` as a production bundle and served statically with COOP/COEP. A gate
@@ -59,7 +70,9 @@ rebuilt on every run, about 5 s per arm.
 
 A `--quick` run of all five arms took 17.0 min. A full `desktop` run took 57.3 min and a
 full `slow` run took 86.8 min. `plugins` dominates both: its `scroll` flow alone runs about
-30 s per sample, against about 4.5 s on `main`.
+30 s per sample, against about 4.5 s on `main`. Those timings are for five arms. `plugins-lto`
+came later and adds a second `plugins`-sized arm; a quick run of `main`, `main-aa`, `plugins` and
+`plugins-lto` took 17.9 min. We haven't timed a full six-arm run.
 
 `.work/` holds about 18 GB by `du`: 9 GB of worktrees, 7 GB of fork checkout, 1.6 GB of emsdk and
 0.7 GB of depot_tools. Most of the fork checkout is APFS clones of the host's
@@ -89,16 +102,17 @@ factor or flow set differ, and prints the keys that differ.
 
 Add it to `arms` in `arms.json`, pointing at an existing worktree or a new one, and add the pairs
 you want reported. A new worktree needs a `recipe`: `typescript` fetches the published engine
-payload, `rust-core` builds the fork and links the Rust engine core, and `rust-kernel` does the
-same plus the wire kernel. A branch that needs a different build means a new recipe in
+payload, `rust-core` builds the fork and links the Rust engine core, `rust-kernel` does the
+same plus the wire kernel, and `rust-kernel-lto` builds that kernel as a `cdylib` only, so LTO
+applies. A branch that needs a different build means a new recipe in
 `scripts/build-arm.mjs`, and that file's contents are the worktree cache key, so editing it
 rebuilds every worktree.
 
 ## How the Rust-core payload is built
 
 No fork release publishes the `wasm32-eh` target the Rust engine core links against. The branch's
-own `engine-runtime-build.json` marks it `"status": "pending"`. So the `rust-core` and
-`rust-kernel` recipes build it: they check the fork out at the worktree's recorded
+own `engine-runtime-build.json` marks it `"status": "pending"`. So the `rust-core`,
+`rust-kernel` and `rust-kernel-lto` recipes build it: they check the fork out at the worktree's recorded
 `runtime-src` commit under `.work/fork/`, copy its gclient dependencies from the host checkout
 when the host synced the same `DEPS` (otherwise they run `gclient sync`; the host's synced copy is 7.4 GB), install
 emsdk 4.0.0 into the fork's own `third_party/emsdk`, and run the fork's `build-target.sh
