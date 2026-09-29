@@ -901,12 +901,13 @@ export function buildWorktree(id, config) {
   console.log(`building ${id} (${w.recipe})`);
   sh('pnpm install --frozen-lockfile', dir);
   const source = payload(dir, { allowLocal: w.recipe !== 'typescript' });
+  sh('pnpm exec turbo run build --filter=@embedpdf/viewer...', dir);
+  // After the build: the script self-imports @embedpdf/engine-runtime, which resolves to dist/.
   let rustCore = false;
   if (w.recipe === 'rust-core') {
     sh('node packages/engine/runtime/scripts/verify-rust-core.mjs', dir);
     rustCore = true;
   }
-  sh('pnpm exec turbo run build --filter=@embedpdf/viewer...', dir);
   if (w.recipe === 'rust-kernel') {
     sh('pnpm --filter @embedpdf/core-wasm build:wasm', dir);
     sh('pnpm bootstrap', path.join(dir, 'examples/rust-kernel-eval'));
@@ -1228,19 +1229,15 @@ function typecheckEntry(arm, staged) {
   writeFileSync(
     file,
     JSON.stringify({
+      // Inherit the viewer's options: its source needs vite/client types for `?inline` imports.
+      extends: path.join(viewerMain, 'tsconfig.json'),
       compilerOptions: {
         noEmit: true,
-        strict: true,
-        skipLibCheck: true,
-        target: 'es2022',
-        module: 'esnext',
-        moduleResolution: 'bundler',
-        jsx: 'react-jsx',
-        types: [],
         baseUrl: viewerMain,
         paths: { '@perf/door': ['src/doors/local.ts'], '@perf/kernel': [kernel] },
       },
       files: [path.join(staged, 'main.ts'), path.join(staged, 'globals.d.ts')],
+      include: [], // otherwise the viewer's own `include` is inherited
     }),
   );
   sh(`pnpm exec tsc -p ${file}`, viewerMain);
