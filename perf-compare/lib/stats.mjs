@@ -33,10 +33,12 @@ function rng(seed) {
 
 const median = (values) => quantile(sorted(values), 0.5);
 
-function resample(values, next) {
-  const out = new Array(values.length);
-  for (let i = 0; i < values.length; i++) out[i] = values[Math.floor(next() * values.length)];
-  return out;
+// The resampled median, sorting a scratch buffer in place. Inputs were
+// validated once by the caller, so the bootstrap loop skips `sorted()`.
+function resampledMedian(values, next, scratch) {
+  for (let i = 0; i < values.length; i++) scratch[i] = values[Math.floor(next() * values.length)];
+  scratch.sort((a, b) => a - b);
+  return quantile(scratch, 0.5);
 }
 
 export function bootstrapRatio(reference, candidate, { resamples = 10_000, seed = 1 } = {}) {
@@ -45,8 +47,10 @@ export function bootstrapRatio(reference, candidate, { resamples = 10_000, seed 
   }
   const next = rng(seed);
   const ratios = new Array(resamples);
+  const [c, r] = [new Float64Array(candidate.length), new Float64Array(reference.length)];
+  median(candidate), median(reference); // validates both once
   for (let i = 0; i < resamples; i++) {
-    ratios[i] = median(resample(candidate, next)) / median(resample(reference, next));
+    ratios[i] = resampledMedian(candidate, next, c) / resampledMedian(reference, next, r);
   }
   ratios.sort((a, b) => a - b);
   return {
@@ -62,8 +66,10 @@ export function bootstrapRatio(reference, candidate, { resamples = 10_000, seed 
 export function bootstrapDifference(reference, candidate, { resamples = 10_000, seed = 1 } = {}) {
   const next = rng(seed);
   const diffs = new Array(resamples);
+  const [c, r] = [new Float64Array(candidate.length), new Float64Array(reference.length)];
+  median(candidate), median(reference); // validates both once
   for (let i = 0; i < resamples; i++) {
-    diffs[i] = median(resample(candidate, next)) - median(resample(reference, next));
+    diffs[i] = resampledMedian(candidate, next, c) - resampledMedian(reference, next, r);
   }
   diffs.sort((a, b) => a - b);
   return {
