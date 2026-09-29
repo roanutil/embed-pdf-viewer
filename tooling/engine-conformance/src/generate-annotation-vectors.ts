@@ -1,7 +1,7 @@
 /**
  * Emits `vectors/annotation/vocabulary.json`: every annotation enum the read
  * path decodes, swept across a code range that runs past both ends of each
- * enum, plus the `/IT` and `/State` string maps.
+ * enum, plus the `/IT`, `/State` and `/Name` string maps.
  *
  * From the repository root:
  *   pnpm --filter @embedpdf/tooling-engine-conformance run annotation
@@ -32,10 +32,10 @@ import {
   bitsToFlags,
 } from '../../../packages/engine/services/src/features/annotations/internal/annotationFlagBits';
 import {
-  FILE_CODE_TO_ICON,
-  FILE_ICON_TO_CODE,
-  NOTE_CODE_TO_ICON,
-  NOTE_ICON_TO_CODE,
+  FILE_ICON_TO_NAME,
+  FILE_NAME_TO_ICON,
+  NOTE_ICON_TO_NAME,
+  NOTE_NAME_TO_ICON,
 } from '../../../packages/engine/services/src/features/annotations/internal/annotationIcon';
 import {
   stateFromPdf,
@@ -69,8 +69,8 @@ import {
   borderStyleToCode,
 } from '../../../packages/engine/services/src/features/annotations/internal/shapeBorderStyle';
 import {
-  STAMP_CODE_TO_NAME,
-  STAMP_NAME_TO_CODE,
+  STANDARD_STAMP_NAMES,
+  isStandardStampName,
 } from '../../../packages/engine/services/src/features/annotations/internal/stampName';
 import {
   standardFontFromCode,
@@ -101,12 +101,11 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /**
  * The swept range. Low enough to catch a negative wrapping into a table's
- * tail, high enough to run past the stamp block, which ends at 35 and is the
- * largest `FPDF_ANNOT_NAME` value.
+ * tail, high enough to run well past the largest enum here.
  */
 const CODE_RANGE = { from: -2, to: 40 } as const;
 
@@ -196,8 +195,8 @@ const STANDARD_FONTS: readonly StandardFont[] = [
 
 const TEXT_ALIGNMENTS: readonly TextAlignment[] = ['left', 'center', 'right'];
 
-const NOTE_ICONS = Object.keys(NOTE_ICON_TO_CODE) as NoteIcon[];
-const FILE_ICONS = Object.keys(FILE_ICON_TO_CODE) as FileAttachmentIcon[];
+const NOTE_ICONS = Object.keys(NOTE_ICON_TO_NAME) as NoteIcon[];
+const FILE_ICONS = Object.keys(FILE_ICON_TO_NAME) as FileAttachmentIcon[];
 
 const CODECS: readonly CodecVector[] = [
   sweep(
@@ -242,24 +241,62 @@ const CODECS: readonly CodecVector[] = [
     (code) => replyTypeFromCode(code),
     (['reply', 'group'] as const).map((r) => [r, replyTypeToCode(r)] as const),
   ),
-  sweep(
-    'noteIcon',
-    'FPDF_ANNOT_NAME, the text block',
-    (code) => NOTE_CODE_TO_ICON[code],
-    NOTE_ICONS.map((i) => [i, NOTE_ICON_TO_CODE[i]] as const),
-  ),
-  sweep(
-    'fileAttachmentIcon',
-    'FPDF_ANNOT_NAME, the file-attachment block',
-    (code) => FILE_CODE_TO_ICON[code],
-    FILE_ICONS.map((i) => [i, FILE_ICON_TO_CODE[i]] as const),
-  ),
-  sweep(
-    'stampName',
-    'FPDF_ANNOT_NAME, the stamp block',
-    (code) => STAMP_CODE_TO_NAME[code],
-    Object.entries(STAMP_NAME_TO_CODE).map(([name, code]) => [name, code] as const),
-  ),
+];
+
+/**
+ * The `/Name` maps. `EPDFAnnot_GetName` and `EPDFAnnot_SetName` speak name
+ * text, so these are swept over every name any of the three tables holds plus
+ * the near misses: the wire's kebab-case words, a differing capital, a
+ * trailing space, and a custom stamp identifier.
+ */
+const NAME_PROBES: readonly string[] = [
+  ...Object.values(NOTE_ICON_TO_NAME),
+  ...Object.values(FILE_ICON_TO_NAME),
+  ...STANDARD_STAMP_NAMES,
+  '',
+  'note',
+  'NOTE',
+  'Note ',
+  'new-paragraph',
+  'push-pin',
+  'pushpin',
+  'approved',
+  '#LBGiYhk8V_oAfmqAPENiwD',
+];
+
+interface NameVector {
+  readonly name: string;
+  /** What this map reads, for a reader of the file. */
+  readonly of: string;
+  /**
+   * `decoded[i]` for `NAME_PROBES[i]`: the wire value, or `null` where the map
+   * has no entry and the reader supplies the default. For `stampName`, the
+   * probe itself when it is a standard label.
+   */
+  readonly decoded: readonly (string | null)[];
+  /** Wire value to the `/Name` a write path stores. */
+  readonly encoded: readonly (readonly [string, string])[];
+}
+
+const NAMES: readonly NameVector[] = [
+  {
+    name: 'noteIcon',
+    of: '/Name of a text annotation (ISO 32000-2 table 175)',
+    decoded: NAME_PROBES.map((probe) => NOTE_NAME_TO_ICON[probe] ?? null),
+    encoded: NOTE_ICONS.map((i) => [i, NOTE_ICON_TO_NAME[i]] as const),
+  },
+  {
+    name: 'fileAttachmentIcon',
+    of: '/Name of a file attachment annotation (ISO 32000-2 table 184)',
+    decoded: NAME_PROBES.map((probe) => FILE_NAME_TO_ICON[probe] ?? null),
+    encoded: FILE_ICONS.map((i) => [i, FILE_ICON_TO_NAME[i]] as const),
+  },
+  {
+    name: 'stampName',
+    of: '/Name of a stamp, standard labels only',
+    decoded: NAME_PROBES.map((probe) => (isStandardStampName(probe) ? probe : null)),
+    encoded: [...STANDARD_STAMP_NAMES].map((n) => [n, n] as const),
+  },
 ];
 
 /**
@@ -389,6 +426,7 @@ function serialize(): string {
       codeRange: CODE_RANGE,
       colorType: FPDFANNOT_COLORTYPE,
       intentProbes: INTENT_PROBES,
+      nameProbes: NAME_PROBES,
       flagBits: ANNOT_FLAG_BITS,
     },
     null,
@@ -399,6 +437,7 @@ function serialize(): string {
   return `${head}\n${[
     section('codecs', CODECS),
     section('intents', INTENTS),
+    section('names', NAMES),
     section('states', STATES),
     section('flags', FLAGS),
   ].join(',\n')}\n}\n`;

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "annotation.vocabulary",
   "codeRange": {
     "from": -2,
@@ -26,6 +26,51 @@
     "StrikeoutTextEdit",
     "Highlight"
   ],
+  "nameProbes": [
+    "Comment",
+    "Key",
+    "Note",
+    "Help",
+    "NewParagraph",
+    "Paragraph",
+    "Insert",
+    "Graph",
+    "PushPin",
+    "Paperclip",
+    "Tag",
+    "Approved",
+    "Experimental",
+    "NotApproved",
+    "AsIs",
+    "Expired",
+    "NotForPublicRelease",
+    "Confidential",
+    "Final",
+    "Sold",
+    "Departmental",
+    "ForComment",
+    "TopSecret",
+    "Draft",
+    "ForPublicRelease",
+    "Completed",
+    "Void",
+    "PreliminaryResults",
+    "InformationOnly",
+    "Rejected",
+    "Witness",
+    "InitialHere",
+    "SignHere",
+    "Accepted",
+    "",
+    "note",
+    "NOTE",
+    "Note ",
+    "new-paragraph",
+    "push-pin",
+    "pushpin",
+    "approved",
+    "#LBGiYhk8V_oAfmqAPENiwD"
+  ],
   "flagBits": {
     "invisible": 1,
     "hidden": 2,
@@ -45,16 +90,18 @@
     {"name":"borderStyle","of":"FPDF_ANNOT_BORDER_STYLE","decoded":["solid","solid","solid","solid","dashed","beveled","inset","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid","solid"],"encoded":[["solid",1],["dashed",2],["beveled",3],["inset",4]]},
     {"name":"standardFont","of":"FPDF_STANDARD_FONT","decoded":["helvetica","helvetica","courier","courier-bold","courier-bold-oblique","courier-oblique","helvetica","helvetica-bold","helvetica-bold-oblique","helvetica-oblique","times-roman","times-bold","times-bold-italic","times-italic","symbol","zapf-dingbats","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica","helvetica"],"encoded":[["courier",0],["courier-bold",1],["courier-bold-oblique",2],["courier-oblique",3],["helvetica",4],["helvetica-bold",5],["helvetica-bold-oblique",6],["helvetica-oblique",7],["times-roman",8],["times-bold",9],["times-bold-italic",10],["times-italic",11],["symbol",12],["zapf-dingbats",13]]},
     {"name":"textAlignment","of":"/Q quadding","decoded":["left","left","left","center","right","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left","left"],"encoded":[["left",0],["center",1],["right",2]]},
-    {"name":"replyType","of":"FPDF_ANNOT_REPLY_TYPE, gated on /IRT","decoded":["reply","reply","reply","reply","group","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply"],"encoded":[["reply",1],["group",2]]},
-    {"name":"noteIcon","of":"FPDF_ANNOT_NAME, the text block","decoded":[null,null,"comment","key","note","help","new-paragraph","paragraph","insert",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["comment",0],["key",1],["note",2],["help",3],["new-paragraph",4],["paragraph",5],["insert",6]]},
-    {"name":"fileAttachmentIcon","of":"FPDF_ANNOT_NAME, the file-attachment block","decoded":[null,null,null,null,null,null,null,null,null,"graph","push-pin","paperclip","tag",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["graph",7],["push-pin",8],["paperclip",9],["tag",10]]},
-    {"name":"stampName","of":"FPDF_ANNOT_NAME, the stamp block","decoded":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,"Approved","Experimental","NotApproved","AsIs","Expired","NotForPublicRelease","Confidential","Final","Sold","Departmental","ForComment","TopSecret","Draft","ForPublicRelease","Completed","Void","PreliminaryResults","InformationOnly","Rejected","Witness","InitialHere","SignHere","Accepted",null,null,null,null,null],"encoded":[["Approved",13],["Experimental",14],["NotApproved",15],["AsIs",16],["Expired",17],["NotForPublicRelease",18],["Confidential",19],["Final",20],["Sold",21],["Departmental",22],["ForComment",23],["TopSecret",24],["Draft",25],["ForPublicRelease",26],["Completed",27],["Void",28],["PreliminaryResults",29],["InformationOnly",30],["Rejected",31],["Witness",32],["InitialHere",33],["SignHere",34],["Accepted",35]]}
+    {"name":"replyType","of":"FPDF_ANNOT_REPLY_TYPE, gated on /IRT","decoded":["reply","reply","reply","reply","group","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply","reply"],"encoded":[["reply",1],["group",2]]}
   ],
   "intents": [
     {"name":"freeTextIntent","decoded":["free-text","free-text","free-text","free-text-callout","free-text","free-text","free-text","free-text","free-text","free-text","free-text","free-text","free-text"],"encoded":[["free-text","FreeText"],["free-text-callout","FreeTextCallout"]]},
     {"name":"inkIntent","decoded":[null,null,null,null,null,null,"ink-highlight",null,null,null,null,null,null],"encoded":[["ink-highlight","InkHighlight"]]},
     {"name":"caretIntent","decoded":[null,null,null,null,null,null,null,null,"replace",null,null,null,null],"encoded":[["replace","Replace"]]},
     {"name":"strikeoutIntent","decoded":[null,null,null,null,null,null,null,null,null,null,"strikeout-text-edit",null,null],"encoded":[["strikeout-text-edit","StrikeOutTextEdit"]]}
+  ],
+  "names": [
+    {"name":"noteIcon","of":"/Name of a text annotation (ISO 32000-2 table 175)","decoded":["comment","key","note","help","new-paragraph","paragraph","insert",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["comment","Comment"],["key","Key"],["note","Note"],["help","Help"],["new-paragraph","NewParagraph"],["paragraph","Paragraph"],["insert","Insert"]]},
+    {"name":"fileAttachmentIcon","of":"/Name of a file attachment annotation (ISO 32000-2 table 184)","decoded":[null,null,null,null,null,null,null,"graph","push-pin","paperclip","tag",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],"encoded":[["graph","Graph"],["push-pin","PushPin"],["paperclip","Paperclip"],["tag","Tag"]]},
+    {"name":"stampName","of":"/Name of a stamp, standard labels only","decoded":[null,null,null,null,null,null,null,null,null,null,null,"Approved","Experimental","NotApproved","AsIs","Expired","NotForPublicRelease","Confidential","Final","Sold","Departmental","ForComment","TopSecret","Draft","ForPublicRelease","Completed","Void","PreliminaryResults","InformationOnly","Rejected","Witness","InitialHere","SignHere","Accepted",null,null,null,null,null,null,null,null,null],"encoded":[["Approved","Approved"],["Experimental","Experimental"],["NotApproved","NotApproved"],["AsIs","AsIs"],["Expired","Expired"],["NotForPublicRelease","NotForPublicRelease"],["Confidential","Confidential"],["Final","Final"],["Sold","Sold"],["Departmental","Departmental"],["ForComment","ForComment"],["TopSecret","TopSecret"],["Draft","Draft"],["ForPublicRelease","ForPublicRelease"],["Completed","Completed"],["Void","Void"],["PreliminaryResults","PreliminaryResults"],["InformationOnly","InformationOnly"],["Rejected","Rejected"],["Witness","Witness"],["InitialHere","InitialHere"],["SignHere","SignHere"],["Accepted","Accepted"]]}
   ],
   "states": [
     {"probe":"review","stateToPdf":"review","stateFromPdf":"review","stateModelToPdf":"Review","stateModelFromPdf":"review"},

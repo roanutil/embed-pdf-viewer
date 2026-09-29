@@ -75,7 +75,8 @@ pub fn read_file_attachment(
         None => AttachmentFileInfo::default(),
     };
     Ok(FileAttachmentFields {
-        icon: FileAttachmentIcon::from_code(annotation.name_code())
+        icon: dictionary_read("Name", annotation.name())?
+            .and_then(|name| FileAttachmentIcon::from_pdf_name(&name))
             .unwrap_or(DEFAULT_FILE_ATTACHMENT_ICON),
         file,
         color: read_color(annotation, DEFAULT_FILE_ATTACHMENT_COLOR),
