@@ -81,7 +81,7 @@ Every time and byte metric is lower-is-better. Every metric is recorded per arm,
 | CPU | `mainTaskMs`, `mainScriptMs` | CDP `Performance.getMetrics` `TaskDuration` and `ScriptDuration` deltas on the page target |
 | CPU | `workerTaskMs` | The same on the engine worker target, when CDP exposes it (checked in Task 6) |
 | Memory | `heapAfterOpenBytes` | `performance.measureUserAgentSpecificMemory()` total after a forced GC, once open has settled |
-| Memory | `heapSoakSlopeBytes` | Least-squares slope of that total across the soak cycles, in bytes per cycle |
+| Memory | `heapSoakSlopeBytes` | Least-squares slope of that total across soak cycles 5 to 30, in bytes per cycle |
 | Memory | `workerHeapAfterOpenBytes` | The `DedicatedWorker` share of that breakdown |
 
 `measureUserAgentSpecificMemory` needs a cross-origin isolated page, so the server sends `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` to every arm, and Chromium runs with `--enable-blink-features=ForceEagerMeasureMemory` so the promise resolves in about a second instead of up to 20. Task 6 includes a self-test that grows a `WebAssembly.Memory` by 64 MiB and checks the total moves by at least that much. If it doesn't, wasm memory isn't being counted and the memory metrics fall back to CDP `Runtime.getHeapUsage` per target, which the report must then label as JS-heap-only.
@@ -107,15 +107,15 @@ API-driven steps use the public `ViewerHandle` lenses (`StageToken`, `SearchToke
 
 We report median and p95. Never mean.
 
-Each round opens every arm once per flow, in an order rotated by round (round `r` starts at arm `r mod 5`). Each flow gets a fresh browser context: open the fixture, run the flow once unmeasured, then once measured. `open` has no warm-up because cold is the point. The default is `R = 10` rounds; `--quick` is `R = 3` and its report is stamped "quick, not for publication".
+Each round opens every arm once per flow, in an order rotated by round (round `r` starts at arm `r mod 5`). Each flow gets a fresh browser context. Inside it, the flow is put in a defined starting state, warmed up on pages or zoom levels the measured action won't touch, put back in the starting state, and only then measured (Task 7 has the per-flow table). `open`, `search` and `soak` have no separate warm-up, for reasons the table gives. The default is `R = 10` rounds; `--quick` is `R = 3` and its report is stamped "quick, not for publication".
 
-For each pair and metric the report gives the ratio `median(candidate) / median(reference)` and a 95% bootstrap interval (10,000 resamples, seeded, so a rerun of `report.mjs` over the same raw data prints the same numbers). The verdict is "slower" or "faster" only when the interval excludes 1.0 and the ratio's distance from 1.0 is larger than the `main` vs `main-aa` interval's widest distance from 1.0 for the same metric, with a floor of 3%. Anything else is "no detectable difference".
+For each pair and metric the report gives the ratio `median(candidate) / median(reference)` and a 95% bootstrap interval (10,000 resamples, seeded, so a rerun of `report.mjs` over the same raw data prints the same numbers). The `main` vs `main-aa` pair is checked first, against a fixed tolerance that doesn't depend on its own data: it passes a metric when its interval includes 1.0 or its ratio is within 3% of 1.0. A metric whose A/A check fails means the harness treats two identical builds differently, and every other pair's row for that metric is printed as "unreliable (A/A failed)" instead of a verdict. For metrics that pass, the A/A interval's widest distance from 1.0 becomes the noise band. Another pair's verdict is "slower" or "faster" only when its interval excludes 1.0 and its ratio's distance from 1.0 is larger than that noise band, with a floor of 3%. Anything else is "no detectable difference".
 
 ### Environment
 
 Every run writes `meta.json` with the harness commit, each arm's resolved SHA, the sha256 of each arm's engine and kernel wasm, each fixture's sha256, the Chromium and Playwright versions, Node version, OS, CPU model and core count, total memory, power source (`pmset -g batt` on macOS), the viewport (1280×800), device scale factor (2) and CPU throttle rate. `report.mjs --against <other-run>` refuses to compare two runs whose environment, fixtures or flow set differ, the same rule `tooling/viewer-e2e/compare-performance.mjs` enforces.
 
-There are two profiles. `desktop` runs unthrottled. `slow` applies CDP `Emulation.setCPUThrottlingRate` at 4× to the page, which approximates a mid-range laptop and makes main-thread differences easier to see. A developer runs on AC power with other apps closed; `doctor.mjs` warns on battery.
+There are two profiles. `desktop` runs unthrottled. `slow` applies CDP `Emulation.setCPUThrottlingRate` at 4× to the page and the engine worker before the page navigates, so startup is throttled too. It approximates a mid-range laptop and makes main-thread differences easier to see. A developer runs on AC power with other apps closed; `doctor.mjs` warns on battery.
 
 ## Global Constraints
 
@@ -409,6 +409,8 @@ git commit -m "Pin the three branches the viewer perf comparison builds"
   - `bootstrapRatio(reference: number[], candidate: number[], opts?: { resamples?: number, seed?: number }): { ratio, lo, hi }`, where `ratio = median(candidate) / median(reference)`
   - `noiseBand(interval: { lo, hi }): number`, the interval's widest distance from 1.0
   - `verdict(interval: { ratio, lo, hi }, noise: number): 'slower' | 'faster' | 'same'`
+  - `calibrate(aaInterval: { ratio, lo, hi }): { ok: boolean, noise: number }`. `ok` is `verdict(aaInterval, 0) === 'same'`, so the A/A pair is judged against the fixed 3% floor and never against its own band.
+  - `comparePair(interval, calibration): 'slower' | 'faster' | 'same' | 'unreliable'`
   - `slope(ys: number[]): number`, least squares against `x = 0..n-1`
 
 - [ ] **Step 1: Write the failing test**
@@ -416,7 +418,7 @@ git commit -m "Pin the three branches the viewer perf comparison builds"
 ```js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { summarize, bootstrapRatio, noiseBand, verdict, slope } from '../lib/stats.mjs';
+import { summarize, bootstrapRatio, noiseBand, verdict, calibrate, comparePair, slope } from '../lib/stats.mjs';
 
 test('summarize uses linear-interpolated quantiles', () => {
   const s = summarize([5, 1, 4, 2, 3]);
@@ -452,6 +454,26 @@ test('verdict respects the noise band and the 3% floor', () => {
   assert.equal(verdict({ ratio: 1.2, lo: 0.95, hi: 1.3 }, 0.05), 'same');
   assert.equal(verdict({ ratio: 1.04, lo: 1.01, hi: 1.06 }, 0.05), 'same');
   assert.equal(verdict({ ratio: 1.02, lo: 1.01, hi: 1.03 }, 0), 'same');
+});
+
+test('an A/A pair with a consistent 2x slowdown fails calibration', () => {
+  // Judged against its own band, this used to come out `same`.
+  const aa = bootstrapRatio(Array(10).fill(100), Array(10).fill(200));
+  assert.deepEqual(calibrate(aa), { ok: false, noise: 1 });
+});
+
+test('a clean A/A pair calibrates', () => {
+  const a = [100, 102, 98, 101, 99, 100, 103, 97, 100, 101];
+  const b = [101, 99, 100, 98, 102, 100, 97, 103, 101, 100];
+  const c = calibrate(bootstrapRatio(a, b));
+  assert.equal(c.ok, true);
+  assert.ok(c.noise < 0.05, String(c.noise));
+});
+
+test('comparePair refuses a verdict when A/A failed', () => {
+  const clear = { ratio: 2, lo: 1.8, hi: 2.2 };
+  assert.equal(comparePair(clear, { ok: false, noise: 0 }), 'unreliable');
+  assert.equal(comparePair(clear, { ok: true, noise: 0.04 }), 'slower');
 });
 
 test('noiseBand is the widest distance from 1', () => {
@@ -536,6 +558,17 @@ export function verdict({ ratio, lo, hi }, noise) {
   return 'same';
 }
 
+// The A/A pair is judged against the fixed floor alone. Using its own band
+// would make it pass by construction: the band is at least as wide as the
+// pair's distance from 1.0.
+export function calibrate(aa) {
+  return { ok: verdict(aa, 0) === 'same', noise: noiseBand(aa) };
+}
+
+export function comparePair(interval, calibration) {
+  return calibration.ok ? verdict(interval, calibration.noise) : 'unreliable';
+}
+
 export function slope(ys) {
   const n = ys.length;
   const mx = (n - 1) / 2;
@@ -555,7 +588,7 @@ export function slope(ys) {
 - [ ] **Step 4: Run the tests**
 
 Run: `cd perf-compare && node --test test/stats.test.mjs`
-Expected: 7 passing.
+Expected: 10 passing.
 
 - [ ] **Step 5: Commit**
 
@@ -851,10 +884,13 @@ interface PerfBridge {
   opened: Promise<void>;                      // first 'opened'
   pageCount(): number;
   goToPageIndex(i: number): void;
+  currentPageIndex(): number;
   zoomTo(z: number): void;
   zoomLevel(): number;
   search(text: string): Promise<number>;      // resolves with the hit count
+  clearSearch(): void;
   readSelection(): Promise<string>;
+  clearSelection(): void;
   annotationCount(pageIndex: number): number;
   execute(command: string): void;
   kernelCounts(): Record<string, number> | null;
@@ -946,13 +982,19 @@ window.__perf = {
   opened,
   pageCount: () => v().get(StageToken).listCurrentItemPages().length,
   goToPageIndex: (i) => v().get(StageToken).goToPageIndex(i, { behavior: 'instant' } as never),
+  currentPageIndex: () => v().get(StageToken).getCurrentPageIndex(),
   zoomTo: (z) => v().get(StageToken).zoomTo(z),
   zoomLevel: () => v().get(StageToken).getZoomLevel(),
   search: async (text) => {
     await v().get(SearchToken).search({ text });
     return v().get(SearchToken).getHitCount();
   },
+  clearSearch: () => v().get(SearchToken).clear(),
   readSelection: () => v().get(SelectionToken).readText(),
+  // The selection lens's clear method. The name is taken from
+  // packages/plugin/selection/src/contract.ts on main; Step 4's typecheck
+  // catches it if another branch differs.
+  clearSelection: () => v().get(SelectionToken).clear(),
   annotationCount: (pageIndex) => {
     const stage = v().get(StageToken);
     const page = stage.listCurrentItemPages()[pageIndex];
@@ -967,7 +1009,7 @@ window.__perf = {
 
 - [ ] **Step 2: Write the Vite config**
 
-`perf-compare/entry/vite.config.mjs` runs with its working directory set to `<worktree>/packages/viewer/main`, so `vite`, `preact` and `@tailwindcss/vite` resolve from that package, as they do for `packages/viewer/main/vite.config.ts`:
+Node resolves a config file's imports from the directory the file is in, not from the working directory, and Vite loads its config the same way. A config left in `perf-compare/entry/` would pick up `vite` from the host checkout (or nothing), and `@tailwindcss/vite` fails with `MODULE_NOT_FOUND` because `perf-compare/package.json` doesn't depend on it. So `buildEntry` (Step 3) copies the whole `entry/` directory to `<worktree>/packages/viewer/main/.perf-entry/` first, and Vite loads the copy. From there `vite`, `preact` and `@tailwindcss/vite` resolve through `packages/viewer/main/node_modules`, the same packages `packages/viewer/main/vite.config.ts` uses in that worktree. `PERF_ENTRY` below is that copy's path.
 
 ```js
 import { existsSync } from 'node:fs';
@@ -1041,20 +1083,32 @@ The `react*` aliases mirror `packages/viewer/main/vite.config.ts` on `main`. If 
 - [ ] **Step 3: Add `buildEntry` to `build-arm.mjs`**
 
 ```js
-const entryDir = fileURLToPath(new URL('../entry', import.meta.url));
+const entrySource = fileURLToPath(new URL('../entry', import.meta.url));
 const fixturesDir = fileURLToPath(new URL('../fixtures', import.meta.url));
+
+// Copies entry/ into the worktree so every import in it, including the Vite
+// config's own, resolves from that worktree's packages/viewer/main.
+function stageEntry(arm) {
+  const dir = worktreePath(arm.worktree);
+  const staged = path.join(dir, 'packages/viewer/main/.perf-entry');
+  rmSync(staged, { recursive: true, force: true });
+  cpSync(entrySource, staged, { recursive: true });
+  if (arm.kernel === 'rust') {
+    copyFileSync(path.join(entrySource, 'kernel-rust.ts'), path.join(dir, 'examples/rust-kernel-eval/perf-kernel-rust.ts'));
+  }
+  return staged;
+}
 
 export function buildEntry(armId, config) {
   const arm = { id: armId, ...config.arms[armId] };
   const dir = worktreePath(arm.worktree);
   const out = path.join(workDir(), 'dist', armId);
-  if (arm.kernel === 'rust') {
-    copyFileSync(path.join(entryDir, 'kernel-rust.ts'), path.join(dir, 'examples/rust-kernel-eval/perf-kernel-rust.ts'));
-  }
-  sh(`pnpm exec vite build --config ${path.join(entryDir, 'vite.config.mjs')}`, path.join(dir, 'packages/viewer/main'), {
+  const staged = stageEntry(arm);
+  typecheckEntry(arm, staged);
+  sh(`pnpm exec vite build --config ${path.join(staged, 'vite.config.mjs')}`, path.join(dir, 'packages/viewer/main'), {
     PERF_ARM: JSON.stringify({ id: arm.id, kernel: arm.kernel, rustReads: arm.rustReads }),
     PERF_WORKTREE: dir,
-    PERF_ENTRY: entryDir,
+    PERF_ENTRY: staged,
     PERF_FIXTURES: fixturesDir,
     PERF_OUT: out,
   });
@@ -1062,22 +1116,21 @@ export function buildEntry(armId, config) {
 }
 ```
 
-Add `copyFileSync` to the `node:fs` import. Extend the CLI block so `node scripts/build-arm.mjs` also runs `buildEntry` for every arm after its worktree builds. The entry is rebuilt every run: it takes seconds, and caching it would hide edits to `entry/`.
+Add `copyFileSync`, `cpSync` and `rmSync` to the `node:fs` import. `.perf-entry/` and `perf-kernel-rust.ts` are untracked files in the worktree, which the "never modify tracked files" constraint allows, and `materialize.mjs` ignores untracked files when it checks a worktree is clean. Extend the CLI block so `node scripts/build-arm.mjs` also runs `buildEntry` for every arm after its worktree builds. The entry is rebuilt every run: it takes seconds, and caching it would hide edits to `entry/`.
 
 - [ ] **Step 4: Typecheck the entry against each worktree**
 
-`tsc` doesn't take `paths` on the command line, so add a `typecheckEntry(armId, config)` helper to `build-arm.mjs` that writes `<workDir>/tsconfig/<armId>.json` and runs `pnpm exec tsc -p <that file>` from `<worktree>/packages/viewer/main`. Call it at the top of `buildEntry`.
+`tsc` doesn't take `paths` on the command line, so add a `typecheckEntry(arm, staged)` helper to `build-arm.mjs` that writes `<workDir>/tsconfig/<armId>.json` and runs `pnpm exec tsc -p <that file>` from `<worktree>/packages/viewer/main`. `buildEntry` calls it right after staging, so it checks the staged copy against the same worktree Vite builds from.
 
 ```js
-function typecheckEntry(armId, config) {
-  const arm = config.arms[armId];
+function typecheckEntry(arm, staged) {
   const dir = worktreePath(arm.worktree);
   const viewerMain = path.join(dir, 'packages/viewer/main');
   const kernel =
     arm.kernel === 'rust'
       ? path.join(dir, 'examples/rust-kernel-eval/perf-kernel-rust.ts')
-      : path.join(entryDir, 'kernel-typescript.ts');
-  const file = path.join(workDir(), 'tsconfig', `${armId}.json`);
+      : path.join(staged, 'kernel-typescript.ts');
+  const file = path.join(workDir(), 'tsconfig', `${arm.id}.json`);
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(
     file,
@@ -1094,14 +1147,14 @@ function typecheckEntry(armId, config) {
         baseUrl: viewerMain,
         paths: { '@perf/door': ['src/doors/local.ts'], '@perf/kernel': [kernel] },
       },
-      files: [path.join(entryDir, 'main.ts'), path.join(entryDir, 'globals.d.ts')],
+      files: [path.join(staged, 'main.ts'), path.join(staged, 'globals.d.ts')],
     }),
   );
   sh(`pnpm exec tsc -p ${file}`, viewerMain);
 }
 ```
 
-Add `perf-compare/entry/globals.d.ts` declaring `window.__perf: PerfBridge` and `window.__probe`, with the `PerfBridge` interface above. On the plugins arm, `kernel-rust.ts` has to be copied into the worktree before this runs, so move the copy to the top of `typecheckEntry`.
+Add `perf-compare/entry/globals.d.ts` declaring `window.__perf: PerfBridge` and `window.__probe`, with the `PerfBridge` interface above. On the plugins arm `stageEntry` has already copied `kernel-rust.ts` into the worktree, so the `@perf/kernel` path exists when `tsc` runs.
 
 Run: `node perf-compare/scripts/build-arm.mjs`
 Expected: `tsc` passes for all five arms. A method-name error means the lens surface differs between branches. The fix goes in `main.ts`, and the README records the difference.
@@ -1132,7 +1185,7 @@ git commit -m "Build one viewer entry into every perf arm"
 **Interfaces:**
 - Produces:
   - `serveArms(dists: Record<armId, dir>): Promise<{ urls: Record<armId, string>, close(): Promise<void> }>`, ports from 5301 upward in `armOrder`
-  - `installProbe` (the `probe.js` source, used with `context.addInitScript({ path })`); in the page: `window.__probe = { firstPaintAt, settledAt(sinceMs) : Promise<number>, frames(): number[], longTasks(): {start, duration}[], reset() }`
+  - `installProbe` (the `probe.js` source, used with `context.addInitScript({ path })`); in the page: `window.__probe = { firstPaintAt, settledAt(sinceMs, { doneAt?, requireChange? }): Promise<number>, frames(): number[], longTasks(): {start, duration}[], reset() }`
   - `openCdp(page): Promise<Cdp>` with `metrics(): Promise<{ taskMs, scriptMs }>`, `workerMetrics(): Promise<{ taskMs } | null>`, `gc(): Promise<void>`, `memory(): Promise<{ total, worker, source: 'uasm' | 'cdp' }>`, `throttle(rate: number): Promise<void>`
   - `collectEnv({ config, stamps, fixtures, browserVersion, profile }): Meta`
 
@@ -1165,7 +1218,7 @@ Content types: `.html`, `.js`, `.mjs`, `.css`, `.wasm` (`application/wasm`, requ
 
 ```js
 (() => {
-  const state = { firstPaintAt: null, frames: [], longTasks: [], lastChange: performance.now() };
+  const state = { firstPaintAt: null, frames: [], longTasks: [], changes: [] };
   let last = null;
   const tick = (t) => {
     if (last !== null) state.frames.push(t - last);
@@ -1179,6 +1232,7 @@ Content types: `.html`, `.js`, `.mjs`, `.css`, `.wasm` (`application/wasm`, requ
   }).observe({ type: 'longtask', buffered: true });
 
   const root = () => document.querySelector('embedpdf-viewer')?.shadowRoot ?? null;
+  const isPageImage = (n) => n instanceof HTMLImageElement && n.getAttribute('draggable') === 'false';
   const visibleImages = () =>
     [...(root()?.querySelectorAll('img[draggable="false"]') ?? [])].filter((img) => {
       const r = img.getBoundingClientRect();
@@ -1189,16 +1243,22 @@ Content types: `.html`, `.js`, `.mjs`, `.css`, `.wasm` (`application/wasm`, requ
     return imgs.length > 0 && imgs.every((img) => img.complete && img.naturalWidth > 0);
   };
 
-  // Watch the shadow root once it exists: any img added or re-sourced is a change.
+  // A change is a page image being added, re-sourced, or finishing decode.
+  // Recording the decode, not only the src swap, is what makes a slow decode
+  // show up in the settled time instead of hiding behind the mutation.
+  const mark = () => state.changes.push(performance.now());
   const attach = () => {
     const r = root();
     if (!r) return requestAnimationFrame(attach);
-    new MutationObserver(() => (state.lastChange = performance.now())).observe(r, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ['src'],
-    });
+    new MutationObserver((records) => {
+      for (const rec of records) {
+        if (rec.type === 'attributes' ? isPageImage(rec.target) : [...rec.addedNodes].some(
+          (n) => isPageImage(n) || (n instanceof Element && n.querySelector('img[draggable="false"]')),
+        )) return mark();
+      }
+    }).observe(r, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+    // `load` doesn't bubble, so listen in the capture phase.
+    r.addEventListener('load', (e) => isPageImage(e.target) && e.target.decode().then(mark, mark), true);
     const firstPaint = () => {
       if (allDecoded()) requestAnimationFrame((t) => (state.firstPaintAt ??= t));
       else requestAnimationFrame(firstPaint);
@@ -1212,15 +1272,29 @@ Content types: `.html`, `.js`, `.mjs`, `.css`, `.wasm` (`application/wasm`, requ
     get firstPaintAt() {
       return state.firstPaintAt;
     },
-    // Resolves with the time of the last change once the page has been quiet
-    // for QUIET_MS with every visible image decoded. Not the detection time.
-    settledAt: (sinceMs) =>
+    // `sinceMs` is when the action started. `doneAt` is when the flow saw the
+    // action's own completion condition (see Task 7), and defaults to
+    // `sinceMs`. With `requireChange`, at least one page-image change must
+    // happen after `sinceMs`, so an action whose render hasn't started yet
+    // can't settle on the quiet left over from the previous one.
+    //
+    // Resolves with the later of `doneAt` and the last change after `sinceMs`,
+    // once QUIET_MS has passed since then with every visible image decoded.
+    // That is the time of the last change, not the time it was detected.
+    settledAt: (sinceMs, { doneAt = sinceMs, requireChange = true } = {}) =>
       new Promise((resolve, reject) => {
         const deadline = performance.now() + 30_000;
         const check = () => {
           const now = performance.now();
-          if (now > deadline) return reject(new Error('page never settled'));
-          if (now - state.lastChange >= QUIET_MS && allDecoded()) return resolve(Math.max(state.lastChange, sinceMs));
+          const after = state.changes.filter((t) => t >= sinceMs);
+          const lastChange = after.length ? after[after.length - 1] : null;
+          if (now > deadline) {
+            const why = requireChange && lastChange === null ? 'action produced no page-image change' : 'page never settled';
+            return reject(new Error(why));
+          }
+          const settledAt = Math.max(lastChange ?? sinceMs, doneAt);
+          const ready = (!requireChange || lastChange !== null) && now - settledAt >= QUIET_MS && allDecoded();
+          if (ready) return resolve(settledAt);
           setTimeout(check, 16);
         };
         check();
@@ -1230,17 +1304,20 @@ Content types: `.html`, `.js`, `.mjs`, `.css`, `.wasm` (`application/wasm`, requ
     reset: () => {
       state.frames = [];
       state.longTasks = [];
+      state.changes = [];
       last = null;
     },
   };
 })();
 ```
 
+A settle that times out rejects. The flow records that as an `error` sample, so a broken action shows up as a failure and never as `settleMs = 0`.
+
 The same caveat as `tooling/viewer-e2e/performance.ts` applies and goes in the README: "first paint" is a frame opportunity after a decoded image, not a compositor timestamp.
 
 - [ ] **Step 4: CDP helpers**
 
-`lib/cdp.mjs` opens a CDP session on the page with `page.context().newCDPSession(page)`, enables `Performance`, and calls `Target.setAutoAttach({ autoAttach: true, waitForDebuggerOnStart: false, flatten: true })` to get a session for the engine worker. Playwright also exposes `page.workers()`; use `context.newCDPSession(worker)` on the one whose URL contains `embedpdf-worker` when it's available.
+`lib/cdp.mjs` opens a CDP session on the page with `page.context().newCDPSession(page)`, enables `Performance`, and calls `Target.setAutoAttach({ autoAttach: true, waitForDebuggerOnStart: true, flatten: true })` before the page navigates. Each worker then starts paused. On `Target.attachedToTarget` for a worker, the helper enables `Performance` on that session, applies the current throttle rate, and only then sends `Runtime.runIfWaitingForDebugger`, so the engine worker runs throttled from its first instruction. `openCdp` must be called on a fresh page before `page.goto`; Task 7's runner is the only caller.
 
 `metrics()` reads `Performance.getMetrics` and returns `TaskDuration` and `ScriptDuration` in ms (CDP reports seconds). `workerMetrics()` tries the same on the worker session and returns `null` if `Performance.enable` is rejected there; the report then prints `n/a` for `workerTaskMs` rather than zero.
 
@@ -1248,7 +1325,7 @@ The same caveat as `tooling/viewer-e2e/performance.ts` applies and goes in the R
 
 `memory()` calls `gc()`, then evaluates `performance.measureUserAgentSpecificMemory()` in the page and sums `bytes` for the whole result and for breakdown entries whose `attribution[].scope` is `DedicatedWorkerGlobalScope`. If `crossOriginIsolated` is false or the call throws, it falls back to `Runtime.getHeapUsage` on each session and sets `source: 'cdp'`.
 
-`throttle(rate)` sends `Emulation.setCPUThrottlingRate({ rate })`.
+`throttle(rate)` sends `Emulation.setCPUThrottlingRate({ rate })` to the page session and to every worker session attached so far, and stores the rate for workers attached later. If a worker session rejects the command, `throttle` records `workerThrottled: false`, which the runner copies into `meta.json` and the report prints next to the profile, so a `slow` run never quietly throttles only the main thread.
 
 - [ ] **Step 5: The memory self-test**
 
@@ -1306,15 +1383,42 @@ The gate also asserts two things about the arms themselves: `window.__perf.arm` 
 
 - [ ] **Step 2: Flows**
 
-`lib/flows.mjs` exports one async function per flow with the signature `(page, cdp) => Promise<Record<string, number>>`. Each one records `const t0 = await page.evaluate(() => performance.now())` before its action and reads `__probe.settledAt(t0)` after, so every time is page-clock minus page-clock and never mixes Node's clock in. Each flow also takes `metrics()` before and after and returns the deltas as `mainTaskMs` and `mainScriptMs`.
-
-`scroll`:
+`lib/flows.mjs` exports one object per flow:
 
 ```js
-export async function scroll(page, cdp) {
+/** @typedef {{ fixture: string, start(page): Promise<void>, warmup?(page, cdp): Promise<void>, measure(page, cdp): Promise<Record<string, number>> }} Flow */
+```
+
+The runner calls them in this order, and only `measure` is inside the measurement window:
+
+1. `start(page)` puts the page in the flow's starting state and waits for it to settle (`requireChange: false`).
+2. `warmup(page, cdp)`, if the flow has one.
+3. `start(page)` again, then `__probe.reset()`. Whatever the warm-up moved (page, zoom, selection, search) is put back before timing starts.
+4. `measure(page, cdp)`.
+
+A warm-up is there to warm code (JIT, lazily loaded modules, wasm tier-up), never data. So each warm-up does the same kind of work as its measured action, on pages or zoom levels the measured action doesn't touch. That way no measured action is served from a render tile, text-geometry or search cache that the warm-up filled. The table is the contract; `flows.mjs` implements exactly it.
+
+| Flow | Starting state | Warm-up | Measured action | Done condition | Caches when measuring |
+| --- | --- | --- | --- | --- | --- |
+| `open` | Fresh context, `about:blank` | None | Navigate to `/?doc=<fixture>` | `perf:opened` mark, then settle with `requireChange` | Everything cold: new context, `Cache-Control: no-store` |
+| `scroll` | Page index 0, zoom 1, pointer at the viewer's centre | 20 wheel events starting at page 200 | 60 wheel events of 240 px at 16 ms spacing | Last wheel sent (`doneAt`), then settle with `requireChange` from the first wheel | Only the starting pages (index 0 to 2) have tiles; the warm-up rendered pages near 200 |
+| `jump` | Page index 0, zoom 1 | `goToPageIndex(200)`, settle | `goToPageIndex(300)` | `currentPageIndex() === 300`, then settle with `requireChange` | Page 300 never rendered |
+| `zoom` | Page index 0, zoom 1 | `zoomTo(1.5)`, settle, `zoomTo(3)`, settle | `zoomTo` 2, then 4, then 1, settling between | `zoomLevel()` equals the target; `requireChange` for 2 and 4, not for the return to 1 | Tiles at 2 and 4 never rendered. The step back to 1 can be served from the starting state's tiles, and the report labels it `zoom / backTo1SettleMs` so nobody reads it as a cold render |
+| `select` | Page index 1, zoom 1, nothing selected | Drag across four lines of page index 2 | Drag across four lines of page index 1 | `readSelection()` resolves non-empty (`doneAt`), then settle without `requireChange` | Page 1's text geometry never requested |
+| `search` | Page index 0, no query | None | `search('the')` | The promise resolves | Every page's extracted text cold. This flow has no warm-up on purpose: a warm-up search fills the text cache for every page, so the measured search would time the cache. The cost is that JIT warm-up is inside the number; it's the first search a user runs |
+| `annotate` | Page index 1, zoom 1, highlight tool off | Highlight across one line of page index 2 | `execute('annotation:add-highlight')`, drag across one line of page index 1 | `annotationCount(1)` grows by one (`doneAt`, 10 s timeout), then settle without `requireChange` | Page 1 has no annotations yet |
+| `soak` | Page index 0, zoom 1 | None; cycles 1 to 4 are its warm-up | 30 cycles of `goToPageIndex(last)`, `zoomTo(3)`, `goToPageIndex(0)`, `zoomTo(1)` | Each step settles like `jump` and `zoom` | Reported over cycles 5 to 30 only |
+
+`start` for every flow calls `clearSearch()`, `clearSelection()`, `goToPageIndex(<start page>)` and `zoomTo(1)`, waits for `currentPageIndex()` and `zoomLevel()` to match, then settles.
+
+Every measured time is page-clock minus page-clock (`performance.now()` read inside the page), never Node's clock. Every `measure` takes `metrics()` before and after its action and returns the deltas as `mainTaskMs` and `mainScriptMs`.
+
+`scroll.measure`:
+
+```js
+async measure(page, cdp) {
   const box = await page.locator('#viewer').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.evaluate(() => window.__probe.reset());
   const before = await cdp.metrics();
   const t0 = await page.evaluate(() => performance.now());
   for (let i = 0; i < 60; i++) {
@@ -1322,7 +1426,12 @@ export async function scroll(page, cdp) {
     await page.waitForTimeout(16);
   }
   const tLast = await page.evaluate(() => performance.now());
-  const settled = await page.evaluate((t) => window.__probe.settledAt(t), tLast);
+  // requireChange counts from t0, not tLast: the scroll's renders may all
+  // land during the wheel burst, and that's a settled page, not a failure.
+  const settled = await page.evaluate(
+    ([since, doneAt]) => window.__probe.settledAt(since, { doneAt }),
+    [t0, tLast],
+  );
   const after = await cdp.metrics();
   const { frames, longTasks } = await page.evaluate(() => ({
     frames: window.__probe.frames(),
@@ -1341,12 +1450,25 @@ export async function scroll(page, cdp) {
     mainTaskMs: after.taskMs - before.taskMs,
     mainScriptMs: after.scriptMs - before.scriptMs,
   };
-}
+},
 ```
 
-The rest follow the table under "Flows". `select` and `annotate` compute their drag coordinates from `StageToken.pageRectToViewport` on page index 1 plus the entry's shadow-root offset, exposed through a `__perf.pageBox(i)` helper added to `main.ts` in this step, so the drag hits the same text on every arm regardless of layout. `annotate` waits for `annotationCount(1)` to grow by one with a 10 s timeout. `soak` returns `heapCycle5Bytes`, `heapCycle30Bytes` and `heapSoakSlopeBytes` via `slope()` over all 30 `memory().total` samples, and on the plugins arm writes `kernelCounts()` at cycles 5 and 30 into the sample as `diagnostics`.
+`select` and `annotate` compute their drag coordinates from `StageToken.pageRectToViewport` plus the entry's shadow-root offset, exposed through a `__perf.pageBox(i)` helper added to `main.ts` in this step, so the drag hits the same text on every arm regardless of layout. `soak` returns `heapCycle5Bytes`, `heapCycle30Bytes` and `heapSoakSlopeBytes` via `slope()` over the `memory().total` samples from cycles 5 to 30, and on the plugins arm writes `kernelCounts()` at cycles 5 and 30 into the sample as `diagnostics`.
 
-`open` is different from the others: it creates the page, navigates, and reads `performance.getEntriesByName('perf:ready')[0].startTime` and friends, which are already relative to navigation start.
+`open.measure` receives the page the runner prepared (Step 3), navigates it, and reads `performance.getEntriesByName('perf:ready')[0].startTime` and friends, which are already relative to navigation start.
+
+- [ ] **Step 2b: Probe and flow-state self-test**
+
+Add `test/probe.selftest.mjs`. It serves a page with a fake `<embedpdf-viewer>` whose shadow root holds one `img[draggable="false"]`, and checks three things in Chromium:
+
+1. An action that swaps the `src` 200 ms after `sinceMs` settles no earlier than the swap. The old probe returned `sinceMs` here, giving `settleMs = 0`.
+2. An image whose decode finishes after its `src` swap settles no earlier than the decode. Serve a large PNG with a 300 ms delay to force it.
+3. With `requireChange` and no swap at all, `settledAt` rejects with `action produced no page-image change`.
+
+Then, against the `main` arm's real build, run each flow's `start`, `warmup`, `start` sequence and assert the page index and zoom after the second `start` equal the table's starting state.
+
+Run: `node --test perf-compare/test/probe.selftest.mjs`
+Expected: PASS.
 
 - [ ] **Step 3: Runner**
 
@@ -1355,7 +1477,11 @@ The rest follow the table under "Flows". `select` and `annotate` compute their d
 1. Loads config, verifies fixture hashes, reads stamps, serves `dist/<arm>` for each arm.
 2. Launches Chromium once via `playwright-core` with `--enable-blink-features=ForceEagerMeasureMemory` and `--js-flags=--expose-gc`, `headless: true`, and exits with a message naming `npx playwright-core install chromium` if the browser is missing.
 3. Runs the gate. Writes `gate.json`.
-4. For round `r` in `0..R-1`, for each flow, for each arm in `armOrder` rotated left by `r`: new context (viewport 1280×800, `deviceScaleFactor: 2`), `addInitScript({ path: probe.js })`, open the flow's fixture, wait for `__perf.opened` and a settle, apply the profile's throttle, run the flow once unmeasured (except `open`), run it measured, append the sample line, close the context.
+4. For round `r` in `0..R-1`, for each flow, for each arm in `armOrder` rotated left by `r`:
+   1. New context (viewport 1280×800, `deviceScaleFactor: 2`) and `addInitScript({ path: probe.js })`.
+   2. New page, `openCdp(page)`, then `cdp.throttle(rate)` for the profile (1 for `desktop`, 4 for `slow`). All of this happens before the page navigates anywhere, so the throttle covers startup, and the engine worker is throttled from its first instruction (Task 6, Step 4).
+   3. For `open`: call `open.measure` on that page. For every other flow: navigate to the flow's fixture, wait for `__perf.opened`, then run the `start`, `warmup`, `start`, `measure` sequence from Step 2.
+   4. Append the sample line and close the context.
 5. Writes `meta.json` last, with `completedAt`, so a run killed half way is recognizable by the missing file.
 
 A flow that throws writes a sample with `error` and no metrics. It doesn't stop the run.
@@ -1373,7 +1499,7 @@ Expected: 120 sample lines. Any arm excluded by the gate is a finding about that
 - [ ] **Step 6: Commit**
 
 ```bash
-git add perf-compare/lib/gate.mjs perf-compare/lib/flows.mjs perf-compare/run.mjs perf-compare/entry/main.ts
+git add perf-compare/lib/gate.mjs perf-compare/lib/flows.mjs perf-compare/run.mjs perf-compare/entry/main.ts perf-compare/test/probe.selftest.mjs
 git commit -m "Gate every perf arm on the same answers, then run interleaved rounds"
 ```
 
@@ -1396,7 +1522,7 @@ The report has these sections, in order, and each table's rows are `flow / metri
 2. Environment, from `meta.json`, including each arm's SHA and engine wasm sha256.
 3. Gate: one line per arm, `pass` or `excluded: <reason>`.
 4. Sizes: one row per size metric, one column per arm. No statistics: sizes are deterministic.
-5. One table per pair in `arms.json`, columns `reference median [p95]`, `candidate median [p95]`, `ratio [95% CI]`, `verdict`. The noise band for each metric comes from the `main` vs `main-aa` pair of the same run.
+5. One table per pair in `arms.json`, columns `reference median [p95]`, `candidate median [p95]`, `ratio [95% CI]`, `verdict`. The `main` vs `main-aa` table comes first and uses `calibrate()`: its verdict column says `pass` or `A/A failed`. Every other pair uses `comparePair()` with that metric's calibration from the same run, so a metric that failed A/A prints `unreliable (A/A failed)` in every other table.
 6. Memory: `heapAfterOpenBytes`, `workerHeapAfterOpenBytes`, `heapSoakSlopeBytes` per arm, median and p95, labeled "JS heap only" when `meta.memorySource` is `cdp`.
 7. Diagnostics: the plugins arm's kernel counts at soak cycles 5 and 30.
 
@@ -1407,7 +1533,7 @@ Count metrics (`jankFrames`, `longTasks`) are reported as median and p95 per arm
 - [ ] **Step 2: Run it on the quick run**
 
 Run: `node perf-compare/report.mjs results/<run-id>`
-Expected: every section present, the `main` vs `main-aa` table showing `same` on every row (if it doesn't at `R = 3`, that's expected noise and exactly why the real run uses 10), and `report.md` written.
+Expected: every section present and `report.md` written. At `R = 3` a few A/A rows may say `A/A failed` from noise alone, which is why the real run uses 10. A row that fails with a ratio far from 1.0 (say, beyond 1.2) is worth a look even now, because it points at a systematic difference between two identical builds.
 
 - [ ] **Step 3: Check determinism**
 
@@ -1459,7 +1585,7 @@ Add `--latest` to `report.mjs`: pick the newest directory under `results/` that 
 - [ ] **Step 3: The first real run**
 
 Run: `cd perf-compare && pnpm compare -- --rounds 10 --profile desktop`, then again with `--profile slow`.
-Expected: both complete, and in both `main` vs `main-aa` is `same` on at least 90% of rows. If more than 10% of A/A rows say `slower` or `faster`, the harness has a systematic bias between two identical builds (port, order, or build nondeterminism). Find it before publishing anything.
+Expected: both complete, and in both, at least 90% of `main` vs `main-aa` rows say `pass`. With a 95% interval and the fixed 3% floor, a bias-free harness should fail very few rows by chance. If more than 10% fail, the harness has a systematic bias between two identical builds (port, arm order, or build nondeterminism). Find it before publishing anything.
 
 - [ ] **Step 4: Publish**
 
