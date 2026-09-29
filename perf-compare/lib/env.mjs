@@ -45,9 +45,9 @@ function powerSource() {
   return /'([^']+)'/.exec(batt)?.[1] ?? 'unknown';
 }
 
-export function collectEnv({ config, stamps, worktreeDirs, fixtures, browserVersion, profile, flows }) {
+export function collectEnv({ config, arms: armIds = config.armOrder, stamps, worktreeDirs, fixtures, browserVersion, profile, flows }) {
   const arms = {};
-  for (const id of config.armOrder) {
+  for (const id of armIds) {
     const arm = config.arms[id];
     const stamp = stamps[arm.worktree];
     const kernel = arm.kernel === 'rust' ? kernelWasm(worktreeDirs[arm.worktree]) : null;
@@ -88,4 +88,36 @@ const COMPARED = ['browserVersion', 'cpuModel', 'fixtures', 'profile', 'viewport
 // The keys that make two runs incomparable. Empty when they compare.
 export function compatible(a, b) {
   return COMPARED.filter((key) => JSON.stringify(a[key]) !== JSON.stringify(b[key]));
+}
+
+// Byte sizes of an arm's built entry: the engine and wire-kernel wasm, and
+// every .js, raw and brotli level 11.
+export function distSizes(dist) {
+  const { readdirSync, statSync } = require('node:fs');
+  const { brotliCompressSync, constants } = require('node:zlib');
+  const brotli = (buf) => brotliCompressSync(buf, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } }).length;
+  const files = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else files.push(full);
+    }
+  };
+  walk(dist);
+  const sum = (pick) => {
+    let raw = 0;
+    let br = 0;
+    for (const f of files.filter(pick)) {
+      const buf = readFileSync(f);
+      raw += buf.length;
+      br += brotli(buf);
+    }
+    return [raw, br];
+  };
+  const base = (f) => path.basename(f);
+  const [engineWasmBytes, engineWasmBrotliBytes] = sum((f) => /^embedpdf-.*\.wasm$/.test(base(f)));
+  const [kernelWasmBytes, kernelWasmBrotliBytes] = sum((f) => /^epdf_web_bg.*\.wasm$/.test(base(f)));
+  const [jsBytes, jsBrotliBytes] = sum((f) => f.endsWith('.js'));
+  return { engineWasmBytes, engineWasmBrotliBytes, kernelWasmBytes, kernelWasmBrotliBytes, jsBytes, jsBrotliBytes };
 }

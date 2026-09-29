@@ -19,9 +19,14 @@
       const r = img.getBoundingClientRect();
       return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
     });
+  // Images whose src changed and haven't finished loading and decoding.
+  // Chromium keeps `complete` true and the old naturalWidth until the new
+  // bytes arrive, so without this a swap reads as decoded straight away.
+  const pending = new Set();
   const allDecoded = () => {
+    for (const img of pending) if (!img.isConnected) pending.delete(img);
     const imgs = visibleImages();
-    return imgs.length > 0 && imgs.every((img) => img.complete && img.naturalWidth > 0);
+    return imgs.length > 0 && imgs.every((img) => img.complete && img.naturalWidth > 0 && !pending.has(img));
   };
 
   // A change is a page image being added, re-sourced, or finishing decode.
@@ -31,15 +36,34 @@
   const attach = () => {
     const r = root();
     if (!r) return requestAnimationFrame(attach);
+    const track = (img) => {
+      if (!img.complete || img.naturalWidth === 0 || img.currentSrc !== img.src) pending.add(img);
+    };
     new MutationObserver((records) => {
+      let changed = false;
       for (const rec of records) {
-        if (rec.type === 'attributes' ? isPageImage(rec.target) : [...rec.addedNodes].some(
-          (n) => isPageImage(n) || (n instanceof Element && n.querySelector('img[draggable="false"]')),
-        )) return mark();
+        if (rec.type === 'attributes') {
+          if (isPageImage(rec.target)) {
+            pending.add(rec.target);
+            changed = true;
+          }
+          continue;
+        }
+        for (const n of rec.addedNodes) {
+          const imgs = isPageImage(n) ? [n] : n instanceof Element ? [...n.querySelectorAll('img[draggable="false"]')] : [];
+          imgs.forEach(track);
+          if (imgs.length) changed = true;
+        }
       }
+      if (changed) mark();
     }).observe(r, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
     // `load` doesn't bubble, so listen in the capture phase.
-    r.addEventListener('load', (e) => isPageImage(e.target) && e.target.decode().then(mark, mark), true);
+    const done = (img) => () => {
+      pending.delete(img);
+      mark();
+    };
+    r.addEventListener('load', (e) => isPageImage(e.target) && e.target.decode().then(done(e.target), done(e.target)), true);
+    r.addEventListener('error', (e) => isPageImage(e.target) && done(e.target)(), true);
     const firstPaint = () => {
       if (allDecoded()) requestAnimationFrame((t) => (state.firstPaintAt ??= t));
       else requestAnimationFrame(firstPaint);

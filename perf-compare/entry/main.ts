@@ -52,6 +52,17 @@ const opened = ready.then(
 const pages = () => v().documents.listPages();
 const pageRef = (i: number) => pages()[i].ref;
 
+function viewportOrigin(width: number, height: number): { x: number; y: number } {
+  const all = el.shadowRoot?.querySelectorAll<HTMLElement>('*') ?? [];
+  for (const node of all) {
+    if (node.clientWidth === width && node.clientHeight === height) {
+      const r = node.getBoundingClientRect();
+      return { x: r.x + node.clientLeft, y: r.y + node.clientTop };
+    }
+  }
+  throw new Error(`no element is the ${width}x${height} stage viewport`);
+}
+
 window.__perf = {
   arm,
   ready,
@@ -70,5 +81,20 @@ window.__perf = {
   clearSelection: () => v().get(SelectionToken).clear(),
   annotationCount: (pageIndex) => v().get(AnnotationToken).list({ page: pageRef(pageIndex) }).length,
   execute: (command) => v().execute(command),
+  pageBox: (i) => {
+    // The frame is in stage-viewport px; the viewport element is found by its
+    // size, so chrome above or beside it moves the box with it.
+    const stage = v().get(StageToken);
+    const frame = stage.getPageFrame(pageRef(i));
+    if (!frame) throw new Error(`page ${i} has no frame yet`);
+    const { width, height } = stage.getViewportSize();
+    const origin = viewportOrigin(width, height);
+    return {
+      x: origin.x + frame.screenX,
+      y: origin.y + frame.screenY,
+      width: frame.transform.viewWidth,
+      height: frame.transform.viewHeight,
+    };
+  },
   kernelCounts,
 };

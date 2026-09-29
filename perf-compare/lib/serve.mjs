@@ -25,6 +25,12 @@ const TYPES = {
 function serveDir(root) {
   return createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
+    // Same-origin and empty: the runner parks each fresh page here to attach
+    // CDP and throttle it before the viewer loads, without a process swap.
+    if (url.pathname === '/__blank') {
+      res.writeHead(200, { ...HEADERS, 'Content-Type': 'text/html; charset=utf-8' });
+      return res.end('<!doctype html>');
+    }
     const rel = decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname);
     const file = path.join(root, rel);
     let stat = null;

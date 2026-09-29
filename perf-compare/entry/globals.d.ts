@@ -20,6 +20,7 @@ export interface PerfBridge {
   annotationCount(pageIndex: number): number;
   execute(command: string): void;
   kernelCounts(): Record<string, number> | null;
+  pageBox(pageIndex: number): { x: number; y: number; width: number; height: number };
 }
 
 export interface Probe {
