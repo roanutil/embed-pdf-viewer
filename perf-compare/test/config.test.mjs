@@ -24,7 +24,7 @@ const valid = {
 
 test('the tracked arms.json loads', () => {
   const config = loadConfig();
-  assert.deepEqual(config.armOrder, ['main', 'main-aa', 'impl-ts', 'impl-rust', 'plugins', 'plugins-lto']);
+  assert.deepEqual(config.armOrder, ['main', 'main-aa', 'impl-ts', 'impl-rust', 'plugins', 'plugins-lto', 'plugins-fix']);
 });
 
 test('armOrder follows file order', () => {

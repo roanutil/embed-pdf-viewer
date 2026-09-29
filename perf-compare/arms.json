@@ -21,6 +21,11 @@
       "ref": "research/multi-platform-rust-core-impl-plugins",
       "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "e0f33b1c4fd64533c62a22860de0fc8391cf3434",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -53,6 +58,11 @@
       "worktree": "plugins-lto",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-fix": {
+      "worktree": "plugins-fix",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -79,6 +89,10 @@
     [
       "plugins",
       "plugins-lto"
+    ],
+    [
+      "plugins-lto",
+      "plugins-fix"
     ]
   ]
 }
