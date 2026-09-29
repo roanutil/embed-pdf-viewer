@@ -1,0 +1,13 @@
+{
+  "name": "embedpdf-perf-compare",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "compare": "node perf.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "1.55.0"
+  }
+}

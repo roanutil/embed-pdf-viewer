@@ -1,0 +1,70 @@
+{
+  "baseline": "main",
+  "noiseArm": "main-aa",
+  "worktrees": {
+    "main": {
+      "ref": "main",
+      "sha": "2516e2786ee894383220ecd436fbd248182ef444",
+      "recipe": "typescript"
+    },
+    "impl": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "27801926782369a067b2f9116b81a4c3ec5bcf03",
+      "recipe": "rust-core"
+    },
+    "plugins": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "17296a72681f364b5d94ddc7a52bc7b5e66348a2",
+      "recipe": "rust-kernel"
+    }
+  },
+  "arms": {
+    "main": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "main-aa": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-ts": {
+      "worktree": "impl",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-rust": {
+      "worktree": "impl",
+      "kernel": "typescript",
+      "rustReads": true
+    },
+    "plugins": {
+      "worktree": "plugins",
+      "kernel": "rust",
+      "rustReads": false
+    }
+  },
+  "pairs": [
+    [
+      "main",
+      "main-aa"
+    ],
+    [
+      "main",
+      "impl-ts"
+    ],
+    [
+      "impl-ts",
+      "impl-rust"
+    ],
+    [
+      "impl-ts",
+      "plugins"
+    ],
+    [
+      "main",
+      "plugins"
+    ]
+  ]
+}
