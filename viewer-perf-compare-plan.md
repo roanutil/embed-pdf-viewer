@@ -26,25 +26,41 @@ We build every arm as a production Vite bundle and serve it statically. The dev 
 
 ## What we compare
 
+### The two halves of the viewer
+
+The web viewer has two halves, and the branches put Rust into different ones.
+
+The **kernel** runs on the page's main thread. It holds the viewer's state: which document is open, which page you're on, the zoom level, the current text selection, the annotations. The plugins (stage, search, selection, annotation, and so on) live here too. On `main` and the impl branch it's TypeScript (`packages/core/main` and `packages/plugin/*`). On the plugins branch it's Rust compiled to wasm (`crates/epdf-kernel`, `crates/plugins/*`), and the TypeScript UI talks to it by passing JSON text across `packages/core-wasm/src/proxy.ts`.
+
+The **engine** runs in a web worker. It's PDFium compiled to wasm, plus the TypeScript code in `packages/engine/services` that asks PDFium for things: parse this file, render this page to pixels, give me the text on page 4. The kernel sends it requests and waits for answers. Each kind of request has a name, such as `pages.geometry`, which returns the position of every character on a page. Text selection and hit testing use it.
+
+The impl branch adds a second implementation of those requests, written in Rust (`crates/epdf-engine`), and links it into the engine's wasm file next to the TypeScript one. By default the worker still sends every request to the TypeScript code, so the Rust code is in the file and never runs. Passing `rustRouting: { rustReads: true }` when the engine starts makes the worker send one request kind, `pages.geometry`, to Rust instead. That's what "engine requests" means in the table below: which implementation answers the worker's requests. The impl branch routes nothing else to Rust yet.
+
 ### Arms
 
-| Arm | Worktree | Kernel | Engine routing | What it isolates |
+An arm is one thing we build and time: a branch, plus the switches it runs with. The arm names are the branch (`impl` is `research/multi-platform-rust-core-impl`, `plugins` is `research/multi-platform-rust-core-impl-plugins`) followed by what's different about that arm.
+
+| Arm | Branch | Kernel | Engine requests | What it's for |
 | --- | --- | --- | --- | --- |
-| `main` | `main` | TypeScript | TypeScript | The baseline |
-| `main-aa` | `main` | TypeScript | TypeScript | Noise floor: a second, separately built copy of `main` on its own origin |
-| `impl-ts` | impl | TypeScript | TypeScript | What the impl branch ships by default: a payload with the Rust core linked but not routed |
-| `impl-rust` | impl | TypeScript | `rustReads: true` | Rust `pages.geometry` |
-| `plugins` | plugins | Rust (`WasmKernel`) | TypeScript | Rust kernel and plugins plus the JSON wire |
+| `main` | `main` | TypeScript | All TypeScript | The baseline everything is compared against |
+| `main-aa` | `main` | TypeScript | All TypeScript | A second copy of `main`, built and served separately. Any difference between it and `main` is noise, and tells us how big a difference has to be before it means something |
+| `impl-ts` | impl | TypeScript | All TypeScript, with the Rust code linked in but unused | The impl branch as it runs by default |
+| `impl-rust` | impl | TypeScript | `pages.geometry` in Rust, the rest TypeScript | The impl branch with its Rust switch on |
+| `plugins` | plugins | Rust | All TypeScript | The plugins branch as it runs in `examples/rust-kernel-eval` |
+
+The plugins branch contains all of the impl branch too, but its eval app doesn't turn on `rustReads`, so its engine behaves like `impl-ts`.
 
 ### Pairs in the report
 
-| Pair | Question it answers |
-| --- | --- |
-| `main` vs `main-aa` | How big is a difference that means nothing? |
-| `main` vs `impl-ts` | Does linking the Rust core into the payload cost anything when it's idle (size, instantiate, open)? |
-| `impl-ts` vs `impl-rust` | What does routing `pages.geometry` to Rust change? Expect it in the select flow and nowhere else. |
-| `impl-ts` vs `plugins` | What does the Rust kernel cost or save, holding the engine constant? |
-| `main` vs `plugins` | The headline number for the plugins branch |
+Comparing every arm against `main` gives a headline number but doesn't say why an arm is faster or slower, because most arms differ from `main` in more than one way. So the report also compares pairs that differ in exactly one thing.
+
+| Pair | The one thing that differs | Question it answers |
+| --- | --- | --- |
+| `main` vs `main-aa` | Nothing | How big is a difference that means nothing? |
+| `main` vs `impl-ts` | The engine's wasm file now also contains the unused Rust code | Does carrying that code cost anything on its own? Expect a bigger download and maybe a slower start, and no change once a document is open. |
+| `impl-ts` vs `impl-rust` | `pages.geometry` answered by Rust instead of TypeScript | Is the Rust geometry code faster in the real viewer? Expect a change in the select flow and nowhere else. |
+| `impl-ts` vs `plugins` | The kernel and plugins are Rust instead of TypeScript | What does moving the kernel to Rust cost or save, with the engine held the same? |
+| `main` vs `plugins` | Everything the plugins branch changes | The headline number for the plugins branch |
 
 ### Metrics
 
