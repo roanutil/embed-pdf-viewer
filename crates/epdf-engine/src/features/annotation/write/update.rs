@@ -308,7 +308,7 @@ fn preflight(
                 }
             }
             if let Some(name) = fields.name.as_deref()
-                && crate::features::annotation::vocabulary::stamp_name_to_code(name).is_none()
+                && !crate::features::annotation::vocabulary::is_standard_stamp_name(name)
             {
                 return Err(EngineError::with_message(
                     EngineErrorCode::InvalidArg,
@@ -914,7 +914,7 @@ fn apply_text_patch(
     }
     set_opacity_patch(annotation, fields.opacity)?;
     if let Some(icon) = fields.icon
-        && !annotation.set_name(icon.code())
+        && !annotation.set_name(icon.pdf_name())
     {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
@@ -1275,7 +1275,7 @@ fn apply_file_attachment_patch(
     }
     set_opacity_patch(annotation, fields.opacity)?;
     if let Some(icon) = fields.icon
-        && !annotation.set_name(icon.code())
+        && !annotation.set_name(icon.pdf_name())
     {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,

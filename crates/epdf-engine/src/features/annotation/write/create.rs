@@ -261,7 +261,7 @@ fn preflight(
             // label this engine writes should be one a viewer can draw, and
             // the twenty-three the fork enumerates are that set.
             if let Some(name) = fields.name.as_deref()
-                && crate::features::annotation::vocabulary::stamp_name_to_code(name).is_none()
+                && !crate::features::annotation::vocabulary::is_standard_stamp_name(name)
             {
                 return Err(EngineError::with_message(
                     EngineErrorCode::InvalidArg,
@@ -579,7 +579,7 @@ fn apply_text(
     )?;
     set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
     let icon = fields.icon.unwrap_or(crate::features::annotation::vocabulary::DEFAULT_NOTE_ICON);
-    if !annotation.set_name(icon.code()) {
+    if !annotation.set_name(icon.pdf_name()) {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             "EPDFAnnot_SetName refused the icon",
@@ -959,7 +959,7 @@ fn apply_file_attachment(
     )?;
     set_opacity(annotation, fields.opacity.unwrap_or(DEFAULT_OPACITY))?;
     let icon = fields.icon.unwrap_or(DEFAULT_DRAFT_FILE_ATTACHMENT_ICON);
-    if !annotation.set_name(icon.code()) {
+    if !annotation.set_name(icon.pdf_name()) {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             "EPDFAnnot_SetName refused the icon",
@@ -1406,14 +1406,7 @@ pub(super) fn set_stamp_name(
     annotation: &pdfium::Annotation<'_>,
     name: &str,
 ) -> Result<(), EngineError> {
-    let code =
-        crate::features::annotation::vocabulary::stamp_name_to_code(name).ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::Unknown,
-                format!("the stamp label '{name}' passed preflight and has no code"),
-            )
-        })?;
-    if !annotation.set_name(code) {
+    if !annotation.set_name(name) {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             format!("EPDFAnnot_SetName refused the stamp label '{name}'"),

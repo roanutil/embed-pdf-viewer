@@ -337,14 +337,18 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_SetOverlayTextRepeat(self.as_raw(), i32::from(repeat)) != 0 }
     }
 
-    /// `/Name`, as an `FPDF_ANNOT_NAME` code.
+    /// `/Name`, as the PDF name's text without the leading `/`.
     ///
-    /// Which block of that enum a code belongs to depends on the subtype,
-    /// exactly as on the read side: this layer passes the integer through and
-    /// the engine's vocabulary decides what it means.
-    pub fn set_name(&self, name: i32) -> bool {
-        // SAFETY: the handle is live.
-        unsafe { pdfium_sys::EPDFAnnot_SetName(self.as_raw(), name) != 0 }
+    /// Which names mean something depends on the subtype, exactly as on the
+    /// read side: this layer passes the text through and the engine's
+    /// vocabulary decides what it means. `false` for a name with a NUL, an
+    /// empty name, or a subtype that carries no `/Name`.
+    pub fn set_name(&self, name: &str) -> bool {
+        let Ok(name) = CString::new(name) else {
+            return false;
+        };
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAnnot_SetName(self.as_raw(), name.as_ptr()) != 0 }
     }
 
     /// Append one quad to `/QuadPoints`.

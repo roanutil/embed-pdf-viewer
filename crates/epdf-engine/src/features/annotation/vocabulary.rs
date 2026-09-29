@@ -402,16 +402,26 @@ impl NoteIcon {
         Self::Insert,
     ];
 
-    /// Decode a `FPDF_ANNOT_NAME`, or `None` for a code outside the note
-    /// block. The reader substitutes [`DEFAULT_NOTE_ICON`]; the distinction is
-    /// kept here so a file-attachment code reaching a text annotation is
-    /// visible as a miss rather than silently becoming `note` inside the map.
-    pub fn from_code(code: i32) -> Option<Self> {
-        Self::ALL.get(usize::try_from(code).ok()?).copied()
+    /// Decode a `/Name`, or `None` for a name outside the note set (ISO
+    /// 32000-2 table 175). The reader substitutes [`DEFAULT_NOTE_ICON`]; the
+    /// distinction is kept here so a file-attachment name reaching a text
+    /// annotation is visible as a miss rather than silently becoming `note`
+    /// inside the map.
+    pub fn from_pdf_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|icon| icon.pdf_name() == name)
     }
 
-    pub fn code(self) -> i32 {
-        self as i32
+    /// The `/Name` this icon is written as.
+    pub fn pdf_name(self) -> &'static str {
+        match self {
+            Self::Comment => "Comment",
+            Self::Key => "Key",
+            Self::Note => "Note",
+            Self::Help => "Help",
+            Self::NewParagraph => "NewParagraph",
+            Self::Paragraph => "Paragraph",
+            Self::Insert => "Insert",
+        }
     }
 
     pub fn as_str(self) -> &'static str {
@@ -443,14 +453,20 @@ pub const DEFAULT_FILE_ATTACHMENT_ICON: FileAttachmentIcon = FileAttachmentIcon:
 impl FileAttachmentIcon {
     pub const ALL: [Self; 4] = [Self::Graph, Self::PushPin, Self::Paperclip, Self::Tag];
 
-    /// Decode a `FPDF_ANNOT_NAME`. The file-attachment block starts at 7,
-    /// straight after the note block's seven.
-    pub fn from_code(code: i32) -> Option<Self> {
-        Self::ALL.get(usize::try_from(code - 7).ok()?).copied()
+    /// Decode a `/Name`, or `None` for a name outside the file-attachment set
+    /// (ISO 32000-2 table 184).
+    pub fn from_pdf_name(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|icon| icon.pdf_name() == name)
     }
 
-    pub fn code(self) -> i32 {
-        self as i32 + 7
+    /// The `/Name` this icon is written as.
+    pub fn pdf_name(self) -> &'static str {
+        match self {
+            Self::Graph => "Graph",
+            Self::PushPin => "PushPin",
+            Self::Paperclip => "Paperclip",
+            Self::Tag => "Tag",
+        }
     }
 
     pub fn as_str(self) -> &'static str {
@@ -463,47 +479,41 @@ impl FileAttachmentIcon {
     }
 }
 
-/// The stamp `/Name` labels `FPDF_ANNOT_NAME` enumerates, code 13 upward.
+/// The standard stamp `/Name` labels: §12.5.6.12 Table 181 plus Adobe's
+/// extended set the fork draws.
 ///
-/// Literal PDF names rather than a wire vocabulary, because §12.5.6.12 Table
-/// 181 and Adobe's extended set are already the names a stamp carries, and a
-/// kebab-case translation would have to be undone on write. A stamp whose
-/// `/Name` is not in this table is not an error: its reader falls back to the
-/// raw string entry, which is how a custom stamp survives.
-pub const STAMP_NAMES: [(&str, i32); 23] = [
-    ("Approved", 13),
-    ("Experimental", 14),
-    ("NotApproved", 15),
-    ("AsIs", 16),
-    ("Expired", 17),
-    ("NotForPublicRelease", 18),
-    ("Confidential", 19),
-    ("Final", 20),
-    ("Sold", 21),
-    ("Departmental", 22),
-    ("ForComment", 23),
-    ("TopSecret", 24),
-    ("Draft", 25),
-    ("ForPublicRelease", 26),
-    ("Completed", 27),
-    ("Void", 28),
-    ("PreliminaryResults", 29),
-    ("InformationOnly", 30),
-    ("Rejected", 31),
-    ("Witness", 32),
-    ("InitialHere", 33),
-    ("SignHere", 34),
-    ("Accepted", 35),
+/// Literal PDF names rather than a wire vocabulary, because they are already
+/// the names a stamp carries, and a kebab-case translation would have to be
+/// undone on write.
+pub const STAMP_NAMES: [&str; 23] = [
+    "Approved",
+    "Experimental",
+    "NotApproved",
+    "AsIs",
+    "Expired",
+    "NotForPublicRelease",
+    "Confidential",
+    "Final",
+    "Sold",
+    "Departmental",
+    "ForComment",
+    "TopSecret",
+    "Draft",
+    "ForPublicRelease",
+    "Completed",
+    "Void",
+    "PreliminaryResults",
+    "InformationOnly",
+    "Rejected",
+    "Witness",
+    "InitialHere",
+    "SignHere",
+    "Accepted",
 ];
 
-/// The label for a stamp `/Name` code, or `None` for a custom stamp.
-pub fn stamp_name_from_code(code: i32) -> Option<&'static str> {
-    STAMP_NAMES.iter().find(|(_, c)| *c == code).map(|(name, _)| *name)
-}
-
-/// The code for a stamp label, or `None` if the fork's enum has no entry.
-pub fn stamp_name_to_code(name: &str) -> Option<i32> {
-    STAMP_NAMES.iter().find(|(n, _)| *n == name).map(|(_, code)| *code)
+/// Whether a stamp label is one of [`STAMP_NAMES`].
+pub fn is_standard_stamp_name(name: &str) -> bool {
+    STAMP_NAMES.contains(&name)
 }
 
 #[cfg(test)]
@@ -532,14 +542,13 @@ mod tests {
             assert_eq!(AnnotationReplyType::from_code(reply.code()), reply);
         }
         for icon in NoteIcon::ALL {
-            assert_eq!(NoteIcon::from_code(icon.code()), Some(icon));
+            assert_eq!(NoteIcon::from_pdf_name(icon.pdf_name()), Some(icon));
         }
         for icon in FileAttachmentIcon::ALL {
-            assert_eq!(FileAttachmentIcon::from_code(icon.code()), Some(icon));
+            assert_eq!(FileAttachmentIcon::from_pdf_name(icon.pdf_name()), Some(icon));
         }
-        for (name, code) in STAMP_NAMES {
-            assert_eq!(stamp_name_from_code(code), Some(name));
-            assert_eq!(stamp_name_to_code(name), Some(code));
+        for name in STAMP_NAMES {
+            assert!(is_standard_stamp_name(name), "{name}");
         }
     }
 
@@ -550,26 +559,25 @@ mod tests {
         assert_eq!(BlendMode::from_code(-1), BlendMode::Normal);
         assert_eq!(LineEnding::from_code(-1), LineEnding::None);
         assert_eq!(StandardFont::from_code(-1), DEFAULT_STANDARD_FONT);
-        assert_eq!(NoteIcon::from_code(-1), None);
-        assert_eq!(FileAttachmentIcon::from_code(-1), None);
-        assert_eq!(FileAttachmentIcon::from_code(6), None);
-        assert_eq!(stamp_name_from_code(-1), None);
     }
 
     #[test]
-    fn the_two_icon_blocks_do_not_overlap() {
-        // The note block is 0..=6 and the file block is 7..=10. A code from
-        // one must miss in the other, which is what makes the `Option` worth
-        // having.
+    fn the_two_icon_sets_do_not_overlap() {
+        // A name from one set must miss in the other, which is what makes the
+        // `Option` worth having.
         for icon in NoteIcon::ALL {
-            assert_eq!(FileAttachmentIcon::from_code(icon.code()), None, "{icon:?}");
+            assert_eq!(FileAttachmentIcon::from_pdf_name(icon.pdf_name()), None, "{icon:?}");
         }
         for icon in FileAttachmentIcon::ALL {
-            assert_eq!(NoteIcon::from_code(icon.code()), None, "{icon:?}");
+            assert_eq!(NoteIcon::from_pdf_name(icon.pdf_name()), None, "{icon:?}");
         }
-        // And neither reaches the stamp block, which starts at 13.
-        assert_eq!(NoteIcon::from_code(13), None);
-        assert_eq!(FileAttachmentIcon::from_code(13), None);
+        // Neither reaches a stamp label, and the wire's kebab-case words are
+        // not PDF names.
+        assert_eq!(NoteIcon::from_pdf_name("Approved"), None);
+        assert_eq!(FileAttachmentIcon::from_pdf_name("Approved"), None);
+        assert_eq!(NoteIcon::from_pdf_name("new-paragraph"), None);
+        assert_eq!(FileAttachmentIcon::from_pdf_name("push-pin"), None);
+        assert!(!is_standard_stamp_name("#LBGiYhk8V_oAfmqAPENiwD"));
     }
 
     #[test]

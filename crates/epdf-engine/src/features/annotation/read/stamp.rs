@@ -7,18 +7,9 @@
 //! rendered like any other baked appearance, so what is on the wire is the
 //! label and the rotation pair.
 //!
-//! The label is read by two routes. `FPDF_ANNOT_NAME` enumerates the
-//! twenty-three standard labels, and a stamp whose `/Name` is not one of them
-//! falls outside that enum entirely, so the raw entry is read instead. A
+//! The label is `/Name` as text (`EPDFAnnot_GetName`), a standard label or a
+//! custom one alike, as `readAnnotName` reads it on the TypeScript side. A
 //! custom stamp is ordinary, not an error.
-//!
-//! On the fixtures here the two routes agree, and a version of this that
-//! consulted only the raw entry passes every test. That is a real property
-//! and not a gap the corpus could close: `FPDFAnnot_GetStringValue` reads the
-//! name object's text for a standard label as readily as for a custom one, so
-//! no `/Name` distinguishes them. The enum is consulted first anyway, because
-//! it is the route the fork maintains and the raw read is the fallback, not
-//! the other way round.
 
 use pdfium::Annotation;
 use serde::{Deserialize, Serialize};
@@ -26,7 +17,6 @@ use serde::{Deserialize, Serialize};
 use super::dictionary_read;
 use super::transform::{read_rotation, read_unrotated_rect};
 use crate::error::EngineError;
-use crate::features::annotation::vocabulary::stamp_name_from_code;
 use crate::geom::PdfRect;
 
 /// A stamp annotation's own fields.
@@ -45,12 +35,8 @@ pub struct StampFields {
 
 /// Read them.
 pub fn read_stamp(annotation: &Annotation<'_>) -> Result<StampFields, EngineError> {
-    let name = match stamp_name_from_code(annotation.name_code()) {
-        Some(known) => Some(known.to_owned()),
-        None => dictionary_read("Name", annotation.string_value("Name"))?,
-    };
     Ok(StampFields {
-        name,
+        name: dictionary_read("Name", annotation.name())?,
         rotation: read_rotation(annotation)?,
         unrotated_rect: read_unrotated_rect(annotation)?,
     })

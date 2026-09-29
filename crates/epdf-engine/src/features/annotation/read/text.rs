@@ -45,10 +45,12 @@ pub struct TextFields {
 /// Read them.
 pub fn read_text(annotation: &Annotation<'_>) -> Result<TextFields, EngineError> {
     Ok(TextFields {
-        // A `/Name` outside the note block of `FPDF_ANNOT_NAME` reads as the
-        // default rather than as an error: a file-attachment icon on a sticky
-        // note is a file being wrong, not a document being unreadable.
-        icon: NoteIcon::from_code(annotation.name_code()).unwrap_or(DEFAULT_NOTE_ICON),
+        // A `/Name` outside the note set reads as the default rather than as
+        // an error: a file-attachment icon on a sticky note is a file being
+        // wrong, not a document being unreadable.
+        icon: dictionary_read("Name", annotation.name())?
+            .and_then(|name| NoteIcon::from_pdf_name(&name))
+            .unwrap_or(DEFAULT_NOTE_ICON),
         color: read_color(annotation, DEFAULT_NOTE_COLOR),
         opacity: read_opacity(annotation),
         state: dictionary_read("State", annotation.string_value("State"))?

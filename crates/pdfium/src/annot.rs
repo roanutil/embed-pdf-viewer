@@ -503,12 +503,15 @@ impl Annotation<'_> {
         Ok(out)
     }
 
-    /// `/Name`, as the raw `FPDF_ANNOT_NAME` code. Which block of that enum
-    /// the code falls in depends on the subtype, so the decode is the
-    /// subtype's reader and not this layer's.
-    pub fn name_code(&self) -> i32 {
-        // SAFETY: the handle is live.
-        unsafe { pdfium_sys::EPDFAnnot_GetName(self.handle) }
+    /// `/Name` as text, whatever its value: a standard icon or stamp name, or
+    /// a custom identifier. `None` when absent. Which names mean something
+    /// depends on the subtype, so the decode is the subtype's reader and not
+    /// this layer's.
+    pub fn name(&self) -> Result<Option<String>, PdfiumError> {
+        read_utf8(|buffer, len| {
+            // SAFETY: the handle is live, and `len` describes `buffer` in bytes.
+            unsafe { pdfium_sys::EPDFAnnot_GetName(self.handle, buffer.cast(), len) }
+        })
     }
 
     /// `/RT`, as the raw `FPDF_ANNOT_REPLY_TYPE` code.
@@ -731,6 +734,30 @@ where
     }
     let produced = (written as usize).min(buffer.len());
     Ok(buffer[..produced].iter().copied().map(PointF::from).collect())
+}
+
+/// Measure then fill, for a UTF-8 accessor.
+///
+/// The reported length counts the terminator, and a length of one or less is
+/// an absent value rather than an empty one.
+fn read_utf8<F>(mut call: F) -> Result<Option<String>, PdfiumError>
+where
+    F: FnMut(*mut std::ffi::c_void, std::os::raw::c_ulong) -> std::os::raw::c_ulong,
+{
+    let bytes = call(std::ptr::null_mut(), 0);
+    if bytes <= 1 {
+        return Ok(None);
+    }
+    let mut buffer: Vec<u8> = Vec::new();
+    buffer.try_reserve_exact(bytes as usize).map_err(|_| PdfiumError::OutOfMemory)?;
+    buffer.resize(bytes as usize, 0u8);
+
+    let written = call(buffer.as_mut_ptr().cast(), bytes);
+    if written == 0 {
+        return Ok(None);
+    }
+    let produced = (written as usize).saturating_sub(1).min(buffer.len());
+    Ok(Some(String::from_utf8_lossy(&buffer[..produced]).into_owned()))
 }
 
 /// The byte-counted UTF-16 getters: the reported length counts the

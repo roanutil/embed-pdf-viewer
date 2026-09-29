@@ -23,11 +23,11 @@ use epdf_engine::features::annotation::state::{
 use epdf_engine::features::annotation::subtype::AnnotationSubtype;
 use epdf_engine::features::annotation::vocabulary::{
     AnnotationBorderStyle, AnnotationColorType, AnnotationReplyType, BlendMode, FileAttachmentIcon,
-    LineEnding, NoteIcon, StandardFont, TextAlignment, stamp_name_from_code, stamp_name_to_code,
+    LineEnding, NoteIcon, STAMP_NAMES, StandardFont, TextAlignment, is_standard_stamp_name,
 };
 use serde::Deserialize;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 struct VocabularyFile {
@@ -40,10 +40,13 @@ struct VocabularyFile {
     color_type: std::collections::BTreeMap<String, i32>,
     #[serde(rename = "intentProbes")]
     intent_probes: Vec<Option<String>>,
+    #[serde(rename = "nameProbes")]
+    name_probes: Vec<String>,
     #[serde(rename = "flagBits")]
     flag_bits: std::collections::BTreeMap<String, u32>,
     codecs: Vec<Codec>,
     intents: Vec<Intent>,
+    names: Vec<NameMap>,
     states: Vec<StateCase>,
     flags: Vec<FlagCase>,
 }
@@ -67,6 +70,16 @@ struct Codec {
 #[derive(Debug, Deserialize)]
 struct Intent {
     name: String,
+    decoded: Vec<Option<String>>,
+    encoded: Vec<(String, String)>,
+}
+
+#[derive(Debug, Deserialize)]
+struct NameMap {
+    name: String,
+    /// What the map reads, for a human opening the vector file. Unused here.
+    #[allow(dead_code)]
+    of: String,
     decoded: Vec<Option<String>>,
     encoded: Vec<(String, String)>,
 }
@@ -147,11 +160,6 @@ fn the_integer_codecs_decode_what_typescript_does_across_the_whole_range() {
     check_sweep(&file, "standardFont", |code| Some(StandardFont::from_code(code).as_str()));
     check_sweep(&file, "textAlignment", |code| Some(TextAlignment::from_code(code).as_str()));
     check_sweep(&file, "replyType", |code| Some(AnnotationReplyType::from_code(code).as_str()));
-    check_sweep(&file, "noteIcon", |code| NoteIcon::from_code(code).map(NoteIcon::as_str));
-    check_sweep(&file, "fileAttachmentIcon", |code| {
-        FileAttachmentIcon::from_code(code).map(FileAttachmentIcon::as_str)
-    });
-    check_sweep(&file, "stampName", stamp_name_from_code);
 }
 
 #[test]
@@ -188,16 +196,6 @@ fn the_integer_codecs_encode_what_typescript_does() {
             .find(|r| r.as_str() == wire)
             .map(AnnotationReplyType::code)
     });
-    check_encode(&file, "noteIcon", |wire| {
-        NoteIcon::ALL.into_iter().find(|i| i.as_str() == wire).map(NoteIcon::code)
-    });
-    check_encode(&file, "fileAttachmentIcon", |wire| {
-        FileAttachmentIcon::ALL
-            .into_iter()
-            .find(|i| i.as_str() == wire)
-            .map(FileAttachmentIcon::code)
-    });
-    check_encode(&file, "stampName", stamp_name_to_code);
 }
 
 #[test]
@@ -313,4 +311,70 @@ fn the_bit_positions_and_the_color_selector_are_the_same_numbers() {
     ] {
         assert_eq!(file.color_type.get(name), Some(&(value as i32)), "color type {name}");
     }
+}
+
+fn name_map<'a>(file: &'a VocabularyFile, name: &str) -> &'a NameMap {
+    file.names
+        .iter()
+        .find(|n| n.name == name)
+        .unwrap_or_else(|| panic!("vocabulary.json has no name map {name}"))
+}
+
+/// `decode` answers `None` where the TypeScript map has no entry, leaving the
+/// default to the reader, exactly as the integer codecs do.
+fn check_names(
+    file: &VocabularyFile,
+    name: &str,
+    decode: impl Fn(&str) -> Option<&'static str>,
+    encode: impl Fn(&str) -> Option<&'static str>,
+) {
+    let entry = name_map(file, name);
+    assert_eq!(entry.decoded.len(), file.name_probes.len(), "{name} is not one entry per probe");
+    for (probe, expected) in file.name_probes.iter().zip(&entry.decoded) {
+        assert_eq!(
+            decode(probe),
+            expected.as_deref(),
+            "{name} decoded /Name {probe:?} differently from TypeScript",
+        );
+    }
+    assert!(!entry.encoded.is_empty(), "{name} has no encode table");
+    for (wire, expected) in &entry.encoded {
+        assert_eq!(
+            encode(wire),
+            Some(expected.as_str()),
+            "{name} encoded {wire} differently from TypeScript",
+        );
+    }
+}
+
+#[test]
+fn the_name_maps_decode_and_encode_what_typescript_does() {
+    let file = load();
+
+    check_names(
+        &file,
+        "noteIcon",
+        |pdf| NoteIcon::from_pdf_name(pdf).map(NoteIcon::as_str),
+        |wire| NoteIcon::ALL.into_iter().find(|i| i.as_str() == wire).map(NoteIcon::pdf_name),
+    );
+    check_names(
+        &file,
+        "fileAttachmentIcon",
+        |pdf| FileAttachmentIcon::from_pdf_name(pdf).map(FileAttachmentIcon::as_str),
+        |wire| {
+            FileAttachmentIcon::ALL
+                .into_iter()
+                .find(|i| i.as_str() == wire)
+                .map(FileAttachmentIcon::pdf_name)
+        },
+    );
+    // A stamp label is written verbatim, so the encode side is the identity
+    // over the standard set, and the decode side is membership.
+    let standard = |label: &str| STAMP_NAMES.into_iter().find(|n| *n == label);
+    check_names(
+        &file,
+        "stampName",
+        |pdf| standard(pdf).filter(|n| is_standard_stamp_name(n)),
+        standard,
+    );
 }
