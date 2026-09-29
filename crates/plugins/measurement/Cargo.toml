@@ -25,7 +25,7 @@ epdf-geometry = { path = "../geometry", default-features = false }
 epdf-annotation-core = { path = "../annotation-core", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
 epdf-plugin-interaction = { path = "../interaction", default-features = false }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
 

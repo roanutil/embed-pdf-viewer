@@ -9,7 +9,7 @@ description = "packages/core/main in Rust: the viewer kernel, its store, plugin 
 crate-type = ["rlib"]
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 # `float_roundtrip` because the vectors are compared value for value, and the
 # default parser is not correctly rounded (crates/test-support/src/lib.rs).
 serde_json = { version = "1", features = ["float_roundtrip"] }

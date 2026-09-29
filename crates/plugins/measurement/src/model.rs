@@ -3,6 +3,7 @@
 //! calibration and the last change's reports.
 
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 use epdf_annotation_core::{PageObjectNumber, PageRef};
 use serde::{Deserialize, Serialize};
@@ -18,8 +19,10 @@ pub struct PageEntry {
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct MeasurementState {
+    /// Entries are shared, so the reducer's copy of the map for each
+    /// dispatch copies pointers, not every page's viewports.
     #[serde(deserialize_with = "pages_by_key")]
-    pub pages: BTreeMap<PageObjectNumber, PageEntry>,
+    pub pages: BTreeMap<PageObjectNumber, Rc<PageEntry>>,
     pub pending: f64,
     pub calibration: Option<CalibrationRequest>,
     pub reports: Vec<ScaleChangeReport>,
@@ -29,11 +32,11 @@ pub struct MeasurementState {
 /// object numbers.
 fn pages_by_key<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
-) -> Result<BTreeMap<PageObjectNumber, PageEntry>, D::Error> {
+) -> Result<BTreeMap<PageObjectNumber, Rc<PageEntry>>, D::Error> {
     BTreeMap::<String, PageEntry>::deserialize(deserializer)?
         .into_iter()
         .map(|(key, entry)| {
-            key.parse().map(|pon| (pon, entry)).map_err(|_| {
+            key.parse().map(|pon| (pon, Rc::new(entry))).map_err(|_| {
                 serde::de::Error::custom(format!("page key {key:?} is not a page object number"))
             })
         })
@@ -73,7 +76,7 @@ pub fn measurement_reducer(
         MeasurementAction::PageScale { page, viewports, scale } => {
             next.pages.insert(
                 page.page_object_number,
-                PageEntry { viewports: viewports.clone(), scale: scale.clone() },
+                Rc::new(PageEntry { viewports: viewports.clone(), scale: scale.clone() }),
             );
         }
         MeasurementAction::Pending { delta } => {

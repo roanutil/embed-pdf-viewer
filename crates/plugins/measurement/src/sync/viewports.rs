@@ -97,7 +97,7 @@ impl MeasurementCapability {
         };
         s.cx.dispatch(MeasurementAction::PageScale {
             page,
-            viewports: previous.map(|p| p.viewports).unwrap_or_default(),
+            viewports: previous.map(|p| p.viewports.clone()).unwrap_or_default(),
             scale,
         });
         let service = has_measure(&*doc, &page)?;
@@ -201,16 +201,19 @@ impl MeasurementCapability {
         }));
         // Covers pages inserted after this document-scoped instance was
         // created.
-        let pages = Rc::new(RefCell::new(String::new()));
+        // Keyed on the registry itself: it is replaced, never edited, so an
+        // unchanged `Rc` is an unchanged page list. This runs on every store
+        // change, and rebuilding a joined string of every page's number to
+        // find that out was O(pages) each time.
+        let pages: Rc<RefCell<Option<Rc<Value>>>> = Rc::new(RefCell::new(None));
         let this = self.clone();
         let reconcile = Rc::new(move || -> Result<(), Error> {
-            let refs = this.s().page_refs();
-            let next =
-                refs.iter().map(|p| p.page_object_number.to_string()).collect::<Vec<_>>().join(",");
-            if *pages.borrow() == next {
+            let registry = this.s().layouts();
+            if pages.borrow().as_ref().is_some_and(|seen| Rc::ptr_eq(seen, &registry)) {
                 return Ok(());
             }
-            *pages.borrow_mut() = next;
+            *pages.borrow_mut() = Some(registry);
+            let refs = this.s().page_refs();
             for page in refs {
                 if !this.s().state().pages.contains_key(&page.page_object_number) {
                     this.ensure_loaded(&page)?;

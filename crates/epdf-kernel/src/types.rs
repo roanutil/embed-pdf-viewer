@@ -6,6 +6,7 @@
 //! do deserialize it into their own types.
 
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
@@ -38,8 +39,10 @@ pub struct DocumentMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub page_count: u32,
-    /// `PageLayout[]`, as the engine reported it.
-    pub pages: Value,
+    /// `PageLayout[]`, as the engine reported it. Shared, because nearly
+    /// every read of a document clones its meta, and a deep copy of every
+    /// page's layout per read made those reads O(pages).
+    pub pages: Rc<Value>,
     /// Bumps each time a mutation event replaces the page registry.
     pub revision: u64,
     pub render_policy: Value,
