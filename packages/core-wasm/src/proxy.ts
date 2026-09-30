@@ -197,6 +197,10 @@ export function rusty<T>(run: () => T): T {
   }
 }
 
+/** Members that only read: their calls change no state, so answers cached
+ *  before them stay good while the store's revision holds. */
+const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
+
 export class Wire {
   private attached!: RustKernel;
   /** Set by `dispose`, once the kernel is freed. */
@@ -311,6 +315,28 @@ export class Wire {
     this.results = new Map();
   }
 
+  /** The store revision `results` holds answers for. */
+  private resultsRevision = -1;
+
+  /** Drop `results` if the store has moved since they were cached. The
+   *  revision moves on every change, before listeners hear of it
+   *  (`Store::revision`), so this sees a change whose notification the
+   *  store deferred. */
+  private sync(): void {
+    const revision = this.attached.state_revision();
+    if (revision === this.resultsRevision) return;
+    this.bump();
+    this.resultsRevision = revision;
+  }
+
+  /** After a real call: one that may have changed state outside the store
+   *  (a registry, a handler list) drops every cached answer; a read keeps
+   *  them unless it moved the store. */
+  private settle(member: string): void {
+    if (!READS.test(member)) this.bump();
+    this.sync();
+  }
+
   /** `value` as canonical JSON (an object, not text). `member` names the
    *  call it is encoded for in the error a `Blob` throws. */
   encode(value: unknown, signals?: AbortSignal[], member?: string): unknown {
@@ -377,7 +403,7 @@ export class Wire {
     if (this.dead) throw new Error(DESTROYED);
     // A callback from inside a kernel call: the store may have moved since
     // anything was cached, with its notification still to come.
-    this.bump();
+    this.sync();
     const n = Number(id);
     const fn = this.fns.get(n);
     if (!fn) {
@@ -637,25 +663,32 @@ export class Wire {
     const signals: AbortSignal[] = [];
     const json = JSON.stringify(this.encode(args, signals, member));
     const key = `${id}:${json}`;
+    this.sync();
     if (this.results.has(key)) return this.results.get(key);
     const changes = this.changes;
+    const revision = this.resultsRevision;
+    // Cache an answer only from a call that changed nothing: no change
+    // notification, and no store revision moved during it.
+    // Only a read's answer is kept: any other call runs every time.
+    const unmoved = () =>
+      READS.test(member) && this.changes === changes && this.resultsRevision === revision;
     const text = rusty(() => this.rust.invoke_ref(id, json));
     // The same text as the answer kept for these arguments: the same value,
     // with no parse. Only a returned value is kept, and identical text holds
     // the same ref ids, all still live.
     const kept = this.answers.get(key);
     if (kept !== undefined && kept.text === text && !MAKES_NEW.test(member)) {
-      this.bump();
-      if (this.changes === changes) this.results.set(key, kept.value);
+      this.settle(member);
+      if (unmoved()) this.results.set(key, kept.value);
       return kept.value;
     }
     const outcome = JSON.parse(text) as Outcome;
     // A real call, not a cache hit: the store may have deferred its change
     // notification (a dispatch from inside a change listener only sets
-    // `pending`, `crates/epdf-kernel/src/store.rs:206-219`), so `bump` can't
-    // wait for `subscribe` to fire. Only two calls with no real call between
-    // them may share a cache entry.
-    this.bump();
+    // `pending`, `crates/epdf-kernel/src/store.rs:206-219`), so this can't
+    // wait for `subscribe` to fire. It reads the store's revision instead,
+    // and drops everything after a call that isn't a read.
+    this.settle(member);
     if ('threw' in outcome) throw toError(outcome.threw);
     if ('promise' in outcome) {
       const promise = this.promise(outcome.promise, member);
@@ -698,7 +731,7 @@ export class Wire {
     if (value !== undefined) {
       // A call that changed the store (`search.nextHit`, `link.activate`)
       // answers anew next time, even with nothing between.
-      if (this.changes === changes) this.results.set(key, value);
+      if (unmoved()) this.results.set(key, value);
       if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
       this.answers.set(key, { shape, text: decoded, value });
     }
