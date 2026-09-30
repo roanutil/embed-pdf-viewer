@@ -383,7 +383,12 @@ export function usePages(explicitToken?: StageTokenProp) {
   const s = useCapability(token);
   const currentPage = useSelector(token, (c) => c.getCurrentPageIndex());
   const documentId = useDocumentId();
-  const pageCount = useKernelValue((k) => k.documents.listPages(documentId ?? undefined).length);
+  // The count, not the registry: listing every page's layout to take its
+  // length was a copy of the whole registry per store change.
+  const pageCount = useKernelValue((k) => {
+    const id = documentId ?? k.documents.getActiveId();
+    return id ? (k.documents.get(id)?.pageCount ?? 0) : 0;
+  });
   return {
     currentPage,
     pageCount,

@@ -71,6 +71,16 @@ export interface RustKernel {
   state_json(): string;
   /** Moves whenever `state_json` could answer differently. */
   state_revision(): number;
+  /** Moves whenever core changes: the documents, and so the capabilities
+   *  `try_capability` can answer. */
+  core_revision(): number;
+  /** `{"core": n, "plugins": {"<key>": n}}`: a revision per part of
+   *  `state_json`. */
+  state_revisions(): string;
+  /** `state_json().core` as text. */
+  core_text(): string;
+  /** `state_json().plugins[key]` as text, or `undefined`. */
+  slice_text(key: string): string | undefined;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
   status(): string;
@@ -219,14 +229,16 @@ export class Wire {
    *  was decoded from, whose refs it holds. Cleared whole past
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; text: string; value: unknown }>();
-  private state: { revision: number; text: string; value: unknown } | undefined;
+  private state: { revision: number; value: unknown } | undefined;
+  private capabilities = new Map<string, object | null>();
+  private capabilitiesRevision = -1;
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
    *  store, so its answer is not cached. */
   changes = 0;
   /** Each slice's JSON text and decoded value, by path (`core`,
    *  `plugins.stage`), from the last `getState` that parsed. */
-  private slices = new Map<string, { text: string; value: unknown }>();
+  private slices = new Map<string, { revision: number; text: string; value: unknown }>();
 
   constructor(private readonly bridge: EngineBridge) {}
 
@@ -268,6 +280,9 @@ export class Wire {
   evict(): void {
     if (this.dead) return;
     const texts = JSON.parse(this.attached.take_evicted()) as string[];
+    // A closed document's proxies must not outlive it in the capability
+    // cache: they hold its refs, and through them its images.
+    if (texts.length > 0) this.capabilities = new Map();
     const evicted = new Set<number>();
     for (const text of texts) {
       this.proxies.delete(text);
@@ -402,60 +417,100 @@ export class Wire {
    *  `capability`/`tryCapability` are only ever called from outside such a
    *  callback. */
   capability(tokenName: string, doc?: string | null): object {
+    const key = this.capabilityKey(tokenName, doc);
+    const cached = this.capabilities.get(key);
+    if (cached) return cached;
     this.evict();
-    return this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
+    // Throws the kernel's own refusal for a capability that isn't there.
+    const found = this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
+    this.capabilities.set(key, found);
+    return found;
   }
 
   tryCapability(tokenName: string, doc?: string | null): object | null {
+    const key = this.capabilityKey(tokenName, doc);
+    if (this.capabilities.has(key)) return this.capabilities.get(key) ?? null;
     this.evict();
     const text = rusty(() => this.rust.try_capability(tokenName, doc ?? null));
-    return text === undefined || text === null ? null : this.proxy(text);
+    const found = text === undefined || text === null ? null : this.proxy(text);
+    this.capabilities.set(key, found);
+    return found;
+  }
+
+  /** The key into `capabilities`, emptied first if core moved. Which
+   *  capabilities exist, and for which documents, only changes when a
+   *  document opens, closes or becomes ready, all core changes. Hooks read
+   *  capabilities on every render, and each miss is an eviction check, a
+   *  lookup in the kernel, and hashing the answer's description text to find
+   *  its proxy. */
+  private capabilityKey(tokenName: string, doc?: string | null): string {
+    const revision = this.rust.core_revision();
+    if (revision !== this.capabilitiesRevision) {
+      this.capabilities = new Map();
+      this.capabilitiesRevision = revision;
+    }
+    return `${tokenName}\u0000${doc ?? ''}`;
   }
 
   documents(): object {
     return this.proxy(rusty(() => this.rust.documents()));
   }
 
-  /** The kernel's state, parsed once per store change. */
+  /** The kernel's state, parsed once per store change, and then only the
+   *  parts of it that changed. */
   getState(): unknown {
     // Keyed on the store's own revision, not `version`: `version` also moves
     // on every real call (see `call`) and every callback, which does not
-    // mean the store changed, and re-reading the whole state for each of
-    // those made one store change cost a full serialization per reader.
+    // mean the store changed.
     const revision = this.rust.state_revision();
     if (this.state?.revision === revision) return this.state.value;
-    // The same text keeps the same object, and a changed store keeps every
-    // slice whose text did not change, as the TypeScript store keeps an
-    // untouched plugin's slice.
-    const text = this.rust.state_json();
-    if (this.state?.text === text) {
-      this.state.revision = revision;
-      return this.state.value;
-    }
-    const raw = JSON.parse(text) as Record<string, unknown>;
-    const slices = new Map<string, { text: string; value: unknown }>();
-    const share = (path: string, slice: unknown) => {
-      const sliceText = JSON.stringify(slice) ?? 'undefined';
+    // A revision per part: only a part whose revision moved is fetched and
+    // parsed. Rebuilding and parsing the whole state per change (core alone
+    // holds every page's layout) was most of a scroll's wire time. The same
+    // text keeps the same object, and a changed store keeps every slice whose
+    // text did not change, as the TypeScript store keeps an untouched
+    // plugin's slice.
+    const revisions = JSON.parse(this.rust.state_revisions()) as {
+      core: number;
+      plugins: Record<string, number>;
+    };
+    const slices = new Map<string, { revision: number; text: string; value: unknown }>();
+    let changed = this.state === undefined;
+    const part = (path: string, partRevision: number, read: () => string | undefined) => {
       const last = this.slices.get(path);
-      const entry =
-        last?.text === sliceText ? last : { text: sliceText, value: this.decode(slice) };
+      if (last?.revision === partRevision) {
+        slices.set(path, last);
+        return last.value;
+      }
+      const text = read() ?? 'undefined';
+      if (last?.text === text) {
+        const kept = { ...last, revision: partRevision };
+        slices.set(path, kept);
+        return kept.value;
+      }
+      changed = true;
+      const entry = {
+        revision: partRevision,
+        text,
+        value: text === 'undefined' ? undefined : this.decode(JSON.parse(text)),
+      };
       slices.set(path, entry);
       return entry.value;
     };
-    const value: Record<string, unknown> = {};
-    for (const [key, slice] of Object.entries(raw)) {
-      if (key === 'plugins' && slice !== null && typeof slice === 'object') {
-        const plugins: Record<string, unknown> = {};
-        for (const [id, plugin] of Object.entries(slice)) {
-          plugins[id] = share(`plugins.${id}`, plugin);
-        }
-        value[key] = plugins;
-      } else {
-        value[key] = share(key, slice);
-      }
+    const core = part('core', revisions.core, () => this.rust.core_text());
+    const plugins: Record<string, unknown> = {};
+    for (const [id, pluginRevision] of Object.entries(revisions.plugins)) {
+      plugins[id] = part(`plugins.${id}`, pluginRevision, () => this.rust.slice_text(id));
     }
+    // A slice that went away changes the state too.
+    if (this.slices.size !== slices.size) changed = true;
     this.slices = slices;
-    this.state = { revision, text, value };
+    if (!changed && this.state) {
+      this.state.revision = revision;
+      return this.state.value;
+    }
+    const value = { core, plugins };
+    this.state = { revision, value };
     return value;
   }
 

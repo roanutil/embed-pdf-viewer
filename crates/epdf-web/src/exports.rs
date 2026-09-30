@@ -560,6 +560,30 @@ impl WasmKernel {
         self.kernel.state_revision() as f64
     }
 
+    /// Moves whenever the documents, and so the capabilities
+    /// [`try_capability`](Self::try_capability) can answer, might have
+    /// changed. A plain read, like [`state_revision`](Self::state_revision).
+    pub fn core_revision(&self) -> f64 {
+        self.kernel.core_revision() as f64
+    }
+
+    /// `{"core": n, "plugins": {"<key>": n}}`: which parts of
+    /// [`state_json`](Self::state_json) moved since a reader last looked.
+    /// Plain reads, like [`state_revision`](Self::state_revision).
+    pub fn state_revisions(&self) -> String {
+        self.kernel.state_revisions()
+    }
+
+    /// `state_json().core`, as text.
+    pub fn core_text(&self) -> String {
+        self.kernel.core_text().to_string()
+    }
+
+    /// `state_json().plugins[key]`, as text; `undefined` for no such slice.
+    pub fn slice_text(&self, key: &str) -> Option<String> {
+        self.kernel.slice_text(key).map(|text| text.to_string())
+    }
+
     /// Call `listener()` after every store change until
     /// [`unsubscribe`](Self::unsubscribe) with the id this returns. A throw
     /// is reported.

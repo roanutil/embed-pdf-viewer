@@ -246,6 +246,7 @@ describe("the wire's answer reuse", () => {
       release_ref: (id: number) => released.push(id),
       // `capability` drains this first (`Wire.evict`); nothing here closes.
       take_evicted: () => '[]',
+      core_revision: () => 0,
     } as unknown as RustKernel;
     const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
     wire.attach(rust);
