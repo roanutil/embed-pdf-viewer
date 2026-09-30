@@ -66,14 +66,42 @@ const quoted = runArgs.map((a) => `'${a.replaceAll("'", "'\\''")}'`).join(' ');
 // The same Node as this machine, through mise, not whatever the remote's
 // PATH finds first.
 const node = `mise exec node@${process.versions.node} -- node`;
+// The run is detached from this ssh session: a full run outlasts a dropped
+// connection, and whatever runs this script may stop it before the end. Its
+// output goes to a log, which is followed from here; its exit status to a
+// file next to it.
+const log = `.work/remote-run.log`;
+const exitFile = `.work/remote-run.exit`;
+const run = `PERF_HARNESS_COMMIT=${commit} PERF_HARNESS_DIRTY=${dirty ? 1 : 0} caffeinate -dimsu ${node} run.mjs ${quoted}`;
 const script = [
   `cd ~/${remoteRoot}`,
   `mise install node@${process.versions.node} >/dev/null 2>&1`,
   `${node} node_modules/playwright-core/cli.js install chromium >/dev/null`,
-  `PERF_HARNESS_COMMIT=${commit} PERF_HARNESS_DIRTY=${dirty ? 1 : 0} caffeinate -dimsu ${node} run.mjs ${quoted}`,
+  `rm -f ${exitFile}`,
+  `(nohup sh -c '${run.replaceAll("'", "'\\''")}; echo \\$? > ${exitFile}' > ${log} 2>&1 < /dev/null &)`,
 ].join(' && ');
 const before = new Set(ssh(`ls ~/${remoteRoot}/results`, { stdio: ['ignore', 'pipe', 'inherit'] }).split('\n'));
 ssh(`zsh -lc "${script.replaceAll('"', '\\"')}"`);
+const quiet = { stdio: ['ignore', 'pipe', 'inherit'] };
+let shown = 0;
+for (;;) {
+  await new Promise((r) => setTimeout(r, 15_000));
+  let out;
+  try {
+    out = ssh(`cd ~/${remoteRoot} && tail -c +${shown + 1} ${log}; echo; echo "@@exit:$(cat ${exitFile} 2>/dev/null)"`, quiet);
+  } catch (error) {
+    console.log(`(poll failed, retrying: ${error.message})`);
+    continue;
+  }
+  const at = out.lastIndexOf('\n@@exit:');
+  const text = out.slice(0, at);
+  process.stdout.write(text);
+  shown += Buffer.byteLength(text);
+  const status = out.slice(at + '\n@@exit:'.length).trim();
+  if (status === '') continue;
+  if (status !== '0') throw new Error(`the remote run exited ${status}; see ~/${remoteRoot}/${log} on ${host}`);
+  break;
+}
 const after = ssh(`ls ~/${remoteRoot}/results`, { stdio: ['ignore', 'pipe', 'inherit'] }).split('\n');
 const fresh = after.filter((d) => d && !before.has(d));
 for (const run of fresh) {

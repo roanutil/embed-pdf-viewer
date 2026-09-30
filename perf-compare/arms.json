@@ -51,6 +51,11 @@
       "ref": "research/rust-kernel-wire",
       "sha": "776f0c26525f1b9061d092826edd4a16954c6534",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-toolbar": {
+      "ref": "research/rust-kernel-toolbar",
+      "sha": "e4d533d183a81bf13bc47d04fc33dcc5cc0d61b8",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -111,6 +116,11 @@
     },
     "plugins-getstate": {
       "worktree": "plugins-getstate",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-toolbar": {
+      "worktree": "plugins-toolbar",
       "kernel": "rust",
       "rustReads": false
     }
@@ -179,6 +189,14 @@
     [
       "main",
       "plugins-getstate"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-toolbar"
+    ],
+    [
+      "main",
+      "plugins-toolbar"
     ]
   ]
 }

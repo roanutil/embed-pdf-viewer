@@ -130,6 +130,57 @@ These are individually smaller but multiply with the notify fan-out:
   back into JS predicates (`packages/framework/react/src/toolbar.tsx:508-551`).
 - Every export runs `after_entry` (`runtime.rs:160-200`) even for read-only calls.
 
+### 6. Every hook re-runs on every change
+
+Measured 2026-09-30 on `research/rust-kernel-wire` at `776f0c265` (the `plugins-getstate` arm),
+with an unminified build and source maps; line numbers are at that commit. After items 1 to 5 the
+60-wheel scroll is 1292 ms busy on the main thread. By source, 569 ms is Rust, 287 ms is the JS wire
+(`packages/core-wasm/src/proxy.ts` and `engine-bridge.ts`), 127 ms is Preact and about 35 ms is the
+app's own components. Rendering is not where the time goes. What rendering decides is how many wire
+calls there are.
+
+Every hook subscribes to the whole kernel change stream: `useKernelValue`, `useSelector` and
+`useOptionalSelector` all pass `kernel.subscribe` to `useSyncExternalStore`
+(`packages/framework/react/src/runtime.tsx:65`, `:158`, `:196`). Each change re-runs every selector
+on the page, the wire's per-change answer cache is dropped on that same change, and so every re-run
+is a wasm call. Tallying `Wire.invoke` over the scroll gave 10,150 `resolveCommand` misses (98 ms),
+12,992 `isOpen` misses, and about 2,500 misses each for some 20 per-page reads (`getChromeSettings`,
+`listPageItems`, `getSourceKey`, `listLinks` and the rest) that a scroll doesn't change.
+
+Three changes, in order of payoff for effort:
+
+- The toolbar forces a render on every change (`packages/framework/react/src/toolbar.tsx:509`) and
+  resolves every command each time. The scroll rendered `Toolbar` 404 times, `CommandButton` 11,312
+  times and `Icon` 9,696 times, 67 ms inclusive before counting the `resolveCommand` crossings. It
+  should re-render only when a resolved command differs, which `resolvedCommandsEqual` already
+  decides. `main` has the same line, so the TS kernel gains too, just less.
+- The command predicates ask the shell `isOpen(id)` once per surface: `mode:view` alone checks all
+  six mode surfaces (`packages/viewer/chrome/src/config/commands.ts:417`, and `:785`, `:860`, plus
+  `packages/viewer/chrome/src/Shell.tsx:71`). `listOpenSurfaces()` takes no arguments, so reads of
+  it can share one cached answer. (`menus.isOpen` in `MenuAnchoredButton` looks like the culprit but
+  is a local array check.)
+- A selector could skip its re-run while its capability's slice revision holds, using the per-slice
+  revisions item 1 added. That's up to about 200 ms (the selector re-runs under `flush`), but some
+  reads depend on other slices (`getPlan` reads the stage camera), so each capability has to declare
+  what it reads. A wrong declaration shows up as stale UI, not as an error, which makes this the
+  riskiest of the three.
+
+The first two are prototyped on `research/rust-kernel-toolbar` at `e4d533d18` (the
+`plugins-toolbar` arm). The toolbar no longer renders during a scroll: 0 renders where there were
+404. It still resolves as many commands (10,125 against 10,150), because the change check now does
+the reads the render used to. `isOpen` calls fell from 12,992 to 5,265, but only 2,025 of 5,670
+`listOpenSurfaces` reads hit the cache: `Wire.bump()` drops every cached answer after any call that
+missed (`packages/core-wasm/src/proxy.ts:309`), so the cache only helps calls made back to back. A
+local profile of the scroll went from 1,277 to 1,126 ms busy, Preact from 132 to 39 ms.
+
+The quick remote run (R=3, `results/2026-09-30T18-07-04-233Z-2023MBP16Grey-desktop`) agrees only in
+part. `zoom` main-thread task time fell 12% and `open(ebook)` 5%, and `scroll` task time didn't move
+beyond noise. But script time rose: 20% for `scroll`, 24% for `open(large)` and 15% for `annotate`.
+We don't have an explanation that squares that with the profile yet. The full R=10 run should say
+whether it's real. Either way the larger payoff needs fewer resolves, not fewer renders: one
+`resolveCommands(ids)` crossing per check, or a `Wire.bump()` that keeps answers while the store's
+revision holds.
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated

@@ -96,6 +96,11 @@ stamps and each timed arm's built entry to `~/perf-remote/perf-compare/` on the 
 that only exists here works too. The remote needs SSH key access, `mise` and `rsync`; Chromium is
 installed there on first use.
 
+The run is detached from the SSH session, so a dropped connection or a stopped `remote.mjs` doesn't
+end it. Its output goes to `.work/remote-run.log` on the remote, which `remote.mjs` follows every
+15 s, and its exit status to `.work/remote-run.exit`. If `remote.mjs` stops early, the run finishes
+anyway, and its `results/<run-id>/` can be copied back with `rsync`.
+
 `meta.json` records the remote's host, CPU and power source, and the local harness commit.
 `report.mjs --against` refuses to compare a remote run with a local one, because the CPU differs.
 
