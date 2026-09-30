@@ -135,6 +135,14 @@
     [
       "plugins-fix-leak",
       "plugins-fix-zoom"
+    ],
+    [
+      "plugins-lto",
+      "plugins-fix-zoom"
+    ],
+    [
+      "main",
+      "plugins-fix-zoom"
     ]
   ]
 }
