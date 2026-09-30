@@ -206,6 +206,31 @@ Against the gate alone, scroll task time falls 8.5%. Against `plugins-getstate`,
 cache fix together make scroll task time 16.5% lower and wall time 7.4% lower, `zoom` 16%, `select`
 17%, `annotate` 12% and `open(ebook)` 6.4%, with `zoom2SettleMs` 19 ms sooner.
 
+The third fix, prototyped without declarations (`research/rust-kernel-read-sets` at `685a5472b`, the
+`plugins-reads` arm): the store records which slices, and whether core, each capability call reads
+(`Store::track_begin`/`track_end`), and the wire keeps a read's answer across store changes until
+one of those parts moves. A read that called JavaScript back, read nothing from the store, or read
+the whole tree isn't kept, and a call that isn't a read retires the kept answers of its own
+capability (the wire learns each member ref's capability from its pinned description). It works as
+a cache: in the 60-wheel scroll, misses in the 40 busiest members fell from 61,341 to 27,994 and the
+per-page reads from about 2,200 misses each to about 1,300. It doesn't pay. Against `plugins-bump`
+(R=3, `results/2026-09-30T22-28-55-068Z-2023MBP16Grey-desktop`) no row moves beyond noise; the point
+estimates are 2 to 3% slower for `scroll` and 5 to 8% slower for `jump` and `zoom` task time, 11 to
+17% faster for `select`, `search` and `annotate`. What a miss costs now is small, and each kept
+answer pays for a `last_reads` crossing and parse, a `BTreeSet<String>` per tracked call, and a
+`state_revisions` parse per change. We'd leave it out. Its residual risk also stays: a read that
+depends on another plugin's state outside the store, changed by a call that doesn't touch the
+store, would read stale.
+
+The selector re-runs themselves are now mostly JavaScript: `plugins-reads` spends 654 ms of JS in
+the scroll (`mainJsMs`) against 306 ms on `main`, which runs the same hooks against a TypeScript
+kernel.
+
+That run also prices the trace behind `mainJsMs`. Against the untraced run before it
+(`results/2026-09-30T20-45-12-681Z-2023MBP16Grey-desktop`), most timing rows on `main` and
+`plugins-bump` moved by 3% or less, which is inside run-to-run noise. `zoom` settle moved more on
+both, 16% and 11%, so traced and untraced `zoom` timings shouldn't be compared.
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
