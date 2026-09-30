@@ -71,6 +71,11 @@
       "ref": "research/rust-kernel-open-surfaces",
       "sha": "eeea6d2891a1fc7c218b71fea092429f168556ad",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-reads": {
+      "ref": "research/rust-kernel-read-sets",
+      "sha": "685a5472b2db32e882a69b36050f001b70b3f1be",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -151,6 +156,11 @@
     },
     "plugins-item3": {
       "worktree": "plugins-item3",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-reads": {
+      "worktree": "plugins-reads",
       "kernel": "rust",
       "rustReads": false
     }
@@ -251,6 +261,14 @@
     [
       "plugins-item1",
       "plugins-bump"
+    ],
+    [
+      "plugins-bump",
+      "plugins-reads"
+    ],
+    [
+      "main",
+      "plugins-reads"
     ]
   ]
 }
