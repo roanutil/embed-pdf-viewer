@@ -323,7 +323,17 @@ export class Wire {
    *  (`Store::revision`), so this sees a change whose notification the
    *  store deferred. */
   private sync(): void {
-    const revision = this.attached.state_revision();
+    let revision: number;
+    try {
+      // Not yet attached (a callback while the kernel is being built), or
+      // a kernel that can't be read from here (one being destroyed holds
+      // itself exclusively): nothing cached can be trusted.
+      revision = this.attached.state_revision();
+    } catch {
+      this.bump();
+      this.resultsRevision = -1;
+      return;
+    }
     if (revision === this.resultsRevision) return;
     this.bump();
     this.resultsRevision = revision;
