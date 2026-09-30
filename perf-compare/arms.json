@@ -76,6 +76,11 @@
       "ref": "research/rust-kernel-read-sets",
       "sha": "685a5472b2db32e882a69b36050f001b70b3f1be",
       "recipe": "rust-kernel-lto"
+    },
+    "impl-gate": {
+      "ref": "research/rust-core-toolbar-gate",
+      "sha": "30f4295d7d3a0e457abe557a3607cd8f417204d7",
+      "recipe": "rust-core"
     }
   },
   "arms": {
@@ -162,6 +167,11 @@
     "plugins-reads": {
       "worktree": "plugins-reads",
       "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-gate": {
+      "worktree": "impl-gate",
+      "kernel": "typescript",
       "rustReads": false
     }
   },
@@ -269,6 +279,10 @@
     [
       "main",
       "plugins-reads"
+    ],
+    [
+      "impl-ts",
+      "impl-gate"
     ]
   ]
 }
