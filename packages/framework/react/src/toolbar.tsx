@@ -501,12 +501,24 @@ export function Toolbar({
   const commands = useCapability(CommandsToken);
   const documentId = useDocumentId();
 
-  // Command state is derived-on-read; re-render on the kernel's change stream
-  // so labels/active/visible (and thus the hidden layer's measurements) stay
-  // live. The toolbar is small — a per-action render is the simple, correct
-  // baseline.
+  // Command state is derived-on-read, so each change re-resolves the commands
+  // the last render read, and renders again only when one of them differs
+  // (resolvedCommandsEqual, as useStripView does). Most changes (a scroll
+  // step, a tile landing) move no command, and a render here is every
+  // button twice over, live and in the measuring layer.
   const [, force] = useReducer((x: number) => x + 1, 0);
-  useEffect(() => kernel.subscribe(force), [kernel]);
+  const lastRead = useRef(new Map<string, ResolvedCommand | null>());
+  const readAgain = useRef<(id: string) => ResolvedCommand | null>(() => null);
+  readAgain.current = (id) => commands.resolveCommand(id, documentId ?? undefined);
+  useEffect(
+    () =>
+      kernel.subscribe(() => {
+        for (const [id, before] of lastRead.current) {
+          if (!resolvedCommandsEqual(before, readAgain.current(id))) return force();
+        }
+      }),
+    [kernel],
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -543,6 +555,7 @@ export function Toolbar({
   const rendering = { current: true };
   useLayoutEffect(() => {
     rendering.current = false;
+    lastRead.current = resolvedThisRender;
   });
   const resolveCmd = (id: string): ResolvedCommand | null => {
     if (!rendering.current) return commands.resolveCommand(id, documentId ?? undefined);

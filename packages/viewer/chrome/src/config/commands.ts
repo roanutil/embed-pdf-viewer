@@ -42,6 +42,11 @@ const CUSTOM_LIBRARY_ID = 'embedpdf-custom';
 
 const stage = (c: Ctx) => c.tryGet(StageToken);
 const interaction = (c: Ctx) => c.tryGet(InteractionToken);
+// One `listOpenSurfaces` read per check, not one `isOpen` per id: it takes no
+// arguments, so every predicate resolved after the same change shares one
+// answer, where each `isOpen(id)` is its own call into the kernel.
+const surfaceOpen = (c: Ctx, id: string): boolean =>
+  c.tryGet(ShellToken)?.listOpenSurfaces().some((s) => s.id === id) ?? false;
 const anno = (c: Ctx) => c.tryGet(AnnotationToken);
 const textSelection = (c: Ctx) => c.tryGet(SelectionToken);
 const sameTextRange = (a: TextRange | null, b: TextRange | null): boolean =>
@@ -412,10 +417,7 @@ export const defaultCommands: CommandDef[] = [
       for (const m of MODE_SURFACES) shell?.close(m);
       interaction(c)?.activateTool('pointer');
     },
-    active: (c) => {
-      const shell = c.tryGet(ShellToken);
-      return shell ? MODE_SURFACES.every((m) => !shell.isOpen(m)) : true;
-    },
+    active: (c) => MODE_SURFACES.every((m) => !surfaceOpen(c, m)),
   },
   modeCommand('mode:annotate', 'commands.mode.annotate'),
   modeCommand('mode:shapes', 'commands.mode.shapes'),
@@ -782,7 +784,7 @@ export const defaultCommands: CommandDef[] = [
     icon: 'link',
     categories: ['annotation'],
     run: (c) => c.tryGet(ShellToken)?.toggle('link-editor'),
-    active: (c) => c.tryGet(ShellToken)?.isOpen('link-editor') ?? false,
+    active: (c) => surfaceOpen(c, 'link-editor'),
     visible: (c) => selectionLink(c) === null,
   },
   {
@@ -857,6 +859,6 @@ function modeCommand(
       shell?.toggle(id, { exclusive: 'mode' });
       interaction(c)?.activateTool(shell?.isOpen(id) ? toolId : 'pointer');
     },
-    active: (c) => c.tryGet(ShellToken)?.isOpen(id) ?? false,
+    active: (c) => surfaceOpen(c, id),
   };
 }

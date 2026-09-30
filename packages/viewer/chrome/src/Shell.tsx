@@ -68,7 +68,10 @@ function ModeBand({ edge }: { edge: 'top' | 'bottom' }) {
   const modeSurfaces = useMemo(() => Object.keys(schema.modeBars ?? {}), [schema]);
   const activeMode = useOptionalSelector(
     ShellToken,
-    (s) => modeSurfaces.find((m) => s.isOpen(m)) ?? null,
+    (s) => {
+      const open = s.listOpenSurfaces();
+      return modeSurfaces.find((m) => open.some((o) => o.id === m)) ?? null;
+    },
     null,
   );
   if (!activeMode) return null;
