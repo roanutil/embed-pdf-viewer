@@ -361,7 +361,9 @@ export class Wire {
    *  changes if it read the store and called nothing back. */
   private keepAcross(key: string, value: unknown, callbacks: number): void {
     if (this.callbacks !== callbacks) return;
-    const reads = JSON.parse(this.rust.last_reads()) as Revisions;
+    const reads = JSON.parse(this.rust.last_reads()) as Revisions & { all?: true };
+    // A read of the whole tree depends on every slice, even one added later.
+    if (reads.all) return;
     if (reads.core === null && Object.keys(reads.plugins).length === 0) return;
     if (this.durable.size >= ANSWERS_KEPT) this.durable = new Map();
     this.durable.set(key, { value, reads });

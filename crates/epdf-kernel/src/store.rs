@@ -227,6 +227,9 @@ pub struct Store {
 
 /// The read-set entry for core. No slice key is empty.
 const CORE_READ: &str = "";
+/// The read-set entry for a read of the whole tree, which depends on every
+/// slice, including ones added later.
+const ALL_READ: &str = "\0all";
 
 impl Store {
     pub fn new(report: Report) -> Rc<Store> {
@@ -354,10 +357,14 @@ impl Store {
     }
 
     pub fn get_slice(&self, key: &str) -> Option<SliceState> {
+        // Recorded even when absent: an answer can depend on a slice not
+        // being there.
+        self.note_read(key);
         self.leases.borrow().get(key).map(SliceLease::read)
     }
 
     pub fn has_slice(&self, key: &str) -> bool {
+        self.note_read(key);
         self.leases.borrow().contains_key(key)
     }
 
@@ -384,9 +391,13 @@ impl Store {
     /// Stop the innermost recording, and answer what it read with each
     /// part's revision now, in [`revisions_json`](Self::revisions_json)'s
     /// shape: `{"core": n | null, "plugins": {"<key>": n | null}}`, null
-    /// for core unread and for a slice that doesn't exist.
+    /// for core unread and for a slice that doesn't exist; `{"all": true}`
+    /// for a call that read the whole tree.
     pub fn track_end(&self) -> String {
         let reads = self.tracking.borrow_mut().pop().unwrap_or_default();
+        if reads.contains(ALL_READ) {
+            return r#"{"all":true}"#.to_string();
+        }
         let leases = self.leases.borrow();
         let mut core = Value::Null;
         let mut plugins = serde_json::Map::new();
@@ -403,6 +414,7 @@ impl Store {
 
     /// `getState()`: the whole tree as canonical JSON.
     pub fn state_json(&self) -> Value {
+        self.note_read(ALL_READ);
         let leases = self.leases.borrow();
         let mut plugins = serde_json::Map::new();
         for (key, lease) in leases.iter() {
@@ -415,6 +427,7 @@ impl Store {
     /// `state_json().to_string()` gives, built from cached per-slice text and
     /// cached whole while the revision holds.
     pub fn state_text(&self) -> Rc<str> {
+        self.note_read(ALL_READ);
         let revision = self.revision.get();
         if let Some((cached, text)) = &*self.state_text.borrow() {
             if *cached == revision {
@@ -474,6 +487,7 @@ impl Store {
 
     /// One slice as canonical JSON.
     pub fn slice_json(&self, key: &str) -> Option<Value> {
+        self.note_read(key);
         self.leases.borrow().get(key).map(SliceLease::json)
     }
 
