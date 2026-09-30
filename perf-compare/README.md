@@ -78,6 +78,32 @@ came later and adds a second `plugins`-sized arm; a quick run of `main`, `main-a
 0.7 GB of depot_tools. Most of the fork checkout is APFS clones of the host's
 `packages/engine/runtime/runtime-src` dependencies, so it costs far less real disk than `du` says.
 
+## Timing on another machine
+
+A run on the machine you're working on picks up whatever else it's doing. To time on an idle one
+instead, set `PERF_REMOTE`:
+
+```sh
+PERF_REMOTE=andrew@2023mbp16grey.local pnpm compare -- --rounds 10 --profile desktop
+# or, with the entries already built:
+PERF_REMOTE=andrew@2023mbp16grey.local node scripts/remote.mjs --quick --arms main,main-aa,plugins
+```
+
+Builds stay local. `scripts/remote.mjs` copies the harness, its `node_modules`, the fixtures, the
+stamps and each timed arm's built entry to `~/perf-remote/perf-compare/` on the remote, runs
+`run.mjs` there under `caffeinate` with this machine's Node version (through `mise`), and copies
+`results/<run-id>/` back. It never touches a checkout on the remote, so an arm built from a commit
+that only exists here works too. The remote needs SSH key access, `mise` and `rsync`; Chromium is
+installed there on first use.
+
+The run is detached from the SSH session, so a dropped connection or a stopped `remote.mjs` doesn't
+end it. Its output goes to `.work/remote-run.log` on the remote, which `remote.mjs` follows every
+15 s, and its exit status to `.work/remote-run.exit`. If `remote.mjs` stops early, the run finishes
+anyway, and its `results/<run-id>/` can be copied back with `rsync`.
+
+`meta.json` records the remote's host, CPU and power source, and the local harness commit.
+`report.mjs --against` refuses to compare a remote run with a local one, because the CPU differs.
+
 ## Moving a pin
 
 ```sh
@@ -149,6 +175,15 @@ If a run ever falls back to `Runtime.getHeapUsage`, the report labels memory "JS
 
 The gate compares page 1's rendered bitmap, read back from the viewer's full-page image, instead
 of a screenshot. Two identical `main` builds differed in 0.01% of compositor-screenshot pixels.
+
+`mainTaskMs` is Chromium's `TaskDuration` over the measured window: everything the page's main
+thread did. `mainJsMs` is the JavaScript part of it, read from a trace of the same window as the
+outermost `FunctionCall`, `RunMicrotasks`, `EvaluateScript` and `v8.evaluateModule` events. It
+replaced `mainScriptMs` (`ScriptDuration`) on 2026-09-30, because `ScriptDuration` leaves microtasks
+out, and a Preact render is one: moving work out of a render read as more script with the same
+JavaScript run (FINDINGS.md, section 6). Runs from before then have `mainScriptMs` instead, so
+`--against` can't compare that row across the change. The trace is on during every measured
+window, so its overhead is in every timing.
 
 `scroll / settleMs` is usually 0 on the TypeScript arms: every render lands during the wheel burst,
 so the page is already settled when the last wheel event goes out.

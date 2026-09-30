@@ -41,6 +41,41 @@
       "ref": "research/rust-kernel-state-cache",
       "sha": "8cef92c76b3c1a71e23548f05a86ab2d9628f0d5",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-wire": {
+      "ref": "research/rust-kernel-wire",
+      "sha": "da947a5646ac13d5dcbdae46d46a46905dc94ffd",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-getstate": {
+      "ref": "research/rust-kernel-wire",
+      "sha": "776f0c26525f1b9061d092826edd4a16954c6534",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-toolbar": {
+      "ref": "research/rust-kernel-toolbar",
+      "sha": "e4d533d183a81bf13bc47d04fc33dcc5cc0d61b8",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-bump": {
+      "ref": "research/rust-kernel-bump",
+      "sha": "dd1b86fcc71af563f88d56f4561cc86d9c03f3cf",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-item1": {
+      "ref": "research/rust-kernel-toolbar-gate",
+      "sha": "1efa42de60a4a63c4d6aee857763b2cb4f262d9b",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-item3": {
+      "ref": "research/rust-kernel-open-surfaces",
+      "sha": "eeea6d2891a1fc7c218b71fea092429f168556ad",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-reads": {
+      "ref": "research/rust-kernel-read-sets",
+      "sha": "685a5472b2db32e882a69b36050f001b70b3f1be",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -93,6 +128,41 @@
       "worktree": "plugins-fix-zoom",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-wire": {
+      "worktree": "plugins-wire",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-getstate": {
+      "worktree": "plugins-getstate",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-toolbar": {
+      "worktree": "plugins-toolbar",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-bump": {
+      "worktree": "plugins-bump",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-item1": {
+      "worktree": "plugins-item1",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-item3": {
+      "worktree": "plugins-item3",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-reads": {
+      "worktree": "plugins-reads",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -143,6 +213,62 @@
     [
       "main",
       "plugins-fix-zoom"
+    ],
+    [
+      "plugins-fix-zoom",
+      "plugins-wire"
+    ],
+    [
+      "plugins-wire",
+      "plugins-getstate"
+    ],
+    [
+      "plugins-lto",
+      "plugins-getstate"
+    ],
+    [
+      "main",
+      "plugins-getstate"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-toolbar"
+    ],
+    [
+      "main",
+      "plugins-toolbar"
+    ],
+    [
+      "plugins-toolbar",
+      "plugins-bump"
+    ],
+    [
+      "main",
+      "plugins-bump"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-item1"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-item3"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-bump"
+    ],
+    [
+      "plugins-item1",
+      "plugins-bump"
+    ],
+    [
+      "plugins-bump",
+      "plugins-reads"
+    ],
+    [
+      "main",
+      "plugins-reads"
     ]
   ]
 }
