@@ -1,0 +1,162 @@
+# perf-compare
+
+Builds the web viewer from `main` and the two Rust research branches at pinned commits, drives the
+same flows against each in Chromium, and reports load, interaction, CPU and memory differences with
+bootstrap confidence intervals. It answers "is the viewer faster or slower on branch X than on
+`main`", which none of `tooling/viewer-e2e`, `tooling/engine-baseline` or
+`examples/rust-kernel-eval` can.
+
+```sh
+cd perf-compare
+pnpm install --ignore-workspace
+pnpm exec playwright-core install chromium
+pnpm compare -- --rounds 10 --profile desktop
+```
+
+`pnpm compare` runs `scripts/doctor.mjs`, `scripts/materialize.mjs`, `scripts/build-entry.mjs`,
+`run.mjs` and `report.mjs --latest` in that order. The report lands in
+`results/<run-id>/report.md` and on stdout. `--quick` runs 3 rounds instead of 10 and stamps the
+report "quick, not for publication". `--arms` and `--flows` take comma lists. `--profile slow`
+applies a 4x CPU throttle.
+
+This directory isn't a pnpm workspace member. Keep it out of `pnpm-workspace.yaml` and
+`turbo.json`.
+
+## What it compares
+
+Six arms, defined in `arms.json`, which is the only file that knows which branches exist:
+
+| Arm | Branch | Kernel | Engine requests |
+| --- | --- | --- | --- |
+| `main` | `main` | TypeScript | All TypeScript |
+| `main-aa` | `main` | TypeScript | All TypeScript (a second copy, served separately) |
+| `impl-ts` | `research/multi-platform-rust-core-impl` | TypeScript | TypeScript, Rust core linked but unused |
+| `impl-rust` | same | TypeScript | `pages.geometry` in Rust (`rustRouting: { rustReads: true }`) |
+| `plugins` | `research/multi-platform-rust-core-impl-plugins` | Rust (`packages/core-wasm`) | TypeScript |
+| `plugins-lto` | same | Rust, kernel built with LTO | TypeScript |
+
+The report compares each pair in `arms.json`. `main` vs `main-aa` comes first: it's the A/A
+check, and its interval sets the noise band every other pair has to clear. `impl-ts` vs
+`impl-rust` isolates the Rust geometry reader. `impl-ts` vs `plugins` isolates the Rust kernel,
+with the engine held the same (both arms run the byte-identical engine wasm). `main` vs `impl-ts`
+is the aggregate cost of the impl branch with its switch off, not the cost of the unused Rust code
+alone.
+
+`plugins` vs `plugins-lto` isolates link-time optimization of the wire kernel. The branch sets
+`lto = true` in `[profile.release]`, but `crates/epdf-web/Cargo.toml` declares
+`crate-type = ["cdylib", "rlib"]`, and with an `rlib` in the set Cargo passes no `-C lto`, so the
+kernel `plugins` ships was never link-time optimized. `plugins-lto` is the same commit with the
+kernel built by `cargo rustc --crate-type cdylib`, which does get `-C lto`. A quick run on
+2026-09-29 put the gain at about 10% where the kernel is the bottleneck (`open(large) / openedMs`
+1384 to 1273 ms, `scroll / longTaskMs` 9.6 to 8.3 s) and nothing detectable on `select`, `search`,
+`annotate` or `jump`, for a kernel 0.9 MiB larger. The Rust engine core (`crates/epdf-wasm`,
+`["staticlib", "rlib"]`) has the same problem, and no arm measures it yet.
+
+Every arm runs one shared entry page (`entry/`), built with Vite from each worktree's own
+`packages/viewer/main` as a production bundle and served statically with COOP/COEP. A gate
+(`lib/gate.mjs`) opens every arm first and excludes any arm whose page count, search hits,
+selected text, annotation count or rendered page-1 bitmap differs from `main`'s. The report prints
+an excluded arm as `excluded: <reason>` rather than dropping it.
+
+## How long it takes
+
+Measured on an Apple M4 Max (16 cores, 64 GiB), on AC power, on 2026-09-29.
+
+The first build of all three worktrees is dominated by the two Rust-core payloads. `main` built in
+68 s. Copying the fork's dependencies from the host checkout took about 40 s, once. After that,
+`impl` built in 78 s including a clean `wasm32-eh` fork build, and `plugins` in 103 s reusing it.
+A second run finds everything cached and `scripts/build-arm.mjs` returns in 0.7 s. The entry is
+rebuilt on every run, about 5 s per arm.
+
+A `--quick` run of all five arms took 17.0 min. A full `desktop` run took 57.3 min and a
+full `slow` run took 86.8 min. `plugins` dominates both: its `scroll` flow alone runs about
+30 s per sample, against about 4.5 s on `main`. Those timings are for five arms. `plugins-lto`
+came later and adds a second `plugins`-sized arm; a quick run of `main`, `main-aa`, `plugins` and
+`plugins-lto` took 17.9 min. We haven't timed a full six-arm run.
+
+`.work/` holds about 18 GB by `du`: 9 GB of worktrees, 7 GB of fork checkout, 1.6 GB of emsdk and
+0.7 GB of depot_tools. Most of the fork checkout is APFS clones of the host's
+`packages/engine/runtime/runtime-src` dependencies, so it costs far less real disk than `du` says.
+
+## Moving a pin
+
+```sh
+node scripts/pin.mjs plugins   # or impl, main; no argument moves all three
+git commit perf-compare/arms.json
+```
+
+A pinned commit has to exist on one of the checkout's remotes. `materialize.mjs` tries each remote
+in turn, so a branch pushed only to a private fork works, as long as every machine that runs the
+harness has that remote. Push before pinning.
+
+To see whether a change on a branch helped, run once, move the pin, run again, and compare:
+
+```sh
+node report.mjs results/<after> --against results/<before>
+```
+
+`--against` refuses two runs whose Chromium version, CPU, fixtures, profile, viewport, device scale
+factor or flow set differ, and prints the keys that differ.
+
+## Adding an arm
+
+Add it to `arms` in `arms.json`, pointing at an existing worktree or a new one, and add the pairs
+you want reported. A new worktree needs a `recipe`: `typescript` fetches the published engine
+payload, `rust-core` builds the fork and links the Rust engine core, `rust-kernel` does the
+same plus the wire kernel, and `rust-kernel-lto` builds that kernel as a `cdylib` only, so LTO
+applies. A branch that needs a different build means a new recipe in
+`scripts/build-arm.mjs`, and that file's contents are the worktree cache key, so editing it
+rebuilds every worktree.
+
+## How the Rust-core payload is built
+
+No fork release publishes the `wasm32-eh` target the Rust engine core links against. The branch's
+own `engine-runtime-build.json` marks it `"status": "pending"`. So the `rust-core`,
+`rust-kernel` and `rust-kernel-lto` recipes build it: they check the fork out at the worktree's recorded
+`runtime-src` commit under `.work/fork/`, copy its gclient dependencies from the host checkout
+when the host synced the same `DEPS` (otherwise they run `gclient sync`; the host's synced copy is 7.4 GB), install
+emsdk 4.0.0 into the fork's own `third_party/emsdk`, and run the fork's `build-target.sh
+wasm32-eh`. The Rust core is then linked with the steps `tooling/engine-conformance/README.md`
+documents.
+
+emsdk 4.0.0 is hard-coded in `scripts/build-arm.mjs`, unlike every other toolchain version here,
+because no branch declares it anywhere a script can read. `compile.esm.sh` passes
+`-sWASM_LEGACY_EXCEPTIONS=0`, which first exists in 4.0.0, and
+`tooling/engine-baseline/results/geometry-service-boundary.json` records emcc 4.0.0.
+
+The research pins were moved to make this build work at all. Both earlier pins had a Rust core
+that called the fork's old integer `/Name` API, while their own fork submodule and TypeScript
+bindings used the new text API, so the `pdfium` crate compiled against no fork commit. The fix is
+`c8085bd3c` on the impl branch, merged into the plugins branch as `bef223d9d`.
+
+## Caveats
+
+> Note: The `slow` profile throttles the main thread only. Chromium 140 answers
+> `Emulation.setCPUThrottlingRate` on a worker target with "Operation is only supported for pages,
+> not workers", and page throttling doesn't reach the worker: at 4x a busy loop took 4.4x longer on
+> the main thread and no longer in the worker. `meta.json` records `workerThrottled: false` and the
+> report says so. For the same reason `workerTaskMs` is n/a: workers have no `Performance` domain.
+
+"First paint" is a frame opportunity after a visible page image has decoded, not a compositor
+timestamp, the same rule as `tooling/viewer-e2e/performance.ts`. `jankFrames` counts
+`requestAnimationFrame` intervals over 50 ms in headless Chromium, which runs frames at about
+120 Hz here (`frameP50Ms` is 8.3 on `main`).
+
+Memory comes from `performance.measureUserAgentSpecificMemory()` after a forced GC, which counts
+wasm linear memory (`test/memory.selftest.mjs` checks a 64 MiB `WebAssembly.Memory` moves the
+total). It needs the full Chromium build in new-headless mode; the headless shell rejects the call.
+If a run ever falls back to `Runtime.getHeapUsage`, the report labels memory "JS heap only".
+
+The gate compares page 1's rendered bitmap, read back from the viewer's full-page image, instead
+of a screenshot. Two identical `main` builds differed in 0.01% of compositor-screenshot pixels.
+
+`scroll / settleMs` is usually 0 on the TypeScript arms: every render lands during the wheel burst,
+so the page is already settled when the last wheel event goes out.
+
+The `slow` profile approximates a mid-range laptop by CPU throttling. It is not a real device.
+
+## Tests
+
+`pnpm test` runs the Node tests (config, statistics, server, environment). Two self-tests need
+Chromium: `node --test test/memory.selftest.mjs` and `node --test test/probe.selftest.mjs`, which
+also needs a built `main` arm.

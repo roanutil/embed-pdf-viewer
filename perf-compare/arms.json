@@ -1,0 +1,148 @@
+{
+  "baseline": "main",
+  "noiseArm": "main-aa",
+  "worktrees": {
+    "main": {
+      "ref": "main",
+      "sha": "2516e2786ee894383220ecd436fbd248182ef444",
+      "recipe": "typescript"
+    },
+    "impl": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "c8085bd3ca876a3d3cf7705fdae8df1fc9a733bb",
+      "recipe": "rust-core"
+    },
+    "plugins": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
+      "recipe": "rust-kernel"
+    },
+    "plugins-lto": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "bef223d9d1702703dbffae9ce8180ee9f4690615",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "e0f33b1c4fd64533c62a22860de0fc8391cf3434",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix34": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "2b07fb371c64c6f4cef2df5eb9b1725f6b2fd12e",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix-leak": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "2ed3124464581342adaf7e06a0af80c3e352b754",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix-zoom": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "8cef92c76b3c1a71e23548f05a86ab2d9628f0d5",
+      "recipe": "rust-kernel-lto"
+    }
+  },
+  "arms": {
+    "main": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "main-aa": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-ts": {
+      "worktree": "impl",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-rust": {
+      "worktree": "impl",
+      "kernel": "typescript",
+      "rustReads": true
+    },
+    "plugins": {
+      "worktree": "plugins",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-lto": {
+      "worktree": "plugins-lto",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fix": {
+      "worktree": "plugins-fix",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fix34": {
+      "worktree": "plugins-fix34",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fix-leak": {
+      "worktree": "plugins-fix-leak",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fix-zoom": {
+      "worktree": "plugins-fix-zoom",
+      "kernel": "rust",
+      "rustReads": false
+    }
+  },
+  "pairs": [
+    [
+      "main",
+      "main-aa"
+    ],
+    [
+      "main",
+      "impl-ts"
+    ],
+    [
+      "impl-ts",
+      "impl-rust"
+    ],
+    [
+      "impl-ts",
+      "plugins"
+    ],
+    [
+      "main",
+      "plugins"
+    ],
+    [
+      "plugins",
+      "plugins-lto"
+    ],
+    [
+      "plugins-lto",
+      "plugins-fix"
+    ],
+    [
+      "plugins-fix",
+      "plugins-fix34"
+    ],
+    [
+      "plugins-fix34",
+      "plugins-fix-leak"
+    ],
+    [
+      "plugins-fix-leak",
+      "plugins-fix-zoom"
+    ],
+    [
+      "plugins-lto",
+      "plugins-fix-zoom"
+    ],
+    [
+      "main",
+      "plugins-fix-zoom"
+    ]
+  ]
+}

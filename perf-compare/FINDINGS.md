@@ -1,0 +1,218 @@
+# Performance findings, 2026-09-29
+
+The Rust kernel on the plugins branch is slow because of its architecture, not its compiler flags.
+Every store change re-serializes the whole kernel state to JSON, many times, and nearly every read
+of the page registry deep-clones every page layout. Both scale with page count. Fixing three
+things (a revision-cached `getState`, coalesced change notifications, and a shared page registry)
+should remove most of the 12x gap to `main` on a 400-page document. Every build setting we found is
+worth single-digit percent by comparison.
+
+This comes from main-thread and worker CPU profiles, call counts, heap snapshots and JSON-size
+probes taken in the harness browser, plus a read-only review of the Rust kernel, the wasm/TS wire,
+the Rust engine core and the build settings. Nothing on the branches was changed. The benchmark
+numbers it explains are in `RESULTS.md`.
+
+Paths are relative to a checkout of the branch named in each section:
+`research/multi-platform-rust-core-impl-plugins` at `bef223d9d` ("plugins") or
+`research/multi-platform-rust-core-impl` at `c8085bd3c` ("impl"). Line numbers are at those commits.
+
+## What the profiles show
+
+All numbers are for the `plugins-lto` arm on `large.pdf` (400 pages), Chromium 140, Apple M4 Max.
+
+A 60-wheel scroll spends 14.2 s on the main thread. 7.3 s of that is under JS `getState` calling
+the wasm export `state_json`, which runs `epdf_kernel::store::Store::state_json` and serializes the
+entire store. Precise coverage counted 920 `state_json` calls for 10 wheel events: 92 full-state
+serializations per event. In those 10 events the page ran `JSON.parse` 66,692 times over 27.1 MiB
+of text, 182 of those parses over 100 KiB (largest 167 KiB). On the 4-page `ebook.pdf` the largest
+payload is 28 KiB, so the state grows with the document, at roughly 350 bytes per page.
+
+Kernel self time is dominated by allocation and `Value` handling: dlmalloc `free`, `malloc` and
+`unlink_chunk` (about 3.4 s), `IndexMap<String, serde_json::Value>` clone and insert (about 2 s),
+SipHash (0.7 s) and `serde_json` serialization (about 1.7 s). The measurement plugin's
+`refresh` then `publish` path costs 3.6 s during a scroll that never touches a measurement.
+
+Opening the document takes 2.6 s of main thread, of which `state_json` is 859 ms and the
+measurement plugin's `connect_viewports` then `ensure_loaded` path is 996 ms.
+
+Heap snapshots after soak cycles 5 and 30 grow from 39.7 to 54.2 MiB. The growth is JS-side:
++12.9 MB of `ArrayBuffer` data across 250 buffers (about 10 per cycle, about 51 KB each), with
++600 `AbortController`/`AbortSignal` pairs and +600 `DOMRectReadOnly`. Strings grew only 236 KiB, so
+this isn't a cache of JSON text. It looks like retained render requests, but the retainer isn't
+traced yet.
+
+In the engine worker, `handlePagesGeometry` costs 5.8 ms on `impl-ts` and 5.4 ms on `impl-rust`
+across the whole `select` sequence, against 283 ms for `handlePagesRender`. Geometry is about 2% of
+the worker's time there, which is why the Rust geometry reader shows no difference in the viewer.
+
+## Plugins kernel: the fixes that matter
+
+### 1. `getState` re-serializes everything on every read
+
+`Wire.getState` (`packages/core-wasm/src/proxy.ts:418-454`) reuses its parsed state only while its
+`version` hasn't moved, but `version` is bumped after every real `invoke` (`proxy.ts:588`), every
+Rust-to-JS callback (`proxy.ts:363`) and every kernel notification. During a notify pass the hooks
+alternate invokes and `getState` reads, so the cache never hits. Each `useT()`
+(`packages/framework/react/src/i18n.ts:41`, about 35 call sites in the chrome) reads
+`getState().plugins['i18n']`, and each miss rebuilds every slice from scratch
+(`crates/epdf-kernel/src/store.rs:295-302`), including `DocumentMeta.pages`, all 400 page layouts
+(`crates/epdf-kernel/src/types.rs:42`).
+
+The fix is a Rust `state_revision()` bumped at mutation time, JSON cached per slice keyed on the
+slice's `Rc`, and `useT` reading an i18n capability value instead of `getState`. This should remove
+most of the 7.3 s in scroll and the 859 ms at open. The cost is small; per-slice objects must keep
+reference identity while their revision is unchanged, which the existing slice cache already does.
+
+### 2. Change notifications aren't coalesced
+
+`SliceLease::commit` calls `emit_change` on every reducer result (`store.rs:135-152`), and one
+listener is `listener.call0` into JS (`crates/epdf-web/src/exports.rs:559-569`), which notifies every
+mounted hook synchronously, from inside the Rust call (`packages/core-wasm/src/kernel.ts:156-160`).
+There are 200 to 300 such subscriptions, and Preact's `useSyncExternalStore` reads the snapshot again
+during render and in a layout effect, because `get` is a new closure each render
+(`packages/framework/react/src/runtime.tsx:59`, `:152`, `:181`). One scroll event makes several store
+changes (camera, cursor, motion cause, camera rest), each a full pass.
+
+The fix is to have the Rust listener set a dirty flag and call JS once at the end of the outermost
+entry (`runtime::at_exit`, `crates/epdf-web/src/runtime.rs:77-86`), or from one microtask. It's about
+ten lines. The proxy already tolerates a notification that lags the dispatch (`proxy.ts:41-51`), so
+the risk is low. A stable `getSnapshot` in `runtime.tsx` cuts the Preact re-reads, but that adapter is
+shared with `main`.
+
+### 3. The page registry is deep-cloned on almost every read
+
+`DocumentMeta.pages` is a bare `serde_json::Value`, and `PluginContext::document()`
+(`crates/epdf-kernel/src/plugin.rs:278-286`), `ControllerContext::meta()` and `page_of()`
+(`plugin.rs:717-758`), `Session::staged_meta()` (`crates/epdf-kernel/src/kernel.rs:158-160`) and
+`Documents::meta_of`/`pages_of` (`kernel.rs:1660-1671`) all clone it. That's roughly 20,000
+allocations per clone at 400 pages. Stage does five to ten of these per store change, sometimes to
+read one integer (`crates/plugins/stage/src/sync/watchers.rs:65`), and every `build_scene` does two
+even on a cache hit (`crates/plugins/stage/src/services/scene.rs:42`, `:65`, `:268`). The same
+pattern is in measurement, annotation, selection, link, actions, redaction and page-edit. Render
+already avoids it with `with_meta` (`crates/plugins/render/src/controller.rs:139-148`).
+
+The fix is `Rc<DocumentMeta>` in `CoreState`, pages parsed once into `Rc<[PageLayout]>` with a
+`pon -> index` map, and accessors that don't clone (`document_revision()`, `page_count()`,
+`page_by_pon()`). It's about 25 mechanical call-site edits with no change in behavior, and it
+removes most of the allocator, clone and SipHash time.
+
+### 4. Measurement is O(pages²) at open and keeps publishing during scroll
+
+`reconcile` (`crates/plugins/measurement/src/sync/viewports.rs:206-227`) runs `ensure_loaded` and
+`refresh` for each of the 400 pages. Each refresh does a registry clone and a linear scan
+(`services/store.rs:92-94`), two bridge calls into JS, and a `PageScale` dispatch whose reducer starts
+with `let mut next = s.clone();` over the whole 400-entry map (`model.rs:71`). Each dispatch then runs
+the full fan-out from items 1 to 3, including `reconcile` itself. The 400 async viewport answers
+land over the next seconds and each publishes again (`viewports.rs:40-63`), which is the 3.6 s under
+`publish` in the scroll profile.
+
+The fix is items 1 to 3 plus a revision-keyed `pon -> PageMeta` cache in `Services`, `Rc` entries in
+`MeasurementState.pages`, and optionally one batched `PageScales` action at open. The batching changes
+action granularity, so the conformance vectors need checking.
+
+### 5. Per-call waste on the wire
+
+These are individually smaller but multiply with the notify fan-out:
+
+- `useCapability` makes two crossings per read (`take_evicted` then `try_capability`) and hashes a
+  KB-sized description string (`proxy.ts:407-411`, `:492-498`). Cache proxies in JS and invalidate on
+  a documents-lifecycle revision.
+- `usePages` returns all 400 layouts to read `.length` (`packages/framework/react/src/stage.tsx:386`,
+  used three times in `viewer/chrome/src/ui/panels.tsx`). Read `pageCount` instead.
+- `invoke` parses the answer before comparing it with the cached text (`proxy.ts:575-636`). Compare
+  first, and skip the ref-marker regex when there are no markers.
+- Every engine answer is JSON-encoded twice and parsed twice: the bridge resolves with JSON text
+  (`packages/core-wasm/src/engine-bridge.ts:527`), and `from_js` stringifies that string again
+  (`crates/epdf-web/src/runtime.rs:255-270`) before `engine_call` parses it (`engine.rs:137-139`).
+- The PDF's bytes cross at open as base64 JSON, about six passes over 1.4 MB
+  (`engine-bridge.ts:101-114`). Pass them as a `$host` handle; Rust never needs them.
+- The toolbar re-renders on every store change and resolves every command, each resolution calling
+  back into JS predicates (`packages/framework/react/src/toolbar.tsx:508-551`).
+- Every export runs `after_entry` (`runtime.rs:160-200`) even for read-only calls.
+
+### Serialization formats
+
+The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
+full-state builds. What remains is dominated by building `serde_json::Value` trees, not by writing
+text. Serializing typed structs straight to a reused buffer with `serde_json::to_writer`, caching
+each slice's text, and swapping SipHash for `rustc-hash` or `ahash` in the kernel's own maps all help
+more than a format change would. The SIMD JSON crates (`simd-json`, `sonic-rs`) don't target
+`wasm32-unknown-unknown` as built.
+
+On the JS side, `JSON.parse` is native and hard to beat for building object graphs. MessagePack
+(`rmp-serde` with `msgpackr`) or CBOR (`ciborium` with `cbor-x`) would shrink numeric payloads and
+might match `JSON.parse` speed, but they change both ends of every call. We haven't measured them.
+`serde-wasm-bindgen` avoids text entirely but makes one boundary call per field, which usually
+loses on large payloads. For bulk numeric data (page layouts, glyph geometry) packed `Float32Array`
+views over wasm memory are the clear answer: no parse at all, and transferable across the worker
+boundary.
+
+## The heap leak
+
+About ten `ArrayBuffer`s and 24 `AbortController`s survive each soak cycle. The next step is a
+retainer path from a heap snapshot. Separately, `Session.staged_meta` is never cleared after
+`commit_ready` (`kernel.rs:617-633`), so each open document holds a second full copy of its pages;
+`staged_meta.take()` fixes that in one line.
+
+## Engine, on every branch
+
+These apply to `main` too, since they're in the shared TypeScript engine and its build.
+
+The engine's final link is unoptimized. `packages/engine/runtime/build/compile.esm.sh` (`:35-50` on
+`main`, `:80-97` on impl) passes no `-O` and sets `-sASSERTIONS=1`. That wraps all 915 exports in
+checking wrappers, links emcc's debug system libraries, and blocks metadce. Linking with
+`-O2 -sASSERTIONS=0 -sSTACK_OVERFLOW_CHECK=0` cuts the wasm 8% raw (`wasm-opt -O3` alone takes the
+impl engine from 11,084,440 to 10,198,993 bytes) and should speed up the worker by an estimated 2 to
+8%. It can be tested without a branch edit, because emcc appends `EMCC_CFLAGS` last. The cost is
+that a runtime misuse becomes an opaque trap instead of a named assert.
+
+The TypeScript per-glyph cost is mostly glue. Each PDFium call goes through `cwrap`, a `bridge`
+closure with `args.map`, `ccall` and the assert wrapper (`packages/engine/runtime/src/wasm/wasm-runtime.ts:246-272`,
+`:473-487`). Each returned pointer allocates a BigInt (`wasm-runtime.ts:43-45`), and each f32 read goes
+through `getValue` (`structs.ts:69-71`), about 20 per glyph. Binding raw exports and reading
+`HEAPF32` views in hot loops helps geometry and annotation reads on every branch.
+
+Search always uses the TypeScript geometry reader, with no cache, for up to 64 matched pages per
+slice (`packages/engine/services/src/features/search/SearchReader.ts:139`), and its folding loop
+allocates several strings per code point (`packages/engine/core/src/search/fold.ts:60-86`). Caching
+geometry per page by `mutationSeq`, as `pageCorpusCache.ts` already does for text, and an ASCII fast
+path in folding are both small.
+
+Geometry travels as about 1.7 MB of JSON per dense page, with every f32 widened to f64 and printed to
+17 digits (`crates/epdf-engine/src/features/geometry.rs:344-360`). It's then structured-cloned to the
+main thread with no transfer list (`WorkerHost.ts:1299`), about 25,000 objects per page. Packed
+typed arrays on the transfer list fix both, at the cost of changing the `PageGeometrySnapshot` DTO.
+
+Every text read loads and closes the text page (`PageGeometryReader.ts:94`, `PageTextReader.ts:46`,
+`geometry.rs:264`), and a matched search page loads it twice. Caching `FPDF_TEXTPAGE` in
+`PagePtrPool` needs its lifetime and leak checks extended.
+
+## Build settings
+
+These are cheap and each worth measuring as its own arm, but none changes the picture above.
+
+| Change | Evidence | Expected |
+| --- | --- | --- |
+| Real LTO for `epdf-web`: `crate-type = ["cdylib", "rlib"]` makes Cargo skip `-C lto` | measured with the `plugins-lto` arm | about 10% on kernel-heavy rows |
+| `wasm-opt -O3 --strip-debug` after `wasm-bindgen` (`crates/epdf-web/scripts/build.sh` runs neither) | measured on the built wasm | 11.3 to 8.3 MB raw, brotli 2.13 to 2.03 MB; speed 0 to 5%, unmeasured |
+| WebAssembly SIMD: no `+simd128` in any `target_features` section, no `-msimd128` in the fork | artifact inspection | 0 to 15% on render rows, a guess |
+| `main`'s payload uses emsdk 3.1.72 without bulk-memory: large `memcpy` and longjmp go through JS imports | artifact imports | within the noise band for these fixtures |
+| Two copies of `preact/compat` in every bundle, including the shipped viewer (`compat.mjs` via the alias, `compat.module.js` via `compat/client`) | bundle contents | 1 to 3% of main-thread script, plus a correctness risk |
+| Stage B's 65-op `Host` is linked into every Rust-core payload (`compile.esm.sh:68-69`) | export list | most of the 7.19 to 10.57 MiB engine growth |
+| `serde_json`'s `float_roundtrip` is on across the kernel | crate features | about 2x on float parsing; risky for JS parity |
+| PDFium with `-flto` | none | 5 to 15%, a guess, at much longer builds |
+
+Checked and left alone: the kernel already aborts on panic (`wasm32-unknown-unknown` defaults to it),
+the engine needs unwind for its poisoned-session path, the allocator and memory settings are
+reasonable, the exnref exception encoding costs nothing when nothing throws, `wasm-bindgen` already
+uses externref, both wasm files are streamed, and the Vite build is a clean production build.
+
+## What the harness should measure next
+
+The `select` flow doesn't time `pages.geometry`, because page 1's geometry is loaded before `t0`.
+`impl-ts` against `impl-rust` needs a flow that reads cold geometry on many dense pages, and the gate
+should prove the Rust route ran rather than only that the payload contains the core
+(`lib/gate.mjs`). The runs are cold, so wasm starts in Liftoff; a diagnostic arm with
+`--js-flags=--no-liftoff` would show how much of `openedMs` is baseline-tier execution.
+
+The cheapest high-value next step is items 1 and 2 on the plugins branch, re-measured as a new arm.
