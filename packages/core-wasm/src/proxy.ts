@@ -205,7 +205,7 @@ type Revisions = { core: number | null; plugins: Record<string, number | null> }
 
 /** Members that only read: their calls change no state, so answers cached
  *  before them stay good while the store's revision holds. */
-const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
+const READS = /^(?:(?:get|list|is|has|can|resolve)(?:[A-Z]|$)|t$)/;
 
 export class Wire {
   private attached!: RustKernel;
@@ -332,7 +332,20 @@ export class Wire {
    *  back and read the store at all is kept (`keepAcross`); anything else
    *  may depend on state the store doesn't see. Dropped whole by any call
    *  that isn't a read, as `results` is. */
-  private durable = new Map<string, { value: unknown; reads: Revisions }>();
+  private durable = new Map<
+    string,
+    { value: unknown; reads: Revisions; owner: number; generation: number }
+  >();
+  /** The capability each member ref belongs to, by ref id, as an index
+   *  into `generations`: a capability's description pins its members'
+   *  refs, so `proxy` knows them. */
+  private owners = new Map<number, number>();
+  private ownerOf = new Map<string, number>();
+  /** Per capability, how many calls that aren't reads it has taken. Such a
+   *  call can change state its plugin keeps outside the store, so it
+   *  retires that capability's kept answers; one through a ref with no
+   *  known capability retires them all. */
+  private generations: number[] = [];
   /** `state_revisions` as of `revisionsAt`, parsed when first needed. */
   private revisions: Revisions | undefined;
   private revisionsAt = -1;
@@ -359,14 +372,16 @@ export class Wire {
 
   /** After a real read that changed nothing: keep its answer across store
    *  changes if it read the store and called nothing back. */
-  private keepAcross(key: string, value: unknown, callbacks: number): void {
+  private keepAcross(key: string, id: number, value: unknown, callbacks: number): void {
     if (this.callbacks !== callbacks) return;
+    const owner = this.owners.get(id);
+    if (owner === undefined) return;
     const reads = JSON.parse(this.rust.last_reads()) as Revisions & { all?: true };
     // A read of the whole tree depends on every slice, even one added later.
     if (reads.all) return;
     if (reads.core === null && Object.keys(reads.plugins).length === 0) return;
     if (this.durable.size >= ANSWERS_KEPT) this.durable = new Map();
-    this.durable.set(key, { value, reads });
+    this.durable.set(key, { value, reads, owner, generation: this.generations[owner] });
   }
 
   /** Drop `results` if the store has moved since they were cached. The
@@ -395,10 +410,12 @@ export class Wire {
   /** After a real call: one that may have changed state outside the store
    *  (a registry, a handler list) drops every cached answer; a read keeps
    *  them unless it moved the store. */
-  private settle(member: string): void {
+  private settle(id: number, member: string): void {
     if (!READS.test(member)) {
       this.bump();
-      this.durable = new Map();
+      const owner = this.owners.get(id);
+      if (owner === undefined) this.durable = new Map();
+      else this.generations[owner]++;
     }
     this.sync();
   }
@@ -646,7 +663,14 @@ export class Wire {
   private proxy(text: string): object {
     let proxy = this.proxies.get(text);
     if (!proxy) {
-      proxy = this.decode(JSON.parse(text)) as object;
+      const description = JSON.parse(text) as unknown;
+      let owner = this.ownerOf.get(text);
+      if (owner === undefined) {
+        owner = this.generations.push(0) - 1;
+        this.ownerOf.set(text, owner);
+      }
+      for (const id of pinnedIds(description)) this.owners.set(id, owner);
+      proxy = this.decode(description) as object;
       this.proxies.set(text, proxy);
     }
     return proxy;
@@ -733,7 +757,11 @@ export class Wire {
     this.sync();
     if (this.results.has(key)) return this.results.get(key);
     const durable = this.durable.get(key);
-    if (durable !== undefined && this.fresh(durable.reads)) {
+    if (
+      durable !== undefined &&
+      this.generations[durable.owner] === durable.generation &&
+      this.fresh(durable.reads)
+    ) {
       this.results.set(key, durable.value);
       return durable.value;
     }
@@ -751,10 +779,10 @@ export class Wire {
     // the same ref ids, all still live.
     const kept = this.answers.get(key);
     if (kept !== undefined && kept.text === text && !MAKES_NEW.test(member)) {
-      this.settle(member);
+      this.settle(id, member);
       if (unmoved()) {
         this.results.set(key, kept.value);
-        this.keepAcross(key, kept.value, callbacks);
+        this.keepAcross(key, id, kept.value, callbacks);
       }
       return kept.value;
     }
@@ -764,7 +792,7 @@ export class Wire {
     // `pending`, `crates/epdf-kernel/src/store.rs:206-219`), so this can't
     // wait for `subscribe` to fire. It reads the store's revision instead,
     // and drops everything after a call that isn't a read.
-    this.settle(member);
+    this.settle(id, member);
     if ('threw' in outcome) throw toError(outcome.threw);
     if ('promise' in outcome) {
       const promise = this.promise(outcome.promise, member);
@@ -809,7 +837,7 @@ export class Wire {
       // answers anew next time, even with nothing between.
       if (unmoved()) {
         this.results.set(key, value);
-        this.keepAcross(key, value, callbacks);
+        this.keepAcross(key, id, value, callbacks);
       }
       if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
       this.answers.set(key, { shape, text: decoded, value });
