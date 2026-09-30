@@ -256,6 +256,12 @@ pub(crate) fn js_to_value(value: &JsValue) -> Result<Value, Error> {
     if value.is_undefined() || value.is_function() {
         return Ok(undefined());
     }
+    // A string is itself: `JSON.stringify` then parsing gives it back. Every
+    // engine answer arrives as JSON text, and the round trip escaped and
+    // re-read the whole of it before the caller parsed it for real.
+    if let Some(text) = value.as_string() {
+        return Ok(Value::String(text));
+    }
     let json = js_sys::JSON::stringify(value).map_err(|thrown| {
         let message = match thrown.dyn_ref::<js_sys::Error>() {
             Some(error) => String::from(error.message()),

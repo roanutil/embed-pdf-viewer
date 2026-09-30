@@ -71,6 +71,9 @@ export interface RustKernel {
   state_json(): string;
   /** Moves whenever `state_json` could answer differently. */
   state_revision(): number;
+  /** Moves whenever core changes: the documents, and so the capabilities
+   *  `try_capability` can answer. */
+  core_revision(): number;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
   status(): string;
@@ -220,6 +223,8 @@ export class Wire {
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; text: string; value: unknown }>();
   private state: { revision: number; text: string; value: unknown } | undefined;
+  private capabilities = new Map<string, object | null>();
+  private capabilitiesRevision = -1;
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
    *  store, so its answer is not cached. */
@@ -268,6 +273,9 @@ export class Wire {
   evict(): void {
     if (this.dead) return;
     const texts = JSON.parse(this.attached.take_evicted()) as string[];
+    // A closed document's proxies must not outlive it in the capability
+    // cache: they hold its refs, and through them its images.
+    if (texts.length > 0) this.capabilities = new Map();
     const evicted = new Set<number>();
     for (const text of texts) {
       this.proxies.delete(text);
@@ -402,14 +410,39 @@ export class Wire {
    *  `capability`/`tryCapability` are only ever called from outside such a
    *  callback. */
   capability(tokenName: string, doc?: string | null): object {
+    const key = this.capabilityKey(tokenName, doc);
+    const cached = this.capabilities.get(key);
+    if (cached) return cached;
     this.evict();
-    return this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
+    // Throws the kernel's own refusal for a capability that isn't there.
+    const found = this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
+    this.capabilities.set(key, found);
+    return found;
   }
 
   tryCapability(tokenName: string, doc?: string | null): object | null {
+    const key = this.capabilityKey(tokenName, doc);
+    if (this.capabilities.has(key)) return this.capabilities.get(key) ?? null;
     this.evict();
     const text = rusty(() => this.rust.try_capability(tokenName, doc ?? null));
-    return text === undefined || text === null ? null : this.proxy(text);
+    const found = text === undefined || text === null ? null : this.proxy(text);
+    this.capabilities.set(key, found);
+    return found;
+  }
+
+  /** The key into `capabilities`, emptied first if core moved. Which
+   *  capabilities exist, and for which documents, only changes when a
+   *  document opens, closes or becomes ready, all core changes. Hooks read
+   *  capabilities on every render, and each miss is an eviction check, a
+   *  lookup in the kernel, and hashing the answer's description text to find
+   *  its proxy. */
+  private capabilityKey(tokenName: string, doc?: string | null): string {
+    const revision = this.rust.core_revision();
+    if (revision !== this.capabilitiesRevision) {
+      this.capabilities = new Map();
+      this.capabilitiesRevision = revision;
+    }
+    return `${tokenName}\u0000${doc ?? ''}`;
   }
 
   documents(): object {

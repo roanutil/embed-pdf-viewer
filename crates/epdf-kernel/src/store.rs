@@ -202,6 +202,10 @@ pub struct Store {
     /// Moves on every change to core or to the set of slices or their
     /// states, before listeners hear of it.
     revision: Cell<u64>,
+    /// Moves on every change to core only: documents opening, closing,
+    /// becoming ready or active, which is what decides the capabilities a
+    /// caller can reach.
+    core_revision: Cell<u64>,
     /// `state_json` as text for `revision`, and core's text for the core
     /// `Rc` it was built from.
     state_text: RefCell<Option<(u64, Rc<str>)>>,
@@ -221,6 +225,7 @@ impl Store {
             pending: Cell::new(false),
             report,
             revision: Cell::new(0),
+            core_revision: Cell::new(0),
             state_text: RefCell::new(None),
             core_text: RefCell::new(None),
         })
@@ -233,6 +238,11 @@ impl Store {
     /// The store's revision: equal revisions mean an equal `state_json`.
     pub fn revision(&self) -> u64 {
         self.revision.get()
+    }
+
+    /// Core's revision: equal revisions mean an equal core.
+    pub fn core_revision(&self) -> u64 {
+        self.core_revision.get()
     }
 
     fn guarded(&self, run: impl FnOnce() -> Result<(), Error>) {
@@ -397,6 +407,7 @@ impl Store {
         let mut next = (*self.core()).clone();
         patch(&mut next);
         *self.core.borrow_mut() = Rc::new(next);
+        self.core_revision.set(self.core_revision.get() + 1);
         self.bump();
         self.emit_change();
         self.emit_action(action);
@@ -426,6 +437,7 @@ impl Store {
     /// listener.
     pub fn destroy(&self) {
         *self.core.borrow_mut() = Rc::new(CoreState::default());
+        self.core_revision.set(self.core_revision.get() + 1);
         self.bump();
         let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
         for lease in leases {

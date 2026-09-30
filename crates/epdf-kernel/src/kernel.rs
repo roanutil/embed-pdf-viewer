@@ -1279,6 +1279,12 @@ impl Kernel {
         self.0.store.revision()
     }
 
+    /// Moves whenever core changes: a document opened, closed, became ready
+    /// or active.
+    pub fn core_revision(&self) -> u64 {
+        self.0.store.core_revision()
+    }
+
     pub fn core(&self) -> Rc<CoreState> {
         self.0.store.core()
     }

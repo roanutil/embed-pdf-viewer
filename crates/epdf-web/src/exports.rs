@@ -560,6 +560,13 @@ impl WasmKernel {
         self.kernel.state_revision() as f64
     }
 
+    /// Moves whenever the documents, and so the capabilities
+    /// [`try_capability`](Self::try_capability) can answer, might have
+    /// changed. A plain read, like [`state_revision`](Self::state_revision).
+    pub fn core_revision(&self) -> f64 {
+        self.kernel.core_revision() as f64
+    }
+
     /// Call `listener()` after every store change until
     /// [`unsubscribe`](Self::unsubscribe) with the id this returns. A throw
     /// is reported.
