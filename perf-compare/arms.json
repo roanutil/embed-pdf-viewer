@@ -31,6 +31,11 @@
       "ref": "research/rust-kernel-state-cache",
       "sha": "2b07fb371c64c6f4cef2df5eb9b1725f6b2fd12e",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-fix-leak": {
+      "ref": "research/rust-kernel-state-cache",
+      "sha": "2ed3124464581342adaf7e06a0af80c3e352b754",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -73,6 +78,11 @@
       "worktree": "plugins-fix34",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-fix-leak": {
+      "worktree": "plugins-fix-leak",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -107,6 +117,10 @@
     [
       "plugins-fix",
       "plugins-fix34"
+    ],
+    [
+      "plugins-fix34",
+      "plugins-fix-leak"
     ]
   ]
 }
