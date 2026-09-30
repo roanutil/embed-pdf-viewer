@@ -9,7 +9,7 @@
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::rc::{Rc, Weak};
 
 use serde_json::Value;
@@ -135,6 +135,9 @@ impl SliceLease {
     }
 
     pub fn read(&self) -> SliceState {
+        if let Some(store) = self.0.store.upgrade() {
+            store.note_read(&self.0.key);
+        }
         self.0.state.borrow().clone()
     }
 
@@ -216,7 +219,14 @@ pub struct Store {
     state_text: RefCell<Option<(u64, Rc<str>)>>,
     core_text: RefCell<Option<(Rc<CoreState>, Rc<str>)>>,
     slice_revisions: Cell<u64>,
+    /// The read sets of the tracked calls in progress, innermost last: each
+    /// slice key a read touched, and [`CORE_READ`] for core. A read counts
+    /// for every call open around it.
+    tracking: RefCell<Vec<BTreeSet<String>>>,
 }
+
+/// The read-set entry for core. No slice key is empty.
+const CORE_READ: &str = "";
 
 impl Store {
     pub fn new(report: Report) -> Rc<Store> {
@@ -235,6 +245,7 @@ impl Store {
             state_text: RefCell::new(None),
             core_text: RefCell::new(None),
             slice_revisions: Cell::new(0),
+            tracking: RefCell::new(Vec::new()),
         })
     }
 
@@ -351,7 +362,43 @@ impl Store {
     }
 
     pub fn core(&self) -> Rc<CoreState> {
+        self.note_read(CORE_READ);
         self.core.borrow().clone()
+    }
+
+    fn note_read(&self, key: &str) {
+        let mut tracking = self.tracking.borrow_mut();
+        for reads in tracking.iter_mut() {
+            if !reads.contains(key) {
+                reads.insert(key.to_string());
+            }
+        }
+    }
+
+    /// Start recording what the store is read for, until the matching
+    /// [`track_end`](Self::track_end).
+    pub fn track_begin(&self) {
+        self.tracking.borrow_mut().push(BTreeSet::new());
+    }
+
+    /// Stop the innermost recording, and answer what it read with each
+    /// part's revision now, in [`revisions_json`](Self::revisions_json)'s
+    /// shape: `{"core": n | null, "plugins": {"<key>": n | null}}`, null
+    /// for core unread and for a slice that doesn't exist.
+    pub fn track_end(&self) -> String {
+        let reads = self.tracking.borrow_mut().pop().unwrap_or_default();
+        let leases = self.leases.borrow();
+        let mut core = Value::Null;
+        let mut plugins = serde_json::Map::new();
+        for key in reads {
+            if key == CORE_READ {
+                core = Value::from(self.core_revision());
+            } else {
+                let revision = leases.get(&key).map(|lease| Value::from(lease.0.revision.get()));
+                plugins.insert(key, revision.unwrap_or(Value::Null));
+            }
+        }
+        serde_json::json!({ "core": core, "plugins": plugins }).to_string()
     }
 
     /// `getState()`: the whole tree as canonical JSON.

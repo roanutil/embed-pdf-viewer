@@ -292,6 +292,9 @@ pub struct WasmKernel {
     /// [`runtime::at_exit`], which holds it weakly: it runs for as long as
     /// this kernel lives.
     _release_fns: Rc<dyn Fn()>,
+    /// What the last [`invoke_ref`](Self::invoke_ref) read from the store,
+    /// for [`last_reads`](Self::last_reads).
+    last_reads: RefCell<String>,
 }
 
 #[wasm_bindgen]
@@ -395,6 +398,7 @@ impl WasmKernel {
             documents,
             aborts: Rc::new(RefCell::new(HashMap::new())),
             _release_fns: release_fns,
+            last_reads: RefCell::new(String::new()),
         })
     }
 
@@ -481,6 +485,8 @@ impl WasmKernel {
     pub fn invoke_ref(&self, id: u32, args_json: String) -> Result<String, JsValue> {
         entry(|| {
             let args = parse_args(&args_json).map_err(|e| thrown(&e))?;
+            let store = self.kernel.store();
+            store.track_begin();
             let outcome = match self.harness.ref_fn(id as usize) {
                 Some(f) => f(args),
                 None => {
@@ -493,8 +499,18 @@ impl WasmKernel {
                     Outcome::Threw(error)
                 }
             };
+            *self.last_reads.borrow_mut() = store.track_end();
             Ok(self.harness.outcome_json_raw(outcome).to_string())
         })
+    }
+
+    /// What the last [`invoke_ref`](Self::invoke_ref) read from the store,
+    /// with each part's revision as the call ended: `{"core": n | null,
+    /// "plugins": {"<key>": n | null}}` (`Store::track_end`). A caller can
+    /// keep that call's answer for as long as those revisions hold, if the
+    /// answer depends on nothing outside the store.
+    pub fn last_reads(&self) -> String {
+        self.last_reads.borrow().clone()
     }
 
     /// Free ref `id`: the shim calls this once the function it built from

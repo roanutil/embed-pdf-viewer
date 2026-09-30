@@ -77,6 +77,9 @@ export interface RustKernel {
   /** `{"core": n, "plugins": {"<key>": n}}`: a revision per part of
    *  `state_json`. */
   state_revisions(): string;
+  /** What the last `invoke_ref` read from the store, in `state_revisions`'
+   *  shape, with null for core unread or a slice that doesn't exist. */
+  last_reads(): string;
   /** `state_json().core` as text. */
   core_text(): string;
   /** `state_json().plugins[key]` as text, or `undefined`. */
@@ -197,6 +200,9 @@ export function rusty<T>(run: () => T): T {
   }
 }
 
+/** `state_revisions`' shape: null for a part not read, or not there. */
+type Revisions = { core: number | null; plugins: Record<string, number | null> };
+
 /** Members that only read: their calls change no state, so answers cached
  *  before them stay good while the store's revision holds. */
 const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
@@ -270,6 +276,7 @@ export class Wire {
     this.proxies.clear();
     this.results = new Map();
     this.answers = new Map();
+    this.durable = new Map();
     this.slices = new Map();
     this.state = undefined;
   }
@@ -307,6 +314,7 @@ export class Wire {
     const stale = (key: string) => evicted.has(Number(key.slice(0, key.indexOf(':'))));
     for (const key of [...this.answers.keys()]) if (stale(key)) this.answers.delete(key);
     for (const key of [...this.results.keys()]) if (stale(key)) this.results.delete(key);
+    for (const key of [...this.durable.keys()]) if (stale(key)) this.durable.delete(key);
   }
 
   /** The store changed: every cached result is stale. */
@@ -317,6 +325,47 @@ export class Wire {
 
   /** The store revision `results` holds answers for. */
   private resultsRevision = -1;
+
+  /** Reads' answers kept across store changes, with what each read from
+   *  the store and at which revisions: an answer is good for as long as
+   *  those parts haven't moved. Only a read that called no JavaScript
+   *  back and read the store at all is kept (`keepAcross`); anything else
+   *  may depend on state the store doesn't see. Dropped whole by any call
+   *  that isn't a read, as `results` is. */
+  private durable = new Map<string, { value: unknown; reads: Revisions }>();
+  /** `state_revisions` as of `revisionsAt`, parsed when first needed. */
+  private revisions: Revisions | undefined;
+  private revisionsAt = -1;
+  /** `callJs` calls so far: a read that made one isn't kept across. */
+  private callbacks = 0;
+
+  private currentRevisions(): Revisions {
+    if (this.revisions === undefined || this.revisionsAt !== this.resultsRevision) {
+      this.revisions = JSON.parse(this.attached.state_revisions()) as Revisions;
+      this.revisionsAt = this.resultsRevision;
+    }
+    return this.revisions;
+  }
+
+  /** Every part `reads` names is at the revision it was read at. */
+  private fresh(reads: Revisions): boolean {
+    const now = this.currentRevisions();
+    if (reads.core !== null && reads.core !== now.core) return false;
+    for (const key in reads.plugins) {
+      if ((now.plugins[key] ?? null) !== reads.plugins[key]) return false;
+    }
+    return true;
+  }
+
+  /** After a real read that changed nothing: keep its answer across store
+   *  changes if it read the store and called nothing back. */
+  private keepAcross(key: string, value: unknown, callbacks: number): void {
+    if (this.callbacks !== callbacks) return;
+    const reads = JSON.parse(this.rust.last_reads()) as Revisions;
+    if (reads.core === null && Object.keys(reads.plugins).length === 0) return;
+    if (this.durable.size >= ANSWERS_KEPT) this.durable = new Map();
+    this.durable.set(key, { value, reads });
+  }
 
   /** Drop `results` if the store has moved since they were cached. The
    *  revision moves on every change, before listeners hear of it
@@ -331,6 +380,8 @@ export class Wire {
       revision = this.attached.state_revision();
     } catch {
       this.bump();
+      this.durable = new Map();
+      this.revisions = undefined;
       this.resultsRevision = -1;
       return;
     }
@@ -343,7 +394,10 @@ export class Wire {
    *  (a registry, a handler list) drops every cached answer; a read keeps
    *  them unless it moved the store. */
   private settle(member: string): void {
-    if (!READS.test(member)) this.bump();
+    if (!READS.test(member)) {
+      this.bump();
+      this.durable = new Map();
+    }
     this.sync();
   }
 
@@ -411,6 +465,7 @@ export class Wire {
   /** `call_js`: a `$fn` callback's call from the kernel. */
   readonly callJs = (id: string, argsJson: string): unknown => {
     if (this.dead) throw new Error(DESTROYED);
+    this.callbacks++;
     // A callback from inside a kernel call: the store may have moved since
     // anything was cached, with its notification still to come.
     this.sync();
@@ -675,6 +730,12 @@ export class Wire {
     const key = `${id}:${json}`;
     this.sync();
     if (this.results.has(key)) return this.results.get(key);
+    const durable = this.durable.get(key);
+    if (durable !== undefined && this.fresh(durable.reads)) {
+      this.results.set(key, durable.value);
+      return durable.value;
+    }
+    const callbacks = this.callbacks;
     const changes = this.changes;
     const revision = this.resultsRevision;
     // Cache an answer only from a call that changed nothing: no change
@@ -689,7 +750,10 @@ export class Wire {
     const kept = this.answers.get(key);
     if (kept !== undefined && kept.text === text && !MAKES_NEW.test(member)) {
       this.settle(member);
-      if (unmoved()) this.results.set(key, kept.value);
+      if (unmoved()) {
+        this.results.set(key, kept.value);
+        this.keepAcross(key, kept.value, callbacks);
+      }
       return kept.value;
     }
     const outcome = JSON.parse(text) as Outcome;
@@ -741,7 +805,10 @@ export class Wire {
     if (value !== undefined) {
       // A call that changed the store (`search.nextHit`, `link.activate`)
       // answers anew next time, even with nothing between.
-      if (unmoved()) this.results.set(key, value);
+      if (unmoved()) {
+        this.results.set(key, value);
+        this.keepAcross(key, value, callbacks);
+      }
       if (this.answers.size >= ANSWERS_KEPT) this.answers = new Map();
       this.answers.set(key, { shape, text: decoded, value });
     }

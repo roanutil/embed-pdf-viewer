@@ -248,6 +248,8 @@ describe("the wire's answer reuse", () => {
       take_evicted: () => '[]',
       core_revision: () => 0,
       state_revision: () => 0,
+      state_revisions: () => '{"core":0,"plugins":{}}',
+      last_reads: () => '{"core":null,"plugins":{}}',
     } as unknown as RustKernel;
     const wire = new Wire({ host: () => undefined, hold: () => 0 } as unknown as EngineBridge);
     wire.attach(rust);
