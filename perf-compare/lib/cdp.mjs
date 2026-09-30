@@ -75,6 +75,44 @@ export async function launchBrowser({ port = 9333 } = {}) {
 
 const METRIC = (metrics, name) => metrics.find((m) => m.name === name)?.value ?? 0;
 
+// The trace events that enter JavaScript on a renderer's main thread. Only the
+// outermost is counted, so a microtask checkpoint at the end of a callback
+// isn't counted twice. `RunMicrotasks` is why this reads a trace at all:
+// `ScriptDuration` leaves microtasks out, and a Preact render is one.
+const JS_EVENTS = new Set(['FunctionCall', 'RunMicrotasks', 'EvaluateScript', 'v8.evaluateModule']);
+const TRACE_CATEGORIES = 'devtools.timeline,v8.execute';
+
+// Milliseconds of JavaScript on the busiest renderer main thread in `events`:
+// the page's own, since it's the only page running.
+function mainThreadJsMs(events) {
+  const main = new Set();
+  for (const e of events) {
+    if (e.name === 'thread_name' && e.args?.name === 'CrRendererMain') main.add(`${e.pid}:${e.tid}`);
+  }
+  const byThread = new Map();
+  for (const e of events) {
+    if (e.ph !== 'X' || !e.dur || !JS_EVENTS.has(e.name)) continue;
+    const thread = `${e.pid}:${e.tid}`;
+    if (!main.has(thread)) continue;
+    if (!byThread.has(thread)) byThread.set(thread, []);
+    byThread.get(thread).push(e);
+  }
+  let best = 0;
+  for (const list of byThread.values()) {
+    list.sort((a, b) => a.ts - b.ts || b.dur - a.dur);
+    let total = 0;
+    let end = -Infinity;
+    for (const e of list) {
+      if (e.ts >= end) {
+        total += e.dur;
+        end = e.ts + e.dur;
+      }
+    }
+    best = Math.max(best, total);
+  }
+  return best / 1000;
+}
+
 // Must run on a fresh page, before page.goto: the auto-attach has to be in
 // place before the engine worker starts.
 export async function openCdp(page, cdp) {
@@ -130,9 +168,17 @@ export async function openCdp(page, cdp) {
   const readMetrics = async (sessionId) => {
     const { metrics } = await cdp.send('Performance.getMetrics', {}, sessionId);
     // CDP reports seconds.
-    return { taskMs: METRIC(metrics, 'TaskDuration') * 1000, scriptMs: METRIC(metrics, 'ScriptDuration') * 1000 };
+    return { taskMs: METRIC(metrics, 'TaskDuration') * 1000 };
   };
   const sessions = () => [pageSession, ...workers.keys()];
+
+  // A browser-wide trace over one measured window, for `mainJsMs`.
+  let trace = null;
+  const offTrace = cdp.on((msg) => {
+    if (msg.sessionId || !trace) return;
+    if (msg.method === 'Tracing.dataCollected') trace.events.push(...msg.params.value);
+    if (msg.method === 'Tracing.tracingComplete') trace.done();
+  });
 
   const self = {
     get workerThrottled() {
@@ -140,6 +186,28 @@ export async function openCdp(page, cdp) {
     },
     workerCount: () => workers.size,
     metrics: () => readMetrics(pageSession),
+    /** Start a measured window: a trace, then the page's counters. */
+    async cpuStart() {
+      if (trace) throw new Error('cpuStart: a window is already open');
+      let done;
+      trace = { events: [], complete: new Promise((resolve) => (done = resolve)) };
+      trace.done = done;
+      await cdp.send('Tracing.start', { categories: TRACE_CATEGORIES, transferMode: 'ReportEvents' });
+      return readMetrics(pageSession);
+    },
+    /** End it: main-thread task time from the counters, and JavaScript
+     *  time, microtasks included, from the trace. */
+    async cpuEnd(before) {
+      const after = await readMetrics(pageSession);
+      const open = trace;
+      await cdp.send('Tracing.end');
+      await open.complete;
+      trace = null;
+      return {
+        mainTaskMs: after.taskMs - before.taskMs,
+        mainJsMs: mainThreadJsMs(open.events),
+      };
+    },
     async workerMetrics() {
       const [sessionId, worker] = [...workers.entries()].find(([, w]) => w.performance) ?? [];
       if (!worker) return null;
@@ -199,6 +267,7 @@ export async function openCdp(page, cdp) {
     },
     async close() {
       off();
+      offTrace();
       await cdp.send('Target.detachFromTarget', { sessionId: pageSession }).catch(() => {});
     },
   };

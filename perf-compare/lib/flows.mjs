@@ -30,10 +30,11 @@ async function waitFor(page, fn, arg, what, timeout = 30_000) {
   return now(page);
 }
 
-const cpu = async (cdp, before) => {
-  const after = await cdp.metrics();
-  return { mainTaskMs: after.taskMs - before.taskMs, mainScriptMs: after.scriptMs - before.scriptMs };
-};
+// Main-thread task time, and JavaScript time from a trace of the same window
+// (`mainJsMs`). It replaces `ScriptDuration`, which leaves microtasks out: a
+// Preact render is one, so a change that moved work out of a render read as
+// more script when the JavaScript run was the same.
+const cpu = (cdp, before) => cdp.cpuEnd(before);
 
 async function goTo(page, index) {
   await page.evaluate((i) => window.__perf.goToPageIndex(i), index);
@@ -113,7 +114,7 @@ export const FLOWS = {
     },
     async measure(page, cdp) {
       await centre(page);
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       // Frames and long tasks from here on only.
       await page.evaluate(() => window.__probe.reset());
       const t0 = await now(page);
@@ -152,7 +153,7 @@ export const FLOWS = {
       await settle(page, await now(page), { requireChange: false });
     },
     async measure(page, cdp) {
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       const t0 = await now(page);
       const done = await goTo(page, 300);
       const settled = await settle(page, t0, { doneAt: done });
@@ -171,7 +172,7 @@ export const FLOWS = {
       }
     },
     async measure(page, cdp) {
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       const steps = {};
       for (const [z, key, requireChange] of [
         [2, 'zoom2SettleMs', true],
@@ -201,7 +202,7 @@ export const FLOWS = {
       await page.mouse.move(PARKED.x, PARKED.y);
     },
     async measure(page, cdp) {
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       // Before the pointer first enters the page: on main the selection
       // handler's onHover already fetches text geometry.
       const t0 = await now(page);
@@ -217,7 +218,7 @@ export const FLOWS = {
     start: startAt(0),
     // No warm-up: a warm-up search fills every page's text cache.
     async measure(page, cdp) {
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       const { ms, hits } = await page.evaluate(async () => {
         const t0 = performance.now();
         const hits = await window.__perf.search('the');
@@ -244,7 +245,7 @@ export const FLOWS = {
     async measure(page, cdp) {
       const countBefore = await page.evaluate(() => window.__perf.annotationCount(1));
       await page.evaluate(() => window.__perf.execute('annotation:add-highlight'));
-      const before = await cdp.metrics();
+      const before = await cdp.cpuStart();
       // After the tool is on, before the pointer first enters the page.
       const t0 = await now(page);
       await drag(page, 1, HIGHLIGHT_DRAG);
@@ -305,7 +306,7 @@ export const FLOW_ORDER = Object.keys(FLOWS);
 // Cold open on a page the runner prepared: parked on /__blank with CDP
 // attached and the throttle on.
 export async function openFlow(page, cdp, url) {
-  const before = await cdp.metrics();
+  const before = await cdp.cpuStart();
   await page.goto(url);
   await page.waitForFunction(() => window.__perf, null, { timeout: 60_000 });
   await page.evaluate(() => window.__perf.opened);

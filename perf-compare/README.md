@@ -176,6 +176,15 @@ If a run ever falls back to `Runtime.getHeapUsage`, the report labels memory "JS
 The gate compares page 1's rendered bitmap, read back from the viewer's full-page image, instead
 of a screenshot. Two identical `main` builds differed in 0.01% of compositor-screenshot pixels.
 
+`mainTaskMs` is Chromium's `TaskDuration` over the measured window: everything the page's main
+thread did. `mainJsMs` is the JavaScript part of it, read from a trace of the same window as the
+outermost `FunctionCall`, `RunMicrotasks`, `EvaluateScript` and `v8.evaluateModule` events. It
+replaced `mainScriptMs` (`ScriptDuration`) on 2026-09-30, because `ScriptDuration` leaves microtasks
+out, and a Preact render is one: moving work out of a render read as more script with the same
+JavaScript run (FINDINGS.md, section 6). Runs from before then have `mainScriptMs` instead, so
+`--against` can't compare that row across the change. The trace is on during every measured
+window, so its overhead is in every timing.
+
 `scroll / settleMs` is usually 0 on the TypeScript arms: every render lands during the wheel burst,
 so the page is already settled when the last wheel event goes out.
 
