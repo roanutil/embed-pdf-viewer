@@ -115,6 +115,10 @@ struct LeaseInner {
     /// an immutable `Rc` a reducer replaces, so pointer identity is enough;
     /// holding the `Rc` keeps its address from being reused.
     text: RefCell<Option<(SliceState, Rc<str>)>>,
+    /// Moves when this slice's state is replaced, from a counter the store
+    /// shares across slices, so a lease that replaces another under the same
+    /// key never repeats its revision.
+    revision: Cell<u64>,
 }
 
 impl SliceLease {
@@ -146,6 +150,7 @@ impl SliceLease {
         if let Some(next) = next {
             *self.0.state.borrow_mut() = next;
             if let Some(store) = &store {
+                self.0.revision.set(store.next_slice_revision());
                 store.bump();
                 store.emit_change();
             }
@@ -210,6 +215,7 @@ pub struct Store {
     /// `Rc` it was built from.
     state_text: RefCell<Option<(u64, Rc<str>)>>,
     core_text: RefCell<Option<(Rc<CoreState>, Rc<str>)>>,
+    slice_revisions: Cell<u64>,
 }
 
 impl Store {
@@ -228,7 +234,13 @@ impl Store {
             core_revision: Cell::new(0),
             state_text: RefCell::new(None),
             core_text: RefCell::new(None),
+            slice_revisions: Cell::new(0),
         })
+    }
+
+    fn next_slice_revision(&self) -> u64 {
+        self.slice_revisions.set(self.slice_revisions.get() + 1);
+        self.slice_revisions.get()
     }
 
     fn bump(&self) {
@@ -304,6 +316,7 @@ impl Store {
             to_json,
             store: self.this.clone(),
             text: RefCell::new(None),
+            revision: Cell::new(self.next_slice_revision()),
         }));
         self.leases.borrow_mut().insert(key.to_string(), lease.clone());
         self.bump();
@@ -361,16 +374,7 @@ impl Store {
                 return text.clone();
             }
         }
-        let core = self.core();
-        let core_text = match &*self.core_text.borrow() {
-            Some((cached, text)) if Rc::ptr_eq(cached, &core) => Some(text.clone()),
-            _ => None,
-        };
-        let core_text = core_text.unwrap_or_else(|| {
-            let text: Rc<str> = crate::js::to_value(&*core).to_string().into();
-            *self.core_text.borrow_mut() = Some((core.clone(), text.clone()));
-            text
-        });
+        let core_text = self.core_text();
         let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
         let mut out = String::with_capacity(core_text.len() + 64);
         out.push_str("{\"core\":");
@@ -388,6 +392,37 @@ impl Store {
         let text: Rc<str> = out.into();
         *self.state_text.borrow_mut() = Some((revision, text.clone()));
         text
+    }
+
+    /// Core as canonical JSON text, rebuilt only when core changed.
+    pub fn core_text(&self) -> Rc<str> {
+        let core = self.core();
+        if let Some((cached, text)) = &*self.core_text.borrow() {
+            if Rc::ptr_eq(cached, &core) {
+                return text.clone();
+            }
+        }
+        let text: Rc<str> = crate::js::to_value(&*core).to_string().into();
+        *self.core_text.borrow_mut() = Some((core, text.clone()));
+        text
+    }
+
+    /// One slice's canonical JSON text, rebuilt only when it changed.
+    pub fn slice_text(&self, key: &str) -> Option<Rc<str>> {
+        let lease = self.leases.borrow().get(key).cloned();
+        lease.map(|lease| lease.text())
+    }
+
+    /// `{"core": n, "plugins": {"<key>": n, ...}}`: a revision per part of
+    /// [`state_json`](Self::state_json), so a reader can refetch only the
+    /// parts that moved.
+    pub fn revisions_json(&self) -> String {
+        let leases = self.leases.borrow();
+        let mut plugins = serde_json::Map::new();
+        for (key, lease) in leases.iter() {
+            plugins.insert(key.clone(), Value::from(lease.0.revision.get()));
+        }
+        serde_json::json!({ "core": self.core_revision(), "plugins": plugins }).to_string()
     }
 
     /// One slice as canonical JSON.

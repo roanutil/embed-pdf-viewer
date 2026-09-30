@@ -74,6 +74,13 @@ export interface RustKernel {
   /** Moves whenever core changes: the documents, and so the capabilities
    *  `try_capability` can answer. */
   core_revision(): number;
+  /** `{"core": n, "plugins": {"<key>": n}}`: a revision per part of
+   *  `state_json`. */
+  state_revisions(): string;
+  /** `state_json().core` as text. */
+  core_text(): string;
+  /** `state_json().plugins[key]` as text, or `undefined`. */
+  slice_text(key: string): string | undefined;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
   status(): string;
@@ -222,7 +229,7 @@ export class Wire {
    *  was decoded from, whose refs it holds. Cleared whole past
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; text: string; value: unknown }>();
-  private state: { revision: number; text: string; value: unknown } | undefined;
+  private state: { revision: number; value: unknown } | undefined;
   private capabilities = new Map<string, object | null>();
   private capabilitiesRevision = -1;
   /** How many times the kernel's `subscribe` listener has fired
@@ -231,7 +238,7 @@ export class Wire {
   changes = 0;
   /** Each slice's JSON text and decoded value, by path (`core`,
    *  `plugins.stage`), from the last `getState` that parsed. */
-  private slices = new Map<string, { text: string; value: unknown }>();
+  private slices = new Map<string, { revision: number; text: string; value: unknown }>();
 
   constructor(private readonly bridge: EngineBridge) {}
 
@@ -449,46 +456,61 @@ export class Wire {
     return this.proxy(rusty(() => this.rust.documents()));
   }
 
-  /** The kernel's state, parsed once per store change. */
+  /** The kernel's state, parsed once per store change, and then only the
+   *  parts of it that changed. */
   getState(): unknown {
     // Keyed on the store's own revision, not `version`: `version` also moves
     // on every real call (see `call`) and every callback, which does not
-    // mean the store changed, and re-reading the whole state for each of
-    // those made one store change cost a full serialization per reader.
+    // mean the store changed.
     const revision = this.rust.state_revision();
     if (this.state?.revision === revision) return this.state.value;
-    // The same text keeps the same object, and a changed store keeps every
-    // slice whose text did not change, as the TypeScript store keeps an
-    // untouched plugin's slice.
-    const text = this.rust.state_json();
-    if (this.state?.text === text) {
-      this.state.revision = revision;
-      return this.state.value;
-    }
-    const raw = JSON.parse(text) as Record<string, unknown>;
-    const slices = new Map<string, { text: string; value: unknown }>();
-    const share = (path: string, slice: unknown) => {
-      const sliceText = JSON.stringify(slice) ?? 'undefined';
+    // A revision per part: only a part whose revision moved is fetched and
+    // parsed. Rebuilding and parsing the whole state per change (core alone
+    // holds every page's layout) was most of a scroll's wire time. The same
+    // text keeps the same object, and a changed store keeps every slice whose
+    // text did not change, as the TypeScript store keeps an untouched
+    // plugin's slice.
+    const revisions = JSON.parse(this.rust.state_revisions()) as {
+      core: number;
+      plugins: Record<string, number>;
+    };
+    const slices = new Map<string, { revision: number; text: string; value: unknown }>();
+    let changed = this.state === undefined;
+    const part = (path: string, partRevision: number, read: () => string | undefined) => {
       const last = this.slices.get(path);
-      const entry =
-        last?.text === sliceText ? last : { text: sliceText, value: this.decode(slice) };
+      if (last?.revision === partRevision) {
+        slices.set(path, last);
+        return last.value;
+      }
+      const text = read() ?? 'undefined';
+      if (last?.text === text) {
+        const kept = { ...last, revision: partRevision };
+        slices.set(path, kept);
+        return kept.value;
+      }
+      changed = true;
+      const entry = {
+        revision: partRevision,
+        text,
+        value: text === 'undefined' ? undefined : this.decode(JSON.parse(text)),
+      };
       slices.set(path, entry);
       return entry.value;
     };
-    const value: Record<string, unknown> = {};
-    for (const [key, slice] of Object.entries(raw)) {
-      if (key === 'plugins' && slice !== null && typeof slice === 'object') {
-        const plugins: Record<string, unknown> = {};
-        for (const [id, plugin] of Object.entries(slice)) {
-          plugins[id] = share(`plugins.${id}`, plugin);
-        }
-        value[key] = plugins;
-      } else {
-        value[key] = share(key, slice);
-      }
+    const core = part('core', revisions.core, () => this.rust.core_text());
+    const plugins: Record<string, unknown> = {};
+    for (const [id, pluginRevision] of Object.entries(revisions.plugins)) {
+      plugins[id] = part(`plugins.${id}`, pluginRevision, () => this.rust.slice_text(id));
     }
+    // A slice that went away changes the state too.
+    if (this.slices.size !== slices.size) changed = true;
     this.slices = slices;
-    this.state = { revision, text, value };
+    if (!changed && this.state) {
+      this.state.revision = revision;
+      return this.state.value;
+    }
+    const value = { core, plugins };
+    this.state = { revision, value };
     return value;
   }
 

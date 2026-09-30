@@ -1285,6 +1285,21 @@ impl Kernel {
         self.0.store.core_revision()
     }
 
+    /// A revision for core and for each slice (`Store::revisions_json`).
+    pub fn state_revisions(&self) -> String {
+        self.0.store.revisions_json()
+    }
+
+    /// `getState().core` as canonical JSON text.
+    pub fn core_text(&self) -> Rc<str> {
+        self.0.store.core_text()
+    }
+
+    /// `getState().plugins[key]` as canonical JSON text.
+    pub fn slice_text(&self, key: &str) -> Option<Rc<str>> {
+        self.0.store.slice_text(key)
+    }
+
     pub fn core(&self) -> Rc<CoreState> {
         self.0.store.core()
     }
