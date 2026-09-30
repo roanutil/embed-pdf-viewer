@@ -201,6 +201,11 @@ kernel's change listener, which it does count. So `mainScriptMs` undercounts any
 through microtasks, `main` included, and `mainTaskMs` is the one to trust. Item 3 is reverted on
 `research/rust-kernel-bump` (`dd1b86fcc`).
 
+Without item 3 the cache fix holds (R=3, `results/2026-09-30T20-45-12-681Z-2023MBP16Grey-desktop`).
+Against the gate alone, scroll task time falls 8.5%. Against `plugins-getstate`, the gate and the
+cache fix together make scroll task time 16.5% lower and wall time 7.4% lower, `zoom` 16%, `select`
+17%, `annotate` 12% and `open(ebook)` 6.4%, with `zoom2SettleMs` 19 ms sooner.
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
