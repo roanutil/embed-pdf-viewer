@@ -261,7 +261,9 @@ impl SelectionCapability {
 
     fn pages(&self) -> Vec<PageLayout> {
         let Some(meta) = self.cx().document() else { return Vec::new() };
-        serde_json::from_value(meta.pages).unwrap_or_default()
+        // Read in place: `&Value` is a deserializer, so the shared layouts
+        // aren't copied first.
+        serde::Deserialize::deserialize(&*meta.pages).unwrap_or_default()
     }
 
     fn layout_of(&self, pon: PageObjectNumber) -> Option<PageLayout> {

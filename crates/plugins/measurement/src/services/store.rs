@@ -2,7 +2,8 @@
 //! registry, page and PDF point conversion, the liveness and authority
 //! guards, the page-target expansion, and the two sibling planes.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_annotation_core::{PageRef, PdfPoint, PdfRect, Point};
@@ -53,6 +54,9 @@ pub struct Services {
     disposed: Rc<Cell<bool>>,
     pub annotation: AnnotationCapability,
     pub interaction: InteractionCapability,
+    /// Page ref to its row in `pages`, for the registry it was built from.
+    /// Holding that `Rc` keeps its address from being reused.
+    index: RefCell<Option<(Rc<Value>, Rc<HashMap<epdf_kernel::geometry::PageRef, usize>>)>>,
 }
 
 impl Services {
@@ -68,29 +72,62 @@ impl Services {
         }));
         let annotation = cx.get(&ANNOTATION)?;
         let interaction = cx.get(&INTERACTION)?;
-        Ok(Services { cx, config, events, disposed, annotation, interaction })
+        Ok(Services {
+            cx,
+            config,
+            events,
+            disposed,
+            annotation,
+            interaction,
+            index: RefCell::new(None),
+        })
     }
 
     pub fn state(&self) -> Rc<MeasurementState> {
         self.cx.state()
     }
 
-    /// The document's layout rows.
-    fn layouts(&self) -> Vec<Value> {
-        self.cx.document().and_then(|d| d.pages.as_array().cloned()).unwrap_or_default()
+    /// The document's layout rows, shared with the kernel rather than copied.
+    /// A new `Rc` means a new registry.
+    pub(crate) fn layouts(&self) -> Rc<Value> {
+        self.cx.document().map_or_else(|| Rc::new(Value::Null), |d| d.pages)
     }
 
     /// Every page of the document, in order.
     pub fn page_refs(&self) -> Vec<PageRef> {
-        self.layouts()
-            .iter()
+        let layouts = self.layouts();
+        layouts
+            .as_array()
+            .into_iter()
+            .flatten()
             .filter_map(|l| serde_json::from_value(l.get("ref")?.clone()).ok())
             .collect()
     }
 
-    /// `meta(page)`: the page's layout, when it is in the document.
+    /// `meta(page)`: the page's layout, when it is in the document. The
+    /// first row naming the page, as a linear scan would find it, through an
+    /// index built once per registry: a scan per call made the per-page
+    /// reconcile at open O(pages²).
     pub fn meta(&self, page: &PageRef) -> Option<PageMeta> {
-        self.layouts().iter().find(|l| kernel_page(page).names(l)).map(PageMeta::of)
+        let layouts = self.layouts();
+        let rows = layouts.as_array()?;
+        let cached = match &*self.index.borrow() {
+            Some((pages, index)) if Rc::ptr_eq(pages, &layouts) => Some(index.clone()),
+            _ => None,
+        };
+        let index = cached.unwrap_or_else(|| {
+            let mut index = HashMap::with_capacity(rows.len());
+            for (i, row) in rows.iter().enumerate() {
+                if let Some(r) = row.get("ref").and_then(epdf_kernel::geometry::PageRef::from_json)
+                {
+                    index.entry(r).or_insert(i);
+                }
+            }
+            let index = Rc::new(index);
+            *self.index.borrow_mut() = Some((layouts.clone(), index.clone()));
+            index
+        });
+        index.get(&kernel_page(page)).map(|&i| PageMeta::of(&rows[i]))
     }
 
     /// `requireMeta(page)`.

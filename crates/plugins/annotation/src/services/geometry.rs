@@ -37,8 +37,8 @@ impl AnnotationCapability {
 
     /// Whether the document registry names this page.
     pub(crate) fn has_page(&self, pon: PageObjectNumber) -> bool {
-        self.cx().document().and_then(|d| d.pages.as_array().cloned()).is_some_and(|pages| {
-            pages.iter().any(|p| {
+        self.cx().document().is_some_and(|d| {
+            d.pages.as_array().into_iter().flatten().any(|p| {
                 get(p, "ref").and_then(|r| get(r, "pageObjectNumber")).and_then(Value::as_f64)
                     == Some(f64::from(pon))
             })

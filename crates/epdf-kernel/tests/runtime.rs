@@ -652,3 +652,22 @@ fn bytes_travel_as_base64() {
     assert!(serde_json::from_value::<Bytes>(json!("plain")).is_err());
     assert_eq!(Bytes::from_json(&json!({ "$bytes": "" })), Some(Bytes(Vec::new())));
 }
+
+#[test]
+fn a_settled_promise_drops_its_abort_and_what_it_captured() {
+    // A cached promise used to keep its abort function, and with it the
+    // bridge call it would cancel, for as long as the cache kept the promise.
+    let held = Rc::new(());
+    let probe = Rc::downgrade(&held);
+    let (promise, resolver) = Promise::<u32>::pending();
+    let promise = promise.with_abort(move |_| {
+        let _ = &held;
+    });
+    assert_eq!(probe.strong_count(), 1);
+    resolver.resolve(7);
+    assert_eq!(probe.strong_count(), 0, "settling released the abort's captures");
+    assert!(promise.is_abortable(), "it is still an AbortablePromise");
+    assert!(promise.abort_handle().is_some());
+    promise.abort(None);
+    assert_eq!(promise.peek().map(|r| r.ok()), Some(Some(7)));
+}

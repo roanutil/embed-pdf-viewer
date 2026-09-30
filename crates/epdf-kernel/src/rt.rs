@@ -325,7 +325,14 @@ enum State<T> {
 struct Inner<T> {
     state: RefCell<State<T>>,
     on_settle: RefCell<Vec<Box<dyn FnOnce(&Result<T, Error>)>>>,
+    /// Dropped when the promise settles: a settled promise ignores `abort`,
+    /// and the function usually holds whatever it would cancel (a bridge
+    /// call's JavaScript promise, and through it the task, its signal and
+    /// its answer), which a cached promise would otherwise keep alive.
     abort: RefCell<Option<Rc<dyn Fn(Option<serde_json::Value>)>>>,
+    /// Whether this is an `AbortablePromise`. Outlives `abort`, because it
+    /// decides how many turns a reaction to it takes.
+    abortable: Cell<bool>,
 }
 
 /// A JavaScript promise: settles once, any number of parties await it, and
@@ -368,6 +375,7 @@ impl<T: Clone + 'static> Promise<T> {
             state: RefCell::new(State::Pending(Vec::new())),
             on_settle: RefCell::new(Vec::new()),
             abort: RefCell::new(None),
+            abortable: Cell::new(false),
         }))
     }
 
@@ -407,6 +415,7 @@ impl<T: Clone + 'static> Promise<T> {
                 State::Settled(_) => unreachable!(),
             }
         };
+        drop(self.0.abort.borrow_mut().take());
         let observers = std::mem::take(&mut *self.0.on_settle.borrow_mut());
         for observer in observers {
             observer(&result);
@@ -446,12 +455,15 @@ impl<T: Clone + 'static> Promise<T> {
     /// Make this promise an `AbortablePromise`: `abort` runs the given
     /// function, which is expected to reject it.
     pub fn with_abort(self, abort: impl Fn(Option<serde_json::Value>) + 'static) -> Self {
-        *self.0.abort.borrow_mut() = Some(Rc::new(abort));
+        self.0.abortable.set(true);
+        if !self.is_settled() {
+            *self.0.abort.borrow_mut() = Some(Rc::new(abort));
+        }
         self
     }
 
     pub fn is_abortable(&self) -> bool {
-        self.0.abort.borrow().is_some()
+        self.0.abortable.get()
     }
 
     /// `AbortablePromise.abort(reason)`. A promise without an abort, or one
@@ -468,7 +480,12 @@ impl<T: Clone + 'static> Promise<T> {
 
     /// Carry this promise's abort over to a derived one.
     pub fn abort_handle(&self) -> Option<Rc<dyn Fn(Option<serde_json::Value>)>> {
-        self.0.abort.borrow().clone()
+        match &*self.0.abort.borrow() {
+            Some(abort) => Some(abort.clone()),
+            // Settled, so there is nothing left to cancel.
+            None if self.0.abortable.get() => Some(Rc::new(|_| {})),
+            None => None,
+        }
     }
 
     /// `.then(f)` for a synchronous `f`: a new promise settled one turn

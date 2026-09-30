@@ -189,7 +189,12 @@ export class LocalPageAnnotationsService implements PageAnnotationsService {
             ...(effectiveOptions ? { options: effectiveOptions } : {}),
           }),
       },
-      { priority: Priority.MEDIUM },
+      // HIGH, as page renders are: baked appearances are on-screen pixels.
+      // At MEDIUM they waited behind every queued tile render, so after a
+      // zoom the annotations arrived last, once the tile queue ran dry
+      // (about 100 ms late on a 4x zoom of ebook.pdf when tiles were queued
+      // first).
+      { priority: Priority.HIGH },
     );
     return AbortablePromise.run<AnnotationAppearancesResult>(async (signal) => {
       const onAbort = () => submission.abort(signal.reason);

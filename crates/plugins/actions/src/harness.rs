@@ -701,7 +701,7 @@ fn detached_realm_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error
                 .to_string(),
             name: meta.get("name").and_then(Value::as_str).map(str::to_string),
             page_count: meta.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
-            pages: meta.get("pages").cloned().unwrap_or(json!([])),
+            pages: std::rc::Rc::new(meta.get("pages").cloned().unwrap_or(json!([]))),
             revision: meta.get("revision").and_then(Value::as_u64).unwrap_or(0),
             render_policy: meta.get("renderPolicy").cloned().unwrap_or(Value::Null),
         })),

@@ -798,7 +798,7 @@ impl Inner {
             name: session.name.borrow().clone(),
             page_count,
             // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
-            pages: snapshot.get("pages").cloned().unwrap_or_else(crate::undefined),
+            pages: Rc::new(snapshot.get("pages").cloned().unwrap_or_else(crate::undefined)),
             revision: 0,
             render_policy,
         });
@@ -813,7 +813,7 @@ impl Inner {
             let Some(existing) = core.documents.get(&id).cloned() else { return };
             let updated = DocumentMeta {
                 page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
-                pages: layout.get("pages").cloned().unwrap_or_else(crate::undefined),
+                pages: Rc::new(layout.get("pages").cloned().unwrap_or_else(crate::undefined)),
                 revision: existing.revision + 1,
                 ..existing
             };
@@ -1267,6 +1267,16 @@ impl Kernel {
     /// `getState()` as canonical JSON.
     pub fn state_json(&self) -> Value {
         self.0.store.state_json()
+    }
+
+    /// `getState()` as canonical JSON text, cached per store revision.
+    pub fn state_text(&self) -> Rc<str> {
+        self.0.store.state_text()
+    }
+
+    /// Moves whenever [`state_json`](Self::state_json) could change.
+    pub fn state_revision(&self) -> u64 {
+        self.0.store.revision()
     }
 
     pub fn core(&self) -> Rc<CoreState> {

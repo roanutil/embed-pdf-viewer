@@ -111,6 +111,10 @@ struct LeaseInner {
     reducer: SliceReducer,
     to_json: SliceJson,
     store: Weak<Store>,
+    /// This slice's JSON text, for the state it was built from. The state is
+    /// an immutable `Rc` a reducer replaces, so pointer identity is enough;
+    /// holding the `Rc` keeps its address from being reused.
+    text: RefCell<Option<(SliceState, Rc<str>)>>,
 }
 
 impl SliceLease {
@@ -142,6 +146,7 @@ impl SliceLease {
         if let Some(next) = next {
             *self.0.state.borrow_mut() = next;
             if let Some(store) = &store {
+                store.bump();
                 store.emit_change();
             }
         }
@@ -161,12 +166,26 @@ impl SliceLease {
             store.leases.borrow().get(&self.0.key).is_some_and(|l| Rc::ptr_eq(&l.0, &self.0));
         if current {
             store.leases.borrow_mut().remove(&self.0.key);
+            store.bump();
             store.emit_change();
         }
     }
 
     fn json(&self) -> Value {
         (self.0.to_json)(self.0.state.borrow().as_ref())
+    }
+
+    /// [`json`](Self::json) as text, rebuilt only when the state changed.
+    fn text(&self) -> Rc<str> {
+        let state = self.read();
+        if let Some((cached, text)) = &*self.0.text.borrow() {
+            if Rc::ptr_eq(cached, &state) {
+                return text.clone();
+            }
+        }
+        let text: Rc<str> = (self.0.to_json)(state.as_ref()).to_string().into();
+        *self.0.text.borrow_mut() = Some((state, text.clone()));
+        text
     }
 }
 
@@ -180,6 +199,13 @@ pub struct Store {
     emitting: Cell<bool>,
     pending: Cell<bool>,
     report: Report,
+    /// Moves on every change to core or to the set of slices or their
+    /// states, before listeners hear of it.
+    revision: Cell<u64>,
+    /// `state_json` as text for `revision`, and core's text for the core
+    /// `Rc` it was built from.
+    state_text: RefCell<Option<(u64, Rc<str>)>>,
+    core_text: RefCell<Option<(Rc<CoreState>, Rc<str>)>>,
 }
 
 impl Store {
@@ -194,7 +220,19 @@ impl Store {
             emitting: Cell::new(false),
             pending: Cell::new(false),
             report,
+            revision: Cell::new(0),
+            state_text: RefCell::new(None),
+            core_text: RefCell::new(None),
         })
+    }
+
+    fn bump(&self) {
+        self.revision.set(self.revision.get() + 1);
+    }
+
+    /// The store's revision: equal revisions mean an equal `state_json`.
+    pub fn revision(&self) -> u64 {
+        self.revision.get()
     }
 
     fn guarded(&self, run: impl FnOnce() -> Result<(), Error>) {
@@ -255,8 +293,10 @@ impl Store {
             reducer,
             to_json,
             store: self.this.clone(),
+            text: RefCell::new(None),
         }));
         self.leases.borrow_mut().insert(key.to_string(), lease.clone());
+        self.bump();
         lease
     }
 
@@ -301,6 +341,45 @@ impl Store {
         serde_json::json!({ "core": crate::js::to_value(&*self.core()), "plugins": plugins })
     }
 
+    /// [`state_json`](Self::state_json) as text, byte for byte what
+    /// `state_json().to_string()` gives, built from cached per-slice text and
+    /// cached whole while the revision holds.
+    pub fn state_text(&self) -> Rc<str> {
+        let revision = self.revision.get();
+        if let Some((cached, text)) = &*self.state_text.borrow() {
+            if *cached == revision {
+                return text.clone();
+            }
+        }
+        let core = self.core();
+        let core_text = match &*self.core_text.borrow() {
+            Some((cached, text)) if Rc::ptr_eq(cached, &core) => Some(text.clone()),
+            _ => None,
+        };
+        let core_text = core_text.unwrap_or_else(|| {
+            let text: Rc<str> = crate::js::to_value(&*core).to_string().into();
+            *self.core_text.borrow_mut() = Some((core.clone(), text.clone()));
+            text
+        });
+        let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
+        let mut out = String::with_capacity(core_text.len() + 64);
+        out.push_str("{\"core\":");
+        out.push_str(&core_text);
+        out.push_str(",\"plugins\":{");
+        for (i, lease) in leases.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&serde_json::to_string(lease.key()).expect("a string key serializes"));
+            out.push(':');
+            out.push_str(&lease.text());
+        }
+        out.push_str("}}");
+        let text: Rc<str> = out.into();
+        *self.state_text.borrow_mut() = Some((revision, text.clone()));
+        text
+    }
+
     /// One slice as canonical JSON.
     pub fn slice_json(&self, key: &str) -> Option<Value> {
         self.leases.borrow().get(key).map(SliceLease::json)
@@ -318,6 +397,7 @@ impl Store {
         let mut next = (*self.core()).clone();
         patch(&mut next);
         *self.core.borrow_mut() = Rc::new(next);
+        self.bump();
         self.emit_change();
         self.emit_action(action);
     }
@@ -346,11 +426,13 @@ impl Store {
     /// listener.
     pub fn destroy(&self) {
         *self.core.borrow_mut() = Rc::new(CoreState::default());
+        self.bump();
         let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
         for lease in leases {
             lease.revoke();
         }
         self.leases.borrow_mut().clear();
+        self.bump();
         self.change.clear();
         self.action.clear();
     }

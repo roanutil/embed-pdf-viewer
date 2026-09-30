@@ -550,7 +550,14 @@ impl WasmKernel {
     }
 
     pub fn state_json(&self) -> String {
-        entry(|| self.kernel.state_json().to_string())
+        entry(|| self.kernel.state_text().to_string())
+    }
+
+    /// Moves whenever [`state_json`](Self::state_json) could answer
+    /// differently. A plain read, so it skips [`entry`]: nothing it does can
+    /// queue work or reach JavaScript.
+    pub fn state_revision(&self) -> f64 {
+        self.kernel.state_revision() as f64
     }
 
     /// Call `listener()` after every store change until

@@ -69,6 +69,8 @@ export interface RustKernel {
   promise(id: number): Promise<unknown>;
   abort_promise(id: number, reasonJson?: string | null): void;
   state_json(): string;
+  /** Moves whenever `state_json` could answer differently. */
+  state_revision(): number;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
   status(): string;
@@ -217,7 +219,7 @@ export class Wire {
    *  was decoded from, whose refs it holds. Cleared whole past
    *  `ANSWERS_KEPT` keys. */
   private answers = new Map<string, { shape: string; text: string; value: unknown }>();
-  private state: { version: number; text: string; value: unknown } | undefined;
+  private state: { revision: number; text: string; value: unknown } | undefined;
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
    *  store, so its answer is not cached. */
@@ -416,14 +418,18 @@ export class Wire {
 
   /** The kernel's state, parsed once per store change. */
   getState(): unknown {
-    if (this.state?.version === this.version) return this.state.value;
-    // `version` also moves on every real call (see `call`), which does not
-    // mean the store changed: the same text keeps the same object, and a
-    // changed store keeps every slice whose text did not change, as the
-    // TypeScript store keeps an untouched plugin's slice.
+    // Keyed on the store's own revision, not `version`: `version` also moves
+    // on every real call (see `call`) and every callback, which does not
+    // mean the store changed, and re-reading the whole state for each of
+    // those made one store change cost a full serialization per reader.
+    const revision = this.rust.state_revision();
+    if (this.state?.revision === revision) return this.state.value;
+    // The same text keeps the same object, and a changed store keeps every
+    // slice whose text did not change, as the TypeScript store keeps an
+    // untouched plugin's slice.
     const text = this.rust.state_json();
     if (this.state?.text === text) {
-      this.state.version = this.version;
+      this.state.revision = revision;
       return this.state.value;
     }
     const raw = JSON.parse(text) as Record<string, unknown>;
@@ -449,7 +455,7 @@ export class Wire {
       }
     }
     this.slices = slices;
-    this.state = { version: this.version, text, value };
+    this.state = { revision, text, value };
     return value;
   }
 
@@ -579,6 +585,15 @@ export class Wire {
     if (this.results.has(key)) return this.results.get(key);
     const changes = this.changes;
     const text = rusty(() => this.rust.invoke_ref(id, json));
+    // The same text as the answer kept for these arguments: the same value,
+    // with no parse. Only a returned value is kept, and identical text holds
+    // the same ref ids, all still live.
+    const kept = this.answers.get(key);
+    if (kept !== undefined && kept.text === text && !MAKES_NEW.test(member)) {
+      this.bump();
+      if (this.changes === changes) this.results.set(key, kept.value);
+      return kept.value;
+    }
     const outcome = JSON.parse(text) as Outcome;
     // A real call, not a cache hit: the store may have deferred its change
     // notification (a dispatch from inside a change listener only sets
@@ -611,7 +626,7 @@ export class Wire {
     // return with newly registered refs on every call (stage's
     // `listVisiblePages` does, for each page transform), and the refs the
     // last answer holds are still live and stand in the same places.
-    const shape = text.replace(REF_ID, '{"$ref":0}');
+    const shape = text.includes('"$ref"') ? text.replace(REF_ID, '{"$ref":0}') : text;
     const last = this.answers.get(key);
     let value: unknown;
     let decoded = text;
