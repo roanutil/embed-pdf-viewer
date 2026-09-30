@@ -81,6 +81,21 @@ const METRIC = (metrics, name) => metrics.find((m) => m.name === name)?.value ??
 // `ScriptDuration` leaves microtasks out, and a Preact render is one.
 const JS_EVENTS = new Set(['FunctionCall', 'RunMicrotasks', 'EvaluateScript', 'v8.evaluateModule']);
 const TRACE_CATEGORIES = 'devtools.timeline,v8.execute';
+const debug = process.env.PERF_DEBUG ? (...a) => console.error('[cdp]', (performance.now() / 1000).toFixed(1), ...a) : () => {};
+// A trace that hasn't started or completed by now never will: fail the
+// sample, not the run.
+const TRACE_TIMEOUT_MS = 60_000;
+async function within(promise, what) {
+  let timer;
+  const late = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} didn't answer in ${TRACE_TIMEOUT_MS} ms`)), TRACE_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([promise, late]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // Milliseconds of JavaScript on the busiest renderer main thread in `events`:
 // the page's own, since it's the only page running.
@@ -116,9 +131,11 @@ function mainThreadJsMs(events) {
 // Must run on a fresh page, before page.goto: the auto-attach has to be in
 // place before the engine worker starts.
 export async function openCdp(page, cdp) {
+  debug('openCdp: getTargetInfo');
   const probe = await page.context().newCDPSession(page);
   const { targetInfo } = await probe.send('Target.getTargetInfo');
   await probe.detach();
+  debug('openCdp: attachToTarget');
   const { sessionId: pageSession } = await cdp.send('Target.attachToTarget', {
     targetId: targetInfo.targetId,
     flatten: true,
@@ -162,8 +179,11 @@ export async function openCdp(page, cdp) {
       workers.delete(msg.params.sessionId);
     }
   });
+  debug('openCdp: Performance.enable');
   await cdp.send('Performance.enable', {}, pageSession);
+  debug('openCdp: setAutoAttach');
   await cdp.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: true }, pageSession);
+  debug('openCdp: ready');
 
   const readMetrics = async (sessionId) => {
     const { metrics } = await cdp.send('Performance.getMetrics', {}, sessionId);
@@ -192,7 +212,15 @@ export async function openCdp(page, cdp) {
       let done;
       trace = { events: [], complete: new Promise((resolve) => (done = resolve)) };
       trace.done = done;
-      await cdp.send('Tracing.start', { categories: TRACE_CATEGORIES, transferMode: 'ReportEvents' });
+      debug('Tracing.start');
+      await within(
+        cdp.send('Tracing.start', { categories: TRACE_CATEGORIES, transferMode: 'ReportEvents' }),
+        'Tracing.start',
+      ).catch((error) => {
+        trace = null;
+        throw error;
+      });
+      debug('Tracing.start done');
       return readMetrics(pageSession);
     },
     /** End it: main-thread task time from the counters, and JavaScript
@@ -200,9 +228,15 @@ export async function openCdp(page, cdp) {
     async cpuEnd(before) {
       const after = await readMetrics(pageSession);
       const open = trace;
+      debug('Tracing.end');
       await cdp.send('Tracing.end');
-      await open.complete;
-      trace = null;
+      debug('Tracing.end sent, events so far', open.events.length);
+      try {
+        await within(open.complete, 'the trace');
+      } finally {
+        trace = null;
+      }
+      debug('trace complete', open.events.length);
       return {
         mainTaskMs: after.taskMs - before.taskMs,
         mainJsMs: mainThreadJsMs(open.events),

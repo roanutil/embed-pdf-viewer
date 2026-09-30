@@ -343,10 +343,12 @@ export async function runFlow(run, { origin, flow, fixture, rate, viewport, devi
   try {
     await context.addInitScript({ path: probePath });
     const page = await context.newPage();
+    if (process.env.PERF_DEBUG) console.error('[flow]', flow, fixture, origin);
     await page.goto(`${origin}/__blank`);
     const cdp = await openCdp(page, run.cdp);
     try {
       await cdp.throttle(rate);
+      if (process.env.PERF_DEBUG) console.error('[flow] throttled');
       const url = `${origin}/?doc=${fixture}`;
       let result;
       if (flow === 'open') {

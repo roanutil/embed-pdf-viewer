@@ -62,7 +62,8 @@ for (const id of arms) rsync([`${workDir()}/dist/${id}/`, `${host}:${remoteRoot}
 
 const quoted = runArgs.map((a) => `'${a.replaceAll("'", "'\\''")}'`).join(' ');
 // A login shell, for the PATH that finds mise; caffeinate keeps the machine
-// awake for the length of the run.
+// awake for the length of the run. Not `-d` or `-u`: with the display
+// assertions `Tracing.start` would never answer, three runs out of three.
 // The same Node as this machine, through mise, not whatever the remote's
 // PATH finds first.
 const node = `mise exec node@${process.versions.node} -- node`;
@@ -72,7 +73,7 @@ const node = `mise exec node@${process.versions.node} -- node`;
 // file next to it.
 const log = `.work/remote-run.log`;
 const exitFile = `.work/remote-run.exit`;
-const run = `PERF_HARNESS_COMMIT=${commit} PERF_HARNESS_DIRTY=${dirty ? 1 : 0} caffeinate -dimsu ${node} run.mjs ${quoted}`;
+const run = `PERF_HARNESS_COMMIT=${commit} PERF_HARNESS_DIRTY=${dirty ? 1 : 0} caffeinate -ims ${node} run.mjs ${quoted}`;
 const script = [
   `cd ~/${remoteRoot}`,
   `mise install node@${process.versions.node} >/dev/null 2>&1`,
