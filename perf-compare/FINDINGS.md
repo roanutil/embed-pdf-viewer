@@ -176,10 +176,21 @@ local profile of the scroll went from 1,277 to 1,126 ms busy, Preact from 132 to
 The quick remote run (R=3, `results/2026-09-30T18-07-04-233Z-2023MBP16Grey-desktop`) agrees only in
 part. `zoom` main-thread task time fell 12% and `open(ebook)` 5%, and `scroll` task time didn't move
 beyond noise. But script time rose: 20% for `scroll`, 24% for `open(large)` and 15% for `annotate`.
-We don't have an explanation that squares that with the profile yet. The full R=10 run should say
-whether it's real. Either way the larger payoff needs fewer resolves, not fewer renders: one
-`resolveCommands(ids)` crossing per check, or a `Wire.bump()` that keeps answers while the store's
-revision holds.
+The full R=10 run (`results/2026-09-30T18-24-11-976Z-2023MBP16Grey-desktop`) says it's real, and
+so is the saving: against `plugins-getstate`, scroll task time fell 8% while its script time rose
+12%, and `open(large)` script time rose 22% with task time unchanged.
+
+Split into one arm per change (R=3, `results/2026-09-30T20-09-12-448Z-2023MBP16Grey-desktop`), the
+toolbar gate alone (`plugins-item1`, `1efa42de6`) carries both effects: scroll task time -8%, script
++12.5%, `open(large)` script +24%. The surface predicates alone (`plugins-item3`, `eeea6d289`) show
+nothing beyond noise on 15 of 17 main-thread rows, and read slower on `jump` script time (+36%, from a
+noisy baseline) and `search` task time (+24%). On its own it isn't worth keeping.
+
+Keeping cached answers while the store's revision holds (`plugins-bump`, `eba60e600`, on top of both)
+is the clear win. Against the toolbar gate alone it cuts scroll task time 10.5% and script time
+7.6%, `zoom` task time 12%, and `select` task time 25% with 12 ms off its settle. Against
+`plugins-getstate` that's scroll task time -18% and wall time -8%, `zoom` -13% and `select` -31%.
+The `open(large)` script cost of the gate is still there (+23%).
 
 ### Serialization formats
 

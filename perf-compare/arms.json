@@ -56,6 +56,21 @@
       "ref": "research/rust-kernel-toolbar",
       "sha": "e4d533d183a81bf13bc47d04fc33dcc5cc0d61b8",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-bump": {
+      "ref": "research/rust-kernel-bump",
+      "sha": "eba60e60061eb5c55f8d46c5fde02d3b7c4433bb",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-item1": {
+      "ref": "research/rust-kernel-toolbar-gate",
+      "sha": "1efa42de60a4a63c4d6aee857763b2cb4f262d9b",
+      "recipe": "rust-kernel-lto"
+    },
+    "plugins-item3": {
+      "ref": "research/rust-kernel-open-surfaces",
+      "sha": "eeea6d2891a1fc7c218b71fea092429f168556ad",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -121,6 +136,21 @@
     },
     "plugins-toolbar": {
       "worktree": "plugins-toolbar",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-bump": {
+      "worktree": "plugins-bump",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-item1": {
+      "worktree": "plugins-item1",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-item3": {
+      "worktree": "plugins-item3",
       "kernel": "rust",
       "rustReads": false
     }
@@ -197,6 +227,30 @@
     [
       "main",
       "plugins-toolbar"
+    ],
+    [
+      "plugins-toolbar",
+      "plugins-bump"
+    ],
+    [
+      "main",
+      "plugins-bump"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-item1"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-item3"
+    ],
+    [
+      "plugins-getstate",
+      "plugins-bump"
+    ],
+    [
+      "plugins-item1",
+      "plugins-bump"
     ]
   ]
 }
