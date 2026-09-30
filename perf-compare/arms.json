@@ -59,7 +59,7 @@
     },
     "plugins-bump": {
       "ref": "research/rust-kernel-bump",
-      "sha": "eba60e60061eb5c55f8d46c5fde02d3b7c4433bb",
+      "sha": "dd1b86fcc71af563f88d56f4561cc86d9c03f3cf",
       "recipe": "rust-kernel-lto"
     },
     "plugins-item1": {

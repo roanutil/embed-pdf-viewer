@@ -192,6 +192,15 @@ is the clear win. Against the toolbar gate alone it cuts scroll task time 10.5% 
 `plugins-getstate` that's scroll task time -18% and wall time -8%, `zoom` -13% and `select` -31%.
 The `open(large)` script cost of the gate is still there (+23%).
 
+That cost isn't more JavaScript. A main-thread trace of `open(large)` (the `devtools.timeline`
+category, self time) shows the same JS on both arms, 419.8 ms on `plugins-getstate` and 420.2 ms
+with the gate. What moved is where it runs: `FunctionCall` went from 292.6 to 356.1 ms and
+`RunMicrotasks` from 127.2 to 64.1 ms. A Preact render is scheduled as a microtask, and the
+`ScriptDuration` metric `mainScriptMs` reads doesn't count microtask JS; the change check runs in the
+kernel's change listener, which it does count. So `mainScriptMs` undercounts any arm that renders
+through microtasks, `main` included, and `mainTaskMs` is the one to trust. Item 3 is reverted on
+`research/rust-kernel-bump` (`dd1b86fcc`).
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
