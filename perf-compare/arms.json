@@ -171,6 +171,14 @@
     [
       "plugins-wire",
       "plugins-getstate"
+    ],
+    [
+      "plugins-lto",
+      "plugins-getstate"
+    ],
+    [
+      "main",
+      "plugins-getstate"
     ]
   ]
 }
