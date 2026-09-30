@@ -534,8 +534,23 @@ export function Toolbar({
     [],
   );
 
-  const resolveCmd = (id: string): ResolvedCommand | null =>
-    commands.resolveCommand(id, documentId ?? undefined);
+  // Each command is read several times per render (visibility, the unit,
+  // the hidden measuring layer), and nothing can change between those reads.
+  // Resolving is a derivation pass, and on a kernel where that crosses into
+  // wasm and back per derivation it was most of a toolbar render. Reads after
+  // this render commits (event handlers) resolve fresh.
+  const resolvedThisRender = new Map<string, ResolvedCommand | null>();
+  const rendering = { current: true };
+  useLayoutEffect(() => {
+    rendering.current = false;
+  });
+  const resolveCmd = (id: string): ResolvedCommand | null => {
+    if (!rendering.current) return commands.resolveCommand(id, documentId ?? undefined);
+    if (resolvedThisRender.has(id)) return resolvedThisRender.get(id) ?? null;
+    const resolved = commands.resolveCommand(id, documentId ?? undefined);
+    resolvedThisRender.set(id, resolved);
+    return resolved;
+  };
   const executeCmd = (id: string) =>
     void commands.execute(id, { documentId: documentId ?? undefined });
   const commandOf = (u: NormalizedUnit) => (u.kind === 'command' ? u.command : u.terminal);

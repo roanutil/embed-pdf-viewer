@@ -585,6 +585,15 @@ export class Wire {
     if (this.results.has(key)) return this.results.get(key);
     const changes = this.changes;
     const text = rusty(() => this.rust.invoke_ref(id, json));
+    // The same text as the answer kept for these arguments: the same value,
+    // with no parse. Only a returned value is kept, and identical text holds
+    // the same ref ids, all still live.
+    const kept = this.answers.get(key);
+    if (kept !== undefined && kept.text === text && !MAKES_NEW.test(member)) {
+      this.bump();
+      if (this.changes === changes) this.results.set(key, kept.value);
+      return kept.value;
+    }
     const outcome = JSON.parse(text) as Outcome;
     // A real call, not a cache hit: the store may have deferred its change
     // notification (a dispatch from inside a change listener only sets
@@ -617,7 +626,7 @@ export class Wire {
     // return with newly registered refs on every call (stage's
     // `listVisiblePages` does, for each page transform), and the refs the
     // last answer holds are still live and stand in the same places.
-    const shape = text.replace(REF_ID, '{"$ref":0}');
+    const shape = text.includes('"$ref"') ? text.replace(REF_ID, '{"$ref":0}') : text;
     const last = this.answers.get(key);
     let value: unknown;
     let decoded = text;
