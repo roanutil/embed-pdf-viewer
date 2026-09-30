@@ -41,6 +41,11 @@
       "ref": "research/rust-kernel-state-cache",
       "sha": "8cef92c76b3c1a71e23548f05a86ab2d9628f0d5",
       "recipe": "rust-kernel-lto"
+    },
+    "plugins-wire": {
+      "ref": "research/rust-kernel-wire",
+      "sha": "da947a5646ac13d5dcbdae46d46a46905dc94ffd",
+      "recipe": "rust-kernel-lto"
     }
   },
   "arms": {
@@ -93,6 +98,11 @@
       "worktree": "plugins-fix-zoom",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-wire": {
+      "worktree": "plugins-wire",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -143,6 +153,10 @@
     [
       "main",
       "plugins-fix-zoom"
+    ],
+    [
+      "plugins-fix-zoom",
+      "plugins-wire"
     ]
   ]
 }

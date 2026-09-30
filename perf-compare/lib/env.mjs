@@ -1,7 +1,7 @@
 // meta.json: everything about a run that decides whether two runs compare.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,10 +33,14 @@ export function verifyFixtures() {
   return expected;
 }
 
-// The wire kernel's wasm, when the worktree has one (the plugins recipe).
-export function kernelWasm(worktreeDir) {
-  const file = path.join(worktreeDir, 'packages/core-wasm/wasm/epdf_web_bg.wasm');
-  return existsSync(file) ? file : null;
+// The wire kernel's wasm in an arm's built entry, when it has one (the
+// plugins recipes): the file that actually ran, which a remote run has even
+// though it has no worktrees.
+export function kernelWasm(dist) {
+  const assets = path.join(dist, 'assets');
+  if (!existsSync(assets)) return null;
+  const name = readdirSync(assets).find((f) => /^epdf_web_bg.*\.wasm$/.test(f));
+  return name ? path.join(assets, name) : null;
 }
 
 function powerSource() {
@@ -45,12 +49,12 @@ function powerSource() {
   return /'([^']+)'/.exec(batt)?.[1] ?? 'unknown';
 }
 
-export function collectEnv({ config, arms: armIds = config.armOrder, stamps, worktreeDirs, fixtures, browserVersion, profile, flows }) {
+export function collectEnv({ config, arms: armIds = config.armOrder, stamps, dists, fixtures, browserVersion, profile, flows }) {
   const arms = {};
   for (const id of armIds) {
     const arm = config.arms[id];
     const stamp = stamps[arm.worktree];
-    const kernel = arm.kernel === 'rust' ? kernelWasm(worktreeDirs[arm.worktree]) : null;
+    const kernel = arm.kernel === 'rust' ? kernelWasm(dists[id]) : null;
     arms[id] = {
       ...arm,
       ref: config.worktrees[arm.worktree].ref,
@@ -63,8 +67,15 @@ export function collectEnv({ config, arms: armIds = config.armOrder, stamps, wor
   }
   const cpus = os.cpus();
   return {
-    harnessCommit: run('git', ['-C', here, 'rev-parse', 'HEAD']) ?? 'unknown',
-    harnessDirty: Boolean(run('git', ['-C', path.join(here, '..'), 'status', '--porcelain', '--', '.'])),
+    // A remote run's copy of the harness isn't a checkout: scripts/remote.mjs
+    // passes the commit and dirtiness of the one it was copied from.
+    harnessCommit:
+      process.env.PERF_HARNESS_COMMIT ?? run('git', ['-C', here, 'rev-parse', 'HEAD']) ?? 'unknown',
+    harnessDirty:
+      process.env.PERF_HARNESS_DIRTY !== undefined
+        ? process.env.PERF_HARNESS_DIRTY === '1'
+        : Boolean(run('git', ['-C', path.join(here, '..'), 'status', '--porcelain', '--', '.'])),
+    host: os.hostname().split('.')[0],
     arms,
     fixtures,
     browserVersion,

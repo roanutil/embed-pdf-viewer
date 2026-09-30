@@ -16,7 +16,7 @@ const meta = () =>
   collectEnv({
     config,
     stamps,
-    worktreeDirs: { w: '/nonexistent' },
+    dists: { a: '/nonexistent', b: '/nonexistent' },
     fixtures: verifyFixtures(),
     browserVersion: '140.0.0.0',
     profile: 'desktop',

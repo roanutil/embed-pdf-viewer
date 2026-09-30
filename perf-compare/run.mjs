@@ -14,7 +14,7 @@ import { collectEnv, DEVICE_SCALE_FACTOR, distSizes, THROTTLE, verifyFixtures, V
 import { FLOW_ORDER, FLOWS, runFlow } from './lib/flows.mjs';
 import { runGate } from './lib/gate.mjs';
 import { serveArms } from './lib/serve.mjs';
-import { workDir, worktreePath } from './scripts/materialize.mjs';
+import { workDir } from './scripts/materialize.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const { values } = parseArgs({
@@ -44,13 +44,11 @@ const flows = pick(values.flows, FLOW_ORDER, 'flow');
 
 const fixtures = verifyFixtures();
 const stamps = {};
-const worktreeDirs = {};
 for (const id of arms) {
   const w = config.arms[id].worktree;
   const stampFile = path.join(workDir(), 'stamps', `${w}.json`);
   if (!existsSync(stampFile)) throw new Error(`no build for worktree ${w}; run scripts/build-entry.mjs`);
   stamps[w] = JSON.parse(readFileSync(stampFile, 'utf8'));
-  worktreeDirs[w] = worktreePath(w);
   if (!existsSync(path.join(workDir(), 'dist', id, 'index.html'))) {
     throw new Error(`no entry build for arm ${id}; run scripts/build-entry.mjs`);
   }
@@ -102,7 +100,7 @@ try {
 
   const meta = {
     runId,
-    ...collectEnv({ config, arms, stamps, worktreeDirs, fixtures, browserVersion: run.browserVersion, profile, flows }),
+    ...collectEnv({ config, arms, stamps, dists: Object.fromEntries(arms.map((id) => [id, path.join(workDir(), 'dist', id)])), fixtures, browserVersion: run.browserVersion, profile, flows }),
     rounds,
     quick,
     armsRun: arms,
