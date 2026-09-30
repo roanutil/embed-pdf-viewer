@@ -491,6 +491,7 @@ impl TileManager {
         p1: Vec<TileCoord>,
         visible: Rect,
     ) -> Result<(), Error> {
+        let suffix = self.key_suffix();
         let options = self.deps().options.clone();
         let (first_engage, level_changed) = {
             let mut s = state.borrow_mut();
@@ -510,7 +511,7 @@ impl TileManager {
         let wanted: HashSet<String> = p0
             .iter()
             .chain(p1.iter())
-            .map(|c| self.tile_key(pon, want_width, *c, include_annotations, epoch))
+            .map(|c| self.tile_key(&suffix, pon, want_width, *c, include_annotations, epoch))
             .collect();
         let snapshot: Vec<(String, Rc<TileEntry>)> =
             state.borrow().entries.iter().map(|(k, e)| (k.clone(), e.clone())).collect();
@@ -634,11 +635,12 @@ impl TileManager {
         epoch: f64,
         coords: &[TileCoord],
     ) -> Result<bool, Error> {
+        let suffix = self.key_suffix();
         let mut all_ready = true;
         let mut started = 0;
         let bleed_pt = self.deps().options.tiles.bleed_px / grid.scale;
         for coord in coords {
-            let key = self.tile_key(pon, want_width, *coord, include_annotations, epoch);
+            let key = self.tile_key(&suffix, pon, want_width, *coord, include_annotations, epoch);
             // A key that failed at this level is not retried until the level
             // or epoch changes.
             if state.borrow().failed_keys.contains(&key) {
@@ -731,6 +733,7 @@ impl TileManager {
         page: PageSizePt,
         include_annotations: bool,
     ) -> bool {
+        let suffix = self.key_suffix();
         let (want_scale, want_width, epoch, last_visible) = {
             let s = state.borrow();
             (s.want_scale, s.want_width, s.epoch, s.last_visible)
@@ -738,7 +741,7 @@ impl TileManager {
         let (Some(want_scale), Some(want_width)) = (want_scale, want_width) else { return false };
         let grid = tile_grid(page, want_scale, self.strategy().tile_size);
         let painted_at = |c: TileCoord| {
-            let key = self.tile_key(pon, want_width, c, include_annotations, epoch);
+            let key = self.tile_key(&suffix, pon, want_width, c, include_annotations, epoch);
             state.borrow().entries.get(&key).is_some_and(|e| e.painted.get())
         };
         let mut released = false;
@@ -765,7 +768,8 @@ impl TileManager {
                     .iter()
                     .take(3)
                     .map(|c| {
-                        let k = self.tile_key(pon, want_width, *c, include_annotations, epoch);
+                        let k =
+                            self.tile_key(&suffix, pon, want_width, *c, include_annotations, epoch);
                         let st = match state.borrow().entries.get(&k) {
                             None => "NO-ENTRY",
                             Some(e) if !e.resolved.get() => "PENDING",
@@ -816,26 +820,34 @@ impl TileManager {
     /// from the options, the conformed format).
     fn tile_key(
         &self,
+        suffix: &str,
         pon: u32,
         level_width: f64,
         c: TileCoord,
         include_annotations: bool,
         epoch: f64,
     ) -> String {
-        let tiles = &self.deps().options.tiles;
-        let format = self.strategy().format;
-        let geometry = format!(
-            "g{}.{}{}",
-            num(tiles.size),
-            num(tiles.bleed_px),
-            format.map_or(String::new(), |f| format!(".{}", f.as_str()))
-        );
         format!(
-            "t:{pon}|w{}|{}|a{}|e{}|{geometry}",
+            "t:{pon}|w{}|{}|a{}|e{}|{suffix}",
             num(level_width),
             coord_key(c),
             u8::from(include_annotations),
             num(epoch)
+        )
+    }
+
+    /// The part of every [`tile_key`](Self::tile_key) that depends only on
+    /// the options and the strategy's format. Built once per pass over a
+    /// page's tiles: resolving the strategy reads and compares the policy,
+    /// and doing that per key was most of the key's cost.
+    fn key_suffix(&self) -> String {
+        let tiles = &self.deps().options.tiles;
+        let format = self.strategy().format;
+        format!(
+            "g{}.{}{}",
+            num(tiles.size),
+            num(tiles.bleed_px),
+            format.map_or(String::new(), |f| format!(".{}", f.as_str()))
         )
     }
 }
