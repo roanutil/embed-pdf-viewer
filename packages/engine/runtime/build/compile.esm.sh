@@ -77,6 +77,10 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 # i32 halves (expandI64Args), which only matches a build without BigInt
 # integration. emcc 4.0.0, which the wasm32-eh build needs, turns it on by
 # default; emsdk 3.1.72 has it off.
+# -O2 and no assertions, but the stack cookie kept: a C stack overflow would
+# otherwise overwrite the data below the stack without a sound. ASSERTIONS=1
+# turned it on; it costs about nothing. What assertions also caught, a call
+# with the wrong argument count, verify-wasm-abi.mjs below checks at build time.
 # args: <out-file> <environment> [extra flags...]
 link() {
   local out="$1" environment="$2"
@@ -90,7 +94,9 @@ link() {
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=createPdfRuntimeWasm \
     -sWASM_BIGINT=0 \
-    -sASSERTIONS=1 \
+    -O2 \
+    -sASSERTIONS=0 \
+    -sSTACK_OVERFLOW_CHECK=1 \
     -sEXPORTED_RUNTIME_METHODS="$(cat "$GEN_DIR/exported-runtime-methods.txt")" \
     -sEXPORTED_FUNCTIONS="$(cat "$GEN_DIR/exported-functions.txt")$RUST_EXPORTS" \
     -I"$LIB_DIR/include" \
