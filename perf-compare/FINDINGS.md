@@ -341,8 +341,8 @@ described in the section named. The first five are cheap, and two of them are al
    its own below: a small win, kept.
 4. `staged_meta.take()` (The heap leak). Tried since, and left alone: it isn't a second copy any
    more, and the conformance vectors pin what it holds. See below.
-5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and kept:
-   see below.
+5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and left
+   out of the research branches: see below.
 6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
    kernel's own maps (Serialization formats).
 7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
@@ -498,7 +498,8 @@ Measured with the harness's `dedupeCompat` switch, each arm against its own buil
 main-thread task time is 7.1% lower (262.7 to 244.0 ms) and JavaScript time 7.7% lower; on impl
 and plugins no row moves beyond noise. `main`'s toolbar still re-renders on every change, which
 the toolbar gate removed on the research branches, so there's less there for a second set of hooks
-to slow down. Kept on both research branches (`packages/viewer/main/vite.config.ts`, and plugins'
-`examples/rust-kernel-eval/vite.config.ts`) for the single instance it gives. The cost is an alias
-to a file inside preact's package, which a preact release that renames its dist files would break
-at build time. `main` has the same aliases and would gain the 7%.
+to slow down. With no gain on either research branch, what's left is the cost: an alias to a file
+inside preact's package, which a preact release that renames its dist files would break at build
+time. The two copies haven't caused a bug we've seen, so the research branches keep their aliases
+as they are. `main` has the same aliases and would gain the 7% there, which is a change for `main`
+to decide.
