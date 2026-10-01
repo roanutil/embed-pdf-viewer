@@ -319,6 +319,14 @@ function createWasmMemory(module: EmscriptenModule): PdfRuntimeMemory {
     peek(ptr, kind, byteOffset = 0) {
       return module.getValue?.(toNumber(ptr) + byteOffset, wasmValueKind(kind)) ?? 0;
     },
+    peekWords(ptr, bytes) {
+      const { buffer } = module.HEAPU8;
+      const at = toNumber(ptr);
+      return {
+        f32: new Float32Array(buffer, at, bytes >> 2),
+        i32: new Int32Array(buffer, at, bytes >> 2),
+      };
+    },
     poke(ptr, kind, value, byteOffset = 0) {
       module.setValue?.(toNumber(ptr) + byteOffset, value, wasmValueKind(kind));
     },
