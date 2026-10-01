@@ -146,6 +146,26 @@
       "ref": "research/rust-kernel-slice-text",
       "sha": "d9c5e4a584f556576ccab494baa5b5e73fb97276",
       "recipe": "rust-kernel"
+    },
+    "impl-now": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "65d9798d65b65d19886ef4c9ccd18ed5216dea40",
+      "recipe": "rust-core"
+    },
+    "impl-glyphview": {
+      "ref": "research/rust-core-glyph-view",
+      "sha": "061a544c4a12b6cdf8596bedb99f65e102ef39c6",
+      "recipe": "rust-core"
+    },
+    "plugins-tip2": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "d9c5e4a584f556576ccab494baa5b5e73fb97276",
+      "recipe": "rust-kernel"
+    },
+    "plugins-glyphview": {
+      "ref": "research/rust-kernel-glyph-view",
+      "sha": "16f128278ba4ca7f0e9fd770862b85747a346c14",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -319,6 +339,26 @@
     },
     "plugins-slicetext": {
       "worktree": "plugins-slicetext",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-now": {
+      "worktree": "impl-now",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-glyphview": {
+      "worktree": "impl-glyphview",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-tip2": {
+      "worktree": "plugins-tip2",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-glyphview": {
+      "worktree": "plugins-glyphview",
       "kernel": "rust",
       "rustReads": false
     }
@@ -503,6 +543,18 @@
     [
       "main",
       "plugins-slicetext"
+    ],
+    [
+      "impl-now",
+      "impl-glyphview"
+    ],
+    [
+      "plugins-tip2",
+      "plugins-glyphview"
+    ],
+    [
+      "main",
+      "impl-glyphview"
     ]
   ]
 }

@@ -1,6 +1,7 @@
-// The nine flows. For the first eight, the table in viewer-perf-compare-plan.md
+// The ten flows. For the first eight, the table in viewer-perf-compare-plan.md
 // (Task 7, Step 2) is the contract: starting state, warm-up, measured action,
-// done condition. `coldScroll`, added since, is `scroll` without its warm-up.
+// done condition. Added since: `coldScroll`, which is `scroll` without its
+// warm-up, and `searchLarge`, which is `search` on large.pdf.
 //
 // Every time is page clock minus page clock (performance.now() in the page).
 // The runner calls start, warmup, start, then measure; only measure is timed.
@@ -238,6 +239,14 @@ export const FLOWS = {
       return { metrics: { searchMs: ms, ...(await cpu(cdp, before)) }, answers: { hits } };
     },
   },
+  // The same cold search on large.pdf: 400 pages of glyph geometry read in
+  // the worker, where ebook.pdf's 4 pages barely reach the reader.
+  searchLarge: {
+    fixture: 'large',
+    start: (page) => FLOWS.search.start(page),
+    measure: (page, cdp) => FLOWS.search.measure(page, cdp),
+  },
+
 
   annotate: {
     fixture: 'ebook',
