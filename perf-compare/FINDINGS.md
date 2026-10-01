@@ -348,7 +348,8 @@ described in the section named. The first five are cheap, and two of them are al
    tried: see "The measurement slice's text" below.
 7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
    `HEAPF32` reads, a per-page search geometry cache and an ASCII folding fast path, geometry as
-   transferable typed arrays, and a cached `FPDF_TEXTPAGE`.
+   transferable typed arrays, and a cached `FPDF_TEXTPAGE`. Profiled since: only the per-glyph
+   reads paid, and their fix is below. Measuring it turned up the search regression below it.
 8. The PDF's bytes as a `$host` handle instead of base64 at open (section 5). About 20 ms of main
    thread, and every Rust call site that takes bytes changes.
 9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
@@ -530,3 +531,43 @@ serialization path a plugin has to keep identical to its `to_json`. We'd keep it
 The JavaScript side still parses the whole 82 KB once per change. Batching the scale loads, so the
 slice changes once per scroll step rather than once per page, would cut that too, at the cost of
 changing the plugin's action sequence, which the conformance vectors check.
+
+### Glyph reads, one view per struct
+
+A worker profile of the engine during a cold search for "the" on `large.pdf` (on impl's TypeScript
+kernel) puts 1,267 ms in the worker, 783 ms of it JavaScript: `readGlyphRaw` 485 ms inclusive,
+`peek` 204 ms self. Each glyph's geometry struct (`EPDF_CHAR_GEOMETRY_LAYOUT`) was read up to 33
+values at a time through `mem.peek` and emscripten's `getValue`. Open and a cold scroll barely
+touch the engine (the worker is idle 2,427 of 2,645 ms), so the rest of item 7 has nothing to win
+there. Reading `f32`/`i32` from the heap inside `peek` itself was slower, not faster: each call then
+paid for `HEAPU8.buffer`.
+
+`research/rust-core-glyph-view` (`061a544c4`, impl) and `research/rust-kernel-glyph-view`
+(`16f128278`, plugins) add an optional `PdfRuntimeMemory.peekWords(ptr, bytes)`, f32 and i32 views
+over a struct that the wasm runtime implements and the native runtime doesn't, and the reader
+takes each glyph from one view. Locally `readGlyphRaw` falls 44% and the worker's search 18%; the
+engine suite fails the same 21 tests as before, and the Rust-TypeScript geometry parity tests pass
+(18 of 18). A new `searchLarge` flow, `search` on `large.pdf`, measures it: on impl, 1,624 to 1,337
+ms (-18%; R=3, `results/2026-10-01T16-44-36-878Z-2023MBP16Grey-desktop`), with no row slower.
+
+### Search on the Rust kernel
+
+`searchLarge` on the plugins kernel took 37.9 s, all of it main thread, against `main`'s 1.6 s.
+Two things, both fixed on `research/rust-kernel-lazy-state`:
+
+- Two selectors read `kernel.getState()` on every change for one part of it, i18n's slice
+  (`packages/framework/react/src/i18n.ts:41`) and core's documents
+  (`packages/framework/react/src/annotation.tsx:1138`), and `getState()` read and parsed every
+  changed slice. The search slice holds every hit so far and changes once per page of results, so
+  the whole hit list was rebuilt in Rust and re-parsed in JavaScript once per page. Each plugin
+  slice is now a getter that reads it on first access (`36ae29149`); core is still read once per
+  change. An outdated state's unread slice answers with the current one, and one `core-wasm` test
+  now reads its slices while its state is current. This was also what kept re-reading the
+  measurement slice during a cold scroll.
+- `Core::hits_from_slice` found each match's page in the registry twice, each a scan of every
+  page's ref. It now looks each page up once per slice (`f83e60654`).
+
+On the remote (same run), `searchLarge` goes from 37,907 to 2,176 ms and its main thread from
+37,856 to 1,020 ms, against `main`'s 231 ms of JavaScript; no other row moves. Rust workspace tests
+256 of 256, `core-wasm` 57 of 57 and 10 of 10. What's left of the gap is the plugin's per-page
+work on the main thread and the worker's glyph reads, which the glyph view above would cut too.
