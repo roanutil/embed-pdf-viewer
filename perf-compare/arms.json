@@ -171,6 +171,11 @@
       "ref": "research/rust-kernel-lazy-state",
       "sha": "f83e606542021d233208c27b00b16c70047b4f05",
       "recipe": "rust-kernel"
+    },
+    "plugins-tip3": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "373b7f73b1b1d0d4bf202ecfafdcbbc84f18ba31",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -369,6 +374,11 @@
     },
     "plugins-lazy": {
       "worktree": "plugins-lazy",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip3": {
+      "worktree": "plugins-tip3",
       "kernel": "rust",
       "rustReads": false
     }
@@ -573,6 +583,14 @@
     [
       "main",
       "plugins-lazy"
+    ],
+    [
+      "plugins-lazy",
+      "plugins-tip3"
+    ],
+    [
+      "main",
+      "plugins-tip3"
     ]
   ]
 }
