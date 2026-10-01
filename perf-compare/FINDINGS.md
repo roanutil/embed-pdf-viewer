@@ -339,8 +339,8 @@ described in the section named. The first five are cheap, and two of them are al
    `packages/engine/runtime/build/compile.esm.sh:88` still passes `-sASSERTIONS=1`.
 3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). Tried since, and measured on
    its own below: a small win, kept.
-4. `staged_meta.take()` (The heap leak). Each open document still holds a second copy of its
-   pages (`crates/epdf-kernel/src/kernel.rs:619` clones it).
+4. `staged_meta.take()` (The heap leak). Tried since, and left alone: it isn't a second copy any
+   more, and the conformance vectors pin what it holds. See below.
 5. The second copy of `preact/compat` in every bundle (Build settings).
 6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
    kernel's own maps (Serialization formats).
@@ -460,3 +460,24 @@ assertions cost is a few percent on one row of one branch. They already caught o
 what's merged: `-O2` with assertions on, plus the `toJsResult` bool fix, which the raw-export
 fallback needs in any build (`a1cc26fe3` and `ec18b766d` on impl, `f625ccfe4` and `fa97fb3e8` on
 plugins). The assertions-off branches are deleted.
+
+### `staged_meta`
+
+The heap-leak section's one-line fix is out of date and wrong. Since the page-registry fix,
+`DocumentMeta.pages` is an `Rc<Value>` (`crates/epdf-kernel/src/types.rs:45`), so the staged meta
+shares the pages core holds rather than copying them. What it does hold on to is the meta the
+document opened with, until the document closes; after a page edit replaces the registry, that's
+one stale page registry per edited open document.
+
+And that stale meta is behavior the TypeScript kernel has, which two conformance vectors pin:
+
+- `staged_meta.borrow_mut().take()` in `commit_ready` fails `plugins/page-edit.json`,
+  `a-captured-capability-outlives-its-document`: a capability captured before the close reads its
+  document's meta through `ctx.document()` and must reach the lifetime guard ("document instance
+  a#1 was closed"); with the meta gone it fails earlier, "no page 20".
+- Parking core's current meta at close as well fixes that and fails `plugins/stage-feeds.json`,
+  `page-mutations-refit`, step 11: stage's refit during the close has to see the pages the document
+  opened with to report what the TypeScript kernel reports.
+
+So the kernel keeps it, at the cost of one page registry per page-edited open document, until
+close. Changing it means changing the TypeScript reference and the vectors with it.
