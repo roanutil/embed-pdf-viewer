@@ -35,6 +35,8 @@ thread_local! {
     static PENDING: RefCell<Pending> = RefCell::new((0, HashMap::new()));
     /// `events.subscribe` listeners, by document id.
     static LISTENERS: RefCell<Listeners> = RefCell::new((0, HashMap::new()));
+    /// `destroy` calls waiting for the worker to drain, by id.
+    static DRAINED: RefCell<(u64, HashMap<u64, Resolver<()>>)> = RefCell::new((0, HashMap::new()));
 }
 
 pub struct NativeEngine {
@@ -184,9 +186,26 @@ impl Engine for NativeEngine {
         })
     }
 
+    /// Resolves once the worker has answered every call queued before it.
+    /// Later calls are refused; `Session::drop` joins the thread.
     fn destroy(&self) -> EngineCall<()> {
-        self.inner.worker.shutdown();
-        Promise::resolved(())
+        let (promise, resolver) = Promise::pending();
+        let id = DRAINED.with(|d| {
+            let mut d = d.borrow_mut();
+            d.0 += 1;
+            let id = d.0;
+            d.1.insert(id, resolver);
+            id
+        });
+        let post = self.inner.post.clone();
+        self.inner.worker.shutdown_after(Box::new(move || {
+            post(Box::new(move || {
+                if let Some(resolver) = DRAINED.with(|d| d.borrow_mut().1.remove(&id)) {
+                    resolver.resolve(());
+                }
+            }));
+        }));
+        promise
     }
 }
 

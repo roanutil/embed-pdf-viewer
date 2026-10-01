@@ -288,6 +288,13 @@ impl ViewerHost {
     pub async fn host_table_entries(&self) -> Result<usize, ViewerError> {
         self.call(|_| Ok(HostTable::len())).await
     }
+
+    /// Upgrades while the engine's client thread is alive: a test's view of
+    /// whether dropping the host ended it. Not exported.
+    #[doc(hidden)]
+    pub async fn engine_thread_witness(&self) -> Result<std::sync::Weak<()>, ViewerError> {
+        self.call(|s| Ok(s.engine_alive())).await
+    }
 }
 
 impl Drop for ViewerHost {

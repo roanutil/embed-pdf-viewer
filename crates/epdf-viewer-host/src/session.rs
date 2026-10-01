@@ -3,7 +3,7 @@
 //! tells the delegate the state moved.
 
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use epdf_ffi::{KernelPost, ViewerError};
@@ -68,7 +68,7 @@ impl Session {
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {
-                worker.shutdown();
+                worker.join();
                 return Err(error);
             }
         };
@@ -85,11 +85,19 @@ impl Session {
         }));
         Ok(Session { kernel, worker, on_change })
     }
+
+    /// Dropped once the engine's client thread has closed PDFium.
+    pub fn engine_alive(&self) -> Weak<()> {
+        self.worker.alive()
+    }
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
         self.on_change.call();
-        self.worker.shutdown();
+        // On the kernel thread, as it stops: the client thread's last
+        // replies post here and fail without blocking, so this join cannot
+        // wait on itself. PDFium is closed when it returns.
+        self.worker.join();
     }
 }

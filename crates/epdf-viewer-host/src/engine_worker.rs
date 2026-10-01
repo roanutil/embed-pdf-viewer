@@ -4,55 +4,71 @@
 //! reply.
 
 use std::sync::mpsc::{self, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
+use std::thread::JoinHandle;
 
 use epdf_engine::dispatch::OwnerThread;
 use epdf_engine::host::{Host, HostResponse};
 
 type Reply = Box<dyn FnOnce(HostResponse) + Send>;
 
-struct Request {
-    json: String,
-    payloads: Vec<Vec<u8>>,
-    reply: Reply,
+enum Request {
+    Call { json: String, payloads: Vec<Vec<u8>>, reply: Reply },
+    /// Answered once every request queued before it has been answered.
+    Drained(Box<dyn FnOnce() + Send>),
+}
+
+struct State {
+    tx: Option<Sender<Request>>,
+    handle: Option<JoinHandle<()>>,
 }
 
 #[derive(Clone)]
 pub struct EngineWorker {
-    tx: Arc<Mutex<Option<Sender<Request>>>>,
+    state: Arc<Mutex<State>>,
+    /// Held by the client thread until PDFium is closed: a test's view of
+    /// whether the thread outlived its host.
+    alive: Weak<()>,
 }
 
 impl EngineWorker {
     pub fn spawn() -> EngineWorker {
         let (tx, rx) = mpsc::channel::<Request>();
-        std::thread::Builder::new()
+        let alive = Arc::new(());
+        let witness = Arc::downgrade(&alive);
+        let handle = std::thread::Builder::new()
             .name("epdf-engine-client".into())
             .spawn(move || {
                 let mut owner = OwnerThread::start(Host::new);
-                for Request { json, payloads, reply } in rx {
-                    let response = owner
-                        .run(move |host: &mut Host| host.call(&json, payloads))
-                        .unwrap_or_else(|error| HostResponse {
-                            json: serde_json::json!({ "error": error }).to_string(),
-                            payloads: Vec::new(),
-                        });
-                    reply(response);
+                for request in rx {
+                    match request {
+                        Request::Call { json, payloads, reply } => {
+                            let response = owner
+                                .run(move |host: &mut Host| host.call(&json, payloads))
+                                .unwrap_or_else(|error| HostResponse {
+                                    json: serde_json::json!({ "error": error }).to_string(),
+                                    payloads: Vec::new(),
+                                });
+                            reply(response);
+                        }
+                        Request::Drained(reply) => reply(),
+                    }
                 }
                 owner.close();
+                drop(alive);
             })
             .expect("the engine client thread");
-        EngineWorker { tx: Arc::new(Mutex::new(Some(tx))) }
+        EngineWorker {
+            state: Arc::new(Mutex::new(State { tx: Some(tx), handle: Some(handle) })),
+            alive: witness,
+        }
     }
 
     /// Queue a call. After `shutdown` the reply still comes, at once and as
     /// an error, so a caller waiting on it is never left pending.
     pub fn submit(&self, json: String, payloads: Vec<Vec<u8>>, reply: Reply) {
-        let request = Request { json, payloads, reply };
-        let refused = match self.tx.lock().unwrap().as_ref() {
-            Some(tx) => tx.send(request).err().map(|e| e.0),
-            None => Some(request),
-        };
-        if let Some(Request { reply, .. }) = refused {
+        let request = Request::Call { json, payloads, reply };
+        if let Some(Request::Call { reply, .. }) = self.send(request) {
             reply(HostResponse {
                 json: serde_json::json!({
                     "error": { "code": "DocNotOpen", "message": "the engine is shut down" }
@@ -63,7 +79,47 @@ impl EngineWorker {
         }
     }
 
+    /// Refuse further calls. `drained` runs, on the client thread, once
+    /// every call queued before this one has been answered; at once, on
+    /// this thread, if the worker was already shut down.
+    pub fn shutdown_after(&self, drained: Box<dyn FnOnce() + Send>) {
+        if let Some(Request::Drained(drained)) = self.send(Request::Drained(drained)) {
+            drained();
+        }
+        self.shutdown();
+    }
+
+    /// Refuse further calls. Calls already queued still run.
     pub fn shutdown(&self) {
-        self.tx.lock().unwrap().take();
+        self.state.lock().unwrap().tx.take();
+    }
+
+    /// `shutdown`, then wait for the client thread to answer what is queued,
+    /// close PDFium and exit. Never called on the client thread: only the
+    /// kernel thread owns a worker, and the client thread's replies only
+    /// post to the kernel thread (a post that never blocks, and fails once
+    /// the kernel thread is stopping).
+    pub fn join(&self) {
+        let handle = {
+            let mut state = self.state.lock().unwrap();
+            state.tx.take();
+            state.handle.take()
+        };
+        if let Some(handle) = handle {
+            let _ = handle.join();
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn alive(&self) -> Weak<()> {
+        self.alive.clone()
+    }
+
+    /// The request back if the thread no longer takes requests.
+    fn send(&self, request: Request) -> Option<Request> {
+        match self.state.lock().unwrap().tx.as_ref() {
+            Some(tx) => tx.send(request).err().map(|e| e.0),
+            None => Some(request),
+        }
     }
 }

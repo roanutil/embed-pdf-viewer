@@ -88,11 +88,14 @@ fn a_call_after_shutdown_is_closed() {
 fn dropping_the_host_joins_both_threads() {
     let host = started();
     let weak = Arc::downgrade(&host);
+    let engine = block_on(host.engine_thread_witness()).unwrap();
+    assert!(engine.upgrade().is_some());
     drop(host);
     assert!(weak.upgrade().is_none());
-    // KernelThread::drop joins the kernel thread; Session::drop shuts the
-    // EngineWorker down, which ends the client thread and closes OwnerThread.
-    // A hang here is the failure.
+    // KernelThread::drop joins the kernel thread, whose Session::drop joins
+    // the engine's client thread once it has closed PDFium. A hang here is
+    // also a failure.
+    assert!(engine.upgrade().is_none(), "the engine thread outlived its host");
 }
 
 /// Holds the host and lets it go from the kernel thread, once the test has
