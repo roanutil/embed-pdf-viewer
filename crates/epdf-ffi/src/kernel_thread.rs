@@ -98,12 +98,18 @@ impl<S: 'static> KernelThread<S> {
     /// Stop the loop and join it. Once the sender is taken, every outstanding
     /// `KernelPost` returns `false`, which is how a handle that outlives the
     /// viewer learns the viewer is gone.
+    ///
+    /// Called from the kernel thread itself (a callback that releases the
+    /// last owner), it cannot join: the handle is dropped instead, and the
+    /// loop stops after the current job and drops its state as usual.
     pub fn shutdown(&mut self) {
         let Some(handle) = self.handle.take() else { return };
         if let Some(tx) = self.tx.lock().unwrap().take() {
             let _ = tx.send(Msg::Stop);
         }
-        let _ = handle.join();
+        if std::thread::current().id() != handle.thread().id() {
+            let _ = handle.join();
+        }
     }
 }
 
