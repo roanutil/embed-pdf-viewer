@@ -470,14 +470,10 @@ dependencies = [
 name = "epdf-manual-bridge"
 version = "0.0.0"
 dependencies = [
- "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-render",
  "epdf-plugin-search",
- "epdf-viewer-host",
- "futures",
- "test-support",
 ]
 
 [[package]]

@@ -37,3 +37,10 @@ build-support = { path = "../build-support" }
 
 [dev-dependencies]
 test-support = { path = "../test-support" }
+
+# The manual bridge's C ABI, driving a real host. Here rather than in
+# `epdf-manual-bridge` so that no dev-dependency turns `manual-bridge` on
+# under `cargo test --workspace`: the workspace build is the shipping one.
+[[test]]
+name = "manual_bridge_abi"
+required-features = ["manual-bridge"]

@@ -1,6 +1,11 @@
-//! The C ABI, called from Rust the way Swift calls it: `extern "C"`
-//! callbacks with a boxed context, results read inside the callback.
+//! `crates/epdf-manual-bridge`'s C ABI, called from Rust the way Swift
+//! calls it: `extern "C"` callbacks with a boxed context, results read
+//! inside the callback. Experimental: built only with `manual-bridge`
+//! (`cargo test -p epdf-viewer-host --features manual-bridge
+//! --test manual_bridge_abi`), so the workspace build never turns the
+//! feature on for the shipping host.
 
+#[path = "manual_bridge_support/mod.rs"]
 mod support;
 
 use std::ffi::c_void;

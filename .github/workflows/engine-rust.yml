@@ -84,6 +84,14 @@ jobs:
       - name: cargo test
         run: cargo test --workspace
 
+      # The experimental manual bridge's C ABI tests, which need the host's
+      # `manual-bridge` feature. Nothing in the workspace build turns it on,
+      # so the steps above compile and test the shipping host only.
+      - name: Manual bridge ABI (experimental)
+        run: |
+          cargo clippy -p epdf-viewer-host --features manual-bridge --all-targets -- -D warnings
+          cargo test -p epdf-viewer-host --features manual-bridge --test manual_bridge_abi
+
       # The Node addon, loaded by Node. `napi::Buffer` cannot be built
       # outside a Node environment, so a Rust test of `epdf-node` would reach
       # the export's body and skip the Node-API marshalling, which is the

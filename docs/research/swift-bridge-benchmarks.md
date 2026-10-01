@@ -131,7 +131,7 @@ helpers), not uniffi's generated Swift.
 | C | 0 | 204 (`epdf_manual.h`) |
 | Swift | 113 (`Search.swift` 54, `Render.swift` 59) | 336 (`EmbedPDFManualBridge` 322, `EmbedPDF/Experimental.swift` 14) |
 | Total | 534 | 1,332 |
-| ABI tests | 0 | 566 (`tests/abi.rs` 220, `tests/support/mod.rs` 244, `tests/layout.rs` 102) |
+| ABI tests | 0 | 566 (`epdf-viewer-host/tests/manual_bridge_abi.rs` 220, `manual_bridge_support/mod.rs` 244, `epdf-manual-bridge/tests/layout.rs` 102) |
 
 Archive size (`libEmbedPDFFFI.a`, simulator slice): 112,839,896 bytes shipping, 113,733,664 bytes
 with the experimental features, so 893,768 bytes (0.79%) for the manual bridge plus the two uniffi

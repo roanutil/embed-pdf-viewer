@@ -18,13 +18,7 @@ epdf-kernel = { path = "../epdf-kernel" }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }
 epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }
 
-[dev-dependencies]
-# A dev-dependency cycle: the host links this crate with `manual-bridge`, and
-# the ABI tests drive a real host. Integration tests link one copy of both.
-epdf-viewer-host = { path = "../epdf-viewer-host", features = ["manual-bridge"] }
-futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
-test-support = { path = "../test-support" }
-
-[build-dependencies]
-# The rpath to libembedpdf for the ABI tests, which drive a real host.
-build-support = { path = "../build-support" }
+# The ABI tests drive a real host, so they live in epdf-viewer-host
+# (tests/manual_bridge_abi.rs, behind its `manual-bridge` feature). A
+# dev-dependency on the host from here would turn that feature on for every
+# `cargo test --workspace`. tests/layout.rs checks the header on its own.
