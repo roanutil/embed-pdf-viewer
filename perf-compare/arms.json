@@ -136,6 +136,16 @@
       "ref": "research/rust-kernel-engine-o2",
       "sha": "785e68335e857c5421ebec2cc464f200f801b4d0",
       "recipe": "rust-kernel"
+    },
+    "plugins-now": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "4f9ceee9c7805b06ca8c51a822f3fcd66f61db42",
+      "recipe": "rust-kernel"
+    },
+    "plugins-slicetext": {
+      "ref": "research/rust-kernel-slice-text",
+      "sha": "d9c5e4a584f556576ccab494baa5b5e73fb97276",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -301,6 +311,16 @@
       "kernel": "rust",
       "rustReads": false,
       "dedupeCompat": true
+    },
+    "plugins-now": {
+      "worktree": "plugins-now",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-slicetext": {
+      "worktree": "plugins-slicetext",
+      "kernel": "rust",
+      "rustReads": false
     }
   },
   "pairs": [
@@ -475,6 +495,14 @@
     [
       "plugins-fixed",
       "plugins-compat"
+    ],
+    [
+      "plugins-now",
+      "plugins-slicetext"
+    ],
+    [
+      "main",
+      "plugins-slicetext"
     ]
   ]
 }
