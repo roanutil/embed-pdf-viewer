@@ -3,8 +3,9 @@
 We keep uniffi as the bridge for every plugin, and we hand-write exactly two kinds of path: page
 rasters (B5) and large record arrays (the search hit list, and whatever B1 and B2 add of the same
 shape). Pointer samples in B1 stay on uniffi. On a call that moves a few bytes, the two bridges
-are equal within noise: both pay the same 6 µs to 12 µs hop to the kernel thread, and the
-difference between them swung from 0.98x to 1.11x across runs. On a call that moves a lot, the
+are equal within noise: both pay the same hop to the kernel thread (medians of 11.96 µs and
+10.75 µs in run 2, lower in run 1), and the `noop_hop` ratio between them swung from 0.98x to 1.11x
+across runs (`hit_count`'s from 0.84x to 1.07x). On a call that moves a lot, the
 difference is transfer cost alone. Handing over 8,610 search hits costs 33.6 ms through uniffi and
 1.24 ms by hand. A page raster costs about 1 ms (1x) to 8 ms (3x) through uniffi and about 10 µs by
 hand. Those rasters were raster-store cache hits, so neither number includes PDFium rendering; a
@@ -57,9 +58,9 @@ Ratio is uniffi's median over the manual median: above 1 means manual is faster.
 | `noop_hop` | 10,000 | 11.96 µs / 38.92 µs | 10.75 µs / 25.25 µs | 1.11 |
 
 Verdict: equal where it matters. uniffi's entry costs about 4 ns more than a bare C call (run 1:
-6.25 ns against 1.25 ns). The hop to the kernel thread costs 6 µs to 12 µs on either bridge, and
-run 1 had the ratio the other way round (6.42 µs against 6.58 µs). The 4 ns doesn't show up next to
-the hop.
+6.25 ns against 1.25 ns). The hop to the kernel thread had medians of 11.96 µs (uniffi) and
+10.75 µs (manual) in run 2. Run 1 was lower, and had the ratio the other way round (6.42 µs against
+6.58 µs). The 4 ns doesn't show up next to the hop.
 
 ### Search
 
@@ -147,8 +148,10 @@ And it doesn't matter. Not here.
 
 Every capability call in this design hops to the kernel thread, because the kernel is `Rc` all the
 way down and lives on one thread. That hop is a channel send, a thread wake, a job, and a reply back
-across threads into a Swift continuation. It costs 6 µs to 12 µs on this machine, and it moves by
-about a microsecond from run to run. uniffi adds about 4 ns at the entry, far below that noise, and
+across threads into a Swift continuation. Its median on this machine was 11.96 µs (uniffi) and
+10.75 µs (manual) in run 2, and about 6.5 µs on both in run 1. Within run 2 alone, the five
+per-run means of `noop_hop` span about 4 µs on each bridge (15.53 µs to 19.75 µs for uniffi,
+10.92 µs to 14.91 µs by hand). uniffi adds about 4 ns at the entry, far below that noise, and
 both `noop_hop` and `hit_count` say so: the two bridges trade places between runs.
 
 So the hop sets the floor, and the floor is the same for both. Which means the only place a
@@ -193,9 +196,8 @@ For B1, keep pointer samples on uniffi. There's nothing to win.
 
 The cost is real, and it's mostly not the lines. The manual search and render paths are 2.5x the
 lines of their uniffi twins (1,332 against 534), and that's before counting 566 lines of ABI tests,
-102 of them there only because a person keeps the header's struct layouts in sync by hand. Every
-hand-written
-member is `unsafe` code with an ownership contract (`epdf_hits_free`, `epdf_pixels_free`, a context
+102 of them there only because a person keeps the header's struct layouts in sync by hand.
+Every hand-written member is `unsafe` code with an ownership contract (`epdf_hits_free`, `epdf_pixels_free`, a context
 released exactly once) that the compiler doesn't check on either side. A field added to `SearchHit`
 lands in uniffi for free and in the manual bridge as a header change, a Rust change, a Swift change
 and a layout test. So the hand-written paths have to stay few, and each has to keep earning its
