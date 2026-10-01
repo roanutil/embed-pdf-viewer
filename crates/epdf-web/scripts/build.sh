@@ -4,7 +4,11 @@
 # directories are build output and gitignored.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../../.." && pwd)"
-cargo build -p epdf-web --release --target wasm32-unknown-unknown -j 4 --manifest-path "$root/Cargo.toml"
+# As a cdylib only: Cargo.toml also declares an rlib, for the crate's own
+# integration tests, and with an rlib in the set Cargo passes no `-C lto`, so
+# the workspace's `lto = true` never applied to the browser build.
+cargo rustc -p epdf-web --release --target wasm32-unknown-unknown -j 4 --crate-type cdylib \
+  --manifest-path "$root/Cargo.toml"
 wasm="$root/target/wasm32-unknown-unknown/release/epdf_web.wasm"
 wasm-bindgen --target web --out-dir "$root/packages/core-wasm/wasm" "$wasm"
 wasm-bindgen --target experimental-nodejs-module --out-dir "$root/packages/core-wasm/wasm-node" "$wasm"
