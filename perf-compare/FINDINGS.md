@@ -326,3 +326,35 @@ should prove the Rust route ran rather than only that the payload contains the c
 `--js-flags=--no-liftoff` would show how much of `openedMs` is baseline-tier execution.
 
 The cheapest high-value next step is items 1 and 2 on the plugins branch, re-measured as a new arm.
+
+## Not tried yet
+
+As of 2026-09-30, with sections 1 to 6 prototyped and the kept fixes merged into
+`research/multi-platform-rust-core-impl-plugins` (`416ee81b8`), these are still open. Each is
+described in the section named. The first five are cheap, and two of them are already measured.
+
+1. LTO in the branch's own build (Build settings). It's measured, about 10% on kernel-heavy rows,
+   but only the harness's `rust-kernel-lto` recipe applies it. The branch still ships without it,
+   because `crates/epdf-web/Cargo.toml:9` declares `crate-type = ["cdylib", "rlib"]`.
+2. The engine's final link with `-O2 -sASSERTIONS=0` (Engine, on every branch).
+   `packages/engine/runtime/build/compile.esm.sh:88` still passes `-sASSERTIONS=1`.
+3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). The size is measured, 11.3 to
+   8.3 MB raw; the speed isn't.
+4. `staged_meta.take()` (The heap leak). Each open document still holds a second copy of its
+   pages (`crates/epdf-kernel/src/kernel.rs:619` clones it).
+5. The second copy of `preact/compat` in every bundle (Build settings).
+6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
+   kernel's own maps (Serialization formats).
+7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
+   `HEAPF32` reads, a per-page search geometry cache and an ASCII folding fast path, geometry as
+   transferable typed arrays, and a cached `FPDF_TEXTPAGE`.
+8. The PDF's bytes as a `$host` handle instead of base64 at open (section 5). About 20 ms of main
+   thread, and every Rust call site that takes bytes changes.
+9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
+   guesses, and `float_roundtrip` risks JS parity.
+10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
+    `--no-liftoff` diagnostic arm.
+
+Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
+time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
+what it would save), and read sets for the hook selectors (section 6; no row moved).
