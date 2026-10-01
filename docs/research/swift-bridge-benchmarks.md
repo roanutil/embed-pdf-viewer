@@ -3,9 +3,12 @@
 We keep uniffi as the bridge for every plugin, and we hand-write exactly two kinds of path: page
 rasters (B5) and large record arrays (the search hit list, and whatever B1 and B2 add of the same
 shape). Pointer samples in B1 stay on uniffi. On a call that moves a few bytes, the two bridges
-cost the same, because the hop to the kernel thread is 99.9% of the call. On a call that moves
-megabytes or thousands of records, uniffi is 27x to 786x slower, and the difference is all copying
-and serialization.
+are equal within noise: both pay the same 6 µs to 12 µs hop to the kernel thread, and the
+difference between them swung from 0.98x to 1.11x across runs. On a call that moves a lot, the
+difference is transfer cost alone. Handing over 8,610 search hits costs 33.6 ms through uniffi and
+1.24 ms by hand. A page raster costs about 1 ms (1x) to 8 ms (3x) through uniffi and about 10 µs by
+hand. Those rasters were raster-store cache hits, so neither number includes PDFium rendering; a
+cold render adds the same render time to both.
 
 These are provisional numbers from a local dev machine, which is noisy. Numbers from the dedicated
 perf Mac are pending (it didn't resolve on the day of the run), and so are device numbers, which need
@@ -21,7 +24,7 @@ B5's signing. Don't make the final call on rasters until the device numbers exis
 | Simulator | iPhone 17, iOS 26.5 (`5FA32A5D-6186-4C16-BE25-C87829DD1BFA`) |
 | Rust | 1.98.0, `PROFILE=release` (`lto = true`, `codegen-units = 1`) |
 | Swift | `-configuration Release` |
-| Code | `459bbe779` plus the commit that adds this document |
+| Code | `7e9491152` (on `459bbe779`), the commit that adds the bridge, the benchmarks and this document |
 
 The manual bridge is `crates/epdf-manual-bridge`, a C ABI declared by hand in
 [`include/epdf_manual.h`](../../crates/epdf-manual-bridge/include/epdf_manual.h), with its Swift side in
@@ -131,8 +134,8 @@ helpers), not uniffi's generated Swift.
 | ABI tests | 0 | 566 (`tests/abi.rs` 220, `tests/support/mod.rs` 244, `tests/layout.rs` 102) |
 
 Archive size (`libEmbedPDFFFI.a`, simulator slice): 112,839,896 bytes shipping, 113,733,664 bytes
-with the manual bridge, so 893,768 bytes (0.79%) for both bridges' exports side by side. That's an
-archive, not a linked app; the linked cost is smaller and unmeasured.
+with the experimental features, so 893,768 bytes (0.79%) for the manual bridge plus the two uniffi
+benchmark exports. That's an archive, not a linked app; the linked cost is smaller and unmeasured.
 
 ## Why the gap is where it is
 
@@ -144,9 +147,9 @@ And it doesn't matter. Not here.
 
 Every capability call in this design hops to the kernel thread, because the kernel is `Rc` all the
 way down and lives on one thread. That hop is a channel send, a thread wake, a job, and a reply back
-across threads into a Swift continuation. It costs 6 µs to 12 µs on this machine. uniffi adds about
-4 ns to a call that already costs 10,000 ns, and both `noop_hop` and `hit_count` say exactly that:
-the two bridges trade places between runs.
+across threads into a Swift continuation. It costs 6 µs to 12 µs on this machine, and it moves by
+about a microsecond from run to run. uniffi adds about 4 ns at the entry, far below that noise, and
+both `noop_hop` and `hit_count` say so: the two bridges trade places between runs.
 
 So the hop sets the floor, and the floor is the same for both. Which means the only place a
 hand-written bridge can win is in what crosses after the hop. Two things cross badly.
@@ -158,9 +161,11 @@ writes flat C structs in one pass, and Swift decodes them in 1.24 ms, or reads t
 nothing at all. I haven't split uniffi's 33.6 ms between the Rust half and the Swift half. My guess is
 most of it is the Swift lift, but it is a guess.
 
-The second is bytes. A raster crosses uniffi as a `Vec<u8>` copied out of the host table, then
-written into a `RustBuffer`, then lifted into `Data`. Three passes over 17 MB at 3x is 8 ms, which is
-half a frame budget gone on a cache hit. The manual path doesn't copy at all: `CGDataProvider` reads
+The second is bytes. Reading the code, a raster crosses uniffi as a `Vec<u8>` copied out of the host
+table, then written into a `RustBuffer`, then lifted into `Data`, and bridging that `Data` to
+`CFData` for `CGDataProvider` may copy it once more. I counted those passes from the source, not
+with a profiler. What I did measure is the total: 8.19 ms for 17 MB at 3x, which is half a frame
+budget gone on a cache hit. The manual path doesn't copy at all: `CGDataProvider` reads
 the raster store's own buffer and frees its `Arc` in the release callback.
 
 (That zero-copy has a side effect worth knowing about. A `CGImage` from the manual path keeps the
@@ -168,9 +173,10 @@ raster store's buffer alive after the store evicts it. The memory doesn't grow, 
 the store's to give back. For a viewer that's probably what you want. For the footprint accounting,
 it means "zero growth" is shared memory, not free memory.)
 
-Pointer samples, the thing B1 worried about, are the `noop_hop` case: small, frequent, and nobody
-waits on them. A 120 Hz pointer stream is one call every 8.3 ms, and the hop costs a thousandth of
-that. A hand-written path would save 4 ns of it.
+Pointer samples, the thing B1 worried about, are `fire` calls: an entry plus a post to the kernel
+thread, with no reply for anyone to wait on. So they cost less than `noop_hop`, and the only part a
+hand-written path could shave is the entry, where uniffi's extra is about 4 ns. A 120 Hz pointer
+stream is one call every 8.3 ms.
 
 ## Recommendation
 
@@ -186,13 +192,21 @@ anyone writes a second hand-kept header.
 For B1, keep pointer samples on uniffi. There's nothing to win.
 
 The cost is real, and it's mostly not the lines. The manual search and render paths are 2.5x the
-lines of their uniffi twins (1,332 against 534), and that's before counting 566 lines of ABI tests, 102 of them there only
-because a person keeps the header's struct layouts in sync by hand. Every hand-written
+lines of their uniffi twins (1,332 against 534), and that's before counting 566 lines of ABI tests,
+102 of them there only because a person keeps the header's struct layouts in sync by hand. Every
+hand-written
 member is `unsafe` code with an ownership contract (`epdf_hits_free`, `epdf_pixels_free`, a context
 released exactly once) that the compiler doesn't check on either side. A field added to `SearchHit`
 lands in uniffi for free and in the manual bridge as a header change, a Rust change, a Swift change
 and a layout test. So the hand-written paths have to stay few, and each has to keep earning its
 place against a uniffi version that keeps getting cheaper to maintain.
+
+One thing has to change before any hand-written path ships. The bridge parks each pending promise's
+abort in a kernel-thread-local table (`ABORTS` in `crates/epdf-manual-bridge/src/lib.rs`), and
+nothing drains it when the kernel thread exits. A call still in flight at shutdown would drop its
+promise during thread-local teardown, after the runtime it reaches is gone: the same abort hazard
+`bound::drop_all` fixed for the `KernelBound` slab in `f4a9a0844`. The table needs the same drain,
+in the same place, before the thread exits.
 
 ## Running it again
 
@@ -226,3 +240,32 @@ ssh andrew@2023mbp16grey.local 'cd ~/bench/EmbedPDF \
 The rsync carries the XCFramework, the generated `EmbedPDFBindings` sources and the fixtures, all of
 which are ignored by git. Off the home network, the same machine is
 `andrew@2023mbp16grey.squeaker-algol.ts.net` over Tailscale.
+
+## Appendix: run 2's raw output
+
+Every table above comes from these lines, as `BridgeBenchmarks.swift` printed them (times in
+nanoseconds). `progress_events`' `median_ns` and `p95_ns` are the first-event latency.
+
+```
+BENCH {"bridge":"uniffi","extra":{},"median_ns":6.25,"n":100000,"p95_ns":7.09,"run_means_ns":[7.32125,6.8975,6.70125,7.47,6.68916],"runs":5,"workload":"noop"}
+BENCH {"bridge":"manual","extra":{},"median_ns":2.5,"n":100000,"p95_ns":2.92,"run_means_ns":[1.55916,3.66542,3.13125,3.10167,2.54917],"runs":5,"workload":"noop"}
+BENCH {"bridge":"uniffi","extra":{},"median_ns":11958,"n":10000,"p95_ns":38917,"run_means_ns":[18336.325,17202.2833,15528.5667,19754.5833,16252.4459],"runs":5,"workload":"noop_hop"}
+BENCH {"bridge":"manual","extra":{},"median_ns":10750,"n":10000,"p95_ns":25250,"run_means_ns":[13447.8833,12537.5625,10921.7708,13058.9375,14906.4416],"runs":5,"workload":"noop_hop"}
+BENCH {"bridge":"uniffi","extra":{},"median_ns":8209,"n":10000,"p95_ns":22333.049999999996,"run_means_ns":[10688.1958,11745.1375,11058.9,11120.6166,10656.2125],"runs":5,"workload":"hit_count"}
+BENCH {"bridge":"manual","extra":{},"median_ns":9750,"n":10000,"p95_ns":26708,"run_means_ns":[11098.2334,13817.0917,15730.9583,12137.9875,11487.075],"runs":5,"workload":"hit_count"}
+BENCH {"bridge":"uniffi","extra":{"hits":8610,"segments":8610},"median_ns":33622916.5,"n":200,"p95_ns":35702497.3,"run_means_ns":[34571620.625,33755313.125,33524538.125,33944122.5,33581212.5],"runs":5,"workload":"hits_lazy"}
+BENCH {"bridge":"manual","extra":{"hits":8610,"segments":8610},"median_ns":194563,"n":200,"p95_ns":239908.34999999998,"run_means_ns":[194978.54,205819.375,196413.125,196185.42,202711.045],"runs":5,"workload":"hits_lazy"}
+BENCH {"bridge":"manual","extra":{"hits":8610,"segments":8610},"median_ns":1241104,"n":200,"p95_ns":1356776.45,"run_means_ns":[1244721.46,1290936.665,1268102.915,1254355.205,1245313.75],"runs":5,"workload":"hits_eager"}
+BENCH {"bridge":"uniffi","extra":{},"median_ns":151922437.5,"n":50,"p95_ns":160792795.79999998,"run_means_ns":[152451651.66,154052203.34,152109902.5,155119269.16,152170680.82],"runs":5,"workload":"search"}
+BENCH {"bridge":"manual","extra":{},"median_ns":151939187.5,"n":50,"p95_ns":159354243.9,"run_means_ns":[152147064.16,152153400.84,152278564.16,152080085,155257201.66],"runs":5,"workload":"search"}
+BENCH {"bridge":"uniffi","extra":{},"median_ns":971936270.5,"n":20,"p95_ns":1008239776.8,"run_means_ns":[962254297.95,964931950,984555541.65,980382531.25,985806350],"runs":5,"workload":"find_all"}
+BENCH {"bridge":"manual","extra":{},"median_ns":936518312.5,"n":20,"p95_ns":965331809.75,"run_means_ns":[944843350,952321014.55,939723350,938491991.65,930808566.7],"runs":5,"workload":"find_all"}
+BENCH {"bridge":"uniffi","extra":{"events_per_s":12.88655345557427,"events_per_scan":14,"scan_median_ns":1086566042},"median_ns":49625583.5,"n":20,"p95_ns":50724050,"run_means_ns":[1086403750.1],"runs":1,"workload":"progress_events"}
+BENCH {"bridge":"manual","extra":{"events_per_s":12.850069180497526,"events_per_scan":14,"scan_median_ns":1087573146},"median_ns":49778354,"n":20,"p95_ns":52511820.85,"run_means_ns":[1089488297.95],"runs":1,"workload":"progress_events"}
+BENCH {"bridge":"manual","extra":{"footprint_growth_bytes":0,"height":792,"peak_growth_bytes":0,"width":612},"median_ns":10125,"n":50,"p95_ns":12689.55,"run_means_ns":[10084.18,10395.84,9950.82,10424.16,10029.16],"runs":5,"workload":"raster_1x"}
+BENCH {"bridge":"uniffi","extra":{"footprint_growth_bytes":1949696,"height":792,"peak_growth_bytes":1949696,"width":612},"median_ns":969167,"n":50,"p95_ns":1079904.65,"run_means_ns":[975375.82,980464.18,975068.34,975625,998130],"runs":5,"workload":"raster_1x"}
+BENCH {"bridge":"manual","extra":{"footprint_growth_bytes":0,"height":1584,"peak_growth_bytes":0,"width":1224},"median_ns":8541.5,"n":50,"p95_ns":12542,"run_means_ns":[9765,9632.5,9054.16,9309.18,8873.34],"runs":5,"workload":"raster_2x"}
+BENCH {"bridge":"uniffi","extra":{"footprint_growth_bytes":7782400,"height":1584,"peak_growth_bytes":7798784,"width":1224},"median_ns":3661562.5,"n":50,"p95_ns":4225377.05,"run_means_ns":[3792615,3695825,3703570,3825911.66,3804017.5],"runs":5,"workload":"raster_2x"}
+BENCH {"bridge":"manual","extra":{"footprint_growth_bytes":0,"height":2376,"peak_growth_bytes":0,"width":1836},"median_ns":10416.5,"n":50,"p95_ns":13314.55,"run_means_ns":[10499.16,10166.66,10110,10848.34,10533.34],"runs":5,"workload":"raster_3x"}
+BENCH {"bridge":"uniffi","extra":{"footprint_growth_bytes":17465344,"height":2376,"peak_growth_bytes":17465344,"width":1836},"median_ns":8189396,"n":50,"p95_ns":9497444.05,"run_means_ns":[8496027.5,8576345.82,8415294.16,8449338.34,8336925.84],"runs":5,"workload":"raster_3x"}
+```
