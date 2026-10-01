@@ -1,10 +1,13 @@
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
-use epdf_ffi::{CancelToken, KernelBound, KernelThread, Subscription, ViewerError};
+use epdf_ffi::{
+    CancelToken, KernelBound, KernelThread, Subscription, SubscriptionSlot, ViewerError,
+};
 use epdf_kernel::Promise;
+use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
 use futures::executor::block_on;
 
@@ -255,4 +258,85 @@ fn a_promise_that_ignores_the_abort_still_answers() {
 thread_local! {
     static RESOLVER: std::cell::RefCell<Option<epdf_kernel::rt::Resolver<u32>>> =
         const { std::cell::RefCell::new(None) };
+    static LIFETIME: AbortSignal = AbortSignal::new();
+}
+
+/// Counts `on_end` calls and records whether the listener was removed.
+#[derive(Clone, Default)]
+struct Ends {
+    ended: Arc<AtomicUsize>,
+    unsubscribed: Arc<AtomicBool>,
+    registered: Arc<AtomicBool>,
+}
+
+impl Ends {
+    /// On the kernel thread: fill `slot` against this thread's `LIFETIME`.
+    fn fill(&self, slot: SubscriptionSlot) {
+        let (ended, unsubscribed, registered) =
+            (self.ended.clone(), self.unsubscribed.clone(), self.registered.clone());
+        LIFETIME.with(|lifetime| {
+            slot.fill_until_end(
+                lifetime,
+                move || {
+                    registered.store(true, Ordering::SeqCst);
+                    Unsubscribe::new(move || unsubscribed.store(true, Ordering::SeqCst))
+                },
+                move || {
+                    ended.fetch_add(1, Ordering::SeqCst);
+                },
+            )
+        });
+    }
+}
+
+fn end_lifetime() {
+    LIFETIME.with(|l| l.abort(epdf_kernel::Error::new("closed")));
+}
+
+#[test]
+fn a_subscription_ends_once_when_its_lifetime_aborts() {
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let ends = Ends::default();
+    let (subscription, slot) = Subscription::pending(thread.post());
+    let filler = ends.clone();
+    block_on(thread.call(move |_| {
+        filler.fill(slot);
+        end_lifetime();
+        end_lifetime();
+    }))
+    .unwrap();
+    assert_eq!(ends.ended.load(Ordering::SeqCst), 1);
+    assert!(ends.unsubscribed.load(Ordering::SeqCst));
+    // Cancelling after the end is harmless and does not end again.
+    subscription.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert_eq!(ends.ended.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn subscribing_after_the_lifetime_ended_ends_at_once() {
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let ends = Ends::default();
+    let (_subscription, slot) = Subscription::pending(thread.post());
+    let filler = ends.clone();
+    block_on(thread.call(move |_| {
+        end_lifetime();
+        filler.fill(slot);
+    }))
+    .unwrap();
+    assert_eq!(ends.ended.load(Ordering::SeqCst), 1);
+    assert!(!ends.registered.load(Ordering::SeqCst));
+}
+
+#[test]
+fn a_cancelled_subscription_does_not_end() {
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let ends = Ends::default();
+    let (subscription, slot) = Subscription::pending(thread.post());
+    let filler = ends.clone();
+    block_on(thread.call(move |_| filler.fill(slot))).unwrap();
+    subscription.cancel();
+    block_on(thread.call(|_| end_lifetime())).unwrap();
+    assert_eq!(ends.ended.load(Ordering::SeqCst), 0);
+    assert!(ends.unsubscribed.load(Ordering::SeqCst));
 }

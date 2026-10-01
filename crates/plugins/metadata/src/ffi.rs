@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use epdf_ffi::{CancelToken, KernelBound, KernelPost, Subscription, ViewerError};
+use epdf_ffi::{CancelToken, KernelBound, KernelPost, ResourceStatus, Subscription, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::signal::AbortSignal;
@@ -18,7 +18,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::{MetadataCapability, ResourceStatus};
+use crate::MetadataCapability;
 
 /// `/Trapped`: always present, so a patch can set it but not clear it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
@@ -176,6 +176,21 @@ pub enum MetadataEvent {
 #[uniffi::export(with_foreign)]
 pub trait MetadataEventListener: Send + Sync {
     fn on_event(&self, event: MetadataEvent);
+    /// The document closed: no event follows. Called once, and at once for a
+    /// subscription made after the close.
+    fn on_end(&self);
+}
+
+impl From<crate::ResourceStatus> for ResourceStatus {
+    fn from(status: crate::ResourceStatus) -> Self {
+        match status {
+            crate::ResourceStatus::Idle => ResourceStatus::Idle,
+            crate::ResourceStatus::Loading => ResourceStatus::Loading,
+            crate::ResourceStatus::Ready => ResourceStatus::Ready,
+            crate::ResourceStatus::Forbidden => ResourceStatus::Forbidden,
+            crate::ResourceStatus::Error => ResourceStatus::Error,
+        }
+    }
 }
 
 /// `MetadataUpdateResult`, as the engine answers an update.
@@ -198,7 +213,7 @@ fn decode<T: DeserializeOwned>(value: Value) -> Result<T, Error> {
 /// answering from its last state after a close; a foreign handle that
 /// outlived the close gets `instance-closed` instead.
 fn open(cap: &MetadataCapability) -> Result<&MetadataCapability, Error> {
-    if cap.is_closed() {
+    if cap.lifetime().aborted() {
         return Err(plugin_error(
             code::INSTANCE_CLOSED,
             "metadata",
@@ -232,7 +247,7 @@ impl MetadataHandle {
     }
 
     pub async fn status(&self) -> Result<ResourceStatus, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_status())).await
+        self.cap.call(|c| Ok(open(c)?.get_status().into())).await
     }
 
     /// Whether this caller may edit the Info dict (`doc.metadata.modify`).
@@ -271,17 +286,24 @@ impl MetadataHandle {
     }
 
     /// The listener is registered on the kernel thread after this returns;
-    /// a cancel before then still takes effect. An event that does not
+    /// a cancel before then still takes effect. It gets `on_end` when the
+    /// document closes (at once if it already has). An event that does not
     /// decode is reported through the kernel's report sink, not delivered.
     pub fn subscribe(&self, listener: Arc<dyn MetadataEventListener>) -> Arc<Subscription> {
         let (subscription, slot) = Subscription::pending(self.post.clone());
         self.cap.fire(move |c| {
-            let off = c.on_updated(move |event| {
-                let event = MetadataUpdatedEvent::try_from(event)?;
-                listener.on_event(MetadataEvent::Updated { event });
-                Ok(())
-            });
-            slot.fill(off);
+            let ending = listener.clone();
+            slot.fill_until_end(
+                c.lifetime(),
+                || {
+                    c.on_updated(move |event| {
+                        let event = MetadataUpdatedEvent::try_from(event)?;
+                        listener.on_event(MetadataEvent::Updated { event });
+                        Ok(())
+                    })
+                },
+                move || ending.on_end(),
+            );
         });
         subscription
     }

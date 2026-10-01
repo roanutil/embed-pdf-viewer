@@ -148,12 +148,13 @@ impl MetadataCapability {
         self.0.updated.on(listener)
     }
 
-    /// Whether the document this capability belongs to has closed. Not in
-    /// the TypeScript, where a closed capability is unreachable; a foreign
-    /// handle outlives the close and checks this before every call.
+    /// The instance lifetime, aborted when the document closes. Not in the
+    /// TypeScript, where a closed capability is unreachable; a foreign handle
+    /// outlives the close, checks this before every call, and ends its event
+    /// streams when it aborts.
     #[cfg(feature = "uniffi")]
-    pub(crate) fn is_closed(&self) -> bool {
-        self.0.cx.lifetime().aborted()
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
     }
 
     fn connect(&self) -> Result<(), Error> {

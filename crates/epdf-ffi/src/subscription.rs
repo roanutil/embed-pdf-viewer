@@ -5,8 +5,11 @@
 //! cancelled flag and the unsubscribe handle share one lock: whichever of
 //! `cancel` and `fill` runs second sees the other's effect and unsubscribes.
 
+use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
+use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
 
 use crate::{KernelBound, KernelPost};
@@ -47,6 +50,41 @@ impl SubscriptionSlot {
         } else {
             state.unsubscribe = Some(KernelBound::new(unsubscribe, self.post));
         }
+    }
+
+    /// On the kernel thread: `fill` with a listener that lives no longer than
+    /// `lifetime` (a per-document controller's lifetime, aborted at close).
+    /// When the lifetime aborts, the listener is removed and `on_end` runs,
+    /// once; if it already aborted, `register` is never called and `on_end`
+    /// runs now. A subscription cancelled first never ends, and cancelling
+    /// after the end does nothing more.
+    pub fn fill_until_end(
+        self,
+        lifetime: &AbortSignal,
+        register: impl FnOnce() -> Unsubscribe,
+        on_end: impl FnOnce() + 'static,
+    ) {
+        if lifetime.aborted() {
+            on_end();
+            self.fill(Unsubscribe::noop());
+            return;
+        }
+        let off = Rc::new(register());
+        let end = Cell::new(Some(on_end));
+        let listener = {
+            let off = off.clone();
+            lifetime.on_abort(Rc::new(move |_| {
+                off.call();
+                if let Some(on_end) = end.take() {
+                    on_end();
+                }
+            }))
+        };
+        let lifetime = lifetime.clone();
+        self.fill(Unsubscribe::new(move || {
+            lifetime.remove(listener);
+            off.call();
+        }));
     }
 }
 

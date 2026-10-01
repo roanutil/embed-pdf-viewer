@@ -1,8 +1,7 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use epdf_ffi::{CancelToken, ViewerError};
-use epdf_plugin_metadata::ResourceStatus;
+use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_viewer_host::{
     DocumentEvent, DocumentEventListener, OpenDocumentOptions, ViewerConfig, ViewerDelegate,

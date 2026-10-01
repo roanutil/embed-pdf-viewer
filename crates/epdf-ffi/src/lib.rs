@@ -7,6 +7,7 @@ pub mod cancel;
 pub mod error;
 pub mod geometry;
 pub mod kernel_thread;
+pub mod status;
 pub mod subscription;
 
 pub use bound::{KernelBound, PromiseSlot};
@@ -14,6 +15,7 @@ pub use cancel::CancelToken;
 pub use error::ViewerError;
 pub use geometry::{PageRef, Point, Rect, Size};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
+pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};
 
 uniffi::setup_scaffolding!();

@@ -68,5 +68,35 @@ extension BaseSuite {
       try await viewer.destroy()
       await events.value
     }
+
+    @Test func closingTheDocumentFinishesTheEvents() async throws {
+      let (viewer, document, metadata) = try await opened()
+      let events = Task { for await _ in metadata.events {} }
+      try await Task.sleep(for: .milliseconds(50))
+      try await viewer.close(document)
+      let closed = await finishes(events)
+      expectNoDifference(closed, true)
+      // A stream made after the close ends at once.
+      let late = await finishes(Task { for await _ in metadata.events {} })
+      expectNoDifference(late, true)
+    }
+
+    /// Whether `task` finishes within two seconds.
+    func finishes(_ task: Task<Void, Never>) async -> Bool {
+      await withTaskGroup(of: Bool.self) { group in
+        group.addTask {
+          await task.value
+          return true
+        }
+        group.addTask {
+          try? await Task.sleep(for: .seconds(2))
+          return false
+        }
+        let first = await group.next() ?? false
+        group.cancelAll()
+        task.cancel()
+        return first
+      }
+    }
   }
 }

@@ -32,14 +32,15 @@ public struct MetadataCapability: Sendable {
 
   /// Returns once the confirmed change has reached the snapshot and `events`.
   public func update(_ patch: MetadataPatch) async throws(PDFError) -> DocumentMetadata {
-    try await bridged { token in try await handle.update(patch: patch, cancel: token) }
+    try await bridgedCancellable { token in try await handle.update(patch: patch, cancel: token) }
   }
 
   public func refresh() async throws(PDFError) {
-    try await bridged { token in try await handle.refresh(cancel: token) }
+    try await bridgedCancellable { token in try await handle.refresh(cancel: token) }
   }
 
-  /// Confirmed changes, whoever made them. Finishes when the viewer is destroyed.
+  /// Confirmed changes, whoever made them. Finishes when the document closes
+  /// (at once if it already has) or the viewer is destroyed.
   public var events: AsyncStream<MetadataEvent> {
     viewer.registry.stream { handle.subscribe(listener: $0) }
   }
@@ -48,6 +49,10 @@ public struct MetadataCapability: Sendable {
 extension EventRelay: MetadataEventListener where Event == MetadataEvent {
   func onEvent(event: MetadataEvent) {
     continuation.yield(event)
+  }
+
+  func onEnd() {
+    continuation.finish()
   }
 }
 

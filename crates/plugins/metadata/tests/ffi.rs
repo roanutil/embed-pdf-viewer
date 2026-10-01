@@ -1,24 +1,29 @@
 #![cfg(feature = "uniffi")]
 
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{CancelToken, KernelThread, ViewerError};
+use epdf_ffi::{CancelToken, KernelThread, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::{
     DocumentMetadataTrapped, MetadataEvent, MetadataEventListener, MetadataField, MetadataHandle,
     MetadataPatch,
 };
-use epdf_plugin_metadata::{METADATA, ResourceStatus, metadata_plugin};
+use epdf_plugin_metadata::{METADATA, metadata_plugin};
 use futures::executor::block_on;
 use plugin_conformance::test_kernel::{
     Reply, TestKernel, TestSpec, one_document, spec_with_metadata,
 };
 use serde_json::json;
 
-struct Events(Mutex<Vec<MetadataEvent>>);
+#[derive(Default)]
+struct Events(Mutex<Vec<MetadataEvent>>, AtomicUsize);
 
 impl MetadataEventListener for Events {
     fn on_event(&self, event: MetadataEvent) {
         self.0.lock().unwrap().push(event);
+    }
+    fn on_end(&self) {
+        self.1.fetch_add(1, Ordering::SeqCst);
     }
 }
 
@@ -65,7 +70,7 @@ fn refresh_then_snapshot_reads_the_metadata() {
 #[test]
 fn an_update_is_observed() {
     let (_thread, metadata) = handle();
-    let events = Arc::new(Events(Mutex::new(vec![])));
+    let events = Arc::new(Events::default());
     let _sub = metadata.subscribe(events.clone());
     block_on(metadata.refresh(token())).unwrap();
     let patch = MetadataPatch { title: Some("Renamed".into()), ..Default::default() };
@@ -154,4 +159,28 @@ fn metadata_the_record_cannot_hold_is_an_error_not_a_default() {
     block_on(metadata.refresh(token())).unwrap();
     let error = block_on(metadata.snapshot()).unwrap_err();
     assert_eq!(code(&error), Some("invalid-state"), "{error:?}");
+}
+
+#[test]
+fn closing_the_document_ends_its_subscriptions() {
+    let (thread, metadata) = handle();
+    let events = Arc::new(Events::default());
+    let subscription = metadata.subscribe(events.clone());
+    block_on(metadata.refresh(token())).unwrap();
+    assert_eq!(events.1.load(Ordering::SeqCst), 0);
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    assert_eq!(events.1.load(Ordering::SeqCst), 1);
+    subscription.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert_eq!(events.1.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn subscribing_after_the_close_ends_at_once() {
+    let (thread, metadata) = handle();
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    let events = Arc::new(Events::default());
+    let _subscription = metadata.subscribe(events.clone());
+    block_on(thread.call(|_| ())).unwrap();
+    assert_eq!(events.1.load(Ordering::SeqCst), 1);
 }
