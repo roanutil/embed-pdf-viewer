@@ -14,6 +14,7 @@
 // Callback-shaped types are the port of JavaScript closures, as in the kernel.
 #![allow(clippy::type_complexity)]
 
+mod text;
 pub mod contract;
 pub mod controller;
 pub mod model;
@@ -59,6 +60,7 @@ pub(crate) fn build_measurement_plugin(config: MeasurementConfig) -> AnyPlugin {
         .requires(INTERACTION.any())
         .initial_state(initial_measurement_state)
         .reduce(measurement_reducer)
+        .slice_text(text::measurement_text())
         .create(&MEASUREMENT, move |cx| {
             let api = create_measurement_controller(cx, config.clone())?;
             let connected = api.clone();

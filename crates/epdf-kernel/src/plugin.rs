@@ -26,7 +26,9 @@ use crate::rt::{self, Promise};
 use crate::scope::{Scope, Teardown};
 use crate::serial_queue::SerialQueue;
 use crate::signal::AbortSignal;
-use crate::store::{Report, SliceJson, SliceLease, SliceReducer, SliceState, Store, Unsubscribe};
+use crate::store::{
+    Report, SliceJson, SliceLease, SliceReducer, SliceState, SliceText, Store, Unsubscribe,
+};
 use crate::token::{AnyToken, Token};
 use crate::types::{CoreState, DocumentMeta, PluginScope};
 
@@ -55,6 +57,8 @@ pub struct PluginDef {
     pub initial_state: Rc<dyn Fn() -> SliceState>,
     pub reducer: SliceReducer,
     pub to_json: SliceJson,
+    /// The slice's text written directly (`PluginBuilder::slice_text`).
+    pub to_text: Option<SliceText>,
     pub capability: Option<CapabilityFn>,
     pub init: Option<InitFn>,
     pub effects: Option<EffectsFn>,
@@ -898,6 +902,7 @@ pub struct PluginBuilder<S, A> {
     optional: Vec<AnyToken>,
     initial_state: Option<Rc<dyn Fn() -> S>>,
     reduce: Option<TypedReducer<S, A>>,
+    slice_text: Option<Rc<dyn Fn(&S) -> String>>,
     capability: Option<CapabilityFn>,
     init: Option<InitFn>,
     effects: Option<EffectsFn>,
@@ -913,6 +918,7 @@ pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
         optional: Vec::new(),
         initial_state: None,
         reduce: None,
+        slice_text: None,
         capability: None,
         init: None,
         effects: None,
@@ -946,6 +952,14 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
     }
 
     /// The pure reducer. `None` is `return state`.
+    /// Write the slice's JSON text directly. It must be byte for byte what
+    /// `js::to_value(state).to_string()` gives; the store uses it in place
+    /// of building the whole value.
+    pub fn slice_text(mut self, text: impl Fn(&S) -> String + 'static) -> Self {
+        self.slice_text = Some(Rc::new(text));
+        self
+    }
+
     pub fn reduce(mut self, reduce: impl Fn(&S, &A) -> Option<S> + 'static) -> Self {
         self.reduce = Some(Rc::new(reduce));
         self
@@ -1020,6 +1034,10 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
                 Value::Null
             }
         });
+        let to_text: Option<SliceText> = self.slice_text.map(|text| {
+            Rc::new(move |state: &dyn Any| state.downcast_ref::<S>().map(|state| text(state)))
+                as SliceText
+        });
         Rc::new(PluginDef {
             id: self.id,
             token: self.token,
@@ -1029,6 +1047,7 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
             initial_state,
             reducer,
             to_json,
+            to_text,
             capability: self.capability,
             init: self.init,
             effects: self.effects,

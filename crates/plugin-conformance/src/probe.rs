@@ -327,6 +327,7 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         initial_state,
         reducer,
         to_json,
+        to_text: None,
         capability,
         init,
         effects,

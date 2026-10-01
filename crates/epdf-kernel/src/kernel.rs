@@ -834,11 +834,12 @@ impl Inner {
 
         for plugin in &this.document_plugins {
             // The lease is the write authority for this instance's slice.
-            let lease = this.store.lease(
+            let lease = this.store.lease_with_text(
                 &slice_key(&plugin.id, Some(&session.id())),
                 plugin.reducer.clone(),
                 (plugin.initial_state)(),
                 plugin.to_json.clone(),
+                plugin.to_text.clone(),
                 Some(session.instance_id.clone()),
             );
             session.leases.borrow_mut().push((Rc::as_ptr(plugin), lease.clone()));
@@ -1165,11 +1166,12 @@ impl Kernel {
 
         for plugin in &inner.plan.ordered {
             if plugin.scope != PluginScope::Document {
-                let lease = inner.store.lease(
+                let lease = inner.store.lease_with_text(
                     &plugin.id,
                     plugin.reducer.clone(),
                     (plugin.initial_state)(),
                     plugin.to_json.clone(),
+                    plugin.to_text.clone(),
                     None,
                 );
                 inner.workspace_leases.borrow_mut().push((Rc::as_ptr(plugin), lease));

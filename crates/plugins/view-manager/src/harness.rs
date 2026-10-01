@@ -99,6 +99,7 @@ fn as_shipped() -> AnyPlugin {
         initial_state: plugin.initial_state.clone(),
         reducer: plugin.reducer.clone(),
         to_json: plugin.to_json.clone(),
+        to_text: plugin.to_text.clone(),
         capability: None,
         init: None,
         effects: None,

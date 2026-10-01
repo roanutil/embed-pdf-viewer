@@ -660,6 +660,7 @@ impl HarnessPlugin for SignatureHarness {
             initial_state: Rc::new(|| Rc::new(epdf_kernel::undefined()) as SliceState),
             reducer,
             to_json,
+            to_text: None,
             capability: Some(Rc::new(move |ctx: PluginContext| {
                 Ok(Rc::new(SignatureCapability { ctx, harness: harness.clone() }) as Rc<dyn Any>)
             })),

@@ -24,6 +24,11 @@ pub type SliceState = Rc<dyn Any>;
 /// notification); `Some` is a new state object.
 pub type SliceReducer = Rc<dyn Fn(&SliceState, &dyn Action) -> Option<SliceState>>;
 pub type SliceJson = Rc<dyn Fn(&dyn Any) -> Value>;
+/// A slice's JSON text written directly, byte for byte what its
+/// [`SliceJson`] gives through `to_string()`, for a slice that can build it
+/// cheaper than whole (a large map of shared entries can reuse each entry's
+/// text). `None` falls back to the [`SliceJson`].
+pub type SliceText = Rc<dyn Fn(&dyn Any) -> Option<String>>;
 /// A state-change listener. An `Err` is a throwing listener: reported, and
 /// the pass continues.
 pub type ChangeListener = dyn Fn() -> Result<(), Error>;
@@ -110,6 +115,7 @@ struct LeaseInner {
     state: RefCell<SliceState>,
     reducer: SliceReducer,
     to_json: SliceJson,
+    to_text: Option<SliceText>,
     store: Weak<Store>,
     /// This slice's JSON text, for the state it was built from. The state is
     /// an immutable `Rc` a reducer replaces, so pointer identity is enough;
@@ -188,7 +194,11 @@ impl SliceLease {
                 return text.clone();
             }
         }
-        let text: Rc<str> = (self.0.to_json)(state.as_ref()).to_string().into();
+        let written = self.0.to_text.as_ref().and_then(|to_text| to_text(state.as_ref()));
+        let text: Rc<str> = match written {
+            Some(text) => text.into(),
+            None => (self.0.to_json)(state.as_ref()).to_string().into(),
+        };
         *self.0.text.borrow_mut() = Some((state, text.clone()));
         text
     }
@@ -299,6 +309,19 @@ impl Store {
         to_json: SliceJson,
         instance_id: Option<String>,
     ) -> SliceLease {
+        self.lease_with_text(key, reducer, initial, to_json, None, instance_id)
+    }
+
+    /// [`lease`](Self::lease), with a [`SliceText`] for the slice's text.
+    pub fn lease_with_text(
+        &self,
+        key: &str,
+        reducer: SliceReducer,
+        initial: SliceState,
+        to_json: SliceJson,
+        to_text: Option<SliceText>,
+        instance_id: Option<String>,
+    ) -> SliceLease {
         let instance_id = instance_id.unwrap_or_else(|| {
             self.lease_counter.set(self.lease_counter.get() + 1);
             format!("{key}#{}", self.lease_counter.get())
@@ -314,6 +337,7 @@ impl Store {
             state: RefCell::new(initial),
             reducer,
             to_json,
+            to_text,
             store: self.this.clone(),
             text: RefCell::new(None),
             revision: Cell::new(self.next_slice_revision()),

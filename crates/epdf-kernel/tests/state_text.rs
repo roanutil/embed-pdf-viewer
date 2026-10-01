@@ -75,3 +75,19 @@ fn an_unchanged_revision_returns_the_same_text() {
     let second = store.state_text();
     assert!(Rc::ptr_eq(&first, &second), "no rebuild while the revision holds");
 }
+
+#[test]
+fn a_slice_text_writer_stands_in_for_the_value_and_none_falls_back() {
+    use epdf_kernel::store::SliceText;
+    let store = Store::new(Rc::new(|_| {}));
+    let (reducer, to_json) = counter();
+    let written: SliceText = Rc::new(|state: &dyn Any| {
+        state.downcast_ref::<i64>().map(|n| format!(r#"{{"n":{n},"tag":"a\"b"}}"#))
+    });
+    store.lease_with_text("w", reducer.clone(), Rc::new(4_i64), to_json.clone(), Some(written), None);
+    let declined: SliceText = Rc::new(|_: &dyn Any| None);
+    store.lease_with_text("d", reducer, Rc::new(6_i64), to_json, Some(declined), None);
+    same(&store);
+    assert_eq!(&*store.slice_text("w").unwrap(), r#"{"n":4,"tag":"a\"b"}"#);
+    assert_eq!(&*store.slice_text("d").unwrap(), r#"{"n":6,"tag":"a\"b"}"#);
+}
