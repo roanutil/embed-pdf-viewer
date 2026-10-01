@@ -176,6 +176,11 @@
       "ref": "research/multi-platform-rust-core-impl-plugins",
       "sha": "373b7f73b1b1d0d4bf202ecfafdcbbc84f18ba31",
       "recipe": "rust-kernel"
+    },
+    "plugins-sharedhits": {
+      "ref": "research/rust-kernel-shared-hits",
+      "sha": "b450a9909e8c429216f95a529823384775f4da5f",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -379,6 +384,11 @@
     },
     "plugins-tip3": {
       "worktree": "plugins-tip3",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-sharedhits": {
+      "worktree": "plugins-sharedhits",
       "kernel": "rust",
       "rustReads": false
     }
@@ -591,6 +601,14 @@
     [
       "main",
       "plugins-tip3"
+    ],
+    [
+      "plugins-tip3",
+      "plugins-sharedhits"
+    ],
+    [
+      "main",
+      "plugins-sharedhits"
     ]
   ]
 }
