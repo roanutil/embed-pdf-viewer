@@ -380,4 +380,5 @@ out.
 to 75.7 ms) and 6.4% on `open(large)`: a smaller module compiles and instantiates sooner. No row
 is slower, and the open and scroll point estimates are 2 to 5% faster. Its cost is a build
 dependency: `build.sh` now needs binaryen's `wasm-opt` (version 133 here) wherever the kernel is
-built. We'd keep it.
+built. It's merged into `research/multi-platform-rust-core-impl-plugins` (a fast-forward to
+`e981e0cb9`); the LTO branch is deleted.
