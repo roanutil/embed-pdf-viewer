@@ -56,7 +56,7 @@ describe.skipIf(!hasDispatcher)('G3w: the session on the Rust side', () => {
     try {
       for (let round = 0; round < 8; round++) {
         const doc = await engine.open({ kind: 'bytes', id: `g3w-${round}`, bytes });
-        expect(doc.security.encryptionState, `round ${round}`).toBe('none');
+        expect(doc.security.current.encryption.state, `round ${round}`).toBe('none');
         await doc.close();
       }
     } finally {
@@ -72,8 +72,8 @@ describe.skipIf(!hasDispatcher)('G3w: the session on the Rust side', () => {
     const bytes = new Uint8Array(await readFile(ENCRYPTED));
     try {
       const doc = await engine.open({ kind: 'bytes', id: 'g3w-locked', bytes });
-      expect(doc.security.encryptionState).toBe('encrypted');
-      expect(doc.security.encryptionRequiresPassword).toBe(true);
+      expect(doc.security.current.encryption.state).toBe('encrypted');
+      expect(doc.security.current.encryption.requiresPassword).toBe(true);
       await doc.close();
     } finally {
       await engine.destroy();

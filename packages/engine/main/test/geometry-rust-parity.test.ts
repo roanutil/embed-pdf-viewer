@@ -62,7 +62,7 @@ async function readAllPages(rustReads: boolean, path: string): Promise<PageGeome
     const { pages } = await doc.pages.list();
     const snapshots: PageGeometrySnapshot[] = [];
     for (const page of pages) {
-      snapshots.push(await doc.page(page.pageObjectNumber).geometry.read());
+      snapshots.push(await doc.page(page.ref).geometry.read());
     }
     return snapshots;
   } finally {
