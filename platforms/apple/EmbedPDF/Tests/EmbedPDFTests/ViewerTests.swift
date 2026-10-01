@@ -28,6 +28,14 @@ extension BaseSuite {
       }
     }
 
+    @Test func aFailedOpenListsItsTabAsFailed() async throws {
+      let viewer = try await started()
+      _ = try? await viewer.open(Fixture.data("encrypted-hello"))
+      let documents = try await viewer.documents()
+      expectNoDifference(documents.map(\.status), [DocumentStatus.failed])
+      expectNoDifference(documents.first?.error?.code, "permission-denied")
+    }
+
     @Test func openingAndClosingAreObserved() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents

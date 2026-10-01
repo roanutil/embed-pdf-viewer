@@ -34,8 +34,8 @@ use epdf_plugin_search::ffi::SearchHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
-    DocumentEvent, DocumentEventListener, DocumentInfo, OpenDocumentOptions, PageInfo,
-    ViewerConfig, ViewerDelegate,
+    DocumentEvent, DocumentEventListener, DocumentInfo, DocumentStatus, OpenDocumentOptions,
+    PageInfo, ViewerConfig, ViewerDelegate,
 };
 use api::{Lifecycle, decode_pages};
 use host_table::HostTable;

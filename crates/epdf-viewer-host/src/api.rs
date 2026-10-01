@@ -5,9 +5,9 @@
 //! camelCase, lifecycle payloads as `crates/epdf-kernel/src/kernel.rs` emits
 //! them. A shape the kernel did not send is an error, never a guess.
 
-use epdf_ffi::{PageRef, ViewerError};
+use epdf_ffi::{PageRef, PluginErrorInfo, ViewerError};
 use epdf_kernel::Error;
-use epdf_kernel::types::DocInfo;
+use epdf_kernel::types::{DocInfo, DocStatus};
 use epdf_plugin_render::ffi::RenderConfig;
 use epdf_plugin_search::ffi::SearchConfig;
 use serde_json::Value;
@@ -41,6 +41,33 @@ pub struct DocumentInfo {
     pub id: String,
     pub name: Option<String>,
     pub page_count: u32,
+    pub status: DocumentStatus,
+    /// `Failed` only: why the open failed, as the kernel's
+    /// `toPluginErrorInfo` reports it. A locked document opened without its
+    /// password carries code `permission-denied`, with the engine's
+    /// `DocPasswordRequired` leading the message.
+    pub error: Option<PluginErrorInfo>,
+}
+
+/// Where a tab is, as the kernel's `DocInfo.status` reports it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum DocumentStatus {
+    Loading,
+    Locked,
+    Ready,
+    /// The kernel's `error`: the open failed, and `error` says why.
+    Failed,
+}
+
+impl From<DocStatus> for DocumentStatus {
+    fn from(status: DocStatus) -> Self {
+        match status {
+            DocStatus::Loading => DocumentStatus::Loading,
+            DocStatus::Locked => DocumentStatus::Locked,
+            DocStatus::Ready => DocumentStatus::Ready,
+            DocStatus::Error => DocumentStatus::Failed,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -76,7 +103,17 @@ pub trait ViewerDelegate: Send + Sync {
 
 impl From<DocInfo> for DocumentInfo {
     fn from(info: DocInfo) -> Self {
-        DocumentInfo { id: info.id, name: info.name, page_count: info.page_count }
+        DocumentInfo {
+            id: info.id,
+            name: info.name,
+            page_count: info.page_count,
+            status: info.status.into(),
+            error: info.error.map(|e| PluginErrorInfo {
+                code: e.code,
+                message: e.message,
+                capability: e.capability,
+            }),
+        }
     }
 }
 

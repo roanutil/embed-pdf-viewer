@@ -6,8 +6,8 @@ use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
 use epdf_viewer_host::{
-    DocumentEvent, DocumentEventListener, OpenDocumentOptions, ViewerConfig, ViewerDelegate,
-    ViewerHost,
+    DocumentEvent, DocumentEventListener, DocumentStatus, OpenDocumentOptions, ViewerConfig,
+    ViewerDelegate, ViewerHost,
 };
 use futures::FutureExt;
 use futures::executor::block_on;
@@ -62,6 +62,31 @@ fn the_password_reaches_the_engine() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options));
     let doc = doc.unwrap();
     assert!(doc.page_count > 0, "{doc:?}");
+}
+
+#[test]
+fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
+    let host = started();
+    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
+        .unwrap_err();
+    let documents = block_on(host.documents()).unwrap();
+    let [tab] = documents.as_slice() else { panic!("{documents:?}") };
+    assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
+    let error = tab.error.as_ref().expect("a failed tab without its error");
+    // The kernel's `toPluginError` maps the engine's `DocPasswordRequired`
+    // to `permission-denied` and keeps the engine code in the message.
+    assert_eq!(error.code, "permission-denied", "{error:?}");
+    assert!(error.message.starts_with("DocPasswordRequired"), "{error:?}");
+}
+
+#[test]
+fn an_open_document_lists_as_ready_without_an_error() {
+    let host = started();
+    block_on(host.open_document(test_support::fixture(test_support::REPORT), options())).unwrap();
+    let documents = block_on(host.documents()).unwrap();
+    let [tab] = documents.as_slice() else { panic!("{documents:?}") };
+    assert_eq!(tab.status, DocumentStatus::Ready, "{tab:?}");
+    assert_eq!(tab.error, None);
 }
 
 #[test]
