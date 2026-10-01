@@ -55,42 +55,12 @@ impl<C: 'static> KernelBound<C> {
         f: impl FnOnce(&C) -> Result<Promise<U>, Error> + Send + 'static,
         map: impl FnOnce(U) -> T + Send + 'static,
     ) -> impl Future<Output = Result<T, ViewerError>> + Send {
-        let (tx, rx) = oneshot::channel::<Result<T, ViewerError>>();
-        let pending = Arc::new(AtomicU64::new(0));
-        let slot = pending.clone();
+        let (slot, reply) = PromiseSlot::pending(self.post.clone(), map);
         let id = self.id;
         (self.post)(Box::new(move || {
-            let started = with(id, |c: &C| f(c).map_err(ViewerError::from));
-            match started {
-                Err(error) => {
-                    let _ = tx.send(Err(error));
-                }
-                Ok(promise) => {
-                    let pid = NEXT.fetch_add(1, Ordering::Relaxed);
-                    // The future may have been dropped before this job ran:
-                    // then `CANCELLED` is already in the slot, so abort now
-                    // and don't park the promise.
-                    if slot.compare_exchange(0, pid, Ordering::SeqCst, Ordering::SeqCst).is_err() {
-                        promise.abort(None);
-                        return;
-                    }
-                    SLAB.with(|s| s.borrow_mut().insert(pid, Box::new(promise.clone())));
-                    promise.on_settle(move |result| {
-                        SLAB.with(|s| s.borrow_mut().remove(&pid));
-                        let _ = tx.send(match result {
-                            Ok(value) => Ok(map(value.clone())),
-                            Err(error) => Err(ViewerError::from(error.clone())),
-                        });
-                    });
-                }
-            }
+            slot.start(with(id, |c: &C| f(c).map_err(ViewerError::from)));
         }));
-        let guard = AbortOnDrop::<U> { pending, post: self.post.clone(), _value: PhantomData };
-        async move {
-            let result = rx.await.unwrap_or(Err(ViewerError::Closed));
-            guard.disarm();
-            result
-        }
+        reply
     }
 
     /// No reply: for hot paths where the caller never waits.
@@ -118,9 +88,8 @@ fn with<C: 'static, T>(
     id: u64,
     f: impl FnOnce(&C) -> Result<T, ViewerError>,
 ) -> Result<T, ViewerError> {
-    let value = SLAB.with(|s| {
-        s.borrow().get(&id).and_then(|v| v.downcast_ref::<C>().map(|c| c as *const C))
-    });
+    let value = SLAB
+        .with(|s| s.borrow().get(&id).and_then(|v| v.downcast_ref::<C>().map(|c| c as *const C)));
     match value {
         // The slab entry outlives this call: only a later job on this same
         // thread can remove it. The `RefCell` borrow is not held across `f`,
@@ -128,6 +97,64 @@ fn with<C: 'static, T>(
         // wraps it in a `KernelBound`).
         Some(c) => f(unsafe { &*c }),
         None => Err(ViewerError::Closed),
+    }
+}
+
+/// The kernel-thread half of a call that answers with a promise. The job
+/// hands it what it started; it parks the promise until it settles, or until
+/// the caller's future is dropped, which aborts it. `KernelBound` and any
+/// other owner of kernel-thread state share it.
+pub struct PromiseSlot<U: Clone + 'static, T: Send + 'static> {
+    tx: oneshot::Sender<Result<T, ViewerError>>,
+    pending: Arc<AtomicU64>,
+    map: Box<dyn FnOnce(U) -> T + Send>,
+}
+
+impl<U: Clone + 'static, T: Send + 'static> PromiseSlot<U, T> {
+    /// The slot to move into the job, and the future that answers. Aborts
+    /// go through `post`. A slot dropped unstarted (its job never ran)
+    /// answers `Closed`.
+    pub fn pending(
+        post: KernelPost,
+        map: impl FnOnce(U) -> T + Send + 'static,
+    ) -> (Self, impl Future<Output = Result<T, ViewerError>> + Send) {
+        let (tx, rx) = oneshot::channel::<Result<T, ViewerError>>();
+        let pending = Arc::new(AtomicU64::new(0));
+        let guard = AbortOnDrop::<U> { pending: pending.clone(), post, _value: PhantomData };
+        let reply = async move {
+            let result = rx.await.unwrap_or(Err(ViewerError::Closed));
+            guard.disarm();
+            result
+        };
+        (PromiseSlot { tx, pending, map: Box::new(map) }, reply)
+    }
+
+    /// On the kernel thread, with what the job started.
+    pub fn start(self, started: Result<Promise<U>, ViewerError>) {
+        let PromiseSlot { tx, pending, map } = self;
+        match started {
+            Err(error) => {
+                let _ = tx.send(Err(error));
+            }
+            Ok(promise) => {
+                let pid = NEXT.fetch_add(1, Ordering::Relaxed);
+                // The future may have been dropped before this job ran:
+                // then `CANCELLED` is already in the slot, so abort now
+                // and don't park the promise.
+                if pending.compare_exchange(0, pid, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+                    promise.abort(None);
+                    return;
+                }
+                SLAB.with(|s| s.borrow_mut().insert(pid, Box::new(promise.clone())));
+                promise.on_settle(move |result| {
+                    SLAB.with(|s| s.borrow_mut().remove(&pid));
+                    let _ = tx.send(match result {
+                        Ok(value) => Ok(map(value.clone())),
+                        Err(error) => Err(ViewerError::from(error.clone())),
+                    });
+                });
+            }
+        }
     }
 }
 

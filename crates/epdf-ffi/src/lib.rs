@@ -8,7 +8,7 @@ pub mod geometry;
 pub mod kernel_thread;
 pub mod subscription;
 
-pub use bound::KernelBound;
+pub use bound::{KernelBound, PromiseSlot};
 pub use error::ViewerError;
 pub use geometry::{PageRef, Point, Rect, Size};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
