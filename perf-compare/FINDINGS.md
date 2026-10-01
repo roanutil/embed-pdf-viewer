@@ -431,3 +431,26 @@ present those 7 files pass, 38 of 38. The other 4 are the Rust core's own: the R
 reports no `security.encryptionState` (`test/session-rust-rehearsal.test.ts:59`, `:75`), and the
 Rust geometry reader's output lacks `pageObjectNumber`, which the TypeScript reader returns
 (`test/geometry-rust-parity.test.ts`). Both failed on the old pin as well.
+
+#### `-O2` and assertions, apart
+
+The link above changes two things, so each is measured on its own as well: `-O2` with assertions
+kept (`research/rust-core-engine-o2` at `977a874e4`, `research/rust-kernel-engine-o2` at
+`785e68335`), against the same base and the full link (R=3,
+`results/2026-10-01T04-27-30-603Z-2023MBP16Grey-desktop`, A/A 39 of 39).
+
+| Build | Engine wasm | Brotli |
+| --- | ---: | ---: |
+| base | 11,120,042 | 3,019,872 |
+| `-O2`, assertions on | 10,164,511 (-8.6%) | 3,013,134 (-0.2%) |
+| `-O2`, assertions off | 10,098,549 (-9.2%) | 2,994,491 (-0.8%) |
+
+`-O2` is 94% of the size. On speed, only the open rows move, and only by 3 to 7%. On impl, `-O2`
+alone opens `ebook.pdf` 4.7% sooner, and turning assertions off on top shows no detectable
+difference. On plugins, `-O2` alone shows none, and turning assertions off on top opens `ebook.pdf`
+4% sooner and settles it 3.4% sooner. No row is slower in any of the four comparisons. The 14% on
+`jump` in the run before didn't reproduce.
+
+We'd take `-O2` and keep assertions: it gets nearly all the size and part of the speed, and what
+assertions cost is a few percent on one row of one branch. They already caught one real bug here
+(the i64 split), and the named abort is worth more than 3% on opening a small document.
