@@ -36,6 +36,10 @@ public final class PDFViewer: Sendable {
     }
   }
 
+  /// Not usable yet: it cannot succeed until document security lands
+  /// (follow-on plan B4). The native engine fails a locked open outright, so
+  /// the kernel records a failed tab, not a locked one, and there is nothing
+  /// to unlock. Open the document again with `password` instead.
   public func unlock(_ document: PDFDocument, password: String) async throws(PDFError) {
     try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
   }
