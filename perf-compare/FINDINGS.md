@@ -341,7 +341,8 @@ described in the section named. The first five are cheap, and two of them are al
    its own below: a small win, kept.
 4. `staged_meta.take()` (The heap leak). Tried since, and left alone: it isn't a second copy any
    more, and the conformance vectors pin what it holds. See below.
-5. The second copy of `preact/compat` in every bundle (Build settings).
+5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and kept:
+   see below.
 6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
    kernel's own maps (Serialization formats).
 7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
@@ -481,3 +482,23 @@ And that stale meta is behavior the TypeScript kernel has, which two conformance
 
 So the kernel keeps it, at the cost of one page registry per page-edited open document, until
 close. Changing it means changing the TypeScript reference and the vectors with it.
+
+### One copy of `preact/compat`
+
+The viewer's `react` and `react-dom` aliases resolve `preact/compat` the way Node does, to
+`compat/dist/compat.mjs`, but `compat/client.mjs` imports `preact/compat` by name and Vite resolves
+that the way a browser does, to `compat/dist/compat.module.js`. So every bundle carried both, the
+shipped viewer included, and each copy patches Preact's `options` hooks when it loads. Aliasing
+them to `compat.module.js` leaves one (source maps of the built viewer list `compat/client.mjs`
+and `compat/dist/compat.module.js` only). The bundle shrinks by about 5.4 KB raw and doesn't move
+compressed.
+
+Measured with the harness's `dedupeCompat` switch, each arm against its own build (R=3,
+`results/2026-10-01T06-10-46-897Z-2023MBP16Grey-desktop`, A/A 39 of 39): on `main`, `open(large)`
+main-thread task time is 7.1% lower (262.7 to 244.0 ms) and JavaScript time 7.7% lower; on impl
+and plugins no row moves beyond noise. `main`'s toolbar still re-renders on every change, which
+the toolbar gate removed on the research branches, so there's less there for a second set of hooks
+to slow down. Kept on both research branches (`packages/viewer/main/vite.config.ts`, and plugins'
+`examples/rust-kernel-eval/vite.config.ts`) for the single instance it gives. The cost is an alias
+to a file inside preact's package, which a preact release that renames its dist files would break
+at build time. `main` has the same aliases and would gain the 7%.
