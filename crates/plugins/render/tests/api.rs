@@ -104,6 +104,13 @@ fn handle_costs() {
         cost(json!({ "source": { "kind": "url", "url": "x" }, "width": 3, "height": 5 })),
         15.0
     );
+    // A native host's raw pixels, held host side: the byte count, which is
+    // four times the pixel count (and more, with row padding).
+    assert_eq!(
+        cost(json!({ "source": { "kind": "pixels", "$byteLength": 64 },
+            "width": 3, "height": 5, "stride": 16 })),
+        64.0
+    );
     assert_eq!(cost(json!({ "width": null, "height": 5 })), 0.0);
     assert_eq!(cost(json!({ "width": true, "height": 5 })), 5.0);
     assert_eq!(cost(json!({ "width": 7 })), 1.0);

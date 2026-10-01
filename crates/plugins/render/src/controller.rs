@@ -785,6 +785,18 @@ impl RenderCapability {
     pub fn tile_manager(&self) -> &TileManager {
         &self.0.tiles
     }
+
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &AbortSignal {
+        self.0.cx.lifetime()
+    }
+
+    /// The page's width in points, as `render_page` sizes against it.
+    /// `not-found` for a page not in this document.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn page_width(&self, page: PageRef) -> Result<f64, Error> {
+        self.0.page_width_of(page)
+    }
 }
 
 // ── view demands ──────────────────────────────────────────────────────────────

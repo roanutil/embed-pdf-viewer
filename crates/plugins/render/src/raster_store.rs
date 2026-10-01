@@ -28,8 +28,9 @@ use serde_json::Value;
 pub type ReleaseImage = Rc<dyn Fn(&Value)>;
 
 /// A `PageImageHandle` as the engine answered it: the result JSON (`source`
-/// as `{kind: 'bytes', bytes}` or `{kind: 'url', url}`, `width`, `height`,
-/// and whatever else the engine put there). Cheap to clone. A handle made
+/// as `{kind: 'bytes', bytes}` or `{kind: 'url', url}`, or a native host's
+/// raw pixels as `{kind: 'pixels', $byteLength}`, `width`, `height`, and
+/// whatever else the engine put there). Cheap to clone. A handle made
 /// [`with_release`](Self::with_release) calls its hook once, when the last
 /// clone drops: store eviction, and the paint plans that still held it.
 #[derive(Clone)]
@@ -83,8 +84,9 @@ impl PageImageHandle {
         Bytes::from_json(source.get("bytes")?)
     }
 
-    /// Approximate memory cost: encoded bytes when known, the pixel count as
-    /// a decoded-order estimate for URL handles, 1 when nothing is known.
+    /// Approximate memory cost: encoded bytes when known, raw pixel bytes
+    /// for a native host's pixels, the pixel count as a decoded-order
+    /// estimate for URL handles, 1 when nothing is known.
     pub fn cost(&self) -> f64 {
         let source = self.0.value.get("source");
         if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("bytes") {
@@ -99,6 +101,14 @@ impl PageImageHandle {
                 return len;
             }
             return self.bytes().map_or(f64::NAN, |b| b.0.len() as f64);
+        }
+        // A native host's raw pixels (`epdf-viewer-host`), kept on its side
+        // behind the handle's `$host` id with only the byte count crossing.
+        // The TypeScript never sees this kind.
+        if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("pixels")
+            && let Some(len) = source.and_then(|s| s.get("$byteLength")).and_then(Value::as_f64)
+        {
+            return len;
         }
         match (self.0.value.get("width"), self.0.value.get("height")) {
             (Some(width), Some(height)) => js_number(width) * js_number(height),

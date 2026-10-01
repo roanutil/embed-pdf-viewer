@@ -38,8 +38,13 @@ pub mod strategy;
 pub mod tile_manager;
 pub mod tiles;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 #[cfg(feature = "harness")]
 pub mod harness;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
 
 pub use contract::{
     InvalidateOptions, InvalidateScope, PageImage, PageRender, PageRenderFailure,

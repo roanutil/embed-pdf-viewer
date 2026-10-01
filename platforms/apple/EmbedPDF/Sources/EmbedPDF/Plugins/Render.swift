@@ -1,0 +1,159 @@
+public import CoreGraphics
+public import EmbedPDFBindings
+import Foundation
+
+public typealias RenderConfig = EmbedPDFBindings.RenderConfig
+public typealias RenderFullPageOptions = EmbedPDFBindings.RenderFullPageOptions
+public typealias RenderQuantize = EmbedPDFBindings.RenderQuantize
+public typealias RenderPageOptions = EmbedPDFBindings.RenderPageOptions
+public typealias RenderInvalidateScope = EmbedPDFBindings.RenderInvalidateScope
+public typealias RenderBatchFailure = EmbedPDFBindings.RenderBatchFailure
+public typealias RenderEvent = EmbedPDFBindings.RenderEvent
+
+/// A rendered page. `image` owns its pixels: it outlives the document and
+/// the viewer.
+public struct RenderedPage: @unchecked Sendable {
+  public let width: Int
+  public let height: Int
+  /// Device pixels per PDF point across the page's width.
+  public let scale: Double
+  /// Immutable, so sharing it across tasks is safe.
+  public let image: CGImage
+}
+
+/// One page of a batch.
+public struct RenderedPageResult: Sendable {
+  public let page: PageRef
+  public let rendered: RenderedPage
+}
+
+/// A batch, best effort per page, each list in input order.
+public struct RenderBatchResult: Sendable {
+  public let applied: [RenderedPageResult]
+  public let failed: [RenderBatchFailure]
+}
+
+/// A document's page rasters. Get one with `PDFViewer.render(in:)`; the
+/// viewer needs `ViewerConfig(render: RenderConfig())`. It keeps the viewer
+/// alive. After its document closes, every call throws `instance-closed`.
+public struct RenderCapability: Sendable {
+  let handle: RenderHandle
+  let viewer: PDFViewer
+
+  /// Whether page rasters would be served to this session (`doc.render`).
+  public func canRender() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canRender() }
+  }
+
+  /// Render one page at exactly the size asked for: `width` device pixels,
+  /// or `scale` device pixels a point (1 when neither is given). Throws
+  /// `invalid-input` for a size that is not a positive number, `not-found`
+  /// for a page not in this document, and `operation-cancelled` when the
+  /// task is cancelled.
+  public func renderPage(_ page: PageRef, options: RenderPageOptions = RenderPageOptions())
+    async throws(PDFError) -> RenderedPage
+  {
+    let image = try await bridgedCancellable { token in
+      try await handle.renderPage(page: page, options: options, cancel: token)
+    }
+    return try RenderedPage(image)
+  }
+
+  /// A small raster `maxWidth` device pixels wide.
+  public func renderThumbnail(
+    _ page: PageRef, maxWidth: Double, includeAnnotations: Bool? = nil
+  ) async throws(PDFError) -> RenderedPage {
+    let image = try await bridgedCancellable { token in
+      try await handle.renderThumbnail(
+        page: page, maxWidth: maxWidth, includeAnnotations: includeAnnotations, cancel: token)
+    }
+    return try RenderedPage(image)
+  }
+
+  /// Render several pages, `concurrency` at a time (4 when `nil`). A page
+  /// that fails is in `failed`; cancelling the task throws
+  /// `operation-cancelled` for the whole batch.
+  public func renderPages(
+    _ pages: [PageRef], options: RenderPageOptions = RenderPageOptions(),
+    concurrency: UInt32? = nil
+  ) async throws(PDFError) -> RenderBatchResult {
+    let batch = try await bridgedCancellable { token in
+      try await handle.renderPages(
+        pages: pages, options: options, concurrency: concurrency, cancel: token)
+    }
+    var applied: [RenderedPageResult] = []
+    for entry in batch.applied {
+      applied.append(RenderedPageResult(page: entry.page, rendered: try RenderedPage(entry.image)))
+    }
+    return RenderBatchResult(applied: applied, failed: batch.failed)
+  }
+
+  /// The version of the raster these options would produce. It goes up when
+  /// the page's pixels change.
+  public func renderEpoch(_ page: PageRef, includeAnnotations: Bool? = nil) async throws(PDFError)
+    -> UInt64
+  {
+    try await bridged {
+      try await handle.renderEpoch(page: page, includeAnnotations: includeAnnotations)
+    }
+  }
+
+  /// Declare that page pixels changed: every page when `pages` is `nil`,
+  /// `.content` when `scope` is.
+  public func invalidate(_ pages: [PageRef]? = nil, scope: RenderInvalidateScope? = nil)
+    async throws(PDFError)
+  {
+    try await bridged { try await handle.invalidate(pages: pages, scope: scope) }
+  }
+
+  /// Invalidations, and rasters resolving or failing. Finishes when the
+  /// document closes (at once if it already has) or the viewer is destroyed.
+  public var events: AsyncStream<RenderEvent> {
+    viewer.registry.stream { handle.subscribe(listener: $0) }
+  }
+}
+
+extension RenderedPage {
+  /// Wrap the owned pixels in a `CGImage`. `CGDataProvider` retains the
+  /// buffer, so the image depends on nothing in Rust.
+  init(_ rendered: RenderedImage) throws(PDFError) {
+    let alpha: CGImageAlphaInfo =
+      switch rendered.format {
+      // Memory order R, G, B, A with straight alpha.
+      case .rgba8: .last
+      }
+    guard
+      let provider = CGDataProvider(data: rendered.pixels as CFData),
+      let space = CGColorSpace(name: CGColorSpace.sRGB),
+      let image = CGImage(
+        width: Int(rendered.width), height: Int(rendered.height), bitsPerComponent: 8,
+        bitsPerPixel: 32, bytesPerRow: Int(rendered.stride), space: space,
+        bitmapInfo: CGBitmapInfo(rawValue: alpha.rawValue), provider: provider, decode: nil,
+        shouldInterpolate: true, intent: .defaultIntent)
+    else {
+      throw PDFError(
+        name: "InvalidState", code: "invalid-state",
+        detail: "Core Graphics refused a \(rendered.width)x\(rendered.height) raster")
+    }
+    self.init(
+      width: Int(rendered.width), height: Int(rendered.height), scale: rendered.scale,
+      image: image)
+  }
+}
+
+extension EventRelay: RenderEventListener where Event == RenderEvent {
+  func onEvent(event: RenderEvent) {
+    continuation.yield(event)
+  }
+
+  func onEnd() {
+    continuation.finish()
+  }
+}
+
+extension PDFViewer {
+  public func render(in document: PDFDocument) async throws(PDFError) -> RenderCapability {
+    let handle = try await bridged { try await host.render(documentId: document.id) }
+    return RenderCapability(handle: handle, viewer: self)
+  }
+}

@@ -8,6 +8,7 @@
 use epdf_ffi::{PageRef, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::DocInfo;
+use epdf_plugin_render::ffi::RenderConfig;
 use epdf_plugin_search::ffi::SearchConfig;
 use serde_json::Value;
 
@@ -20,6 +21,9 @@ pub struct ViewerConfig {
     /// Install `searchPlugin(config)`: text search, a session per document.
     #[uniffi(default = None)]
     pub search: Option<SearchConfig>,
+    /// Install `renderPlugin(config)`: page rasters as owned pixels.
+    #[uniffi(default = None)]
+    pub render: Option<RenderConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]

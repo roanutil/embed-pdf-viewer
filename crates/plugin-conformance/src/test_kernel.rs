@@ -39,16 +39,20 @@ impl Reply {
 
 pub type Responder = Rc<dyn Fn(&[Value]) -> Result<Reply, Error>>;
 
-/// The fake engine's spec, plus responders that answer document calls by
-/// path before the fake's tables are consulted.
+/// A responder for a page call: the page's object number, then the args.
+pub type PageResponder = Rc<dyn Fn(u32, &[Value]) -> Result<Reply, Error>>;
+
+/// The fake engine's spec, plus responders that answer document and page
+/// calls by path before the fake's tables are consulted.
 pub struct TestSpec {
     pub engine: Value,
     responders: Vec<(String, Responder)>,
+    page_responders: Vec<(String, PageResponder)>,
 }
 
 impl TestSpec {
     pub fn new(engine: Value) -> Self {
-        TestSpec { engine, responders: Vec::new() }
+        TestSpec { engine, responders: Vec::new(), page_responders: Vec::new() }
     }
 
     /// Answer the document call `path` (not a page call) with `responder`.
@@ -58,6 +62,19 @@ impl TestSpec {
         responder: impl Fn(&[Value]) -> Result<Reply, Error> + 'static,
     ) -> Self {
         self.responders.push((path.to_string(), Rc::new(responder)));
+        self
+    }
+
+    /// Answer the page call `path` (`page.render.image`, say) with
+    /// `responder`, which gets the page's object number and the args. The
+    /// responder answers any page; `page_index` still refuses one the
+    /// spec's page list lacks.
+    pub fn respond_page(
+        mut self,
+        path: &str,
+        responder: impl Fn(u32, &[Value]) -> Result<Reply, Error> + 'static,
+    ) -> Self {
+        self.page_responders.push((path.to_string(), Rc::new(responder)));
         self
     }
 }
@@ -91,10 +108,21 @@ impl TestKernel {
     /// Start a kernel with `plugins` and open [`DOCUMENT`], running the
     /// runtime until the open settles.
     pub fn open(plugins: Vec<AnyPlugin>, spec: impl Into<TestSpec>) -> Result<Self, Error> {
-        let TestSpec { engine: spec, responders } = spec.into();
+        TestKernel::open_with(plugins, spec, KernelOptions::default())
+    }
+
+    /// [`open`](Self::open) with the kernel's options: a host that sets
+    /// `release_closed_sessions`, say.
+    pub fn open_with(
+        plugins: Vec<AnyPlugin>,
+        spec: impl Into<TestSpec>,
+        options: KernelOptions,
+    ) -> Result<Self, Error> {
+        let TestSpec { engine: spec, responders, page_responders } = spec.into();
         let fake = FakeEngine::new(spec);
-        let engine = Rc::new(TestEngine { fake: fake.clone(), responders: Rc::new(responders) });
-        let kernel = Kernel::new(engine, plugins, KernelOptions::default())?;
+        let responders = Rc::new(Responders { document: responders, page: page_responders });
+        let engine = Rc::new(TestEngine { fake: fake.clone(), responders });
+        let kernel = Kernel::new(engine, plugins, options)?;
         settle(&kernel.start())?;
         let opened = kernel.documents().open(
             OpenSource::Input(
@@ -139,9 +167,30 @@ pub fn settle<T: Clone + 'static>(promise: &Promise<T>) -> Result<T, Error> {
     }
 }
 
+struct Responders {
+    document: Vec<(String, Responder)>,
+    page: Vec<(String, PageResponder)>,
+}
+
+impl Responders {
+    /// The reply for `path`, when a responder answers it.
+    fn answer(&self, path: &str, pon: Option<u32>, args: &[Value]) -> Option<Result<Reply, Error>> {
+        match pon {
+            Some(pon) => {
+                let (_, responder) = self.page.iter().find(|(p, _)| p == path)?;
+                Some(responder(pon, args))
+            }
+            None => {
+                let (_, responder) = self.document.iter().find(|(p, _)| p == path)?;
+                Some(responder(args))
+            }
+        }
+    }
+}
+
 struct TestEngine {
     fake: Rc<FakeEngine>,
-    responders: Rc<Vec<(String, Responder)>>,
+    responders: Rc<Responders>,
 }
 
 impl Engine for TestEngine {
@@ -169,7 +218,7 @@ impl Engine for TestEngine {
 struct TestHandle {
     inner: Rc<dyn DocumentHandle>,
     fake: Rc<FakeEngine>,
-    responders: Rc<Vec<(String, Responder)>>,
+    responders: Rc<Responders>,
 }
 
 impl DocumentHandle for TestHandle {
@@ -190,14 +239,10 @@ impl DocumentHandle for TestHandle {
     }
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
-        let responder = match pon {
-            Some(_) => None,
-            None => self.responders.iter().find(|(p, _)| p == path).map(|(_, r)| r.clone()),
-        };
-        let Some(responder) = responder else {
+        let Some(reply) = self.responders.answer(path, pon, &args) else {
             return self.inner.call(path, pon, args);
         };
-        match responder(&args) {
+        match reply {
             Ok(Reply { value, events }) => {
                 let id = self.inner.id();
                 for event in &events {

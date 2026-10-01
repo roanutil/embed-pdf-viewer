@@ -17,12 +17,14 @@ pub mod translate;
 extern crate epdf_uniffi;
 
 use std::future::Future;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_metadata::ffi::MetadataHandle;
+use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use serde_json::{Map, Value, json};
 
@@ -236,6 +238,18 @@ impl ViewerHost {
         .await
     }
 
+    /// The render capability of an open document: page rasters copied out
+    /// of the `HostTable` into owned pixels. Needs `ViewerConfig.render`;
+    /// without it the kernel refuses the token.
+    pub async fn render(&self, document_id: String) -> Result<Arc<RenderHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_render::RENDER, Some(&document_id))?;
+            Ok(RenderHandle::new(cap, post, Rc::new(HostTable::get)))
+        })
+        .await
+    }
+
     pub fn state_revision(&self) -> u64 {
         self.revision.load(Ordering::SeqCst)
     }
@@ -245,6 +259,15 @@ impl ViewerHost {
     pub fn shutdown(&self) {
         let thread = self.thread.lock().unwrap().take();
         drop(thread);
+    }
+}
+
+impl ViewerHost {
+    /// How many byte buffers the `HostTable` holds: a test's view of what
+    /// the host has not let go of. Not exported.
+    #[doc(hidden)]
+    pub async fn host_table_entries(&self) -> Result<usize, ViewerError> {
+        self.call(|_| Ok(HostTable::len())).await
     }
 }
 

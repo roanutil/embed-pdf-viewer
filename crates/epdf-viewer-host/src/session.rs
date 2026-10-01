@@ -11,6 +11,7 @@ use epdf_kernel::{Error, Kernel, KernelOptions, Unsubscribe};
 
 use crate::api::{ViewerConfig, ViewerDelegate};
 use crate::engine_worker::EngineWorker;
+use crate::host_table::HostTable;
 use crate::native_engine::NativeEngine;
 
 pub struct Session {
@@ -35,6 +36,11 @@ impl Session {
             report: Some(Rc::new(move |error: &Error| {
                 reporter.report(ViewerError::from(error.clone()));
             })),
+            // A closed document's capabilities go once no foreign handle
+            // holds them. Otherwise the session and its capabilities keep
+            // each other alive past the close, and the render plugin's
+            // raster store keeps its pixels in the `HostTable` for good.
+            release_closed_sessions: true,
             ..KernelOptions::default()
         };
         let mut plugins = Vec::new();
@@ -43,6 +49,21 @@ impl Session {
         }
         if let Some(search) = config.search {
             plugins.push(epdf_plugin_search::search_plugin(search.into()));
+        }
+        if let Some(render) = config.render {
+            // A raster's pixels sit in the `HostTable` behind its `$host` id
+            // for as long as the raster store holds the image; this lets go
+            // when the store's last handle does. The frame scheduler stays
+            // the default 16 ms timer on the kernel thread.
+            let host = epdf_plugin_render::RenderHost {
+                release_image: Some(Rc::new(|image: &serde_json::Value| {
+                    if let Some(id) = image.get("$host").and_then(serde_json::Value::as_u64) {
+                        HostTable::release(id);
+                    }
+                })),
+                ..epdf_plugin_render::RenderHost::default()
+            };
+            plugins.push(epdf_plugin_render::render_plugin_with_host(render.into(), host));
         }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,

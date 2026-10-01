@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::MetadataPatch;
+use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
 use epdf_viewer_host::{
     DocumentEvent, DocumentEventListener, OpenDocumentOptions, ViewerConfig, ViewerDelegate,
@@ -210,4 +211,87 @@ fn without_its_config_the_search_plugin_is_not_installed() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     assert!(block_on(host.search(doc.id)).is_err());
+}
+
+fn with_render() -> Arc<ViewerHost> {
+    let config = ViewerConfig { render: Some(RenderConfig::default()), ..Default::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_render_plugin_renders_rgba_through_the_native_engine() {
+    let host = with_render();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap().remove(0);
+    let render = block_on(host.render(doc.id)).unwrap();
+    assert!(block_on(render.can_render()).unwrap());
+    let options = RenderPageOptions { scale: Some(1.0), ..Default::default() };
+    let image = block_on(render.render_page(page.page, options, CancelToken::new())).unwrap();
+    assert_eq!(f64::from(image.width), page.width.round());
+    assert_eq!(f64::from(image.height), page.height.round());
+    assert!(image.stride >= image.width * 4);
+    assert_eq!(image.pixels.len(), (image.stride * image.height) as usize);
+    assert_eq!(image.format, RenderPixelFormat::Rgba8);
+    // Channel order: the fixture is an 80 by 20 point page of four 20-point
+    // squares, red, green, blue and (0.2, 0.4, 0.6), so a red and blue swap
+    // shows in the first square.
+    assert_eq!((image.width, image.height), (80, 20));
+    let pixel = |x: usize| {
+        let at = 10 * image.stride as usize + x * 4;
+        image.pixels[at..at + 4].to_vec()
+    };
+    assert_eq!(pixel(10), [255, 0, 0, 255]);
+    assert_eq!(pixel(30), [0, 255, 0, 255]);
+    assert_eq!(pixel(50), [0, 0, 255, 255]);
+    assert_eq!(pixel(70), [51, 102, 153, 255]);
+}
+
+#[test]
+fn a_closed_documents_pixels_go_with_its_render_handle() {
+    let host = with_render();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let render = block_on(host.render(doc.id.clone())).unwrap();
+    let options = RenderPageOptions { scale: Some(0.5), ..Default::default() };
+    block_on(render.render_page(page, options, CancelToken::new())).unwrap();
+    // The raster store keeps the image, and the host table its pixels.
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), 1);
+    block_on(host.close_document(doc.id)).unwrap();
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), 1);
+    drop(render);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while block_on(host.host_table_entries()).unwrap() != 0 {
+        assert!(Instant::now() < deadline, "the closed document's pixels were never released");
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn shutting_down_with_a_rendered_image_held_does_not_abort() {
+    // The kernel thread's slab still holds the render capability when the
+    // thread exits, and dropping it releases the raster store's pixels while
+    // thread locals are being torn down.
+    let host = with_render();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let render = block_on(host.render(doc.id)).unwrap();
+    let options = RenderPageOptions { scale: Some(0.25), ..Default::default() };
+    let image = block_on(render.render_page(page, options, CancelToken::new())).unwrap();
+    block_on(host.destroy()).unwrap();
+    host.shutdown();
+    drop(render);
+    assert!(!image.pixels.is_empty());
+}
+
+#[test]
+fn without_its_config_the_render_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+        .unwrap();
+    assert!(block_on(host.render(doc.id)).is_err());
 }

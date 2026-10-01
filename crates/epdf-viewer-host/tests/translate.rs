@@ -142,6 +142,62 @@ fn a_search_hit_without_its_page_is_an_error() {
 }
 
 #[test]
+fn a_render_request_keeps_the_viewport_and_drops_the_encode_options() {
+    // What the render plugin sends: the host renders raw pixels on
+    // `pages.render` and reads neither `format` nor `quality`.
+    let options = json!({
+        "viewport": {"kind": "width", "width": 612.0},
+        "includeAnnotations": false,
+        "format": "png",
+        "quality": 0.8
+    });
+    let call = translate("d1", "page.render.image", Some(2), &[options], 14).unwrap();
+    assert_eq!(
+        call.request["options"],
+        json!({"viewport": {"kind": "width", "width": 612.0}, "includeAnnotations": false})
+    );
+}
+
+fn raster(json: &str, pixels: Vec<u8>) -> HostResponse {
+    HostResponse { json: json.into(), payloads: vec![pixels] }
+}
+
+#[test]
+fn a_raster_decodes_to_the_raw_pixels_the_render_plugin_reads() {
+    let pixels = vec![255, 0, 0, 255, 0, 0, 255, 255];
+    let decoded = decode(
+        &Decode::Raster,
+        raster(r#"{"result":{"width":2,"height":1,"stride":8}}"#, pixels.clone()),
+    )
+    .unwrap();
+    let id = decoded.value["$host"].as_u64().unwrap();
+    assert_eq!(
+        decoded.value,
+        json!({
+            "width": 2, "height": 1, "stride": 8,
+            "color": "rgba8", "premultipliedAlpha": false,
+            "source": {"kind": "pixels", "$byteLength": 8},
+            "$host": id
+        })
+    );
+    assert_eq!(HostTable::get(id).as_deref(), Some(&pixels));
+    HostTable::release(id);
+}
+
+#[test]
+fn a_raster_whose_pixels_do_not_fit_is_an_error() {
+    let short = raster(r#"{"result":{"width":2,"height":2,"stride":8}}"#, vec![0; 8]);
+    assert!(decode(&Decode::Raster, short).is_err());
+    let narrow = raster(r#"{"result":{"width":3,"height":1,"stride":8}}"#, vec![0; 8]);
+    assert!(decode(&Decode::Raster, narrow).is_err());
+    let no_stride = raster(r#"{"result":{"width":2,"height":1}}"#, vec![0; 8]);
+    assert!(decode(&Decode::Raster, no_stride).is_err());
+    assert!(
+        decode(&Decode::Raster, answer(r#"{"result":{"width":2,"height":1,"stride":8}}"#)).is_err()
+    );
+}
+
+#[test]
 fn a_host_error_is_an_engine_error() {
     let json = r#"{"error":{"code":"DocPasswordRequired","message":"document e is locked and requires a password"}}"#;
     let error = decode(&Decode::PageList, answer(json)).err().unwrap();

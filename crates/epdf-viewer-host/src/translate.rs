@@ -15,9 +15,10 @@
 //! and wraps a mutation's result with its sequence and event. What decoding
 //! produces is what the plugins read, so where the host and the
 //! `engine-core` DTOs differ for a mapped kind (`PageLayout.ref`,
-//! `SearchMatch.page`) it is filled in here, and a `SearchRequest`'s
-//! `startPage` goes out as the object number the host reads. A shape the
-//! host did not send is an error, never a guess.
+//! `SearchMatch.page`, a raster's pixel format) it is filled in here, a
+//! `SearchRequest`'s `startPage` goes out as the object number the host
+//! reads, and a render request leaves its encode options behind. A shape
+//! the host did not send is an error, never a guess.
 
 use epdf_engine::host::HostResponse;
 use epdf_kernel::Error;
@@ -44,7 +45,10 @@ pub enum Decode {
     /// A mutation: `{result, mutationSequence, event}`. Answers `result`
     /// and hands back the event to publish.
     Mutation,
-    /// Width, height and stride, with the pixels moved into the `HostTable`.
+    /// Width, height and stride, with the pixels moved into the `HostTable`
+    /// behind a `$host` id, plus what the render plugin and its ffi read:
+    /// the pixel format as `PageRaster` spells it and a raw-pixel `source`
+    /// carrying the byte count.
     Raster,
     Unit,
 }
@@ -100,7 +104,7 @@ pub fn translate(
     let extra: Vec<(&str, Value)> = match kind {
         "metadata.update" => vec![("patch", arg(0))],
         "pages.text" | "pages.geometry" => vec![("pageObjectNumber", page()?)],
-        "pages.render" => vec![("pageObjectNumber", page()?), ("options", arg(0))],
+        "pages.render" => vec![("pageObjectNumber", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
         _ => vec![],
     };
@@ -130,6 +134,18 @@ fn search_request(mut request: Value) -> Result<Value, Error> {
         *start = pon.page_object_number.into();
     }
     Ok(request)
+}
+
+/// `PageImageOptions` as `pages.render` reads them. The viewport, target and
+/// `includeAnnotations` go as they are (the host spells them the same); the
+/// encode options do not, because `pages.render` answers raw pixels and has
+/// no encoder to hand them to.
+fn render_options(mut options: Value) -> Value {
+    if let Value::Object(map) = &mut options {
+        map.remove("format");
+        map.remove("quality");
+    }
+    options
 }
 
 fn malformed(what: String) -> Error {
@@ -205,6 +221,30 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .into_iter()
                 .next()
                 .ok_or_else(|| malformed("a raster without its pixels".into()))?;
+            let dimension = |key: &str| {
+                result.get(key).and_then(Value::as_u64).ok_or_else(|| {
+                    malformed(format!("a raster without a whole \"{key}\": {result:?}"))
+                })
+            };
+            let (width, height, stride) =
+                (dimension("width")?, dimension("height")?, dimension("stride")?);
+            let fits = width.checked_mul(4).is_some_and(|row| stride >= row)
+                && stride.checked_mul(height).is_some_and(|needed| bytes.len() as u64 >= needed);
+            if !fits {
+                return Err(malformed(format!(
+                    "a {width}x{height} raster with stride {stride} in {} bytes",
+                    bytes.len()
+                )));
+            }
+            // `PageRaster`'s pixel format: the host renders through
+            // `FPDF_REVERSE_BYTE_ORDER` into RGBA with straight alpha
+            // (`epdf_engine::features::render::raster::PageRaster`).
+            result.insert("color".into(), "rgba8".into());
+            result.insert("premultipliedAlpha".into(), false.into());
+            result.insert(
+                "source".into(),
+                serde_json::json!({ "kind": "pixels", "$byteLength": bytes.len() }),
+            );
             result.insert("$host".into(), HostTable::put(bytes).into());
             Value::Object(result)
         }

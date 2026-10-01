@@ -34,7 +34,16 @@ impl HostTable {
             .map(|a| Arc::try_unwrap(a).unwrap_or_else(|a| (*a).clone()))
     }
 
+    /// A no-op once the table is gone: the render plugin's raster store
+    /// releases its images as it drops, and it can drop while the kernel
+    /// thread's locals are being torn down (a handle still in the slab when
+    /// the thread exits).
     pub fn release(id: u64) {
-        TABLE.with(|t| t.borrow_mut().1.remove(&id));
+        let _ = TABLE.try_with(|t| t.borrow_mut().1.remove(&id));
+    }
+
+    /// Entries held.
+    pub fn len() -> usize {
+        TABLE.with(|t| t.borrow().1.len())
     }
 }
