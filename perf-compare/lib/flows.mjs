@@ -1,7 +1,8 @@
-// The ten flows. For the first eight, the table in viewer-perf-compare-plan.md
-// (Task 7, Step 2) is the contract: starting state, warm-up, measured action,
-// done condition. Added since: `coldScroll`, which is `scroll` without its
-// warm-up, and `searchLarge`, which is `search` on large.pdf.
+// The thirteen flows. For the first eight, the table in
+// viewer-perf-compare-plan.md (Task 7, Step 2) is the contract: starting state,
+// warm-up, measured action, done condition. Added since: `coldScroll`, which
+// is `scroll` without its warm-up, and `searchLarge`, `selectLarge`,
+// `annotateLarge` and `zoomLarge`, which are their flows on large.pdf.
 //
 // Every time is page clock minus page clock (performance.now() in the page).
 // The runner calls start, warmup, start, then measure; only measure is timed.
@@ -15,6 +16,10 @@ import { slope, summarize } from './stats.mjs';
 // single line "You need PDF functionality in your app."
 const SELECT_DRAG = { from: [0.2, 0.384], to: [0.78, 0.475] };
 const HIGHLIGHT_DRAG = { from: [0.11, 0.252], to: [0.69, 0.252] };
+// large.pdf's 40 lines of Courier start at y = 730 of 792 with 13 pt leading,
+// from x = 54 to about x = 384 of 612: lines 5 to 9, and line 3.
+const LARGE_SELECT_DRAG = { from: [0.12, 0.139], to: [0.55, 0.205] };
+const LARGE_HIGHLIGHT_DRAG = { from: [0.1, 0.106], to: [0.55, 0.106] };
 // #viewer fills the window, so "outside" is the tab bar's empty left corner:
 // over no page, so no hover can ask for text geometry.
 const PARKED = { x: 4, y: 4 };
@@ -98,6 +103,100 @@ async function centre(page) {
 }
 
 /** @type {Record<string, Flow>} */
+const zoomFlow = (fixture, pageIndex) => ({
+  fixture,
+  start: startAt(pageIndex),
+  async warmup(page) {
+    for (const z of [1.5, 3]) {
+      const t = await now(page);
+      await zoomTo(page, z);
+      await settle(page, t, { requireChange: false });
+    }
+  },
+  async measure(page, cdp) {
+    const before = await cdp.cpuStart();
+    const steps = {};
+    for (const [z, key, requireChange] of [
+      [2, 'zoom2SettleMs', true],
+      [4, 'zoom4SettleMs', true],
+      // Can be served from the starting state's tiles, so it's labeled
+      // apart and never read as a cold render.
+      [1, 'backTo1SettleMs', false],
+    ]) {
+      const t = await now(page);
+      const done = await zoomTo(page, z);
+      steps[key] = (await settle(page, t, { doneAt: done, requireChange })) - t;
+    }
+    return {
+      metrics: { settleMs: steps.zoom2SettleMs + steps.zoom4SettleMs, ...steps, ...(await cpu(cdp, before)) },
+    };
+  },
+});
+
+const selectFlow = (fixture, pageIndex, region) => ({
+  fixture,
+  start: startAt(pageIndex, { park: true }),
+  async warmup(page) {
+    await goTo(page, pageIndex + 1);
+    await settle(page, await now(page), { requireChange: false });
+    await drag(page, pageIndex + 1, region);
+    await page.evaluate(() => window.__perf.readSelection()).catch(() => {});
+    await page.mouse.move(PARKED.x, PARKED.y);
+  },
+  async measure(page, cdp) {
+    const before = await cdp.cpuStart();
+    // Before the pointer first enters the page: on main the selection
+    // handler's onHover already fetches text geometry.
+    const t0 = await now(page);
+    await drag(page, pageIndex, region);
+    const { text, at } = await readSelection(page);
+    const settled = await settle(page, t0, { doneAt: at, requireChange: false });
+    return { metrics: { settleMs: settled - t0, ...(await cpu(cdp, before)) }, answers: { selection: text } };
+  },
+});
+
+const annotateFlow = (fixture, pageIndex, region) => ({
+  fixture,
+  start: startAt(pageIndex, { park: true }),
+  async warmup(page) {
+    const warm = pageIndex + 1;
+    await goTo(page, warm);
+    await settle(page, await now(page), { requireChange: false });
+    const count = await page.evaluate((i) => window.__perf.annotationCount(i), warm);
+    await page.evaluate(() => window.__perf.execute('annotation:add-highlight'));
+    await drag(page, warm, region);
+    await waitFor(
+      page,
+      ([i, n]) => window.__perf.annotationCount(i) > n,
+      [warm, count],
+      'the warm-up highlight',
+      10_000,
+    ).catch(() => {});
+    await page.mouse.move(PARKED.x, PARKED.y);
+  },
+  async measure(page, cdp) {
+    const countBefore = await page.evaluate((i) => window.__perf.annotationCount(i), pageIndex);
+    await page.evaluate(() => window.__perf.execute('annotation:add-highlight'));
+    const before = await cdp.cpuStart();
+    // After the tool is on, before the pointer first enters the page.
+    const t0 = await now(page);
+    await drag(page, pageIndex, region);
+    const done = await waitFor(
+      page,
+      ([i, n]) => window.__perf.annotationCount(i) === n + 1,
+      [pageIndex, countBefore],
+      'the highlight to be added',
+      10_000,
+    );
+    const settled = await settle(page, t0, { doneAt: done, requireChange: false });
+    const countAfter = await page.evaluate((i) => window.__perf.annotationCount(i), pageIndex);
+    return {
+      metrics: { settleMs: settled - t0, ...(await cpu(cdp, before)) },
+      answers: { countBefore, countAfter },
+    };
+  },
+});
+
 export const FLOWS = {
   // Measured by the runner's open path (openFlow below), not start/measure.
   open: { fixtures: ['ebook', 'large'] },
@@ -173,57 +272,15 @@ export const FLOWS = {
     },
   },
 
-  zoom: {
-    fixture: 'ebook',
-    start: startAt(0),
-    async warmup(page) {
-      for (const z of [1.5, 3]) {
-        const t = await now(page);
-        await zoomTo(page, z);
-        await settle(page, t, { requireChange: false });
-      }
-    },
-    async measure(page, cdp) {
-      const before = await cdp.cpuStart();
-      const steps = {};
-      for (const [z, key, requireChange] of [
-        [2, 'zoom2SettleMs', true],
-        [4, 'zoom4SettleMs', true],
-        // Can be served from the starting state's tiles, so it's labeled
-        // apart and never read as a cold render.
-        [1, 'backTo1SettleMs', false],
-      ]) {
-        const t = await now(page);
-        const done = await zoomTo(page, z);
-        steps[key] = (await settle(page, t, { doneAt: done, requireChange })) - t;
-      }
-      return {
-        metrics: { settleMs: steps.zoom2SettleMs + steps.zoom4SettleMs, ...steps, ...(await cpu(cdp, before)) },
-      };
-    },
-  },
+  zoom: zoomFlow('ebook', 0),
+  // The same zoom steps in the middle of large.pdf.
+  zoomLarge: zoomFlow('large', 200),
 
-  select: {
-    fixture: 'ebook',
-    start: startAt(1, { park: true }),
-    async warmup(page) {
-      await goTo(page, 2);
-      await settle(page, await now(page), { requireChange: false });
-      await drag(page, 2, SELECT_DRAG);
-      await page.evaluate(() => window.__perf.readSelection()).catch(() => {});
-      await page.mouse.move(PARKED.x, PARKED.y);
-    },
-    async measure(page, cdp) {
-      const before = await cdp.cpuStart();
-      // Before the pointer first enters the page: on main the selection
-      // handler's onHover already fetches text geometry.
-      const t0 = await now(page);
-      await drag(page, 1, SELECT_DRAG);
-      const { text, at } = await readSelection(page);
-      const settled = await settle(page, t0, { doneAt: at, requireChange: false });
-      return { metrics: { settleMs: settled - t0, ...(await cpu(cdp, before)) }, answers: { selection: text } };
-    },
-  },
+
+  select: selectFlow('ebook', 1, SELECT_DRAG),
+  // Four lines on page index 200 of large.pdf, a 400-page document.
+  selectLarge: selectFlow('large', 200, LARGE_SELECT_DRAG),
+
 
   search: {
     fixture: 'ebook',
@@ -248,42 +305,10 @@ export const FLOWS = {
   },
 
 
-  annotate: {
-    fixture: 'ebook',
-    start: startAt(1, { park: true }),
-    async warmup(page) {
-      await goTo(page, 2);
-      await settle(page, await now(page), { requireChange: false });
-      const count = await page.evaluate(() => window.__perf.annotationCount(2));
-      await page.evaluate(() => window.__perf.execute('annotation:add-highlight'));
-      await drag(page, 2, HIGHLIGHT_DRAG);
-      await waitFor(page, (n) => window.__perf.annotationCount(2) > n, count, 'the warm-up highlight', 10_000).catch(
-        () => {},
-      );
-      await page.mouse.move(PARKED.x, PARKED.y);
-    },
-    async measure(page, cdp) {
-      const countBefore = await page.evaluate(() => window.__perf.annotationCount(1));
-      await page.evaluate(() => window.__perf.execute('annotation:add-highlight'));
-      const before = await cdp.cpuStart();
-      // After the tool is on, before the pointer first enters the page.
-      const t0 = await now(page);
-      await drag(page, 1, HIGHLIGHT_DRAG);
-      const done = await waitFor(
-        page,
-        (n) => window.__perf.annotationCount(1) === n + 1,
-        countBefore,
-        'the highlight to be added',
-        10_000,
-      );
-      const settled = await settle(page, t0, { doneAt: done, requireChange: false });
-      const countAfter = await page.evaluate(() => window.__perf.annotationCount(1));
-      return {
-        metrics: { settleMs: settled - t0, ...(await cpu(cdp, before)) },
-        answers: { countBefore, countAfter },
-      };
-    },
-  },
+  annotate: annotateFlow('ebook', 1, HIGHLIGHT_DRAG),
+  // One line on page index 200 of large.pdf.
+  annotateLarge: annotateFlow('large', 200, LARGE_HIGHLIGHT_DRAG),
+
 
   soak: {
     fixture: 'ebook',
