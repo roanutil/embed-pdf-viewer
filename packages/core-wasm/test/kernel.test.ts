@@ -168,8 +168,11 @@ describe('the Kernel shim over the Rust kernel', () => {
     stage.setViewportSize({ width: 800, height: 120 });
 
     // `useT` reads `getState().plugins.i18n` as a snapshot: a real getter
-    // call from another component must not hand it a fresh object.
+    // call from another component must not hand it a fresh object. Slices
+    // are read when accessed, so read them while the state is current.
     const state = k.getState();
+    const stageBefore = state.plugins['stage::fixture'];
+    const shellBefore = state.plugins['shell::fixture'];
     stage.listVisiblePages();
     k.capability(ShellToken).isOpen('sidebar');
     expect(k.getState()).toBe(state);
@@ -177,9 +180,9 @@ describe('the Kernel shim over the Rust kernel', () => {
     stage.panBy(0, -100);
     const after = k.getState();
     expect(after).not.toBe(state);
-    expect(after.plugins['stage::fixture']).not.toBe(state.plugins['stage::fixture']);
+    expect(after.plugins['stage::fixture']).not.toBe(stageBefore);
     expect(after.plugins['shell::fixture']).toBeDefined();
-    expect(after.plugins['shell::fixture']).toBe(state.plugins['shell::fixture']);
+    expect(after.plugins['shell::fixture']).toBe(shellBefore);
   });
 
   test('a call that changes the store is not answered from the cache', async () => {

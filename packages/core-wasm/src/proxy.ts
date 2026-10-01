@@ -492,61 +492,65 @@ export class Wire {
     return this.proxy(rusty(() => this.rust.documents()));
   }
 
-  /** The kernel's state, parsed once per store change, and then only the
-   *  parts of it that changed. */
+  /** The kernel's state. Core is read once per store change; each plugin's
+   *  slice only when something reads it, and then only if its revision
+   *  moved. Two selectors read `getState()` on every change for one part of
+   *  it (i18n's slice, core's documents), and reading every changed slice
+   *  for them re-read the search slice's whole hit list once per page of a
+   *  search: 38 s of main thread for "the" on a 400-page document. A slice
+   *  is read when it is accessed, so an outdated state's unread slice
+   *  answers with the current one. */
   getState(): unknown {
     // Keyed on the store's own revision, not `version`: `version` also moves
     // on every real call (see `call`) and every callback, which does not
     // mean the store changed.
     const revision = this.rust.state_revision();
     if (this.state?.revision === revision) return this.state.value;
-    // A revision per part: only a part whose revision moved is fetched and
-    // parsed. Rebuilding and parsing the whole state per change (core alone
-    // holds every page's layout) was most of a scroll's wire time. The same
-    // text keeps the same object, and a changed store keeps every slice whose
-    // text did not change, as the TypeScript store keeps an untouched
-    // plugin's slice.
     const revisions = JSON.parse(this.rust.state_revisions()) as {
       core: number;
       plugins: Record<string, number>;
     };
-    const slices = new Map<string, { revision: number; text: string; value: unknown }>();
-    let changed = this.state === undefined;
-    const part = (path: string, partRevision: number, read: () => string | undefined) => {
-      const last = this.slices.get(path);
-      if (last?.revision === partRevision) {
-        slices.set(path, last);
-        return last.value;
+    for (const path of [...this.slices.keys()]) {
+      if (path !== 'core' && !(path.slice('plugins.'.length) in revisions.plugins)) {
+        this.slices.delete(path);
       }
-      const text = read() ?? 'undefined';
-      if (last?.text === text) {
-        const kept = { ...last, revision: partRevision };
-        slices.set(path, kept);
-        return kept.value;
-      }
-      changed = true;
-      const entry = {
-        revision: partRevision,
-        text,
-        value: text === 'undefined' ? undefined : this.decode(JSON.parse(text)),
-      };
-      slices.set(path, entry);
-      return entry.value;
-    };
-    const core = part('core', revisions.core, () => this.rust.core_text());
+    }
+    const core = this.part('core', revisions.core, () => this.rust.core_text());
     const plugins: Record<string, unknown> = {};
-    for (const [id, pluginRevision] of Object.entries(revisions.plugins)) {
-      plugins[id] = part(`plugins.${id}`, pluginRevision, () => this.rust.slice_text(id));
-    }
-    // A slice that went away changes the state too.
-    if (this.slices.size !== slices.size) changed = true;
-    this.slices = slices;
-    if (!changed && this.state) {
-      this.state.revision = revision;
-      return this.state.value;
-    }
     const value = { core, plugins };
+    for (const [id, pluginRevision] of Object.entries(revisions.plugins)) {
+      let read = false;
+      let slice: unknown;
+      Object.defineProperty(plugins, id, {
+        enumerable: true,
+        get: () => {
+          if (!read) {
+            slice =
+              this.state?.value === value
+                ? this.part(`plugins.${id}`, pluginRevision, () => this.rust.slice_text(id))
+                : (this.getState() as { plugins: Record<string, unknown> }).plugins[id];
+            read = true;
+          }
+          return slice;
+        },
+      });
+    }
     this.state = { revision, value };
+    return value;
+  }
+
+  /** One part of the state: the value kept for `path` while its revision
+   *  holds, or while its text does; otherwise its text, parsed. */
+  private part(path: string, revision: number, read: () => string | undefined): unknown {
+    const last = this.slices.get(path);
+    if (last?.revision === revision) return last.value;
+    const text = read() ?? 'undefined';
+    if (last?.text === text) {
+      this.slices.set(path, { ...last, revision });
+      return last.value;
+    }
+    const value = text === 'undefined' ? undefined : this.decode(JSON.parse(text));
+    this.slices.set(path, { revision, text, value });
     return value;
   }
 
