@@ -3,6 +3,10 @@ import Foundation
 
 public final class PDFViewer: Sendable {
   let host: ViewerHost
+  let registry = StreamRegistry()
+  private let stateContinuation: AsyncStream<UInt64>.Continuation
+
+  /// Revisions of the viewer's state. The stream supports a single consumer.
   public let stateRevisions: AsyncStream<UInt64>
 
   public init(_ config: ViewerConfig) throws(PDFError) {
@@ -13,6 +17,7 @@ public final class PDFViewer: Sendable {
       throw PDFError(error)
     }
     stateRevisions = stream
+    stateContinuation = continuation
   }
 
   public func start() async throws(PDFError) {
@@ -22,6 +27,7 @@ public final class PDFViewer: Sendable {
   public func destroy() async throws(PDFError) {
     try await bridged { try await host.destroy() }
     host.shutdown()
+    finishStreams()
   }
 
   public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> PDFDocument {
@@ -47,10 +53,16 @@ public final class PDFViewer: Sendable {
   }
 
   public var documentEvents: AsyncStream<DocumentEvent> {
-    EventRelay.stream { host.subscribeDocuments(listener: $0) }
+    registry.stream { host.subscribeDocuments(listener: $0) }
+  }
+
+  func finishStreams() {
+    registry.finishAll()
+    stateContinuation.finish()
   }
 
   deinit {
     host.shutdown()
+    finishStreams()
   }
 }

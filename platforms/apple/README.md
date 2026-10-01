@@ -106,3 +106,20 @@ Engine(code: String, detail: String)`.
 The cost of removing it is that every field on every error variant now has to be
 an FFI type, so an error can no longer carry an arbitrary Rust payload. That is
 the right trade here and worth knowing before adding a variant.
+
+## What `import EmbedPDF` exposes
+
+`EmbedPDF` re-exports the generated records through one `public typealias` each
+in `Exports.swift`, and Swift rejects that over an `internal import`: with
+`internal import EmbedPDFBindings` the compiler reports "type alias cannot be
+declared public because its underlying type uses an internal type", and a public
+signature in `PDFViewer.swift` that uses an alias reports "'PDFDocument' aliases
+'EmbedPDFBindings.DocumentInfo' and cannot be used here because
+'EmbedPDFBindings' was not imported publicly". So `Exports.swift` and
+`PDFViewer.swift` use `public import EmbedPDFBindings`, and every other file
+keeps `internal import`.
+
+The cost is that the generated objects (`ViewerHost`, each plugin's handle)
+become visible to clients that go looking for them. The supported API is
+`PDFViewer` and the capabilities; anything else from the bindings module is
+unsupported and can change with every regeneration.
