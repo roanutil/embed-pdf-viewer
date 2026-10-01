@@ -17,14 +17,31 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: apple-swift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+
+      # platforms/apple/EmbedPDF/Package.swift is swift-tools-version 6.2, which
+      # the Xcode 16.x that macos-15 selects by default cannot parse. Xcode 26
+      # ships Swift 6.2, so take the newest stable Xcode on the image.
+      - uses: maxim-lobanov/setup-xcode@v1
         with:
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+          xcode-version: latest-stable
+
+      # rust-toolchain.toml pins the channel and lists aarch64-apple-ios and
+      # aarch64-apple-ios-sim, so rustup installs both for the pinned toolchain.
+      - name: Install Rust
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
       - name: Fetch PDFium
         env:
           RUNTIME_BUILD_FILE: ${{ inputs.runtime_build_file }}
@@ -35,5 +52,13 @@ jobs:
           done
       - run: cargo test -p epdf-ffi -p epdf-viewer-host
       - run: bash platforms/apple/build-xcframework.sh
+      # The simulator is looked up after Xcode is selected, so the job names
+      # whichever iPhone that Xcode ships rather than a model that may be gone.
+      - name: Pick an iPhone simulator
+        run: |
+          id=$(xcrun simctl list devices available iPhone -j \
+            | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          test -n "$id" && test "$id" != null
+          echo "SIM_ID=$id" >> "$GITHUB_ENV"
       - working-directory: platforms/apple/EmbedPDF
-        run: xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 16'
+        run: xcodebuild test -scheme EmbedPDF-Package -destination "platform=iOS Simulator,id=$SIM_ID"
