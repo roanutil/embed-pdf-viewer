@@ -427,10 +427,13 @@ time is 14% lower (57.6 to 49.4 ms) and the first zoom step settles 8.6 ms soone
 
 Of the 21 engine test failures left on every arm, 17 need the native Node build
 (`pdf-runtime.node` and `libembedpdf.dylib`), which the harness's worktrees don't build; with it
-present those 7 files pass, 38 of 38. The other 4 are the Rust core's own: the Rust session's open
-reports no `security.encryptionState` (`test/session-rust-rehearsal.test.ts:59`, `:75`), and the
-Rust geometry reader's output lacks `pageObjectNumber`, which the TypeScript reader returns
-(`test/geometry-rust-parity.test.ts`). Both failed on the old pin as well.
+present those 7 files pass, 38 of 38. The other 4 looked like the Rust core's own but were test bugs:
+the rehearsal test read `doc.security.encryptionState`, where the state is
+`doc.security.current.encryption` (`test/session-rust-rehearsal.test.ts:59`, `:75`), and the parity
+test addressed pages by `layout.pageObjectNumber`, where the layout carries a `PageRef`
+(`test/geometry-rust-parity.test.ts:65`). With those reads fixed (`65d9798d6` on impl, `4f9ceee9c`
+on plugins) the session and parity tests pass, 7 of 7, so the Rust session and geometry reader
+agree with TypeScript on both fixtures. What's left is the 17 that need the native build.
 
 #### `-O2` and assertions, apart
 
