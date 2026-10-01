@@ -9,9 +9,17 @@
 //! current `worker-protocol.ts` spells: the host reads the former
 //! (`host.rs` `page_field`), and
 //! `tooling/engine-conformance/vectors/wire/requests.json` pins it.
+//!
+//! Answers are read the host's way too, which is not the TypeScript worker's:
+//! the host sends a result bare where the worker tags it (`{tag, snapshot}`),
+//! and wraps a mutation's result with its sequence and event. What decoding
+//! produces is what the plugins read, so the one place the host and the
+//! `engine-core` DTOs differ for a mapped kind (`PageLayout.ref`) is filled
+//! in here. A shape the host did not send is an error, never a guess.
 
 use epdf_engine::host::HostResponse;
 use epdf_kernel::Error;
+use epdf_kernel::geometry::PageRef;
 use serde_json::{Map, Value};
 
 use crate::host_table::HostTable;
@@ -23,9 +31,26 @@ pub struct WireCall {
 }
 
 pub enum Decode {
+    /// The result as the host sent it.
+    Result,
+    /// One member of the result, which must be there.
     Field(&'static str),
+    /// A `PageListSnapshot`, each page given the `ref` `PageLayout` has.
+    PageList,
+    /// A mutation: `{result, mutationSequence, event}`. Answers `result`
+    /// and hands back the event to publish.
+    Mutation,
+    /// Width, height and stride, with the pixels moved into the `HostTable`.
     Raster,
     Unit,
+}
+
+/// A decoded answer: the call's value, and the document event a mutation
+/// published, if it published one.
+#[derive(Debug)]
+pub struct Decoded {
+    pub value: Value,
+    pub event: Option<Value>,
 }
 
 fn coded(code: &str, message: String) -> Error {
@@ -41,13 +66,13 @@ pub fn maps(path: &str) -> bool {
 fn route(path: &str) -> Option<(&'static str, Decode)> {
     Some(match path {
         "close" => ("close", Decode::Unit),
-        "pages.list" => ("pages.list", Decode::Field("snapshot")),
-        "metadata.read" => ("metadata.read", Decode::Field("metadata")),
-        "metadata.update" => ("metadata.update", Decode::Field("metadata")),
-        "page.text.read" => ("pages.text", Decode::Field("snapshot")),
-        "page.geometry.read" => ("pages.geometry", Decode::Field("snapshot")),
+        "pages.list" => ("pages.list", Decode::PageList),
+        "metadata.read" => ("metadata.read", Decode::Result),
+        "metadata.update" => ("metadata.update", Decode::Mutation),
+        "page.text.read" => ("pages.text", Decode::Result),
+        "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
-        "search.query" => ("search.query", Decode::Field("slice")),
+        "search.query" => ("search.query", Decode::Result),
         _ => return None,
     })
 }
@@ -87,29 +112,65 @@ pub fn translate(
     Ok(WireCall { request: Value::Object(request), payloads: Vec::new(), decode })
 }
 
-/// Read a host response. The host answers with the result itself where the
-/// TypeScript worker protocol tags it (`{tag, snapshot}`), so a `Field` that
-/// is absent reads as the whole result.
-pub fn decode(decode: &Decode, response: HostResponse) -> Result<Value, Error> {
-    let envelope: Value = serde_json::from_str(&response.json)
-        .map_err(|e| Error::new(format!("[epdf-viewer-host] unreadable response: {e}")))?;
+fn malformed(what: String) -> Error {
+    Error::new(format!("[epdf-viewer-host] the host answered {what}"))
+}
+
+/// Read a host response into what the call's caller expects.
+pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
+    let mut envelope: Value = serde_json::from_str(&response.json)
+        .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
         let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
         return Err(Error::engine(code, format!("{code}: {message}")));
     }
-    let result = envelope.get("result").cloned().unwrap_or(Value::Null);
-    match decode {
-        Decode::Unit => Ok(epdf_kernel::undefined()),
-        Decode::Field(name) => Ok(result.get(*name).cloned().unwrap_or(result)),
-        Decode::Raster => {
-            let mut raster = result.get("raster").cloned().unwrap_or(result);
-            let bytes = response.payloads.into_iter().next().unwrap_or_default();
-            let id = HostTable::put(bytes);
-            if let Value::Object(map) = &mut raster {
-                map.insert("$host".into(), id.into());
-            }
-            Ok(raster)
-        }
+    if let Decode::Unit = decode {
+        return Ok(Decoded { value: epdf_kernel::undefined(), event: None });
     }
+    let mut result = match envelope.get_mut("result").map(Value::take) {
+        Some(Value::Object(result)) => result,
+        Some(other) => return Err(malformed(format!("a result that is not an object: {other}"))),
+        None => return Err(malformed("neither a result nor an error".into())),
+    };
+    let take = |result: &mut Map<String, Value>, name: &str| {
+        result.remove(name).ok_or_else(|| malformed(format!("a result without \"{name}\"")))
+    };
+    let value = match decode {
+        Decode::Unit => unreachable!("answered above"),
+        Decode::Result => Value::Object(result),
+        Decode::Field(name) => take(&mut result, name)?,
+        Decode::PageList => {
+            let Some(Value::Array(pages)) = result.get_mut("pages") else {
+                return Err(malformed("a page list without \"pages\"".into()));
+            };
+            for page in pages {
+                let pon = page
+                    .get("pageObjectNumber")
+                    .and_then(Value::as_u64)
+                    .and_then(|n| u32::try_from(n).ok())
+                    .ok_or_else(|| {
+                        malformed(format!("a page without a pageObjectNumber: {page}"))
+                    })?;
+                if let Value::Object(page) = page {
+                    page.insert("ref".into(), PageRef::new(pon).to_json());
+                }
+            }
+            Value::Object(result)
+        }
+        Decode::Mutation => {
+            let value = take(&mut result, "result")?;
+            return Ok(Decoded { value, event: result.remove("event") });
+        }
+        Decode::Raster => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("a raster without its pixels".into()))?;
+            result.insert("$host".into(), HostTable::put(bytes).into());
+            Value::Object(result)
+        }
+    };
+    Ok(Decoded { value, event: None })
 }
