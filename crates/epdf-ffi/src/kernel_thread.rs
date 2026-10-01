@@ -6,6 +6,7 @@
 //! deadline, then catches the virtual clock up to wall time, as
 //! `crates/epdf-web/src/runtime.rs` `after_entry` does with `setTimeout`.
 
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -64,12 +65,27 @@ impl<S: 'static> KernelThread<S> {
                         None => rx.recv().map_err(|_| RecvTimeoutError::Disconnected),
                     };
                     match msg {
-                        Ok(Msg::Job(job)) => job(&mut state),
+                        Ok(Msg::Job(job)) => {
+                            // After an idle stretch the virtual clock is
+                            // behind: catch it up first, or a timer the job
+                            // sets is already due when the job returns.
+                            drain(origin);
+                            // A panic is reported by the panic hook (stderr
+                            // by default) and ends the loop through the
+                            // normal teardown, so what is still bound drops
+                            // while the thread locals it reaches are alive.
+                            if catch_unwind(AssertUnwindSafe(|| job(&mut state))).is_err() {
+                                break;
+                            }
+                        }
                         Ok(Msg::Stop) | Err(RecvTimeoutError::Disconnected) => break,
                         Err(RecvTimeoutError::Timeout) => {}
                     }
                     drain(origin);
                 }
+                // Refuse later posts at once rather than queueing them
+                // behind the teardown.
+                drop(rx);
                 drop(state);
                 drain(origin);
                 // Whatever foreign handles still hold goes now, not in

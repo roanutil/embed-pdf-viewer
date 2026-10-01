@@ -131,3 +131,33 @@ fn a_thread_that_shuts_itself_down_drops_what_is_still_bound() {
     assert!(alive, "the bound value was dropped during thread-local teardown");
     drop(bound);
 }
+
+#[test]
+fn a_timer_set_after_an_idle_gap_waits_its_full_delay() {
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    // Idle: nothing scheduled, so the loop sleeps and the virtual clock
+    // stands still while wall time moves on.
+    std::thread::sleep(Duration::from_millis(200));
+    let (tx, rx) = mpsc::channel();
+    (thread.post())(Box::new(move || {
+        let ran = Instant::now();
+        epdf_kernel::rt::set_timeout(50.0, move || tx.send((ran, Instant::now())).unwrap());
+    }));
+    let (ran, fired) = rx.recv_timeout(Duration::from_secs(2)).expect("timer never fired");
+    let waited = fired.duration_since(ran);
+    assert!(waited >= Duration::from_millis(50), "fired after {waited:?}");
+}
+
+#[test]
+fn a_panicking_job_tears_the_thread_down_cleanly() {
+    let (dropped_tx, dropped) = mpsc::channel();
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let post = thread.post();
+    let bound = bind(&thread, dropped_tx);
+    post(Box::new(|| panic!("a kernel job panicked")));
+    let alive = dropped.recv_timeout(Duration::from_secs(2)).expect("never dropped");
+    assert!(alive, "the bound value was dropped during thread-local teardown");
+    assert!(!post(Box::new(|| {})), "a post after the panic was accepted");
+    assert!(block_on(thread.call(|_| ())).is_err(), "a call after the panic was answered");
+    assert!(matches!(block_on(bound.call(|_| Ok(()))), Err(epdf_ffi::ViewerError::Closed)));
+}
