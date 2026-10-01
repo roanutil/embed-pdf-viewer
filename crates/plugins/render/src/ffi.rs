@@ -232,15 +232,18 @@ impl RenderPageOptions {
 
 /// A raster read out of its handle on the kernel thread, the bytes still
 /// shared with the host's table. Cheap to clone; [`Raster::owned`] makes the
-/// one copy the caller keeps.
+/// one copy the caller keeps. Public for the experimental manual bridge,
+/// which hands the shared bytes over without that copy.
+#[doc(hidden)]
 #[derive(Clone)]
-struct Raster {
-    width: u32,
-    height: u32,
-    stride: u32,
-    scale: f64,
-    format: RenderPixelFormat,
-    bytes: Arc<Vec<u8>>,
+pub struct Raster {
+    pub width: u32,
+    pub height: u32,
+    pub stride: u32,
+    pub scale: f64,
+    pub format: RenderPixelFormat,
+    /// At least `stride * height` bytes.
+    pub bytes: Arc<Vec<u8>>,
 }
 
 impl Raster {
@@ -336,7 +339,11 @@ struct Bound {
 /// answering from its last state after a close; a foreign handle that
 /// outlived the close gets `instance-closed` instead.
 fn open(bound: &Bound) -> Result<&RenderCapability, Error> {
-    if bound.cap.lifetime().aborted() {
+    open_cap(&bound.cap)
+}
+
+fn open_cap(cap: &RenderCapability) -> Result<&RenderCapability, Error> {
+    if cap.lifetime().aborted() {
         return Err(plugin_error(
             code::INSTANCE_CLOSED,
             "render",
@@ -345,7 +352,24 @@ fn open(bound: &Bound) -> Result<&RenderCapability, Error> {
             None,
         ));
     }
-    Ok(&bound.cap)
+    Ok(cap)
+}
+
+/// `render_page`'s kernel-thread half: what both bridges start, so they do
+/// the same plugin-side work. Shared with the experimental manual bridge.
+#[doc(hidden)]
+pub fn start_render_page(
+    cap: &RenderCapability,
+    pixels: &PixelSource,
+    page: PageRef,
+    options: RenderPageOptions,
+) -> Result<Promise<Raster>, Error> {
+    let cap = open_cap(cap)?;
+    let mut options = options.validated()?;
+    let (signal, abort) = abortable();
+    options.signal = Some(signal);
+    let image = cap.render_page(page.into(), options);
+    Ok(rendered(cap, pixels, page, image)?.with_abort(abort))
 }
 
 #[derive(uniffi::Object)]
@@ -385,14 +409,7 @@ impl RenderHandle {
         self.bound
             .call_promise_cancellable(
                 cancel,
-                move |b| {
-                    let cap = open(b)?;
-                    let mut options = options.validated()?;
-                    let (signal, abort) = abortable();
-                    options.signal = Some(signal);
-                    let image = cap.render_page(page.into(), options);
-                    Ok(rendered(cap, &b.pixels, page, image)?.with_abort(abort))
-                },
+                move |b| start_render_page(&b.cap, &b.pixels, page, options),
                 Raster::owned,
             )
             .await

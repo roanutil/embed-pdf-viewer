@@ -73,3 +73,37 @@ let package = Package(
     ),
   ]
 )
+
+// Task 11's experimental bridge benchmarks: a hand-written C bridge
+// (EmbedPDFManualBridge) and the tests that time it against uniffi. Neither
+// is a product. Both exist only when EMBEDPDF_EXPERIMENTAL_BRIDGE=1 is set at
+// manifest evaluation, against an XCFramework built with
+// `build-xcframework.sh --experimental-manual-bridge`, so a normal checkout
+// never sees them. The benchmarks run in Release, where
+// EmbedPDFBindingsSmokeTests' `@testable import` cannot build, so the other
+// test targets are left out of an experimental build.
+if Context.environment["EMBEDPDF_EXPERIMENTAL_BRIDGE"] == "1" {
+  package.targets.removeAll { $0.type == .test }
+  for target in package.targets where target.name == "EmbedPDF" {
+    target.swiftSettings = (target.swiftSettings ?? []) + [.define("EMBEDPDF_EXPERIMENTAL_BRIDGE")]
+  }
+  package.targets += [
+    .target(
+      name: "EmbedPDFManualBridge",
+      dependencies: [
+        "EmbedPDF",
+        "EmbedPDFFFI",
+      ]
+    ),
+    .testTarget(
+      name: "EmbedPDFBridgeBenchmarks",
+      dependencies: [
+        "EmbedPDF",
+        "EmbedPDFManualBridge",
+      ],
+      resources: [
+        .copy("Fixtures"),
+      ]
+    ),
+  ]
+}

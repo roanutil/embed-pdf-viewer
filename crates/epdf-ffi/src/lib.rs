@@ -18,4 +18,10 @@ pub use kernel_thread::{Job, KernelPost, KernelThread};
 pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};
 
+/// Returns at once on the calling thread: the pure cost of entering Rust
+/// through uniffi, for the bridge benchmarks. Experimental, never shipped.
+#[cfg(feature = "bench")]
+#[uniffi::export]
+pub fn bench_noop() {}
+
 uniffi::setup_scaffolding!();

@@ -13,13 +13,40 @@
 # Produces the generated inputs of platforms/apple/EmbedPDF/ : the binary target
 # EmbedPDFFFI.xcframework (device and simulator slices), the generated Swift in
 # Sources/EmbedPDFBindings, and the test fixtures. Package.swift is tracked.
+#
+#   bash platforms/apple/build-xcframework.sh --experimental-manual-bridge
+#
+# builds an experimental XCFramework for Task 11's bridge benchmarks instead:
+# the same archive plus the hand-written C bridge (crates/epdf-manual-bridge)
+# and the benchmark control exports, with the `EpdfManualFFI` module in the
+# modulemap. Use it with EMBEDPDF_EXPERIMENTAL_BRIDGE=1 (see Package.swift).
+# Run the script again without the flag to get the shipping XCFramework back.
 set -euo pipefail
+
+EXPERIMENTAL=0
+for arg in "$@"; do
+  case "$arg" in
+    --experimental-manual-bridge) EXPERIMENTAL=1 ;;
+    *)
+      echo "unknown argument: $arg" >&2
+      exit 2
+      ;;
+  esac
+done
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="$ROOT/platforms/apple/EmbedPDF"
 BUILD="$ROOT/platforms/apple/.build"
 LIB_ROOT="$ROOT/packages/engine/runtime/build/libpdfium"
 PROFILE="${PROFILE:-release}"
+
+# The manual bridge links into epdf-viewer-host's own staticlib (one copy of
+# the kernel thread's statics for both bridges), so the flag is only cargo
+# features, never a second archive.
+FEATURES=()
+if [[ $EXPERIMENTAL == 1 ]]; then
+  FEATURES=(--features "manual-bridge,epdf-ffi/bench")
+fi
 
 # Rust target -> fork target. The fork spells these the way Node does.
 SLICES=(
@@ -44,7 +71,8 @@ for slice in "${SLICES[@]}"; do
   fi
 
   echo "building $rust"
-  (cd "$ROOT" && cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE")
+  (cd "$ROOT" && cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
+    ${FEATURES[@]+"${FEATURES[@]}"})
 
   # One archive per slice, because `xcodebuild -create-xcframework` takes one
   # `-library` per platform. libtool merges rather than concatenates, which is
@@ -78,6 +106,16 @@ for map in "$BUILD/generated"/*.modulemap; do
 done > "$BUILD/headers/module.modulemap"
 cp "$BUILD/generated"/*.h "$BUILD/headers/"
 
+if [[ $EXPERIMENTAL == 1 ]]; then
+  cp "$ROOT/crates/epdf-manual-bridge/include/epdf_manual.h" "$BUILD/headers/"
+  cat >> "$BUILD/headers/module.modulemap" <<'MODULEMAP'
+module EpdfManualFFI {
+  header "epdf_manual.h"
+  export *
+}
+MODULEMAP
+fi
+
 echo "creating the xcframework"
 rm -rf "$OUT/EmbedPDFFFI.xcframework"
 xcodebuild -create-xcframework \
@@ -92,7 +130,11 @@ cp "$BUILD/generated"/*.swift "$OUT/Sources/EmbedPDFBindings/"
 # The tests read the same fixtures the Rust tests read. SwiftPM will only
 # bundle resources that live inside the package, so they are copied rather than
 # referenced, and `.gitignore`d rather than committed twice.
-for tests in EmbedPDFBindingsSmokeTests EmbedPDFTests EmbedPDFUITests; do
+TEST_TARGETS=(EmbedPDFBindingsSmokeTests EmbedPDFTests EmbedPDFUITests)
+if [[ $EXPERIMENTAL == 1 ]]; then
+  TEST_TARGETS+=(EmbedPDFBridgeBenchmarks)
+fi
+for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"
   for fixture in report colors encrypted-hello; do
     cp "$ROOT/pdfium-multiplatform-prototype/fixtures/$fixture.pdf" \

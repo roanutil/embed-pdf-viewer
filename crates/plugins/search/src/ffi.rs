@@ -242,7 +242,10 @@ fn error_info(info: crate::PluginErrorInfo) -> PluginErrorInfo {
     PluginErrorInfo { code: info.code, message: info.message, capability: info.capability }
 }
 
-fn whole(n: usize, what: &str) -> Result<u32, Error> {
+/// A count or index as a `u32`, or `invalid-state`. Shared with the
+/// experimental manual bridge (`crates/epdf-manual-bridge`).
+#[doc(hidden)]
+pub fn whole(n: usize, what: &str) -> Result<u32, Error> {
     u32::try_from(n).map_err(|_| {
         Error::named("InvalidState", format!("[search] {what} ({n}) does not fit a u32"))
             .with("code", "invalid-state")
@@ -251,8 +254,10 @@ fn whole(n: usize, what: &str) -> Result<u32, Error> {
 
 /// The capability, if its document is still open. The plugin keeps
 /// answering from its last state after a close; a foreign handle that
-/// outlived the close gets `instance-closed` instead.
-fn open(cap: &SearchCapability) -> Result<&SearchCapability, Error> {
+/// outlived the close gets `instance-closed` instead. Shared with the
+/// experimental manual bridge.
+#[doc(hidden)]
+pub fn open(cap: &SearchCapability) -> Result<&SearchCapability, Error> {
     if cap.lifetime().aborted() {
         return Err(plugin_error(
             code::INSTANCE_CLOSED,
@@ -272,6 +277,32 @@ fn abortable() -> (AbortSignal, impl Fn(Option<serde_json::Value>) + 'static) {
     let signal = AbortSignal::new();
     let aborter = signal.clone();
     (signal, move |reason| aborter.abort(Error::abort(reason)))
+}
+
+/// `search`'s kernel-thread half: what both bridges start, so they do the
+/// same plugin-side work. Shared with the experimental manual bridge.
+#[doc(hidden)]
+pub fn start_search(
+    cap: &SearchCapability,
+    query: SearchQuery,
+    start_page: Option<PageRef>,
+) -> Result<epdf_kernel::Promise<crate::SearchResult>, Error> {
+    let (signal, abort) = abortable();
+    let options = SearchOptions { start_page: start_page.map(Into::into), signal: Some(signal) };
+    Ok(open(cap)?.search(query, options).with_abort(abort))
+}
+
+/// `find_all`'s kernel-thread half. Shared with the experimental manual
+/// bridge.
+#[doc(hidden)]
+pub fn start_find_all(
+    cap: &SearchCapability,
+    query: SearchQuery,
+    mode: Option<SearchMode>,
+) -> Result<epdf_kernel::Promise<Vec<crate::SearchHit>>, Error> {
+    let (signal, abort) = abortable();
+    let options = SearchFindAllOptions { signal: Some(signal), mode };
+    Ok(open(cap)?.find_all(query, options).with_abort(abort))
 }
 
 #[derive(uniffi::Object)]
@@ -309,14 +340,7 @@ impl SearchHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let (signal, abort) = abortable();
-                    let options = SearchOptions {
-                        start_page: start_page.map(Into::into),
-                        signal: Some(signal),
-                    };
-                    Ok(open(c)?.search(query, options).with_abort(abort))
-                },
+                move |c| start_search(c, query, start_page),
                 |result| SearchResult::try_from(result).map_err(Into::into),
             )
             .await?
@@ -481,11 +505,7 @@ impl SearchHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let (signal, abort) = abortable();
-                    let options = SearchFindAllOptions { signal: Some(signal), mode };
-                    Ok(open(c)?.find_all(query, options).with_abort(abort))
-                },
+                move |c| start_find_all(c, query, mode),
                 |found| hits(&found).map_err(Into::into),
             )
             .await?

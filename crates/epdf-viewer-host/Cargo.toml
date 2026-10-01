@@ -8,10 +8,19 @@ publish.workspace = true
 name = "epdf_viewer_host"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
+[features]
+# Experimental, never shipped: links Task 11's hand-written C bridge
+# (`crates/epdf-manual-bridge`) into this staticlib, registers each host's
+# kernel thread with it, and adds the uniffi exports its benchmarks time
+# (`experimental_kernel_token`, `bench_noop_hop`). Only
+# `build-xcframework.sh --experimental-manual-bridge` turns it on.
+manual-bridge = ["dep:epdf-manual-bridge"]
+
 [dependencies]
 epdf-engine = { path = "../epdf-engine" }
 epdf-ffi = { path = "../epdf-ffi" }
 epdf-kernel = { path = "../epdf-kernel" }
+epdf-manual-bridge = { path = "../epdf-manual-bridge", optional = true }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }
 epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }

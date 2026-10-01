@@ -467,6 +467,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-manual-bridge"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-ffi",
+ "epdf-kernel",
+ "epdf-plugin-render",
+ "epdf-plugin-search",
+ "epdf-viewer-host",
+ "futures",
+ "test-support",
+]
+
+[[package]]
 name = "epdf-node"
 version = "0.0.0"
 dependencies = [
@@ -797,6 +811,7 @@ dependencies = [
  "epdf-engine",
  "epdf-ffi",
  "epdf-kernel",
+ "epdf-manual-bridge",
  "epdf-plugin-metadata",
  "epdf-plugin-render",
  "epdf-plugin-search",

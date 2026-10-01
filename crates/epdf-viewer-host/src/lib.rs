@@ -6,6 +6,8 @@
 
 pub mod api;
 pub mod engine_worker;
+#[cfg(feature = "manual-bridge")]
+mod experimental;
 pub mod host_table;
 pub mod native_engine;
 pub mod session;
@@ -15,6 +17,9 @@ pub mod translate;
 // dependency out of the staticlib. The Swift smoke tests drive its engine-level
 // exports through this archive, so link it explicitly.
 extern crate epdf_uniffi;
+// The same for the experimental manual bridge's C exports, when built in.
+#[cfg(feature = "manual-bridge")]
+extern crate epdf_manual_bridge;
 
 use std::future::Future;
 use std::rc::Rc;
@@ -42,6 +47,9 @@ pub struct ViewerHost {
     /// The store revision, mirrored so `state_revision` never posts a job.
     revision: Arc<AtomicU64>,
     post: KernelPost,
+    /// This host's entry in the manual bridge's registry.
+    #[cfg(feature = "manual-bridge")]
+    token: u64,
 }
 
 impl ViewerHost {
@@ -96,7 +104,16 @@ impl ViewerHost {
         let thread =
             KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post))?;
         let post = thread.post();
-        Ok(Arc::new(ViewerHost { thread: Mutex::new(Some(thread)), revision, post }))
+        #[cfg(not(feature = "manual-bridge"))]
+        let host = Arc::new(ViewerHost { thread: Mutex::new(Some(thread)), revision, post });
+        #[cfg(feature = "manual-bridge")]
+        let host = Arc::new_cyclic(|weak| ViewerHost {
+            token: experimental::register(weak.clone(), post.clone()),
+            thread: Mutex::new(Some(thread)),
+            revision,
+            post,
+        });
+        Ok(host)
     }
 
     pub async fn start(&self) -> Result<(), ViewerError> {
@@ -257,6 +274,8 @@ impl ViewerHost {
     /// Stop and join the kernel thread. Idempotent; every later call
     /// answers `Closed`.
     pub fn shutdown(&self) {
+        #[cfg(feature = "manual-bridge")]
+        experimental::unregister(self.token);
         let thread = self.thread.lock().unwrap().take();
         drop(thread);
     }
