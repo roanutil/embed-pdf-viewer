@@ -43,7 +43,11 @@ public struct PageImageView: View {
     }
     error = nil
     do {
-      rendered = try await render.renderPage(page, options: RenderPageOptions(scale: scale))
+      let image = try await render.renderPage(page, options: RenderPageOptions(scale: scale))
+      // A newer task owns the view now; this result is for a page or scale
+      // it no longer shows.
+      guard !Task.isCancelled else { return }
+      rendered = image
       renderedPage = page
     } catch {
       guard !Task.isCancelled else { return }
