@@ -1,5 +1,6 @@
-// The eight flows. The table in viewer-perf-compare-plan.md (Task 7, Step 2)
-// is the contract: starting state, warm-up, measured action, done condition.
+// The nine flows. For the first eight, the table in viewer-perf-compare-plan.md
+// (Task 7, Step 2) is the contract: starting state, warm-up, measured action,
+// done condition. `coldScroll`, added since, is `scroll` without its warm-up.
 //
 // Every time is page clock minus page clock (performance.now() in the page).
 // The runner calls start, warmup, start, then measure; only measure is timed.
@@ -143,6 +144,16 @@ export const FLOWS = {
         },
       };
     },
+  },
+
+  // The same 60 wheels on a document just opened, with no warm-up, so every
+  // page the scroll reaches is reached for the first time: its scale and its
+  // tiles load during the measured window. A first pass through a document
+  // does that; `scroll`, after its warm-up, doesn't time it.
+  coldScroll: {
+    fixture: 'large',
+    start: (page) => FLOWS.scroll.start(page),
+    measure: (page, cdp) => FLOWS.scroll.measure(page, cdp),
   },
 
   jump: {
