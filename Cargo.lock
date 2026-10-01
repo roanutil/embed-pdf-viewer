@@ -791,6 +791,7 @@ dependencies = [
  "epdf-engine",
  "epdf-ffi",
  "epdf-kernel",
+ "epdf-plugin-metadata",
  "epdf-uniffi",
  "futures",
  "serde",

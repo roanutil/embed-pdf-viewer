@@ -22,6 +22,7 @@ use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_plugin_metadata::ffi::MetadataHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
@@ -210,6 +211,17 @@ impl ViewerHost {
             slot.fill(Unsubscribe::new(move || offs.iter().for_each(Unsubscribe::call)));
         });
         subscription
+    }
+
+    /// The metadata capability of an open document. Needs
+    /// `ViewerConfig.metadata`; without it the kernel refuses the token.
+    pub async fn metadata(&self, document_id: String) -> Result<Arc<MetadataHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_metadata::METADATA, Some(&document_id))?;
+            Ok(MetadataHandle::new(cap, post))
+        })
+        .await
     }
 
     pub fn state_revision(&self) -> u64 {

@@ -42,3 +42,17 @@ func bridged<T>(_ body: () async throws -> T) async throws(PDFError) -> T {
     throw PDFError(error)
   }
 }
+
+/// `bridged` for a call that takes a `CancelToken`. UniFFI's Swift does not
+/// cancel the Rust future when the task is cancelled, so cancelling the task
+/// cancels the token instead, which aborts the call on the kernel thread.
+func bridged<T>(_ body: (CancelToken) async throws -> T) async throws(PDFError) -> T {
+  let token = CancelToken()
+  return try await bridged {
+    try await withTaskCancellationHandler {
+      try await body(token)
+    } onCancel: {
+      token.cancel()
+    }
+  }
+}

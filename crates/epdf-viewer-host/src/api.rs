@@ -12,7 +12,11 @@ use serde_json::Value;
 
 /// One field per plugin as each plugin lands.
 #[derive(Debug, Default, uniffi::Record)]
-pub struct ViewerConfig {}
+pub struct ViewerConfig {
+    /// Install `metadataPlugin()`: the document Info dict, read and edited.
+    #[uniffi(default = false)]
+    pub metadata: bool,
+}
 
 #[derive(Debug, uniffi::Record)]
 pub struct OpenDocumentOptions {

@@ -23,7 +23,7 @@ impl Session {
     /// On the kernel thread. Every store change stores the new revision in
     /// `revision`, then tells the delegate.
     pub fn build(
-        _config: ViewerConfig,
+        config: ViewerConfig,
         delegate: Arc<dyn ViewerDelegate>,
         revision: Arc<AtomicU64>,
         post: KernelPost,
@@ -37,8 +37,11 @@ impl Session {
             })),
             ..KernelOptions::default()
         };
-        // Plugins arrive with their `ViewerConfig` fields.
-        let kernel = match Kernel::new(engine, Vec::new(), options) {
+        let mut plugins = Vec::new();
+        if config.metadata {
+            plugins.push(epdf_plugin_metadata::metadata_plugin());
+        }
+        let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {
                 worker.shutdown();

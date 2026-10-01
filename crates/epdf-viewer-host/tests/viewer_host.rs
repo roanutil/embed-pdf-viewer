@@ -1,7 +1,9 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-use epdf_ffi::ViewerError;
+use epdf_ffi::{CancelToken, ViewerError};
+use epdf_plugin_metadata::ResourceStatus;
+use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_viewer_host::{
     DocumentEvent, DocumentEventListener, OpenDocumentOptions, ViewerConfig, ViewerDelegate,
     ViewerHost,
@@ -138,4 +140,34 @@ fn a_delegate_that_drops_the_last_host_on_the_kernel_thread_does_not_deadlock() 
         assert!(Instant::now() < deadline, "the kernel thread never dropped its session");
         std::thread::sleep(Duration::from_millis(10));
     }
+}
+
+fn with_metadata() -> Arc<ViewerHost> {
+    let host = ViewerHost::new(ViewerConfig { metadata: true }, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_metadata_plugin_reads_and_updates_through_the_native_engine() {
+    let host = with_metadata();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let metadata = block_on(host.metadata(doc.id)).unwrap();
+    block_on(metadata.refresh(CancelToken::new())).unwrap();
+    assert_eq!(block_on(metadata.status()).unwrap(), ResourceStatus::Ready);
+    assert!(block_on(metadata.snapshot()).unwrap().is_some());
+    let patch = MetadataPatch { title: Some("Renamed".into()), ..Default::default() };
+    let updated = block_on(metadata.update(patch, CancelToken::new())).unwrap();
+    assert_eq!(updated.title.as_deref(), Some("Renamed"));
+    let snapshot = block_on(metadata.snapshot()).unwrap().unwrap();
+    assert_eq!(snapshot.title.as_deref(), Some("Renamed"));
+}
+
+#[test]
+fn without_its_flag_the_metadata_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.metadata(doc.id)).is_err());
 }
