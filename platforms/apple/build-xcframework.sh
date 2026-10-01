@@ -62,7 +62,8 @@ done
 # epdf_ffi, epdf_viewer_host and the plugins' ffi modules.
 echo "generating bindings"
 (cd "$ROOT" && cargo build -p uniffi-bindgen)
-mkdir -p "$BUILD/headers"
+rm -rf "$BUILD/generated" "$BUILD/headers"
+mkdir -p "$BUILD/generated" "$BUILD/headers"
 "$ROOT/target/debug/uniffi-bindgen" generate \
   --library "$ROOT/target/aarch64-apple-ios-sim/$PROFILE/libepdf_viewer_host.a" \
   --language swift --out-dir "$BUILD/generated"

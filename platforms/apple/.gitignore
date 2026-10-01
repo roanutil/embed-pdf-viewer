@@ -1,4 +1,6 @@
+# Build inputs and outputs, all of them reproducible by build-xcframework.sh.
 .build/
 EmbedPDF/EmbedPDFFFI.xcframework/
 EmbedPDF/Sources/EmbedPDFBindings/
 EmbedPDF/Tests/*/Fixtures/
+EmbedPDF/Package.resolved

@@ -13,9 +13,9 @@ When two simulators share a name, `name=` is ambiguous. Pass the device's id
 instead, from `xcrun simctl list devices`:
 `-destination 'platform=iOS Simulator,id=<UDID>'`.
 
-The package has three products. `EmbedPDF` is the Swift facade and `EmbedPDFUI`
-is its SwiftUI layer; both are empty for now. `EmbedPDFBindings` is the
-generated layer under them, a target rather than a product, holding the uniffi
+The package has two products over a third, internal target. `EmbedPDF` is the
+Swift facade and `EmbedPDFUI` is its SwiftUI layer; both are empty for now.
+`EmbedPDFBindings` is the internal target under them, holding the uniffi
 Swift for every crate in the archive: `epdf_uniffi`, `epdf_ffi` and
 `epdf_viewer_host` today, and each plugin's `ffi` module as it lands. It
 compiles in Swift 5 mode, because generated code isn't ours to make strict
@@ -83,6 +83,7 @@ the two is a distribution problem and nothing else.
 
 Results, 2026-09-23, Xcode 27.0, iPhone 17 simulator (iOS 26.0): 8 tests, 0
 failures, 0.28s.
+
 Results, 2026-10-01, with the archive built from `epdf-viewer-host`: 8 tests, 0
 failures, 0.60s.
 
