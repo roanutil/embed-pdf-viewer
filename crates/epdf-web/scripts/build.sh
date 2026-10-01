@@ -8,3 +8,9 @@ cargo build -p epdf-web --release --target wasm32-unknown-unknown -j 4 --manifes
 wasm="$root/target/wasm32-unknown-unknown/release/epdf_web.wasm"
 wasm-bindgen --target web --out-dir "$root/packages/core-wasm/wasm" "$wasm"
 wasm-bindgen --target experimental-nodejs-module --out-dir "$root/packages/core-wasm/wasm-node" "$wasm"
+# wasm-bindgen runs no optimizer of its own. -O3 on its output, with the
+# features the kernel uses (externref, bulk memory), and no debug names.
+for out in "$root/packages/core-wasm/wasm/epdf_web_bg.wasm" "$root/packages/core-wasm/wasm-node/epdf_web_bg.wasm"; do
+  wasm-opt -O3 --strip-debug --enable-reference-types --enable-bulk-memory --enable-mutable-globals \
+    --enable-sign-ext --enable-nontrapping-float-to-int --enable-multivalue -o "$out" "$out"
+done
