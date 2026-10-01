@@ -119,3 +119,7 @@ cp "$TMP_DIR/browser/embedpdf.js" "$OUT_DIR/embedpdf.browser.js"
 cp "$TMP_DIR/node-esm/embedpdf.js" "$OUT_DIR/embedpdf.node.js"
 cp "$TMP_DIR/node-cjs/embedpdf.cjs" "$OUT_DIR/embedpdf.node.cjs"
 cp "$TMP_DIR/browser/embedpdf.wasm" "$OUT_DIR/embedpdf.wasm"
+
+# Every bound function's parameter count against the bindings generated for
+# it. Without ASSERTIONS a mismatch would read wrong arguments, not abort.
+node "$ROOT/build/verify-wasm-abi.mjs" "$OUT_DIR/embedpdf.wasm" "$GEN_DIR/functions.json"
