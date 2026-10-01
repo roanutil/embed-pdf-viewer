@@ -571,3 +571,24 @@ On the remote (same run), `searchLarge` goes from 37,907 to 2,176 ms and its mai
 37,856 to 1,020 ms, against `main`'s 231 ms of JavaScript; no other row moves. Rust workspace tests
 256 of 256, `core-wasm` 57 of 57 and 10 of 10. What's left of the gap is the plugin's per-page
 work on the main thread and the worker's glyph reads, which the glyph view above would cut too.
+
+With both merged (the plugins tip at `373b7f73b`, the `plugins-tip3` arm), `searchLarge` is 1,866
+ms against `main`'s 1,650 (1.13x; R=3, `results/2026-10-01T18-02-14-142Z-2023MBP16Grey-desktop`).
+Profiled with a named kernel, its 994 ms of main thread is about 300 ms of per-page plumbing in the
+engine callback (futures, promise guards, frees), about 231 ms of the search panel's
+`useSelector((c) => c.listHits())` (`packages/viewer/chrome/src/ui/search-panel.tsx:128`) reading
+every hit so far on every change (348 calls, 17.3 MB of answers), about 213 ms of moving engine
+answers across the boundary, 101 ms of `reduce_search`, and 20 ms of building hits.
+
+`reduce_search` copied every hit so far, segments and snippet included, each time a page of
+results arrived, and a page's bucket once per hit added to it. `research/rust-kernel-shared-hits`
+(`b450a9909`) holds hits as `Rc<SearchHit>` in the state and in the `Append` action, and replaces
+each bucket once per append; the serialized state and actions are unchanged (serde's `rc`
+feature). Rust workspace 256 of 256, search conformance 4 of 4, two new reducer tests for order
+and sharing. `searchLarge` goes from 1,873.5 to 1,749.3 ms (-6.6%), its main thread from 1,038 to
+890 ms (-14%), and it's 1.06x `main` (R=3, `results/2026-10-01T18-55-22-254Z-2023MBP16Grey-desktop`).
+
+The panel's full-list reads aren't worth a paged API at that point: they're the worst case of one
+flow, they shrink quadratically with fewer hits, and paging would give the Rust kernel a different
+panel from the TypeScript reference. Reading `listHits()` at most once a frame during a search
+would be the cheap version, if it's ever wanted.
