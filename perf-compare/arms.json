@@ -104,7 +104,7 @@
     },
     "impl-enginelink": {
       "ref": "research/rust-core-engine-link",
-      "sha": "0525c0f22cdf98a88089b8f7924e7977a609485d",
+      "sha": "7ed02e3996251fc6298293887f53ea919c6a10ab",
       "recipe": "rust-core"
     },
     "plugins-tip": {
@@ -114,7 +114,17 @@
     },
     "plugins-enginelink": {
       "ref": "research/rust-kernel-engine-link",
-      "sha": "1125b487bebab00f3dec9f327b7ddd2d803c4ac3",
+      "sha": "dfb5c43c82e456c444c413bcb241594b080b51d6",
+      "recipe": "rust-kernel"
+    },
+    "impl-fixed": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "38da5cc6b65f6e8f3091c35be6b493256223eaf1",
+      "recipe": "rust-core"
+    },
+    "plugins-fixed": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "45be8d3d51560f11de8de5ab94193fd3022fd563",
       "recipe": "rust-kernel"
     }
   },
@@ -241,6 +251,16 @@
     },
     "plugins-enginelink": {
       "worktree": "plugins-enginelink",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-fixed": {
+      "worktree": "impl-fixed",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-fixed": {
+      "worktree": "plugins-fixed",
       "kernel": "rust",
       "rustReads": false
     }
@@ -373,6 +393,14 @@
     [
       "plugins-tip",
       "plugins-enginelink"
+    ],
+    [
+      "impl-head",
+      "impl-fixed"
+    ],
+    [
+      "plugins-tip",
+      "plugins-fixed"
     ]
   ]
 }

@@ -382,3 +382,35 @@ is slower, and the open and scroll point estimates are 2 to 5% faster. Its cost 
 dependency: `build.sh` now needs binaryen's `wasm-opt` (version 133 here) wherever the kernel is
 built. It's merged into `research/multi-platform-rust-core-impl-plugins` (a fast-forward to
 `e981e0cb9`); the LTO branch is deleted.
+
+### The engine's optimized link
+
+`-O2 -sASSERTIONS=0` in the final emcc link (`packages/engine/runtime/build/compile.esm.sh`),
+measured on both research branches (`research/rust-core-engine-link` at `7ed02e399` on impl,
+`research/rust-kernel-engine-link` at `dfb5c43c8` on plugins; R=3,
+`results/2026-10-01T03-11-14-653Z-2023MBP16Grey-desktop`, A/A 38 of 39). The engine wasm goes from
+11,084,440 to 10,065,349 bytes (-9.2%), 2,999,741 to 2,986,548 brotli. On impl, `open(ebook)`
+opens 6% sooner and `open(large)` opens 4% and settles 7% sooner (226.1 to 211.3 ms); on plugins
+the open rows don't move beyond noise. `search` main-thread task time reads slower on both (2.5 to
+3.3 ms on impl, 9.0 to 17.1 ms on plugins against a baseline p95 of 15.3 ms).
+
+The link keeps `-sSTACK_OVERFLOW_CHECK=1`, which `ASSERTIONS=1` used to turn on: a cookie at the
+top of the C stack, checked at the end of each tick, so a stack overflow aborts instead of silently
+overwriting the data below the stack. What turning assertions off costs otherwise is the JS glue's
+named aborts (a call with the wrong argument count, a runtime method that wasn't exported), and it
+cost us twice before it landed:
+
+- Without assertions, emscripten's `cwrap` returns the raw export for every all-numeric signature
+  and counts `'boolean'` as numeric (`library_ccall.js`), so C `bool` results came back as 0 and
+  1. Ten engine tests failed that way. `toJsResult` in `packages/engine/runtime/src/wasm/wasm-runtime.ts`
+  now maps them to booleans whatever the build.
+- The argument-count assertion is what exposed a real bug on both research branches: their
+  `wasm32-eh` engine is linked with emcc 4.0.0, which turns `WASM_BIGINT` on by default, while the
+  TypeScript runtime splits each i64 argument into two i32 halves. `EPDFSig_Seal` was called with
+  13 arguments where it takes 10, and signing, attachment extraction and revision reads aborted (47
+  of the 68 engine test failures). `-sWASM_BIGINT=0` fixes it (`fba088f7d` on impl, `dea3e7e77` on
+  plugins). With assertions off it would have read wrong arguments instead of aborting.
+
+So we'd land the optimized link only with a build-time check that compares each bound function's
+argument count with the wasm exports, and only after rebasing it onto the `WASM_BIGINT` fix and the
+new runtime pin (`7c7b600b1`, runtime main plus `ca1932c4a`).
