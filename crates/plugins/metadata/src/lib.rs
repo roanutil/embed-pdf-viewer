@@ -12,9 +12,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub mod controller;
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 #[cfg(feature = "harness")]
 pub mod harness;
 pub mod model;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
 
 pub use controller::{MetadataCapability, create_metadata_controller};
 pub use model::{
@@ -37,6 +42,7 @@ pub type MetadataUpdateResult = Value;
 /// `ResourceStatus`: load state of a resource a plugin hydrates from the
 /// engine. `forbidden` is a permission refusal, not an empty value.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum ResourceStatus {
     Idle,

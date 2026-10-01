@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use epdf_ffi::{KernelBound, KernelThread, Subscription, ViewerError};
+use epdf_ffi::{CancelToken, KernelBound, KernelThread, Subscription, ViewerError};
 use epdf_kernel::Promise;
 use epdf_kernel::store::Unsubscribe;
 use futures::executor::block_on;
@@ -140,4 +140,119 @@ fn dropping_a_promise_future_before_the_job_runs_aborts_and_releases_the_promise
     assert!(aborted.load(Ordering::SeqCst));
     // The slab would keep the promise, and its abort closure, alive.
     assert_eq!(Arc::strong_count(&held), 1);
+}
+
+/// A pending promise whose abort rejects it, as an engine call's does.
+fn abortable(aborted: Arc<AtomicBool>) -> Promise<u32> {
+    let (promise, resolver) = Promise::<u32>::pending();
+    promise.with_abort(move |reason| {
+        aborted.store(true, Ordering::SeqCst);
+        resolver.reject(epdf_kernel::Error::abort(reason));
+    })
+}
+
+fn is_cancelled(error: &ViewerError) -> bool {
+    matches!(error, ViewerError::Kernel { code: Some(c), .. } if c == "operation-cancelled")
+}
+
+#[test]
+fn cancelling_before_the_job_runs_skips_the_call() {
+    let (thread, bound) = bound();
+    let (release, gate) = std::sync::mpsc::channel::<()>();
+    let (parked_tx, parked) = std::sync::mpsc::channel::<()>();
+    let blocker = thread.call(move |_| {
+        parked_tx.send(()).unwrap();
+        gate.recv().unwrap();
+    });
+    parked.recv().unwrap();
+
+    let ran = Arc::new(AtomicBool::new(false));
+    let flag = ran.clone();
+    let token = CancelToken::new();
+    let future = bound.call_promise_cancellable(
+        token.clone(),
+        move |_| {
+            flag.store(true, Ordering::SeqCst);
+            Ok(Promise::resolved(1u32))
+        },
+        |n| n,
+    );
+    token.cancel();
+    release.send(()).unwrap();
+    block_on(blocker).unwrap();
+    let error = block_on(future).unwrap_err();
+    assert!(is_cancelled(&error), "{error:?}");
+    assert!(!ran.load(Ordering::SeqCst));
+}
+
+#[test]
+fn cancelling_a_pending_promise_aborts_it_and_answers_its_rejection() {
+    let (thread, bound) = bound();
+    let aborted = Arc::new(AtomicBool::new(false));
+    let flag = aborted.clone();
+    let token = CancelToken::new();
+    let mut future = Box::pin(bound.call_promise_cancellable(
+        token.clone(),
+        move |_| Ok(abortable(flag)),
+        |n| n,
+    ));
+    let _ = block_on(futures::future::select(future.as_mut(), futures::future::ready(())));
+    block_on(thread.call(|_| ())).unwrap(); // the job has parked the promise
+    token.cancel();
+    token.cancel();
+    // The promise's own rejection comes back: here the bare `AbortError` an
+    // engine call rejects with (a plugin maps it to `operation-cancelled`).
+    let error = block_on(future).unwrap_err();
+    assert!(
+        matches!(error, ViewerError::Kernel { ref name, .. } if name == "AbortError"),
+        "{error:?}"
+    );
+    assert!(aborted.load(Ordering::SeqCst));
+}
+
+#[test]
+fn cancelling_after_the_promise_settled_changes_nothing() {
+    let (thread, bound) = bound();
+    let aborted = Arc::new(AtomicBool::new(false));
+    let flag = aborted.clone();
+    let token = CancelToken::new();
+    let n = block_on(bound.call_promise_cancellable(
+        token.clone(),
+        move |_| {
+            Ok(Promise::resolved(7u32).with_abort(move |_| flag.store(true, Ordering::SeqCst)))
+        },
+        |n| n * 6,
+    ))
+    .unwrap();
+    token.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert_eq!(n, 42);
+    assert!(!aborted.load(Ordering::SeqCst));
+}
+
+#[test]
+fn a_promise_that_ignores_the_abort_still_answers() {
+    let (thread, bound) = bound();
+    let token = CancelToken::new();
+    let mut future = Box::pin(bound.call_promise_cancellable(
+        token.clone(),
+        |_| {
+            let (promise, resolve) = Promise::<u32>::pending();
+            // `Resolver` is `!Send`: it stays on the kernel thread.
+            RESOLVER.with(|r| *r.borrow_mut() = Some(resolve));
+            Ok(promise)
+        },
+        |n| n,
+    ));
+    let _ = block_on(futures::future::select(future.as_mut(), futures::future::ready(())));
+    block_on(thread.call(|_| ())).unwrap();
+    token.cancel();
+    block_on(thread.call(|_| RESOLVER.with(|r| r.borrow_mut().take().unwrap().resolve(5))))
+        .unwrap();
+    assert_eq!(block_on(future).unwrap(), 5);
+}
+
+thread_local! {
+    static RESOLVER: std::cell::RefCell<Option<epdf_kernel::rt::Resolver<u32>>> =
+        const { std::cell::RefCell::new(None) };
 }

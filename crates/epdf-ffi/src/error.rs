@@ -18,3 +18,15 @@ impl From<epdf_kernel::Error> for ViewerError {
         }
     }
 }
+
+impl ViewerError {
+    /// What a call answers when its `CancelToken` was cancelled before it
+    /// started: the code a cancelled plugin call carries.
+    pub fn cancelled() -> Self {
+        ViewerError::Kernel {
+            name: "AbortError".into(),
+            code: Some(epdf_kernel::error::code::OPERATION_CANCELLED.into()),
+            detail: "operation cancelled".into(),
+        }
+    }
+}

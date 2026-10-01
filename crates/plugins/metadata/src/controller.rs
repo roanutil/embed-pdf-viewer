@@ -148,6 +148,14 @@ impl MetadataCapability {
         self.0.updated.on(listener)
     }
 
+    /// Whether the document this capability belongs to has closed. Not in
+    /// the TypeScript, where a closed capability is unreachable; a foreign
+    /// handle outlives the close and checks this before every call.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn is_closed(&self) -> bool {
+        self.0.cx.lifetime().aborted()
+    }
+
     fn connect(&self) -> Result<(), Error> {
         let doc = self.0.cx.doc()?;
         // Every confirmed change: this plugin, another plugin, a script, a remote session.

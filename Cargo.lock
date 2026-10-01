@@ -590,10 +590,13 @@ dependencies = [
 name = "epdf-plugin-metadata"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

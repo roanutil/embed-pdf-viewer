@@ -17,6 +17,7 @@ pub mod harness;
 pub use epdf_kernel::js;
 pub mod probe;
 pub mod scenario;
+pub mod test_kernel;
 
 use std::path::PathBuf;
 

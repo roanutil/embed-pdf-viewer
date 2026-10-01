@@ -14,7 +14,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use epdf_kernel::{Error, Promise};
 use futures::channel::oneshot;
 
-use crate::{KernelPost, ViewerError};
+use crate::{CancelToken, KernelPost, ViewerError};
 
 thread_local! {
     static SLAB: RefCell<HashMap<u64, Box<dyn Any>>> = RefCell::new(HashMap::new());
@@ -63,6 +63,30 @@ impl<C: 'static> KernelBound<C> {
         reply
     }
 
+    /// `call_promise`, also aborted by `token`. A token cancelled before the
+    /// job runs skips `f` and answers `operation-cancelled`; one cancelled
+    /// while the promise is pending aborts it, and the future answers with
+    /// whatever the promise settles with (a promise that ignores the abort
+    /// still answers normally). Cancelling after it settled does nothing.
+    pub fn call_promise_cancellable<U: Clone + 'static, T: Send + 'static>(
+        &self,
+        token: Arc<CancelToken>,
+        f: impl FnOnce(&C) -> Result<Promise<U>, Error> + Send + 'static,
+        map: impl FnOnce(U) -> T + Send + 'static,
+    ) -> impl Future<Output = Result<T, ViewerError>> + Send {
+        let (slot, reply) = PromiseSlot::pending(self.post.clone(), map);
+        slot.abort_on(&token);
+        let id = self.id;
+        (self.post)(Box::new(move || {
+            if token.is_cancelled() {
+                slot.start(Err(ViewerError::cancelled()));
+            } else {
+                slot.start(with(id, |c: &C| f(c).map_err(ViewerError::from)));
+            }
+        }));
+        reply
+    }
+
     /// No reply: for hot paths where the caller never waits.
     pub fn fire(&self, f: impl FnOnce(&C) + Send + 'static) {
         let id = self.id;
@@ -107,6 +131,7 @@ fn with<C: 'static, T>(
 pub struct PromiseSlot<U: Clone + 'static, T: Send + 'static> {
     tx: oneshot::Sender<Result<T, ViewerError>>,
     pending: Arc<AtomicU64>,
+    post: KernelPost,
     map: Box<dyn FnOnce(U) -> T + Send>,
 }
 
@@ -120,34 +145,48 @@ impl<U: Clone + 'static, T: Send + 'static> PromiseSlot<U, T> {
     ) -> (Self, impl Future<Output = Result<T, ViewerError>> + Send) {
         let (tx, rx) = oneshot::channel::<Result<T, ViewerError>>();
         let pending = Arc::new(AtomicU64::new(0));
-        let guard = AbortOnDrop::<U> { pending: pending.clone(), post, _value: PhantomData };
+        let guard =
+            AbortOnDrop::<U> { pending: pending.clone(), post: post.clone(), _value: PhantomData };
         let reply = async move {
             let result = rx.await.unwrap_or(Err(ViewerError::Closed));
             guard.disarm();
             result
         };
-        (PromiseSlot { tx, pending, map: Box::new(map) }, reply)
+        (PromiseSlot { tx, pending, post, map: Box::new(map) }, reply)
+    }
+
+    /// Abort the promise when `token` is cancelled, as dropping the future
+    /// would, but keep answering: the future gets the promise's rejection.
+    pub fn abort_on(&self, token: &CancelToken) {
+        let pending = self.pending.clone();
+        let post = self.post.clone();
+        token.on_cancel(move || abort_parked::<U>(&pending, &post));
     }
 
     /// On the kernel thread, with what the job started.
     pub fn start(self, started: Result<Promise<U>, ViewerError>) {
-        let PromiseSlot { tx, pending, map } = self;
+        let PromiseSlot { tx, pending, map, .. } = self;
         match started {
             Err(error) => {
                 let _ = tx.send(Err(error));
             }
             Ok(promise) => {
                 let pid = NEXT.fetch_add(1, Ordering::Relaxed);
-                // The future may have been dropped before this job ran:
-                // then `CANCELLED` is already in the slot, so abort now
-                // and don't park the promise.
-                if pending.compare_exchange(0, pid, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+                // The future may have been dropped, or its token cancelled,
+                // before this job ran: then `CANCELLED` is already in the
+                // slot, so abort now and don't park the promise. A cancelled
+                // caller is still waiting for the answer.
+                let parked =
+                    pending.compare_exchange(0, pid, Ordering::SeqCst, Ordering::SeqCst).is_ok();
+                if parked {
+                    SLAB.with(|s| s.borrow_mut().insert(pid, Box::new(promise.clone())));
+                } else {
                     promise.abort(None);
-                    return;
                 }
-                SLAB.with(|s| s.borrow_mut().insert(pid, Box::new(promise.clone())));
                 promise.on_settle(move |result| {
-                    SLAB.with(|s| s.borrow_mut().remove(&pid));
+                    if parked {
+                        SLAB.with(|s| s.borrow_mut().remove(&pid));
+                    }
                     let _ = tx.send(match result {
                         Ok(value) => Ok(map(value.clone())),
                         Err(error) => Err(ViewerError::from(error.clone())),
@@ -172,16 +211,22 @@ impl<U: Clone + 'static> AbortOnDrop<U> {
 
 impl<U: Clone + 'static> Drop for AbortOnDrop<U> {
     fn drop(&mut self) {
-        let pid = self.pending.swap(CANCELLED, Ordering::SeqCst);
-        // 0: the job hasn't published a promise yet and will see `CANCELLED`.
-        if pid == 0 || pid == CANCELLED {
-            return;
-        }
-        (self.post)(Box::new(move || {
-            let promise = SLAB.with(|s| s.borrow_mut().remove(&pid));
-            if let Some(promise) = promise.and_then(|p| p.downcast::<Promise<U>>().ok()) {
-                promise.abort(None);
-            }
-        }));
+        abort_parked::<U>(&self.pending, &self.post);
     }
+}
+
+/// Mark the slot cancelled, and abort the promise parked in it, if any.
+fn abort_parked<U: Clone + 'static>(pending: &AtomicU64, post: &KernelPost) {
+    let pid = pending.swap(CANCELLED, Ordering::SeqCst);
+    // 0: the job hasn't published a promise yet and will see `CANCELLED`
+    // (or the reply already disarmed the slot, and there is nothing to do).
+    if pid == 0 || pid == CANCELLED {
+        return;
+    }
+    post(Box::new(move || {
+        let promise = SLAB.with(|s| s.borrow_mut().remove(&pid));
+        if let Some(promise) = promise.and_then(|p| p.downcast::<Promise<U>>().ok()) {
+            promise.abort(None);
+        }
+    }));
 }
