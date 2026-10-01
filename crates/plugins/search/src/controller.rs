@@ -15,7 +15,7 @@ use epdf_geometry::{Point, TextQuad, bounds_of_rects, text_quad_bounds};
 use epdf_kernel::engine::decode;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::geometry::PageRef;
+use epdf_kernel::geometry::{PageRef, PageSpace};
 use epdf_kernel::lanes::{LatestLane, LatestRun};
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::rt::{self, Promise, TimerId};
@@ -125,9 +125,17 @@ impl Core {
     /// mid-search (deleted) is dropped.
     fn hits_from_slice(&self, slice: &SearchSlice) -> Result<Vec<SearchHit>, Error> {
         let mut hits = Vec::new();
+        // A slice's matches come a page at a time, and finding a page scans
+        // the document's registry: look each page up once, not twice per
+        // match (32,000 matches on a 400-page document was most of a
+        // search's main thread).
+        let mut last: Option<(PageRef, Value, PageSpace)> = None;
         for m in &slice.matches {
-            let Some(page) = self.cx.get_page(m.page) else { continue };
-            let space = self.cx.for_page(m.page)?;
+            if last.as_ref().is_none_or(|(at, _, _)| *at != m.page) {
+                let Some(page) = self.cx.get_page(m.page) else { continue };
+                last = Some((m.page, page, self.cx.for_page(m.page)?));
+            }
+            let Some((_, page, space)) = &last else { continue };
             // Engine quads carry frame-geometric slot semantics (p1..p4 =
             // upper-start, upper-end, lower-start, lower-end): the y-flip
             // maps the corners onto their names.
