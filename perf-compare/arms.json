@@ -126,6 +126,16 @@
       "ref": "research/multi-platform-rust-core-impl-plugins",
       "sha": "c9201919264bf5fdc309b11b3f2cdbd70936634f",
       "recipe": "rust-kernel"
+    },
+    "impl-o2": {
+      "ref": "research/rust-core-engine-o2",
+      "sha": "977a874e456466b4dc6a47a3b91301e08fd3863b",
+      "recipe": "rust-core"
+    },
+    "plugins-o2": {
+      "ref": "research/rust-kernel-engine-o2",
+      "sha": "785e68335e857c5421ebec2cc464f200f801b4d0",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -261,6 +271,16 @@
     },
     "plugins-fixed": {
       "worktree": "plugins-fixed",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-o2": {
+      "worktree": "impl-o2",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-o2": {
+      "worktree": "plugins-o2",
       "kernel": "rust",
       "rustReads": false
     }
@@ -408,6 +428,22 @@
     ],
     [
       "plugins-fixed",
+      "plugins-enginelink"
+    ],
+    [
+      "impl-fixed",
+      "impl-o2"
+    ],
+    [
+      "impl-o2",
+      "impl-enginelink"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-o2"
+    ],
+    [
+      "plugins-o2",
       "plugins-enginelink"
     ]
   ]
