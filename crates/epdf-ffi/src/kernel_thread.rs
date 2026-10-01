@@ -12,6 +12,8 @@ use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
 
 use epdf_kernel::{Error, rt};
+
+use crate::bound;
 use futures::channel::oneshot;
 
 pub type Job<S> = Box<dyn FnOnce(&mut S) + Send>;
@@ -69,6 +71,12 @@ impl<S: 'static> KernelThread<S> {
                     drain(origin);
                 }
                 drop(state);
+                drain(origin);
+                // Whatever foreign handles still hold goes now, not in
+                // thread-local teardown. Their later removal posts fail:
+                // the sender is gone. This covers a thread that shut itself
+                // down (detached) as well as one that was joined.
+                bound::drop_all();
                 drain(origin);
             })
             .map_err(|e| Error::new(format!("[epdf-ffi] no kernel thread: {e}")))?;

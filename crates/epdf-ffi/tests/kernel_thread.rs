@@ -66,3 +66,68 @@ fn a_job_that_shuts_down_its_own_thread_detaches_instead_of_joining() {
     dropped.recv_timeout(Duration::from_secs(2)).expect("the loop never dropped its state");
     assert!(!post(Box::new(|| {})));
 }
+
+/// A thread local with a destructor, first touched just after the slab is:
+/// thread locals are torn down in reverse order of first use, so while the
+/// slab's teardown runs, this one is already gone.
+struct Guard;
+impl Drop for Guard {
+    fn drop(&mut self) {}
+}
+
+thread_local! {
+    static GUARD: Guard = const { Guard };
+}
+
+/// A kernel-bound value whose drop reaches the runtime and another thread
+/// local, as a plugin capability's does (a timer, a promise, a host table).
+/// It reports whether the guard was still alive.
+struct TouchesThreadLocals(mpsc::Sender<bool>);
+impl Drop for TouchesThreadLocals {
+    fn drop(&mut self) {
+        let alive = GUARD.try_with(|_| ()).is_ok();
+        if alive {
+            epdf_kernel::rt::set_timeout(16.0, || {});
+        }
+        let _ = self.0.send(alive);
+    }
+}
+
+fn bind(
+    thread: &KernelThread<()>,
+    dropped: mpsc::Sender<bool>,
+) -> epdf_ffi::KernelBound<TouchesThreadLocals> {
+    let post = thread.post();
+    block_on(thread.call(move |_| {
+        let bound = epdf_ffi::KernelBound::new(TouchesThreadLocals(dropped), post);
+        GUARD.with(|_| ());
+        bound
+    }))
+    .unwrap()
+}
+
+#[test]
+fn a_value_still_bound_at_shutdown_is_dropped_before_the_thread_exits() {
+    let (dropped_tx, dropped) = mpsc::channel();
+    let mut thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let bound = bind(&thread, dropped_tx);
+    thread.shutdown();
+    let alive = dropped.try_recv().expect("the bound value was never dropped");
+    assert!(alive, "the bound value was dropped during thread-local teardown");
+    // The handle outlived the thread; its removal post fails harmlessly.
+    drop(bound);
+}
+
+#[test]
+fn a_thread_that_shuts_itself_down_drops_what_is_still_bound() {
+    let (dropped_tx, dropped) = mpsc::channel();
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let post = thread.post();
+    let bound = bind(&thread, dropped_tx);
+    let shared = std::sync::Arc::new(std::sync::Mutex::new(Some(thread)));
+    let own = shared.clone();
+    post(Box::new(move || drop(own.lock().unwrap().take())));
+    let alive = dropped.recv_timeout(Duration::from_secs(2)).expect("never dropped");
+    assert!(alive, "the bound value was dropped during thread-local teardown");
+    drop(bound);
+}

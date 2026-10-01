@@ -19,6 +19,15 @@ use crate::{CancelToken, KernelPost, ViewerError};
 thread_local! {
     static SLAB: RefCell<HashMap<u64, Box<dyn Any>>> = RefCell::new(HashMap::new());
 }
+/// Empty this thread's slab and drop what it held: the kernel thread's last
+/// step, while its thread locals (the runtime, the host table) are alive.
+/// Left to thread-local teardown, a capability a foreign handle still holds
+/// would drop after the locals its drop reaches, and abort the process.
+pub(crate) fn drop_all() {
+    let held = SLAB.with(|s| std::mem::take(&mut *s.borrow_mut()));
+    drop(held);
+}
+
 static NEXT: AtomicU64 = AtomicU64::new(1);
 /// Stored in a `call_promise` slot by a dropped future that had no promise yet.
 const CANCELLED: u64 = u64::MAX;
