@@ -780,6 +780,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-viewer-host"
+version = "0.0.0"
+dependencies = [
+ "base64",
+ "build-support",
+ "epdf-engine",
+ "epdf-ffi",
+ "epdf-kernel",
+ "epdf-uniffi",
+ "futures",
+ "serde",
+ "serde_json",
+ "test-support",
+ "thiserror",
+ "uniffi",
+]
+
+[[package]]
 name = "epdf-wasm"
 version = "0.0.0"
 dependencies = [
