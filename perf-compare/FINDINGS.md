@@ -411,6 +411,23 @@ cost us twice before it landed:
   of the 68 engine test failures). `-sWASM_BIGINT=0` fixes it (`fba088f7d` on impl, `dea3e7e77` on
   plugins). With assertions off it would have read wrong arguments instead of aborting.
 
-So we'd land the optimized link only with a build-time check that compares each bound function's
-argument count with the wasm exports, and only after rebasing it onto the `WASM_BIGINT` fix and the
-new runtime pin (`7c7b600b1`, runtime main plus `ca1932c4a`).
+Both conditions are now met. `build/verify-wasm-abi.mjs` reads the linked wasm's export types and
+fails the link when a bound function's parameter count doesn't match what `wasm-runtime.ts` passes
+(an i64 counts twice) or an export takes an i64; the old pin fails it on 16 functions, the fixed
+builds pass all 918. The engine-link branches are rebased onto the fixed tips
+(`research/rust-core-engine-link` at `2a3bb96ed`, `research/rust-kernel-engine-link` at
+`48fda657e`), and every arm fails the same 21 engine tests as its base.
+
+Re-measured on the rebased branches (R=3, `results/2026-10-01T03-48-18-182Z-2023MBP16Grey-desktop`,
+A/A 39 of 39), no row is slower on either branch, and the `search` slowdown above doesn't
+reappear. On impl, `open(large)` opens 5.6% sooner (143.4 to 135.3 ms), `jump` main-thread task
+time is 14% lower (57.6 to 49.4 ms) and the first zoom step settles 8.6 ms sooner; on plugins,
+`open(large)` opens 3.8% sooner (204.0 to 196.3 ms). The engine is 11,120,042 to 10,098,549 bytes
+(-9.2%), 3,019,872 to 2,994,491 brotli. We'd keep it.
+
+Of the 21 engine test failures left on every arm, 17 need the native Node build
+(`pdf-runtime.node` and `libembedpdf.dylib`), which the harness's worktrees don't build; with it
+present those 7 files pass, 38 of 38. The other 4 are the Rust core's own: the Rust session's open
+reports no `security.encryptionState` (`test/session-rust-rehearsal.test.ts:59`, `:75`), and the
+Rust geometry reader's output lacks `pageObjectNumber`, which the TypeScript reader returns
+(`test/geometry-rust-parity.test.ts`). Both failed on the old pin as well.
