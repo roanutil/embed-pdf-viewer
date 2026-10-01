@@ -20,6 +20,8 @@ thread_local! {
     static SLAB: RefCell<HashMap<u64, Box<dyn Any>>> = RefCell::new(HashMap::new());
 }
 static NEXT: AtomicU64 = AtomicU64::new(1);
+/// Stored in a `call_promise` slot by a dropped future that had no promise yet.
+const CANCELLED: u64 = u64::MAX;
 
 pub struct KernelBound<C: 'static> {
     id: u64,
@@ -65,8 +67,14 @@ impl<C: 'static> KernelBound<C> {
                 }
                 Ok(promise) => {
                     let pid = NEXT.fetch_add(1, Ordering::Relaxed);
+                    // The future may have been dropped before this job ran:
+                    // then `CANCELLED` is already in the slot, so abort now
+                    // and don't park the promise.
+                    if slot.compare_exchange(0, pid, Ordering::SeqCst, Ordering::SeqCst).is_err() {
+                        promise.abort(None);
+                        return;
+                    }
                     SLAB.with(|s| s.borrow_mut().insert(pid, Box::new(promise.clone())));
-                    slot.store(pid, Ordering::SeqCst);
                     promise.on_settle(move |result| {
                         SLAB.with(|s| s.borrow_mut().remove(&pid));
                         let _ = tx.send(match result {
@@ -137,8 +145,9 @@ impl<U: Clone + 'static> AbortOnDrop<U> {
 
 impl<U: Clone + 'static> Drop for AbortOnDrop<U> {
     fn drop(&mut self) {
-        let pid = self.pending.swap(0, Ordering::SeqCst);
-        if pid == 0 {
+        let pid = self.pending.swap(CANCELLED, Ordering::SeqCst);
+        // 0: the job hasn't published a promise yet and will see `CANCELLED`.
+        if pid == 0 || pid == CANCELLED {
             return;
         }
         (self.post)(Box::new(move || {

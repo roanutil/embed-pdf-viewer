@@ -106,3 +106,38 @@ fn cancelling_before_the_listener_is_registered_still_unsubscribes() {
     .unwrap();
     assert!(unsubscribed.load(Ordering::SeqCst));
 }
+
+#[test]
+fn dropping_a_promise_future_before_the_job_runs_aborts_and_releases_the_promise() {
+    let (thread, bound) = bound();
+    // Hold the kernel thread so the call's job queues behind this one.
+    let (release, gate) = std::sync::mpsc::channel::<()>();
+    let (parked_tx, parked) = std::sync::mpsc::channel::<()>();
+    let blocker = thread.call(move |_| {
+        parked_tx.send(()).unwrap();
+        gate.recv().unwrap();
+    });
+    parked.recv().unwrap();
+
+    let aborted = Arc::new(AtomicBool::new(false));
+    let flag = aborted.clone();
+    let held = Arc::new(());
+    let witness = held.clone();
+    let future = bound.call_promise(
+        move |_| {
+            let (promise, _resolver) = Promise::<u32>::pending();
+            Ok(promise.with_abort(move |_| {
+                let _keep = &witness;
+                flag.store(true, Ordering::SeqCst)
+            }))
+        },
+        |n| n,
+    );
+    drop(future);
+    release.send(()).unwrap();
+    block_on(blocker).unwrap();
+    block_on(thread.call(|_| ())).unwrap();
+    assert!(aborted.load(Ordering::SeqCst));
+    // The slab would keep the promise, and its abort closure, alive.
+    assert_eq!(Arc::strong_count(&held), 1);
+}
