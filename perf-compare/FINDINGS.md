@@ -453,4 +453,7 @@ difference. On plugins, `-O2` alone shows none, and turning assertions off on to
 
 We'd take `-O2` and keep assertions: it gets nearly all the size and part of the speed, and what
 assertions cost is a few percent on one row of one branch. They already caught one real bug here
-(the i64 split), and the named abort is worth more than 3% on opening a small document.
+(the i64 split), and the named abort is worth more than 3% on opening a small document. That's
+what's merged: `-O2` with assertions on, plus the `toJsResult` bool fix, which the raw-export
+fallback needs in any build (`a1cc26fe3` and `ec18b766d` on impl, `f625ccfe4` and `fa97fb3e8` on
+plugins). The assertions-off branches are deleted.
