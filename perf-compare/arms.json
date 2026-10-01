@@ -81,6 +81,21 @@
       "ref": "research/rust-core-toolbar-gate",
       "sha": "30f4295d7d3a0e457abe557a3607cd8f417204d7",
       "recipe": "rust-core"
+    },
+    "plugins-head": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "51130b042a9d587768c3f0ccc908304a380fa60f",
+      "recipe": "rust-kernel"
+    },
+    "plugins-buildlto": {
+      "ref": "research/rust-kernel-build-lto",
+      "sha": "99d1a8c04c92192d154ea8e63973790f5b6e0308",
+      "recipe": "rust-kernel"
+    },
+    "plugins-wasmopt": {
+      "ref": "research/rust-kernel-wasm-opt",
+      "sha": "e981e0cb9d088c2c84781d25e311a33923fb3105",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -172,6 +187,21 @@
     "impl-gate": {
       "worktree": "impl-gate",
       "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-head": {
+      "worktree": "plugins-head",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-buildlto": {
+      "worktree": "plugins-buildlto",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-wasmopt": {
+      "worktree": "plugins-wasmopt",
+      "kernel": "rust",
       "rustReads": false
     }
   },
@@ -283,6 +313,18 @@
     [
       "impl-ts",
       "impl-gate"
+    ],
+    [
+      "plugins-head",
+      "plugins-buildlto"
+    ],
+    [
+      "plugins-head",
+      "plugins-wasmopt"
+    ],
+    [
+      "plugins-bump",
+      "plugins-buildlto"
     ]
   ]
 }
