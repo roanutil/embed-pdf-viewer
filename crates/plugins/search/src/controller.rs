@@ -301,6 +301,7 @@ impl CollectSink for SessionSink {
     fn on_slice(&self, hits: Vec<SearchHit>, scanned: f64, total: f64) {
         let (core, run) = (&self.core, &self.run);
         run.commit(|| {
+            let hits = hits.into_iter().map(Rc::new).collect();
             core.cx.dispatch(SearchAction::Append { hits, scanned, total });
             core.events.progress.emit(&SearchProgressEvent {
                 scanned,
@@ -553,7 +554,7 @@ impl SearchCapability {
         }
         let len = hits.len() as isize;
         let wrapped = ((index % len) + len) % len;
-        let hit = hits[wrapped as usize].clone();
+        let hit = (*hits[wrapped as usize]).clone();
         if self.state().active_index != wrapped {
             self.0.cx.dispatch(SearchAction::SetActive { index: wrapped });
             self.0.events.active_hit_changed.emit(&SearchActiveHitChangedEvent {
@@ -602,7 +603,7 @@ impl SearchCapability {
 
     /// Hits found so far, or those on one page. The same `Rc` per page until
     /// new hits land there.
-    pub fn list_hits(&self, page: Option<PageRef>) -> Rc<Vec<SearchHit>> {
+    pub fn list_hits(&self, page: Option<PageRef>) -> Rc<Vec<Rc<SearchHit>>> {
         let state = self.state();
         match page {
             Some(page) => state
@@ -634,7 +635,7 @@ impl SearchCapability {
 
     pub fn get_active_hit(&self) -> Option<SearchHit> {
         let state = self.state();
-        usize::try_from(state.active_index).ok().and_then(|i| state.hits.get(i)).cloned()
+        usize::try_from(state.active_index).ok().and_then(|i| state.hits.get(i)).map(|hit| (**hit).clone())
     }
 
     pub fn get_progress(&self) -> SearchProgress {
