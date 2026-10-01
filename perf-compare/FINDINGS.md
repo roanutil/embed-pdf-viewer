@@ -344,7 +344,8 @@ described in the section named. The first five are cheap, and two of them are al
 5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and left
    out of the research branches: see below.
 6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
-   kernel's own maps (Serialization formats).
+   kernel's own maps (Serialization formats). Narrowed to the one slice the profile points at, and
+   tried: see "The measurement slice's text" below.
 7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
    `HEAPF32` reads, a per-page search geometry cache and an ASCII folding fast path, geometry as
    transferable typed arrays, and a cached `FPDF_TEXTPAGE`.
@@ -503,3 +504,29 @@ inside preact's package, which a preact release that renames its dist files woul
 time. The two copies haven't caused a bug we've seen, so the research branches keep their aliases
 as they are. `main` has the same aliases and would gain the 7% there, which is a change for `main`
 to decide.
+
+### The measurement slice's text
+
+Profiled on the current kernel, a first scroll through `large.pdf` spends 155 of its 493 ms of wasm
+self time in `SliceLease::text`, nearly all of it on one slice: the measurement slice, re-read 198
+times in 60 wheels at about 82 KB each (20.6 MB). Each change replaces exactly one page's entry,
+the page whose scale just loaded, and the slice's text was rebuilt from the whole value each time.
+
+`research/rust-kernel-slice-text` (`d9c5e4a58`, on the plugins tip `4f9ceee9c`) lets a slice
+register a text writer (`SliceText`, through `PluginBuilder::slice_text`), which the store uses in
+place of `to_json(state).to_string()`. Measurement's keeps each shared `Rc<PageEntry>`'s text and
+serializes only replaced entries; the text is byte for byte `js::to_value(state).to_string()`,
+which its tests check (numeric key order, `NaN`, the cache across replaced entries). Rust
+workspace tests 256 of 256.
+
+The harness's `scroll` didn't see it: its warm-up loads the pages' scales before the measured
+window, so no row moved. The new `coldScroll` flow is the same 60 wheels on a document just opened.
+There (R=3, `results/2026-10-01T08-25-07-278Z-2023MBP16Grey-desktop`, A/A 47 of 48), main-thread
+task time falls 25% (1048.2 to 787.3 ms) and JavaScript time 28% (934.0 to 672.4 ms); every other
+row shows no detectable difference. Against `main`'s 436.5 ms, the cold first scroll goes from
+2.4x to 1.8x, level with the warmed one. The cost is 15,788 bytes of kernel wasm and a second
+serialization path a plugin has to keep identical to its `to_json`. We'd keep it.
+
+The JavaScript side still parses the whole 82 KB once per change. Batching the scale loads, so the
+slice changes once per scroll step rather than once per page, would cut that too, at the cost of
+changing the plugin's action sequence, which the conformance vectors check.
