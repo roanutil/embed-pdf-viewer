@@ -333,13 +333,12 @@ As of 2026-09-30, with sections 1 to 6 prototyped and the kept fixes merged into
 `research/multi-platform-rust-core-impl-plugins` (`416ee81b8`), these are still open. Each is
 described in the section named. The first five are cheap, and two of them are already measured.
 
-1. LTO in the branch's own build (Build settings). It's measured, about 10% on kernel-heavy rows,
-   but only the harness's `rust-kernel-lto` recipe applies it. The branch still ships without it,
-   because `crates/epdf-web/Cargo.toml:9` declares `crate-type = ["cdylib", "rlib"]`.
+1. LTO in the branch's own build (Build settings). Tried since, and measured on its own below: it
+   no longer pays.
 2. The engine's final link with `-O2 -sASSERTIONS=0` (Engine, on every branch).
    `packages/engine/runtime/build/compile.esm.sh:88` still passes `-sASSERTIONS=1`.
-3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). The size is measured, 11.3 to
-   8.3 MB raw; the speed isn't.
+3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). Tried since, and measured on
+   its own below: a small win, kept.
 4. `staged_meta.take()` (The heap leak). Each open document still holds a second copy of its
    pages (`crates/epdf-kernel/src/kernel.rs:619` clones it).
 5. The second copy of `preact/compat` in every bundle (Build settings).
@@ -358,3 +357,27 @@ described in the section named. The first five are cheap, and two of them are al
 Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
 time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
 what it would save), and read sets for the hook selectors (section 6; no row moved).
+
+### LTO and `wasm-opt`, each on its own
+
+Both are prototyped on the plugins tip (`51130b042`) as separate branches, so either can go
+without the other, and timed against that tip built the branch's own way, without LTO (R=3,
+`results/2026-10-01T02-19-00-897Z-2023MBP16Grey-desktop`, A/A 39 of 39).
+
+LTO (`research/rust-kernel-build-lto` at `99d1a8c04`, the `plugins-buildlto` arm) builds `epdf-web`
+as a cdylib only in `crates/epdf-web/scripts/build.sh`, since the crate's integration tests need the
+rlib in `Cargo.toml`. No row moves beyond noise: the point estimates are 3% faster on scroll task
+time, 0.5 to 1% slower on the open rows, and 15 ms later on jump settle with an interval from -12 to
++49 ms. It costs 921,595 bytes of kernel wasm (+8.1%), 117,163 brotli (+6.3%). The 10% it was
+worth on `plugins-lto` came from a kernel that spent most of every row in Rust; the fixes since
+took most of that time away. It's built exactly as the harness's `rust-kernel-lto` recipe builds
+it (the same 12,254,473 bytes, and no difference from `plugins-bump` on any row). We'd leave it
+out.
+
+`wasm-opt -O3 --strip-debug` after `wasm-bindgen` (`research/rust-kernel-wasm-opt` at
+`e981e0cb9`, the `plugins-wasmopt` arm) takes the kernel from 11,332,878 to 8,311,869 bytes
+(-26.7%), 1,849,657 to 1,776,551 brotli (-4.0%). `readyMs` is 7.8% sooner on `open(ebook)` (82.1
+to 75.7 ms) and 6.4% on `open(large)`: a smaller module compiles and instantiates sooner. No row
+is slower, and the open and scroll point estimates are 2 to 5% faster. Its cost is a build
+dependency: `build.sh` now needs binaryen's `wasm-opt` (version 133 here) wherever the kernel is
+built. We'd keep it.
