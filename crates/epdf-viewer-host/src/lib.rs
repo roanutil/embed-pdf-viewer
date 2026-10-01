@@ -11,6 +11,11 @@ pub mod native_engine;
 pub mod session;
 pub mod translate;
 
+// Nothing here calls `epdf_uniffi`, and rustc leaves an unreferenced
+// dependency out of the staticlib. The Swift smoke tests drive its engine-level
+// exports through this archive, so link it explicitly.
+extern crate epdf_uniffi;
+
 use std::future::Future;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};

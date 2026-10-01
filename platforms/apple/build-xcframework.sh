@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the Apple XCFramework and the Swift package around it.
+# Builds the Apple XCFramework and the generated Swift for the package around it.
 #
 # `multiplatform-plan.md` Phase 1: "Apple XCFramework in a Swift Package".
 # Everything here is local; nothing is fetched and nothing is published. The
@@ -10,8 +10,9 @@
 #
 #   bash platforms/apple/build-xcframework.sh
 #
-# Produces platforms/apple/EmbedPDF/ : a Swift package whose one binary target
-# is EmbedPDFFFI.xcframework, with device and simulator slices.
+# Produces the generated inputs of platforms/apple/EmbedPDF/ : the binary target
+# EmbedPDFFFI.xcframework (device and simulator slices), the generated Swift in
+# Sources/EmbedPDFBindings, and the test fixtures. Package.swift is tracked.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -43,88 +44,60 @@ for slice in "${SLICES[@]}"; do
   fi
 
   echo "building $rust"
-  (cd "$ROOT" && cargo build -p epdf-uniffi --target "$rust" --profile "$PROFILE")
+  (cd "$ROOT" && cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE")
 
   # One archive per slice, because `xcodebuild -create-xcframework` takes one
   # `-library` per platform. libtool merges rather than concatenates, which is
   # what keeps the duplicate-symbol check honest.
   mkdir -p "$BUILD/$fork"
   libtool -static -o "$BUILD/$fork/libEmbedPDFFFI.a" \
-    "$ROOT/target/$rust/$PROFILE/libepdf_uniffi.a" \
+    "$ROOT/target/$rust/$PROFILE/libepdf_viewer_host.a" \
     "$LIB_ROOT/$fork/lib/libembedpdf.a" 2>/dev/null
 done
 
 # The headers every slice shares. Generated from the built library rather than
 # written by hand: uniffi's proc macros are the only thing that knows the
-# current shape, and a hand-kept header drifts silently.
+# current shape, and a hand-kept header drifts silently. Library mode emits
+# Swift for every crate in the archive that has scaffolding: epdf_uniffi,
+# epdf_ffi, epdf_viewer_host and the plugins' ffi modules.
 echo "generating bindings"
 (cd "$ROOT" && cargo build -p uniffi-bindgen)
-mkdir -p "$BUILD/headers" "$BUILD/swift"
+mkdir -p "$BUILD/headers"
 "$ROOT/target/debug/uniffi-bindgen" generate \
-  --library "$ROOT/target/aarch64-apple-ios-sim/$PROFILE/libepdf_uniffi.dylib" \
-  --language swift --out-dir "$BUILD/generated" 2>/dev/null ||
-  "$ROOT/target/debug/uniffi-bindgen" generate \
-    --library "$ROOT/target/$PROFILE/libepdf_uniffi.dylib" \
-    --language swift --out-dir "$BUILD/generated"
+  --library "$ROOT/target/aarch64-apple-ios-sim/$PROFILE/libepdf_viewer_host.a" \
+  --language swift --out-dir "$BUILD/generated"
 
+# One *FFI.h and one *FFI.modulemap per crate. xcframework wants a single
+# module.modulemap inside the headers directory, so the per-crate maps are
+# concatenated into it. uniffi writes each map without a trailing newline, so
+# a bare `cat` would run one map's closing brace into the next `module`.
+for map in "$BUILD/generated"/*.modulemap; do
+  cat "$map"
+  echo
+done > "$BUILD/headers/module.modulemap"
 cp "$BUILD/generated"/*.h "$BUILD/headers/"
-# xcframework wants the modulemap named module.modulemap inside the headers
-# directory, not the generated epdf_uniffiFFI.modulemap beside it.
-cp "$BUILD/generated"/*.modulemap "$BUILD/headers/module.modulemap"
-cp "$BUILD/generated"/*.swift "$BUILD/swift/"
 
 echo "creating the xcframework"
 rm -rf "$OUT/EmbedPDFFFI.xcframework"
-mkdir -p "$OUT/Sources/EmbedPDF"
 xcodebuild -create-xcframework \
   -library "$BUILD/ios-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -library "$BUILD/ios-sim-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -output "$OUT/EmbedPDFFFI.xcframework" > /dev/null
 
-cp "$BUILD/swift"/*.swift "$OUT/Sources/EmbedPDF/"
+mkdir -p "$OUT/Sources/EmbedPDFBindings"
+rm -f "$OUT/Sources/EmbedPDFBindings"/*.swift
+cp "$BUILD/generated"/*.swift "$OUT/Sources/EmbedPDFBindings/"
 
-# The smoke test reads the same fixtures the Rust tests read. SwiftPM will only
+# The tests read the same fixtures the Rust tests read. SwiftPM will only
 # bundle resources that live inside the package, so they are copied rather than
 # referenced, and `.gitignore`d rather than committed twice.
-mkdir -p "$OUT/Tests/EmbedPDFSmokeTests/Fixtures"
-for fixture in report colors encrypted-hello; do
-  cp "$ROOT/pdfium-multiplatform-prototype/fixtures/$fixture.pdf" \
-    "$OUT/Tests/EmbedPDFSmokeTests/Fixtures/"
+for tests in EmbedPDFBindingsSmokeTests EmbedPDFTests EmbedPDFUITests; do
+  mkdir -p "$OUT/Tests/$tests/Fixtures"
+  for fixture in report colors encrypted-hello; do
+    cp "$ROOT/pdfium-multiplatform-prototype/fixtures/$fixture.pdf" \
+      "$OUT/Tests/$tests/Fixtures/"
+  done
 done
-
-cat > "$OUT/Package.swift" <<'SWIFT'
-// swift-tools-version: 5.9
-import PackageDescription
-
-// The generated Swift and the binary it calls. `multiplatform-plan.md` is
-// explicit that uniffi's output is not the public API: a handwritten facade
-// belongs on top of this, in Swift, and does not exist yet. What ships here is
-// the layer that facade will sit on.
-let package = Package(
-    name: "EmbedPDF",
-    // 17.0 because that is the floor the fork's ios build is pinned to; see
-    // ios_deployment_target in the fork's target-args.sh.
-    platforms: [.iOS(.v17)],
-    products: [
-        .library(name: "EmbedPDF", targets: ["EmbedPDF"])
-    ],
-    targets: [
-        .binaryTarget(name: "EmbedPDFFFI", path: "EmbedPDFFFI.xcframework"),
-        .target(
-            name: "EmbedPDF",
-            dependencies: ["EmbedPDFFFI"],
-            // PDFium is C++ and the slices are static archives, so the C++
-            // runtime has to come from the SDK at link time.
-            linkerSettings: [.linkedLibrary("c++")]
-        ),
-        .testTarget(
-            name: "EmbedPDFSmokeTests",
-            dependencies: ["EmbedPDF"],
-            resources: [.copy("Fixtures")]
-        ),
-    ]
-)
-SWIFT
 
 echo
 echo "  $OUT/EmbedPDFFFI.xcframework"
