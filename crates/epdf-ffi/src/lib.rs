@@ -1,0 +1,17 @@
+//! What every crate that exports the kernel or a plugin through uniffi
+//! shares: the kernel's owner thread, the handle that reaches it, the error
+//! every export returns, and the records more than one plugin uses.
+
+pub mod bound;
+pub mod error;
+pub mod geometry;
+pub mod kernel_thread;
+pub mod subscription;
+
+pub use bound::KernelBound;
+pub use error::ViewerError;
+pub use geometry::{PageRef, Point, Rect, Size};
+pub use kernel_thread::{Job, KernelPost, KernelThread};
+pub use subscription::{Subscription, SubscriptionSlot};
+
+uniffi::setup_scaffolding!();

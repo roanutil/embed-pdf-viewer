@@ -1,0 +1,12 @@
+[package]
+name = "epdf-ffi"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+epdf-geometry = { path = "../plugins/geometry", default-features = false }
+epdf-kernel = { path = "../epdf-kernel" }
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+thiserror = "2"
+uniffi = "=0.32.0"
