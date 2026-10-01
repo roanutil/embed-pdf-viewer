@@ -92,6 +92,56 @@ fn a_missing_member_is_an_error_not_the_whole_result() {
 }
 
 #[test]
+fn a_search_start_page_travels_as_its_object_number() {
+    let request = json!({
+        "query": {"text": "the"},
+        "mode": "full",
+        "startPage": {"kind": "objectNumber", "pageObjectNumber": 43}
+    });
+    let call = translate("d1", "search.query", None, &[request], 11).unwrap();
+    assert_eq!(
+        call.request,
+        json!({
+            "kind": "search.query", "jobId": 11, "docId": "d1",
+            "request": {"query": {"text": "the"}, "mode": "full", "startPage": 43}
+        })
+    );
+    assert!(matches!(call.decode, Decode::SearchSlice));
+    let plain = json!({"query": {"text": "the"}, "mode": "full"});
+    let call = translate("d1", "search.query", None, std::slice::from_ref(&plain), 12).unwrap();
+    assert_eq!(call.request["request"], plain);
+}
+
+#[test]
+fn a_search_start_page_that_is_not_a_page_ref_is_invalid_input() {
+    let request = json!({"query": {"text": "the"}, "startPage": {"index": 1}});
+    let error = translate("d1", "search.query", None, &[request], 13).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+/// The host's `search.query` answer for "Report" over the report fixture.
+const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"charCount":6,"charStart":6156,"pageObjectNumber":202,"segments":[{"advance":1,"quad":{"p1":{"x":354.4305114746094,"y":196.280029296875},"p2":{"x":375.85125732421875,"y":196.280029296875},"p3":{"x":354.4305114746094,"y":185.4755096435547},"p4":{"x":375.85125732421875,"y":185.4755096435547}},"rect":{"bottom":185.4755096435547,"left":354.4305114746094,"right":375.85125732421875,"top":196.280029296875}}],"snippet":{"matchLength":6,"matchStart":47,"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4"}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
+
+#[test]
+fn a_search_slice_gives_each_hit_its_page_and_keeps_the_host_fields() {
+    let slice = decode(&Decode::SearchSlice, answer(SEARCH_SLICE)).unwrap().value;
+    let hit = &slice["matches"][0];
+    assert_eq!(hit["page"], json!({"kind": "objectNumber", "pageObjectNumber": 202}));
+    assert_eq!(hit["pageObjectNumber"], 202);
+    assert_eq!(hit["charStart"], 6156);
+    assert_eq!(hit["snippet"]["matchStart"], 47);
+    assert_eq!(slice["nextCursor"], Value::Null);
+    assert_eq!(slice["totalPages"], 14);
+}
+
+#[test]
+fn a_search_hit_without_its_page_is_an_error() {
+    let json = r#"{"result":{"matches":[{"charCount":1,"charStart":0,"segments":[]}],"nextCursor":null,"scannedPages":1,"totalPages":1}}"#;
+    assert!(decode(&Decode::SearchSlice, answer(json)).is_err());
+    assert!(decode(&Decode::SearchSlice, answer(r#"{"result":{"nextCursor":null}}"#)).is_err());
+}
+
+#[test]
 fn a_host_error_is_an_engine_error() {
     let json = r#"{"error":{"code":"DocPasswordRequired","message":"document e is locked and requires a password"}}"#;
     let error = decode(&Decode::PageList, answer(json)).err().unwrap();

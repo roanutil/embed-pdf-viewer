@@ -12,8 +12,8 @@ pub mod subscription;
 
 pub use bound::{KernelBound, PromiseSlot};
 pub use cancel::CancelToken;
-pub use error::ViewerError;
-pub use geometry::{PageRef, Point, Rect, Size};
+pub use error::{PluginErrorInfo, ViewerError};
+pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
 pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};

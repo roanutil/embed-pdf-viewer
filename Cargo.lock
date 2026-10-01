@@ -642,13 +642,16 @@ dependencies = [
 name = "epdf-plugin-search"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-stage",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -792,6 +795,7 @@ dependencies = [
  "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-metadata",
+ "epdf-plugin-search",
  "epdf-uniffi",
  "futures",
  "serde",

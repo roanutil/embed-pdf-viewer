@@ -13,6 +13,7 @@ epdf-engine = { path = "../epdf-engine" }
 epdf-ffi = { path = "../epdf-ffi" }
 epdf-kernel = { path = "../epdf-kernel" }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
+epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }
 epdf-uniffi = { path = "../epdf-uniffi" }
 base64 = "0.22"
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }

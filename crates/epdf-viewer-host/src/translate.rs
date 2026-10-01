@@ -13,9 +13,11 @@
 //! Answers are read the host's way too, which is not the TypeScript worker's:
 //! the host sends a result bare where the worker tags it (`{tag, snapshot}`),
 //! and wraps a mutation's result with its sequence and event. What decoding
-//! produces is what the plugins read, so the one place the host and the
-//! `engine-core` DTOs differ for a mapped kind (`PageLayout.ref`) is filled
-//! in here. A shape the host did not send is an error, never a guess.
+//! produces is what the plugins read, so where the host and the
+//! `engine-core` DTOs differ for a mapped kind (`PageLayout.ref`,
+//! `SearchMatch.page`) it is filled in here, and a `SearchRequest`'s
+//! `startPage` goes out as the object number the host reads. A shape the
+//! host did not send is an error, never a guess.
 
 use epdf_engine::host::HostResponse;
 use epdf_kernel::Error;
@@ -37,6 +39,8 @@ pub enum Decode {
     Field(&'static str),
     /// A `PageListSnapshot`, each page given the `ref` `PageLayout` has.
     PageList,
+    /// A `SearchSlice`, each match given the `page` `SearchMatch` has.
+    SearchSlice,
     /// A mutation: `{result, mutationSequence, event}`. Answers `result`
     /// and hands back the event to publish.
     Mutation,
@@ -72,7 +76,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.text.read" => ("pages.text", Decode::Result),
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
-        "search.query" => ("search.query", Decode::Result),
+        "search.query" => ("search.query", Decode::SearchSlice),
         _ => return None,
     })
 }
@@ -97,7 +101,7 @@ pub fn translate(
         "metadata.update" => vec![("patch", arg(0))],
         "pages.text" | "pages.geometry" => vec![("pageObjectNumber", page()?)],
         "pages.render" => vec![("pageObjectNumber", page()?), ("options", arg(0))],
-        "search.query" => vec![("request", arg(0))],
+        "search.query" => vec![("request", search_request(arg(0))?)],
         _ => vec![],
     };
     let mut request = Map::new();
@@ -112,8 +116,41 @@ pub fn translate(
     Ok(WireCall { request: Value::Object(request), payloads: Vec::new(), decode })
 }
 
+/// A `SearchRequest` the host reads: `startPage` is a `PageObjectNumber`
+/// there, where the plugin sends a `PageRef`. The rest goes as it is.
+fn search_request(mut request: Value) -> Result<Value, Error> {
+    let Some(start) = request.get_mut("startPage") else { return Ok(request) };
+    if start.is_object() {
+        let pon = PageRef::from_json(start).ok_or_else(|| {
+            coded(
+                "invalid-input",
+                format!("[epdf-viewer-host] search.query's startPage is not a PageRef: {start}"),
+            )
+        })?;
+        *start = pon.page_object_number.into();
+    }
+    Ok(request)
+}
+
 fn malformed(what: String) -> Error {
     Error::new(format!("[epdf-viewer-host] the host answered {what}"))
+}
+
+/// The `page: PageRef` a host page object (a page, a search match) lacks,
+/// from its `pageObjectNumber`.
+fn add_page_ref(object: &mut Value, key: &str, what: &str) -> Result<(), Error> {
+    let pon = object
+        .get("pageObjectNumber")
+        .and_then(Value::as_u64)
+        .and_then(|n| u32::try_from(n).ok())
+        .ok_or_else(|| malformed(format!("{what} without a pageObjectNumber: {object}")))?;
+    match object {
+        Value::Object(map) => {
+            map.insert(key.into(), PageRef::new(pon).to_json());
+            Ok(())
+        }
+        other => Err(malformed(format!("{what} that is not an object: {other}"))),
+    }
 }
 
 /// Read a host response into what the call's caller expects.
@@ -145,16 +182,16 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 return Err(malformed("a page list without \"pages\"".into()));
             };
             for page in pages {
-                let pon = page
-                    .get("pageObjectNumber")
-                    .and_then(Value::as_u64)
-                    .and_then(|n| u32::try_from(n).ok())
-                    .ok_or_else(|| {
-                        malformed(format!("a page without a pageObjectNumber: {page}"))
-                    })?;
-                if let Value::Object(page) = page {
-                    page.insert("ref".into(), PageRef::new(pon).to_json());
-                }
+                add_page_ref(page, "ref", "a page")?;
+            }
+            Value::Object(result)
+        }
+        Decode::SearchSlice => {
+            let Some(Value::Array(matches)) = result.get_mut("matches") else {
+                return Err(malformed("a search slice without \"matches\"".into()));
+            };
+            for hit in matches {
+                add_page_ref(hit, "page", "a search match")?;
             }
             Value::Object(result)
         }

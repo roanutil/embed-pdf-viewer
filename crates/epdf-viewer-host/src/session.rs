@@ -41,6 +41,9 @@ impl Session {
         if config.metadata {
             plugins.push(epdf_plugin_metadata::metadata_plugin());
         }
+        if let Some(search) = config.search {
+            plugins.push(epdf_plugin_search::search_plugin(search.into()));
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {

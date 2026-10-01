@@ -23,6 +23,7 @@ use std::sync::{Arc, Mutex};
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_metadata::ffi::MetadataHandle;
+use epdf_plugin_search::ffi::SearchHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
@@ -220,6 +221,17 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_metadata::METADATA, Some(&document_id))?;
             Ok(MetadataHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The search capability of an open document. Needs
+    /// `ViewerConfig.search`; without it the kernel refuses the token.
+    pub async fn search(&self, document_id: String) -> Result<Arc<SearchHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_search::SEARCH, Some(&document_id))?;
+            Ok(SearchHandle::new(cap, post))
         })
         .await
     }

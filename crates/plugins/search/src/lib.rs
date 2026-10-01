@@ -12,11 +12,16 @@
 
 pub mod contract;
 pub mod controller;
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 pub mod model;
 pub mod token;
 
 #[cfg(feature = "harness")]
 pub mod harness;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
 
 use epdf_kernel::{AnyPlugin, define};
 use epdf_plugin_stage::STAGE;

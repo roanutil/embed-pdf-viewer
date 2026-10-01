@@ -8,6 +8,7 @@
 use epdf_ffi::{PageRef, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::DocInfo;
+use epdf_plugin_search::ffi::SearchConfig;
 use serde_json::Value;
 
 /// One field per plugin as each plugin lands.
@@ -16,6 +17,9 @@ pub struct ViewerConfig {
     /// Install `metadataPlugin()`: the document Info dict, read and edited.
     #[uniffi(default = false)]
     pub metadata: bool,
+    /// Install `searchPlugin(config)`: text search, a session per document.
+    #[uniffi(default = None)]
+    pub search: Option<SearchConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]

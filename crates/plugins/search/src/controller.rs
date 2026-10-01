@@ -741,4 +741,13 @@ impl SearchCapability {
     ) -> Unsubscribe {
         self.0.events.cleared.on(listener)
     }
+
+    /// The instance lifetime, aborted when the document closes. Not in the
+    /// TypeScript, where a closed capability is unreachable; a foreign handle
+    /// outlives the close, checks this before every call, and ends its event
+    /// streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &AbortSignal {
+        self.0.cx.lifetime()
+    }
 }

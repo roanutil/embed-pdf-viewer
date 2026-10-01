@@ -101,3 +101,36 @@ impl From<Rect> for epdf_geometry::Rect {
         epdf_geometry::Rect { x: r.x, y: r.y, width: r.width, height: r.height }
     }
 }
+
+/// A quad whose orientation is known, corners named in the text's own
+/// upright frame: `upper` is the ascent side, `start` to `end` runs along
+/// the reading direction. Page space.
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct TextQuad {
+    pub upper_start: Point,
+    pub upper_end: Point,
+    pub lower_start: Point,
+    pub lower_end: Point,
+}
+
+impl From<epdf_geometry::TextQuad> for TextQuad {
+    fn from(q: epdf_geometry::TextQuad) -> Self {
+        TextQuad {
+            upper_start: q.upper_start.into(),
+            upper_end: q.upper_end.into(),
+            lower_start: q.lower_start.into(),
+            lower_end: q.lower_end.into(),
+        }
+    }
+}
+
+impl From<TextQuad> for epdf_geometry::TextQuad {
+    fn from(q: TextQuad) -> Self {
+        epdf_geometry::TextQuad {
+            upper_start: q.upper_start.into(),
+            upper_end: q.upper_end.into(),
+            lower_start: q.lower_start.into(),
+            lower_end: q.lower_end.into(),
+        }
+    }
+}

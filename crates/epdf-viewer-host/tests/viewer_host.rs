@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::MetadataPatch;
+use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
 use epdf_viewer_host::{
     DocumentEvent, DocumentEventListener, OpenDocumentOptions, ViewerConfig, ViewerDelegate,
     ViewerHost,
@@ -142,7 +143,9 @@ fn a_delegate_that_drops_the_last_host_on_the_kernel_thread_does_not_deadlock() 
 }
 
 fn with_metadata() -> Arc<ViewerHost> {
-    let host = ViewerHost::new(ViewerConfig { metadata: true }, Arc::new(Delegate)).unwrap();
+    let host =
+        ViewerHost::new(ViewerConfig { metadata: true, ..Default::default() }, Arc::new(Delegate))
+            .unwrap();
     block_on(host.start()).unwrap();
     host
 }
@@ -169,4 +172,42 @@ fn without_its_flag_the_metadata_plugin_is_not_installed() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     assert!(block_on(host.metadata(doc.id)).is_err());
+}
+
+fn with_search() -> Arc<ViewerHost> {
+    let config = ViewerConfig { search: Some(SearchConfig::default()), ..Default::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_search_plugin_finds_hits_through_the_native_engine() {
+    let host = with_search();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let search = block_on(host.search(doc.id)).unwrap();
+    // A start page goes out as a `PageRef` and has to reach the host as its
+    // object number.
+    let query = SearchQuery { text: "Report".into(), ..Default::default() };
+    let result = block_on(search.search(query, Some(pages[1].page), CancelToken::new())).unwrap();
+    assert_eq!(result.status, SearchResultStatus::Complete);
+    assert!(result.hit_count > 0, "{result:?}");
+    assert_eq!(block_on(search.status()).unwrap(), SearchStatus::Complete);
+    let hit = block_on(search.active_hit()).unwrap().unwrap();
+    let page = pages.iter().find(|p| p.page == hit.page).expect("the hit's page is listed");
+    assert_eq!(hit.page_index, page.index);
+    assert!(hit.bounds.is_some() && hit.snippet.is_some(), "{hit:?}");
+    let the = SearchQuery { text: "the".into(), ..Default::default() };
+    let all = block_on(search.find_all(the, None, CancelToken::new())).unwrap();
+    assert!(all.len() > 1);
+}
+
+#[test]
+fn without_its_config_the_search_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.search(doc.id)).is_err());
 }

@@ -18,23 +18,29 @@ pub type PageObjectNumber = u32;
 /// `SearchQuery`: THE query shape, engine to wire to state to search box.
 /// The flags stay absent when the caller left them absent.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct SearchQuery {
     /// The literal text, or with `regex` a pattern in the portable dialect.
     pub text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub regex: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub match_case: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub whole_word: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub match_diacritics: Option<bool>,
 }
 
 /// `SearchMode`: how much of a match leaves the engine. `Rects` needs
 /// `doc.text.search`; `Full` (a snippet per match) also `doc.text.copy`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMode {
     Rects,
@@ -70,10 +76,13 @@ pub struct SearchRequest {
 
 /// `SearchSnippet`: context around one match, `Full` mode only.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct SearchSnippet {
     pub text: String,
+    /// Where the match starts within `text`, in UTF-16 code units.
     pub match_start: f64,
+    /// In UTF-16 code units.
     pub match_length: f64,
 }
 
@@ -154,6 +163,7 @@ pub struct SearchHit {
 /// `searching`: the scan is walking pages. `cancelled`: `cancel()` stopped
 /// it and the hits found so far stay.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum SearchStatus {
     Idle,
@@ -164,6 +174,7 @@ pub enum SearchStatus {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct SearchProgress {
     pub scanned: f64,
     pub total: f64,
@@ -235,6 +246,7 @@ pub struct SearchFindAllOptions {
 
 /// What a `search()` resolved to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum SearchResultStatus {
     Complete,
@@ -259,6 +271,7 @@ pub struct SearchConfig {
 // ── events ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct SearchStartedEvent {
     pub query: SearchQuery,
@@ -282,6 +295,7 @@ pub struct SearchCompletedEvent {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "lowercase")]
 pub enum SearchCancelReason {
     Superseded,
@@ -290,6 +304,7 @@ pub enum SearchCancelReason {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct SearchCancelledEvent {
     pub operation_id: String,

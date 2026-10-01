@@ -30,3 +30,12 @@ impl ViewerError {
         }
     }
 }
+
+/// `PluginErrorInfo`: the serializable face of a plugin error, as a plugin
+/// keeps it in state or hands it to an event (a failed search, say).
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct PluginErrorInfo {
+    pub code: String,
+    pub message: String,
+    pub capability: String,
+}
