@@ -231,6 +231,15 @@ That run also prices the trace behind `mainJsMs`. Against the untraced run befor
 `plugins-bump` moved by 3% or less, which is inside run-to-run noise. `zoom` settle moved more on
 both, 16% and 11%, so traced and untraced `zoom` timings shouldn't be compared.
 
+The toolbar gate on the TypeScript kernel (`research/rust-core-toolbar-gate` at `30f4295d7`, the
+impl pin plus the gate, the `impl-gate` arm) is a clear win too, and a larger one in proportion
+(R=3, `results/2026-10-01T01-22-09-931Z-2023MBP16Grey-desktop`, A/A 39 of 39). Against `impl-ts`,
+`open(large)` task time falls 38% (264 to 164 ms), scroll 16% (400 to 337 ms), `zoom` 15%,
+`annotate` 14% and `search` 37%, and a jump settles 16 ms sooner. JavaScript time falls 21 to 61%
+on the same rows. One row reads slower, `open(ebook) / readyMs` by 3.4 ms, which is measured
+before any document exists and so before the gate runs. `main` has the same subscription
+(`packages/framework/react/src/toolbar.tsx:509`), so the gate would help it as well.
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
