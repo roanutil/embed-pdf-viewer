@@ -23,6 +23,13 @@ export interface PdfRuntimeMemory {
   writeU16String(str: string): Ptr;
   peek(ptr: Ptr, kind: MemoryValueKind, byteOffset?: number): number | bigint;
   poke(ptr: Ptr, kind: MemoryValueKind, value: number | bigint, byteOffset?: number): void;
+  /**
+   * The `bytes` at a 4-byte-aligned `ptr` as f32 and i32 views over the
+   * runtime's own memory, no copy. Valid only until the next call into the
+   * runtime, which may grow memory and detach them. A runtime that can't hand
+   * out its memory (native) omits it; read through `peek` there.
+   */
+  peekWords?(ptr: Ptr, bytes: number): { f32: Float32Array; i32: Int32Array };
 }
 
 export interface PdfRuntimeCallbacks {

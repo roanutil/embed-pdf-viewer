@@ -20,7 +20,7 @@ import {
   EPDF_CHAR_GEOMETRY_LAYOUT,
   readF32,
   readI32,
-  readRectF,
+  type RectF,
 } from '../../runtime/memory/structs';
 import { throwIfAborted } from '../../shared/abort';
 
@@ -142,8 +142,16 @@ export class PageGeometryReader {
       return emptyRawGlyph();
     }
 
+    // The struct read in one view where the runtime hands one out (wasm):
+    // up to 33 values per glyph, each otherwise its own call. Read before
+    // anything calls into the runtime again.
+    const words = mem.peekWords?.(geometryPtr, EPDF_CHAR_GEOMETRY_LAYOUT.bytes);
+    const f32 = words
+      ? (offset: number) => words.f32[offset >> 2]
+      : (offset: number) => readF32(mem, geometryPtr, offset);
     const { offsets, flags: bits } = EPDF_CHAR_GEOMETRY_LAYOUT;
-    const native = readI32(mem, geometryPtr, offsets.flags) >>> 0;
+    const native =
+      (words ? words.i32[offsets.flags >> 2] : readI32(mem, geometryPtr, offsets.flags)) >>> 0;
     // Degenerate geometry keeps the legacy zeroed-glyph convention so
     // upright snapshots stay bit-identical to the pre-orientation reader.
     if (native & bits.empty) {
@@ -153,24 +161,24 @@ export class PageGeometryReader {
     const upright = Boolean(native & bits.upright);
     const raw: Omit<RawGeometryGlyphRecord, 'objectKey' | 'fontSize'> = {
       flags: native & bits.space ? 1 : 0,
-      looseBox: normalizePdfRect(readRectF(mem, geometryPtr, offsets.looseBox)),
+      looseBox: normalizePdfRect(rectAt(f32, offsets.looseBox)),
       upright,
       rotation: 0,
       ascentFlip: false,
     };
     if (native & bits.hasTightBox) {
-      raw.tightBox = normalizePdfRect(readRectF(mem, geometryPtr, offsets.tightBox));
+      raw.tightBox = normalizePdfRect(rectAt(f32, offsets.tightBox));
     }
     if (native & bits.hasLooseQuad) {
-      raw.looseQuad = readQuad(mem, geometryPtr, offsets.looseQuad);
+      raw.looseQuad = quadAt(f32, offsets.looseQuad);
       if (native & bits.hasTightQuad) {
-        raw.tightQuad = readQuad(mem, geometryPtr, offsets.tightQuad);
+        raw.tightQuad = quadAt(f32, offsets.tightQuad);
       }
       if (!upright) {
-        const a = readF32(mem, geometryPtr, offsets.matrix);
-        const b = readF32(mem, geometryPtr, offsets.matrix + 4);
-        const c = readF32(mem, geometryPtr, offsets.matrix + 8);
-        const d = readF32(mem, geometryPtr, offsets.matrix + 12);
+        const a = f32(offsets.matrix);
+        const b = f32(offsets.matrix + 4);
+        const c = f32(offsets.matrix + 8);
+        const d = f32(offsets.matrix + 12);
         raw.rotation = Math.atan2(b, a);
         raw.ascentFlip = a * d - b * c < 0;
       }
@@ -322,12 +330,20 @@ function emptyRawGlyph(): Omit<RawGeometryGlyphRecord, 'objectKey' | 'fontSize'>
   };
 }
 
-function readQuad(mem: PdfRuntimeMemory, ptr: Ptr, byteOffset: number): PdfQuad {
-  const f = (offset: number) => readF32(mem, ptr, byteOffset + offset);
+function quadAt(f: (offset: number) => number, byteOffset: number): PdfQuad {
   return {
-    p1: { x: f(0), y: f(4) },
-    p2: { x: f(8), y: f(12) },
-    p3: { x: f(16), y: f(20) },
-    p4: { x: f(24), y: f(28) },
+    p1: { x: f(byteOffset), y: f(byteOffset + 4) },
+    p2: { x: f(byteOffset + 8), y: f(byteOffset + 12) },
+    p3: { x: f(byteOffset + 16), y: f(byteOffset + 20) },
+    p4: { x: f(byteOffset + 24), y: f(byteOffset + 28) },
+  };
+}
+
+function rectAt(f: (offset: number) => number, byteOffset: number): RectF {
+  return {
+    left: f(byteOffset),
+    top: f(byteOffset + 4),
+    right: f(byteOffset + 8),
+    bottom: f(byteOffset + 12),
   };
 }
