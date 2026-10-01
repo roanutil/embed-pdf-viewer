@@ -104,7 +104,7 @@
     },
     "impl-enginelink": {
       "ref": "research/rust-core-engine-link",
-      "sha": "7ed02e3996251fc6298293887f53ea919c6a10ab",
+      "sha": "2a3bb96edbc60c1b1438f535bc503c43192f1834",
       "recipe": "rust-core"
     },
     "plugins-tip": {
@@ -114,17 +114,17 @@
     },
     "plugins-enginelink": {
       "ref": "research/rust-kernel-engine-link",
-      "sha": "dfb5c43c82e456c444c413bcb241594b080b51d6",
+      "sha": "48fda657e569d6d4930bbaeee3a246a92a15660a",
       "recipe": "rust-kernel"
     },
     "impl-fixed": {
       "ref": "research/multi-platform-rust-core-impl",
-      "sha": "38da5cc6b65f6e8f3091c35be6b493256223eaf1",
+      "sha": "29f02d38176277e617a906485e520e3ea2ddfec8",
       "recipe": "rust-core"
     },
     "plugins-fixed": {
       "ref": "research/multi-platform-rust-core-impl-plugins",
-      "sha": "45be8d3d51560f11de8de5ab94193fd3022fd563",
+      "sha": "c9201919264bf5fdc309b11b3f2cdbd70936634f",
       "recipe": "rust-kernel"
     }
   },
@@ -401,6 +401,14 @@
     [
       "plugins-tip",
       "plugins-fixed"
+    ],
+    [
+      "impl-fixed",
+      "impl-enginelink"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-enginelink"
     ]
   ]
 }
