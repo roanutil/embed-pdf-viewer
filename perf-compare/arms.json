@@ -283,6 +283,24 @@
       "worktree": "plugins-o2",
       "kernel": "rust",
       "rustReads": false
+    },
+    "main-compat": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false,
+      "dedupeCompat": true
+    },
+    "impl-compat": {
+      "worktree": "impl-fixed",
+      "kernel": "typescript",
+      "rustReads": false,
+      "dedupeCompat": true
+    },
+    "plugins-compat": {
+      "worktree": "plugins-fixed",
+      "kernel": "rust",
+      "rustReads": false,
+      "dedupeCompat": true
     }
   },
   "pairs": [
@@ -445,6 +463,18 @@
     [
       "plugins-o2",
       "plugins-enginelink"
+    ],
+    [
+      "main",
+      "main-compat"
+    ],
+    [
+      "impl-fixed",
+      "impl-compat"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-compat"
     ]
   ]
 }
