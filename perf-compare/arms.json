@@ -166,6 +166,11 @@
       "ref": "research/rust-kernel-glyph-view",
       "sha": "16f128278ba4ca7f0e9fd770862b85747a346c14",
       "recipe": "rust-kernel"
+    },
+    "plugins-lazy": {
+      "ref": "research/rust-kernel-lazy-state",
+      "sha": "f83e606542021d233208c27b00b16c70047b4f05",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -359,6 +364,11 @@
     },
     "plugins-glyphview": {
       "worktree": "plugins-glyphview",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-lazy": {
+      "worktree": "plugins-lazy",
       "kernel": "rust",
       "rustReads": false
     }
@@ -555,6 +565,14 @@
     [
       "main",
       "impl-glyphview"
+    ],
+    [
+      "plugins-tip2",
+      "plugins-lazy"
+    ],
+    [
+      "main",
+      "plugins-lazy"
     ]
   ]
 }
