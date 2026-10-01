@@ -433,6 +433,10 @@ function toJsResult(meta: PdfFunctionAbiSlot | null, value: unknown): unknown {
   if (!meta) return undefined;
   if (meta.ts === 'Ptr' && typeof value === 'number') return toPtr(value);
   if (meta.ts === 'bigint' && typeof value === 'number') return BigInt(value);
+  // A C bool arrives as 0 or 1 whenever cwrap hands back the raw export:
+  // without ASSERTIONS it does for every all-numeric signature, and it
+  // counts 'boolean' as numeric (emscripten's library_ccall.js).
+  if (meta.ts === 'boolean' && typeof value === 'number') return value !== 0;
   return value;
 }
 
