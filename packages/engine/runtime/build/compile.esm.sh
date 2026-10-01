@@ -73,6 +73,10 @@ mkdir -p "$OUT_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# WASM_BIGINT=0: src/wasm/wasm-runtime.ts splits each i64 argument into two
+# i32 halves (expandI64Args), which only matches a build without BigInt
+# integration. emcc 4.0.0, which the wasm32-eh build needs, turns it on by
+# default; emsdk 3.1.72 has it off.
 # args: <out-file> <environment> [extra flags...]
 link() {
   local out="$1" environment="$2"
@@ -85,6 +89,7 @@ link() {
     -sALLOW_MEMORY_GROWTH=1 \
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=createPdfRuntimeWasm \
+    -sWASM_BIGINT=0 \
     -sASSERTIONS=1 \
     -sEXPORTED_RUNTIME_METHODS="$(cat "$GEN_DIR/exported-runtime-methods.txt")" \
     -sEXPORTED_FUNCTIONS="$(cat "$GEN_DIR/exported-functions.txt")$RUST_EXPORTS" \
