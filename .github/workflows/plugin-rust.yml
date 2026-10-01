@@ -14,6 +14,7 @@ on:
   pull_request:
     paths:
       - 'crates/epdf-kernel/**'
+      - 'crates/epdf-ffi/**'
       - 'crates/plugin-conformance/**'
       - 'crates/plugins/**'
       - 'Cargo.toml'
@@ -27,6 +28,7 @@ on:
     branches: [main]
     paths:
       - 'crates/epdf-kernel/**'
+      - 'crates/epdf-ffi/**'
       - 'crates/plugin-conformance/**'
       - 'crates/plugins/**'
       - 'Cargo.toml'
@@ -76,6 +78,13 @@ jobs:
 
       - name: cargo test
         run: cargo test ${{ steps.crates.outputs.packages }}
+
+      # The uniffi exports sit behind a per-plugin feature, so the step above
+      # never builds them. epdf-ffi links no PDFium, which is why this belongs
+      # here and not behind the fork fetch. Each plugin that gains an export
+      # adds itself to both lists.
+      - name: cargo test uniffi exports
+        run: cargo test -p epdf-ffi -p epdf-plugin-metadata -p epdf-plugin-search -p epdf-plugin-render --features epdf-plugin-metadata/uniffi,epdf-plugin-search/uniffi,epdf-plugin-render/uniffi
 
   vectors:
     name: vectors and coverage are current
