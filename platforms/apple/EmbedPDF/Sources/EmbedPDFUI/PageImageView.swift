@@ -7,6 +7,7 @@ public struct PageImageView: View {
   let scale: Double
   @State private var rendered: RenderedPage?
   @State private var error: PDFError?
+  @State private var renderedPage: PageRef?
 
   public init(render: RenderCapability, page: PageRef, scale: Double) {
     self.render = render
@@ -27,13 +28,23 @@ public struct PageImageView: View {
         ProgressView()
       }
     }
-    .task(id: scale) { await task() }
+    .task(id: TaskID(page: page, scale: scale)) { await task() }
+  }
+
+  private struct TaskID: Hashable {
+    let page: PageRef
+    let scale: Double
   }
 
   private func task() async {
+    if renderedPage != page {
+      rendered = nil
+      renderedPage = nil
+    }
+    error = nil
     do {
       rendered = try await render.renderPage(page, options: RenderPageOptions(scale: scale))
-      error = nil
+      renderedPage = page
     } catch {
       guard !Task.isCancelled else { return }
       self.error = error

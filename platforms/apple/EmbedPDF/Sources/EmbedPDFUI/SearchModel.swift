@@ -16,7 +16,14 @@ public final class SearchModel {
   }
 
   public func task() async {
-    for await event in search.events {
+    let events = search.events
+    do {
+      status = try await search.status()
+      activeIndex = try await search.activeHitIndex()
+    } catch {
+      self.error = error
+    }
+    for await event in events {
       if case let .activeHitChanged(event) = event {
         activeIndex = event.index
       }

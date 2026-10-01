@@ -46,12 +46,10 @@ struct SearchModelTests {
     await model.searchSubmitted()
     let task = Task { await model.task() }
     defer { task.cancel() }
+    _ = try await search.goToHit(2)
     let deadline = ContinuousClock.now + .seconds(10)
-    var target: UInt32 = 1
     while model.activeIndex != 2, ContinuousClock.now < deadline {
-      target = target == 1 ? 2 : 1
-      _ = try await search.goToHit(target)
-      try await Task.sleep(for: .milliseconds(50))
+      try await Task.sleep(for: .milliseconds(20))
     }
     expectNoDifference(model.activeIndex, 2)
   }
