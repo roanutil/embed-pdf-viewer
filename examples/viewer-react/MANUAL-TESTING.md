@@ -1,33 +1,152 @@
-# Manual test script: full viewer on `main`
+# Manual test script: full viewer
 
 This script drives `examples/viewer-react`, the full `<PDFViewer>` demo, in Chrome. Every expected
 result below was observed live against `main` at `2516e2786` (Merge #832) on 2026-10-01, in Chrome
 with a 1400×717 CSS-pixel viewport. Zoom percentages that depend on window size are marked as such.
 
+The same script runs against the Rust engine core branch,
+`research/multi-platform-rust-core-impl`. That branch keeps the viewer and swaps the engine
+underneath, so the steps don't change. Only the runtime build does. The expected results are still
+the ones observed on `main`: on the Rust branch, any difference is the finding.
+
+It doesn't fit `research/multi-platform-rust-core-impl-plugins`. That branch moves the kernel into
+Rust and exercises it through a different app, `examples/rust-kernel-eval`.
+
 It covers the major features, not every edge. A full pass takes about 45 minutes.
 
 ## Setup
 
-Use a fresh worktree so your own checkout stays untouched. Steps 2 and 3 take about a minute each.
+Use a fresh worktree so your own checkout stays untouched. Pick the branch first:
 
 ```sh
-# 1. Worktree on main
-git worktree add ../epdf-manual main
+BRANCH=main                                     # or research/multi-platform-rust-core-impl
+
+# 1. Worktree
+git worktree add --detach ../epdf-manual "$BRANCH"
 cd ../epdf-manual
+git log -1 --oneline                            # note the commit you're testing
 
-# 2. Dependencies
+# 2. Dependencies, about a minute
 pnpm install --frozen-lockfile
+```
 
-# 3. The wasm runtime payload. Without this, step 4 fails with
-#    'Could not resolve "@embedpdf/engine-runtime-wasm32"'.
+### 3. The wasm runtime
+
+Without a runtime, step 4 fails with `Could not resolve "@embedpdf/engine-runtime-wasm32"`.
+
+#### On `main`
+
+CI publishes a prebuilt payload, so this is a download:
+
+```sh
 pnpm --filter @embedpdf/engine-runtime fetch:payload
+```
 
-# 4. Build everything the demo depends on (37 tasks)
+#### On the Rust core branch
+
+There's no published payload for this branch. `fetch:payload` stops with "Either wait for the Build
+PDF Runtime workflow, build locally (pnpm --filter @embedpdf/engine-runtime build:target wasm32), or
+set EPDF_PAYLOAD_WAIT_MINUTES to poll." The build it suggests fails too: it downloads the published
+`wasm32` PDFium archive, but the Rust crate links against a `wasm32-eh` build, which isn't published
+(`engine-runtime-build.json` has no `wasm32-eh` entry), so `pdfium-sys` exits with "no libembedpdf
+headers at …/build/libpdfium/wasm32-eh/include".
+
+So you need a `wasm32-eh` PDFium archive built from the fork commit that this branch's
+`runtime-src` submodule records. Then `build:target wasm32-eh` compiles the Rust core and links it.
+This takes three steps.
+
+3a. Rust and Emscripten. `rust-toolchain.toml` pins Rust 1.98.0 and the `wasm32-unknown-emscripten`
+target, and `rustup` installs both on the first `cargo` command. The `wasm32-eh` link needs
+Emscripten 4.0.0, not the 3.1.72 that `build-engine-runtime.yml` uses for `wasm32`.
+
+```sh
+git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+(cd ~/emsdk && ./emsdk install 4.0.0 && ./emsdk activate 4.0.0)
+source ~/emsdk/emsdk_env.sh
+emcc --version | head -1                        # ... 4.0.0 (97c7c2ad...)
+```
+
+3b. The `wasm32-eh` fork archive. Find the commit you need:
+
+```sh
+FORK_SHA=$(git ls-tree HEAD packages/engine/runtime/runtime-src | awk '{print $3}')
+echo "$FORK_SHA"                                # 7c7b600b1... at 061a544c4
+```
+
+If an archive for that commit already exists on your machine, use it. The perf harness on
+`research/viewer-perf-compare` leaves one at
+`perf-compare/.work/fork/$FORK_SHA/artifacts/libembedpdf-runtime-wasm32-eh-<sha9>.tar.gz`:
+
+```sh
+ARCHIVE=$(ls /path/to/perf-compare/.work/fork/$FORK_SHA/artifacts/*wasm32-eh*.tar.gz)
+```
+
+If not, build it from source. This follows `buildFork()` in
+`perf-compare/scripts/build-arm.mjs`. It wasn't rerun for this script, and it's heavy: the synced
+checkout is 6.7 GB, and `gclient` pulls PDFium's Chromium dependencies on the first build.
+
+```sh
+FORK=~/epdf-fork/$FORK_SHA
+git clone https://github.com/embedpdf/runtime.git "$FORK/runtime-src"
+git -C "$FORK/runtime-src" checkout --detach "$FORK_SHA"
+
+git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "$FORK/depot_tools"
+(cd "$FORK/depot_tools" && ./ensure_bootstrap)
+
+# The fork's GN toolchain only uses its own third_party/emsdk
+git clone https://github.com/emscripten-core/emsdk.git "$FORK/runtime-src/third_party/emsdk"
+(cd "$FORK/runtime-src/third_party/emsdk" && ./emsdk install 4.0.0 && ./emsdk activate 4.0.0)
+
+(
+  cd "$FORK/runtime-src"
+  source third_party/emsdk/emsdk_env.sh
+  export PATH="$FORK/depot_tools:$PATH" DEPOT_TOOLS_UPDATE=0 \
+    PDF_RUNTIME_TARGET_OS_LIST=emscripten PDF_RUNTIME_ARTIFACT_DIR="$FORK/artifacts"
+  scripts/embedpdf-runtime/build-target.sh wasm32-eh
+  scripts/embedpdf-runtime/package-target.sh wasm32-eh
+)
+ARCHIVE=$(ls "$FORK"/artifacts/*wasm32-eh*.tar.gz)
+```
+
+3c. Build the runtime from that archive. `fetch-libpdfium.sh` reads its download list from
+`PDF_RUNTIME_BUILD_FILE`, so a copy of the pin file with a `file://` entry for `wasm32-eh` lets the
+branch's own build script do the rest: fetch, `cargo build -p epdf-wasm`, generate bindings, link.
+About a minute on an M-series Mac.
+
+```sh
+jq --arg u "file://$ARCHIVE" --arg s "$(shasum -a 256 "$ARCHIVE" | cut -d' ' -f1)" \
+  '.artifacts["wasm32-eh"] = {url: $u, sha256: $s}' \
+  packages/engine/runtime/engine-runtime-build.json > /tmp/epdf-pin-eh.json
+
+source ~/emsdk/emsdk_env.sh
+PDF_RUNTIME_BUILD_FILE=/tmp/epdf-pin-eh.json \
+  pnpm --filter @embedpdf/engine-runtime build:target wasm32-eh
+```
+
+Expected last line: `…/npm/wasm32/lib/embedpdf.wasm: all 918 bound functions match their
+bindings`. The payload lands in `npm/wasm32/`, the same place `main`'s download does, so the viewer
+picks it up with no other change.
+
+### 4. Build and start
+
+```sh
+# Everything the demo depends on (37 tasks, about a minute)
 pnpm exec turbo run build --filter='@embedpdf/example-viewer-react^...'
 
-# 5. Start the demo on http://localhost:5240 (strictPort, so free that port first)
+# Rust core branch only: confirm the payload really carries the core
+node packages/engine/runtime/scripts/verify-rust-core.mjs
+# expected:   ok      the WASM payload carries the Rust engine core
+
+# Start the demo on http://localhost:5240 (strictPort, so free that port first)
 pnpm --filter @embedpdf/example-viewer-react dev
 ```
+
+Run `verify-rust-core.mjs` after the turbo build, because it imports the built
+`@embedpdf/engine-runtime`. It checks for the `epdf_page_geometry` export rather than file size,
+but the size is a quick second check: `ls -l packages/engine/runtime/npm/wasm32/lib/embedpdf.wasm`
+gave 10,164,511 bytes on the Rust branch at `061a544c4` and 7,544,455 on `main`. The browser can't
+tell you which engine is running: the payload is inlined into the bundle, so no `.wasm` request
+shows in the Network panel.
 
 Open `http://localhost:5240` in Chrome and open DevTools (Cmd+Option+J).
 
