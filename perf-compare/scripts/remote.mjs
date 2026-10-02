@@ -85,15 +85,22 @@ const before = new Set(ssh(`ls ~/${remoteRoot}/results`, { stdio: ['ignore', 'pi
 ssh(`zsh -lc "${script.replaceAll('"', '\\"')}"`);
 const quiet = { stdio: ['ignore', 'pipe', 'inherit'] };
 let shown = 0;
+let refused = 0;
 for (;;) {
   await new Promise((r) => setTimeout(r, 15_000));
   let out;
   try {
     out = ssh(`cd ~/${remoteRoot} && tail -c +${shown + 1} ${log}; echo; echo "@@exit:$(cat ${exitFile} 2>/dev/null)"`, quiet);
   } catch (error) {
+    // A connection that drops is retried; a refused login (a locked SSH agent)
+    // looks the same as a run still going, so it stops the wait instead.
+    if (/exited 255/.test(error.message) && ++refused >= 3) {
+      throw new Error(`ssh to ${host} keeps failing (${error.message}); the run goes on there, fetch its results once ssh works`);
+    }
     console.log(`(poll failed, retrying: ${error.message})`);
     continue;
   }
+  refused = 0;
   const at = out.lastIndexOf('\n@@exit:');
   const text = out.slice(0, at);
   process.stdout.write(text);
