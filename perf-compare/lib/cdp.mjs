@@ -8,6 +8,10 @@
 // page's target by id.
 import { chromium } from 'playwright-core';
 
+/** `PERF_PORT_OFFSET`: added to every port this harness listens on or
+ *  launches with, so runs that share a host don't collide. */
+export const portOffset = () => Number(process.env.PERF_PORT_OFFSET ?? 0);
+
 export const CHROMIUM_ARGS = ['--enable-blink-features=ForceEagerMeasureMemory', '--js-flags=--expose-gc'];
 
 // One connection to the browser endpoint. `send` takes an optional session id
@@ -50,7 +54,7 @@ async function connect(wsUrl) {
 // The full build in new-headless mode, not the headless shell: the shell
 // rejects measureUserAgentSpecificMemory() with "is not available" even on a
 // cross-origin isolated page.
-export async function launchBrowser({ port = 9333 } = {}) {
+export async function launchBrowser({ port = 9333 + portOffset() } = {}) {
   let browser;
   try {
     browser = await chromium.launch({ headless: true, channel: 'chromium', args: [...CHROMIUM_ARGS, `--remote-debugging-port=${port}`] });
