@@ -12,9 +12,14 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub mod controller;
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 #[cfg(feature = "harness")]
 pub mod harness;
 pub mod model;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
 
 pub use controller::{MetadataCapability, create_metadata_controller};
 pub use model::{

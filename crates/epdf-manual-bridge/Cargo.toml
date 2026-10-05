@@ -1,0 +1,24 @@
+[package]
+name = "epdf-manual-bridge"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+description = "Experimental: a hand-written C ABI for the search plugin and render_page, timed against uniffi by Task 11. Never shipped."
+
+# An rlib only. `epdf-viewer-host` links it into its own staticlib with the
+# `manual-bridge` feature, so the C exports share one copy of the kernel
+# thread's statics with the uniffi exports. A second staticlib merged in
+# beside it would carry its own copy of every dependency.
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+epdf-ffi = { path = "../epdf-ffi" }
+epdf-kernel = { path = "../epdf-kernel" }
+epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }
+epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }
+
+# The ABI tests drive a real host, so they live in epdf-viewer-host
+# (tests/manual_bridge_abi.rs, behind its `manual-bridge` feature). A
+# dev-dependency on the host from here would turn that feature on for every
+# `cargo test --workspace`. tests/layout.rs checks the header on its own.

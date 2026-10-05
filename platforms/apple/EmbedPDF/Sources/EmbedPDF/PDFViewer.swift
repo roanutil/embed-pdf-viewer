@@ -1,0 +1,76 @@
+public import EmbedPDFBindings
+import Foundation
+
+public final class PDFViewer: Sendable {
+  let host: ViewerHost
+  let registry = StreamRegistry()
+  private let stateContinuation: AsyncStream<UInt64>.Continuation
+
+  /// Revisions of the viewer's state. The stream supports a single consumer.
+  public let stateRevisions: AsyncStream<UInt64>
+
+  public init(_ config: ViewerConfig) throws(PDFError) {
+    let (stream, continuation) = AsyncStream<UInt64>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    do {
+      host = try ViewerHost(config: config, delegate: StateRelay(continuation))
+    } catch {
+      throw PDFError(error)
+    }
+    stateRevisions = stream
+    stateContinuation = continuation
+  }
+
+  public func start() async throws(PDFError) {
+    try await bridged { try await host.start() }
+  }
+
+  public func destroy() async throws(PDFError) {
+    try await bridged { try await host.destroy() }
+    host.shutdown()
+    finishStreams()
+  }
+
+  public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> PDFDocument {
+    try await measured("open") { () async throws(PDFError) in
+      try await bridged {
+        try await host.openDocument(bytes: data, options: OpenDocumentOptions(name: name, password: password, activate: true))
+      }
+    }
+  }
+
+  /// Not usable yet: it cannot succeed until document security lands
+  /// (follow-on plan B4). The native engine fails a locked open outright, so
+  /// the kernel records a failed tab, not a locked one, and there is nothing
+  /// to unlock. Open the document again with `password` instead.
+  public func unlock(_ document: PDFDocument, password: String) async throws(PDFError) {
+    try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
+  }
+
+  public func close(_ document: PDFDocument) async throws(PDFError) {
+    try await bridged { try await host.closeDocument(documentId: document.id) }
+  }
+
+  public func documents() async throws(PDFError) -> [PDFDocument] {
+    try await bridged { try await host.documents() }
+  }
+
+  public func pages(of document: PDFDocument) async throws(PDFError) -> [PageInfo] {
+    try await measured("pages") { () async throws(PDFError) in
+      try await bridged { try await host.pages(documentId: document.id) }
+    }
+  }
+
+  public var documentEvents: AsyncStream<DocumentEvent> {
+    registry.stream { host.subscribeDocuments(listener: $0) }
+  }
+
+  func finishStreams() {
+    registry.finishAll()
+    stateContinuation.finish()
+  }
+
+  deinit {
+    host.shutdown()
+    finishStreams()
+  }
+}

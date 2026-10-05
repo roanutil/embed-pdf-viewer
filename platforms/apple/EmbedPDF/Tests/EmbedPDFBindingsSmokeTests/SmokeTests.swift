@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import EmbedPDF
+@testable import EmbedPDFBindings
 
 /// The Phase 1 iOS smoke run.
 ///
