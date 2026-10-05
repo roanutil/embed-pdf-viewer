@@ -1,0 +1,15 @@
+{
+  "originHash" : "f14a05fd0e77d85e01d000949a87c44717e4ca33d1c3ae8b1e84db17e532778a",
+  "pins" : [
+    {
+      "identity" : "pspdfkit-sp",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/PSPDFKit/PSPDFKit-SP",
+      "state" : {
+        "revision" : "b457ce168b7346c63d4f6251ce87e8cf97b88447",
+        "version" : "26.11.0"
+      }
+    }
+  ],
+  "version" : 3
+}

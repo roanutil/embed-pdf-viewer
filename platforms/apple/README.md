@@ -170,3 +170,16 @@ Instruments launched, so the traced process is not the one the test drives.
 
 The simulator runs on the Mac's CPU and GPU. Trust its CPU profiles, allocations and
 signpost durations; don't trust its frame times or hitch counts.
+
+## The Nutrient comparison app
+
+`NutrientDemo/` is the same app over Nutrient (PSPDFKit) 26.11.0: the same views,
+accessibility identifiers, UI test and signpost names, with `renderPage.engine` standing in
+for `renderPage.rust`. It renders through Nutrient's render queue with its default cache
+policy and searches with `TextSearch`. It runs without a license key, so Nutrient draws its
+evaluation watermark on every page. Generate it with `tuist generate` in `NutrientDemo/`
+and profile it with `NutrientDemo/scripts/profile.sh`, exactly as above.
+
+Nutrient keeps a disk cache of rendered pages across launches. Uninstall the app from the
+simulator before a measured run (`xcrun simctl uninstall <sim> com.embedpdf.nutrientdemo`),
+or its renders are mostly cache hits and the comparison is meaningless.
