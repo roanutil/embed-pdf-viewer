@@ -5,4 +5,5 @@ EmbedPDF/Sources/EmbedPDFBindings/
 EmbedPDF/Tests/*/Fixtures/
 EmbedPDF/Package.resolved
 EmbedPDFDemo/EmbedPDFDemo.xcodeproj/
-EmbedPDFDemo/EmbedPDFDemo/Info.plist
+EmbedPDFDemo/EmbedPDFDemo.xcworkspace/
+EmbedPDFDemo/Derived/
