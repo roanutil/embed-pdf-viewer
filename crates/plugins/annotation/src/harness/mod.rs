@@ -26,6 +26,7 @@ use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{
     AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
 };
+use plugin_conformance::harness::RefFn;
 use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, Callback, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
@@ -72,8 +73,8 @@ pub static LENS: LazyLock<Token<Lens>> = LazyLock::new(|| Token::new("annotation
 pub struct Annotation;
 
 /// The composed api's member order (`composeApi` over the controller's
-/// slices). `links` and `comments` are objects, which this adapter does not
-/// print.
+/// slices). `links` and `comments` are objects of functions, which
+/// [`describe_member`](HarnessPlugin::describe_member) prints.
 const MEMBERS: &[&str] = &[
     "get",
     "list",
@@ -136,6 +137,7 @@ const MEMBERS: &[&str] = &[
     "rotateBy",
     "delete",
     "deleteMany",
+    "links",
     "armStamp",
     "disarmStamp",
     "placeStamp",
@@ -179,6 +181,7 @@ const MEMBERS: &[&str] = &[
     "finishInkDraft",
     "cancelCreationDraft",
     "cancel",
+    "comments",
     "distanceCreationPage",
     "onDraftCaptured",
     "createMarkup",
@@ -221,6 +224,23 @@ const LENS_MEMBERS: &[&str] = &[
     "linksClear",
     "onThreadChanged",
 ];
+
+/// `CommentsApi`, in the contract's order.
+const COMMENTS_MEMBERS: &[&str] = &[
+    "listThreads",
+    "getThread",
+    "reply",
+    "setText",
+    "setStatus",
+    "setMarked",
+    "delete",
+    "deleteThread",
+    "getPermissions",
+    "onThreadChanged",
+];
+
+/// The api's `links` object.
+const LINKS_MEMBERS: &[&str] = &["get", "set", "clear"];
 
 // ── argument decoding ─────────────────────────────────────────────────────────
 
@@ -942,8 +962,25 @@ fn call_capability(
 
 fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<Outcome, Error> {
     let cap = lens.ctx.get(&ANNOTATION)?;
+    match method {
+        "getHydration" => Ok(out(&cap.get_hydration())),
+        "refresh" => Ok(unit(cap.refresh())),
+        "linksGet" => call_links(&cap, "get", args),
+        "linksSet" => call_links(&cap, "set", args),
+        "linksClear" => call_links(&cap, "clear", args),
+        verb => call_comments(&cap, verb, args, h),
+    }
+}
+
+/// One `comments` verb. The capability's `comments` object and the test
+/// lens's flat verbs both call it.
+fn call_comments(
+    cap: &AnnotationCapability,
+    method: &str,
+    args: &[Value],
+    h: &Harness,
+) -> Result<Outcome, Error> {
     let comments = cap.comments();
-    let links = cap.links();
     let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
     Ok(match method {
         "listThreads" => Outcome::Returned(Value::Array(
@@ -952,8 +989,6 @@ fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<O
         "getThread" => {
             Outcome::Returned(comments.get_thread(&r(0)?).map_or(Value::Null, |t| t.to_json()))
         }
-        "getHydration" => out(&cap.get_hydration()),
-        "refresh" => unit(cap.refresh()),
         "reply" => untyped(comments.reply(r(0)?, text(args, 1)), to_value),
         "setText" => unit(comments.set_text(r(0)?, text(args, 1))),
         "setStatus" => unit(comments.set_status(r(0)?, text(args, 1))),
@@ -961,18 +996,45 @@ fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<O
         "delete" => unit(comments.delete(r(0)?)),
         "deleteThread" => untyped(comments.delete_thread(r(0)?), |t| t.to_json()),
         "getPermissions" => out(&comments.get_permissions(&r(0)?)),
-        "linksGet" => out_opt(links.get(&r(0)?)),
-        "linksSet" => {
-            let target: PdfLinkTarget = decode(args, 1)?;
-            unit(links.set(&r(0)?, target))
-        }
-        "linksClear" => unit(links.clear(&r(0)?)),
         "onThreadChanged" => {
             let comments = comments.clone();
             hook(h, present(args, 0), move |f| comments.on_thread_changed(f))
         }
         other => not_a_function(other),
     })
+}
+
+/// One `links` verb.
+fn call_links(cap: &AnnotationCapability, method: &str, args: &[Value]) -> Result<Outcome, Error> {
+    let links = cap.links();
+    let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
+    Ok(match method {
+        "get" => out_opt(links.get(&r(0)?)),
+        "set" => {
+            let target: PdfLinkTarget = decode(args, 1)?;
+            unit(links.set(&r(0)?, target))
+        }
+        "clear" => unit(links.clear(&r(0)?)),
+        other => not_a_function(other),
+    })
+}
+
+/// A nested object of functions: each verb a ref into `call`.
+fn verbs_json(
+    h: &Harness,
+    cap: &AnnotationCapability,
+    verbs: &[&'static str],
+    call: fn(&AnnotationCapability, &str, &[Value], &Harness) -> Result<Outcome, Error>,
+) -> Value {
+    let mut out = serde_json::Map::new();
+    for &verb in verbs {
+        let cap = cap.clone();
+        let harness = h.clone();
+        let f: RefFn =
+            Rc::new(move |args: Vec<Value>| from_result(call(&cap, verb, &args, &harness)));
+        out.insert(verb.to_string(), h.register_fn(f));
+    }
+    Value::Object(out)
 }
 
 /// A live host's globals: `host: {randomUuid, consoleError}` in the config,
@@ -1080,6 +1142,22 @@ impl HarnessPlugin for Annotation {
             }
             other => not_a_function(other),
         })
+    }
+
+    fn describe_member(
+        &self,
+        capability: &Rc<dyn Any>,
+        member: &'static str,
+        h: &Harness,
+    ) -> Option<Value> {
+        let cap = capability.downcast_ref::<AnnotationCapability>()?;
+        match member {
+            "comments" => Some(verbs_json(h, cap, COMMENTS_MEMBERS, call_comments)),
+            "links" => Some(verbs_json(h, cap, LINKS_MEMBERS, |cap, verb, args, _| {
+                call_links(cap, verb, args)
+            })),
+            _ => None,
+        }
     }
 
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {

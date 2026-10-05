@@ -348,6 +348,39 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(randomUuid).toHaveBeenCalled();
   });
 
+  test("the annotation capability's comments and links are objects of functions", async () => {
+    const k = await openFixture([
+      stagePlugin(),
+      interactionPlugin(),
+      renderPlugin(),
+      annotationPlugin(),
+    ]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 600 });
+    const page = stage.listVisiblePages()[0].ref;
+    const annotation = k.capability(AnnotationToken);
+    expect(annotation.comments.listThreads()).toEqual([]);
+
+    const root = await annotation.create({
+      page,
+      subtype: 'square',
+      contents: 'root',
+      bounds: { x: 10, y: 10, width: 20, height: 20 },
+    });
+    const threads = annotation.comments.listThreads();
+    expect(threads).toHaveLength(1);
+    expect(annotation.comments.listThreads()).toBe(threads);
+
+    const changed = vi.fn();
+    const off = annotation.comments.onThreadChanged(changed);
+    const reply = await annotation.comments.reply(root, 'agreed');
+    off();
+    expect(reply).toBeTruthy();
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(annotation.comments.getThread(root)?.replies).toHaveLength(1);
+    expect(annotation.links.get(root)).toBe(null);
+  });
+
   test('a JS plugin with its own reducer is refused', () => {
     const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
     const plugin = { id: 'mine', reduce: (state: unknown) => state };
