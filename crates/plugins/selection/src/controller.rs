@@ -20,7 +20,6 @@ use std::rc::Rc;
 
 use epdf_geometry::js::{self, number_to_string};
 use epdf_geometry::{PageRotation, Point, Rect, text_quad_bounds};
-use epdf_kernel::engine::decode;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
@@ -331,7 +330,7 @@ impl SelectionCapability {
         }
         let Ok(doc) = self.cx().doc() else { return Promise::resolved(()) };
         let at = self.0.epoch.get();
-        let read = doc.call("page.geometry.read", Some(pon), Vec::new());
+        let read = doc.call_answer("page.geometry.read", Some(pon), Vec::new());
         let this = self.clone();
         let load = Promise::spawn(async move {
             let result = read.await;
@@ -341,7 +340,7 @@ impl SelectionCapability {
             if at != this.0.epoch.get() {
                 return Ok(()); // content changed while in flight: stale
             }
-            let Ok(snapshot) = decode::<PageGeometrySnapshot>(value) else { return Ok(()) };
+            let Ok(snapshot) = value.decode::<PageGeometrySnapshot>() else { return Ok(()) };
             this.0.raw_geometry.borrow_mut().insert(pon, Rc::new(snapshot));
             this.cx().dispatch(SelectionAction::PageLoaded { page });
             // a mid-span page arrived: fill its segments
@@ -568,7 +567,7 @@ impl SelectionCapability {
             return p.clone();
         }
         let call = match self.cx().doc() {
-            Ok(doc) => doc.call("page.text.read", Some(pon), Vec::new()),
+            Ok(doc) => doc.call_answer("page.text.read", Some(pon), Vec::new()),
             Err(error) => Promise::rejected(error),
         };
         // `Promise.resolve(abortable)`: an AbortablePromise is a subclass, so
@@ -576,7 +575,7 @@ impl SelectionCapability {
         let p = Promise::spawn(async move {
             rt::tick().await;
             let value = call.await?;
-            decode::<PageTextSnapshot>(value).map(Rc::new)
+            value.decode::<PageTextSnapshot>().map(Rc::new)
         });
         let core = Rc::downgrade(&self.0);
         let watched = p.clone();

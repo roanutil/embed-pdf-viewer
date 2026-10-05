@@ -15,7 +15,7 @@ use std::rc::Rc;
 
 use serde_json::Value;
 
-use crate::engine::{DocumentHandle, DocumentSecurity, EngineCall};
+use crate::engine::{Answer, DocumentHandle, DocumentSecurity, EngineCall};
 use crate::error::{Error, code, plugin_error, to_plugin_error};
 use crate::rt::{self, Promise};
 use crate::signal::AbortSignal;
@@ -128,6 +128,10 @@ impl DocumentHandle for GuardedHandle {
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
         self.guard.promise(self.inner.call(path, pon, args))
+    }
+
+    fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
+        self.guard.promise(self.inner.call_answer(path, pon, args))
     }
 
     /// `page(ref)` throws synchronously; the guard maps the throw.

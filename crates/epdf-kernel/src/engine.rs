@@ -59,6 +59,20 @@ pub trait DocumentHandle {
     /// An asynchronous service call on the document, or on one of its pages
     /// when `pon` is given.
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value>;
+    /// [`call`](Self::call), with the answer as the host has it, for a caller
+    /// that reads it into its own type with [`Answer::decode`]. Settles in
+    /// the turn `call` would, and keeps its abort. A host whose answers
+    /// arrive as JSON text hands the text over unparsed.
+    fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
+        let call = self.call(path, pon, args);
+        let abort = call.abort_handle();
+        let (answer, resolver) = Promise::pending();
+        call.on_settle(move |result| resolver.settle(result.clone().map(Answer::Value)));
+        match abort {
+            Some(abort) => answer.with_abort(move |reason| abort(reason)),
+            None => answer,
+        }
+    }
     /// `page(ref)` for the page whose `PageRef` names object number `pon`:
     /// the page's display index, or `EngineError(NotFound)`.
     fn page_index(&self, pon: u32) -> Result<u32, Error>;
@@ -87,4 +101,24 @@ impl dyn DocumentHandle {
 /// Read an engine answer into a plugin's DTO.
 pub fn decode<R: serde::de::DeserializeOwned>(value: Value) -> Result<R, Error> {
     serde_json::from_value(value).map_err(|e| Error::new(format!("[engine] malformed answer: {e}")))
+}
+
+/// An engine answer before anyone reads it: the JSON text a host received,
+/// or a value it already holds parsed. A large answer read into a plugin's
+/// DTO from the text is parsed once, without a `Value` in between.
+#[derive(Clone)]
+pub enum Answer {
+    Text(Rc<str>),
+    Value(Value),
+}
+
+impl Answer {
+    /// Read the answer into a plugin's DTO.
+    pub fn decode<R: serde::de::DeserializeOwned>(self) -> Result<R, Error> {
+        match self {
+            Answer::Text(text) => serde_json::from_str(&text)
+                .map_err(|e| Error::new(format!("[engine] malformed answer: {e}"))),
+            Answer::Value(value) => decode(value),
+        }
+    }
 }

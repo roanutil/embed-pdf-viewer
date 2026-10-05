@@ -18,7 +18,7 @@
 
 use std::rc::Rc;
 
-use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
+use epdf_kernel::engine::{Answer, DocumentHandle, DocumentSecurity, Engine, EngineCall};
 use epdf_kernel::store::Unsubscribe;
 use epdf_kernel::{Error, Promise};
 use plugin_conformance::fake_engine::engine_error;
@@ -115,6 +115,17 @@ fn release_hosts(value: &Value) {
 /// dropped. A later answer is dropped too, and nothing ever sees it, so its
 /// `$host` values are released rather than left in the bridge's table.
 fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
+    engine_call_with(started, |text| {
+        serde_json::from_str(text)
+            .map_err(|e| Error::new(format!("[engine-bridge] malformed answer: {e}")))
+    })
+}
+
+/// [`engine_call`] with the answer's text read by `read`.
+fn engine_call_with<T: Clone + 'static>(
+    started: Result<js_sys::Promise, JsValue>,
+    read: impl FnOnce(&str) -> Result<T, Error> + 'static,
+) -> EngineCall<T> {
     let js = match started {
         Ok(js) => js,
         Err(thrown) => return Promise::rejected(refused(js_to_error(&thrown))),
@@ -122,7 +133,7 @@ fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
     let abort = js_sys::Reflect::get(&js, &JsValue::from_str("abort"))
         .ok()
         .and_then(|abort| abort.dyn_into::<js_sys::Function>().ok());
-    let (promise, resolver) = Promise::<Value>::pending();
+    let (promise, resolver) = Promise::<T>::pending();
     let settle = resolver.clone();
     runtime::from_js(js.clone()).on_settle(move |result| {
         // Only the abort below settles the promise before this does.
@@ -135,8 +146,7 @@ fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
             return;
         }
         settle.settle(match result {
-            Ok(Value::String(text)) => serde_json::from_str(text)
-                .map_err(|e| Error::new(format!("[engine-bridge] malformed answer: {e}"))),
+            Ok(Value::String(text)) => read(text),
             Ok(other) => {
                 Err(Error::new(format!("[engine-bridge] answer is not JSON text: {other}")))
             }
@@ -237,6 +247,12 @@ impl DocumentHandle for JsDocumentHandle {
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
         engine_call(self.bridge.call(&self.id, path, pon, &args_json(&args)))
+    }
+
+    fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
+        engine_call_with(self.bridge.call(&self.id, path, pon, &args_json(&args)), |text| {
+            Ok(Answer::Text(text.into()))
+        })
     }
 
     fn page_index(&self, pon: u32) -> Result<u32, Error> {
