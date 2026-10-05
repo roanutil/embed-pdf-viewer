@@ -356,6 +356,10 @@ described in the section named. The first five are cheap, and two of them are al
    guesses, and `float_roundtrip` risks JS parity.
 10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
     `--no-liftoff` diagnostic arm.
+11. Typed engine answers in the kernel, without the `Value` copies (Where the plugins tip's main
+    thread goes). Added 2026-10-05.
+12. Resolved commands cached per kernel revision (Where the plugins tip's main thread goes). Added
+    2026-10-05.
 
 Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
 time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
@@ -592,3 +596,38 @@ The panel's full-list reads aren't worth a paged API at that point: they're the 
 flow, they shrink quadratically with fewer hits, and paging would give the Rust kernel a different
 panel from the TypeScript reference. Reading `listHits()` at most once a frame during a search
 would be the cheap version, if it's ever wanted.
+
+### Where the plugins tip's main thread goes
+
+On the six-arm run (RESULTS.md, 2026-10-02) the plugins tip (`b450a9909`) still spends a median
+1.80x `main`'s main-thread time across the flows. We profiled `jump` and `open(large)` on this
+machine (Apple M4 Max), 5 runs each at a 100 µs sampling interval, inside the harness's own
+measured window. The arm was rebuilt for it with an unminified bundle and a kernel that keeps its
+function names (`wasm-opt -O3 -g` in place of `--strip-debug`; the stripped rebuild is
+byte-identical to the shipped kernel, `5f383fbcd10b`). Two costs stand out, and neither is in the
+sections above.
+
+`jump` runs 113 ms of main-thread JavaScript here against `main`'s 31. Most of the gap is the page
+geometry `SelectionCapability::load` (`crates/plugins/selection/src/controller.rs:319`) fetches for
+the page it lands on, and how that answer gets into the kernel. The engine bridge encodes it with
+`canonical()` (`packages/core-wasm/src/engine-bridge.ts:162`, 10.5 ms). `engine_call`
+(`crates/epdf-web/src/engine.rs:117`) parses the string into a `serde_json::Value` (12.8 ms).
+`Promise::settle` (`crates/epdf-kernel/src/rt.rs:364`), `Guard::promise` and `PromiseFuture::poll`
+then each deep-clone or drop that `Value` (about 14 ms together), and the selection plugin converts
+it into `Vec<PageGeometryRun>` (10.9 ms). That's about 48 of the 82 ms gap, and most of the 20 ms
+of `dlmalloc` self time. Parsing the answer straight into the type the caller wants, and moving
+the settled value instead of cloning it, should remove most of it. Page geometry loads on
+`scroll`, `zoom` and `open` too, so they should gain as well; we haven't profiled them for it.
+
+`open(large)` runs about 465 ms of JavaScript, and 255 ms of it is `flush`, the subscription that
+re-runs every hook selector after each kernel change. The largest part is command resolution:
+`CommandsCapability::resolve_command` (`crates/plugins/commands/src/controller.rs:183`), reached
+from the toolbar and from the page strip's `visible`, takes about 65 ms, and each resolution calls
+the command's scripted predicates back into JavaScript through `live`
+(`crates/epdf-web/src/exports.rs:169`). The wire's revision cache doesn't cover these calls, and
+the toolbar gate (section 6) didn't remove them. Caching resolved commands per kernel revision, or
+re-resolving one only when its inputs change, would. That's a bigger change than the first: it
+changes when the commands plugin evaluates predicates, which the TypeScript reference does on read.
+
+Smaller: SipHash is about 5 ms of `jump` (the `rustc-hash` half of item 6, never tried), and
+Preact's diff is about 48 ms of `open`, which `main` pays as well.
