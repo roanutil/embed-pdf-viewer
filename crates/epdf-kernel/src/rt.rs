@@ -405,20 +405,24 @@ impl<T: Clone + 'static> Promise<T> {
     }
 
     fn settle(&self, result: Result<T, Error>) {
-        let wakers = {
-            let mut state = self.0.state.borrow_mut();
-            if matches!(*state, State::Settled(_)) {
-                return;
-            }
-            match std::mem::replace(&mut *state, State::Settled(result.clone())) {
+        if self.is_settled() {
+            return;
+        }
+        let observers = std::mem::take(&mut *self.0.on_settle.borrow_mut());
+        // Without observers the result moves into the state: an engine
+        // answer is a deep `Value`, and nothing else would read the copy.
+        let (stored, observed) =
+            if observers.is_empty() { (result, None) } else { (result.clone(), Some(result)) };
+        let wakers =
+            match std::mem::replace(&mut *self.0.state.borrow_mut(), State::Settled(stored)) {
                 State::Pending(wakers) => wakers,
                 State::Settled(_) => unreachable!(),
-            }
-        };
+            };
         drop(self.0.abort.borrow_mut().take());
-        let observers = std::mem::take(&mut *self.0.on_settle.borrow_mut());
-        for observer in observers {
-            observer(&result);
+        if let Some(result) = observed {
+            for observer in observers {
+                observer(&result);
+            }
         }
         for waker in wakers {
             waker.wake();
@@ -547,19 +551,30 @@ pub struct PromiseFuture<T> {
 impl<T: Clone + 'static> Future for PromiseFuture<T> {
     type Output = Result<T, Error>;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let settled = {
+        let yielded = self.yielded;
+        // This future holds the promise's last handle: nothing can read the
+        // result after it, so it moves out instead of being cloned.
+        let only = Rc::strong_count(&self.promise.0) == 1;
+        let ready = {
             let mut state = self.promise.0.state.borrow_mut();
             match &mut *state {
-                State::Settled(result) => Some(result.clone()),
                 State::Pending(wakers) => {
                     wakers.push(cx.waker().clone());
                     None
                 }
+                State::Settled(_) if !yielded => Some(None),
+                State::Settled(_) if only => {
+                    match std::mem::replace(&mut *state, State::Pending(Vec::new())) {
+                        State::Settled(result) => Some(Some(result)),
+                        State::Pending(_) => unreachable!(),
+                    }
+                }
+                State::Settled(result) => Some(Some(result.clone())),
             }
         };
-        match settled {
-            Some(result) if self.yielded => Poll::Ready(result),
-            Some(_) => {
+        match ready {
+            Some(Some(result)) => Poll::Ready(result),
+            Some(None) => {
                 self.yielded = true;
                 cx.waker().wake_by_ref();
                 Poll::Pending
