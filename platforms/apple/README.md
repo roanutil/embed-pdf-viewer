@@ -123,3 +123,22 @@ The cost is that the generated objects (`ViewerHost`, each plugin's handle)
 become visible to clients that go looking for them. The supported API is
 `PDFViewer` and the capabilities; anything else from the bindings module is
 unsupported and can change with every regeneration.
+
+## The demo app
+
+`EmbedPDFDemo/` is a small SwiftUI app over the package. It opens `report.pdf` on launch,
+renders every page with `PageImageView`, searches with `SearchModel` (the active hit's page
+is outlined and scrolled to), and shows the Info dictionary from the metadata plugin. The
+open menu takes a PDF from Files or one of two bundled samples; `encrypted-hello.pdf`
+prompts for its password, which is `hôtel`.
+
+The project is generated, not checked in. Build the XCFramework first, then:
+
+```sh
+cd platforms/apple/EmbedPDFDemo
+xcodegen generate
+open EmbedPDFDemo.xcodeproj
+```
+
+It signs ad hoc, which is enough for the simulator. A device run needs a development team
+in `project.yml`.
