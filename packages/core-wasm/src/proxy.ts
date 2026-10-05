@@ -806,6 +806,35 @@ export class Wire {
         : recur(member);
       if (live !== undefined) out[key] = live;
     }
+    shareHits(out);
     return { value: out };
   };
+}
+
+/** Search's members that answer one hit. */
+const ONE_HIT = ['getActiveHit', 'nextHit', 'previousHit', 'goToHit'] as const;
+
+/**
+ * Search's one-hit answers as the matching entry of `listHits` for the hit's
+ * page, as the TypeScript plugin answers them: the same object. Each answer
+ * crosses as its own JSON, so without this the active hit is a copy, and
+ * `SearchLayer`'s `hit === active` never matches. `listHits` is a read, so
+ * its answer comes from the cache until the store changes.
+ */
+function shareHits(capability: Record<string, unknown>): void {
+  const listHits = capability.listHits;
+  if (typeof listHits !== 'function' || typeof capability.getActiveHit !== 'function') return;
+  type Hit = { page: unknown; charStart: number };
+  for (const name of ONE_HIT) {
+    const one = capability[name];
+    if (typeof one !== 'function') continue;
+    capability[name] = (...args: unknown[]) => {
+      const hit = one(...args) as Hit | null;
+      if (!hit) return hit;
+      const listed = (listHits({ page: hit.page }) as readonly Hit[]).find(
+        (other) => other.charStart === hit.charStart,
+      );
+      return listed ?? hit;
+    };
+  }
 }

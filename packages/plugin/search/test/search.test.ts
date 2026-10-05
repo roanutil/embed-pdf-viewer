@@ -139,6 +139,9 @@ describe('search session', () => {
     expect(api.getHitCount(toPageRef(5))).toBe(2);
     expect(api.listPagesWithHits().map((p) => p.pageObjectNumber)).toEqual([5, 7]);
     expect(api.getActiveHitIndex()).toBe(0);
+    // One hit object: the active hit is the entry `listHits` holds.
+    expect(api.listHits({ page: toPageRef(5) })).toContain(api.getActiveHit());
+    expect(api.listHits({ page: toPageRef(5) })).toContain(api.nextHit());
     await kernel.destroy();
   });
 

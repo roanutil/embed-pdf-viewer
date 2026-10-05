@@ -328,6 +328,20 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(stage.getScrollMetrics().scrollTop).toBe(100);
   });
 
+  test('the active hit is the same object as its entry in listHits', async () => {
+    const hello = new Uint8Array(await readFile(resolve(fixtures, 'hello_world.pdf')));
+    const k = await openFixture([stagePlugin(), interactionPlugin(), searchPlugin()], hello);
+    const search = k.capability(SearchToken, 'fixture');
+    await search.search({ text: 'l' });
+    const next = search.nextHit();
+    const active = search.getActiveHit();
+    expect(active).not.toBeNull();
+    const listed = search.listHits({ page: active!.page });
+    expect(listed).toContain(active);
+    expect(listed).toContain(next);
+    expect(listed).toContain(search.goToHit(0));
+  });
+
   test("the hosts' randomUuid names a new annotation", async () => {
     const randomUuid = vi.fn(() => '5a1d2c3e-0000-4000-8000-00000000abcd');
     setHosts({ annotation: { randomUuid } });
