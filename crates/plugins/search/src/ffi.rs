@@ -82,8 +82,8 @@ impl TryFrom<&crate::SearchHit> for SearchHit {
     }
 }
 
-fn hits(hits: &[crate::SearchHit]) -> Result<Vec<SearchHit>, Error> {
-    hits.iter().map(SearchHit::try_from).collect()
+fn hits<H: std::borrow::Borrow<crate::SearchHit>>(hits: &[H]) -> Result<Vec<SearchHit>, Error> {
+    hits.iter().map(|hit| SearchHit::try_from(hit.borrow())).collect()
 }
 
 /// What a `search` resolved to.
@@ -450,7 +450,7 @@ impl SearchHandle {
 
     /// Hits found so far, or those on one page.
     pub async fn hits(&self, page: Option<PageRef>) -> Result<Vec<SearchHit>, ViewerError> {
-        self.cap.call(move |c| hits(&open(c)?.list_hits(page.map(Into::into)))).await
+        self.cap.call(move |c| hits(open(c)?.list_hits(page.map(Into::into)).as_slice())).await
     }
 
     /// How many hits so far, or on one page.

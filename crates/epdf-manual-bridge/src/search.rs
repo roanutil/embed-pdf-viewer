@@ -91,9 +91,9 @@ struct HitsOwner {
 }
 
 impl HitsOwner {
-    fn build(hits: &[epdf_plugin_search::SearchHit]) -> Result<Box<HitsOwner>, Error> {
+    fn build<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(hits: &[H]) -> Result<Box<HitsOwner>, Error> {
         let mut text = Vec::new();
-        for hit in hits {
+        for hit in hits.iter().map(H::borrow) {
             if let Some(snippet) = &hit.snippet {
                 text.extend_from_slice(snippet.text.as_bytes());
             }
@@ -102,7 +102,7 @@ impl HitsOwner {
         let mut at = 0usize;
         let mut segments = Vec::with_capacity(hits.len());
         let mut flat = Vec::with_capacity(hits.len());
-        for hit in hits {
+        for hit in hits.iter().map(H::borrow) {
             let segment_offset = whole(segments.len(), "a segment offset")?;
             segments.extend(hit.segments.iter().map(|s| {
                 let q = epdf_ffi::TextQuad::from(s.quad);
@@ -163,7 +163,7 @@ fn rect(r: epdf_ffi::Rect) -> EpdfRect {
 }
 
 /// Hand a hit list to `completion`; the caller owns it from here.
-fn answer_hits(completion: Completion, hits: Result<&[epdf_plugin_search::SearchHit], Error>) {
+fn answer_hits<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(completion: Completion, hits: Result<&[H], Error>) {
     match hits.and_then(HitsOwner::build) {
         Ok(owner) => {
             let raw = Box::into_raw(owner);
@@ -262,7 +262,7 @@ pub unsafe extern "C" fn epdf_search_hits(
     let completion = Completion::new(ctx, done);
     let search = unsafe { &*search };
     search.bound.fire(move |cap| match open(cap) {
-        Ok(cap) => answer_hits(completion, Ok(&cap.list_hits(None))),
+        Ok(cap) => answer_hits(completion, Ok(cap.list_hits(None).as_slice())),
         Err(error) => completion.fail(error),
     });
 }
