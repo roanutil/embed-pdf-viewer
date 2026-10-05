@@ -181,6 +181,16 @@
       "ref": "research/rust-kernel-shared-hits",
       "sha": "b450a9909e8c429216f95a529823384775f4da5f",
       "recipe": "rust-kernel"
+    },
+    "plugins-promise": {
+      "ref": "research/rust-kernel-typed-results",
+      "sha": "19f07e0771864823d2a8f5e451caf8f83850fedb",
+      "recipe": "rust-kernel"
+    },
+    "plugins-typed": {
+      "ref": "research/rust-kernel-typed-results",
+      "sha": "b8821702787f6c22b60be95c22f848bed5e9e559",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -389,6 +399,16 @@
     },
     "plugins-sharedhits": {
       "worktree": "plugins-sharedhits",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-promise": {
+      "worktree": "plugins-promise",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-typed": {
+      "worktree": "plugins-typed",
       "kernel": "rust",
       "rustReads": false
     }
@@ -609,6 +629,22 @@
     [
       "main",
       "plugins-sharedhits"
+    ],
+    [
+      "plugins-sharedhits",
+      "plugins-promise"
+    ],
+    [
+      "plugins-promise",
+      "plugins-typed"
+    ],
+    [
+      "plugins-sharedhits",
+      "plugins-typed"
+    ],
+    [
+      "main",
+      "plugins-typed"
     ]
   ]
 }
