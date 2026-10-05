@@ -462,8 +462,9 @@ icon deletes it, and with Undo stubbed there's no way back.
 1. Open ebook.pdf again (step 2) so it's the selected tab, then click its ×.
    - Expected: the tab closes and a remaining tab becomes active. There's no "unsaved changes"
      prompt, even with edits.
-   - Expected console on `main`: `[kernel] Error: Capability "stage" unavailable: document
-"ebook.pdf-…" is closing.`, repeated 22 times. Closing a tab that isn't selected
+   - Expected console on `main`: 22 copies of
+     `[kernel] Error: Capability "stage" unavailable: document "ebook.pdf-…" is closing.`
+     Closing a tab that isn't selected
      (`await t.v.documents.close('contract')` from the console) logs nothing.
 2. With one tab left, there's no × on it, so the last document can't be closed from the UI.
 
