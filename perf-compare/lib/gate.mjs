@@ -114,7 +114,7 @@ export async function runGate(run, { config, arms, urls, stamps, env }) {
   for (const [id, got] of Object.entries(collected)) {
     const arm = { id, ...config.arms[id] };
     const reasons = [];
-    const expectedArm = { id, kernel: arm.kernel, rustReads: arm.rustReads };
+    const expectedArm = { id, kernel: arm.kernel, rustReads: arm.rustReads, dedupeCompat: arm.dedupeCompat === true };
     if (JSON.stringify(got.identity.arm) !== JSON.stringify(expectedArm)) {
       reasons.push(`the page reports ${JSON.stringify(got.identity.arm)}, arms.json says ${JSON.stringify(expectedArm)}`);
     }

@@ -75,7 +75,7 @@ export function buildEntry(armId, config) {
   const staged = stageEntry(arm);
   typecheckEntry(arm, staged);
   sh(`pnpm exec vite build --config ${path.join(staged, 'vite.config.mjs')}`, path.join(dir, 'packages/viewer/main'), {
-    PERF_ARM: JSON.stringify({ id: arm.id, kernel: arm.kernel, rustReads: arm.rustReads }),
+    PERF_ARM: JSON.stringify({ id: arm.id, kernel: arm.kernel, rustReads: arm.rustReads, dedupeCompat: arm.dedupeCompat === true }),
     PERF_WORKTREE: dir,
     PERF_ENTRY: staged,
     PERF_FIXTURES: fixturesDir,

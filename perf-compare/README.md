@@ -101,6 +101,15 @@ end it. Its output goes to `.work/remote-run.log` on the remote, which `remote.m
 15 s, and its exit status to `.work/remote-run.exit`. If `remote.mjs` stops early, the run finishes
 anyway, and its `results/<run-id>/` can be copied back with `rsync`.
 
+One run per host. `PERF_PORT_OFFSET` lets two runs share a machine without colliding, and
+`scripts/concurrency-check.mjs` tests whether their numbers survive it. On the Mac mini M1
+(`macmini2020`) they don't: against a solo run, two concurrent runs of `main` and the plugins kernel
+held the plugins/`main` ratio on 47 of 62 rows (76%) and agreed with each other on 48 (77%), where
+the check needs 95%. Absolute medians barely moved (0.99x), but the CPU rows' ratios rose, `select`
+JavaScript time from 1.58x to 2.22x, so a shared host overstates the plugins kernel's CPU gap. The
+runs are `results/2026-10-02T02-02-24-660Z-macmini2020-desktop` (solo) and
+`results/2026-10-02T02-18-19-070Z-macmini2020-desktop-p0` and `-p100`.
+
 `meta.json` records the remote's host, CPU and power source, and the local harness commit.
 `report.mjs --against` refuses to compare a remote run with a local one, because the CPU differs.
 

@@ -1,122 +1,133 @@
-# Viewer perf results, 2026-09-30
+# Viewer perf results, 2026-10-02
 
-The fixed Rust kernel is now close to `main` on everything a user would notice. It isn't at parity
-on startup or CPU. Scrolling a 400-page document has no long tasks and `main`'s 8.3 ms median
-frame, drag-select settles in the same time as `main`, and the soak heap no longer grows. What's
-left: opening is 1.5 to 1.75x `main` (51 to 134 ms later), jump and zoom settle 33 and 49 ms
-later, and main-thread task time is still 2 to 8x `main`, with script time around 20x on a large
-document's open and scroll. That CPU hides in idle time on this machine and would show on a slower
-one.
+The impl branch is now faster than `main`. `impl-glyphview`, the branch tip at `061a544c4`, beats
+`main` on 26 of 63 rows and is slower on 3. Its main-thread JavaScript time is 10 to 56% lower
+on every flow the A/A check judges (all but `coldScroll`): opening `large.pdf` runs 162 ms of it
+against 284. `searchLarge` finishes in 1599 ms against 1908, and `open(ebook)` settles in 316 ms against 395. The cost is 4 to 5% on
+`openedMs` for both fixtures and 13 ms on the first zoom step, plus 2.50 MiB of engine wasm
+(0.70 MiB brotli). `impl-ts`, the old impl pin `c8085bd3c`, differs from `main` only on opening,
+3 to 6% slower.
 
-`plugins-fix-zoom` is `research/rust-kernel-state-cache` at `8cef92c76`: the plugins branch tip
-(`bef223d9d`) plus six commits. `e0f33b1c4` caches the kernel's state JSON per change and notifies
-subscribers once per call. `2b07fb371` shares the page registry through an `Rc` and makes the
-measurement plugin's per-page reconcile linear. `2ed312446` fixes the heap leak: a settled promise
-now drops its abort closure, which had pinned each engine call's task and answer. `e13b09f75` and
-`be26ed588` trim per-render work in the toolbar, the wire and the tile keys. `8cef92c76` renders
-baked annotation appearances at the same HIGH engine priority as page tiles; at MEDIUM they queued
-behind every tile after a zoom. `FINDINGS.md` has the analysis behind each one. None of this is
-merged into `research/multi-platform-rust-core-impl-plugins` or pushed yet.
+The plugins kernel still costs time everywhere. `plugins-sharedhits` is the plugins branch tip at
+`b450a9909`, which holds every kept kernel change, the glyph view and the optimized engine link.
+It is slower than `main` on 41 of 63 rows and faster on none. On the rows a user waits for, it
+settles in the same time as `main` on `select`, `selectLarge`, `search`, `annotate`,
+`annotateLarge` and `zoomLarge`, and scrolls with `main`'s frame times and no long tasks. Opening
+is 1.44 to 1.58x (`large.pdf` opens 85 ms later and settles 152 ms later), a jump settles 51 ms
+later, a zoom 58 ms later, and `searchLarge` takes 1.10x. Main-thread task and JavaScript time is
+a median 1.80x `main`'s, worst on `searchLarge` at 3.64x JavaScript. The kernel is 7.94 MiB of
+wasm (1.71 MiB brotli) and the branch ships 0.74 MiB less JavaScript.
 
-Against `plugins-lto`, the fair baseline because `plugins-fix-zoom` builds its kernel with the
-same LTO recipe, the fixes cut opening `large.pdf` from 1239 to 167 ms (7.4x). A 60-wheel scroll
-goes from 8.4 s of long tasks to none, and jump settle from 817 to 114 ms. `plugins-lto` itself is
-about 10% faster than `plugins` on kernel-bound rows. That's LTO, which Cargo skips for the branch
-as committed because `crates/epdf-web/Cargo.toml` declares `crate-type = ["cdylib", "rlib"]`.
+`plugins-lto` is the plugins branch before any kernel fix (`bef223d9d`), built with LTO. It
+failed `selectLarge` ("the drag selected no text") and `annotateLarge` ("timed out waiting for
+the highlight to be added") in all 10 rounds, probably because page 200 of `large.pdf` doesn't
+answer within the flows' 10 s waits. That is unchecked. Its `searchLarge` took 429 s.
 
-The impl branch hasn't moved: `impl-ts` and `impl-rust` show no detectable difference from `main`
-on any row. The Rust `pages.geometry` reader can't show in this viewer, because geometry is about
-2% of the engine worker's time during a selection. The Rust core costs 3.4 MiB of engine wasm
-(0.7 MiB brotli) on both research branches, and the plugins kernel adds 11.7 MiB (1.9 MiB brotli)
-while shipping 0.75 MiB less JavaScript.
-
-This is one `desktop` run: 10 rounds on an Apple M4 Max, on AC power, harness at `61e6fd907`. It
-took 84.5 min and recorded 630 samples, none failed. The A/A pair passed 38 of 39 rows;
-`search / searchMs` failed it, so that row isn't judged. The `slow` profile wasn't re-run for
-these arms. The earlier five-arm results, `slow` included, are in this file's history at
-`90e783cab`.
+This is one `desktop` run: 10 rounds on an Apple M1 (`macmini2020`, timed over SSH, alone on the
+host), on AC power, harness at `da586b19f`. It took 185.0 min and recorded 840 samples; the 20
+from `plugins-lto` above failed. The A/A pair passed 62 of 63 rows; `coldScroll / mainJsMs`
+failed it (0.963 against a 3% band), so that row isn't judged. The 13 flows include five new
+since the last run: `coldScroll`, `zoomLarge`, `selectLarge`, `searchLarge` and
+`annotateLarge`. The previous results, from an Apple M2 Max, are in this file's history at
+`496088649`; the two machines' numbers aren't comparable.
 
 ## All arms, median
 
-Times are ms. The last column is `plugins-fix-zoom` against `main` from the report below: a ratio
-for time and CPU rows, a difference in ms for settle, jank and long-task rows. "same" is no
-detectable difference; "unreliable" means the row failed the A/A check. Memory rows show the plain
-ratio of medians, which the report doesn't judge.
+Times are ms. The last two columns are `impl-glyphview` and `plugins-sharedhits` against `main`
+from the report below: a ratio for time and CPU rows, a difference in ms for settle, jank and
+long-task rows. "same" is no detectable difference; "unreliable" means the row failed the A/A
+check; "failed" means every sample failed. Memory rows show the plain ratio of medians, which the
+report doesn't judge. `main-aa` is left out; it is in the report's A/A section.
 
-| Row | `main` | `impl-ts` | `impl-rust` | `plugins` | `plugins-lto` | `plugins-fix-zoom` | fix-zoom vs main |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| open(ebook) / readyMs | 44 | 43 | 45 | 68 | 69 | 68 | 1.545 slower |
-| open(ebook) / openedMs | 96 | 97 | 99 | 169 | 168 | 147 | 1.534 slower |
-| open(ebook) / firstPaintMs | 174 | 181 | 181 | 324 | 321 | 253 | 1.448 slower |
-| open(ebook) / settledMs | 266 | 273 | 272 | 526 | 486 | 294 | 1.106 slower |
-| open(ebook) / mainTaskMs | 93 | 93 | 93 | 407 | 367 | 215 | 2.316 slower |
-| open(ebook) / mainScriptMs | 16 | 16 | 16 | 219 | 190 | 96 | 6.094 slower |
-| open(ebook) / heapAfterOpenBytes | 34.34 MiB | 35.02 MiB | 34.97 MiB | 43.35 MiB | 43.28 MiB | 41.55 MiB | 1.21x |
-| open(ebook) / workerHeapAfterOpenBytes | 22.27 MiB | 23.00 MiB | 22.95 MiB | 23.03 MiB | 23.03 MiB | 23.02 MiB | 1.03x |
-| open(large) / readyMs | 43 | 43 | 44 | 68 | 69 | 68 | 1.593 slower |
-| open(large) / openedMs | 110 | 113 | 114 | 1346 | 1239 | 167 | 1.527 slower |
-| open(large) / firstPaintMs | 182 | 184 | 183 | 2213 | 2006 | 299 | 1.643 slower |
-| open(large) / settledMs | 177 | 180 | 180 | 2287 | 2056 | 311 | 1.754 slower |
-| open(large) / mainTaskMs | 205 | 205 | 205 | 2598 | 2324 | 505 | 2.464 slower |
-| open(large) / mainScriptMs | 18 | 18 | 18 | 2134 | 1908 | 354 | 19.611 slower |
-| open(large) / heapAfterOpenBytes | 48.15 MiB | 48.84 MiB | 48.81 MiB | 58.10 MiB | 58.01 MiB | 57.28 MiB | 1.19x |
-| open(large) / workerHeapAfterOpenBytes | 22.26 MiB | 22.99 MiB | 22.96 MiB | 22.94 MiB | 22.94 MiB | 22.95 MiB | 1.03x |
-| scroll / settleMs | 0.0 | 0.0 | 0.0 | 140 | 161 | 0.0 | +0.0 same |
-| scroll / wallMs | 2005 | 2003 | 2005 | 16079 | 14221 | 2619 | 1.306 slower |
-| scroll / frameP50Ms | 8.3 | 8.3 | 8.3 | 42 | 37 | 8.3 | 1.000 same |
-| scroll / frameP95Ms | 8.4 | 8.6 | 8.4 | 207 | 191 | 9.7 | 1.149 slower |
-| scroll / jankFrames | 0 | 0 | 0 | 99 | 94.5 | 0 | +0 same |
-| scroll / longTasks | 0 | 0 | 0 | 64.5 | 63.5 | 0 | +0 same |
-| scroll / longTaskMs | 0.0 | 0.0 | 0.0 | 9613 | 8404 | 0.0 | +0.0 same |
-| scroll / mainTaskMs | 346 | 341 | 335 | 16483 | 14634 | 1354 | 3.912 slower |
-| scroll / mainScriptMs | 46 | 46 | 46 | 9095 | 8067 | 910 | 19.641 slower |
-| jump / settleMs | 81 | 82 | 81 | 992 | 817 | 114 | +32.7 slower |
-| jump / mainTaskMs | 48 | 48 | 47 | 1334 | 1163 | 374 | 7.785 slower |
-| jump / mainScriptMs | 12 | 12 | 12 | 878 | 770 | 324 | 26.842 slower |
-| zoom / settleMs | 306 | 303 | 300 | 537 | 511 | 355 | +48.7 slower |
-| zoom / zoom2SettleMs | 111 | 114 | 115 | 246 | 235 | 139 | +28.0 slower |
-| zoom / zoom4SettleMs | 196 | 188 | 185 | 290 | 276 | 214 | +17.8 slower |
-| zoom / backTo1SettleMs | 62 | 58 | 58 | 107 | 99 | 77 | +14.8 slower |
-| zoom / mainTaskMs | 143 | 140 | 140 | 901 | 798 | 287 | 2.005 slower |
-| zoom / mainScriptMs | 22 | 20 | 20 | 496 | 426 | 134 | 6.059 slower |
-| select / settleMs | 143 | 141 | 142 | 294 | 291 | 145 | +2.7 same |
-| select / mainTaskMs | 41 | 40 | 41 | 237 | 221 | 78 | 1.874 slower |
-| select / mainScriptMs | 9.7 | 9.3 | 9.4 | 187 | 173 | 42 | 4.359 slower |
-| search / searchMs | 51 | 46 | 48 | 76 | 73 | 61 | 1.192 unreliable |
-| search / mainTaskMs | 4.0 | 4.0 | 3.7 | 36 | 34 | 20 | 5.047 slower |
-| search / mainScriptMs | 0.1 | 0.1 | 0.1 | 19 | 17 | 8.5 | 90.904 slower |
-| annotate / settleMs | 153 | 153 | 153 | 330 | 326 | 165 | +12.3 slower |
-| annotate / mainTaskMs | 50 | 49 | 49 | 282 | 260 | 93 | 1.864 slower |
-| annotate / mainScriptMs | 10 | 10 | 10 | 210 | 192 | 48 | 4.621 slower |
-| soak / heapCycle5Bytes | 37.42 MiB | 38.18 MiB | 38.13 MiB | 49.05 MiB | 48.96 MiB | 44.36 MiB | 1.19x |
-| soak / heapCycle30Bytes | 38.27 MiB | 39.04 MiB | 39.00 MiB | 63.11 MiB | 63.02 MiB | 45.05 MiB | 1.18x |
-| soak / heapSoakSlopeBytes | 0.03 MiB | 0.03 MiB | 0.03 MiB | 0.56 MiB | 0.56 MiB | 0.03 MiB |  |
+| Row | `main` | `impl-ts` | `impl-glyphview` | `plugins-lto` | `plugins-sharedhits` | glyphview vs main | sharedhits vs main |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| open(ebook) / readyMs | 62 | 62 | 61 | 108 | 95 | same | 1.521 slower |
+| open(ebook) / openedMs | 136 | 144 | 142 | 266 | 216 | 1.040 slower | 1.582 slower |
+| open(ebook) / firstPaintMs | 255 | 262 | 261 | 513 | 380 | same | 1.488 slower |
+| open(ebook) / settledMs | 395 | 409 | 316 | 787 | 437 | 0.799 faster | 1.104 slower |
+| open(ebook) / mainTaskMs | 144 | 144 | 131 | 609 | 294 | 0.915 faster | 2.048 slower |
+| open(ebook) / mainJsMs | 111 | 111 | 99 | 555 | 244 | 0.895 faster | 2.206 slower |
+| open(large) / readyMs | 63 | 63 | 62 | 103 | 91 | same | 1.440 slower |
+| open(large) / openedMs | 158 | 164 | 167 | 1992 | 243 | 1.052 slower | 1.537 slower |
+| open(large) / firstPaintMs | 271 | 274 | 276 | 3199 | 423 | same | 1.564 slower |
+| open(large) / settledMs | 271 | 276 | 275 | 3298 | 423 | same | 1.563 slower |
+| open(large) / mainTaskMs | 315 | 315 | 196 | 3607 | 579 | 0.621 faster | 1.839 slower |
+| open(large) / mainJsMs | 284 | 285 | 162 | 3560 | 532 | 0.572 faster | 1.875 slower |
+| scroll / settleMs | 0.0 | 0.0 | 0.0 | 184 | 0.0 | same | same |
+| scroll / wallMs | 2916 | 2915 | 2887 | 21928 | 3047 | same | 1.045 slower |
+| scroll / frameP50Ms | 11 | 11 | 11 | 64 | 11 | same | same |
+| scroll / frameP95Ms | 26 | 25 | 25 | 287 | 26 | same | same |
+| scroll / jankFrames | 0 | 0 | 0 | 159 | 0 | same | same |
+| scroll / longTasks | 0 | 0 | 0 | 223 | 0 | same | same |
+| scroll / longTaskMs | 0.0 | 0.0 | 0.0 | 22273 | 0.0 | same | same |
+| scroll / mainTaskMs | 544 | 536 | 476 | 22469 | 907 | 0.875 faster | 1.667 slower |
+| scroll / mainJsMs | 404 | 401 | 321 | 22246 | 767 | 0.794 faster | 1.898 slower |
+| coldScroll / settleMs | 0.0 | 0.0 | 0.0 | 228 | 0.0 | same | same |
+| coldScroll / wallMs | 2879 | 2861 | 2867 | 21076 | 3066 | same | 1.065 slower |
+| coldScroll / frameP50Ms | 11 | 11 | 11 | 62 | 11 | same | same |
+| coldScroll / frameP95Ms | 24 | 25 | 25 | 272 | 27 | same | same |
+| coldScroll / jankFrames | 0 | 0 | 0 | 151 | 0 | same | same |
+| coldScroll / longTasks | 0 | 0 | 0 | 215 | 0 | same | same |
+| coldScroll / longTaskMs | 0.0 | 0.0 | 0.0 | 21158 | 0.0 | same | same |
+| coldScroll / mainTaskMs | 569 | 564 | 497 | 21586 | 906 | 0.874 faster | 1.592 slower |
+| coldScroll / mainJsMs | 399 | 393 | 330 | 21353 | 750 | unreliable | unreliable |
+| jump / settleMs | 125 | 125 | 118 | 1510 | 177 | same | +51.2 slower |
+| jump / mainTaskMs | 72 | 73 | 67 | 1857 | 195 | same | 2.695 slower |
+| jump / mainJsMs | 54 | 54 | 45 | 1696 | 178 | 0.827 faster | 3.282 slower |
+| zoom / settleMs | 485 | 492 | 480 | 795 | 543 | same | +57.7 slower |
+| zoom / zoom2SettleMs | 165 | 166 | 178 | 358 | 195 | +13.2 slower | +30.3 slower |
+| zoom / zoom4SettleMs | 319 | 326 | 303 | 436 | 354 | same | +34.4 slower |
+| zoom / backTo1SettleMs | 87 | 92 | 80 | 166 | 108 | same | +21.2 slower |
+| zoom / mainTaskMs | 223 | 226 | 186 | 1234 | 332 | 0.835 faster | 1.487 slower |
+| zoom / mainJsMs | 161 | 163 | 126 | 1081 | 275 | 0.778 faster | 1.703 slower |
+| zoomLarge / settleMs | 312 | 292 | 310 | 3379 | 316 | same | same |
+| zoomLarge / zoom2SettleMs | 142 | 142 | 139 | 1670 | 151 | same | same |
+| zoomLarge / zoom4SettleMs | 164 | 155 | 172 | 1725 | 172 | same | same |
+| zoomLarge / backTo1SettleMs | 72 | 69 | 74 | 1027 | 87 | same | same |
+| zoomLarge / mainTaskMs | 174 | 179 | 163 | 5432 | 261 | 0.937 faster | 1.498 slower |
+| zoomLarge / mainJsMs | 130 | 133 | 117 | 4886 | 219 | 0.902 faster | 1.686 slower |
+| select / settleMs | 220 | 215 | 227 | 500 | 237 | same | same |
+| select / mainTaskMs | 62 | 62 | 52 | 367 | 82 | 0.833 faster | 1.324 slower |
+| select / mainJsMs | 40 | 40 | 28 | 351 | 65 | 0.709 faster | 1.620 slower |
+| selectLarge / settleMs | 212 | 213 | 205 | failed | 217 | same | same |
+| selectLarge / mainTaskMs | 68 | 70 | 56 | failed | 107 | 0.818 faster | 1.566 slower |
+| selectLarge / mainJsMs | 46 | 47 | 33 | failed | 83 | 0.718 faster | 1.819 slower |
+| search / searchMs | 71 | 74 | 67 | 108 | 82 | same | same |
+| search / mainTaskMs | 5.3 | 5.8 | 3.2 | 47 | 18 | 0.597 faster | 3.357 slower |
+| search / mainJsMs | 3.7 | 3.7 | 1.6 | 34 | 8.5 | 0.440 faster | 2.315 slower |
+| searchLarge / searchMs | 1908 | 1911 | 1599 | 429403 | 2095 | 0.838 faster | 1.098 slower |
+| searchLarge / mainTaskMs | 347 | 348 | 298 | 429436 | 1115 | 0.860 faster | 3.215 slower |
+| searchLarge / mainJsMs | 292 | 293 | 243 | 429246 | 1065 | 0.830 faster | 3.642 slower |
+| annotate / settleMs | 230 | 243 | 218 | 561 | 215 | same | same |
+| annotate / mainTaskMs | 80 | 80 | 70 | 442 | 102 | 0.877 faster | 1.279 slower |
+| annotate / mainJsMs | 48 | 48 | 36 | 417 | 75 | 0.762 faster | 1.566 slower |
+| annotateLarge / settleMs | 218 | 211 | 208 | failed | 225 | same | same |
+| annotateLarge / mainTaskMs | 80 | 81 | 71 | failed | 127 | 0.888 faster | 1.591 slower |
+| annotateLarge / mainJsMs | 47 | 48 | 38 | failed | 84 | 0.808 faster | 1.785 slower |
+| open(ebook) / heapAfterOpenBytes | 35.35 MiB | 35.53 MiB | 35.91 MiB | 44.28 MiB | 42.34 MiB | 1.02x | 1.20x |
+| open(ebook) / workerHeapAfterOpenBytes | 22.27 MiB | 23.00 MiB | 23.02 MiB | 23.03 MiB | 23.02 MiB | 1.03x | 1.03x |
+| open(large) / heapAfterOpenBytes | 48.15 MiB | 48.86 MiB | 48.59 MiB | 58.03 MiB | 54.96 MiB | 1.01x | 1.14x |
+| open(large) / workerHeapAfterOpenBytes | 22.26 MiB | 23.01 MiB | 23.01 MiB | 22.94 MiB | 22.96 MiB | 1.03x | 1.03x |
+| soak / heapCycle5Bytes | 37.92 MiB | 38.70 MiB | 39.05 MiB | 50.00 MiB | 45.14 MiB | 1.03x | 1.19x |
+| soak / heapCycle30Bytes | 38.76 MiB | 39.53 MiB | 39.77 MiB | 64.04 MiB | 45.68 MiB | 1.03x | 1.18x |
+| soak / heapSoakSlopeBytes | 0.03 MiB | 0.03 MiB | 0.03 MiB | 0.56 MiB | 0.02 MiB | 0.84x | 0.67x |
 
-| Size | `main` | `impl-ts` | `impl-rust` | `plugins` | `plugins-lto` | `plugins-fix-zoom` |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| engineWasmBytes | 7.19 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB |
-| engineWasmBrotliBytes | 2.15 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB |
-| kernelWasmBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 10.78 MiB | 11.68 MiB | 11.68 MiB |
-| kernelWasmBrotliBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 1.77 MiB | 1.88 MiB | 1.88 MiB |
-| jsBytes | 3.37 MiB | 3.35 MiB | 3.35 MiB | 2.62 MiB | 2.62 MiB | 2.62 MiB |
-| jsBrotliBytes | 0.96 MiB | 0.96 MiB | 0.96 MiB | 0.80 MiB | 0.80 MiB | 0.80 MiB |
-
-## Viewer perf comparison: 2026-09-30T01-07-37-279Z-mac-desktop
+# Viewer perf comparison: 2026-10-02T12-56-31-247Z-macmini2020-desktop
 
 10 rounds, profile `desktop` (CPU throttle 1x).
 
 `workerTaskMs` is n/a: Chromium has no Performance domain on dedicated workers.
 
-### Environment
+## Environment
 
 | Field | Value |
 | --- | --- |
-| Harness commit | 61e6fd907dc96d80a93a542d82d0a4c38233f184 |
+| Harness commit | da586b19f17e10619ed4a98bf4d22347f3340549 |
 | Chromium / Playwright | 140.0.7339.16 / 1.55.0 |
 | Node | v24.20.0 |
-| OS | Darwin 27.0.0 arm64 |
-| CPU | Apple M4 Max, 16 cores |
-| Memory | 64 GiB |
+| OS | Darwin 27.2.0 arm64 |
+| CPU | Apple M1, 8 cores |
+| Memory | 16 GiB |
 | Power | AC Power |
 | Viewport | 1280x800 @2x |
 | Fixtures | ebook 2e539f62b5fa, large 10c8668fe55c |
@@ -126,436 +137,526 @@ ratio of medians, which the report doesn't judge.
 | main | main | 2516e2786 | fetched | 98c2368a774d |  |
 | main-aa | main | 2516e2786 | fetched | 98c2368a774d |  |
 | impl-ts | research/multi-platform-rust-core-impl | c8085bd3c | built (fork d045f389d, wasm32-eh) | 0f7407599d93 |  |
-| impl-rust | research/multi-platform-rust-core-impl | c8085bd3c | built (fork d045f389d, wasm32-eh) | 0f7407599d93 |  |
-| plugins | research/multi-platform-rust-core-impl-plugins | bef223d9d | built (fork d045f389d, wasm32-eh) | 0f7407599d93 | 992f38174937 |
 | plugins-lto | research/multi-platform-rust-core-impl-plugins | bef223d9d | built (fork d045f389d, wasm32-eh) | 0f7407599d93 | ce0b35ed118c |
-| plugins-fix-zoom | research/rust-kernel-state-cache | 8cef92c76 | built (fork d045f389d, wasm32-eh) | 0f7407599d93 | df47d777780e |
+| impl-glyphview | research/rust-core-glyph-view | 061a544c4 | built (fork 7c7b600b1, wasm32-eh) | c888920f5d27 |  |
+| plugins-sharedhits | research/rust-kernel-shared-hits | b450a9909 | built (fork 7c7b600b1, wasm32-eh) | c888920f5d27 | 5f383fbcd10b |
 
-### Gate
+## Gate
 
 - `main`: pass
 - `main-aa`: pass
 - `impl-ts`: pass
-- `impl-rust`: pass
-- `plugins`: pass
 - `plugins-lto`: pass
-- `plugins-fix-zoom`: pass
+- `impl-glyphview`: pass
+- `plugins-sharedhits`: pass
 
-### Sizes
+20 samples failed and are left out:
 
-| Metric | main | main-aa | impl-ts | impl-rust | plugins | plugins-lto | plugins-fix-zoom |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| engineWasmBytes | 7.19 MiB | 7.19 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB | 10.57 MiB |
-| engineWasmBrotliBytes | 2.15 MiB | 2.15 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB | 2.83 MiB |
-| kernelWasmBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 0.00 MiB | 10.78 MiB | 11.68 MiB | 11.68 MiB |
-| kernelWasmBrotliBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 0.00 MiB | 1.77 MiB | 1.88 MiB | 1.88 MiB |
-| jsBytes | 3.37 MiB | 3.37 MiB | 3.35 MiB | 3.35 MiB | 2.62 MiB | 2.62 MiB | 2.62 MiB |
-| jsBrotliBytes | 0.96 MiB | 0.96 MiB | 0.96 MiB | 0.96 MiB | 0.80 MiB | 0.80 MiB | 0.80 MiB |
+- plugins-lto selectLarge(large): the drag selected no text (x10)
+- plugins-lto annotateLarge(large): timed out waiting for the highlight to be added (x10)
 
-### A/A: `main` vs `main-aa`
+## Sizes
+
+| Metric | main | main-aa | impl-ts | plugins-lto | impl-glyphview | plugins-sharedhits |
+| --- | --- | --- | --- | --- | --- | --- |
+| engineWasmBytes | 7.19 MiB | 7.19 MiB | 10.57 MiB | 10.57 MiB | 9.69 MiB | 9.69 MiB |
+| engineWasmBrotliBytes | 2.15 MiB | 2.15 MiB | 2.83 MiB | 2.83 MiB | 2.85 MiB | 2.85 MiB |
+| kernelWasmBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 11.68 MiB | 0.00 MiB | 7.94 MiB |
+| kernelWasmBrotliBytes | 0.00 MiB | 0.00 MiB | 0.00 MiB | 1.88 MiB | 0.00 MiB | 1.71 MiB |
+| jsBytes | 3.37 MiB | 3.37 MiB | 3.35 MiB | 2.62 MiB | 3.36 MiB | 2.63 MiB |
+| jsBrotliBytes | 0.96 MiB | 0.96 MiB | 0.96 MiB | 0.80 MiB | 0.96 MiB | 0.80 MiB |
+
+## A/A: `main` vs `main-aa`
 
 A metric passes when its interval includes the null value or its point estimate is within 3% of it. Its interval then sets the noise band every other pair must clear.
 
-38 of 39 rows pass.
+62 of 63 rows pass.
 
 | Row | main median [p95] | main-aa median [p95] | ratio or diff [95% CI] | A/A |
 | --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 44.3 [45.6] | 43.4 [44.7] | 0.979 [0.947, 1.038] | pass |
-| open(ebook) / openedMs | 95.7 [98.7] | 95.6 [97.4] | 0.999 [0.980, 1.025] | pass |
-| open(ebook) / firstPaintMs | 174.4 [182.3] | 174.0 [180.5] | 0.998 [0.972, 1.023] | pass |
-| open(ebook) / settledMs | 265.9 [270.4] | 265.0 [268.4] | 0.997 [0.984, 1.009] | pass |
-| open(ebook) / mainTaskMs | 92.8 [94.5] | 92.7 [94.4] | 0.999 [0.981, 1.011] | pass |
-| open(ebook) / mainScriptMs | 15.7 [16.1] | 15.6 [16.2] | 0.992 [0.972, 1.020] | pass |
-| open(large) / readyMs | 42.7 [45.5] | 42.9 [44.7] | 1.003 [0.956, 1.024] | pass |
-| open(large) / openedMs | 109.5 [111.8] | 109.7 [111.6] | 1.001 [0.984, 1.015] | pass |
-| open(large) / firstPaintMs | 181.7 [185.1] | 181.0 [185.6] | 0.996 [0.972, 1.036] | pass |
-| open(large) / settledMs | 177.4 [181.3] | 177.6 [181.3] | 1.001 [0.973, 1.038] | pass |
-| open(large) / mainTaskMs | 205.1 [207.5] | 205.0 [208.2] | 1.000 [0.997, 1.010] | pass |
-| open(large) / mainScriptMs | 18.1 [18.4] | 18.0 [18.5] | 0.997 [0.982, 1.023] | pass |
+| open(ebook) / readyMs | 62.2 [63.6] | 61.4 [64.6] | 0.988 [0.962, 1.035] | pass |
+| open(ebook) / openedMs | 136.3 [138.9] | 136.8 [137.9] | 1.003 [0.977, 1.016] | pass |
+| open(ebook) / firstPaintMs | 255.5 [269.9] | 254.3 [264.4] | 0.995 [0.976, 1.028] | pass |
+| open(ebook) / settledMs | 395.5 [399.7] | 395.5 [398.3] | 1.000 [0.990, 1.010] | pass |
+| open(ebook) / mainTaskMs | 143.5 [146.8] | 143.4 [146.1] | 0.999 [0.984, 1.017] | pass |
+| open(ebook) / mainJsMs | 110.6 [113.8] | 110.6 [113.5] | 1.000 [0.979, 1.016] | pass |
+| open(large) / readyMs | 62.9 [64.3] | 62.2 [65.8] | 0.990 [0.954, 1.041] | pass |
+| open(large) / openedMs | 158.3 [162.2] | 158.4 [159.4] | 1.001 [0.979, 1.014] | pass |
+| open(large) / firstPaintMs | 270.6 [285.4] | 267.1 [270.0] | 0.987 [0.966, 1.011] | pass |
+| open(large) / settledMs | 270.6 [278.2] | 272.1 [283.5] | 1.006 [0.981, 1.029] | pass |
+| open(large) / mainTaskMs | 314.9 [319.8] | 315.8 [319.7] | 1.003 [0.993, 1.014] | pass |
+| open(large) / mainJsMs | 283.8 [289.7] | 284.4 [288.3] | 1.002 [0.993, 1.013] | pass |
 | scroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | pass |
-| scroll / wallMs | 2004.9 [2016.9] | 2005.4 [2022.4] | 1.000 [0.996, 1.007] | pass |
-| scroll / frameP50Ms | 8.3 [8.3] | 8.3 [8.3] | 1.000 [1.000, 1.001] | pass |
-| scroll / frameP95Ms | 8.4 [8.8] | 8.4 [9.1] | 1.000 [0.978, 1.066] | pass |
+| scroll / wallMs | 2916.2 [2964.4] | 2884.1 [2947.4] | 0.989 [0.968, 1.005] | pass |
+| scroll / frameP50Ms | 11.1 [11.6] | 11.4 [11.8] | 1.024 [0.975, 1.040] | pass |
+| scroll / frameP95Ms | 25.6 [27.2] | 26.0 [27.3] | 1.019 [0.912, 1.163] | pass |
 | scroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | pass |
 | scroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | pass |
 | scroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | pass |
-| scroll / mainTaskMs | 346.2 [366.6] | 350.0 [372.3] | 1.011 [0.941, 1.076] | pass |
-| scroll / mainScriptMs | 46.4 [47.8] | 46.7 [48.1] | 1.008 [0.975, 1.028] | pass |
-| jump / settleMs | 81.3 [83.1] | 81.5 [83.3] | +0.2 [-4.6, +5.3] | pass |
-| jump / mainTaskMs | 48.1 [50.2] | 47.6 [49.9] | 0.990 [0.966, 1.039] | pass |
-| jump / mainScriptMs | 12.1 [13.5] | 11.9 [13.9] | 0.986 [0.939, 1.029] | pass |
-| zoom / settleMs | 305.9 [319.4] | 302.6 [315.5] | -3.4 [-14.7, +17.2] | pass |
-| zoom / zoom2SettleMs | 111.3 [115.7] | 111.1 [114.1] | -0.2 [-8.3, +7.3] | pass |
-| zoom / zoom4SettleMs | 195.8 [206.2] | 196.8 [203.9] | +1.0 [-9.2, +17.3] | pass |
-| zoom / backTo1SettleMs | 62.0 [72.1] | 59.7 [72.6] | -2.3 [-7.0, +4.8] | pass |
-| zoom / mainTaskMs | 143.1 [145.0] | 142.5 [145.7] | 0.996 [0.961, 1.036] | pass |
-| zoom / mainScriptMs | 22.1 [23.4] | 21.5 [23.4] | 0.971 [0.884, 1.118] | pass |
-| select / settleMs | 142.5 [148.1] | 143.3 [148.5] | +0.8 [-5.3, +5.3] | pass |
-| select / mainTaskMs | 41.5 [43.1] | 42.2 [46.5] | 1.019 [0.947, 1.107] | pass |
-| select / mainScriptMs | 9.7 [10.1] | 10.2 [11.0] | 1.058 [0.962, 1.107] | pass |
-| search / searchMs | 51.5 [53.1] | 46.0 [50.9] | 0.894 [0.845, 0.969] | A/A failed |
-| search / mainTaskMs | 4.0 [4.6] | 3.8 [4.2] | 0.958 [0.868, 1.009] | pass |
-| search / mainScriptMs | 0.1 [0.1] | 0.1 [0.1] | 1.037 [0.860, 1.078] | pass |
-| annotate / settleMs | 152.6 [154.3] | 152.9 [162.5] | +0.3 [-1.2, +3.3] | pass |
-| annotate / mainTaskMs | 50.0 [52.1] | 51.7 [55.1] | 1.034 [0.992, 1.082] | pass |
-| annotate / mainScriptMs | 10.3 [10.9] | 10.4 [11.1] | 1.002 [0.963, 1.051] | pass |
+| scroll / mainTaskMs | 544.3 [557.7] | 532.0 [559.8] | 0.977 [0.960, 1.011] | pass |
+| scroll / mainJsMs | 404.2 [411.6] | 397.6 [406.6] | 0.984 [0.954, 1.007] | pass |
+| coldScroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | pass |
+| coldScroll / wallMs | 2879.1 [2931.3] | 2840.3 [2885.3] | 0.987 [0.962, 1.009] | pass |
+| coldScroll / frameP50Ms | 11.3 [11.8] | 11.2 [11.9] | 0.998 [0.948, 1.052] | pass |
+| coldScroll / frameP95Ms | 24.0 [26.7] | 25.6 [27.2] | 1.067 [0.947, 1.152] | pass |
+| coldScroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | pass |
+| coldScroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | pass |
+| coldScroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | pass |
+| coldScroll / mainTaskMs | 569.0 [582.4] | 553.9 [570.2] | 0.973 [0.954, 0.994] | pass |
+| coldScroll / mainJsMs | 398.7 [406.5] | 384.0 [398.7] | 0.963 [0.953, 0.990] | A/A failed |
+| jump / settleMs | 125.5 [141.0] | 123.4 [136.0] | -2.1 [-14.1, +2.7] | pass |
+| jump / mainTaskMs | 72.2 [77.2] | 73.1 [77.9] | 1.013 [0.975, 1.079] | pass |
+| jump / mainJsMs | 54.4 [58.3] | 56.6 [60.6] | 1.041 [0.976, 1.091] | pass |
+| zoom / settleMs | 485.5 [514.0] | 495.2 [511.8] | +9.7 [-12.2, +31.4] | pass |
+| zoom / zoom2SettleMs | 164.7 [169.5] | 165.0 [172.0] | +0.3 [-6.1, +4.8] | pass |
+| zoom / zoom4SettleMs | 319.4 [350.2] | 329.3 [341.8] | +9.9 [-9.1, +32.1] | pass |
+| zoom / backTo1SettleMs | 87.0 [108.9] | 93.0 [109.8] | +6.0 [-3.1, +19.4] | pass |
+| zoom / mainTaskMs | 223.2 [230.9] | 227.8 [233.7] | 1.021 [0.986, 1.048] | pass |
+| zoom / mainJsMs | 161.3 [166.8] | 165.4 [169.1] | 1.025 [0.983, 1.043] | pass |
+| zoomLarge / settleMs | 311.9 [342.8] | 302.5 [311.4] | -9.4 [-31.1, +9.0] | pass |
+| zoomLarge / zoom2SettleMs | 142.0 [167.6] | 139.7 [161.5] | -2.3 [-22.8, +14.4] | pass |
+| zoomLarge / zoom4SettleMs | 163.9 [188.1] | 158.0 [176.5] | -6.0 [-20.9, +4.8] | pass |
+| zoomLarge / backTo1SettleMs | 72.1 [92.6] | 77.4 [97.9] | +5.3 [-5.8, +15.2] | pass |
+| zoomLarge / mainTaskMs | 174.4 [180.6] | 174.8 [181.5] | 1.003 [0.985, 1.049] | pass |
+| zoomLarge / mainJsMs | 129.7 [134.3] | 130.8 [135.6] | 1.009 [0.983, 1.071] | pass |
+| select / settleMs | 220.4 [236.8] | 221.0 [241.2] | +0.5 [-20.6, +19.3] | pass |
+| select / mainTaskMs | 61.9 [65.0] | 61.4 [65.0] | 0.992 [0.941, 1.036] | pass |
+| select / mainJsMs | 40.1 [42.8] | 39.9 [42.8] | 0.995 [0.941, 1.039] | pass |
+| selectLarge / settleMs | 212.1 [246.1] | 208.4 [236.1] | -3.7 [-44.5, +26.4] | pass |
+| selectLarge / mainTaskMs | 68.0 [77.6] | 72.1 [75.4] | 1.059 [0.935, 1.168] | pass |
+| selectLarge / mainJsMs | 45.7 [53.6] | 48.8 [50.6] | 1.067 [0.929, 1.188] | pass |
+| search / searchMs | 71.0 [74.7] | 72.6 [83.2] | 1.023 [0.976, 1.151] | pass |
+| search / mainTaskMs | 5.3 [5.7] | 5.4 [6.7] | 1.016 [0.954, 1.122] | pass |
+| search / mainJsMs | 3.7 [3.9] | 3.7 [4.5] | 1.016 [0.962, 1.086] | pass |
+| searchLarge / searchMs | 1907.8 [2025.2] | 1900.2 [1945.5] | 0.996 [0.977, 1.005] | pass |
+| searchLarge / mainTaskMs | 346.9 [349.4] | 346.7 [349.3] | 0.999 [0.993, 1.007] | pass |
+| searchLarge / mainJsMs | 292.5 [293.9] | 292.6 [294.7] | 1.001 [0.997, 1.005] | pass |
+| annotate / settleMs | 229.6 [253.6] | 226.6 [265.6] | -2.9 [-37.4, +31.5] | pass |
+| annotate / mainTaskMs | 79.8 [83.2] | 77.7 [86.3] | 0.973 [0.937, 1.033] | pass |
+| annotate / mainJsMs | 47.9 [50.5] | 46.4 [52.2] | 0.969 [0.926, 1.047] | pass |
+| annotateLarge / settleMs | 218.5 [263.7] | 204.6 [244.6] | -13.9 [-60.5, +25.2] | pass |
+| annotateLarge / mainTaskMs | 79.7 [88.5] | 78.0 [85.1] | 0.978 [0.898, 1.035] | pass |
+| annotateLarge / mainJsMs | 47.2 [53.1] | 47.5 [51.1] | 1.007 [0.913, 1.038] | pass |
 
-### `main` vs `impl-ts`
+## `main` vs `impl-ts`
 
 | Row | main median [p95] | impl-ts median [p95] | ratio or diff [95% CI] | Verdict |
 | --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 44.3 [45.6] | 42.9 [44.9] | 0.968 [0.945, 1.036] | no detectable difference |
-| open(ebook) / openedMs | 95.7 [98.7] | 97.5 [100.2] | 1.018 [1.000, 1.041] | no detectable difference |
-| open(ebook) / firstPaintMs | 174.4 [182.3] | 180.9 [184.1] | 1.037 [1.009, 1.059] | slower |
-| open(ebook) / settledMs | 265.9 [270.4] | 272.6 [274.8] | 1.025 [1.015, 1.035] | no detectable difference |
-| open(ebook) / mainTaskMs | 92.8 [94.5] | 93.1 [94.8] | 1.003 [0.985, 1.016] | no detectable difference |
-| open(ebook) / mainScriptMs | 15.7 [16.1] | 15.9 [16.3] | 1.013 [0.986, 1.029] | no detectable difference |
-| open(large) / readyMs | 42.7 [45.5] | 43.0 [45.3] | 1.007 [0.961, 1.048] | no detectable difference |
-| open(large) / openedMs | 109.5 [111.8] | 113.4 [115.1] | 1.035 [1.015, 1.044] | slower |
-| open(large) / firstPaintMs | 181.7 [185.1] | 184.4 [188.0] | 1.015 [1.002, 1.048] | no detectable difference |
-| open(large) / settledMs | 177.4 [181.3] | 180.3 [183.8] | 1.016 [1.004, 1.051] | no detectable difference |
-| open(large) / mainTaskMs | 205.1 [207.5] | 205.4 [207.7] | 1.002 [0.998, 1.005] | no detectable difference |
-| open(large) / mainScriptMs | 18.1 [18.4] | 17.9 [18.3] | 0.992 [0.978, 1.014] | no detectable difference |
+| open(ebook) / readyMs | 62.2 [63.6] | 61.8 [69.5] | 0.994 [0.970, 1.101] | no detectable difference |
+| open(ebook) / openedMs | 136.3 [138.9] | 144.3 [149.9] | 1.059 [1.028, 1.095] | slower |
+| open(ebook) / firstPaintMs | 255.5 [269.9] | 262.5 [276.2] | 1.027 [1.001, 1.063] | no detectable difference |
+| open(ebook) / settledMs | 395.5 [399.7] | 408.9 [413.8] | 1.034 [1.019, 1.046] | slower |
+| open(ebook) / mainTaskMs | 143.5 [146.8] | 144.3 [149.6] | 1.006 [0.984, 1.035] | no detectable difference |
+| open(ebook) / mainJsMs | 110.6 [113.8] | 110.6 [114.8] | 1.000 [0.976, 1.031] | no detectable difference |
+| open(large) / readyMs | 62.9 [64.3] | 62.6 [74.4] | 0.995 [0.958, 1.081] | no detectable difference |
+| open(large) / openedMs | 158.3 [162.2] | 164.3 [175.0] | 1.038 [1.015, 1.073] | slower |
+| open(large) / firstPaintMs | 270.6 [285.4] | 273.7 [297.3] | 1.012 [0.982, 1.057] | no detectable difference |
+| open(large) / settledMs | 270.6 [278.2] | 276.4 [285.4] | 1.021 [0.990, 1.048] | no detectable difference |
+| open(large) / mainTaskMs | 314.9 [319.8] | 315.2 [318.3] | 1.001 [0.992, 1.014] | no detectable difference |
+| open(large) / mainJsMs | 283.8 [289.7] | 284.8 [306.7] | 1.004 [0.993, 1.016] | no detectable difference |
 | scroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / wallMs | 2004.9 [2016.9] | 2002.7 [2021.3] | 0.999 [0.995, 1.004] | no detectable difference |
-| scroll / frameP50Ms | 8.3 [8.3] | 8.3 [8.3] | 1.000 [0.999, 1.001] | no detectable difference |
-| scroll / frameP95Ms | 8.4 [8.8] | 8.6 [8.9] | 1.018 [0.982, 1.047] | no detectable difference |
+| scroll / wallMs | 2916.2 [2964.4] | 2915.3 [2972.1] | 1.000 [0.984, 1.022] | no detectable difference |
+| scroll / frameP50Ms | 11.1 [11.6] | 11.1 [11.6] | 1.002 [0.963, 1.022] | no detectable difference |
+| scroll / frameP95Ms | 25.6 [27.2] | 25.5 [27.0] | 0.997 [0.924, 1.137] | no detectable difference |
 | scroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
 | scroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
 | scroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / mainTaskMs | 346.2 [366.6] | 340.6 [360.0] | 0.984 [0.936, 1.034] | no detectable difference |
-| scroll / mainScriptMs | 46.4 [47.8] | 46.1 [47.6] | 0.995 [0.971, 1.020] | no detectable difference |
-| jump / settleMs | 81.3 [83.1] | 82.4 [87.3] | +1.1 [-0.4, +6.4] | no detectable difference |
-| jump / mainTaskMs | 48.1 [50.2] | 48.1 [52.4] | 1.000 [0.945, 1.048] | no detectable difference |
-| jump / mainScriptMs | 12.1 [13.5] | 12.1 [15.2] | 0.999 [0.937, 1.115] | no detectable difference |
-| zoom / settleMs | 305.9 [319.4] | 303.4 [322.0] | -2.5 [-16.9, +19.1] | no detectable difference |
-| zoom / zoom2SettleMs | 111.3 [115.7] | 114.2 [120.1] | +2.9 [-0.3, +11.4] | no detectable difference |
-| zoom / zoom4SettleMs | 195.8 [206.2] | 188.0 [204.7] | -7.8 [-17.5, +10.8] | no detectable difference |
-| zoom / backTo1SettleMs | 62.0 [72.1] | 58.3 [65.2] | -3.8 [-9.0, +2.5] | no detectable difference |
-| zoom / mainTaskMs | 143.1 [145.0] | 140.2 [143.7] | 0.980 [0.969, 1.021] | no detectable difference |
-| zoom / mainScriptMs | 22.1 [23.4] | 20.0 [23.0] | 0.906 [0.874, 1.021] | no detectable difference |
-| select / settleMs | 142.5 [148.1] | 141.3 [147.4] | -1.2 [-5.9, +4.9] | no detectable difference |
-| select / mainTaskMs | 41.5 [43.1] | 39.6 [43.9] | 0.956 [0.932, 1.035] | no detectable difference |
-| select / mainScriptMs | 9.7 [10.1] | 9.3 [10.3] | 0.966 [0.932, 1.016] | no detectable difference |
-| search / searchMs | 51.5 [53.1] | 46.5 [51.7] | 0.903 [0.843, 0.985] | unreliable (A/A failed) |
-| search / mainTaskMs | 4.0 [4.6] | 4.0 [4.6] | 1.005 [0.903, 1.083] | no detectable difference |
-| search / mainScriptMs | 0.1 [0.1] | 0.1 [0.1] | 0.995 [0.918, 1.065] | no detectable difference |
-| annotate / settleMs | 152.6 [154.3] | 153.3 [153.8] | +0.7 [-1.1, +2.2] | no detectable difference |
-| annotate / mainTaskMs | 50.0 [52.1] | 49.3 [51.8] | 0.985 [0.946, 1.033] | no detectable difference |
-| annotate / mainScriptMs | 10.3 [10.9] | 10.1 [10.6] | 0.979 [0.894, 1.019] | no detectable difference |
+| scroll / mainTaskMs | 544.3 [557.7] | 536.0 [552.3] | 0.985 [0.970, 1.018] | no detectable difference |
+| scroll / mainJsMs | 404.2 [411.6] | 401.2 [408.3] | 0.992 [0.976, 1.017] | no detectable difference |
+| coldScroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / wallMs | 2879.1 [2931.3] | 2861.4 [2951.6] | 0.994 [0.983, 1.022] | no detectable difference |
+| coldScroll / frameP50Ms | 11.3 [11.8] | 11.2 [11.7] | 0.992 [0.964, 1.032] | no detectable difference |
+| coldScroll / frameP95Ms | 24.0 [26.7] | 24.9 [27.2] | 1.036 [0.938, 1.121] | no detectable difference |
+| coldScroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / mainTaskMs | 569.0 [582.4] | 564.1 [571.1] | 0.991 [0.974, 1.002] | no detectable difference |
+| coldScroll / mainJsMs | 398.7 [406.5] | 392.7 [403.8] | 0.985 [0.972, 1.005] | unreliable (A/A failed) |
+| jump / settleMs | 125.5 [141.0] | 125.3 [131.8] | -0.2 [-11.8, +4.4] | no detectable difference |
+| jump / mainTaskMs | 72.2 [77.2] | 72.6 [77.2] | 1.006 [0.976, 1.068] | no detectable difference |
+| jump / mainJsMs | 54.4 [58.3] | 54.5 [58.3] | 1.003 [0.952, 1.076] | no detectable difference |
+| zoom / settleMs | 485.5 [514.0] | 492.4 [514.0] | +6.9 [-9.3, +29.2] | no detectable difference |
+| zoom / zoom2SettleMs | 164.7 [169.5] | 165.8 [170.2] | +1.0 [-0.6, +3.2] | no detectable difference |
+| zoom / zoom4SettleMs | 319.4 [350.2] | 326.0 [344.6] | +6.6 [-10.5, +30.5] | no detectable difference |
+| zoom / backTo1SettleMs | 87.0 [108.9] | 92.2 [111.0] | +5.2 [-4.7, +19.1] | no detectable difference |
+| zoom / mainTaskMs | 223.2 [230.9] | 225.5 [238.0] | 1.010 [0.959, 1.033] | no detectable difference |
+| zoom / mainJsMs | 161.3 [166.8] | 163.5 [171.6] | 1.013 [0.967, 1.029] | no detectable difference |
+| zoomLarge / settleMs | 311.9 [342.8] | 292.1 [352.7] | -19.8 [-40.8, +15.8] | no detectable difference |
+| zoomLarge / zoom2SettleMs | 142.0 [167.6] | 141.5 [172.1] | -0.5 [-25.3, +13.9] | no detectable difference |
+| zoomLarge / zoom4SettleMs | 163.9 [188.1] | 154.9 [192.5] | -9.1 [-28.3, +11.3] | no detectable difference |
+| zoomLarge / backTo1SettleMs | 72.1 [92.6] | 69.1 [91.3] | -3.0 [-12.8, +5.5] | no detectable difference |
+| zoomLarge / mainTaskMs | 174.4 [180.6] | 178.6 [184.9] | 1.024 [0.987, 1.087] | no detectable difference |
+| zoomLarge / mainJsMs | 129.7 [134.3] | 133.5 [136.4] | 1.029 [0.980, 1.092] | no detectable difference |
+| select / settleMs | 220.4 [236.8] | 214.6 [254.8] | -5.8 [-24.8, +27.4] | no detectable difference |
+| select / mainTaskMs | 61.9 [65.0] | 62.2 [69.0] | 1.004 [0.956, 1.061] | no detectable difference |
+| select / mainJsMs | 40.1 [42.8] | 40.4 [45.2] | 1.009 [0.945, 1.067] | no detectable difference |
+| selectLarge / settleMs | 212.1 [246.1] | 213.0 [257.8] | +0.9 [-34.8, +42.2] | no detectable difference |
+| selectLarge / mainTaskMs | 68.0 [77.6] | 69.5 [79.2] | 1.022 [0.902, 1.131] | no detectable difference |
+| selectLarge / mainJsMs | 45.7 [53.6] | 46.7 [52.6] | 1.021 [0.880, 1.153] | no detectable difference |
+| search / searchMs | 71.0 [74.7] | 74.0 [81.8] | 1.042 [0.991, 1.130] | no detectable difference |
+| search / mainTaskMs | 5.3 [5.7] | 5.8 [6.3] | 1.097 [0.966, 1.177] | no detectable difference |
+| search / mainJsMs | 3.7 [3.9] | 3.7 [4.0] | 0.998 [0.968, 1.053] | no detectable difference |
+| searchLarge / searchMs | 1907.8 [2025.2] | 1911.2 [1926.5] | 1.002 [0.982, 1.006] | no detectable difference |
+| searchLarge / mainTaskMs | 346.9 [349.4] | 348.2 [352.5] | 1.004 [0.997, 1.012] | no detectable difference |
+| searchLarge / mainJsMs | 292.5 [293.9] | 293.4 [296.3] | 1.003 [0.999, 1.010] | no detectable difference |
+| annotate / settleMs | 229.6 [253.6] | 243.3 [274.1] | +13.7 [-41.3, +57.9] | no detectable difference |
+| annotate / mainTaskMs | 79.8 [83.2] | 80.0 [88.5] | 1.002 [0.923, 1.068] | no detectable difference |
+| annotate / mainJsMs | 47.9 [50.5] | 48.0 [53.6] | 1.003 [0.905, 1.052] | no detectable difference |
+| annotateLarge / settleMs | 218.5 [263.7] | 211.1 [253.1] | -7.4 [-44.6, +34.5] | no detectable difference |
+| annotateLarge / mainTaskMs | 79.7 [88.5] | 80.6 [87.0] | 1.011 [0.914, 1.052] | no detectable difference |
+| annotateLarge / mainJsMs | 47.2 [53.1] | 48.4 [52.6] | 1.025 [0.914, 1.073] | no detectable difference |
 
-### `impl-ts` vs `impl-rust`
+## `impl-ts` vs `impl-rust`
 
-| Row | impl-ts median [p95] | impl-rust median [p95] | ratio or diff [95% CI] | Verdict |
-| --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 42.9 [44.9] | 44.7 [45.8] | 1.043 [0.996, 1.063] | no detectable difference |
-| open(ebook) / openedMs | 97.5 [100.2] | 99.4 [102.1] | 1.020 [1.003, 1.035] | no detectable difference |
-| open(ebook) / firstPaintMs | 180.9 [184.1] | 180.8 [182.4] | 0.999 [0.985, 1.015] | no detectable difference |
-| open(ebook) / settledMs | 272.6 [274.8] | 271.6 [278.5] | 0.996 [0.991, 1.005] | no detectable difference |
-| open(ebook) / mainTaskMs | 93.1 [94.8] | 93.0 [96.9] | 0.999 [0.986, 1.013] | no detectable difference |
-| open(ebook) / mainScriptMs | 15.9 [16.3] | 15.7 [16.5] | 0.989 [0.968, 1.020] | no detectable difference |
-| open(large) / readyMs | 43.0 [45.3] | 44.2 [45.2] | 1.028 [0.974, 1.058] | no detectable difference |
-| open(large) / openedMs | 113.4 [115.1] | 113.6 [116.4] | 1.002 [0.990, 1.022] | no detectable difference |
-| open(large) / firstPaintMs | 184.4 [188.0] | 182.8 [189.2] | 0.991 [0.979, 1.018] | no detectable difference |
-| open(large) / settledMs | 180.3 [183.8] | 179.9 [186.0] | 0.998 [0.977, 1.025] | no detectable difference |
-| open(large) / mainTaskMs | 205.4 [207.7] | 205.0 [207.9] | 0.998 [0.993, 1.003] | no detectable difference |
-| open(large) / mainScriptMs | 17.9 [18.3] | 17.8 [18.5] | 0.996 [0.974, 1.024] | no detectable difference |
-| scroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / wallMs | 2002.7 [2021.3] | 2005.3 [2018.1] | 1.001 [0.996, 1.007] | no detectable difference |
-| scroll / frameP50Ms | 8.3 [8.3] | 8.3 [8.3] | 1.000 [1.000, 1.001] | no detectable difference |
-| scroll / frameP95Ms | 8.6 [8.9] | 8.4 [9.2] | 0.982 [0.953, 1.038] | no detectable difference |
-| scroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
-| scroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
-| scroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / mainTaskMs | 340.6 [360.0] | 335.2 [341.3] | 0.984 [0.944, 1.009] | no detectable difference |
-| scroll / mainScriptMs | 46.1 [47.6] | 45.6 [46.8] | 0.988 [0.968, 1.015] | no detectable difference |
-| jump / settleMs | 82.4 [87.3] | 80.8 [83.4] | -1.6 [-7.4, +0.1] | no detectable difference |
-| jump / mainTaskMs | 48.1 [52.4] | 47.1 [51.4] | 0.979 [0.922, 1.052] | no detectable difference |
-| jump / mainScriptMs | 12.1 [15.2] | 11.8 [12.5] | 0.980 [0.877, 1.034] | no detectable difference |
-| zoom / settleMs | 303.4 [322.0] | 299.6 [319.3] | -3.8 [-19.8, +12.0] | no detectable difference |
-| zoom / zoom2SettleMs | 114.2 [120.1] | 115.0 [120.1] | +0.8 [-4.6, +5.8] | no detectable difference |
-| zoom / zoom4SettleMs | 188.0 [204.7] | 185.2 [201.1] | -2.8 [-16.7, +12.5] | no detectable difference |
-| zoom / backTo1SettleMs | 58.3 [65.2] | 58.0 [71.8] | -0.3 [-5.5, +11.8] | no detectable difference |
-| zoom / mainTaskMs | 140.2 [143.7] | 140.3 [146.0] | 1.000 [0.980, 1.027] | no detectable difference |
-| zoom / mainScriptMs | 20.0 [23.0] | 20.2 [23.1] | 1.007 [0.938, 1.113] | no detectable difference |
-| select / settleMs | 141.3 [147.4] | 141.6 [147.5] | +0.3 [-5.5, +1.7] | no detectable difference |
-| select / mainTaskMs | 39.6 [43.9] | 40.7 [43.9] | 1.027 [0.980, 1.064] | no detectable difference |
-| select / mainScriptMs | 9.3 [10.3] | 9.4 [10.2] | 1.011 [0.984, 1.070] | no detectable difference |
-| search / searchMs | 46.5 [51.7] | 48.3 [55.1] | 1.040 [0.895, 1.142] | unreliable (A/A failed) |
-| search / mainTaskMs | 4.0 [4.6] | 3.7 [4.5] | 0.932 [0.848, 1.054] | no detectable difference |
-| search / mainScriptMs | 0.1 [0.1] | 0.1 [0.1] | 1.054 [0.930, 1.180] | no detectable difference |
-| annotate / settleMs | 153.3 [153.8] | 153.0 [154.4] | -0.2 [-2.2, +1.2] | no detectable difference |
-| annotate / mainTaskMs | 49.3 [51.8] | 49.5 [51.5] | 1.004 [0.963, 1.040] | no detectable difference |
-| annotate / mainScriptMs | 10.1 [10.6] | 10.1 [10.7] | 1.000 [0.972, 1.090] | no detectable difference |
+Not run: `impl-rust`.
 
-### `impl-ts` vs `plugins`
+## `impl-ts` vs `plugins`
 
-| Row | impl-ts median [p95] | plugins median [p95] | ratio or diff [95% CI] | Verdict |
-| --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 42.9 [44.9] | 67.7 [69.2] | 1.579 [1.511, 1.625] | slower |
-| open(ebook) / openedMs | 97.5 [100.2] | 168.5 [170.2] | 1.729 [1.711, 1.750] | slower |
-| open(ebook) / firstPaintMs | 180.9 [184.1] | 323.9 [334.6] | 1.790 [1.758, 1.841] | slower |
-| open(ebook) / settledMs | 272.6 [274.8] | 526.1 [541.9] | 1.930 [1.846, 1.983] | slower |
-| open(ebook) / mainTaskMs | 93.1 [94.8] | 406.6 [444.1] | 4.369 [4.243, 4.638] | slower |
-| open(ebook) / mainScriptMs | 15.9 [16.3] | 219.4 [245.9] | 13.793 [13.260, 14.943] | slower |
-| open(large) / readyMs | 43.0 [45.3] | 67.7 [70.0] | 1.574 [1.509, 1.620] | slower |
-| open(large) / openedMs | 113.4 [115.1] | 1346.3 [1385.3] | 11.875 [11.786, 12.111] | slower |
-| open(large) / firstPaintMs | 184.4 [188.0] | 2213.5 [2287.6] | 12.002 [11.861, 12.195] | slower |
-| open(large) / settledMs | 180.3 [183.8] | 2287.3 [2340.0] | 12.687 [12.465, 12.839] | slower |
-| open(large) / mainTaskMs | 205.4 [207.7] | 2598.4 [2630.1] | 12.649 [12.433, 12.764] | slower |
-| open(large) / mainScriptMs | 17.9 [18.3] | 2133.6 [2156.6] | 119.025 [116.568, 120.756] | slower |
-| scroll / settleMs | 0.0 [0.0] | 139.9 [365.9] | +139.9 [+93.5, +320.5] | slower |
-| scroll / wallMs | 2002.7 [2021.3] | 16079.1 [16924.2] | 8.029 [7.853, 8.224] | slower |
-| scroll / frameP50Ms | 8.3 [8.3] | 41.7 [50.0] | 5.000 [3.999, 5.569] | slower |
-| scroll / frameP95Ms | 8.6 [8.9] | 207.3 [234.2] | 24.147 [22.874, 26.206] | slower |
-| scroll / jankFrames | 0 [0] | 99 [101.65] | +99 [+98, +99.50] | slower |
-| scroll / longTasks | 0 [0] | 64.50 [66.55] | +64.50 [+62.50, +65.50] | slower |
-| scroll / longTaskMs | 0.0 [0.0] | 9613.0 [9952.5] | +9613.0 [+9189.5, +9808.5] | slower |
-| scroll / mainTaskMs | 340.6 [360.0] | 16483.5 [17383.0] | 48.399 [46.377, 50.062] | slower |
-| scroll / mainScriptMs | 46.1 [47.6] | 9095.1 [9774.2] | 197.136 [190.587, 207.413] | slower |
-| jump / settleMs | 82.4 [87.3] | 992.3 [1097.1] | +909.8 [+768.6, +1000.9] | slower |
-| jump / mainTaskMs | 48.1 [52.4] | 1334.4 [1463.4] | 27.758 [25.017, 30.731] | slower |
-| jump / mainScriptMs | 12.1 [15.2] | 878.0 [985.7] | 72.862 [61.577, 81.603] | slower |
-| zoom / settleMs | 303.4 [322.0] | 537.2 [554.2] | +233.8 [+212.2, +250.5] | slower |
-| zoom / zoom2SettleMs | 114.2 [120.1] | 245.6 [254.6] | +131.4 [+125.8, +138.3] | slower |
-| zoom / zoom4SettleMs | 188.0 [204.7] | 289.9 [302.7] | +101.9 [+84.7, +115.1] | slower |
-| zoom / backTo1SettleMs | 58.3 [65.2] | 106.7 [108.7] | +48.5 [+46.1, +54.1] | slower |
-| zoom / mainTaskMs | 140.2 [143.7] | 900.8 [948.9] | 6.425 [6.271, 6.700] | slower |
-| zoom / mainScriptMs | 20.0 [23.0] | 495.8 [529.3] | 24.747 [23.058, 26.189] | slower |
-| select / settleMs | 141.3 [147.4] | 293.9 [308.6] | +152.6 [+145.8, +163.1] | slower |
-| select / mainTaskMs | 39.6 [43.9] | 236.5 [240.8] | 5.966 [5.800, 6.050] | slower |
-| select / mainScriptMs | 9.3 [10.3] | 186.8 [189.5] | 20.021 [19.584, 20.578] | slower |
-| search / searchMs | 46.5 [51.7] | 76.2 [77.8] | 1.641 [1.455, 1.738] | unreliable (A/A failed) |
-| search / mainTaskMs | 4.0 [4.6] | 35.7 [37.2] | 8.907 [8.271, 9.579] | slower |
-| search / mainScriptMs | 0.1 [0.1] | 18.8 [19.3] | 201.935 [188.318, 214.674] | slower |
-| annotate / settleMs | 153.3 [153.8] | 330.3 [332.5] | +177.0 [+174.8, +178.7] | slower |
-| annotate / mainTaskMs | 49.3 [51.8] | 281.6 [285.8] | 5.715 [5.548, 5.922] | slower |
-| annotate / mainScriptMs | 10.1 [10.6] | 209.7 [211.7] | 20.707 [20.283, 22.644] | slower |
+Not run: `plugins`.
 
-### `main` vs `plugins`
+## `main` vs `plugins`
 
-| Row | main median [p95] | plugins median [p95] | ratio or diff [95% CI] | Verdict |
-| --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 44.3 [45.6] | 67.7 [69.2] | 1.528 [1.489, 1.617] | slower |
-| open(ebook) / openedMs | 95.7 [98.7] | 168.5 [170.2] | 1.760 [1.737, 1.799] | slower |
-| open(ebook) / firstPaintMs | 174.4 [182.3] | 323.9 [334.6] | 1.857 [1.807, 1.913] | slower |
-| open(ebook) / settledMs | 265.9 [270.4] | 526.1 [541.9] | 1.979 [1.891, 2.032] | slower |
-| open(ebook) / mainTaskMs | 92.8 [94.5] | 406.6 [444.1] | 4.383 [4.253, 4.645] | slower |
-| open(ebook) / mainScriptMs | 15.7 [16.1] | 219.4 [245.9] | 13.966 [13.400, 15.059] | slower |
-| open(large) / readyMs | 42.7 [45.5] | 67.7 [70.0] | 1.585 [1.514, 1.611] | slower |
-| open(large) / openedMs | 109.5 [111.8] | 1346.3 [1385.3] | 12.290 [12.094, 12.409] | slower |
-| open(large) / firstPaintMs | 181.7 [185.1] | 2213.5 [2287.6] | 12.179 [12.020, 12.623] | slower |
-| open(large) / settledMs | 177.4 [181.3] | 2287.3 [2340.0] | 12.891 [12.681, 13.316] | slower |
-| open(large) / mainTaskMs | 205.1 [207.5] | 2598.4 [2630.1] | 12.671 [12.457, 12.776] | slower |
-| open(large) / mainScriptMs | 18.1 [18.4] | 2133.6 [2156.6] | 118.044 [115.734, 120.630] | slower |
-| scroll / settleMs | 0.0 [0.0] | 139.9 [365.9] | +139.9 [+93.5, +320.5] | slower |
-| scroll / wallMs | 2004.9 [2016.9] | 16079.1 [16924.2] | 8.020 [7.847, 8.222] | slower |
-| scroll / frameP50Ms | 8.3 [8.3] | 41.7 [50.0] | 4.999 [3.999, 5.569] | slower |
-| scroll / frameP95Ms | 8.4 [8.8] | 207.3 [234.2] | 24.579 [23.406, 26.675] | slower |
-| scroll / jankFrames | 0 [0] | 99 [101.65] | +99 [+98, +99.50] | slower |
-| scroll / longTasks | 0 [0] | 64.50 [66.55] | +64.50 [+62.50, +65.50] | slower |
-| scroll / longTaskMs | 0.0 [0.0] | 9613.0 [9952.5] | +9613.0 [+9189.5, +9808.5] | slower |
-| scroll / mainTaskMs | 346.2 [366.6] | 16483.5 [17383.0] | 47.610 [45.404, 49.375] | slower |
-| scroll / mainScriptMs | 46.4 [47.8] | 9095.1 [9774.2] | 196.201 [190.697, 205.870] | slower |
-| jump / settleMs | 81.3 [83.1] | 992.3 [1097.1] | +911.0 [+769.3, +1002.3] | slower |
-| jump / mainTaskMs | 48.1 [50.2] | 1334.4 [1463.4] | 27.749 [25.125, 30.151] | slower |
-| jump / mainScriptMs | 12.1 [13.5] | 878.0 [985.7] | 72.790 [63.255, 80.525] | slower |
-| zoom / settleMs | 305.9 [319.4] | 537.2 [554.2] | +231.3 [+212.9, +252.5] | slower |
-| zoom / zoom2SettleMs | 111.3 [115.7] | 245.6 [254.6] | +134.3 [+129.6, +144.3] | slower |
-| zoom / zoom4SettleMs | 195.8 [206.2] | 289.9 [302.7] | +94.0 [+80.8, +112.0] | slower |
-| zoom / backTo1SettleMs | 62.0 [72.1] | 106.7 [108.7] | +44.7 [+40.6, +51.0] | slower |
-| zoom / mainTaskMs | 143.1 [145.0] | 900.8 [948.9] | 6.296 [6.170, 6.650] | slower |
-| zoom / mainScriptMs | 22.1 [23.4] | 495.8 [529.3] | 22.411 [21.490, 25.330] | slower |
-| select / settleMs | 142.5 [148.1] | 293.9 [308.6] | +151.4 [+145.5, +162.4] | slower |
-| select / mainTaskMs | 41.5 [43.1] | 236.5 [240.8] | 5.704 [5.561, 6.169] | slower |
-| select / mainScriptMs | 9.7 [10.1] | 186.8 [189.5] | 19.348 [18.892, 20.213] | slower |
-| search / searchMs | 51.5 [53.1] | 76.2 [77.8] | 1.481 [1.369, 1.554] | unreliable (A/A failed) |
-| search / mainTaskMs | 4.0 [4.6] | 35.7 [37.2] | 8.952 [8.177, 9.193] | slower |
-| search / mainScriptMs | 0.1 [0.1] | 18.8 [19.3] | 200.856 [188.318, 209.204] | slower |
-| annotate / settleMs | 152.6 [154.3] | 330.3 [332.5] | +177.7 [+175.2, +179.4] | slower |
-| annotate / mainTaskMs | 50.0 [52.1] | 281.6 [285.8] | 5.627 [5.444, 5.855] | slower |
-| annotate / mainScriptMs | 10.3 [10.9] | 209.7 [211.7] | 20.278 [19.498, 21.075] | slower |
+Not run: `plugins`.
 
-### `plugins` vs `plugins-lto`
+## `plugins` vs `plugins-lto`
 
-| Row | plugins median [p95] | plugins-lto median [p95] | ratio or diff [95% CI] | Verdict |
-| --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 67.7 [69.2] | 69.3 [70.6] | 1.024 [0.995, 1.053] | no detectable difference |
-| open(ebook) / openedMs | 168.5 [170.2] | 168.1 [170.9] | 0.998 [0.989, 1.011] | no detectable difference |
-| open(ebook) / firstPaintMs | 323.9 [334.6] | 320.9 [329.0] | 0.991 [0.964, 1.010] | no detectable difference |
-| open(ebook) / settledMs | 526.1 [541.9] | 485.7 [491.0] | 0.923 [0.899, 0.965] | faster |
-| open(ebook) / mainTaskMs | 406.6 [444.1] | 366.8 [377.4] | 0.902 [0.850, 0.928] | faster |
-| open(ebook) / mainScriptMs | 219.4 [245.9] | 189.8 [197.1] | 0.865 [0.803, 0.902] | faster |
-| open(large) / readyMs | 67.7 [70.0] | 68.5 [69.1] | 1.012 [0.993, 1.023] | no detectable difference |
-| open(large) / openedMs | 1346.3 [1385.3] | 1239.2 [1274.1] | 0.920 [0.913, 0.927] | faster |
-| open(large) / firstPaintMs | 2213.5 [2287.6] | 2006.0 [2060.5] | 0.906 [0.889, 0.914] | faster |
-| open(large) / settledMs | 2287.3 [2340.0] | 2055.6 [2119.5] | 0.899 [0.890, 0.917] | faster |
-| open(large) / mainTaskMs | 2598.4 [2630.1] | 2324.2 [2395.6] | 0.895 [0.886, 0.914] | faster |
-| open(large) / mainScriptMs | 2133.6 [2156.6] | 1907.8 [1965.9] | 0.894 [0.885, 0.915] | faster |
-| scroll / settleMs | 139.9 [365.9] | 161.3 [307.8] | +21.4 [-175.1, +65.6] | no detectable difference |
-| scroll / wallMs | 16079.1 [16924.2] | 14221.0 [14816.7] | 0.884 [0.859, 0.908] | faster |
-| scroll / frameP50Ms | 41.7 [50.0] | 37.2 [41.7] | 0.892 [0.672, 1.250] | no detectable difference |
-| scroll / frameP95Ms | 207.3 [234.2] | 191.5 [196.2] | 0.924 [0.836, 0.957] | faster |
-| scroll / jankFrames | 99 [101.65] | 94.50 [100.65] | -4.50 [-8, +1] | no detectable difference |
-| scroll / longTasks | 64.50 [66.55] | 63.50 [66.10] | -1 [-2.50, +1.50] | no detectable difference |
-| scroll / longTaskMs | 9613.0 [9952.5] | 8404.0 [8919.2] | -1209.0 [-1512.1, -759.0] | faster |
-| scroll / mainTaskMs | 16483.5 [17383.0] | 14633.7 [15254.2] | 0.888 [0.863, 0.911] | faster |
-| scroll / mainScriptMs | 9095.1 [9774.2] | 8066.9 [8541.7] | 0.887 [0.844, 0.917] | faster |
-| jump / settleMs | 992.3 [1097.1] | 816.6 [912.0] | -175.6 [-305.2, -21.6] | faster |
-| jump / mainTaskMs | 1334.4 [1463.4] | 1163.4 [1258.6] | 0.872 [0.778, 0.975] | faster |
-| jump / mainScriptMs | 878.0 [985.7] | 769.6 [852.8] | 0.877 [0.756, 1.017] | no detectable difference |
-| zoom / settleMs | 537.2 [554.2] | 511.0 [518.6] | -26.2 [-39.1, -8.7] | faster |
-| zoom / zoom2SettleMs | 245.6 [254.6] | 234.8 [239.3] | -10.8 [-20.8, -7.3] | faster |
-| zoom / zoom4SettleMs | 289.9 [302.7] | 276.2 [283.4] | -13.7 [-25.9, -0.9] | no detectable difference |
-| zoom / backTo1SettleMs | 106.7 [108.7] | 98.8 [104.3] | -7.9 [-11.4, -4.1] | faster |
-| zoom / mainTaskMs | 900.8 [948.9] | 798.1 [821.4] | 0.886 [0.845, 0.913] | faster |
-| zoom / mainScriptMs | 495.8 [529.3] | 426.5 [444.0] | 0.860 [0.805, 0.893] | faster |
-| select / settleMs | 293.9 [308.6] | 291.1 [298.6] | -2.8 [-18.6, +1.3] | no detectable difference |
-| select / mainTaskMs | 236.5 [240.8] | 221.5 [224.7] | 0.936 [0.915, 0.948] | no detectable difference |
-| select / mainScriptMs | 186.8 [189.5] | 173.4 [177.5] | 0.928 [0.908, 0.944] | no detectable difference |
-| search / searchMs | 76.2 [77.8] | 73.3 [76.0] | 0.962 [0.946, 1.045] | unreliable (A/A failed) |
-| search / mainTaskMs | 35.7 [37.2] | 33.9 [34.7] | 0.950 [0.911, 0.971] | no detectable difference |
-| search / mainScriptMs | 18.8 [19.3] | 17.0 [17.3] | 0.903 [0.882, 0.947] | no detectable difference |
-| annotate / settleMs | 330.3 [332.5] | 325.6 [327.1] | -4.7 [-7.0, -2.3] | no detectable difference |
-| annotate / mainTaskMs | 281.6 [285.8] | 260.4 [263.0] | 0.925 [0.914, 0.936] | no detectable difference |
-| annotate / mainScriptMs | 209.7 [211.7] | 191.9 [194.0] | 0.915 [0.903, 0.926] | faster |
+Not run: `plugins`.
 
-### `plugins-lto` vs `plugins-fix`
+## `plugins-lto` vs `plugins-fix`
 
 Not run: `plugins-fix`.
 
-### `plugins-fix` vs `plugins-fix34`
+## `plugins-fix` vs `plugins-fix34`
 
 Not run: `plugins-fix`, `plugins-fix34`.
 
-### `plugins-fix34` vs `plugins-fix-leak`
+## `plugins-fix34` vs `plugins-fix-leak`
 
 Not run: `plugins-fix34`, `plugins-fix-leak`.
 
-### `plugins-fix-leak` vs `plugins-fix-zoom`
+## `plugins-fix-leak` vs `plugins-fix-zoom`
 
-Not run: `plugins-fix-leak`.
+Not run: `plugins-fix-leak`, `plugins-fix-zoom`.
 
-### `plugins-lto` vs `plugins-fix-zoom`
+## `plugins-lto` vs `plugins-fix-zoom`
 
-| Row | plugins-lto median [p95] | plugins-fix-zoom median [p95] | ratio or diff [95% CI] | Verdict |
+Not run: `plugins-fix-zoom`.
+
+## `main` vs `plugins-fix-zoom`
+
+Not run: `plugins-fix-zoom`.
+
+## `plugins-fix-zoom` vs `plugins-wire`
+
+Not run: `plugins-fix-zoom`, `plugins-wire`.
+
+## `plugins-wire` vs `plugins-getstate`
+
+Not run: `plugins-wire`, `plugins-getstate`.
+
+## `plugins-lto` vs `plugins-getstate`
+
+Not run: `plugins-getstate`.
+
+## `main` vs `plugins-getstate`
+
+Not run: `plugins-getstate`.
+
+## `plugins-getstate` vs `plugins-toolbar`
+
+Not run: `plugins-getstate`, `plugins-toolbar`.
+
+## `main` vs `plugins-toolbar`
+
+Not run: `plugins-toolbar`.
+
+## `plugins-toolbar` vs `plugins-bump`
+
+Not run: `plugins-toolbar`, `plugins-bump`.
+
+## `main` vs `plugins-bump`
+
+Not run: `plugins-bump`.
+
+## `plugins-getstate` vs `plugins-item1`
+
+Not run: `plugins-getstate`, `plugins-item1`.
+
+## `plugins-getstate` vs `plugins-item3`
+
+Not run: `plugins-getstate`, `plugins-item3`.
+
+## `plugins-getstate` vs `plugins-bump`
+
+Not run: `plugins-getstate`, `plugins-bump`.
+
+## `plugins-item1` vs `plugins-bump`
+
+Not run: `plugins-item1`, `plugins-bump`.
+
+## `plugins-bump` vs `plugins-reads`
+
+Not run: `plugins-bump`, `plugins-reads`.
+
+## `main` vs `plugins-reads`
+
+Not run: `plugins-reads`.
+
+## `impl-ts` vs `impl-gate`
+
+Not run: `impl-gate`.
+
+## `plugins-head` vs `plugins-buildlto`
+
+Not run: `plugins-head`, `plugins-buildlto`.
+
+## `plugins-head` vs `plugins-wasmopt`
+
+Not run: `plugins-head`, `plugins-wasmopt`.
+
+## `plugins-bump` vs `plugins-buildlto`
+
+Not run: `plugins-bump`, `plugins-buildlto`.
+
+## `impl-head` vs `impl-enginelink`
+
+Not run: `impl-head`, `impl-enginelink`.
+
+## `plugins-tip` vs `plugins-enginelink`
+
+Not run: `plugins-tip`, `plugins-enginelink`.
+
+## `impl-head` vs `impl-fixed`
+
+Not run: `impl-head`, `impl-fixed`.
+
+## `plugins-tip` vs `plugins-fixed`
+
+Not run: `plugins-tip`, `plugins-fixed`.
+
+## `impl-fixed` vs `impl-enginelink`
+
+Not run: `impl-fixed`, `impl-enginelink`.
+
+## `plugins-fixed` vs `plugins-enginelink`
+
+Not run: `plugins-fixed`, `plugins-enginelink`.
+
+## `impl-fixed` vs `impl-o2`
+
+Not run: `impl-fixed`, `impl-o2`.
+
+## `impl-o2` vs `impl-enginelink`
+
+Not run: `impl-o2`, `impl-enginelink`.
+
+## `plugins-fixed` vs `plugins-o2`
+
+Not run: `plugins-fixed`, `plugins-o2`.
+
+## `plugins-o2` vs `plugins-enginelink`
+
+Not run: `plugins-o2`, `plugins-enginelink`.
+
+## `main` vs `main-compat`
+
+Not run: `main-compat`.
+
+## `impl-fixed` vs `impl-compat`
+
+Not run: `impl-fixed`, `impl-compat`.
+
+## `plugins-fixed` vs `plugins-compat`
+
+Not run: `plugins-fixed`, `plugins-compat`.
+
+## `plugins-now` vs `plugins-slicetext`
+
+Not run: `plugins-now`, `plugins-slicetext`.
+
+## `main` vs `plugins-slicetext`
+
+Not run: `plugins-slicetext`.
+
+## `impl-now` vs `impl-glyphview`
+
+Not run: `impl-now`.
+
+## `plugins-tip2` vs `plugins-glyphview`
+
+Not run: `plugins-tip2`, `plugins-glyphview`.
+
+## `main` vs `impl-glyphview`
+
+| Row | main median [p95] | impl-glyphview median [p95] | ratio or diff [95% CI] | Verdict |
 | --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 69.3 [70.6] | 68.4 [71.3] | 0.987 [0.966, 1.011] | no detectable difference |
-| open(ebook) / openedMs | 168.1 [170.9] | 146.8 [150.4] | 0.873 [0.860, 0.889] | faster |
-| open(ebook) / firstPaintMs | 320.9 [329.0] | 252.5 [258.0] | 0.787 [0.774, 0.801] | faster |
-| open(ebook) / settledMs | 485.7 [491.0] | 294.2 [299.5] | 0.606 [0.599, 0.614] | faster |
-| open(ebook) / mainTaskMs | 366.8 [377.4] | 214.9 [221.0] | 0.586 [0.577, 0.593] | faster |
-| open(ebook) / mainScriptMs | 189.8 [197.1] | 95.7 [99.1] | 0.504 [0.494, 0.513] | faster |
-| open(large) / readyMs | 68.5 [69.1] | 68.1 [69.6] | 0.994 [0.986, 1.005] | no detectable difference |
-| open(large) / openedMs | 1239.2 [1274.1] | 167.2 [173.4] | 0.135 [0.134, 0.137] | faster |
-| open(large) / firstPaintMs | 2006.0 [2060.5] | 298.6 [315.1] | 0.149 [0.146, 0.151] | faster |
-| open(large) / settledMs | 2055.6 [2119.5] | 311.2 [318.2] | 0.151 [0.149, 0.153] | faster |
-| open(large) / mainTaskMs | 2324.2 [2395.6] | 505.3 [525.4] | 0.217 [0.215, 0.225] | faster |
-| open(large) / mainScriptMs | 1907.8 [1965.9] | 354.5 [371.2] | 0.186 [0.183, 0.193] | faster |
-| scroll / settleMs | 161.3 [307.8] | 0.0 [0.0] | -161.3 [-202.3, -103.1] | faster |
-| scroll / wallMs | 14221.0 [14816.7] | 2619.0 [2630.6] | 0.184 [0.180, 0.186] | faster |
-| scroll / frameP50Ms | 37.2 [41.7] | 8.3 [8.3] | 0.224 [0.200, 0.286] | faster |
-| scroll / frameP95Ms | 191.5 [196.2] | 9.7 [10.2] | 0.051 [0.049, 0.054] | faster |
-| scroll / jankFrames | 94.50 [100.65] | 0 [0] | -94.50 [-99, -91] | faster |
-| scroll / longTasks | 63.50 [66.10] | 0 [0] | -63.50 [-65, -62] | faster |
-| scroll / longTaskMs | 8404.0 [8919.2] | 0.0 [0.0] | -8404.0 [-8582.5, -8180.5] | faster |
-| scroll / mainTaskMs | 14633.7 [15254.2] | 1354.4 [1408.3] | 0.093 [0.088, 0.096] | faster |
-| scroll / mainScriptMs | 8066.9 [8541.7] | 910.5 [955.0] | 0.113 [0.105, 0.119] | faster |
-| jump / settleMs | 816.6 [912.0] | 114.0 [130.2] | -702.6 [-767.6, -623.3] | faster |
-| jump / mainTaskMs | 1163.4 [1258.6] | 374.4 [391.8] | 0.322 [0.304, 0.348] | faster |
-| jump / mainScriptMs | 769.6 [852.8] | 323.8 [338.7] | 0.421 [0.392, 0.461] | faster |
-| zoom / settleMs | 511.0 [518.6] | 354.7 [363.1] | -156.4 [-165.7, -148.2] | faster |
-| zoom / zoom2SettleMs | 234.8 [239.3] | 139.3 [143.4] | -95.5 [-97.8, -86.9] | faster |
-| zoom / zoom4SettleMs | 276.2 [283.4] | 213.6 [225.8] | -62.5 [-70.9, -51.9] | faster |
-| zoom / backTo1SettleMs | 98.8 [104.3] | 76.8 [84.2] | -22.0 [-27.1, -16.5] | faster |
-| zoom / mainTaskMs | 798.1 [821.4] | 286.8 [294.0] | 0.359 [0.351, 0.368] | faster |
-| zoom / mainScriptMs | 426.5 [444.0] | 134.1 [136.6] | 0.314 [0.304, 0.324] | faster |
-| select / settleMs | 291.1 [298.6] | 145.2 [150.0] | -145.9 [-151.9, -137.1] | faster |
-| select / mainTaskMs | 221.5 [224.7] | 77.7 [81.3] | 0.351 [0.330, 0.360] | faster |
-| select / mainScriptMs | 173.4 [177.5] | 42.1 [44.7] | 0.243 [0.234, 0.251] | faster |
-| search / searchMs | 73.3 [76.0] | 61.3 [62.8] | 0.837 [0.769, 0.858] | unreliable (A/A failed) |
-| search / mainTaskMs | 33.9 [34.7] | 20.1 [21.3] | 0.593 [0.529, 0.633] | faster |
-| search / mainScriptMs | 17.0 [17.3] | 8.5 [9.3] | 0.501 [0.426, 0.548] | faster |
-| annotate / settleMs | 325.6 [327.1] | 164.9 [166.8] | -160.8 [-161.5, -157.7] | faster |
-| annotate / mainTaskMs | 260.4 [263.0] | 93.3 [94.7] | 0.358 [0.355, 0.364] | faster |
-| annotate / mainScriptMs | 191.9 [194.0] | 47.8 [48.6] | 0.249 [0.246, 0.252] | faster |
-
-### `main` vs `plugins-fix-zoom`
-
-| Row | main median [p95] | plugins-fix-zoom median [p95] | ratio or diff [95% CI] | Verdict |
-| --- | --- | --- | --- | --- |
-| open(ebook) / readyMs | 44.3 [45.6] | 68.4 [71.3] | 1.545 [1.512, 1.630] | slower |
-| open(ebook) / openedMs | 95.7 [98.7] | 146.8 [150.4] | 1.534 [1.511, 1.573] | slower |
-| open(ebook) / firstPaintMs | 174.4 [182.3] | 252.5 [258.0] | 1.448 [1.414, 1.478] | slower |
-| open(ebook) / settledMs | 265.9 [270.4] | 294.2 [299.5] | 1.106 [1.096, 1.122] | slower |
-| open(ebook) / mainTaskMs | 92.8 [94.5] | 214.9 [221.0] | 2.316 [2.275, 2.334] | slower |
-| open(ebook) / mainScriptMs | 15.7 [16.1] | 95.7 [99.1] | 6.094 [5.956, 6.216] | slower |
-| open(large) / readyMs | 42.7 [45.5] | 68.1 [69.6] | 1.593 [1.522, 1.609] | slower |
-| open(large) / openedMs | 109.5 [111.8] | 167.2 [173.4] | 1.527 [1.502, 1.549] | slower |
-| open(large) / firstPaintMs | 181.7 [185.1] | 298.6 [315.1] | 1.643 [1.613, 1.695] | slower |
-| open(large) / settledMs | 177.4 [181.3] | 311.2 [318.2] | 1.754 [1.732, 1.816] | slower |
-| open(large) / mainTaskMs | 205.1 [207.5] | 505.3 [525.4] | 2.464 [2.456, 2.554] | slower |
-| open(large) / mainScriptMs | 18.1 [18.4] | 354.5 [371.2] | 19.611 [19.425, 20.451] | slower |
+| open(ebook) / readyMs | 62.2 [63.6] | 60.8 [65.6] | 0.978 [0.964, 1.019] | no detectable difference |
+| open(ebook) / openedMs | 136.3 [138.9] | 141.7 [147.4] | 1.040 [1.024, 1.068] | slower |
+| open(ebook) / firstPaintMs | 255.5 [269.9] | 260.5 [273.8] | 1.020 [0.997, 1.053] | no detectable difference |
+| open(ebook) / settledMs | 395.5 [399.7] | 316.1 [323.0] | 0.799 [0.788, 0.809] | faster |
+| open(ebook) / mainTaskMs | 143.5 [146.8] | 131.4 [136.6] | 0.915 [0.900, 0.933] | faster |
+| open(ebook) / mainJsMs | 110.6 [113.8] | 99.0 [102.0] | 0.895 [0.876, 0.907] | faster |
+| open(large) / readyMs | 62.9 [64.3] | 62.5 [63.9] | 0.994 [0.966, 1.022] | no detectable difference |
+| open(large) / openedMs | 158.3 [162.2] | 166.6 [171.1] | 1.052 [1.031, 1.071] | slower |
+| open(large) / firstPaintMs | 270.6 [285.4] | 276.5 [281.7] | 1.022 [0.969, 1.047] | no detectable difference |
+| open(large) / settledMs | 270.6 [278.2] | 275.4 [281.7] | 1.018 [0.998, 1.042] | no detectable difference |
+| open(large) / mainTaskMs | 314.9 [319.8] | 195.6 [197.8] | 0.621 [0.613, 0.628] | faster |
+| open(large) / mainJsMs | 283.8 [289.7] | 162.3 [163.8] | 0.572 [0.565, 0.577] | faster |
 | scroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / wallMs | 2004.9 [2016.9] | 2619.0 [2630.6] | 1.306 [1.290, 1.310] | slower |
-| scroll / frameP50Ms | 8.3 [8.3] | 8.3 [8.3] | 1.000 [1.000, 1.001] | no detectable difference |
-| scroll / frameP95Ms | 8.4 [8.8] | 9.7 [10.2] | 1.149 [1.101, 1.187] | slower |
+| scroll / wallMs | 2916.2 [2964.4] | 2887.2 [2985.2] | 0.990 [0.972, 1.015] | no detectable difference |
+| scroll / frameP50Ms | 11.1 [11.6] | 11.1 [11.5] | 1.000 [0.956, 1.024] | no detectable difference |
+| scroll / frameP95Ms | 25.6 [27.2] | 24.8 [27.2] | 0.970 [0.838, 1.143] | no detectable difference |
 | scroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
 | scroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
 | scroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
-| scroll / mainTaskMs | 346.2 [366.6] | 1354.4 [1408.3] | 3.912 [3.656, 4.105] | slower |
-| scroll / mainScriptMs | 46.4 [47.8] | 910.5 [955.0] | 19.641 [18.397, 20.645] | slower |
-| jump / settleMs | 81.3 [83.1] | 114.0 [130.2] | +32.7 [+22.2, +46.5] | slower |
-| jump / mainTaskMs | 48.1 [50.2] | 374.4 [391.8] | 7.785 [7.486, 8.205] | slower |
-| jump / mainScriptMs | 12.1 [13.5] | 323.8 [338.7] | 26.842 [25.334, 28.091] | slower |
-| zoom / settleMs | 305.9 [319.4] | 354.7 [363.1] | +48.7 [+36.7, +67.3] | slower |
-| zoom / zoom2SettleMs | 111.3 [115.7] | 139.3 [143.4] | +28.0 [+24.9, +35.7] | slower |
-| zoom / zoom4SettleMs | 195.8 [206.2] | 213.6 [225.8] | +17.8 [+9.3, +35.5] | slower |
-| zoom / backTo1SettleMs | 62.0 [72.1] | 76.8 [84.2] | +14.8 [+10.8, +22.3] | slower |
-| zoom / mainTaskMs | 143.1 [145.0] | 286.8 [294.0] | 2.005 [1.984, 2.092] | slower |
-| zoom / mainScriptMs | 22.1 [23.4] | 134.1 [136.6] | 6.059 [5.832, 6.643] | slower |
-| select / settleMs | 142.5 [148.1] | 145.2 [150.0] | +2.7 [-4.7, +5.1] | no detectable difference |
-| select / mainTaskMs | 41.5 [43.1] | 77.7 [81.3] | 1.874 [1.777, 2.026] | slower |
-| select / mainScriptMs | 9.7 [10.1] | 42.1 [44.7] | 4.359 [4.194, 4.577] | slower |
-| search / searchMs | 51.5 [53.1] | 61.3 [62.8] | 1.192 [1.096, 1.252] | unreliable (A/A failed) |
-| search / mainTaskMs | 4.0 [4.6] | 20.1 [21.3] | 5.047 [4.486, 5.300] | slower |
-| search / mainScriptMs | 0.1 [0.1] | 8.5 [9.3] | 90.904 [77.422, 100.486] | slower |
-| annotate / settleMs | 152.6 [154.3] | 164.9 [166.8] | +12.3 [+11.0, +14.8] | slower |
-| annotate / mainTaskMs | 50.0 [52.1] | 93.3 [94.7] | 1.864 [1.804, 1.941] | slower |
-| annotate / mainScriptMs | 10.3 [10.9] | 47.8 [48.6] | 4.621 [4.441, 4.802] | slower |
+| scroll / mainTaskMs | 544.3 [557.7] | 476.3 [489.4] | 0.875 [0.854, 0.902] | faster |
+| scroll / mainJsMs | 404.2 [411.6] | 321.0 [331.5] | 0.794 [0.776, 0.811] | faster |
+| coldScroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / wallMs | 2879.1 [2931.3] | 2867.4 [2955.0] | 0.996 [0.984, 1.030] | no detectable difference |
+| coldScroll / frameP50Ms | 11.3 [11.8] | 11.2 [11.8] | 0.996 [0.960, 1.047] | no detectable difference |
+| coldScroll / frameP95Ms | 24.0 [26.7] | 25.2 [27.1] | 1.050 [0.935, 1.106] | no detectable difference |
+| coldScroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / mainTaskMs | 569.0 [582.4] | 497.4 [510.7] | 0.874 [0.859, 0.889] | faster |
+| coldScroll / mainJsMs | 398.7 [406.5] | 330.0 [337.7] | 0.828 [0.810, 0.845] | unreliable (A/A failed) |
+| jump / settleMs | 125.5 [141.0] | 118.0 [131.3] | -7.5 [-21.7, -1.2] | no detectable difference |
+| jump / mainTaskMs | 72.2 [77.2] | 66.8 [74.0] | 0.925 [0.893, 0.983] | no detectable difference |
+| jump / mainJsMs | 54.4 [58.3] | 45.0 [49.0] | 0.827 [0.787, 0.870] | faster |
+| zoom / settleMs | 485.5 [514.0] | 480.3 [517.9] | -5.2 [-24.2, +20.9] | no detectable difference |
+| zoom / zoom2SettleMs | 164.7 [169.5] | 177.9 [186.9] | +13.2 [+4.7, +19.3] | slower |
+| zoom / zoom4SettleMs | 319.4 [350.2] | 303.1 [337.0] | -16.3 [-32.9, +8.2] | no detectable difference |
+| zoom / backTo1SettleMs | 87.0 [108.9] | 80.2 [91.7] | -6.8 [-18.0, +1.9] | no detectable difference |
+| zoom / mainTaskMs | 223.2 [230.9] | 186.4 [191.5] | 0.835 [0.806, 0.857] | faster |
+| zoom / mainJsMs | 161.3 [166.8] | 125.5 [134.2] | 0.778 [0.740, 0.807] | faster |
+| zoomLarge / settleMs | 311.9 [342.8] | 310.3 [335.8] | -1.6 [-21.4, +24.4] | no detectable difference |
+| zoomLarge / zoom2SettleMs | 142.0 [167.6] | 139.3 [153.4] | -2.7 [-17.2, +9.5] | no detectable difference |
+| zoomLarge / zoom4SettleMs | 163.9 [188.1] | 172.0 [195.6] | +8.0 [-13.5, +22.0] | no detectable difference |
+| zoomLarge / backTo1SettleMs | 72.1 [92.6] | 73.9 [85.5] | +1.8 [-8.7, +6.8] | no detectable difference |
+| zoomLarge / mainTaskMs | 174.4 [180.6] | 163.4 [167.4] | 0.937 [0.917, 0.991] | faster |
+| zoomLarge / mainJsMs | 129.7 [134.3] | 117.0 [119.9] | 0.902 [0.882, 0.962] | faster |
+| select / settleMs | 220.4 [236.8] | 226.6 [267.1] | +6.1 [-15.1, +34.7] | no detectable difference |
+| select / mainTaskMs | 61.9 [65.0] | 51.6 [55.9] | 0.833 [0.792, 0.895] | faster |
+| select / mainJsMs | 40.1 [42.8] | 28.4 [30.9] | 0.709 [0.678, 0.765] | faster |
+| selectLarge / settleMs | 212.1 [246.1] | 204.9 [239.6] | -7.2 [-57.2, +20.7] | no detectable difference |
+| selectLarge / mainTaskMs | 68.0 [77.6] | 55.7 [58.7] | 0.818 [0.743, 0.909] | faster |
+| selectLarge / mainJsMs | 45.7 [53.6] | 32.8 [35.4] | 0.718 [0.646, 0.814] | faster |
+| search / searchMs | 71.0 [74.7] | 67.5 [77.1] | 0.950 [0.869, 1.049] | no detectable difference |
+| search / mainTaskMs | 5.3 [5.7] | 3.2 [4.0] | 0.597 [0.564, 0.647] | faster |
+| search / mainJsMs | 3.7 [3.9] | 1.6 [1.7] | 0.440 [0.408, 0.454] | faster |
+| searchLarge / searchMs | 1907.8 [2025.2] | 1599.0 [1620.0] | 0.838 [0.821, 0.843] | faster |
+| searchLarge / mainTaskMs | 346.9 [349.4] | 298.4 [299.8] | 0.860 [0.831, 0.867] | faster |
+| searchLarge / mainJsMs | 292.5 [293.9] | 242.8 [243.3] | 0.830 [0.824, 0.834] | faster |
+| annotate / settleMs | 229.6 [253.6] | 218.3 [242.1] | -11.3 [-33.8, +17.2] | no detectable difference |
+| annotate / mainTaskMs | 79.8 [83.2] | 70.0 [73.8] | 0.877 [0.842, 0.923] | faster |
+| annotate / mainJsMs | 47.9 [50.5] | 36.5 [38.7] | 0.762 [0.709, 0.804] | faster |
+| annotateLarge / settleMs | 218.5 [263.7] | 208.0 [233.5] | -10.5 [-57.0, +28.6] | no detectable difference |
+| annotateLarge / mainTaskMs | 79.7 [88.5] | 70.8 [73.4] | 0.888 [0.809, 0.912] | faster |
+| annotateLarge / mainJsMs | 47.2 [53.1] | 38.1 [39.9] | 0.808 [0.736, 0.846] | faster |
 
-### Memory
+## `plugins-tip2` vs `plugins-lazy`
 
-| Row | main median [p95] | main-aa median [p95] | impl-ts median [p95] | impl-rust median [p95] | plugins median [p95] | plugins-lto median [p95] | plugins-fix-zoom median [p95] |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| open(ebook) / heapAfterOpenBytes | 34.34 MiB [34.35 MiB] | 34.34 MiB [34.35 MiB] | 35.02 MiB [35.04 MiB] | 34.97 MiB [34.98 MiB] | 43.35 MiB [43.36 MiB] | 43.28 MiB [44.28 MiB] | 41.55 MiB [41.57 MiB] |
-| open(ebook) / workerHeapAfterOpenBytes | 22.27 MiB [22.27 MiB] | 22.27 MiB [22.27 MiB] | 23.00 MiB [23.00 MiB] | 22.95 MiB [22.95 MiB] | 23.03 MiB [23.03 MiB] | 23.03 MiB [23.03 MiB] | 23.02 MiB [23.02 MiB] |
-| open(large) / heapAfterOpenBytes | 48.15 MiB [48.16 MiB] | 48.16 MiB [48.18 MiB] | 48.84 MiB [48.85 MiB] | 48.81 MiB [48.82 MiB] | 58.10 MiB [58.10 MiB] | 58.01 MiB [58.02 MiB] | 57.28 MiB [57.28 MiB] |
-| open(large) / workerHeapAfterOpenBytes | 22.26 MiB [22.26 MiB] | 22.26 MiB [22.28 MiB] | 22.99 MiB [22.99 MiB] | 22.96 MiB [22.96 MiB] | 22.94 MiB [22.94 MiB] | 22.94 MiB [22.94 MiB] | 22.95 MiB [22.95 MiB] |
-| soak / heapCycle5Bytes | 37.42 MiB [37.43 MiB] | 37.42 MiB [37.42 MiB] | 38.18 MiB [38.19 MiB] | 38.13 MiB [38.14 MiB] | 49.05 MiB [49.61 MiB] | 48.96 MiB [48.98 MiB] | 44.36 MiB [44.37 MiB] |
-| soak / heapCycle30Bytes | 38.27 MiB [38.28 MiB] | 38.27 MiB [38.28 MiB] | 39.04 MiB [39.05 MiB] | 39.00 MiB [39.01 MiB] | 63.11 MiB [63.67 MiB] | 63.02 MiB [63.05 MiB] | 45.05 MiB [45.05 MiB] |
-| soak / heapSoakSlopeBytes | 0.03 MiB [0.03 MiB] | 0.03 MiB [0.03 MiB] | 0.03 MiB [0.03 MiB] | 0.03 MiB [0.03 MiB] | 0.56 MiB [0.56 MiB] | 0.56 MiB [0.56 MiB] | 0.03 MiB [0.03 MiB] |
+Not run: `plugins-tip2`, `plugins-lazy`.
 
-### Diagnostics
+## `main` vs `plugins-lazy`
+
+Not run: `plugins-lazy`.
+
+## `plugins-lazy` vs `plugins-tip3`
+
+Not run: `plugins-lazy`, `plugins-tip3`.
+
+## `main` vs `plugins-tip3`
+
+Not run: `plugins-tip3`.
+
+## `plugins-tip3` vs `plugins-sharedhits`
+
+Not run: `plugins-tip3`.
+
+## `main` vs `plugins-sharedhits`
+
+| Row | main median [p95] | plugins-sharedhits median [p95] | ratio or diff [95% CI] | Verdict |
+| --- | --- | --- | --- | --- |
+| open(ebook) / readyMs | 62.2 [63.6] | 94.6 [103.8] | 1.521 [1.495, 1.606] | slower |
+| open(ebook) / openedMs | 136.3 [138.9] | 215.6 [226.0] | 1.582 [1.561, 1.652] | slower |
+| open(ebook) / firstPaintMs | 255.5 [269.9] | 380.2 [421.2] | 1.488 [1.438, 1.568] | slower |
+| open(ebook) / settledMs | 395.5 [399.7] | 436.8 [448.6] | 1.104 [1.084, 1.125] | slower |
+| open(ebook) / mainTaskMs | 143.5 [146.8] | 294.0 [305.9] | 2.048 [2.008, 2.092] | slower |
+| open(ebook) / mainJsMs | 110.6 [113.8] | 244.0 [254.1] | 2.206 [2.152, 2.250] | slower |
+| open(large) / readyMs | 62.9 [64.3] | 90.6 [100.8] | 1.440 [1.410, 1.508] | slower |
+| open(large) / openedMs | 158.3 [162.2] | 243.3 [255.6] | 1.537 [1.503, 1.568] | slower |
+| open(large) / firstPaintMs | 270.6 [285.4] | 423.1 [443.7] | 1.564 [1.525, 1.613] | slower |
+| open(large) / settledMs | 270.6 [278.2] | 422.9 [434.8] | 1.563 [1.539, 1.589] | slower |
+| open(large) / mainTaskMs | 314.9 [319.8] | 579.3 [585.8] | 1.839 [1.810, 1.870] | slower |
+| open(large) / mainJsMs | 283.8 [289.7] | 532.1 [539.3] | 1.875 [1.836, 1.901] | slower |
+| scroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| scroll / wallMs | 2916.2 [2964.4] | 3046.6 [3102.4] | 1.045 [1.030, 1.057] | slower |
+| scroll / frameP50Ms | 11.1 [11.6] | 11.1 [11.5] | 0.997 [0.953, 1.026] | no detectable difference |
+| scroll / frameP95Ms | 25.6 [27.2] | 26.0 [27.2] | 1.016 [0.952, 1.184] | no detectable difference |
+| scroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| scroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| scroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| scroll / mainTaskMs | 544.3 [557.7] | 907.4 [921.5] | 1.667 [1.647, 1.719] | slower |
+| scroll / mainJsMs | 404.2 [411.6] | 767.1 [781.4] | 1.898 [1.872, 1.939] | slower |
+| coldScroll / settleMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / wallMs | 2879.1 [2931.3] | 3065.8 [3151.2] | 1.065 [1.041, 1.098] | slower |
+| coldScroll / frameP50Ms | 11.3 [11.8] | 11.1 [11.7] | 0.985 [0.948, 1.033] | no detectable difference |
+| coldScroll / frameP95Ms | 24.0 [26.7] | 26.9 [27.2] | 1.121 [1.008, 1.173] | no detectable difference |
+| coldScroll / jankFrames | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTasks | 0 [0] | 0 [0] | +0 [+0, +0] | no detectable difference |
+| coldScroll / longTaskMs | 0.0 [0.0] | 0.0 [0.0] | +0.0 [+0.0, +0.0] | no detectable difference |
+| coldScroll / mainTaskMs | 569.0 [582.4] | 905.6 [925.6] | 1.592 [1.567, 1.614] | slower |
+| coldScroll / mainJsMs | 398.7 [406.5] | 750.4 [767.5] | 1.882 [1.850, 1.923] | unreliable (A/A failed) |
+| jump / settleMs | 125.5 [141.0] | 176.7 [211.2] | +51.2 [+30.8, +78.9] | slower |
+| jump / mainTaskMs | 72.2 [77.2] | 194.6 [198.7] | 2.695 [2.585, 2.772] | slower |
+| jump / mainJsMs | 54.4 [58.3] | 178.4 [181.2] | 3.282 [3.106, 3.413] | slower |
+| zoom / settleMs | 485.5 [514.0] | 543.2 [573.4] | +57.7 [+43.9, +84.4] | slower |
+| zoom / zoom2SettleMs | 164.7 [169.5] | 195.0 [213.5] | +30.3 [+19.8, +42.4] | slower |
+| zoom / zoom4SettleMs | 319.4 [350.2] | 353.8 [370.8] | +34.4 [+14.8, +55.6] | slower |
+| zoom / backTo1SettleMs | 87.0 [108.9] | 108.2 [124.0] | +21.2 [+11.6, +27.6] | slower |
+| zoom / mainTaskMs | 223.2 [230.9] | 332.0 [343.4] | 1.487 [1.436, 1.519] | slower |
+| zoom / mainJsMs | 161.3 [166.8] | 274.8 [289.5] | 1.703 [1.658, 1.749] | slower |
+| zoomLarge / settleMs | 311.9 [342.8] | 315.7 [362.5] | +3.8 [-14.0, +37.6] | no detectable difference |
+| zoomLarge / zoom2SettleMs | 142.0 [167.6] | 151.0 [171.8] | +9.0 [-7.9, +22.5] | no detectable difference |
+| zoomLarge / zoom4SettleMs | 163.9 [188.1] | 172.0 [192.0] | +8.1 [-12.9, +22.5] | no detectable difference |
+| zoomLarge / backTo1SettleMs | 72.1 [92.6] | 86.6 [106.2] | +14.5 [+3.1, +28.6] | no detectable difference |
+| zoomLarge / mainTaskMs | 174.4 [180.6] | 261.2 [269.4] | 1.498 [1.427, 1.595] | slower |
+| zoomLarge / mainJsMs | 129.7 [134.3] | 218.7 [227.2] | 1.686 [1.604, 1.809] | slower |
+| select / settleMs | 220.4 [236.8] | 237.3 [265.0] | +16.9 [-8.9, +41.0] | no detectable difference |
+| select / mainTaskMs | 61.9 [65.0] | 82.0 [92.0] | 1.324 [1.256, 1.427] | slower |
+| select / mainJsMs | 40.1 [42.8] | 64.9 [73.4] | 1.620 [1.545, 1.780] | slower |
+| selectLarge / settleMs | 212.1 [246.1] | 217.1 [234.4] | +5.0 [-31.1, +35.3] | no detectable difference |
+| selectLarge / mainTaskMs | 68.0 [77.6] | 106.6 [112.2] | 1.566 [1.426, 1.753] | slower |
+| selectLarge / mainJsMs | 45.7 [53.6] | 83.2 [87.3] | 1.819 [1.633, 2.066] | slower |
+| search / searchMs | 71.0 [74.7] | 81.7 [84.2] | 1.151 [1.092, 1.222] | no detectable difference |
+| search / mainTaskMs | 5.3 [5.7] | 17.7 [21.1] | 3.357 [2.451, 4.002] | slower |
+| search / mainJsMs | 3.7 [3.9] | 8.5 [8.9] | 2.315 [2.011, 2.422] | slower |
+| searchLarge / searchMs | 1907.8 [2025.2] | 2095.1 [2108.0] | 1.098 [1.076, 1.102] | slower |
+| searchLarge / mainTaskMs | 346.9 [349.4] | 1115.4 [1127.4] | 3.215 [3.198, 3.238] | slower |
+| searchLarge / mainJsMs | 292.5 [293.9] | 1065.1 [1078.2] | 3.642 [3.629, 3.662] | slower |
+| annotate / settleMs | 229.6 [253.6] | 215.5 [248.0] | -14.1 [-44.0, +24.1] | no detectable difference |
+| annotate / mainTaskMs | 79.8 [83.2] | 102.1 [107.1] | 1.279 [1.243, 1.341] | slower |
+| annotate / mainJsMs | 47.9 [50.5] | 74.9 [79.9] | 1.566 [1.492, 1.636] | slower |
+| annotateLarge / settleMs | 218.5 [263.7] | 225.0 [255.4] | +6.5 [-35.0, +42.3] | no detectable difference |
+| annotateLarge / mainTaskMs | 79.7 [88.5] | 126.8 [129.2] | 1.591 [1.448, 1.618] | slower |
+| annotateLarge / mainJsMs | 47.2 [53.1] | 84.2 [86.8] | 1.785 [1.610, 1.817] | slower |
+
+## Memory
+
+| Row | main median [p95] | main-aa median [p95] | impl-ts median [p95] | plugins-lto median [p95] | impl-glyphview median [p95] | plugins-sharedhits median [p95] |
+| --- | --- | --- | --- | --- | --- | --- |
+| open(ebook) / heapAfterOpenBytes | 35.35 MiB [35.37 MiB] | 35.34 MiB [35.35 MiB] | 35.53 MiB [36.59 MiB] | 44.28 MiB [44.30 MiB] | 35.91 MiB [35.92 MiB] | 42.34 MiB [42.90 MiB] |
+| open(ebook) / workerHeapAfterOpenBytes | 22.27 MiB [22.27 MiB] | 22.27 MiB [22.27 MiB] | 23.00 MiB [23.00 MiB] | 23.03 MiB [23.03 MiB] | 23.02 MiB [23.02 MiB] | 23.02 MiB [23.02 MiB] |
+| open(large) / heapAfterOpenBytes | 48.15 MiB [48.17 MiB] | 48.15 MiB [48.18 MiB] | 48.86 MiB [48.87 MiB] | 58.03 MiB [58.04 MiB] | 48.59 MiB [48.60 MiB] | 54.96 MiB [55.02 MiB] |
+| open(large) / workerHeapAfterOpenBytes | 22.26 MiB [22.28 MiB] | 22.26 MiB [22.28 MiB] | 23.01 MiB [23.01 MiB] | 22.94 MiB [22.94 MiB] | 23.01 MiB [23.01 MiB] | 22.96 MiB [22.97 MiB] |
+| soak / heapCycle5Bytes | 37.92 MiB [38.43 MiB] | 38.42 MiB [38.44 MiB] | 38.70 MiB [39.20 MiB] | 50.00 MiB [50.01 MiB] | 39.05 MiB [39.07 MiB] | 45.14 MiB [46.14 MiB] |
+| soak / heapCycle30Bytes | 38.76 MiB [39.27 MiB] | 39.26 MiB [39.27 MiB] | 39.53 MiB [40.04 MiB] | 64.04 MiB [64.05 MiB] | 39.77 MiB [39.79 MiB] | 45.68 MiB [46.68 MiB] |
+| soak / heapSoakSlopeBytes | 0.03 MiB [0.03 MiB] | 0.03 MiB [0.03 MiB] | 0.03 MiB [0.03 MiB] | 0.56 MiB [0.56 MiB] | 0.03 MiB [0.03 MiB] | 0.02 MiB [0.02 MiB] |
+
+## Diagnostics
 
 Kernel table counts from the Rust kernel at soak cycles 5 and 30, median over rounds. Not compared: no other arm has them.
-
-`plugins`:
-
-| Table | Cycle 5 | Cycle 30 |
-| --- | --- | --- |
-| aborts | 0 | 0 |
-| allHosts | 296 | 296 |
-| described | 18 | 18 |
-| documents | 1 | 1 |
-| fns | 259 | 259 |
-| heldFns | 259 | 259 |
-| hosts | 296 | 296 |
-| promises | 0 | 0 |
-| proxies | 18 | 18 |
-| refs | 645 | 645 |
-| wasmBytes | 9.00 MiB | 9.00 MiB |
-| wireRefs | 645 | 645 |
 
 `plugins-lto`:
 
@@ -574,7 +675,7 @@ Kernel table counts from the Rust kernel at soak cycles 5 and 30, median over ro
 | wasmBytes | 8.94 MiB | 8.94 MiB |
 | wireRefs | 645 | 645 |
 
-`plugins-fix-zoom`:
+`plugins-sharedhits`:
 
 | Table | Cycle 5 | Cycle 30 |
 | --- | --- | --- |
@@ -588,6 +689,6 @@ Kernel table counts from the Rust kernel at soak cycles 5 and 30, median over ro
 | promises | 0 | 0 |
 | proxies | 18 | 18 |
 | refs | 645 | 645 |
-| wasmBytes | 8.94 MiB | 8.94 MiB |
+| wasmBytes | 9.00 MiB | 9.00 MiB |
 | wireRefs | 645 | 645 |
 

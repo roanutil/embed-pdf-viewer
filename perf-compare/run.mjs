@@ -55,7 +55,10 @@ for (const id of arms) {
 }
 
 const started = new Date();
-const runId = `${started.toISOString().replace(/[:.]/g, '-')}-${os.hostname().split('.')[0]}-${profile}`;
+// A run with a port offset shares its host with another; the offset keeps the
+// two directories apart even when both start in the same millisecond.
+const shared = process.env.PERF_PORT_OFFSET ? `-p${process.env.PERF_PORT_OFFSET}` : '';
+const runId = `${started.toISOString().replace(/[:.]/g, '-')}-${os.hostname().split('.')[0]}-${profile}${shared}`;
 const out = path.join(here, 'results', runId);
 mkdirSync(out, { recursive: true });
 console.log(`run ${runId}: ${rounds} rounds, ${arms.length} arms, ${flows.length} flows${quick ? ' (quick)' : ''}`);

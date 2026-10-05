@@ -11,6 +11,14 @@ const viewerMain = path.join(worktree, 'packages/viewer/main');
 // runs from the staged copy inside that package, so `import.meta.resolve`
 // finds the same preact. `require.resolve` would pick the CommonJS builds.
 const preact = (s) => fileURLToPath(import.meta.resolve(s));
+// `preact/compat` resolved for Node gives compat/dist/compat.mjs, while
+// compat/client.mjs imports `preact/compat` by name and Vite resolves that
+// for the browser, compat/dist/compat.module.js: two copies of compat in one
+// bundle. An arm with `dedupeCompat` aliases react and react-dom to the
+// browser build as well, so there is one.
+const compat = arm.dedupeCompat
+  ? fileURLToPath(new URL('./compat.module.js', import.meta.resolve('preact/compat')))
+  : preact('preact/compat');
 
 // Copied from examples/rust-kernel-eval/vite.config.ts on the plugins branch.
 // Kept here, not imported, so the other two worktrees build without it.
@@ -47,10 +55,10 @@ export default defineConfig({
       { find: '@perf/door', replacement: path.join(viewerMain, 'src/doors/local.ts') },
       { find: '@perf/kernel', replacement: kernel },
       { find: 'react-dom/client', replacement: preact('preact/compat/client') },
-      { find: 'react-dom', replacement: preact('preact/compat') },
+      { find: 'react-dom', replacement: compat },
       { find: 'react/jsx-runtime', replacement: preact('preact/jsx-runtime') },
       { find: 'react/jsx-dev-runtime', replacement: preact('preact/jsx-dev-runtime') },
-      { find: /^react$/, replacement: preact('preact/compat') },
+      { find: /^react$/, replacement: compat },
     ],
   },
   define: {

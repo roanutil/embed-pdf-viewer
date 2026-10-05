@@ -76,6 +76,121 @@
       "ref": "research/rust-kernel-read-sets",
       "sha": "685a5472b2db32e882a69b36050f001b70b3f1be",
       "recipe": "rust-kernel-lto"
+    },
+    "impl-gate": {
+      "ref": "research/rust-core-toolbar-gate",
+      "sha": "30f4295d7d3a0e457abe557a3607cd8f417204d7",
+      "recipe": "rust-core"
+    },
+    "plugins-head": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "51130b042a9d587768c3f0ccc908304a380fa60f",
+      "recipe": "rust-kernel"
+    },
+    "plugins-buildlto": {
+      "ref": "research/rust-kernel-build-lto",
+      "sha": "99d1a8c04c92192d154ea8e63973790f5b6e0308",
+      "recipe": "rust-kernel"
+    },
+    "plugins-wasmopt": {
+      "ref": "research/rust-kernel-wasm-opt",
+      "sha": "e981e0cb9d088c2c84781d25e311a33923fb3105",
+      "recipe": "rust-kernel"
+    },
+    "impl-head": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "485d0b89326ccecfb9643da0ca652ac649e53283",
+      "recipe": "rust-core"
+    },
+    "impl-enginelink": {
+      "ref": "research/rust-core-engine-link",
+      "sha": "2a3bb96edbc60c1b1438f535bc503c43192f1834",
+      "recipe": "rust-core"
+    },
+    "plugins-tip": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "e981e0cb9d088c2c84781d25e311a33923fb3105",
+      "recipe": "rust-kernel"
+    },
+    "plugins-enginelink": {
+      "ref": "research/rust-kernel-engine-link",
+      "sha": "48fda657e569d6d4930bbaeee3a246a92a15660a",
+      "recipe": "rust-kernel"
+    },
+    "impl-fixed": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "29f02d38176277e617a906485e520e3ea2ddfec8",
+      "recipe": "rust-core"
+    },
+    "plugins-fixed": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "c9201919264bf5fdc309b11b3f2cdbd70936634f",
+      "recipe": "rust-kernel"
+    },
+    "impl-o2": {
+      "ref": "research/rust-core-engine-o2",
+      "sha": "977a874e456466b4dc6a47a3b91301e08fd3863b",
+      "recipe": "rust-core"
+    },
+    "plugins-o2": {
+      "ref": "research/rust-kernel-engine-o2",
+      "sha": "785e68335e857c5421ebec2cc464f200f801b4d0",
+      "recipe": "rust-kernel"
+    },
+    "plugins-now": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "4f9ceee9c7805b06ca8c51a822f3fcd66f61db42",
+      "recipe": "rust-kernel"
+    },
+    "plugins-slicetext": {
+      "ref": "research/rust-kernel-slice-text",
+      "sha": "d9c5e4a584f556576ccab494baa5b5e73fb97276",
+      "recipe": "rust-kernel"
+    },
+    "impl-now": {
+      "ref": "research/multi-platform-rust-core-impl",
+      "sha": "65d9798d65b65d19886ef4c9ccd18ed5216dea40",
+      "recipe": "rust-core"
+    },
+    "impl-glyphview": {
+      "ref": "research/rust-core-glyph-view",
+      "sha": "061a544c4a12b6cdf8596bedb99f65e102ef39c6",
+      "recipe": "rust-core"
+    },
+    "plugins-tip2": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "d9c5e4a584f556576ccab494baa5b5e73fb97276",
+      "recipe": "rust-kernel"
+    },
+    "plugins-glyphview": {
+      "ref": "research/rust-kernel-glyph-view",
+      "sha": "16f128278ba4ca7f0e9fd770862b85747a346c14",
+      "recipe": "rust-kernel"
+    },
+    "plugins-lazy": {
+      "ref": "research/rust-kernel-lazy-state",
+      "sha": "f83e606542021d233208c27b00b16c70047b4f05",
+      "recipe": "rust-kernel"
+    },
+    "plugins-tip3": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "373b7f73b1b1d0d4bf202ecfafdcbbc84f18ba31",
+      "recipe": "rust-kernel"
+    },
+    "plugins-sharedhits": {
+      "ref": "research/rust-kernel-shared-hits",
+      "sha": "b450a9909e8c429216f95a529823384775f4da5f",
+      "recipe": "rust-kernel"
+    },
+    "plugins-promise": {
+      "ref": "research/rust-kernel-typed-results",
+      "sha": "19f07e0771864823d2a8f5e451caf8f83850fedb",
+      "recipe": "rust-kernel"
+    },
+    "plugins-typed": {
+      "ref": "research/rust-kernel-typed-results",
+      "sha": "b8821702787f6c22b60be95c22f848bed5e9e559",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -161,6 +276,139 @@
     },
     "plugins-reads": {
       "worktree": "plugins-reads",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-gate": {
+      "worktree": "impl-gate",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-head": {
+      "worktree": "plugins-head",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-buildlto": {
+      "worktree": "plugins-buildlto",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-wasmopt": {
+      "worktree": "plugins-wasmopt",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-head": {
+      "worktree": "impl-head",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-enginelink": {
+      "worktree": "impl-enginelink",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-tip": {
+      "worktree": "plugins-tip",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-enginelink": {
+      "worktree": "plugins-enginelink",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-fixed": {
+      "worktree": "impl-fixed",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-fixed": {
+      "worktree": "plugins-fixed",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-o2": {
+      "worktree": "impl-o2",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-o2": {
+      "worktree": "plugins-o2",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "main-compat": {
+      "worktree": "main",
+      "kernel": "typescript",
+      "rustReads": false,
+      "dedupeCompat": true
+    },
+    "impl-compat": {
+      "worktree": "impl-fixed",
+      "kernel": "typescript",
+      "rustReads": false,
+      "dedupeCompat": true
+    },
+    "plugins-compat": {
+      "worktree": "plugins-fixed",
+      "kernel": "rust",
+      "rustReads": false,
+      "dedupeCompat": true
+    },
+    "plugins-now": {
+      "worktree": "plugins-now",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-slicetext": {
+      "worktree": "plugins-slicetext",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "impl-now": {
+      "worktree": "impl-now",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "impl-glyphview": {
+      "worktree": "impl-glyphview",
+      "kernel": "typescript",
+      "rustReads": false
+    },
+    "plugins-tip2": {
+      "worktree": "plugins-tip2",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-glyphview": {
+      "worktree": "plugins-glyphview",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-lazy": {
+      "worktree": "plugins-lazy",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip3": {
+      "worktree": "plugins-tip3",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-sharedhits": {
+      "worktree": "plugins-sharedhits",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-promise": {
+      "worktree": "plugins-promise",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-typed": {
+      "worktree": "plugins-typed",
       "kernel": "rust",
       "rustReads": false
     }
@@ -269,6 +517,134 @@
     [
       "main",
       "plugins-reads"
+    ],
+    [
+      "impl-ts",
+      "impl-gate"
+    ],
+    [
+      "plugins-head",
+      "plugins-buildlto"
+    ],
+    [
+      "plugins-head",
+      "plugins-wasmopt"
+    ],
+    [
+      "plugins-bump",
+      "plugins-buildlto"
+    ],
+    [
+      "impl-head",
+      "impl-enginelink"
+    ],
+    [
+      "plugins-tip",
+      "plugins-enginelink"
+    ],
+    [
+      "impl-head",
+      "impl-fixed"
+    ],
+    [
+      "plugins-tip",
+      "plugins-fixed"
+    ],
+    [
+      "impl-fixed",
+      "impl-enginelink"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-enginelink"
+    ],
+    [
+      "impl-fixed",
+      "impl-o2"
+    ],
+    [
+      "impl-o2",
+      "impl-enginelink"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-o2"
+    ],
+    [
+      "plugins-o2",
+      "plugins-enginelink"
+    ],
+    [
+      "main",
+      "main-compat"
+    ],
+    [
+      "impl-fixed",
+      "impl-compat"
+    ],
+    [
+      "plugins-fixed",
+      "plugins-compat"
+    ],
+    [
+      "plugins-now",
+      "plugins-slicetext"
+    ],
+    [
+      "main",
+      "plugins-slicetext"
+    ],
+    [
+      "impl-now",
+      "impl-glyphview"
+    ],
+    [
+      "plugins-tip2",
+      "plugins-glyphview"
+    ],
+    [
+      "main",
+      "impl-glyphview"
+    ],
+    [
+      "plugins-tip2",
+      "plugins-lazy"
+    ],
+    [
+      "main",
+      "plugins-lazy"
+    ],
+    [
+      "plugins-lazy",
+      "plugins-tip3"
+    ],
+    [
+      "main",
+      "plugins-tip3"
+    ],
+    [
+      "plugins-tip3",
+      "plugins-sharedhits"
+    ],
+    [
+      "main",
+      "plugins-sharedhits"
+    ],
+    [
+      "plugins-sharedhits",
+      "plugins-promise"
+    ],
+    [
+      "plugins-promise",
+      "plugins-typed"
+    ],
+    [
+      "plugins-sharedhits",
+      "plugins-typed"
+    ],
+    [
+      "main",
+      "plugins-typed"
     ]
   ]
 }

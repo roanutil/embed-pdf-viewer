@@ -8,6 +8,10 @@
 // page's target by id.
 import { chromium } from 'playwright-core';
 
+/** `PERF_PORT_OFFSET`: added to every port this harness listens on or
+ *  launches with, so runs that share a host don't collide. */
+export const portOffset = () => Number(process.env.PERF_PORT_OFFSET ?? 0);
+
 export const CHROMIUM_ARGS = ['--enable-blink-features=ForceEagerMeasureMemory', '--js-flags=--expose-gc'];
 
 // One connection to the browser endpoint. `send` takes an optional session id
@@ -50,7 +54,7 @@ async function connect(wsUrl) {
 // The full build in new-headless mode, not the headless shell: the shell
 // rejects measureUserAgentSpecificMemory() with "is not available" even on a
 // cross-origin isolated page.
-export async function launchBrowser({ port = 9333 } = {}) {
+export async function launchBrowser({ port = 9333 + portOffset() } = {}) {
   let browser;
   try {
     browser = await chromium.launch({ headless: true, channel: 'chromium', args: [...CHROMIUM_ARGS, `--remote-debugging-port=${port}`] });
@@ -209,17 +213,32 @@ export async function openCdp(page, cdp) {
     /** Start a measured window: a trace, then the page's counters. */
     async cpuStart() {
       if (trace) throw new Error('cpuStart: a window is already open');
-      let done;
-      trace = { events: [], complete: new Promise((resolve) => (done = resolve)) };
-      trace.done = done;
+      const fresh = () => {
+        let done;
+        trace = { events: [], complete: new Promise((resolve) => (done = resolve)) };
+        trace.done = done;
+      };
+      fresh();
       debug('Tracing.start');
-      await within(
-        cdp.send('Tracing.start', { categories: TRACE_CATEGORIES, transferMode: 'ReportEvents' }),
-        'Tracing.start',
-      ).catch((error) => {
-        trace = null;
-        throw error;
-      });
+      const start = () =>
+        within(
+          cdp.send('Tracing.start', { categories: TRACE_CATEGORIES, transferMode: 'ReportEvents' }),
+          'Tracing.start',
+        );
+      await start()
+        .catch(async (error) => {
+          // A trace some earlier window never ended: end it, drop what it
+          // reports, and start this one.
+          if (!/already been started/.test(error.message)) throw error;
+          await cdp.send('Tracing.end').catch(() => {});
+          await within(trace.complete, 'the stray trace').catch(() => {});
+          fresh();
+          await start();
+        })
+        .catch((error) => {
+          trace = null;
+          throw error;
+        });
       debug('Tracing.start done');
       return readMetrics(pageSession);
     },
@@ -300,6 +319,14 @@ export async function openCdp(page, cdp) {
       }
     },
     async close() {
+      // A flow that threw inside its measured window left the trace running;
+      // end it, or every later window on this browser fails to start one.
+      if (trace) {
+        const open = trace;
+        await cdp.send('Tracing.end').catch(() => {});
+        await within(open.complete, 'the trace').catch(() => {});
+        trace = null;
+      }
       off();
       offTrace();
       await cdp.send('Target.detachFromTarget', { sessionId: pageSession }).catch(() => {});

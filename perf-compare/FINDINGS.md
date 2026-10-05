@@ -231,6 +231,15 @@ That run also prices the trace behind `mainJsMs`. Against the untraced run befor
 `plugins-bump` moved by 3% or less, which is inside run-to-run noise. `zoom` settle moved more on
 both, 16% and 11%, so traced and untraced `zoom` timings shouldn't be compared.
 
+The toolbar gate on the TypeScript kernel (`research/rust-core-toolbar-gate` at `30f4295d7`, the
+impl pin plus the gate, the `impl-gate` arm) is a clear win too, and a larger one in proportion
+(R=3, `results/2026-10-01T01-22-09-931Z-2023MBP16Grey-desktop`, A/A 39 of 39). Against `impl-ts`,
+`open(large)` task time falls 38% (264 to 164 ms), scroll 16% (400 to 337 ms), `zoom` 15%,
+`annotate` 14% and `search` 37%, and a jump settles 16 ms sooner. JavaScript time falls 21 to 61%
+on the same rows. One row reads slower, `open(ebook) / readyMs` by 3.4 ms, which is measured
+before any document exists and so before the gate runs. `main` has the same subscription
+(`packages/framework/react/src/toolbar.tsx:509`), so the gate would help it as well.
+
 ### Serialization formats
 
 The first win isn't a faster encoder but not serializing at all: items 1 and 2 remove the repeated
@@ -317,3 +326,329 @@ should prove the Rust route ran rather than only that the payload contains the c
 `--js-flags=--no-liftoff` would show how much of `openedMs` is baseline-tier execution.
 
 The cheapest high-value next step is items 1 and 2 on the plugins branch, re-measured as a new arm.
+
+## Not tried yet
+
+As of 2026-09-30, with sections 1 to 6 prototyped and the kept fixes merged into
+`research/multi-platform-rust-core-impl-plugins` (`416ee81b8`), these are still open. Each is
+described in the section named. The first five are cheap, and two of them are already measured.
+
+1. LTO in the branch's own build (Build settings). Tried since, and measured on its own below: it
+   no longer pays.
+2. The engine's final link with `-O2 -sASSERTIONS=0` (Engine, on every branch).
+   `packages/engine/runtime/build/compile.esm.sh:88` still passes `-sASSERTIONS=1`.
+3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). Tried since, and measured on
+   its own below: a small win, kept.
+4. `staged_meta.take()` (The heap leak). Tried since, and left alone: it isn't a second copy any
+   more, and the conformance vectors pin what it holds. See below.
+5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and left
+   out of the research branches: see below.
+6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
+   kernel's own maps (Serialization formats). Narrowed to the one slice the profile points at, and
+   tried: see "The measurement slice's text" below.
+7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
+   `HEAPF32` reads, a per-page search geometry cache and an ASCII folding fast path, geometry as
+   transferable typed arrays, and a cached `FPDF_TEXTPAGE`. Profiled since: only the per-glyph
+   reads paid, and their fix is below. Measuring it turned up the search regression below it.
+8. The PDF's bytes as a `$host` handle instead of base64 at open (section 5). About 20 ms of main
+   thread, and every Rust call site that takes bytes changes.
+9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
+   guesses, and `float_roundtrip` risks JS parity.
+10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
+    `--no-liftoff` diagnostic arm.
+11. Typed engine answers in the kernel, without the `Value` copies (Where the plugins tip's main
+    thread goes). Added 2026-10-05, tried since, and kept: see that section.
+12. Resolved commands cached per kernel revision (Where the plugins tip's main thread goes). Added
+    2026-10-05.
+
+Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
+time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
+what it would save), and read sets for the hook selectors (section 6; no row moved).
+
+### LTO and `wasm-opt`, each on its own
+
+Both are prototyped on the plugins tip (`51130b042`) as separate branches, so either can go
+without the other, and timed against that tip built the branch's own way, without LTO (R=3,
+`results/2026-10-01T02-19-00-897Z-2023MBP16Grey-desktop`, A/A 39 of 39).
+
+LTO (`research/rust-kernel-build-lto` at `99d1a8c04`, the `plugins-buildlto` arm) builds `epdf-web`
+as a cdylib only in `crates/epdf-web/scripts/build.sh`, since the crate's integration tests need the
+rlib in `Cargo.toml`. No row moves beyond noise: the point estimates are 3% faster on scroll task
+time, 0.5 to 1% slower on the open rows, and 15 ms later on jump settle with an interval from -12 to
++49 ms. It costs 921,595 bytes of kernel wasm (+8.1%), 117,163 brotli (+6.3%). The 10% it was
+worth on `plugins-lto` came from a kernel that spent most of every row in Rust; the fixes since
+took most of that time away. It's built exactly as the harness's `rust-kernel-lto` recipe builds
+it (the same 12,254,473 bytes, and no difference from `plugins-bump` on any row). We'd leave it
+out.
+
+`wasm-opt -O3 --strip-debug` after `wasm-bindgen` (`research/rust-kernel-wasm-opt` at
+`e981e0cb9`, the `plugins-wasmopt` arm) takes the kernel from 11,332,878 to 8,311,869 bytes
+(-26.7%), 1,849,657 to 1,776,551 brotli (-4.0%). `readyMs` is 7.8% sooner on `open(ebook)` (82.1
+to 75.7 ms) and 6.4% on `open(large)`: a smaller module compiles and instantiates sooner. No row
+is slower, and the open and scroll point estimates are 2 to 5% faster. Its cost is a build
+dependency: `build.sh` now needs binaryen's `wasm-opt` (version 133 here) wherever the kernel is
+built. It's merged into `research/multi-platform-rust-core-impl-plugins` (a fast-forward to
+`e981e0cb9`); the LTO branch is deleted.
+
+### The engine's optimized link
+
+`-O2 -sASSERTIONS=0` in the final emcc link (`packages/engine/runtime/build/compile.esm.sh`),
+measured on both research branches (`research/rust-core-engine-link` at `7ed02e399` on impl,
+`research/rust-kernel-engine-link` at `dfb5c43c8` on plugins; R=3,
+`results/2026-10-01T03-11-14-653Z-2023MBP16Grey-desktop`, A/A 38 of 39). The engine wasm goes from
+11,084,440 to 10,065,349 bytes (-9.2%), 2,999,741 to 2,986,548 brotli. On impl, `open(ebook)`
+opens 6% sooner and `open(large)` opens 4% and settles 7% sooner (226.1 to 211.3 ms); on plugins
+the open rows don't move beyond noise. `search` main-thread task time reads slower on both (2.5 to
+3.3 ms on impl, 9.0 to 17.1 ms on plugins against a baseline p95 of 15.3 ms).
+
+The link keeps `-sSTACK_OVERFLOW_CHECK=1`, which `ASSERTIONS=1` used to turn on: a cookie at the
+top of the C stack, checked at the end of each tick, so a stack overflow aborts instead of silently
+overwriting the data below the stack. What turning assertions off costs otherwise is the JS glue's
+named aborts (a call with the wrong argument count, a runtime method that wasn't exported), and it
+cost us twice before it landed:
+
+- Without assertions, emscripten's `cwrap` returns the raw export for every all-numeric signature
+  and counts `'boolean'` as numeric (`library_ccall.js`), so C `bool` results came back as 0 and
+  1. Ten engine tests failed that way. `toJsResult` in `packages/engine/runtime/src/wasm/wasm-runtime.ts`
+  now maps them to booleans whatever the build.
+- The argument-count assertion is what exposed a real bug on both research branches: their
+  `wasm32-eh` engine is linked with emcc 4.0.0, which turns `WASM_BIGINT` on by default, while the
+  TypeScript runtime splits each i64 argument into two i32 halves. `EPDFSig_Seal` was called with
+  13 arguments where it takes 10, and signing, attachment extraction and revision reads aborted (47
+  of the 68 engine test failures). `-sWASM_BIGINT=0` fixes it (`fba088f7d` on impl, `dea3e7e77` on
+  plugins). With assertions off it would have read wrong arguments instead of aborting.
+
+Both conditions are now met. `build/verify-wasm-abi.mjs` reads the linked wasm's export types and
+fails the link when a bound function's parameter count doesn't match what `wasm-runtime.ts` passes
+(an i64 counts twice) or an export takes an i64; the old pin fails it on 16 functions, the fixed
+builds pass all 918. The engine-link branches are rebased onto the fixed tips
+(`research/rust-core-engine-link` at `2a3bb96ed`, `research/rust-kernel-engine-link` at
+`48fda657e`), and every arm fails the same 21 engine tests as its base.
+
+Re-measured on the rebased branches (R=3, `results/2026-10-01T03-48-18-182Z-2023MBP16Grey-desktop`,
+A/A 39 of 39), no row is slower on either branch, and the `search` slowdown above doesn't
+reappear. On impl, `open(large)` opens 5.6% sooner (143.4 to 135.3 ms), `jump` main-thread task
+time is 14% lower (57.6 to 49.4 ms) and the first zoom step settles 8.6 ms sooner; on plugins,
+`open(large)` opens 3.8% sooner (204.0 to 196.3 ms). The engine is 11,120,042 to 10,098,549 bytes
+(-9.2%), 3,019,872 to 2,994,491 brotli. We'd keep it.
+
+Of the 21 engine test failures left on every arm, 17 need the native Node build
+(`pdf-runtime.node` and `libembedpdf.dylib`), which the harness's worktrees don't build; with it
+present those 7 files pass, 38 of 38. The other 4 looked like the Rust core's own but were test bugs:
+the rehearsal test read `doc.security.encryptionState`, where the state is
+`doc.security.current.encryption` (`test/session-rust-rehearsal.test.ts:59`, `:75`), and the parity
+test addressed pages by `layout.pageObjectNumber`, where the layout carries a `PageRef`
+(`test/geometry-rust-parity.test.ts:65`). With those reads fixed (`65d9798d6` on impl, `4f9ceee9c`
+on plugins) the session and parity tests pass, 7 of 7, so the Rust session and geometry reader
+agree with TypeScript on both fixtures. What's left is the 17 that need the native build.
+
+#### `-O2` and assertions, apart
+
+The link above changes two things, so each is measured on its own as well: `-O2` with assertions
+kept (`research/rust-core-engine-o2` at `977a874e4`, `research/rust-kernel-engine-o2` at
+`785e68335`), against the same base and the full link (R=3,
+`results/2026-10-01T04-27-30-603Z-2023MBP16Grey-desktop`, A/A 39 of 39).
+
+| Build | Engine wasm | Brotli |
+| --- | ---: | ---: |
+| base | 11,120,042 | 3,019,872 |
+| `-O2`, assertions on | 10,164,511 (-8.6%) | 3,013,134 (-0.2%) |
+| `-O2`, assertions off | 10,098,549 (-9.2%) | 2,994,491 (-0.8%) |
+
+`-O2` is 94% of the size. On speed, only the open rows move, and only by 3 to 7%. On impl, `-O2`
+alone opens `ebook.pdf` 4.7% sooner, and turning assertions off on top shows no detectable
+difference. On plugins, `-O2` alone shows none, and turning assertions off on top opens `ebook.pdf`
+4% sooner and settles it 3.4% sooner. No row is slower in any of the four comparisons. The 14% on
+`jump` in the run before didn't reproduce.
+
+We'd take `-O2` and keep assertions: it gets nearly all the size and part of the speed, and what
+assertions cost is a few percent on one row of one branch. They already caught one real bug here
+(the i64 split), and the named abort is worth more than 3% on opening a small document. That's
+what's merged: `-O2` with assertions on, plus the `toJsResult` bool fix, which the raw-export
+fallback needs in any build (`a1cc26fe3` and `ec18b766d` on impl, `f625ccfe4` and `fa97fb3e8` on
+plugins). The assertions-off branches are deleted.
+
+### `staged_meta`
+
+The heap-leak section's one-line fix is out of date and wrong. Since the page-registry fix,
+`DocumentMeta.pages` is an `Rc<Value>` (`crates/epdf-kernel/src/types.rs:45`), so the staged meta
+shares the pages core holds rather than copying them. What it does hold on to is the meta the
+document opened with, until the document closes; after a page edit replaces the registry, that's
+one stale page registry per edited open document.
+
+And that stale meta is behavior the TypeScript kernel has, which two conformance vectors pin:
+
+- `staged_meta.borrow_mut().take()` in `commit_ready` fails `plugins/page-edit.json`,
+  `a-captured-capability-outlives-its-document`: a capability captured before the close reads its
+  document's meta through `ctx.document()` and must reach the lifetime guard ("document instance
+  a#1 was closed"); with the meta gone it fails earlier, "no page 20".
+- Parking core's current meta at close as well fixes that and fails `plugins/stage-feeds.json`,
+  `page-mutations-refit`, step 11: stage's refit during the close has to see the pages the document
+  opened with to report what the TypeScript kernel reports.
+
+So the kernel keeps it, at the cost of one page registry per page-edited open document, until
+close. Changing it means changing the TypeScript reference and the vectors with it.
+
+### One copy of `preact/compat`
+
+The viewer's `react` and `react-dom` aliases resolve `preact/compat` the way Node does, to
+`compat/dist/compat.mjs`, but `compat/client.mjs` imports `preact/compat` by name and Vite resolves
+that the way a browser does, to `compat/dist/compat.module.js`. So every bundle carried both, the
+shipped viewer included, and each copy patches Preact's `options` hooks when it loads. Aliasing
+them to `compat.module.js` leaves one (source maps of the built viewer list `compat/client.mjs`
+and `compat/dist/compat.module.js` only). The bundle shrinks by about 5.4 KB raw and doesn't move
+compressed.
+
+Measured with the harness's `dedupeCompat` switch, each arm against its own build (R=3,
+`results/2026-10-01T06-10-46-897Z-2023MBP16Grey-desktop`, A/A 39 of 39): on `main`, `open(large)`
+main-thread task time is 7.1% lower (262.7 to 244.0 ms) and JavaScript time 7.7% lower; on impl
+and plugins no row moves beyond noise. `main`'s toolbar still re-renders on every change, which
+the toolbar gate removed on the research branches, so there's less there for a second set of hooks
+to slow down. With no gain on either research branch, what's left is the cost: an alias to a file
+inside preact's package, which a preact release that renames its dist files would break at build
+time. The two copies haven't caused a bug we've seen, so the research branches keep their aliases
+as they are. `main` has the same aliases and would gain the 7% there, which is a change for `main`
+to decide.
+
+### The measurement slice's text
+
+Profiled on the current kernel, a first scroll through `large.pdf` spends 155 of its 493 ms of wasm
+self time in `SliceLease::text`, nearly all of it on one slice: the measurement slice, re-read 198
+times in 60 wheels at about 82 KB each (20.6 MB). Each change replaces exactly one page's entry,
+the page whose scale just loaded, and the slice's text was rebuilt from the whole value each time.
+
+`research/rust-kernel-slice-text` (`d9c5e4a58`, on the plugins tip `4f9ceee9c`) lets a slice
+register a text writer (`SliceText`, through `PluginBuilder::slice_text`), which the store uses in
+place of `to_json(state).to_string()`. Measurement's keeps each shared `Rc<PageEntry>`'s text and
+serializes only replaced entries; the text is byte for byte `js::to_value(state).to_string()`,
+which its tests check (numeric key order, `NaN`, the cache across replaced entries). Rust
+workspace tests 256 of 256.
+
+The harness's `scroll` didn't see it: its warm-up loads the pages' scales before the measured
+window, so no row moved. The new `coldScroll` flow is the same 60 wheels on a document just opened.
+There (R=3, `results/2026-10-01T08-25-07-278Z-2023MBP16Grey-desktop`, A/A 47 of 48), main-thread
+task time falls 25% (1048.2 to 787.3 ms) and JavaScript time 28% (934.0 to 672.4 ms); every other
+row shows no detectable difference. Against `main`'s 436.5 ms, the cold first scroll goes from
+2.4x to 1.8x, level with the warmed one. The cost is 15,788 bytes of kernel wasm and a second
+serialization path a plugin has to keep identical to its `to_json`. We'd keep it.
+
+The JavaScript side still parses the whole 82 KB once per change. Batching the scale loads, so the
+slice changes once per scroll step rather than once per page, would cut that too, at the cost of
+changing the plugin's action sequence, which the conformance vectors check.
+
+### Glyph reads, one view per struct
+
+A worker profile of the engine during a cold search for "the" on `large.pdf` (on impl's TypeScript
+kernel) puts 1,267 ms in the worker, 783 ms of it JavaScript: `readGlyphRaw` 485 ms inclusive,
+`peek` 204 ms self. Each glyph's geometry struct (`EPDF_CHAR_GEOMETRY_LAYOUT`) was read up to 33
+values at a time through `mem.peek` and emscripten's `getValue`. Open and a cold scroll barely
+touch the engine (the worker is idle 2,427 of 2,645 ms), so the rest of item 7 has nothing to win
+there. Reading `f32`/`i32` from the heap inside `peek` itself was slower, not faster: each call then
+paid for `HEAPU8.buffer`.
+
+`research/rust-core-glyph-view` (`061a544c4`, impl) and `research/rust-kernel-glyph-view`
+(`16f128278`, plugins) add an optional `PdfRuntimeMemory.peekWords(ptr, bytes)`, f32 and i32 views
+over a struct that the wasm runtime implements and the native runtime doesn't, and the reader
+takes each glyph from one view. Locally `readGlyphRaw` falls 44% and the worker's search 18%; the
+engine suite fails the same 21 tests as before, and the Rust-TypeScript geometry parity tests pass
+(18 of 18). A new `searchLarge` flow, `search` on `large.pdf`, measures it: on impl, 1,624 to 1,337
+ms (-18%; R=3, `results/2026-10-01T16-44-36-878Z-2023MBP16Grey-desktop`), with no row slower.
+
+### Search on the Rust kernel
+
+`searchLarge` on the plugins kernel took 37.9 s, all of it main thread, against `main`'s 1.6 s.
+Two things, both fixed on `research/rust-kernel-lazy-state`:
+
+- Two selectors read `kernel.getState()` on every change for one part of it, i18n's slice
+  (`packages/framework/react/src/i18n.ts:41`) and core's documents
+  (`packages/framework/react/src/annotation.tsx:1138`), and `getState()` read and parsed every
+  changed slice. The search slice holds every hit so far and changes once per page of results, so
+  the whole hit list was rebuilt in Rust and re-parsed in JavaScript once per page. Each plugin
+  slice is now a getter that reads it on first access (`36ae29149`); core is still read once per
+  change. An outdated state's unread slice answers with the current one, and one `core-wasm` test
+  now reads its slices while its state is current. This was also what kept re-reading the
+  measurement slice during a cold scroll.
+- `Core::hits_from_slice` found each match's page in the registry twice, each a scan of every
+  page's ref. It now looks each page up once per slice (`f83e60654`).
+
+On the remote (same run), `searchLarge` goes from 37,907 to 2,176 ms and its main thread from
+37,856 to 1,020 ms, against `main`'s 231 ms of JavaScript; no other row moves. Rust workspace tests
+256 of 256, `core-wasm` 57 of 57 and 10 of 10. What's left of the gap is the plugin's per-page
+work on the main thread and the worker's glyph reads, which the glyph view above would cut too.
+
+With both merged (the plugins tip at `373b7f73b`, the `plugins-tip3` arm), `searchLarge` is 1,866
+ms against `main`'s 1,650 (1.13x; R=3, `results/2026-10-01T18-02-14-142Z-2023MBP16Grey-desktop`).
+Profiled with a named kernel, its 994 ms of main thread is about 300 ms of per-page plumbing in the
+engine callback (futures, promise guards, frees), about 231 ms of the search panel's
+`useSelector((c) => c.listHits())` (`packages/viewer/chrome/src/ui/search-panel.tsx:128`) reading
+every hit so far on every change (348 calls, 17.3 MB of answers), about 213 ms of moving engine
+answers across the boundary, 101 ms of `reduce_search`, and 20 ms of building hits.
+
+`reduce_search` copied every hit so far, segments and snippet included, each time a page of
+results arrived, and a page's bucket once per hit added to it. `research/rust-kernel-shared-hits`
+(`b450a9909`) holds hits as `Rc<SearchHit>` in the state and in the `Append` action, and replaces
+each bucket once per append; the serialized state and actions are unchanged (serde's `rc`
+feature). Rust workspace 256 of 256, search conformance 4 of 4, two new reducer tests for order
+and sharing. `searchLarge` goes from 1,873.5 to 1,749.3 ms (-6.6%), its main thread from 1,038 to
+890 ms (-14%), and it's 1.06x `main` (R=3, `results/2026-10-01T18-55-22-254Z-2023MBP16Grey-desktop`).
+
+The panel's full-list reads aren't worth a paged API at that point: they're the worst case of one
+flow, they shrink quadratically with fewer hits, and paging would give the Rust kernel a different
+panel from the TypeScript reference. Reading `listHits()` at most once a frame during a search
+would be the cheap version, if it's ever wanted.
+
+### Where the plugins tip's main thread goes
+
+On the six-arm run (RESULTS.md, 2026-10-02) the plugins tip (`b450a9909`) still spends a median
+1.80x `main`'s main-thread time across the flows. We profiled `jump` and `open(large)` on this
+machine (Apple M4 Max), 5 runs each at a 100 µs sampling interval, inside the harness's own
+measured window. The arm was rebuilt for it with an unminified bundle and a kernel that keeps its
+function names (`wasm-opt -O3 -g` in place of `--strip-debug`; the stripped rebuild is
+byte-identical to the shipped kernel, `5f383fbcd10b`). Two costs stand out, and neither is in the
+sections above.
+
+`jump` runs 113 ms of main-thread JavaScript here against `main`'s 31. Most of the gap is the page
+geometry `SelectionCapability::load` (`crates/plugins/selection/src/controller.rs:319`) fetches for
+the page it lands on, and how that answer gets into the kernel. The engine bridge encodes it with
+`canonical()` (`packages/core-wasm/src/engine-bridge.ts:162`, 10.5 ms). `engine_call`
+(`crates/epdf-web/src/engine.rs:117`) parses the string into a `serde_json::Value` (12.8 ms).
+`Promise::settle` (`crates/epdf-kernel/src/rt.rs:364`), `Guard::promise` and `PromiseFuture::poll`
+then each deep-clone or drop that `Value` (about 14 ms together), and the selection plugin converts
+it into `Vec<PageGeometryRun>` (10.9 ms). That's about 48 of the 82 ms gap, and most of the 20 ms
+of `dlmalloc` self time. Parsing the answer straight into the type the caller wants, and moving
+the settled value instead of cloning it, should remove most of it. Page geometry loads on
+`scroll`, `zoom` and `open` too, so they should gain as well; we haven't profiled them for it.
+
+`open(large)` runs about 465 ms of JavaScript, and 255 ms of it is `flush`, the subscription that
+re-runs every hook selector after each kernel change. The largest part is command resolution:
+`CommandsCapability::resolve_command` (`crates/plugins/commands/src/controller.rs:183`), reached
+from the toolbar and from the page strip's `visible`, takes about 65 ms, and each resolution calls
+the command's scripted predicates back into JavaScript through `live`
+(`crates/epdf-web/src/exports.rs:169`). The wire's revision cache doesn't cover these calls, and
+the toolbar gate (section 6) didn't remove them. Caching resolved commands per kernel revision, or
+re-resolving one only when its inputs change, would. That's a bigger change than the first: it
+changes when the commands plugin evaluates predicates, which the TypeScript reference does on read.
+
+Smaller: SipHash is about 5 ms of `jump` (the `rustc-hash` half of item 6, never tried), and
+Preact's diff is about 48 ms of `open`, which `main` pays as well.
+
+Item 11 is two commits on `research/rust-kernel-typed-results`, timed apart. `19f07e077` stops the
+kernel's `Promise` (`crates/epdf-kernel/src/rt.rs`) from copying a result nothing else reads:
+`settle` moves it into the state when no observer is waiting, and `PromiseFuture::poll` moves it out
+when the future holds the promise's last handle, and no longer clones it on the poll that only
+yields a turn. `b88217027` adds `DocumentHandle::call_answer` and `Answer`
+(`crates/epdf-kernel/src/engine.rs`): the web host hands over the answer's JSON text, and selection
+parses `page.geometry.read` and `page.text.read` straight into its snapshots. Other hosts keep
+`call`'s parsed value, in the same turn. Rust workspace 873 of 873, `core-wasm` 57 of 57 and 10 of
+10.
+
+On the remote (R=10, `results/2026-10-05T18-16-21-739Z-macmini2020-desktop`, A/A 63 of 63, no
+failed samples), neither commit is slower than the plugins tip on any row. The promise change cuts
+`jump` main-thread JavaScript 12% (175.8 to 154.1 ms), `scroll` and `coldScroll` 3 to 4%, and
+`searchLarge` 19% (1,061 to 862 ms), its time 9% (2,076 to 1,882 ms): search answers stopped being
+copied too, which the profile didn't predict. The typed answers cut `jump` another 13% (to 134.5 ms)
+and `scroll` and `coldScroll` 4%. Together `jump` settles 24.7 ms sooner, and against `main` its
+JavaScript goes from 3.28x to 2.53x. `open` doesn't move: its cost is item 12. The kernel grows 0.09
+MiB (7.94 to 8.03), 0.01 MiB brotli. The JavaScript half, `canonical()` encoding the answer, is
+still there (10.5 ms of `jump` in the profile). Both are merged into
+`research/multi-platform-rust-core-impl-plugins`.

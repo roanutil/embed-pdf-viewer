@@ -1,6 +1,7 @@
 import { createReadStream, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { portOffset } from './cdp.mjs';
 
 // Every arm gets exactly these. Cross-origin isolation is what lets
 // performance.measureUserAgentSpecificMemory() run.
@@ -51,7 +52,8 @@ function serveDir(root) {
 }
 
 // One listener per arm, ports from `basePort` upward in the order given.
-export async function serveArms(dists, { basePort = 5301 } = {}) {
+// PERF_PORT_OFFSET moves every port, so two runs can share a host.
+export async function serveArms(dists, { basePort = 5301 + portOffset() } = {}) {
   const servers = [];
   const urls = {};
   let port = basePort;
