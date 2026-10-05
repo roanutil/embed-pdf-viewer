@@ -142,3 +142,31 @@ tuist generate
 
 It signs ad hoc, which is enough for the simulator. A device run needs a development team
 in `Project.swift`.
+
+## Profiling the demo app
+
+`EmbedPDF` emits `os_signpost` intervals under Points of Interest (subsystem
+`com.embedpdf`): `open`, `pages`, `search`, `hits`, and `renderPage` split into
+`renderPage.rust` (the call into Rust, including the kernel and engine threads) and
+`renderPage.cgImage` (wrapping the pixels). They show up in any Instruments template that
+has the Points of Interest track, Time Profiler included.
+
+`EmbedPDFDemoUITests` is the scenario: it flings through `report.pdf` and back, searches
+for "trace" and steps through ten hits. With `TEST_RUNNER_EMBEDPDF_PROFILE_DELAY=10` it
+waits ten seconds after the document appears, long enough to attach Instruments to the
+app's process. `scripts/profile.sh` does both:
+
+```sh
+cd platforms/apple/EmbedPDFDemo
+tuist generate
+xcodebuild build-for-testing -workspace EmbedPDFDemo.xcworkspace -scheme EmbedPDFDemo \
+  -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath .build/dd
+scripts/profile.sh "Time Profiler" time.trace
+```
+
+Attach to the process; don't record all processes. An `--all-processes` recording on the
+simulator could not be symbolicated, and `XCUIApplication.activate()` relaunches an app
+Instruments launched, so the traced process is not the one the test drives.
+
+The simulator runs on the Mac's CPU and GPU. Trust its CPU profiles, allocations and
+signpost durations; don't trust its frame times or hitch counts.

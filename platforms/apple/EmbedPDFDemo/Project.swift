@@ -1,5 +1,14 @@
 import ProjectDescription
 
+// No Apple developer team is configured. Ad-hoc signing is enough for the
+// simulator; a device run needs a team set here.
+let signing: Settings = .settings(base: [
+  "SWIFT_VERSION": "6.0",
+  "CODE_SIGN_IDENTITY": "-",
+  "CODE_SIGN_STYLE": "Manual",
+  "DEVELOPMENT_TEAM": "",
+])
+
 let project = Project(
   name: "EmbedPDFDemo",
   packages: [
@@ -26,14 +35,22 @@ let project = Project(
         .package(product: "EmbedPDF"),
         .package(product: "EmbedPDFUI"),
       ],
-      settings: .settings(base: [
-        "SWIFT_VERSION": "6.0",
-        // No Apple developer team is configured. Ad-hoc signing is enough for
-        // the simulator; a device run needs a team set here.
-        "CODE_SIGN_IDENTITY": "-",
-        "CODE_SIGN_STYLE": "Manual",
-        "DEVELOPMENT_TEAM": "",
-      ])
+      settings: signing
+    ),
+    // Drives a scroll-and-search scenario. Run it on its own, or with
+    // TEST_RUNNER_EMBEDPDF_ATTACH=1 against an app Instruments launched
+    // (see platforms/apple/README.md, "Profiling the demo app").
+    .target(
+      name: "EmbedPDFDemoUITests",
+      destinations: .iOS,
+      product: .uiTests,
+      bundleId: "com.embedpdf.demo.uitests",
+      deploymentTargets: .iOS("17.0"),
+      sources: ["EmbedPDFDemoUITests/**"],
+      dependencies: [
+        .target(name: "EmbedPDFDemo"),
+      ],
+      settings: signing
     ),
   ]
 )

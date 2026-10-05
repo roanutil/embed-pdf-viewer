@@ -78,6 +78,7 @@ private struct PagesView: View {
           }
           .padding()
         }
+        .accessibilityIdentifier("pages")
         .background(Color(.secondarySystemBackground))
       }
       .safeAreaInset(edge: .bottom) {
@@ -119,8 +120,10 @@ private struct SearchBar: View {
       TextField("Search", text: $search.text)
         .textFieldStyle(.roundedBorder)
         .submitLabel(.search)
+        .accessibilityIdentifier("searchField")
         .onSubmit { Task { await search.searchSubmitted() } }
       Text(summary)
+        .accessibilityIdentifier("searchSummary")
         .font(.caption.monospacedDigit())
         .foregroundStyle(.secondary)
       Button("Previous", systemImage: "chevron.up") { Task { await search.previousButtonTapped() } }

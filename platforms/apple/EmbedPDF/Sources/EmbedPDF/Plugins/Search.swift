@@ -45,8 +45,10 @@ public struct SearchCapability: Sendable {
   public func search(_ query: SearchQuery, startPage: PageRef? = nil) async throws(PDFError)
     -> SearchResult
   {
-    try await bridgedCancellable { token in
-      try await handle.search(query: query, startPage: startPage, cancel: token)
+    try await measured("search") { () async throws(PDFError) in
+      try await bridgedCancellable { token in
+        try await handle.search(query: query, startPage: startPage, cancel: token)
+      }
     }
   }
 
@@ -94,7 +96,9 @@ public struct SearchCapability: Sendable {
 
   /// Hits found so far, or those on one page.
   public func hits(on page: PageRef? = nil) async throws(PDFError) -> [SearchHit] {
-    try await bridged { try await handle.hits(page: page) }
+    try await measured("hits") { () async throws(PDFError) in
+      try await bridged { try await handle.hits(page: page) }
+    }
   }
 
   public func hitCount(on page: PageRef? = nil) async throws(PDFError) -> UInt32 {

@@ -53,10 +53,14 @@ public struct RenderCapability: Sendable {
   public func renderPage(_ page: PageRef, options: RenderPageOptions = RenderPageOptions())
     async throws(PDFError) -> RenderedPage
   {
-    let image = try await bridgedCancellable { token in
-      try await handle.renderPage(page: page, options: options, cancel: token)
+    try await measured("renderPage") { () async throws(PDFError) in
+      let image = try await measured("renderPage.rust") { () async throws(PDFError) in
+        try await bridgedCancellable { token in
+          try await handle.renderPage(page: page, options: options, cancel: token)
+        }
+      }
+      return try measured("renderPage.cgImage") { () throws(PDFError) in try RenderedPage(image) }
     }
-    return try RenderedPage(image)
   }
 
   /// A small raster `maxWidth` device pixels wide.

@@ -31,8 +31,10 @@ public final class PDFViewer: Sendable {
   }
 
   public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> PDFDocument {
-    try await bridged {
-      try await host.openDocument(bytes: data, options: OpenDocumentOptions(name: name, password: password, activate: true))
+    try await measured("open") { () async throws(PDFError) in
+      try await bridged {
+        try await host.openDocument(bytes: data, options: OpenDocumentOptions(name: name, password: password, activate: true))
+      }
     }
   }
 
@@ -53,7 +55,9 @@ public final class PDFViewer: Sendable {
   }
 
   public func pages(of document: PDFDocument) async throws(PDFError) -> [PageInfo] {
-    try await bridged { try await host.pages(documentId: document.id) }
+    try await measured("pages") { () async throws(PDFError) in
+      try await bridged { try await host.pages(documentId: document.id) }
+    }
   }
 
   public var documentEvents: AsyncStream<DocumentEvent> {
