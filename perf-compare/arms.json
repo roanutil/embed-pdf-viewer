@@ -191,6 +191,16 @@
       "ref": "research/rust-kernel-typed-results",
       "sha": "b8821702787f6c22b60be95c22f848bed5e9e559",
       "recipe": "rust-kernel"
+    },
+    "plugins-fixes": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "adda0bbea2eda9047dd0e2e16183e08381841dba",
+      "recipe": "rust-kernel"
+    },
+    "plugins-encode": {
+      "ref": "research/rust-kernel-bridge-encode",
+      "sha": "57f627ed5a62c58c482e6ed90a2d9dc2b10a15b0",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -409,6 +419,16 @@
     },
     "plugins-typed": {
       "worktree": "plugins-typed",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fixes": {
+      "worktree": "plugins-fixes",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-encode": {
+      "worktree": "plugins-encode",
       "kernel": "rust",
       "rustReads": false
     }
@@ -645,6 +665,18 @@
     [
       "main",
       "plugins-typed"
+    ],
+    [
+      "plugins-typed",
+      "plugins-fixes"
+    ],
+    [
+      "plugins-fixes",
+      "plugins-encode"
+    ],
+    [
+      "main",
+      "plugins-encode"
     ]
   ]
 }
