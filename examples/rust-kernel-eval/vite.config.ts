@@ -58,6 +58,16 @@ export default defineConfig({
     ],
   },
   define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  // Both found late by the dependency scan, so a cold cache reloaded the
+  // page for each: the JSX dev runtime on first load, and QuickJS, which the
+  // form sandbox reaches through a `#quickjs-variant` subpath import, on the
+  // first form script.
+  optimizeDeps: {
+    include: [
+      'react/jsx-dev-runtime',
+      '@embedpdf/core-wasm > @embedpdf/core-js-sandbox > @jitl/quickjs-singlefile-browser-release-sync',
+    ],
+  },
   // The dev harness's demo PDF and font.
   publicDir: path.join(root, 'packages/viewer/main/public'),
   server: { port: 5250, strictPort: true },
