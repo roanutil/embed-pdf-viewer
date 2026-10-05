@@ -242,6 +242,50 @@ export function canonical(
   }
 }
 
+/** Deep enough for any engine answer; deeper (or cyclic) takes `canonical`. */
+const PLAIN_DEPTH = 64;
+
+/** Whether `value` is data `JSON.stringify` writes exactly as `canonical`
+ *  would: finite numbers, strings, booleans, `null`, and arrays and plain
+ *  objects of them, with no function, live value or `undefined` element.
+ *  An `undefined` member is fine: both leave it out. Checking is cheaper
+ *  than building the canonical copy, and most engine answers (page geometry,
+ *  text, lists) pass. */
+function plainJson(value: unknown, depth: number): boolean {
+  switch (typeof value) {
+    case 'string':
+    case 'boolean':
+      return true;
+    case 'number':
+      return Number.isFinite(value);
+    case 'object':
+      break;
+    default:
+      return false;
+  }
+  if (value === null) return true;
+  if (depth >= PLAIN_DEPTH) return false;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      if (!(i in value) || !plainJson(value[i], depth + 1)) return false;
+    }
+    return true;
+  }
+  if (!isPlain(value)) return false;
+  for (const key in value) {
+    if (!Object.hasOwn(value, key)) continue;
+    const member = (value as Record<string, unknown>)[key];
+    if (member !== undefined && !plainJson(member, depth + 1)) return false;
+  }
+  return true;
+}
+
+/** `value` as canonical JSON text: straight through `JSON.stringify` when
+ *  it is plain data, else through `canonical`. */
+export function canonicalText(value: unknown, hooks: EncodeHooks): string {
+  return JSON.stringify(plainJson(value, 0) ? value : canonical(value, hooks));
+}
+
 /** A decoder's own markers: `{ value }` when `object` is one, else
  *  `undefined` to fall through to the default rules. `recur` decodes a
  *  nested value with the same hook. */
@@ -454,7 +498,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
   const registered = { owns: (n: number) => ownHosts.has(n), release };
   liveBridges.add(registered);
   const hooks: EncodeHooks = { hold, image: (n, bytes) => imageBytes.set(n, bytes) };
-  const encode = (value: unknown) => JSON.stringify(canonical(value, hooks));
+  const encode = (value: unknown) => canonicalText(value, hooks);
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
   const reason = (error: unknown) => errorSpec(error, (v) => canonical(v, hold));
 

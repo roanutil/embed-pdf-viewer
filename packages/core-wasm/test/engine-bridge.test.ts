@@ -6,6 +6,8 @@ import { createLocalEngine } from '@embedpdf/engine';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
 import {
+  canonical,
+  canonicalText,
   createEngineBridge,
   decode,
   encodeInput,
@@ -379,5 +381,46 @@ describe('encodeInput', () => {
       bytes: { $bytes: 'AQID' },
       n: { $number: 'NaN' },
     });
+  });
+});
+
+describe('canonicalText', () => {
+  const hooks = { hold: () => 7 };
+  const viaCanonical = (value: unknown) => JSON.stringify(canonical(value, { hold: () => 7 }));
+
+  test('writes what canonical writes, plain data or not', () => {
+    const sparse: unknown[] = [1];
+    sparse[2] = 3;
+    const values: unknown[] = [
+      null,
+      true,
+      'text',
+      0,
+      -0,
+      1.5,
+      [],
+      {},
+      { runs: [{ rect: { x: 1, y: 2.5, width: 3, height: 4 }, text: 'a', glyphs: [] }] },
+      { kept: 1, dropped: undefined },
+      Object.assign(Object.create(null), { a: 1 }),
+      undefined,
+      NaN,
+      Infinity,
+      [1, undefined],
+      sparse,
+      { n: NaN },
+      { bytes: new Uint8Array([1, 2, 3]) },
+      { when: new Date(5) },
+      { method() {} },
+      new Map([[1, 2]]),
+      { big: 1n },
+    ];
+    for (const value of values) expect(canonicalText(value, hooks)).toBe(viaCanonical(value));
+  });
+
+  test('a cyclic value still throws', () => {
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => canonicalText(cyclic, hooks)).toThrow(TypeError);
   });
 });
