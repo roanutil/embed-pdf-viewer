@@ -357,7 +357,7 @@ described in the section named. The first five are cheap, and two of them are al
 10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
     `--no-liftoff` diagnostic arm.
 11. Typed engine answers in the kernel, without the `Value` copies (Where the plugins tip's main
-    thread goes). Added 2026-10-05.
+    thread goes). Added 2026-10-05, tried since, and kept: see that section.
 12. Resolved commands cached per kernel revision (Where the plugins tip's main thread goes). Added
     2026-10-05.
 
@@ -631,3 +631,24 @@ changes when the commands plugin evaluates predicates, which the TypeScript refe
 
 Smaller: SipHash is about 5 ms of `jump` (the `rustc-hash` half of item 6, never tried), and
 Preact's diff is about 48 ms of `open`, which `main` pays as well.
+
+Item 11 is two commits on `research/rust-kernel-typed-results`, timed apart. `19f07e077` stops the
+kernel's `Promise` (`crates/epdf-kernel/src/rt.rs`) from copying a result nothing else reads:
+`settle` moves it into the state when no observer is waiting, and `PromiseFuture::poll` moves it out
+when the future holds the promise's last handle, and no longer clones it on the poll that only
+yields a turn. `b88217027` adds `DocumentHandle::call_answer` and `Answer`
+(`crates/epdf-kernel/src/engine.rs`): the web host hands over the answer's JSON text, and selection
+parses `page.geometry.read` and `page.text.read` straight into its snapshots. Other hosts keep
+`call`'s parsed value, in the same turn. Rust workspace 873 of 873, `core-wasm` 57 of 57 and 10 of
+10.
+
+On the remote (R=10, `results/2026-10-05T18-16-21-739Z-macmini2020-desktop`, A/A 63 of 63, no
+failed samples), neither commit is slower than the plugins tip on any row. The promise change cuts
+`jump` main-thread JavaScript 12% (175.8 to 154.1 ms), `scroll` and `coldScroll` 3 to 4%, and
+`searchLarge` 19% (1,061 to 862 ms), its time 9% (2,076 to 1,882 ms): search answers stopped being
+copied too, which the profile didn't predict. The typed answers cut `jump` another 13% (to 134.5 ms)
+and `scroll` and `coldScroll` 4%. Together `jump` settles 24.7 ms sooner, and against `main` its
+JavaScript goes from 3.28x to 2.53x. `open` doesn't move: its cost is item 12. The kernel grows 0.09
+MiB (7.94 to 8.03), 0.01 MiB brotli. The JavaScript half, `canonical()` encoding the answer, is
+still there (10.5 ms of `jump` in the profile). Both are merged into
+`research/multi-platform-rust-core-impl-plugins`.
