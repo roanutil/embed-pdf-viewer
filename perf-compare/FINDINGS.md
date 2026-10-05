@@ -325,18 +325,20 @@ should prove the Rust route ran rather than only that the payload contains the c
 (`lib/gate.mjs`). The runs are cold, so wasm starts in Liftoff; a diagnostic arm with
 `--js-flags=--no-liftoff` would show how much of `openedMs` is baseline-tier execution.
 
-The cheapest high-value next step is items 1 and 2 on the plugins branch, re-measured as a new arm.
+Items 1 and 2 below, the next step this section first named, are done. The large flows came after
+(item 10); the three gaps in the paragraph above are still open.
 
 ## Not tried yet
 
-As of 2026-09-30, with sections 1 to 6 prototyped and the kept fixes merged into
-`research/multi-platform-rust-core-impl-plugins` (`416ee81b8`), these are still open. Each is
-described in the section named. The first five are cheap, and two of them are already measured.
+Updated 2026-10-05, with every kept fix merged into
+`research/multi-platform-rust-core-impl-plugins` (`c8e53c523`). Each item is described in the
+section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest of 10 are open.
 
 1. LTO in the branch's own build (Build settings). Tried since, and measured on its own below: it
    no longer pays.
-2. The engine's final link with `-O2 -sASSERTIONS=0` (Engine, on every branch).
-   `packages/engine/runtime/build/compile.esm.sh:88` still passes `-sASSERTIONS=1`.
+2. The engine's final link with `-O2 -sASSERTIONS=0` (Engine, on every branch). Tried since, each
+   flag on its own: `-O2` is merged, and assertions stay on by choice. See "`-O2` and assertions,
+   apart" below.
 3. `wasm-opt -O3 --strip-debug` on the kernel wasm (Build settings). Tried since, and measured on
    its own below: a small win, kept.
 4. `staged_meta.take()` (The heap leak). Tried since, and left alone: it isn't a second copy any
@@ -344,8 +346,9 @@ described in the section named. The first five are cheap, and two of them are al
 5. The second copy of `preact/compat` in every bundle (Build settings). Tried since, and left
    out of the research branches: see below.
 6. Typed serialization with `serde_json::to_writer` into reused buffers, and `rustc-hash` for the
-   kernel's own maps (Serialization formats). Narrowed to the one slice the profile points at, and
-   tried: see "The measurement slice's text" below.
+   kernel's own maps (Serialization formats). The serialization half was narrowed to the one slice
+   the profile points at, and tried: see "The measurement slice's text" below. The `rustc-hash`
+   half wasn't, and is item 13.
 7. The engine glue and geometry work shared with `main` (Engine, on every branch): raw exports and
    `HEAPF32` reads, a per-page search geometry cache and an ASCII folding fast path, geometry as
    transferable typed arrays, and a cached `FPDF_TEXTPAGE`. Profiled since: only the per-glyph
@@ -355,11 +358,18 @@ described in the section named. The first five are cheap, and two of them are al
 9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
    guesses, and `float_roundtrip` risks JS parity.
 10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
-    `--no-liftoff` diagnostic arm.
+    `--no-liftoff` diagnostic arm. Large-document flows were added since (`coldScroll`,
+    `searchLarge`, `zoomLarge`, `selectLarge`, `annotateLarge`); those three gaps are still open.
 11. Typed engine answers in the kernel, without the `Value` copies (Where the plugins tip's main
     thread goes). Added 2026-10-05, tried since, and kept: see that section.
 12. Resolved commands cached per kernel revision (Where the plugins tip's main thread goes). Added
-    2026-10-05.
+    2026-10-05. It's what `open` still costs.
+13. `rustc-hash` in place of SipHash for the kernel's own maps (Serialization formats, and Where the
+    plugins tip's main thread goes). About 5 ms of `jump`.
+14. The engine bridge's `canonical()` encoding of every engine answer, the JavaScript half of item
+    11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile.
+15. The search panel reading `listHits()` at most once a frame during a search (Search on the Rust
+    kernel). Only `searchLarge` would gain.
 
 Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
 time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
