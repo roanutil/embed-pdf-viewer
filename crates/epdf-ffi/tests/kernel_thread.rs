@@ -161,3 +161,36 @@ fn a_panicking_job_tears_the_thread_down_cleanly() {
     assert!(block_on(thread.call(|_| ())).is_err(), "a call after the panic was answered");
     assert!(matches!(block_on(bound.call(|_| Ok(()))), Err(epdf_ffi::ViewerError::Closed)));
 }
+
+/// Bind a value, run `panics` as a kernel job (it schedules work that
+/// panics later, in a drain rather than in the job), and check the thread
+/// tore down as it does for a panicking job.
+fn assert_a_later_panic_tears_down_cleanly(panics: fn()) {
+    let (dropped_tx, dropped) = mpsc::channel();
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let post = thread.post();
+    let bound = bind(&thread, dropped_tx);
+    post(Box::new(panics));
+    let alive = dropped.recv_timeout(Duration::from_secs(2)).expect("never dropped");
+    assert!(alive, "the bound value was dropped during thread-local teardown");
+    assert!(!post(Box::new(|| {})), "a post after the panic was accepted");
+    assert!(block_on(thread.call(|_| ())).is_err(), "a call after the panic was answered");
+    assert!(matches!(block_on(bound.call(|_| Ok(()))), Err(epdf_ffi::ViewerError::Closed)));
+}
+
+#[test]
+fn a_panicking_timer_tears_the_thread_down_cleanly() {
+    assert_a_later_panic_tears_down_cleanly(|| {
+        epdf_kernel::rt::set_timeout(0.0, || panic!("a kernel timer panicked"));
+    });
+}
+
+#[test]
+fn a_task_that_panics_in_a_later_poll_tears_the_thread_down_cleanly() {
+    assert_a_later_panic_tears_down_cleanly(|| {
+        epdf_kernel::rt::spawn(async {
+            epdf_kernel::rt::tick().await;
+            panic!("a kernel task panicked");
+        });
+    });
+}

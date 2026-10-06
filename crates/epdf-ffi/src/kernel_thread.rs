@@ -58,8 +58,12 @@ impl<S: 'static> KernelThread<S> {
                         return;
                     }
                 };
-                drain(origin);
-                loop {
+                // A panic, in a job or in a timer or task a drain runs, is
+                // reported by the panic hook (stderr by default) and ends the
+                // loop through the normal teardown, so what is still bound
+                // drops while the thread locals it reaches are alive.
+                let mut alive = drain(origin);
+                while alive {
                     let msg = match rt::next_deadline() {
                         Some(deadline) => {
                             let wait = (deadline - rt::now()).max(0.0);
@@ -72,11 +76,9 @@ impl<S: 'static> KernelThread<S> {
                             // After an idle stretch the virtual clock is
                             // behind: catch it up first, or a timer the job
                             // sets is already due when the job returns.
-                            drain(origin);
-                            // A panic is reported by the panic hook (stderr
-                            // by default) and ends the loop through the
-                            // normal teardown, so what is still bound drops
-                            // while the thread locals it reaches are alive.
+                            if !drain(origin) {
+                                break;
+                            }
                             if catch_unwind(AssertUnwindSafe(|| job(&mut state))).is_err() {
                                 break;
                             }
@@ -84,7 +86,7 @@ impl<S: 'static> KernelThread<S> {
                         Ok(Msg::Stop) | Err(RecvTimeoutError::Disconnected) => break,
                         Err(RecvTimeoutError::Timeout) => {}
                     }
-                    drain(origin);
+                    alive = drain(origin);
                 }
                 // Refuse later posts at once rather than queueing them
                 // behind the teardown.
@@ -155,12 +157,16 @@ fn post_for<S: 'static>(tx: &SharedSender<S>) -> KernelPost {
 }
 
 /// Catch the virtual clock up to wall time, then run everything runnable.
-/// `rt::advance` fires each due timer and drains after it.
-fn drain(origin: Instant) {
-    let wall = origin.elapsed().as_secs_f64() * 1000.0;
-    let behind = wall - rt::now();
-    if behind > 0.0 {
-        rt::advance(behind);
-    }
-    rt::run_until_stalled();
+/// `rt::advance` fires each due timer and drains after it. False when a
+/// timer or task panicked; the work queued behind it is left unrun.
+fn drain(origin: Instant) -> bool {
+    catch_unwind(|| {
+        let wall = origin.elapsed().as_secs_f64() * 1000.0;
+        let behind = wall - rt::now();
+        if behind > 0.0 {
+            rt::advance(behind);
+        }
+        rt::run_until_stalled();
+    })
+    .is_ok()
 }
