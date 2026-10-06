@@ -96,15 +96,20 @@ async function renderSuite(suite: Suite): Promise<unknown> {
   return { schemaVersion: SCHEMA_VERSION, kind: 'scenario', describes: suite.describes, cases };
 }
 
-/** Write each suite, or with `check` fail on any file whose content would change. */
-export async function emit(suites: readonly Suite[], check: boolean, only?: string): Promise<void> {
+/** Write each suite, or with `check` fail on any file whose content would
+ *  change. `render` runs every case and keeps nothing: the coverage gate's
+ *  second pass, over a filtered set of cases no file holds. */
+export async function emit(suites: readonly Suite[], mode: 'write' | 'check' | 'render', only?: string): Promise<void> {
+  const check = mode === 'check';
   const stale: string[] = [];
   const names = new Set<string>();
   for (const suite of suites) {
     if (names.has(suite.file)) throw new Error(`two suites write ${suite.file}`);
     names.add(suite.file);
     if (only && !suite.file.startsWith(only)) continue;
-    const text = `${JSON.stringify(await renderSuite(suite), null, 2)}\n`;
+    const rendered = await renderSuite(suite);
+    if (mode === 'render') continue;
+    const text = `${JSON.stringify(rendered, null, 2)}\n`;
     const path = join(vectorsRoot, suite.file);
     if (check) {
       const current = await readFile(path, 'utf8').catch(() => null);
@@ -121,5 +126,7 @@ export async function emit(suites: readonly Suite[], check: boolean, only?: stri
     process.exitCode = 1;
   } else if (check) {
     console.log(`${names.size} vector files are current`);
+  } else if (mode === 'render') {
+    console.log(`rendered ${names.size} suites`);
   }
 }

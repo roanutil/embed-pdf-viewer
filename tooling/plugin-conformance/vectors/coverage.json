@@ -1,7 +1,8 @@
 {
   "total": {
     "statements": "49197/49390",
-    "branches": "12172/12495"
+    "branches": "12172/12495",
+    "unsnapshottedOnlyLines": 1479
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -22,6 +23,12 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "184:108#0"
+      ],
+      "unsnapshottedOnly": [
+        "155-156",
+        "173-188",
+        "205-207",
+        "221-224"
       ]
     },
     "packages/core/acrojs/src/index.ts": {
@@ -370,7 +377,11 @@
       "statements": "156/156",
       "branches": "22/22",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "45-46",
+        "48-49"
+      ]
     },
     "packages/core/signature/src/cms/engine.ts": {
       "statements": "30/40",
@@ -410,13 +421,26 @@
       "uncoveredBranches": [
         "12:63#0",
         "52:35#0"
+      ],
+      "unsnapshottedOnly": [
+        "30-31",
+        "52-54"
       ]
     },
     "packages/core/signature/src/gate.ts": {
       "statements": "73/73",
       "branches": "21/21",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "33-38",
+        "43-44",
+        "47-52",
+        "54-55",
+        "58-59",
+        "61-62",
+        "66-71"
+      ]
     },
     "packages/core/signature/src/index.ts": {
       "statements": "53/53",
@@ -428,7 +452,10 @@
       "statements": "76/76",
       "branches": "23/23",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "28-33"
+      ]
     },
     "packages/core/signature/src/signers/personal.ts": {
       "statements": "81/119",
@@ -473,25 +500,41 @@
         118,
         119
       ],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "34-60",
+        "64-74"
+      ]
     },
     "packages/core/signature/src/signers/remote.ts": {
       "statements": "19/19",
       "branches": "3/3",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "9-19"
+      ]
     },
     "packages/core/signature/src/signers/self-signed.ts": {
       "statements": "64/64",
       "branches": "10/10",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "13-52"
+      ]
     },
     "packages/core/signature/src/signers/webcrypto.ts": {
       "statements": "122/122",
       "branches": "26/26",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "12-54",
+        "56-67",
+        "80-102",
+        "105-122"
+      ]
     },
     "packages/core/signature/src/trust.ts": {
       "statements": "71/73",
@@ -504,13 +547,26 @@
         "64:51#0",
         "68:20#0",
         "70:2#0"
+      ],
+      "unsnapshottedOnly": [
+        "40-70",
+        "73"
       ]
     },
     "packages/core/signature/src/verdict.ts": {
       "statements": "203/203",
       "branches": "59/59",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "95-108",
+        "111-115",
+        "128-129",
+        "133-134",
+        "162-167",
+        "187",
+        "197-202"
+      ]
     },
     "packages/core/stage/src/index.ts": {
       "statements": "919/919",
@@ -588,6 +644,9 @@
         "101:16#0",
         "155:78#0",
         "189:14#0"
+      ],
+      "unsnapshottedOnly": [
+        "188-221"
       ]
     },
     "packages/plugin/actions/src/dispatch/fold.ts": {
@@ -612,6 +671,9 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "57:14#0"
+      ],
+      "unsnapshottedOnly": [
+        "77-78"
       ]
     },
     "packages/plugin/actions/src/host-contract.ts": {
@@ -624,7 +686,12 @@
       "statements": "101/101",
       "branches": "38/38",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "26-27",
+        "33-35",
+        "97-99"
+      ]
     },
     "packages/plugin/actions/src/lifecycle/document-events.ts": {
       "statements": "162/162",
@@ -632,6 +699,9 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "68:61#0"
+      ],
+      "unsnapshottedOnly": [
+        "107-109"
       ]
     },
     "packages/plugin/actions/src/lifecycle/open-sequence.ts": {
@@ -688,6 +758,9 @@
       "uncoveredBranches": [
         "87:38#0",
         "89:16#0"
+      ],
+      "unsnapshottedOnly": [
+        "102"
       ]
     },
     "packages/plugin/actions/src/scripting/realm.ts": {
@@ -700,7 +773,15 @@
       "statements": "127/127",
       "branches": "41/41",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "37-42",
+        "44-57",
+        "61-66",
+        "71-76",
+        "78-83",
+        "93-94"
+      ]
     },
     "packages/plugin/actions/src/scripting/world.ts": {
       "statements": "154/154",
@@ -712,6 +793,13 @@
         "130:51#0",
         "132:47#0",
         "133:46#0"
+      ],
+      "unsnapshottedOnly": [
+        "118",
+        "120",
+        "124",
+        "129-133",
+        "139"
       ]
     },
     "packages/plugin/actions/src/services/authority.ts": {
@@ -733,7 +821,11 @@
       "statements": "37/37",
       "branches": "8/8",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "23",
+        "26"
+      ]
     },
     "packages/plugin/actions/src/services/index.ts": {
       "statements": "39/39",
@@ -751,7 +843,13 @@
       "statements": "80/80",
       "branches": "18/18",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "55-56",
+        "61-62",
+        "69-70",
+        "75-76"
+      ]
     },
     "packages/plugin/actions/src/services/print-latch.ts": {
       "statements": "12/12",
@@ -786,6 +884,9 @@
         "86:54#0",
         "98:54#0",
         "79:47#0"
+      ],
+      "unsnapshottedOnly": [
+        "43-48"
       ]
     },
     "packages/plugin/actions/src/token.ts": {
@@ -815,6 +916,9 @@
       "uncoveredBranches": [
         "49:14#0",
         "57:14#0"
+      ],
+      "unsnapshottedOnly": [
+        "169-182"
       ]
     },
     "packages/plugin/annotation/src/comments/threads.ts": {
@@ -887,6 +991,10 @@
       "uncoveredBranches": [
         "176:48#0",
         "178:38#0"
+      ],
+      "unsnapshottedOnly": [
+        "174-179",
+        "189-210"
       ]
     },
     "packages/plugin/annotation/src/read/render.ts": {
@@ -900,6 +1008,9 @@
         "146:30#0",
         "154:42#0",
         "157:16#0"
+      ],
+      "unsnapshottedOnly": [
+        "156-167"
       ]
     },
     "packages/plugin/annotation/src/read/selection-props.ts": {
@@ -1074,6 +1185,9 @@
       "uncoveredBranches": [
         "59:14#0",
         "76:60#0"
+      ],
+      "unsnapshottedOnly": [
+        "137-139"
       ]
     },
     "packages/plugin/annotation/src/sync/remote.ts": {
@@ -1120,6 +1234,9 @@
         "213:19#0",
         "285:19#0",
         "460:55#0"
+      ],
+      "unsnapshottedOnly": [
+        "119-120"
       ]
     },
     "packages/plugin/annotation/src/tools/hover-feed.ts": {
@@ -1128,6 +1245,9 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "36:21#0"
+      ],
+      "unsnapshottedOnly": [
+        "34-42"
       ]
     },
     "packages/plugin/annotation/src/tools/markup-bridge.ts": {
@@ -1136,6 +1256,9 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "78:19#0"
+      ],
+      "unsnapshottedOnly": [
+        "82"
       ]
     },
     "packages/plugin/annotation/src/tools/registry.ts": {
@@ -1146,6 +1269,10 @@
         "42:49#0",
         "81:21#0",
         "102:70#0"
+      ],
+      "unsnapshottedOnly": [
+        "54-69",
+        "74-76"
       ]
     },
     "packages/plugin/annotation/src/write/crud.ts": {
@@ -1416,6 +1543,11 @@
         "163:40#0",
         "167:23#0",
         "170:51#0"
+      ],
+      "unsnapshottedOnly": [
+        "153-155",
+        "170-171",
+        "173-177"
       ]
     },
     "packages/plugin/form/src/host-contract.ts": {
@@ -1452,7 +1584,10 @@
       "statements": "140/140",
       "branches": "54/54",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "62-84"
+      ]
     },
     "packages/plugin/form/src/scripting/controller.ts": {
       "statements": "573/575",
@@ -1472,6 +1607,37 @@
         "418:53#0",
         "462:53#0",
         "213:60#0"
+      ],
+      "unsnapshottedOnly": [
+        "83-84",
+        "116",
+        "120-127",
+        "130-131",
+        "151-156",
+        "179-183",
+        "204-205",
+        "212-215",
+        "228-232",
+        "236-241",
+        "248-271",
+        "278-283",
+        "307-308",
+        "310-315",
+        "318-319",
+        "342-343",
+        "345-348",
+        "351-352",
+        "369-374",
+        "390-394",
+        "415-420",
+        "433-434",
+        "436-440",
+        "459-464",
+        "476-477",
+        "479-485",
+        "500-505",
+        "516",
+        "551-567"
       ]
     },
     "packages/plugin/form/src/scripting/overlay.ts": {
@@ -1483,6 +1649,16 @@
       "uncoveredBranches": [
         "93:4#0",
         "129:19#0"
+      ],
+      "unsnapshottedOnly": [
+        "33",
+        "63-64",
+        "67",
+        "75-93",
+        "101-108",
+        "117",
+        "133",
+        "140-141"
       ]
     },
     "packages/plugin/form/src/scripting/results.ts": {
@@ -1491,6 +1667,11 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "28:24#0"
+      ],
+      "unsnapshottedOnly": [
+        "9-10",
+        "17-21",
+        "37-38"
       ]
     },
     "packages/plugin/form/src/services/authority.ts": {
@@ -1505,7 +1686,10 @@
       "statements": "33/33",
       "branches": "5/5",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "21-29"
+      ]
     },
     "packages/plugin/form/src/services/index.ts": {
       "statements": "38/38",
@@ -1535,7 +1719,10 @@
       "statements": "71/71",
       "branches": "25/25",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "35-41"
+      ]
     },
     "packages/plugin/form/src/sync/hydration.ts": {
       "statements": "61/61",
@@ -1568,6 +1755,13 @@
         "72:19#0",
         "78:17#0",
         "125:16#0"
+      ],
+      "unsnapshottedOnly": [
+        "47-53",
+        "55-70",
+        "72-112",
+        "118-125",
+        "127"
       ]
     },
     "packages/plugin/form/src/write/activation.ts": {
@@ -1586,6 +1780,17 @@
         "53:61#0",
         "56:67#0",
         "64:14#0"
+      ],
+      "unsnapshottedOnly": [
+        "22-28",
+        "32-33",
+        "50-57",
+        "60-88",
+        "92-96",
+        "102-106",
+        "110-117",
+        "122-142",
+        "144-176"
       ]
     },
     "packages/plugin/form/src/write/fields.ts": {
@@ -1598,6 +1803,12 @@
         "121:65#0",
         "132:14#0",
         "140:14#0"
+      ],
+      "unsnapshottedOnly": [
+        "56-57",
+        "71-76",
+        "86",
+        "88-98"
       ]
     },
     "packages/plugin/form/src/write/interchange.ts": {
@@ -1619,6 +1830,11 @@
         "107:16#0",
         "143:44#0",
         "166:20#0"
+      ],
+      "unsnapshottedOnly": [
+        "53-61",
+        "86-89",
+        "126-157"
       ]
     },
     "packages/plugin/form/src/write/script-effects.ts": {
@@ -1628,6 +1844,12 @@
       "uncoveredBranches": [
         "41:14#0",
         "80:57#0"
+      ],
+      "unsnapshottedOnly": [
+        "36-53",
+        "61-73",
+        "78-92",
+        "99-105"
       ]
     },
     "packages/plugin/form/src/write/values.ts": {
@@ -1638,6 +1860,11 @@
         "29:14#0",
         "53:16#0",
         "110:20#0"
+      ],
+      "unsnapshottedOnly": [
+        "74-98",
+        "116-127",
+        "129-133"
       ]
     },
     "packages/plugin/i18n/src/contract.ts": {
@@ -1726,7 +1953,11 @@
       "statements": "207/207",
       "branches": "96/96",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "126-131",
+        "150-154"
+      ]
     },
     "packages/plugin/interaction/src/feedback.ts": {
       "statements": "45/45",
@@ -1790,6 +2021,13 @@
         "121:74#0",
         "174:36#0",
         "190:75#0"
+      ],
+      "unsnapshottedOnly": [
+        "39",
+        "101-121",
+        "123-139",
+        "142-153",
+        "183-185"
       ]
     },
     "packages/plugin/link/src/host-contract.ts": {
@@ -2008,6 +2246,22 @@
         "30:14#0",
         "40:41#0",
         "75:63#0"
+      ],
+      "unsnapshottedOnly": [
+        "29-32",
+        "34-39",
+        "42",
+        "44-49",
+        "53-57",
+        "60-64",
+        "66-70",
+        "78-94",
+        "96",
+        "98-102",
+        "105-112",
+        "114-141",
+        "143-150",
+        "152-158"
       ]
     },
     "packages/plugin/page-edit/src/host-contract.ts": {
@@ -2079,6 +2333,10 @@
       "uncoveredBranches": [
         "41:39#0",
         "44:44#0"
+      ],
+      "unsnapshottedOnly": [
+        "67-68",
+        "74-76"
       ]
     },
     "packages/plugin/redaction/src/redaction.plugin.ts": {
@@ -2091,7 +2349,10 @@
       "statements": "26/26",
       "branches": "4/4",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "17"
+      ]
     },
     "packages/plugin/redaction/src/services/index.ts": {
       "statements": "17/17",
@@ -2113,6 +2374,9 @@
         "20:14#0",
         "31:39#0",
         "33:71#0"
+      ],
+      "unsnapshottedOnly": [
+        "26-27"
       ]
     },
     "packages/plugin/redaction/src/sync/document-events.ts": {
@@ -2131,13 +2395,20 @@
       "statements": "63/63",
       "branches": "15/15",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "40-41",
+        "57-58"
+      ]
     },
     "packages/plugin/redaction/src/write/marks.ts": {
       "statements": "147/147",
       "branches": "56/56",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "130-131"
+      ]
     },
     "packages/plugin/render/src/contract.ts": {
       "statements": "166/166",
@@ -2161,6 +2432,13 @@
         "306:59#0",
         "377:26#0",
         "470:45#0"
+      ],
+      "unsnapshottedOnly": [
+        "103-111",
+        "133-135",
+        "141-145",
+        "286-310",
+        "456"
       ]
     },
     "packages/plugin/render/src/host-contract.ts": {
@@ -2273,7 +2551,10 @@
       "statements": "83/83",
       "branches": "23/23",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "81-83"
+      ]
     },
     "packages/plugin/search/src/search.plugin.ts": {
       "statements": "21/21",
@@ -2306,6 +2587,10 @@
         "475:23#0",
         "507:43#0",
         "602:41#0"
+      ],
+      "unsnapshottedOnly": [
+        "466-468",
+        "497-498"
       ]
     },
     "packages/plugin/selection/src/geometry.ts": {
@@ -2450,13 +2735,19 @@
       "uncoveredLines": [],
       "uncoveredBranches": [
         "10:32#0"
+      ],
+      "unsnapshottedOnly": [
+        "17-22"
       ]
     },
     "packages/plugin/signature/src/services/events.ts": {
       "statements": "62/62",
       "branches": "5/5",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "37-48"
+      ]
     },
     "packages/plugin/signature/src/services/index.ts": {
       "statements": "33/33",
@@ -2468,7 +2759,10 @@
       "statements": "21/21",
       "branches": "8/8",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "16"
+      ]
     },
     "packages/plugin/signature/src/services/siblings.ts": {
       "statements": "15/15",
@@ -2483,13 +2777,19 @@
       "uncoveredBranches": [
         "27:14#0",
         "43:13#0"
+      ],
+      "unsnapshottedOnly": [
+        "42-45"
       ]
     },
     "packages/plugin/signature/src/signature.plugin.ts": {
       "statements": "53/53",
       "branches": "6/6",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "44-49"
+      ]
     },
     "packages/plugin/signature/src/sync/document-events.ts": {
       "statements": "68/68",
@@ -2503,7 +2803,13 @@
       "statements": "140/140",
       "branches": "52/52",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "102",
+        "107",
+        "118",
+        "120-124"
+      ]
     },
     "packages/plugin/signature/src/token.ts": {
       "statements": "9/9",
@@ -2515,25 +2821,37 @@
       "statements": "50/50",
       "branches": "15/15",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "23-50"
+      ]
     },
     "packages/plugin/signature/src/write/fill.ts": {
       "statements": "59/59",
       "branches": "15/15",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "30-35"
+      ]
     },
     "packages/plugin/signature/src/write/place.ts": {
       "statements": "104/104",
       "branches": "24/24",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "64-101"
+      ]
     },
     "packages/plugin/signature/src/write/sign.ts": {
       "statements": "150/150",
       "branches": "33/33",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "53"
+      ]
     },
     "packages/plugin/stage/src/camera/animation.ts": {
       "statements": "240/240",
@@ -2909,6 +3227,12 @@
         "131:60#0",
         "133:93#0",
         "209:40#0"
+      ],
+      "unsnapshottedOnly": [
+        "103-106",
+        "108-109",
+        "118-122",
+        "158-162"
       ]
     },
     "packages/plugin/view-manager/src/contract.ts": {
@@ -2921,7 +3245,10 @@
       "statements": "175/175",
       "branches": "76/76",
       "uncoveredLines": [],
-      "uncoveredBranches": []
+      "uncoveredBranches": [],
+      "unsnapshottedOnly": [
+        "24"
+      ]
     },
     "packages/plugin/view-manager/src/host-contract.ts": {
       "statements": "8/8",

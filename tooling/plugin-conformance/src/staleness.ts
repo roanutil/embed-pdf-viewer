@@ -38,7 +38,7 @@ for (const suite of loaded) {
   console.log = () => {};
   console.error = () => {};
   try {
-    await emit([suite], true);
+    await emit([suite], 'check');
     rows.push([process.exitCode ? 'stale' : 'unchanged', suite.file, '']);
   } catch (e) {
     rows.push(['throws', suite.file, String((e as Error).message).split('\n')[0]]);

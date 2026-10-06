@@ -23,5 +23,5 @@ for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).s
 for (const name of process.argv.slice(2).filter((a) => a !== '--check')) {
   const module = modules.get(name);
   if (!module?.suites) throw new Error(`src/suites/${name}.ts exports no suites`);
-  await emit(module.suites, check);
+  await emit(module.suites, check ? 'check' : 'write');
 }

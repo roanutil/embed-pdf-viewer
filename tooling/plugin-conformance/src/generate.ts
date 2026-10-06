@@ -6,6 +6,10 @@
  *   pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check
  *   pnpm --filter @embedpdf/tooling-plugin-conformance run vectors -- --only kernel/
  *
+ * `--compared-only` drops every scenario case whose trace carries no state
+ * (`snapshot: 'none'`), runs the rest, and writes nothing. `coverage.ts` runs
+ * it to find the lines only those cases reach.
+ *
  * Suites are discovered: every module in `src/suites/` exports `suites`. A new
  * crate's generator is a new file there and touches nothing else.
  */
@@ -25,6 +29,7 @@ const suitesDir = join(dirname(fileURLToPath(import.meta.url)), 'suites');
 
 const argv = process.argv.slice(2);
 const check = argv.includes('--check');
+const comparedOnly = argv.includes('--compared-only');
 const onlyAt = argv.indexOf('--only');
 const only = onlyAt >= 0 ? argv[onlyAt + 1] : undefined;
 
@@ -34,4 +39,11 @@ for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).s
   if (!module.suites) throw new Error(`src/suites/${file} exports no suites`);
   suites.push(...module.suites);
 }
-await emit(suites, check, only);
+if (comparedOnly) {
+  const compared = suites.map((suite) =>
+    suite.kind === 'scenario' ? { ...suite, cases: suite.cases.filter((c) => c.snapshot !== 'none') } : suite,
+  );
+  await emit(compared, 'render', only);
+} else {
+  await emit(suites, check ? 'check' : 'write', only);
+}
