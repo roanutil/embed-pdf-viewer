@@ -354,7 +354,8 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
    transferable typed arrays, and a cached `FPDF_TEXTPAGE`. Profiled since: only the per-glyph
    reads paid, and their fix is below. Measuring it turned up the search regression below it.
 8. The PDF's bytes as a `$host` handle instead of base64 at open (section 5). About 20 ms of main
-   thread, and every Rust call site that takes bytes changes.
+   thread, and every Rust call site that takes bytes changes. Tried since, and kept: see "The PDF's bytes as a
+   host handle" below.
 9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
    guesses, and `float_roundtrip` risks JS parity.
 10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
@@ -675,3 +676,28 @@ the plugins tip before it (`adda0bbea`), `searchLarge` main-thread JavaScript dr
 801.0 ms) and its time 3.2%. `jump` JavaScript reads 8% lower (136.5 to 125.4 ms, interval 0.868
 to 0.979), inside that row's noise band, so the report doesn't count it. No row is slower, and the
 kernel is unchanged. It's merged into `research/multi-platform-rust-core-impl-plugins`.
+
+### The PDF's bytes as a host handle
+
+Item 8 is two commits on `research/rust-kernel-host-bytes`. No Rust call site had to change: the
+kernel never reads an open source's bytes, it only passes the source to `engine.open`, and the
+bridge's `decode` already turns a `$host` back into the value it holds. So the shim
+(`packages/core-wasm/src/proxy.ts`) holds a document's `Uint8Array` in the bridge's host table and
+sends `{"$host": n}` in its place, for bytes passed to `documents.open` or `openAll`
+(`db0bc2fd8`) and for bytes a source function passed to them produces (`81899a80a`). The viewer
+opens through such a function (`packages/viewer/main/src/kernel/config.ts:47`), so the first
+commit alone moved nothing in the harness. The kernel releases the handle when `close()` drops the
+session's record of its source: a `HostHold` in `crates/epdf-kernel/src/kernel.rs`, which a failed
+tab's `retry()` carries to the next session so the bytes outlive it. Two test files never installed
+the releaser `initWasm()` installs in the browser; they do now. Rust workspace 981 of 981,
+`core-wasm` 61 of 61 and 13 of 13, three of them new.
+
+On the remote (R=10, `results/2026-10-06T01-37-19-460Z-macmini2020-desktop`, A/A 62 of 63, no
+failed samples), against the plugins tip before it (`7455a5294`): `open(ebook)` opens 15% sooner
+(210.1 to 178.1 ms) and settles 8% sooner, now level with `main` (396.3 against 397.9 ms), and
+`open(large)` opens 13% and settles 8% sooner. Main-thread JavaScript at open drops 12% and 6%.
+The base64 copies are gone from the heap: 5.5 MiB less after opening `ebook.pdf`, 3.5 MiB after
+`large.pdf`, 4.4 MiB less across the soak, whose slope stays at 0.02 MiB a cycle. One row is
+slower: `zoomLarge` main-thread JavaScript, 1.063x [1.024, 1.088], with its settle times unmoved.
+The zoom flow passes no bytes; we haven't looked into it. It's merged into
+`research/multi-platform-rust-core-impl-plugins`.
