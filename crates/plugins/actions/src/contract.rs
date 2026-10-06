@@ -698,6 +698,10 @@ pub struct AlertOptions {
 /// The UI port. Identity is the `Rc`: a disposer clears the slot only while
 /// the same adapter is installed. `Err` is a throw, which propagates.
 pub struct ActionUiAdapter {
+    /// A link the document asked to open. The dispatcher has already
+    /// passed it through [`sanitize_external_uri`](crate::sanitize_external_uri)
+    /// with the default allowlist (http, https, mailto, tel), but the string
+    /// is still document-supplied: treat it as untrusted.
     pub open_uri: Rc<dyn Fn(&str, &UriOptions) -> Result<(), Error>>,
     /// The Named Print verb and script `print()`; `None` when the TypeScript
     /// calls `print()` with no context.

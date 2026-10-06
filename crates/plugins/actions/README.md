@@ -49,6 +49,12 @@ Policy is live. `config.policy` and `updatePolicy` merge row-wise, so a row name
 changes, and `updatePolicy` bumps `policyRevision` in the slice even for an empty patch
 (`policy-rows-merge-and-update-live`).
 
+Rust ships no default UI adapter, so the dispatcher does the URI check the TypeScript's default
+adapter does. `sanitize_external_uri` holds a link's scheme to http, https, mailto and tel before
+`open_uri`, and any other scheme ends the node `blocked` with `uri: scheme not allowed`. The cost:
+an embedder cannot receive a custom scheme through `open_uri`, where a TypeScript override adapter
+can. No vector covers it, since every vector link is https.
+
 ## Host inputs
 
 The TypeScript reads three ambient values, and each is an input here:

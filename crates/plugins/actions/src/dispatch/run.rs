@@ -23,6 +23,7 @@ use crate::contract::{
     ActionExecutorResult, ActionNodeResult, ActionNodeStatus, ActionPolicyDecision,
     ActionResultStatus, UriOptions,
 };
+use crate::external_uri::{DEFAULT_ALLOWED_URI_SCHEMES, sanitize_external_uri};
 use crate::host_contract::{AnnotCommitEntry, AnnotCommitResultEntry, AnnotCommitStatus};
 use crate::services::policy::{DOCUMENT_TYPES, Decision, is_print_verb};
 use crate::services::ports::ExecutorKind;
@@ -471,8 +472,20 @@ impl Walk {
                     ));
                     return Ok(());
                 };
+                // The TypeScript's default adapter filters the scheme; Rust has
+                // no default adapter, so no adapter ever sees an unsafe URI.
+                let Some(uri) =
+                    sanitize_external_uri(str_of(&node, "uri"), &DEFAULT_ALLOWED_URI_SCHEMES)
+                else {
+                    self.set(index, ActionNodeStatus::Blocked, Some("scheme not allowed".into()));
+                    (self.diagnose)(ActionDiagnostic::new(
+                        ActionDiagnosticCode::Blocked,
+                        "uri: scheme not allowed",
+                    ));
+                    return Ok(());
+                };
                 (adapter.open_uri)(
-                    str_of(&node, "uri"),
+                    uri,
                     &UriOptions {
                         is_map: get(&node, "isMap").and_then(Value::as_bool).unwrap_or(false),
                         origin: self.ctx.origin,

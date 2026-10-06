@@ -22,6 +22,7 @@
 pub mod contract;
 pub mod controller;
 pub mod dispatch;
+pub mod external_uri;
 pub mod host_contract;
 pub mod hover_pump;
 pub mod lifecycle;
@@ -40,6 +41,7 @@ pub use contract::*;
 pub use controller::{ActionsCapability, create_actions_controller};
 pub use dispatch::fold::fold_steps;
 pub use dispatch::triggers::same_ref;
+pub use external_uri::{DEFAULT_ALLOWED_URI_SCHEMES, sanitize_external_uri};
 pub use host_contract::*;
 pub use hover_pump::{HoverEvents, HoverPump, HoverTarget, create_hover_pump};
 pub use model::{ActionsAction, ActionsState, actions_reducer, initial_actions_state};
