@@ -199,6 +199,10 @@ export function rusty<T>(run: () => T): T {
 
 /** Members that only read: their calls change no state, so answers cached
  *  before them stay good while the store's revision holds. */
+/** `documents.open` and `documents.openAll`: their bytes only pass through
+ *  the kernel. */
+const OPENS = /^open(All)?$/;
+
 const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
 
 export class Wire {
@@ -355,8 +359,15 @@ export class Wire {
       fn: (f) => ({ $fn: `js:${this.fnId(f)}` }),
       signal: signals ? (s) => signals.push(s) : undefined,
       blob: () => unprepared(member),
+      bytes: member !== undefined && OPENS.test(member) ? this.holdBytes : undefined,
     });
   }
+
+  /** A document's bytes, held here instead of inlined: the kernel only
+   *  passes an open source on to the engine, whose bridge decodes the
+   *  `$host` back to this same array, so the bytes never cross. The kernel
+   *  releases it with the last session that can open it. */
+  private readonly holdBytes = (bytes: Uint8Array) => ({ $host: this.bridge.hold(bytes) });
 
   decode(value: unknown): unknown {
     return decode(value, this.bridge.host, this.hook);

@@ -125,12 +125,49 @@ pub struct KernelOptions {
 
 // ── sessions ──────────────────────────────────────────────────────────────────
 
+/// The `$host` values in an open source: what a web host kept on its side
+/// instead of inlining (the PDF's bytes). Handed back to the host once no
+/// session records the source any more: a close drops its session's record,
+/// and a failed tab's `retry()` carries the same hold to the next session.
+/// A native source has none.
+struct HostHold(Vec<Value>);
+
+impl HostHold {
+    fn of(input: &OpenSource) -> Option<Rc<HostHold>> {
+        let OpenSource::Input(value) = input else { return None };
+        let mut held = Vec::new();
+        collect_hosts(value, &mut held);
+        (!held.is_empty()).then(|| Rc::new(HostHold(held)))
+    }
+}
+
+impl Drop for HostHold {
+    fn drop(&mut self) {
+        self.0.iter().for_each(crate::bytes::release_host);
+    }
+}
+
+fn collect_hosts(value: &Value, out: &mut Vec<Value>) {
+    match value {
+        Value::Array(items) => items.iter().for_each(|item| collect_hosts(item, out)),
+        Value::Object(members) => {
+            if members.contains_key("$host") {
+                out.push(value.clone());
+            }
+            members.values().for_each(|member| collect_hosts(member, out));
+        }
+        _ => {}
+    }
+}
+
+/// What `open()` was called with, so a failed tab can `retry()`.
+type Recorded = (OpenSource, OpenOptions, Option<Rc<HostHold>>);
+
 struct Session {
     id: RefCell<String>,
     instance_id: String,
     name: RefCell<Option<String>>,
-    /// What `open()` was called with, so a failed tab can `retry()`.
-    source: RefCell<Option<(OpenSource, OpenOptions)>>,
+    source: RefCell<Option<Recorded>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
     staged_meta: RefCell<Option<DocumentMeta>>,
@@ -492,6 +529,10 @@ impl Inner {
                 this.sessions.borrow_mut().delete(&id);
             }
             this.events.closed.emit(&serde_json::json!({ "documentId": id }));
+            // Nothing retries a closed session, and something may hold it
+            // long after: its source goes now, and with it the host's bytes
+            // unless a `retry()` took them on to the next session.
+            drop(s.source.borrow_mut().take());
             // Each capability's context holds this session, so while the
             // session holds the capabilities (and their connects) the two
             // keep each other alive past the close, and past the kernel.
@@ -888,9 +929,14 @@ impl Inner {
         Self::checkpoint(&session)
     }
 
-    fn open_document(&self, input: OpenSource, options: OpenOptions) -> Promise<Value> {
+    fn open_document(
+        &self,
+        input: OpenSource,
+        options: OpenOptions,
+        hold: Option<Rc<HostHold>>,
+    ) -> Promise<Value> {
         // An async function: its synchronous throws are rejections.
-        match self.reserve_and_open(input, options) {
+        match self.reserve_and_open(input, options, hold) {
             Ok((_, promise)) => promise,
             Err(error) => Promise::rejected(error),
         }
@@ -902,9 +948,11 @@ impl Inner {
         &self,
         input: OpenSource,
         options: OpenOptions,
+        hold: Option<Rc<HostHold>>,
     ) -> Result<(String, Promise<Value>), Error> {
         self.guard_usable("documents.open()")?;
-        let recorded = (input.clone(), options.clone());
+        let hold = hold.or_else(|| HostHold::of(&input));
+        let recorded = (input.clone(), options.clone(), hold);
         let OpenOptions { activate, name, engine: engine_options } = options;
         let requested_id = match &input {
             OpenSource::Thunk(_) => self.next_ticket(),
@@ -1449,7 +1497,7 @@ impl Documents {
 
     pub fn open(&self, input: OpenSource, options: OpenOptions) -> Promise<Value> {
         match self.inner() {
-            Ok(inner) => inner.open_document(input, options),
+            Ok(inner) => inner.open_document(input, options, None),
             Err(error) => Promise::rejected(error),
         }
     }
@@ -1466,13 +1514,13 @@ impl Documents {
             let recorded = session.as_ref().and_then(|s| {
                 (s.phase.get() == Phase::Error).then(|| s.source.borrow().clone()).flatten()
             });
-            let (Some(session), Some((source, options))) = (session, recorded) else {
+            let (Some(session), Some((source, options, hold))) = (session, recorded) else {
                 return Err(Error::new(format!(
                     "[documents] \"{id}\" is not a failed open; nothing to retry"
                 )));
             };
             inner.close_session(&session).await?;
-            let reopened = inner.open_document(source, options);
+            let reopened = inner.open_document(source, options, hold);
             // `return openDocument(...)` from an async function adopts it.
             rt::tick().await;
             reopened.await
@@ -1526,7 +1574,7 @@ impl Documents {
                 OpenSource::Thunk(_) => String::new(),
                 OpenSource::Input(value) => id_of_input(value).unwrap_or_default(),
             };
-            match inner.reserve_and_open(doc.source, options) {
+            match inner.reserve_and_open(doc.source, options, None) {
                 Ok((id, done)) => {
                     done.ignore();
                     ids.push(id);

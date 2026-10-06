@@ -155,6 +155,8 @@ export interface EncodeHooks {
   signal?(value: AbortSignal): void;
   /** Encode a `Blob`. Without it a `Blob` is held, as any live value is. */
   blob?(value: Blob): unknown;
+  /** Encode a `Uint8Array`. Without it the bytes are inlined as base64. */
+  bytes?(value: Uint8Array): unknown;
 }
 
 /** Canonical form of `value`; `hooks.hold` registers what JSON cannot carry
@@ -191,7 +193,7 @@ export function canonical(
   if (h.blob && typeof Blob !== 'undefined' && object instanceof Blob) return h.blob(object);
   const recur = (v: unknown) => canonical(v, h, seen);
   if (object instanceof Error) return errorSpec(object, recur);
-  if (object instanceof Uint8Array) return { $bytes: base64(object) };
+  if (object instanceof Uint8Array) return h.bytes ? h.bytes(object) : { $bytes: base64(object) };
   if (ArrayBuffer.isView(object)) {
     return { $bytes: base64(new Uint8Array(object.buffer, object.byteOffset, object.byteLength)) };
   }

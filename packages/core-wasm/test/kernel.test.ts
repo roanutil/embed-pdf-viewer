@@ -13,7 +13,7 @@ import { SearchToken } from '@embedpdf/plugin-search';
 
 import { RenderToken } from '@embedpdf/plugin-render/contract/host';
 
-import { WasmKernel } from '../wasm-node/epdf_web.js';
+import { WasmKernel, set_host_bytes_source, set_host_release } from '../wasm-node/epdf_web.js';
 import {
   annotationPlugin,
   commandsPlugin,
@@ -29,6 +29,7 @@ import {
   type EngineBridge,
   type RustKernelClass,
 } from '../src';
+import { hostBytes, releaseHost } from '../src/engine-bridge';
 import { demoToolsPlugin } from '../../viewer/chrome/src/config/demo-tools.plugin';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -41,6 +42,9 @@ let kernel: Kernel | undefined;
 
 beforeAll(async () => {
   setWasmKernel(WasmKernel);
+  // As `initWasm()` installs them in the browser.
+  set_host_bytes_source(hostBytes);
+  set_host_release(releaseHost);
   bytes = new Uint8Array(await readFile(resolve(fixtures, FIXTURE)));
 });
 afterEach(async () => {

@@ -14,7 +14,7 @@ import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { RenderToken } from '@embedpdf/plugin-render/contract/host';
 
-import { WasmKernel } from '../wasm-node/epdf_web.js';
+import { WasmKernel, set_host_bytes_source, set_host_release } from '../wasm-node/epdf_web.js';
 import {
   createKernel,
   interactionPlugin,
@@ -24,7 +24,7 @@ import {
   stagePlugin,
 } from '../src';
 import { Wire, type RustKernel, type RustKernelClass } from '../src/proxy';
-import type { EngineBridge } from '../src/engine-bridge';
+import { hostBytes, releaseHost, type EngineBridge } from '../src/engine-bridge';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = resolve(here, '..', '..', 'engine', 'main', 'test', 'fixtures');
@@ -47,6 +47,9 @@ let kernel: Kernel | undefined;
 
 beforeAll(async () => {
   setWasmKernel(WasmKernel);
+  // As `initWasm()` installs them in the browser.
+  set_host_bytes_source(hostBytes);
+  set_host_release(releaseHost);
   bytes = new Uint8Array(await readFile(resolve(fixtures, 'two_page_sigfield.pdf')));
 });
 afterEach(async () => {
@@ -215,6 +218,90 @@ describe('a closed document', () => {
       expect(await collectUntil(() => release.mock.calls.length > 0)).toBe(true);
       await new Promise((r) => setTimeout(r, 0));
       expect(bridge.counts().hosts).toBeLessThan(held);
+    } finally {
+      setWasmKernel(WasmKernel);
+    }
+  });
+});
+
+describe("a document's bytes", () => {
+  /** Open `source` on `k` and run `opened` with the host id its bytes were
+   *  held under. */
+  async function heldId(k: Kernel, bridge: EngineBridge, open: () => void): Promise<number> {
+    const hold = vi.spyOn(bridge, 'hold');
+    open();
+    const call = hold.mock.calls.findIndex(([value]) => value instanceof Uint8Array);
+    expect(call).toBeGreaterThanOrEqual(0);
+    return hold.mock.results[call]!.value as number;
+  }
+
+  test('cross as a host handle, released with the session', async () => {
+    const bridges: EngineBridge[] = [];
+    setWasmKernel(function (...args: ConstructorParameters<RustKernelClass>) {
+      bridges.push(args[1]);
+      return new WasmKernel(...args);
+    } as unknown as RustKernelClass);
+    try {
+      const k = await openFixture();
+      const ready = new Promise<void>((done) => {
+        const off = k.documents.onOpened((event) => {
+          if (event.documentId !== 'second') return;
+          off();
+          done();
+        });
+      });
+      const second = bytes.slice();
+      const id = await heldId(k, bridges[0]!, () =>
+        k.documents.openAll([{ source: { kind: 'bytes', id: 'second', bytes: second }, scope: ['*'] }]),
+      );
+      await ready;
+      expect(hostBytes(id)).toBe(second);
+
+      await k.documents.close('second');
+      const released = () => {
+        try {
+          hostBytes(id);
+          return false;
+        } catch (error) {
+          return /released/.test(String(error));
+        }
+      };
+      const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(await collectUntil(released)).toBe(true);
+      quiet.mockRestore();
+    } finally {
+      setWasmKernel(WasmKernel);
+    }
+  });
+
+  test("outlive a failed open's retry", async () => {
+    const bridges: EngineBridge[] = [];
+    setWasmKernel(function (...args: ConstructorParameters<RustKernelClass>) {
+      bridges.push(args[1]);
+      return new WasmKernel(...args);
+    } as unknown as RustKernelClass);
+    try {
+      const k = await openFixture();
+      const failed = () =>
+        new Promise<void>((done) => {
+          const off = k.documents.onOpenFailed((event) => {
+            if (event.documentId !== 'broken') return;
+            off();
+            done();
+          });
+        });
+      const junk = new Uint8Array([1, 2, 3, 4]);
+      const first = failed();
+      const id = await heldId(k, bridges[0]!, () =>
+        k.documents.openAll([{ source: { kind: 'bytes', id: 'broken', bytes: junk }, scope: ['*'] }]),
+      );
+      await first;
+      const again = failed();
+      await k.documents.retry('broken').catch(() => {});
+      await again;
+      await new Promise((r) => setTimeout(r, 0));
+      // The retried session holds the same bytes: not released yet.
+      expect(hostBytes(id)).toBe(junk);
     } finally {
       setWasmKernel(WasmKernel);
     }
