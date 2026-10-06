@@ -558,7 +558,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
     },
 
     call(docId, path, pon, argsJson) {
-      return bridged(
+      const out = bridged(
         () => {
           const { root, segments } = resolve(document(docId), path, pon);
           let target = root as Record<string, unknown>;
@@ -572,6 +572,17 @@ export function createEngineBridge(engine: Engine): EngineBridge {
         },
         (value) => encode(value),
       );
+      // A closed handle leaves the table once its close settles, either way,
+      // so it does not live until kernel destroy. Only the handle the close
+      // was issued on: a reopen under the same id may have replaced it.
+      if (path === 'close' && (pon === null || pon === undefined)) {
+        const closing = documents.get(docId);
+        const forget = () => {
+          if (closing && documents.get(docId) === closing) documents.delete(docId);
+        };
+        out.then(forget, forget);
+      }
+      return out;
     },
 
     has(docId, member) {

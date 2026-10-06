@@ -126,20 +126,28 @@ describe('the engine bridge over the local engine', () => {
     expect(events.length).toBe(seen);
   });
 
-  test('close resolves again on a second call, matching the real handle', async () => {
+  test('close forgets the document once it settles', async () => {
+    expect(bridge.counts().documents).toBe(1);
     expect(JSON.parse(await bridge.call(docId, 'close', null, '[]'))).toEqual({ $undefined: true });
-    // `LocalDocumentHandle.close()` on an already-closed handle resolves
-    // `undefined` rather than rejecting; the bridge keeps the document in
-    // its table after close so every later call, including a second
-    // `close`, reaches the real handle instead of a bridge-invented error.
-    expect(JSON.parse(await bridge.call(docId, 'close', null, '[]'))).toEqual({ $undefined: true });
+    // The handle is dropped from the table, so a closed document no longer
+    // lives until the kernel is destroyed; a later call on its id answers
+    // the bridge's own unknown-document refusal.
+    expect(bridge.counts().documents).toBe(0);
+    await expect(bridge.call(docId, 'pages.list', null, '[]')).rejects.toEqual({
+      $error: expect.objectContaining({ message: `[engine-bridge] no document "${docId}"` }),
+    });
   });
 
-  test("a call after close answers the real handle's DocNotOpen refusal", async () => {
-    const afterClose = bridge.call(docId, 'pages.list', null, '[]');
-    await expect(afterClose).rejects.toEqual({
-      $error: expect.objectContaining({ name: 'EngineError', code: 'DocNotOpen' }),
-    });
+  test('each open and close leaves no document behind', async () => {
+    const bytes = new Uint8Array(await readFile(resolve(fixtures, FIXTURE)));
+    for (const id of ['again-1', 'again-2']) {
+      const opened = JSON.parse(
+        await bridge.open(JSON.stringify({ kind: 'bytes', id, bytes: bytesJson(bytes) })),
+      );
+      expect(bridge.counts().documents).toBe(1);
+      await bridge.call(opened, 'close', null, '[]');
+      expect(bridge.counts().documents).toBe(0);
+    }
   });
 });
 
