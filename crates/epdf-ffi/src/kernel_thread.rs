@@ -45,6 +45,9 @@ impl<S: 'static> KernelThread<S> {
             .name("epdf-kernel".into())
             .spawn(move || {
                 let origin = Instant::now();
+                rt::set_monotonic_clock(Some(std::rc::Rc::new(move || {
+                    origin.elapsed().as_secs_f64() * 1000.0
+                })));
                 let mut state = match build(post) {
                     Ok(state) => {
                         let _ = built_tx.send(Ok(()));

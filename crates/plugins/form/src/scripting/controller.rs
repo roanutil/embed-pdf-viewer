@@ -137,12 +137,14 @@ impl Pass {
         let Some(remaining) = self.remaining_budget() else {
             return Run::Error(budget_error("Form script transaction timed out"));
         };
-        let started_at = rt::now();
+        // Wall time, not the virtual clock: on a real host the whole chain
+        // runs inside one drain, where the virtual clock stands still.
+        let started_at = rt::monotonic_now();
         let output = match self.txn.run(source, input, Some(remaining)).await {
             Ok(output) => output,
             Err(error) => return Run::Error(script_error(error.message)),
         };
-        self.execution_ms += rt::now() - started_at;
+        self.execution_ms += rt::monotonic_now() - started_at;
         match self.consume(&output, ScriptPhase::User) {
             Some(error) => Run::Error(error),
             None => Run::Output(std::boxed::Box::new(output)),

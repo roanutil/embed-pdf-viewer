@@ -64,6 +64,7 @@ struct Runtime {
 
 thread_local! {
     static RT: Runtime = Runtime::default();
+    static MONOTONIC: RefCell<Option<Rc<dyn Fn() -> f64>>> = const { RefCell::new(None) };
 }
 
 // ── wakers: a task id, pushed onto this thread's ready queue ──────────────────
@@ -136,6 +137,24 @@ pub fn run_until_stalled() {
 /// Milliseconds on the virtual clock: `Date.now()` and `performance.now()`.
 pub fn now() -> f64 {
     RT.with(|rt| rt.now.get())
+}
+
+/// Milliseconds on the host's monotonic clock, for measuring how long
+/// synchronous work took. The virtual clock cannot: a real host catches it up
+/// only when a drain starts, so work inside one drain measures zero. Without
+/// a host clock ([`set_monotonic_clock`]) this is [`now`], which is what a
+/// test driving the clock with [`advance`] wants.
+pub fn monotonic_now() -> f64 {
+    match MONOTONIC.with(|clock| clock.borrow().clone()) {
+        Some(clock) => clock(),
+        None => now(),
+    }
+}
+
+/// Install this thread's monotonic clock, or remove it with `None`. Real
+/// hosts install one when they start the runtime; [`reset`] removes it.
+pub fn set_monotonic_clock(clock: Option<Rc<dyn Fn() -> f64>>) {
+    MONOTONIC.with(|slot| *slot.borrow_mut() = clock);
 }
 
 fn schedule(delay: f64, interval: Option<f64>, callback: Box<dyn FnMut()>) -> TimerId {
@@ -270,6 +289,7 @@ pub fn reset() {
             std::mem::take(&mut *rt.timer_data.borrow_mut()),
         )
     });
+    set_monotonic_clock(None);
     // Dropped outside the borrow: a task's destructor may touch the runtime.
     drop(tasks);
     drop(timers);

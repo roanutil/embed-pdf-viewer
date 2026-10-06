@@ -124,12 +124,15 @@ pub fn reset() {
 /// Move the virtual clock forward to `Date.now()`, and keep it following
 /// wall time at every [`after_entry`] from here on. Call once, when the
 /// kernel is created, so what plugins timestamp with `rt::now()` is a date.
+/// It also installs `Date.now()` as `rt::monotonic_now()`, which measures
+/// work inside one entry, where the virtual clock stands still.
 ///
 /// Call it before anything schedules a timer. The jump is one
 /// `rt::advance` across decades, and an interval set before it would fire
 /// once for every period in the gap.
 pub fn start_clock() {
     STARTED.with(|started| started.set(true));
+    rt::set_monotonic_clock(Some(Rc::new(js_sys::Date::now)));
     let entry = Entry::enter();
     if entry.outermost {
         catch_up();
