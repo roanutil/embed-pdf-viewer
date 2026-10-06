@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import { createLocalEngine } from '@embedpdf/engine';
-import type { Kernel } from '@embedpdf/core';
+import { isCancelled, isPluginError, type Kernel, type PluginError } from '@embedpdf/core';
 import { InteractionToken } from '@embedpdf/plugin-interaction';
 import { StageToken } from '@embedpdf/plugin-stage';
 import { CommandsToken } from '@embedpdf/plugin-commands';
@@ -28,6 +28,7 @@ import {
   stagePlugin,
   type EngineBridge,
   type RustKernelClass,
+  toError,
 } from '../src';
 import { hostBytes, releaseHost } from '../src/engine-bridge';
 import { demoToolsPlugin } from '../../viewer/chrome/src/config/demo-tools.plugin';
@@ -504,5 +505,49 @@ describe('closed documents and destroyed kernels', () => {
     } finally {
       setWasmKernel(WasmKernel);
     }
+  });
+});
+
+describe('Rust rejections keep their error class', () => {
+  test('toError rebuilds a PluginError, decoding its cause and details', () => {
+    const error = toError({
+      $error: {
+        name: 'PluginError',
+        message: 'no such page',
+        code: 'not-found',
+        capability: 'render',
+        details: { page: { $number: 'NaN' }, missing: { $undefined: true } },
+        cause: { $error: { name: 'CancelledError', message: '[kernel] cancelled: open' } },
+      },
+    });
+    expect(isPluginError(error, 'not-found')).toBe(true);
+    expect(error.message).toBe('no such page');
+    expect((error as PluginError).capability).toBe('render');
+    expect((error as PluginError).details).toEqual({ page: NaN });
+    const cause = (error as { cause?: unknown }).cause;
+    expect(isCancelled(cause)).toBe(true);
+    expect((cause as Error).message).toBe('[kernel] cancelled: open');
+  });
+
+  test('closing a document while it opens rejects the open with a CancelledError', async () => {
+    const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
+    const k = createKernel({ engine, plugins: [stagePlugin()] });
+    kernel = k;
+    await k.start();
+    let release!: () => void;
+    const gate = new Promise<void>((done) => (release = done));
+    const opening = k.documents.open(async () => {
+      await gate;
+      return { kind: 'bytes', id: 'late', bytes };
+    });
+    const [id] = k.documents.list().map((d) => d.id);
+    const settled = opening.then(
+      () => null,
+      (error: unknown) => error,
+    );
+    await k.documents.close(id);
+    release();
+    const error = await settled;
+    expect(isCancelled(error)).toBe(true);
   });
 });

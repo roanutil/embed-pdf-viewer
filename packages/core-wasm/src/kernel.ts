@@ -244,7 +244,7 @@ export function createKernel(opts: {
     status: () => rusty(() => wire.rust.status()) as KernelStatus,
     start: () =>
       (started ??= wire.rust.start().then(startJsPlugins, (error) => {
-        throw toError(error);
+        throw toError(error, (v) => wire.decode(v));
       })),
     // Frees the Rust side once its destroy settles; every call after that
     // throws `[core-wasm] kernel destroyed` (`Wire.rust`).

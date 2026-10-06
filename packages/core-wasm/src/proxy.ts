@@ -53,6 +53,7 @@
  * `undefined`, a throw or a promise. A call during which the store changed
  * is not cached, and a callback from the kernel (`callJs`) clears the cache.
  */
+import { CancelledError, PluginError, type PluginErrorCode } from '@embedpdf/core';
 import { canonical, decode, errorSpec, type DecodeHook, type EngineBridge } from './engine-bridge';
 import { hasBlob, prepareArgs, readBinarySources, rehydrate } from './rehydrate';
 
@@ -176,15 +177,49 @@ function unprepared(member: string | undefined): never {
   throw error;
 }
 
+/** Canonical JSON to live values for a thrown error's members when no
+ *  wire is at hand: a `$host` stays its marker. */
+const decodeLoose = (value: unknown) => decode(value, (n) => ({ $host: n }));
+
 /** A canonical `{"$error": {...}}` (or anything thrown) as an `Error` with
- *  its `name`, `code` and other members. */
-export function toError(thrown: unknown): Error {
+ *  its `name`, `code` and other members. The kernel's `PluginError` and
+ *  `CancelledError` come back as those classes, so `isPluginError` and
+ *  `isCancelled` hold. Canonical JSON carries no class, so the name decides.
+ *  Members go through `decodeValue` (`Wire.decode` where the caller has a
+ *  wire), and a nested `$error` (a `cause`) becomes an `Error` too. */
+export function toError(
+  thrown: unknown,
+  decodeValue: (value: unknown) => unknown = decodeLoose,
+): Error {
   const spec = (thrown as { $error?: Record<string, unknown> } | null)?.$error;
   if (!spec) return thrown instanceof Error ? thrown : new Error(String(thrown));
-  const { name, message, ...members } = spec;
-  const error = new Error(typeof message === 'string' ? message : String(message));
-  if (typeof name === 'string') error.name = name;
-  Object.assign(error, members);
+  const { name, message: raw, ...members } = spec;
+  const message = typeof raw === 'string' ? raw : String(raw);
+  const live: Record<string, unknown> = {};
+  for (const [key, member] of Object.entries(members)) {
+    const value =
+      member !== null && typeof member === 'object' && '$error' in member
+        ? toError(member, decodeValue)
+        : decodeValue(member);
+    if (value !== undefined) live[key] = value;
+  }
+  let error: Error;
+  if (name === 'PluginError') {
+    const { code, capability, cause, details, ...rest } = live;
+    error = new PluginError(code as PluginErrorCode, String(capability), message, {
+      cause,
+      details,
+    });
+    Object.assign(error, rest);
+  } else if (name === 'CancelledError') {
+    error = new CancelledError('');
+    error.message = message;
+    Object.assign(error, live);
+  } else {
+    error = new Error(message);
+    if (typeof name === 'string') error.name = name;
+    Object.assign(error, live);
+  }
   return error;
 }
 
@@ -597,7 +632,7 @@ export class Wire {
         return live;
       },
       (error) => {
-        throw toError(error);
+        throw toError(error, (v) => this.decode(v));
       },
     ) as Promise<unknown> & { abort(reason?: unknown): void };
     // A no-op once the kernel is freed: an `AbortSignal` can fire long after.
@@ -732,7 +767,7 @@ export class Wire {
     // wait for `subscribe` to fire. It reads the store's revision instead,
     // and drops everything after a call that isn't a read.
     this.settle(member);
-    if ('threw' in outcome) throw toError(outcome.threw);
+    if ('threw' in outcome) throw toError(outcome.threw, (v) => this.decode(v));
     if ('promise' in outcome) {
       const promise = this.promise(outcome.promise, member);
       for (const signal of signals) {
