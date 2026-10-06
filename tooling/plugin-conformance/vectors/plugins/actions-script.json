@@ -10088,6 +10088,1181 @@
       ]
     },
     {
+      "name": "script-print-obeys-the-print-policy",
+      "covers": "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
+      "plugins": [
+        {
+          "factory": "actions",
+          "config": {
+            "openSequence": "off",
+            "javascript": {
+              "enabled": true,
+              "sandbox": {
+                "builds": [
+                  {
+                    "run": [
+                      {
+                        "output": {
+                          "uiEffects": [
+                            {
+                              "kind": "print"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*",
+              "identity": {
+                "user_id": "u-1",
+                "display_name": "Ada",
+                "group_id": "g-1"
+              }
+            },
+            "services": [
+              "actions",
+              "forms.submit"
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "fieldObjectNumber": 100,
+                      "name": "name",
+                      "family": "text",
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "name-value"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "flags": {
+                        "readOnly": false,
+                        "required": false
+                      },
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 41
+                          },
+                          "annotObjectNumber": 41,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "fieldObjectNumber": 101,
+                      "name": "choice",
+                      "family": "combobox",
+                      "valueEntry": {
+                        "kind": "array",
+                        "values": [
+                          "1"
+                        ]
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "flags": {
+                        "readOnly": false,
+                        "required": false
+                      },
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 42
+                          },
+                          "annotObjectNumber": 42,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ],
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 102
+                      },
+                      "fieldObjectNumber": 102,
+                      "name": "empty",
+                      "family": "text",
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "flags": {
+                        "readOnly": false,
+                        "required": false
+                      },
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "pageObjectNumber": 1
+                            },
+                            "annotObjectNumber": 43
+                          },
+                          "annotObjectNumber": 43,
+                          "page": {
+                            "kind": "objectNumber",
+                            "pageObjectNumber": 1
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 1,
+                "value": {
+                  "annotations": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 6
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "square",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": true,
+                        "print": false,
+                        "readOnly": true,
+                        "locked": true,
+                        "noView": false,
+                        "toggleNoView": true
+                      },
+                      "nm": "tip",
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "color": {
+                        "r": 255,
+                        "g": 0,
+                        "b": 51
+                      },
+                      "interiorColor": null,
+                      "opacity": 0.5,
+                      "strokeWidth": 2,
+                      "borderStyle": "dashed",
+                      "dashArray": [
+                        3,
+                        1
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 7
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "link",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 8
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "widget-text",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      }
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 9
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "subtype": "stamp",
+                      "rect": {
+                        "left": 10,
+                        "bottom": 20,
+                        "right": 30,
+                        "top": 40
+                      },
+                      "flags": {
+                        "hidden": false,
+                        "print": true,
+                        "readOnly": false,
+                        "locked": false,
+                        "noView": false,
+                        "toggleNoView": false
+                      },
+                      "interiorColor": {
+                        "r": 0,
+                        "g": 128,
+                        "b": 255
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "path": "actions.read",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
+                }
+              },
+              {
+                "path": "forms.submit",
+                "value": {
+                  "submissionId": "s",
+                  "receivedAt": "now"
+                }
+              },
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "none",
+                  "needsAppearances": false,
+                  "fields": [],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "page.annotations.list",
+                "value": {
+                  "annotations": []
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "onDiagnostic",
+          "args": [
+            {
+              "$fn": "onDiagnostic"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "setUiAdapter",
+          "args": [
+            {
+              "openUri": {
+                "$fn": "ui.openUri"
+              },
+              "print": {
+                "$fn": "ui.print"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "this.print()",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "lifecycle",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "document",
+                "name": "open"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "actions",
+            "doc": "a"
+          },
+          "method": "execute",
+          "args": [
+            {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "this.print()",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            },
+            {
+              "origin": "user",
+              "source": {
+                "kind": "api"
+              },
+              "event": {
+                "scope": "activate"
+              }
+            }
+          ]
+        }
+      ],
+      "snapshot": [
+        "actions::a"
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 1
+            }
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 0,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "javascript",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "actions.read",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "this.print()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "Ada",
+                    "loginName": "u-1",
+                    "corporation": "g-1",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3669834966
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "name-value",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "name": "choice",
+                      "family": "combobox",
+                      "value": [
+                        "1"
+                      ],
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false,
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 102
+                      },
+                      "name": "empty",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
+                  "annotPages": [
+                    0
+                  ],
+                  "annotsCoverDocument": false,
+                  "event": {
+                    "kind": "widget-activate",
+                    "type": "Doc",
+                    "name": "Open"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "onDiagnostic",
+              "args": [
+                {
+                  "code": "blocked",
+                  "message": "print: policy 'block' for origin 'lifecycle'"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 1,
+                "policyRevision": 0
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "status": "executed",
+                "nodes": [
+                  {
+                    "path": [],
+                    "type": "javascript",
+                    "status": "executed"
+                  }
+                ],
+                "diagnostics": []
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "actions::a",
+              "action": {
+                "type": "ACTIONS_DISPATCHED"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 1,
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "this.print()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "Ada",
+                    "loginName": "u-1",
+                    "corporation": "g-1",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3686612585
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 100
+                      },
+                      "name": "name",
+                      "family": "text",
+                      "value": "name-value",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 101
+                      },
+                      "name": "choice",
+                      "family": "combobox",
+                      "value": [
+                        "1"
+                      ],
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false,
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "fieldObjectNumber": 102
+                      },
+                      "name": "empty",
+                      "family": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "pageObjectNumber": 1
+                        },
+                        "annotObjectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        10,
+                        20,
+                        30,
+                        40
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "RGB",
+                        0,
+                        0.5019607843137255,
+                        1
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
+                  "annotPages": [
+                    0
+                  ],
+                  "annotsCoverDocument": false,
+                  "event": {
+                    "kind": "widget-activate",
+                    "type": "Annot",
+                    "name": "Mouse Up"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "ui.print",
+              "args": [
+                {
+                  "origin": "user",
+                  "phase": "user"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "actions::a": {
+                "seq": 2,
+                "policyRevision": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "script-node-budget",
       "covers": "maxScriptNodesPerDispatch caps JS nodes per dispatch: the rest are inert with the budget reason, and the next dispatch starts a fresh count.",
       "plugins": [

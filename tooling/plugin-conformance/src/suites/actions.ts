@@ -1729,6 +1729,22 @@ const scriptCases: ScenarioCase[] = [
     snapshot: snap,
   },
   {
+    name: 'script-print-obeys-the-print-policy',
+    covers: "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
+    plugins: plugins(
+      JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ kind: 'print' }] })] }] } }),
+    ),
+    engine: scriptEngine({}, { nameTreeScripts: [] }),
+    steps: [
+      ...boot,
+      listen(),
+      cap('setUiAdapter', adapter()),
+      cap('execute', tree(js('this.print()')), LIFECYCLE),
+      cap('execute', tree(js('this.print()')), USER),
+    ],
+    snapshot: snap,
+  },
+  {
     name: 'script-node-budget',
     covers: 'maxScriptNodesPerDispatch caps JS nodes per dispatch: the rest are inert with the budget reason, and the next dispatch starts a fresh count.',
     plugins: plugins(JS_OFF({ maxScriptNodesPerDispatch: 2 })),

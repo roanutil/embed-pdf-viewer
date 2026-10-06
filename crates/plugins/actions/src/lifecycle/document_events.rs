@@ -13,8 +13,8 @@ use epdf_kernel::rt::{self, Promise};
 use crate::ActionsCapability;
 use crate::contract::{
     ActionContext, ActionDiagnostic, ActionDiagnosticCode, ActionNodeStatus, ActionOrigin,
-    ActionSource, ActionStepResult, ActionTriggerEvent, ActionTriggerResult, ActionUiContext,
-    DocumentTriggerEvent, DocumentVerb,
+    ActionPolicyDecision, ActionSource, ActionStepResult, ActionTriggerEvent, ActionTriggerResult,
+    ActionUiContext, DocumentTriggerEvent, DocumentVerb,
 };
 use crate::dispatch::fold::fold_steps;
 use crate::services::catalog::doc_event_tree_key;
@@ -86,6 +86,19 @@ impl ActionsCapability {
         ui_context: Option<ActionUiContext>,
         diagnose: Diagnose,
     ) -> Result<(ActionNodeStatus, Option<String>), Error> {
+        // A script's print() is not a dispatched node, so the print row has
+        // not been consulted yet; the dispatch path (no context) already was.
+        if let Some(ui) = &ui_context {
+            let decision = self.0.policy.borrow().print.get(ui.origin);
+            if matches!(decision, ActionPolicyDecision::Block | ActionPolicyDecision::Report) {
+                let decision = decision.as_str();
+                diagnose(ActionDiagnostic::new(
+                    ActionDiagnosticCode::Blocked,
+                    format!("print: policy '{decision}' for origin '{}'", ui.origin.as_str()),
+                ));
+                return Ok((ActionNodeStatus::Blocked, Some(format!("policy '{decision}'"))));
+            }
+        }
         if self.0.print_latch.get() {
             diagnose(ActionDiagnostic::new(
                 ActionDiagnosticCode::ReentrantPrint,
