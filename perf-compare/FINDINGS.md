@@ -367,7 +367,8 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
 13. `rustc-hash` in place of SipHash for the kernel's own maps (Serialization formats, and Where the
     plugins tip's main thread goes). About 5 ms of `jump`.
 14. The engine bridge's `canonical()` encoding of every engine answer, the JavaScript half of item
-    11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile.
+    11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile. Tried since,
+    and kept: see that section.
 15. The search panel reading `listHits()` at most once a frame during a search (Search on the Rust
     kernel). Only `searchLarge` would gain.
 
@@ -662,3 +663,15 @@ JavaScript goes from 3.28x to 2.53x. `open` doesn't move: its cost is item 12. T
 MiB (7.94 to 8.03), 0.01 MiB brotli. The JavaScript half, `canonical()` encoding the answer, is
 still there (10.5 ms of `jump` in the profile). Both are merged into
 `research/multi-platform-rust-core-impl-plugins`.
+
+Item 14 is `57f627ed5` on `research/rust-kernel-bridge-encode`. The bridge's `canonicalText`
+(`packages/core-wasm/src/engine-bridge.ts`) checks whether an answer is plain JSON data (finite
+numbers, strings, booleans, `null`, and arrays and plain objects of them) and writes it with
+`JSON.stringify` without building the canonical copy; anything else still goes through
+`canonical()`. A test holds the two to the same text for 22 kinds of value, cycles included.
+`core-wasm` 61 of 61 and 10 of 10. On the remote (R=10,
+`results/2026-10-05T23-13-18-049Z-macmini2020-desktop`, A/A 62 of 63, no failed samples), against
+the plugins tip before it (`adda0bbea`), `searchLarge` main-thread JavaScript drops 7.4% (864.8 to
+801.0 ms) and its time 3.2%. `jump` JavaScript reads 8% lower (136.5 to 125.4 ms, interval 0.868
+to 0.979), inside that row's noise band, so the report doesn't count it. No row is slower, and the
+kernel is unchanged. It's merged into `research/multi-platform-rust-core-impl-plugins`.
