@@ -7,7 +7,7 @@ use crate::anchor::anchor_mode_of;
 use crate::geometry::{selection_quad, union_rect};
 use crate::hit::is_selectable;
 use crate::js;
-use crate::types::{Axis, Guide, Id, Model, PageRef, Point, Rect};
+use crate::types::{Annot, Axis, Guide, Id, Model, PageRef, Point, Rect};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SnapResult {
@@ -42,10 +42,8 @@ fn shift(b: &Bounds, d: Point) -> Bounds {
     }
 }
 
-/// An annotation's oriented footprint corners. The TypeScript reads
-/// `m.byId[id]` unguarded, so a missing id throws there; it panics here.
-fn annot_quad(m: &Model, id: &str) -> [Point; 4] {
-    let a = &m.by_id[id];
+/// An annotation's oriented footprint corners.
+fn annot_quad(a: &Annot) -> [Point; 4] {
     selection_quad(&a.geom, a.style.stroke_width, Some(&a.style.border))
 }
 
@@ -69,7 +67,8 @@ pub fn compute_move_snap(
     if ids.iter().any(|id| m.by_id.get(id).is_some_and(|a| anchor_mode_of(a).is_some())) {
         return SnapResult { delta: raw, guides: Vec::new() };
     }
-    let corners: Vec<Point> = ids.iter().flat_map(|id| annot_quad(m, id)).collect();
+    let corners: Vec<Point> =
+        ids.iter().filter_map(|id| m.by_id.get(id)).flat_map(annot_quad).collect();
     let base = to_bounds(union_rect(&corners));
     let moving_box = shift(&base, raw);
 
@@ -81,7 +80,7 @@ pub fn compute_move_snap(
             && is_selectable(m, id)
             && anchor_mode_of(a).is_none()
         {
-            targets.push(to_bounds(union_rect(&annot_quad(m, id))));
+            targets.push(to_bounds(union_rect(&annot_quad(a))));
         }
     }
 

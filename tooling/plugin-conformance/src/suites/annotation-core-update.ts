@@ -374,6 +374,9 @@ const RUNS: Case[] = [
   ['hydrated-keeps-dragged', S(), [ed('down', 101, 130), ed('move', 131, 170), { t: 'hydrated', annots: [] }]],
   ['hydrated-nothing-reaped', S(), [{ t: 'hydrated', annots: ANNOTS }]],
   ['created', GROUP, [{ t: 'beginTextEdit', id: 'tmp:1' }, { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],
+  // The Created ack lands mid-gesture: the draft must follow the temp→durable id swap.
+  ['created-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 170, 150), ed('up', 170, 150)]],
+  ['created-mid-handle', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 200, 160), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 220, 180), ed('up', 220, 180)]],
   ['created-unknown', GROUP, [{ t: 'created', tempId: 'tmp:9', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],
   ['created-index-ref', GROUP, [{ t: 'created', tempId: 'tmp:2', id: 'c2', ref: { kind: 'index', page: pageRef(PON), index: 3, revision: { docSessionId: 's', page: pageRef(PON), generation: 2 } } }]],
   ['create-failed', GROUP, [{ t: 'createFailed', tempId: 'tmp:2' }]],

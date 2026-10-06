@@ -72298,7 +72298,747 @@
       }
     },
     {
-      "name": "runs/create-39-create-failed",
+      "name": "runs/created-39-created-mid-move",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {},
+          "order": []
+        },
+        [
+          {
+            "name": "created-mid-move",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 150,
+                    "y": 130
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "created",
+                "tempId": "tmp:1",
+                "id": "c1",
+                "ref": {
+                  "kind": "nm",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "nm": "abc"
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 170,
+                    "y": 150
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 170,
+                    "y": 150
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "created-mid-handle",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "move",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "square",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "created",
+                "tempId": "tmp:1",
+                "id": "c1",
+                "ref": {
+                  "kind": "nm",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "nm": "abc"
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 220,
+                    "y": 180
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 220,
+                    "y": 180
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "name": "created-mid-move",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "move",
+                  "ids": [
+                    "tmp:1"
+                  ],
+                  "start": {
+                    "x": 150,
+                    "y": 130
+                  },
+                  "delta": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "guides": []
+                },
+                "selected": [
+                  "tmp:1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "move",
+                  "ids": [
+                    "c1"
+                  ],
+                  "start": {
+                    "x": 150,
+                    "y": 130
+                  },
+                  "delta": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "guides": []
+                },
+                "selected": [
+                  "c1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "move",
+                  "ids": [
+                    "c1"
+                  ],
+                  "start": {
+                    "x": 150,
+                    "y": 130
+                  },
+                  "delta": {
+                    "x": 20,
+                    "y": 20
+                  },
+                  "guides": []
+                },
+                "selected": [
+                  "c1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "c1",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "c1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "c1"
+              ],
+              "selected": [
+                "c1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "c1": {
+                  "id": "c1",
+                  "ref": {
+                    "kind": "nm",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "nm": "abc"
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 120,
+                      "y": 120,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "created-mid-handle",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-rect",
+                  "subtype": "square",
+                  "preset": "square",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "from": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "to": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "ellipse": false
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "handle",
+                  "id": "tmp:1",
+                  "handle": "se",
+                  "base": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "cur": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  }
+                },
+                "selected": [
+                  "tmp:1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "handle",
+                  "id": "c1",
+                  "handle": "se",
+                  "base": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "cur": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  }
+                },
+                "selected": [
+                  "c1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "handle",
+                  "id": "c1",
+                  "handle": "se",
+                  "base": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 100,
+                      "height": 60
+                    },
+                    "ellipse": false
+                  },
+                  "cur": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 120,
+                      "height": 80
+                    },
+                    "ellipse": false
+                  }
+                },
+                "selected": [
+                  "c1"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "c1",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "c1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "c1"
+              ],
+              "selected": [
+                "c1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "c1": {
+                  "id": "c1",
+                  "ref": {
+                    "kind": "nm",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "nm": "abc"
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "square",
+                  "geom": {
+                    "t": "rect",
+                    "rect": {
+                      "x": 100,
+                      "y": 100,
+                      "width": 120,
+                      "height": 80
+                    },
+                    "ellipse": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/create-40-create-failed",
       "fn": "runs",
       "args": [
         {
@@ -72696,7 +73436,7 @@
       }
     },
     {
-      "name": "runs/upsert-40-upsert",
+      "name": "runs/upsert-41-upsert",
       "fn": "runs",
       "args": [
         {
@@ -75350,7 +76090,7 @@
       }
     },
     {
-      "name": "runs/bump-41-bump-ap",
+      "name": "runs/bump-42-bump-ap",
       "fn": "runs",
       "args": [
         {
@@ -76725,7 +77465,7 @@
       }
     },
     {
-      "name": "runs/remove-42-remove",
+      "name": "runs/remove-43-remove",
       "fn": "runs",
       "args": [
         {
@@ -78261,7 +79001,7 @@
       }
     },
     {
-      "name": "runs/text-43-text-edit",
+      "name": "runs/text-44-text-edit",
       "fn": "runs",
       "args": [
         {
@@ -80222,7 +80962,7 @@
       }
     },
     {
-      "name": "runs/draft-44-draft-create-rect-upright-nan",
+      "name": "runs/draft-45-draft-create-rect-upright-nan",
       "fn": "runs",
       "args": [
         {
@@ -81191,7 +81931,7 @@
       }
     },
     {
-      "name": "runs/edit-45-edit-move-exactly-0.01",
+      "name": "runs/edit-46-edit-move-exactly-0.01",
       "fn": "runs",
       "args": [
         {
@@ -81464,7 +82204,7 @@
       }
     },
     {
-      "name": "runs/baked-46-baked-handle-flips",
+      "name": "runs/baked-47-baked-handle-flips",
       "fn": "runs",
       "args": [
         {
@@ -83250,7 +83990,7 @@
       }
     },
     {
-      "name": "runs/baked-47-baked-weird-opaque",
+      "name": "runs/baked-48-baked-weird-opaque",
       "fn": "runs",
       "args": [
         {
@@ -83464,7 +84204,7 @@
       }
     },
     {
-      "name": "runs/draft-48-draft-move-missing-member",
+      "name": "runs/draft-49-draft-move-missing-member",
       "fn": "runs",
       "args": [
         {
@@ -85067,22 +85807,7 @@
               {
                 "same": false,
                 "effects": [],
-                "draft": {
-                  "g": "move",
-                  "ids": [
-                    "sq",
-                    "ghost"
-                  ],
-                  "start": {
-                    "x": 0,
-                    "y": 0
-                  },
-                  "delta": {
-                    "x": 10,
-                    "y": 10
-                  },
-                  "guides": []
-                },
+                "draft": null,
                 "selected": [
                   "sq"
                 ]
@@ -85117,22 +85842,7 @@
                 "sq"
               ],
               "hovered": null,
-              "draft": {
-                "g": "move",
-                "ids": [
-                  "sq",
-                  "ghost"
-                ],
-                "start": {
-                  "x": 0,
-                  "y": 0
-                },
-                "delta": {
-                  "x": 10,
-                  "y": 10
-                },
-                "guides": []
-              },
+              "draft": null,
               "preview": null,
               "seq": 0,
               "style": {
@@ -85170,41 +85880,13 @@
               {
                 "same": false,
                 "effects": [],
-                "draft": {
-                  "g": "move",
-                  "ids": [
-                    "ghost"
-                  ],
-                  "start": {
-                    "x": 0,
-                    "y": 0
-                  },
-                  "delta": {
-                    "x": 10,
-                    "y": 10
-                  },
-                  "guides": []
-                },
+                "draft": null,
                 "selected": []
               },
               {
-                "same": false,
+                "same": true,
                 "effects": [],
-                "draft": {
-                  "g": "move",
-                  "ids": [
-                    "ghost"
-                  ],
-                  "start": {
-                    "x": 0,
-                    "y": 0
-                  },
-                  "delta": {
-                    "x": 10,
-                    "y": 10
-                  },
-                  "guides": []
-                },
+                "draft": null,
                 "selected": []
               }
             ],
@@ -85235,21 +85917,7 @@
               ],
               "selected": [],
               "hovered": null,
-              "draft": {
-                "g": "move",
-                "ids": [
-                  "ghost"
-                ],
-                "start": {
-                  "x": 0,
-                  "y": 0
-                },
-                "delta": {
-                  "x": 10,
-                  "y": 10
-                },
-                "guides": []
-              },
+              "draft": null,
               "preview": null,
               "seq": 0,
               "style": {
@@ -86028,7 +86696,7 @@
       }
     },
     {
-      "name": "runs/created-49-created-relationships",
+      "name": "runs/created-50-created-relationships",
       "fn": "runs",
       "args": [
         {

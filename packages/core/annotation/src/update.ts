@@ -612,6 +612,7 @@ function editMove(m: Model, input: PointerInput): [Model, Effect[]] {
   const home = editDraftPage(m, d);
   if (home != null && input.page.pageObjectNumber !== home.pageObjectNumber) return [m, []];
   if (d.g === 'move') {
+    if (d.ids.some((id) => !m.byId[id])) return [{ ...m, draft: null }, []];
     const view = viewOf(input);
     const raw = clampMoveDelta(m, d.ids, sub(input.point, d.start), input.pageBox, view);
     if (!m.snap.guides || input.shift)
@@ -630,6 +631,7 @@ function editMove(m: Model, input: PointerInput): [Model, Effect[]] {
   const point = clampPointToBox(input.point, input.pageBox);
   if (d.g === 'leader') {
     const annotation = m.byId[d.id];
+    if (!annotation) return [{ ...m, draft: null }, []];
     const start = distanceLeaderLength(annotation.geom, d.start);
     const current = distanceLeaderLength(annotation.geom, point);
 
@@ -707,6 +709,7 @@ function editUp(m: Model): [Model, Effect[]] {
     // `cur` is VIEW-space (the projected geometry the user dragged); the
     // commit maps it back to stored space — the identity when un-flagged.
     const before = m.byId[d.id];
+    if (!before) return [{ ...m, draft: null }, []];
     const stored = unanchoredGeom(d.cur, anchorModeOf(before), d.view);
     if (before.measure?.intent === 'PolygonDimension') {
       const readout = shapeMeasurementReadout(stored, before.measure);
@@ -758,6 +761,7 @@ function editUp(m: Model): [Model, Effect[]] {
   }
   if (d.g === 'move') {
     if (Math.hypot(d.delta.x, d.delta.y) < 0.01) return [{ ...m, draft: null }, []]; // a click
+    if (d.ids.some((id) => !m.byId[id])) return [{ ...m, draft: null }, []];
     const byId = { ...m.byId };
     const fx: Effect[] = [];
     for (const id of d.ids) {
@@ -1916,11 +1920,21 @@ function reconcile(m: Model, tempId: Id, id: Id, ref: AnnotationRef): Model {
       };
     }
   }
+  const swap = (x: Id) => (x === tempId ? id : x);
+  // A gesture that began before the ack keeps working on the durable id.
+  const d = m.draft;
+  const draft: Draft | null =
+    d && 'ids' in d
+      ? { ...d, ids: d.ids.map(swap) }
+      : d && 'id' in d
+        ? { ...d, id: swap(d.id) }
+        : d;
   return {
     ...m,
     byId,
-    order: m.order.map((x) => (x === tempId ? id : x)),
-    selected: m.selected.map((x) => (x === tempId ? id : x)),
+    draft,
+    order: m.order.map(swap),
+    selected: m.selected.map(swap),
     // keep the just-drawn box in edit mode across the temp→durable id swap
     editing: m.editing === tempId ? id : m.editing,
   };

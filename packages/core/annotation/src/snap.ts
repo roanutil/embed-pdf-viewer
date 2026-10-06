@@ -37,8 +37,10 @@ const shift = (b: Bounds, d: Vec): Bounds => ({
 
 /** An annotation's visual footprint corners — the ORIENTED quad, so a rotated
  *  shape snaps by what's actually drawn, not its unrotated box. */
-const annotQuad = (m: Model, id: Id): Vec[] =>
-  selectionQuad(m.byId[id].geom, m.byId[id].style.strokeWidth, m.byId[id].style.border);
+const annotQuad = (m: Model, id: Id): Vec[] => {
+  const a = m.byId[id];
+  return a ? selectionQuad(a.geom, a.style.strokeWidth, a.style.border) : [];
+};
 
 /**
  * Snap a move delta: shift the selection's union bounds by `raw`, compare its

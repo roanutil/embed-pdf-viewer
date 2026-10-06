@@ -626,6 +626,9 @@ fn edit_move(m: &Model, input: &PointerInput) -> Step {
         return same();
     }
     if let Draft::Move { ids, start, .. } = d {
+        if ids.iter().any(|id| !m.by_id.contains_key(id)) {
+            return changed(Model { draft: None, ..m.clone() });
+        }
         let view = view_of(input);
         let raw = clamp_move_delta(m, ids, sub(input.point, *start), input.page_box, view);
         if !m.snap.guides || input.shift {
@@ -650,8 +653,10 @@ fn edit_move(m: &Model, input: &PointerInput) -> Step {
     let point = clamp_point_to_box(input.point, input.page_box);
     match d {
         Draft::Leader { id, start, .. } => {
-            // The TypeScript reads `byId[id]` unguarded here.
-            let geom = &m.by_id[id].geom;
+            let Some(a) = m.by_id.get(id) else {
+                return changed(Model { draft: None, ..m.clone() });
+            };
+            let geom = &a.geom;
             let delta = distance_leader_length(geom, point) - distance_leader_length(geom, *start);
             with_draft(m, Draft::Leader { id: id.clone(), start: *start, delta })
         }
@@ -750,7 +755,9 @@ fn edit_up(m: &Model) -> Step {
             if geom_equal(base, cur) {
                 return changed(cleared());
             }
-            let before = &m.by_id[id];
+            let Some(before) = m.by_id.get(id) else {
+                return changed(cleared());
+            };
             let stored = unanchored_geom(cur, anchor_mode_of(before), *view);
             if let Some(MeasurementAppearance::Shape(shape)) = &before.measure
                 && shape.is_polygon()
@@ -809,10 +816,12 @@ fn edit_up(m: &Model) -> Step {
             if js::hypot(delta.x, delta.y) < 0.01 {
                 return changed(cleared());
             }
+            if ids.iter().any(|id| !m.by_id.contains_key(id)) {
+                return changed(cleared());
+            }
             let mut by_id = m.by_id.clone();
             let mut fx = Vec::new();
             for id in ids {
-                // The TypeScript reads `byId[id]` unguarded here.
                 let a = by_id[id].clone();
                 let moved = Annot {
                     geom: geom_translate(&a.geom, *delta),
@@ -2032,8 +2041,24 @@ fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option
         }
     }
     let swap = |x: &Id| if x == temp_id { id.to_string() } else { x.clone() };
+    // A gesture that began before the ack keeps working on the durable id.
+    let mut draft = m.draft.clone();
+    match &mut draft {
+        Some(Draft::Move { ids, .. } | Draft::Rotate { ids, .. } | Draft::Group { ids, .. }) => {
+            for x in ids.iter_mut() {
+                *x = swap(x);
+            }
+        }
+        Some(
+            Draft::Handle { id: x, .. }
+            | Draft::Caption { id: x, .. }
+            | Draft::Leader { id: x, .. },
+        ) => *x = swap(x),
+        _ => {}
+    }
     Some(Model {
         by_id,
+        draft,
         order: m.order.iter().map(swap).collect(),
         selected: m.selected.iter().map(swap).collect(),
         editing: if m.editing.as_deref() == Some(temp_id) {
