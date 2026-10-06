@@ -3798,6 +3798,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -6372,6 +6373,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -30684,6 +30686,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -88834,6 +88837,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -91128,6 +91132,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -96515,6 +96520,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -174711,6 +174717,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -212891,6 +212898,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -240957,6 +240965,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

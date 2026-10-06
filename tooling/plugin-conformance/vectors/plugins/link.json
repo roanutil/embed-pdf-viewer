@@ -12646,6 +12646,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -15349,6 +15350,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -15724,6 +15726,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -16448,6 +16451,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -16703,6 +16707,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -17748,6 +17753,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -18374,6 +18380,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -18766,6 +18773,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -19289,6 +19297,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -21697,6 +21706,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -22655,6 +22665,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -23249,6 +23260,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -27251,6 +27263,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

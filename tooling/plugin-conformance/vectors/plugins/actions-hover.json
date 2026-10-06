@@ -208,6 +208,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -629,6 +630,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -1109,6 +1111,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -1594,6 +1597,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -2047,6 +2051,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -2488,6 +2493,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -3080,6 +3086,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -3864,6 +3871,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [
@@ -4218,6 +4226,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
       "trace": [
         {
           "settled": [

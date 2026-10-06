@@ -27063,6 +27063,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins where replace-text carets anchor and which markup tools register, through the engine writes and call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -32197,6 +32198,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins where replace-text carets anchor and which markup tools register, through the engine writes and call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -37454,6 +37456,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins where replace-text carets anchor and which markup tools register, through the engine writes and call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -85446,6 +85449,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins where replace-text carets anchor and which markup tools register, through the engine writes and call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

@@ -37,6 +37,12 @@ import {
   v3Widget,
 } from './form-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins how the form answers the actions plugin's reset, submit, commit and activation doors, through call outcomes, settled results and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const OFF = { openSequence: 'off' };
 const HYDRATE: ResponseSpec = { path: 'annotations.listRawAll', value: { pages: [] } };
 const WITH_ACTIONS = [{ factory: 'interaction' }, { factory: 'actions', config: OFF }, { factory: 'form' }];
@@ -113,7 +119,7 @@ const executorCases: ScenarioCase[] = [
         b: doc([list(FIELDS)], { lacks: ['forms.applyEffects'] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -136,7 +142,7 @@ const executorCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, act('onDiagnostic', [fnSpec('onDiagnostic')]), execute(resetNode(null)), execute(resetNode(null))],
   },
   {
@@ -154,7 +160,7 @@ const executorCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('resetFormAction', [[byName('other')], false]),
@@ -177,7 +183,7 @@ const submitCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       act('onDiagnostic', [fnSpec('onDiagnostic')]),
@@ -196,7 +202,7 @@ const submitCases: ScenarioCase[] = [
         a: doc([list([C1, BUTTON], { times: 3 }), { path: 'forms.list', error: { name: 'EngineError', message: 'gone', code: 'Io' } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('resolveSubmitDataset', [intent({ fields: [byName('button')] }), USER, fnSpec('diagnose')]),
@@ -234,7 +240,7 @@ const sinkCases: ScenarioCase[] = [
         b: doc([list(FIELDS), HYDRATE], { lacks: ['forms.applyEffects'] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -252,7 +258,7 @@ const sinkCases: ScenarioCase[] = [
         a: doc([list(FIELDS), { path: 'forms.applyEffects', value: effectsOk(1, [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })]) }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('commitScriptFormEffects', [[{ kind: 'setValue', ref: ref(1), value: { type: 'text', value: 'x' } }]])],
   },
 ];
@@ -266,7 +272,7 @@ const widgetCases: ScenarioCase[] = [
     covers: "Without the actions plugin activateWidget takes the form path, which is an unscripted no-op: kind 'form', status unchanged.",
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('activateWidget', ['obj:1', W1]), call('notifyWidgetEvent', ['obj:1', W1, 'mouseDown'])],
   },
   {
@@ -287,7 +293,7 @@ const widgetCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       act('onAction', [fnSpec('onAction')]),
@@ -305,7 +311,7 @@ const widgetCases: ScenarioCase[] = [
         a: doc([list(FIELDS), annotations(1, [activation(1, 101, { activate: tree(js('x()'), true) })])]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('activateWidget', ['obj:1', W1])],
   },
   {
@@ -328,7 +334,7 @@ const widgetCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       act('onAction', [fnSpec('onAction')]),
@@ -369,7 +375,7 @@ const widgetCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       act('onAction', [fnSpec('onAction')]),

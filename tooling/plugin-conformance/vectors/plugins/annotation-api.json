@@ -88,6 +88,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the capability's page-space reads and its write settlements, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -223446,6 +223447,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the capability's page-space reads and its write settlements, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -225731,6 +225733,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the capability's page-space reads and its write settlements, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

@@ -50,6 +50,12 @@ import {
   v3Widget,
 } from './form-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── sandbox answers ───────────────────────────────────────────────────────────
 
 const ev = (value: unknown = null, over: Record<string, unknown> = {}) => ({ rc: true, value, change: '', selStart: 0, selEnd: 0, ...over });
@@ -95,7 +101,7 @@ const environmentCases: ScenarioCase[] = [
       fileName: fnSpec('fileName', { returns: 'proposal.pdf' }),
     }),
     engine: { documents: { a: doc([list([NAME]), ACTIONS_READ(['var a = 1;', 'var b = 2;']), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('Grace')), commit(1, textValue('Hopper'))],
   },
   {
@@ -110,7 +116,7 @@ const environmentCases: ScenarioCase[] = [
         }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, advance(1500), commit(2, textValue('new'))],
   },
   {
@@ -122,7 +128,7 @@ const environmentCases: ScenarioCase[] = [
         a: doc([list([NAME]), ACTIONS_READ()], { services: ['actions'], security: { allows: '*', identity: { user_id: 'u-2' } } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, standalone('recalculate')],
   },
   {
@@ -130,7 +136,7 @@ const environmentCases: ScenarioCase[] = [
     covers: 'dispose() releases the owned realm; a later transaction rejects.',
     plugins: solo({ sandbox: { builds: [{}] } }),
     engine: { documents: { a: doc([list([NAME]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('x')), standalone('dispose'), commit(1, textValue('y')), standalone('dispose')],
   },
 ];
@@ -160,7 +166,7 @@ const valueCases: ScenarioCase[] = [
       "A toggle proposes its state (null as 'Off'), a combobox its first choice ('' for none), a listbox every choice; a value whose type does not match the family fails the transaction before any run.",
     plugins: solo({ sandbox: { builds: [{}] } }),
     engine: { documents: { a: doc([list(PLAIN_VALUE_FIELDS), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       commit(4, { type: 'toggle', state: 'Yes' }),
@@ -179,7 +185,7 @@ const valueCases: ScenarioCase[] = [
     covers: "A toggle to null reaches the validator as 'Off'.",
     plugins: solo({ sandbox: { builds: [{ run: [out({ event: ev('Off') })] }] } }),
     engine: { documents: { a: doc([list([CHECK]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(4, { type: 'toggle', state: null })],
   },
   {
@@ -206,7 +212,7 @@ const valueCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list(VALUE_FIELDS), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       commit(9, textValue('typed')),
@@ -231,7 +237,7 @@ const bootCases: ScenarioCase[] = [
       sandbox: { builds: [{ boot: [out({ formEffects: [setValue(1, textValue('initialized'))], uiEffects: [alert('Needs a newer viewer', 1)] })] }] },
     }),
     engine: { documents: { a: doc([list([NAME, text(2, 'other', 'o')]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('mine')), commit(2, textValue('again'))],
   },
   {
@@ -247,7 +253,7 @@ const bootCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([NAME]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('a'))],
   },
   {
@@ -270,7 +276,7 @@ const bootCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([NAME, text(2, 'other', 'o')]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('b'))],
   },
   {
@@ -282,7 +288,7 @@ const bootCases: ScenarioCase[] = [
         a: doc([list([NAME]), { path: 'actions.read', error: { name: 'EngineError', message: 'actions unavailable', code: 'Io' } }, applyOk()], withScripts),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('a'))],
   },
   {
@@ -313,7 +319,7 @@ const bootCases: ScenarioCase[] = [
         c: doc([list([NAME, text(2, 'guarded', '', kvcf({ validate: tree(js('no()')) }))]), ACTIONS_READ()], { ...withScripts, lacks: ['forms.applyEffects'] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -334,7 +340,7 @@ const activationCases: ScenarioCase[] = [
       sandbox: { builds: [{ run: [out({ formEffects: [setValue(1, textValue('Mouse Up:Field'))], uiEffects: [alert('Summary ready'), { kind: 'gotoPage', page: 1 }] })] }] },
     }),
     engine: { documents: { a: doc([list([NAME, BUTTON, TOTAL], {}, [ref(3)]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, standalone('activate', [ref(8), tree(js('go()', [js('then()')]))])],
   },
   {
@@ -342,7 +348,7 @@ const activationCases: ScenarioCase[] = [
     covers: "An activation that sets its own field's value commits it; the activated field is not formatted, since no value was proposed.",
     plugins: solo({ sandbox: { builds: [{ run: [out({ formEffects: [setValue(9, textValue('mine'))] })] }] } }),
     engine: { documents: { a: doc([list([text(9, 'self', 'old', kvcf({ format: tree(js('fmt()')) }))]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, standalone('activate', [ref(9), tree(js('me()'))])],
   },
   {
@@ -354,7 +360,7 @@ const activationCases: ScenarioCase[] = [
         a: doc([list([text(4, 'total', 'changed', { defaultValueEntry: { kind: 'scalar', value: 'dflt' } })], {}, [ref(4)]), ACTIONS_READ(), applyOk()], withScripts),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, standalone('recalculate')],
   },
   {
@@ -363,7 +369,7 @@ const activationCases: ScenarioCase[] = [
       'An incomplete tree fails before any run; a tree with no JavaScript commits nothing; a run error fails the transaction.',
     plugins: solo({ sandbox: { builds: [{ run: [exception('activation broke')] }] } }),
     engine: { documents: { a: doc([list([NAME, BUTTON]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       standalone('activate', [ref(8), tree(js('x()'), true)]),
@@ -394,7 +400,7 @@ const keystrokeCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([NAME, CODE()]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('abc'))],
   },
   {
@@ -422,7 +428,7 @@ const keystrokeCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([CODE({}, '😀x')]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('z')), commit(2, textValue('z')), commit(2, textValue('z')), commit(2, textValue('z')), commit(2, textValue('z'))],
   },
   {
@@ -443,7 +449,7 @@ const keystrokeCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, { type: 'text', value: null }), commit(3, textValue('u')), commit(4, textValue('l')), commit(5, textValue('s'))],
   },
   {
@@ -471,7 +477,7 @@ const keystrokeCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([CODE()]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('42')), commit(2, textValue('43')), commit(2, textValue('44')), commit(2, textValue('45')), commit(2, textValue('46')), commit(2, textValue('47'))],
   },
   {
@@ -491,7 +497,7 @@ const keystrokeCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('a')), commit(3, textValue('b')), commit(4, { type: 'toggle', state: 'Yes' })],
   },
 ];
@@ -518,7 +524,7 @@ const validateCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list([NAME, GUARD()]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('invalid')), commit(2, textValue('ok')), commit(2, textValue('ok')), commit(2, textValue('A@B.TEST'))],
   },
   {
@@ -530,7 +536,7 @@ const validateCases: ScenarioCase[] = [
         a: doc([list([GUARD({ validate: tree(js('x()'), true) }), text(3, 'empty', '', kvcf({ validate: tree(null) }))]), applyOk()]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('a')), commit(3, textValue('b'))],
   },
 ];
@@ -566,7 +572,7 @@ const calculateCases: ScenarioCase[] = [
       },
     }),
     engine: { documents: { a: doc([list(CALC_FIELDS, {}, [null, ref(99), ref(3), ref(4), ref(5), ref(6), ref(4)]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('5'))],
   },
   {
@@ -579,7 +585,7 @@ const calculateCases: ScenarioCase[] = [
         b: doc([list([text(2, 'amount', '3'), text(3, 'total', '', kvcf({ calculate: tree(js('t()'), true) }))], {}, [ref(3)]), applyOk()]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -599,7 +605,7 @@ const calculateCases: ScenarioCase[] = [
         c: doc([list([])]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -629,7 +635,7 @@ const formatCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('7')), commit(2, textValue('8')), commit(3, textValue('9')), commit(4, textValue('10'))],
   },
 ];
@@ -678,7 +684,7 @@ const effectCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue(''))],
   },
   {
@@ -698,7 +704,7 @@ const effectCases: ScenarioCase[] = [
         b: doc([list([NAME])], { lacks: ['forms.applyEffects'] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -714,7 +720,7 @@ const effectCases: ScenarioCase[] = [
     covers: 'A commit of the current value produces no effects: unchanged, no engine write. A field the snapshot no longer has fails.',
     plugins: solo({ sandbox: { builds: [{}] } }),
     engine: { documents: { a: doc([list([NAME])]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('Ada')), commit(99, textValue('x')), standalone('commit', [{ kind: 'fqn', name: 'name' }, textValue('x')])],
   },
   {
@@ -724,7 +730,7 @@ const effectCases: ScenarioCase[] = [
       sandbox: { builds: [{ run: [{ throws: { message: 'realm crashed' } }, out({ formEffects: [setValue(8, textValue('no'))] })] }] },
     }),
     engine: { documents: { a: doc([list([GUARD(), BUTTON]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('a')), commit(2, textValue('b'))],
   },
 ];
@@ -754,7 +760,7 @@ const budgetCases: ScenarioCase[] = [
       budget: BUDGET,
     }),
     engine: { documents: { a: doc([list([NAME, GUARD()]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('a')), commit(2, textValue('b'))],
   },
   {
@@ -762,7 +768,7 @@ const budgetCases: ScenarioCase[] = [
     covers: `Output bytes are the UTF-8 length of each output's JSON (${WIDE_BYTES} here, with 2-, 3- and 4-byte characters): exactly the budget passes.`,
     plugins: solo({ sandbox: { builds: [{ boot: [out(WIDE)] }] }, budget: { ...BUDGET, maxOutputBytes: WIDE_BYTES } }),
     engine: { documents: { a: doc([list([NAME]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('a'))],
   },
   {
@@ -770,7 +776,7 @@ const budgetCases: ScenarioCase[] = [
     covers: 'One byte over, a boot output degrades with the budget message, and a run output that crosses the aggregate fails the transaction.',
     plugins: solo({ sandbox: { builds: [{ boot: [out(WIDE)], run: [out(WIDE)] }] }, budget: { ...BUDGET, maxOutputBytes: WIDE_BYTES - 1 } }),
     engine: { documents: { a: doc([list([NAME, GUARD()]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(1, textValue('a')), commit(2, textValue('b'))],
   },
   {
@@ -782,7 +788,7 @@ const budgetCases: ScenarioCase[] = [
       budget: BUDGET,
     }),
     engine: { documents: { a: doc([list([CODE()]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('slow')), advance(60), settle('rebuild'), commit(2, textValue('next'))],
   },
   {
@@ -793,7 +799,7 @@ const budgetCases: ScenarioCase[] = [
       budget: BUDGET,
     }),
     engine: { documents: { a: doc([list([CODE()]), ACTIONS_READ(), applyOk()], withScripts) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, commit(2, textValue('slow')), advance(20), settle('rebuild')],
   },
 ];
@@ -866,7 +872,7 @@ const capabilityCases: ScenarioCase[] = [
       "setValues and importValues report a rejected write as failed 'invalid-input' with the first diagnostic's message (or the status), and a failed one as 'operation-failed' with the error's message; a rejection is also announced on onValidationRejected with its diagnostics.",
     plugins: scripted({ builds: [{ run: [rejects('x'), budgetFault('boom'), out({ event: ev('ok') }), out({ event: ev('y', { rc: false }), diagnostics: [{ code: 'script-error', message: 'bad email' }] })] }] }),
     engine: { documents: { a: doc([list([NAME, GUARD()]), applyOk()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       ...observe,
@@ -901,7 +907,7 @@ const capabilityCases: ScenarioCase[] = [
         a: doc([list([text(2, 'amount', '3'), text(4, 'total', '6', kvcf({ calculate: tree(js('t()')) }))], {}, [ref(4)]), applyOk()]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       ...observe,
@@ -931,7 +937,7 @@ const capabilityCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('activateWidget', ['obj:8', aref(1, 108)]),
@@ -963,7 +969,7 @@ const capabilityCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('activateWidget', ['obj:8', { kind: 'nm', page: pr(1), nm: 'n1' }]),
@@ -989,7 +995,7 @@ const capabilityCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('activateWidget', ['obj:8', { page: pr(1), annotObjectNumber: 108 }])],
   },
   {
@@ -1020,7 +1026,7 @@ const capabilityCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('activateWidget', ['obj:8', aref(1, 108)]),
@@ -1048,7 +1054,7 @@ const capabilityCases: ScenarioCase[] = [
         a: doc([list([AMOUNT, TOTAL], {}, [ref(3)]), annotations(1, []), { path: 'forms.setValue', value: { changedWidgets: [v3Widget({ annotObjectNumber: 102, pageObjectNumber: 1 })] } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('commitValue', [ref(2), textValue('3')]), call('activateWidget', ['obj:2', aref(1, 102)])],
   },
 ];

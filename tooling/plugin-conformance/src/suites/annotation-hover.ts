@@ -24,6 +24,12 @@ import {
   widget,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins what hover reports to the actions pump and the permission twins, through call outcomes, callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const tree = (name: string) => ({ root: { type: 'named', subtype: 'Named', name, next: [] }, incomplete: false, warningFlags: 0, warnings: [] });
 const actionsCall = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'actions', doc: 'a' }, method, args });
 
@@ -67,7 +73,7 @@ const cases: ScenarioCase[] = [
       'With the actions plugin present, each hover change reports to the shared pump: an annotation with /E or /X trees is a target with per-event flags; drafts, widgets, links and tree-less annotations are not. The pump runs the trees as hover-origin dispatches.',
     plugins: [{ factory: 'interaction' }, { factory: 'actions', config: { openSequence: 'off' } }, { factory: 'annotation' }],
     engine: { documents: { a: doc([hydrate({ 1: hoverable }), annotationsList, FORMS_EMPTY, { path: 'page.annotations.create', pon: 1, defer: 'draft' }]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       actionsCall('registerExecutor', 'named', { $fn: 'exec.named', returns: { status: 'executed' } }),
@@ -97,7 +103,7 @@ const cases: ScenarioCase[] = [
         c: doc([hydrate({ 1: [square(1)] })], { security: { allows: ['doc.annotate.read'], allowsAnnotationCreate: true, allowsAnnotationMutation: { update: true, delete: false } } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },

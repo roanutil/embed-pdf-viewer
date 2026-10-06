@@ -14,6 +14,12 @@ import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the pane events each write fires, which the event callbacks record. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 /**
  * The shipping controller spreads its context (`{ ...rawCtx, dispatch }`),
  * which reads the controller context's `doc` getter, and for a workspace
@@ -334,7 +340,7 @@ const cases: ScenarioCase[] = [
     covers:
       'Every write is diffed: onPaneCreated for each new pane in order, onPaneRemoved for each removed one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc(), b: doc() } },
     steps: [
       vm('onPaneCreated', { $fn: 'created', returns: null }),

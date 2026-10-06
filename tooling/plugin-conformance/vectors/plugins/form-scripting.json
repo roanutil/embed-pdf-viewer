@@ -270,6 +270,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -920,6 +921,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -1477,6 +1479,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -1918,6 +1921,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -2755,6 +2759,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -3935,6 +3940,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -4905,6 +4911,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7901,6 +7908,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -8582,6 +8590,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -9190,6 +9199,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -9722,6 +9732,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -10727,6 +10738,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -12066,6 +12078,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -12645,6 +12658,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -13196,6 +13210,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -13729,6 +13744,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -14451,6 +14467,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -15176,6 +15193,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -16939,6 +16957,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -18392,6 +18411,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -19873,6 +19893,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -20606,6 +20627,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -21660,6 +21682,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -22487,6 +22510,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -23836,6 +23860,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -24979,6 +25004,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -25970,6 +25996,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -27179,6 +27206,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -27908,6 +27936,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -28631,6 +28660,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -29181,6 +29211,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -29856,6 +29887,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -30489,6 +30521,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -31108,6 +31141,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -31830,6 +31864,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -32726,6 +32761,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -39599,6 +39635,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -42232,6 +42269,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -44955,6 +44993,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -46828,6 +46867,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -47701,6 +47741,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -48512,6 +48553,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -52702,6 +52744,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the script transaction (what crosses into the sandbox and what commits), through settled results, sandbox callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

@@ -12131,6 +12131,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -42882,6 +42883,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -51154,6 +51156,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -51847,6 +51850,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -77579,6 +77583,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -78447,6 +78452,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -81708,6 +81714,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -84226,6 +84233,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -86471,6 +86479,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -94637,6 +94646,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

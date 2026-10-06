@@ -43,6 +43,12 @@ import {
   updated,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins activation outcomes, reveals and hit tests, through call outcomes, onActivate callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── the factory ───────────────────────────────────────────────────────────────
 
 type Scripted = AnswerSpec & { readonly $fn: string };
@@ -329,7 +335,7 @@ const cases: ScenarioCase[] = [
       'With the annotation plugin init registers the link-nav behavior: it matches link annotations only and is engaged while the active tool enables link-nav, as engaged() is. The link tool (no link-nav) hands links to the annotation plane; pan takes them back.',
     plugins: WITH_ANNOTATION,
     engine: { documents: { a: annotationDoc({ 1: [link(1), square(2)] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lk('engaged'),
@@ -352,7 +358,7 @@ const cases: ScenarioCase[] = [
     covers: 'Without the annotation plugin engaged() still reads the hub: true under pointer, false under a tool without link-nav.',
     plugins: VIEWER,
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lk('engaged'),
@@ -369,7 +375,7 @@ const cases: ScenarioCase[] = [
       'With no stage a goto hands back its explicit destination; uri and named report their member; javascript, goto-remote, launch and unsupported are reported whole. An activate tree without the actions plugin takes the same classic path. onActivate sees every activation.',
     plugins: VIEWER,
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lk('activate', [goto(xyz(2, 10, 20, 3))]),
@@ -387,7 +393,7 @@ const cases: ScenarioCase[] = [
     covers: 'Without an onActivate config activation still runs and returns its outcome.',
     plugins: [INTERACTION, { factory: 'link' }],
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, lk('activate', [uri('https://example.com')]), lk('activate', [named('FirstPage')])],
   },
   {
@@ -396,7 +402,7 @@ const cases: ScenarioCase[] = [
       'With a stage a goto to a page of the document reveals its destination smoothly (xyz, fit, fitH, fitR on an offset crop) and reports revealed; a goto to a page the document lacks hands back the destination.',
     plugins: WITH_STAGE,
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       viewport,
@@ -420,7 +426,7 @@ const cases: ScenarioCase[] = [
     covers: 'The reveal is smooth whatever the stage scrollBehavior setting: with frames the camera tweens to the destination.',
     plugins: [INTERACTION, { factory: 'stage', config: { ...STAGE.config, frames: true } }, LOGGED],
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), st('cameraInMotion'), { op: 'advance', ms: 400 }, st('cameraInMotion'), st('camera')],
   },
   {
@@ -429,7 +435,7 @@ const cases: ScenarioCase[] = [
       'A goto to a page whose userUnit is 0 throws the geometry error out of activate before onActivate runs.',
     plugins: WITH_STAGE,
     engine: { documents: { a: doc([], { pages: [layout(0, 1), { ...layout(1, 2, CROP2), userUnit: 0 }] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), lk('activate', [goto({ kind: 'fit', page: pr(1) })])],
   },
   {
@@ -437,7 +443,7 @@ const cases: ScenarioCase[] = [
     covers: 'onActivate runs after the built-in handling, so its throw leaves the reveal done and escapes activate.',
     plugins: [INTERACTION, STAGE, { factory: 'link', config: { onActivate: { $fn: 'onActivate', throws: { name: 'Error', message: 'listener broke' } } } }],
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, viewport, lk('activate', [goto(xyz(2, 60, 300, 2))]), st('currentPage')],
   },
   {
@@ -460,7 +466,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       viewport,
@@ -490,7 +496,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lk('ensureLoaded', [pr(1)]),
@@ -522,7 +528,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lk('ensureLoaded', [pr(1)]),
@@ -545,7 +551,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: { token: 'actions', doc: 'a' }, method: 'onExecuted', args: [{ $fn: 'executed' }] },
@@ -608,7 +614,7 @@ const cases: ScenarioCase[] = [
     covers: 'With the annotation plugin every page is loaded and listAllLinks reads its folded model without an engine read.',
     plugins: WITH_ANNOTATION,
     engine: { documents: { a: annotationDoc({ 1: [link(1)], 2: PAGE2 }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('listAllLinks')],
   },
 ];

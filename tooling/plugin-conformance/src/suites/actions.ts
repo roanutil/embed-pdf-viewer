@@ -39,6 +39,28 @@ import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '..
 import type { FunctionCase, Suite } from '../vectors';
 import { scriptedCallback, scriptedSandboxFactory, type AnswerSpec, type SandboxSpec } from './acrojs';
 
+/** Why some cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED_ACTIONS_DISPATCHER = {
+  snapshot: 'none',
+  reason: "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+const UNSNAPSHOTTED_ACTIONS_HOVER = {
+  snapshot: 'none',
+  reason: "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+} as const;
+const UNSNAPSHOTTED_ACTIONS_SCRIPT = {
+  snapshot: 'none',
+  reason: "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
+} as const;
+const UNSNAPSHOTTED_ACTIONS_SUBMIT = {
+  snapshot: 'none',
+  reason: "Pins the handoff between an installed submit handler and the home, through the handler callbacks and the engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+const UNSNAPSHOTTED_ACTIONS_TRIGGERS = {
+  snapshot: 'none',
+  reason: "Pins when lifecycle trees are read and which trigger families fire, through the engine reads and the dispatch outcomes. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── the observer-error host input ─────────────────────────────────────────────
 
 let observerEnv: PluginEnv | null = null;
@@ -523,7 +545,7 @@ const dispatcherCases: ScenarioCase[] = [
       cap('getActionTree', { kind: 'document', event: 'did-print' }),
       { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'getActionTree', args: [{ kind: 'document' }] },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_DISPATCHER,
   },
   {
     name: 'uri-without-an-adapter',
@@ -556,7 +578,7 @@ const dispatcherCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter()),
       cap('execute', tree(named('Print')), USER),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_DISPATCHER,
   },
   {
     name: 'hide-routes-by-plane',
@@ -790,7 +812,7 @@ const dispatcherCases: ScenarioCase[] = [
       callRef(6),
       cap('execute', tree(submit(payload())), USER),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_DISPATCHER,
   },
   {
     name: 'dispatches-serialize',
@@ -916,7 +938,7 @@ const submitCases: ScenarioCase[] = [
       { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'setSubmitHandler', args: [fnSpec('handler.b')] },
       { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'execute', args: [tree(submit(payload())), USER] },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SUBMIT,
   },
   {
     name: 'handler-contract',
@@ -1172,7 +1194,7 @@ const triggerCases: ScenarioCase[] = [
       dispatch(pageEvent('visible', 5)),
       close(),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_TRIGGERS,
   },
   {
     name: 'trigger-gates',
@@ -1200,7 +1222,7 @@ const triggerCases: ScenarioCase[] = [
     plugins: plugins({ openSequence: 'off', triggers: {} }),
     engine: engineWith(),
     steps: [...boot, cap('canDispatch', pageEvent('open', 1)), cap('canDispatch', annotationEvent('focus', 1, aref(1, 1))), cap('canDispatch', docEvent('open'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_TRIGGERS,
   },
 ];
 
@@ -1787,7 +1809,7 @@ const scriptCases: ScenarioCase[] = [
         { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
       ].map((ctx) => cap('execute', tree(js('probe()')), ctx)),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-page-to-anchor',
@@ -1818,7 +1840,7 @@ const scriptCases: ScenarioCase[] = [
     ),
     engine: scriptEngine(),
     steps: [...boot, cap('execute', tree(js('a()')), USER)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'environment-defaults',
@@ -1826,7 +1848,7 @@ const scriptCases: ScenarioCase[] = [
     plugins: plugins(JS_OFF()),
     engine: scriptEngine(),
     steps: [start, open('a', { name: 'Opened.pdf' }), { op: 'advance', ms: 2500 }, cap('execute', tree(js('a()', [js('b()')])), USER)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'environment-file-name-fallback',
@@ -1834,7 +1856,7 @@ const scriptCases: ScenarioCase[] = [
     plugins: plugins(JS_OFF()),
     engine: scriptEngine(),
     steps: [...boot, cap('execute', tree(js('a()')), USER)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'a-fault-rebuilds-the-realm',
@@ -1842,7 +1864,7 @@ const scriptCases: ScenarioCase[] = [
     plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [{ dispose: true }] }, {}] } })),
     engine: scriptEngine(),
     steps: [...boot, cap('execute', tree(js('a()')), USER), cap('execute', tree(js('b()')), USER)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'a-throwing-sandbox-fails-the-node',
@@ -1858,7 +1880,7 @@ const scriptCases: ScenarioCase[] = [
     plugins: plugins(JS_OFF({ budget: { maxExecutionMs: 5, maxMemoryBytes: 1024, maxStackBytes: 256, maxEffects: 2, maxOutputBytes: 64 } })),
     engine: scriptEngine(),
     steps: [...boot, cap('execute', tree(js('a()')), USER)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-sandbox-host',
@@ -1881,7 +1903,7 @@ const scriptCases: ScenarioCase[] = [
       callRef(8, fnSpec('body', { resolves: 'body-result' })),
       callRef(8, fnSpec('body.throws', { throws: { message: 'body threw' } })),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'closing-the-document-disposes-the-realm',
@@ -1889,7 +1911,7 @@ const scriptCases: ScenarioCase[] = [
     plugins: plugins(JS_OFF()),
     engine: scriptEngine(),
     steps: [...boot, cap('execute', tree(js('a()')), USER), close()],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'script-boot-without-a-catalog',
@@ -1902,7 +1924,7 @@ const scriptCases: ScenarioCase[] = [
       },
     },
     steps: [start, open('a'), open('b'), cap('execute', tree(js('a()')), USER), { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'execute', args: [tree(js('b()')), USER] }],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'detached-script-realm',
@@ -1925,7 +1947,7 @@ const scriptCases: ScenarioCase[] = [
       callRef(1),
       { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['again()'] },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'detached-script-realm-without-metadata',
@@ -1942,7 +1964,7 @@ const scriptCases: ScenarioCase[] = [
       { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
       { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['stamp()'] },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-detached-realm-without-scripting',
@@ -1953,7 +1975,7 @@ const scriptCases: ScenarioCase[] = [
     ],
     engine: { documents: { a: doc(), b: doc() } },
     steps: [start, open('a'), open('b'), { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] }],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'scripting-disabled',
@@ -1995,7 +2017,7 @@ const surfaceCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter()),
       surface({ uiEffects: [{ kind: 'alert', message: 'm3', icon: 1 }, { kind: 'gotoPage', page: 1 }] }),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-refusals',
@@ -2016,7 +2038,7 @@ const surfaceCases: ScenarioCase[] = [
       settle('printing', 'done'),
       { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'surfaceScriptResult', args: [{ uiEffects: [{ kind: 'print' }], diagnostics: [], origin: 'user', phase: 'user' }] },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-submit',
@@ -2031,7 +2053,7 @@ const surfaceCases: ScenarioCase[] = [
       surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }, { kind: 'submitForm', url: 'https://x.test', fieldNames: ['a'], includeEmpty: true, format: 'html', method: 'get' }], origin: 'lifecycle' }),
       surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }], origin: 'user' }),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-a-detached-realm',
@@ -2057,7 +2079,7 @@ const surfaceCases: ScenarioCase[] = [
       }),
       surface({ uiEffects: [{ kind: 'gotoPage', page: 2 }], realm: 'document' }),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-script-commit',
@@ -2095,7 +2117,7 @@ const surfaceCases: ScenarioCase[] = [
         { origin: 'user', realm: 'detached' },
       ),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'script-hooks-isolate-observers',
@@ -2108,7 +2130,7 @@ const surfaceCases: ScenarioCase[] = [
       cap('onScriptError', fnSpec('bad.error', { throws: { message: 'error broke' } })),
       surface({ diagnostics: [{ code: 'script-error', message: 'd' }], error: { kind: 'exception', message: 'e' } }),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
 ];
 
@@ -2135,7 +2157,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), settle('d1', done), hover(hoverTarget(2)), settle('d2', done), settle('d3', done)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'a-slow-transition-is-never-split',
@@ -2143,7 +2165,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2)), settle('d1', done), settle('d2', done), settle('d3', done)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'intermediate-targets-are-skipped',
@@ -2151,7 +2173,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2)), hover(hoverTarget(3)), hover(null), hover(hoverTarget(4)), settle('d1', done), settle('d2', done), settle('d3', done)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'same-target-is-free-and-exit-happens-once',
@@ -2159,7 +2181,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), settle('d1', done), hover(hoverTarget(1)), hover(null), settle('d2', done), hover(null)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'event-flags-skip-tree-less-halves',
@@ -2175,7 +2197,7 @@ const hoverCases: ScenarioCase[] = [
       hover(null),
       hover(hoverTarget(3, {})),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'reset-forgets-without-dispatching',
@@ -2183,7 +2205,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), settle('d1', done), pumpReset, hover(hoverTarget(2)), settle('d2', done)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'target-identity',
@@ -2204,7 +2226,7 @@ const hoverCases: ScenarioCase[] = [
       hover(hoverTarget(1, undefined, aref(2, 1), 2)),
       hover(hoverTarget(1, undefined, aref(2, 2), 2)),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'a-rejected-dispatch-still-releases',
@@ -2212,7 +2234,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(fnSpec('dispatch', { seq: [{ rejects: { message: 'no' } }, { resolves: done }] })),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'an-unknown-ref-kind-never-matches-itself',
@@ -2220,7 +2242,7 @@ const hoverCases: ScenarioCase[] = [
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
     engine: engineWith(),
     steps: [...boot, hover(hoverTarget(1, undefined, { kind: 'mystery' })), settle('d1', done), hover(hoverTarget(1, undefined, { kind: 'mystery' }))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'drives-the-real-dispatcher',

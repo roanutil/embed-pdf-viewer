@@ -35,6 +35,12 @@ import {
   WORKSHOP_PAGE,
 } from './stamp-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins how a dynamic stamp is evaluated and armed: the copy's engine calls, the observers' callbacks and the arm's settlement. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const ONE = [assetPage(0, 100)];
 const TWO = [assetPage(0, 100), assetPage(1, 101)];
 
@@ -178,7 +184,7 @@ const skipped: ScenarioCase[] = [
     covers: 'With scripting disabled, or enabled on a host with no sandbox, a PDF asset arms its template bytes and no copy is opened.',
     plugins: PLACEMENT({ scripting: { enabled: false, sandbox: BOOT_SETS } }),
     engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -186,7 +192,7 @@ const skipped: ScenarioCase[] = [
     covers: 'A host with scripting enabled but no sandbox evaluates nothing: the Rust port has no scripting options to build, and the TypeScript runs as with scripting disabled.',
     plugins: PLACEMENT({ scripting: { enabled: true, sandbox: null } }),
     engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -194,7 +200,7 @@ const skipped: ScenarioCase[] = [
     covers: 'With scripting enabled, a raster asset still arms as is, without a target check.',
     plugins: PLACEMENT(scripting()),
     engine: { documents: { a: target() }, responses: opens('a') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('addAsset', [{ name: 'Logo', source: png() }]), arm('stamp-lib-0-0:Logo')],
   },
   {
@@ -210,7 +216,7 @@ const skipped: ScenarioCase[] = [
       },
       responses: opens('a', 'lib', 'copy'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
 ];
@@ -250,7 +256,7 @@ const dynamic: ScenarioCase[] = [
       },
       responses: opens('a', 'workshop', 'workshop', 'copy'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -273,7 +279,7 @@ const dynamic: ScenarioCase[] = [
       },
       responses: opens('a', 'lib', 'moved', 'noFlatten', 'noExtract'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -309,7 +315,7 @@ const dynamic: ScenarioCase[] = [
       }),
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -351,7 +357,7 @@ const dynamic: ScenarioCase[] = [
       }),
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -381,7 +387,7 @@ const dynamic: ScenarioCase[] = [
       }),
     ),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -401,7 +407,7 @@ const dynamic: ScenarioCase[] = [
       },
       responses: opens('a', 'lib', 'failed', 'skipped', 'text', 'nil', 'flag', 'none'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -427,7 +433,7 @@ const dynamic: ScenarioCase[] = [
       },
       responses: opens('a', 'lib', 'copy', 'url'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), arm('stamp-lib-0-1:Stamp1')],
   },
   {
@@ -443,7 +449,7 @@ const dynamic: ScenarioCase[] = [
       },
       responses: opens('a', 'lib', 'copy', 'copy'),
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2')],
   },
   {
@@ -451,7 +457,7 @@ const dynamic: ScenarioCase[] = [
     covers: 'A materialization through a factory engine uses the memoized engine, and teardown destroys it.',
     plugins: PLACEMENT({ ...scripting(), assetEngine: 'factory' }),
     engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), destroy],
   },
 ];

@@ -2169,6 +2169,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -2835,6 +2836,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -3897,6 +3899,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -4719,6 +4722,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -5418,6 +5422,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -5977,6 +5982,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7290,6 +7296,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7836,6 +7843,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -8725,6 +8733,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -9639,6 +9648,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -14448,6 +14458,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -15653,6 +15664,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -15972,6 +15984,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -17382,6 +17395,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -17819,6 +17833,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -18807,6 +18822,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

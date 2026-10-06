@@ -34,6 +34,12 @@ import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '..
 import type { Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins double-tap ladders, the fits predicate, reveals and focal points, through the values the stage calls return. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── the v3 surface ────────────────────────────────────────────────────────────
 
 const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
@@ -930,7 +936,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant', responsive: [] }),
     engine: engine([page(1, 0, 1000, 800), page(2, 1, 1000, 800)]),
     steps: [start, open, vp(1148, 700), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel')],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'double-tap-at-the-rung-edges',
@@ -949,7 +955,7 @@ const mutationEdgeCases: ScenarioCase[] = [
       st('doubleTapZoom', { x: 100, y: 100 }),
       st('zoomLevel'),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'scroller-memo-per-field',
@@ -989,7 +995,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant', gap: { px: 40 } }),
     engine: engine(),
     steps: [...boot, st('visiblePages'), st('zoomOut'), st('visiblePages'), st('zoomOut'), st('pageRect', 2)],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'paged-slice-rekeys',
@@ -1009,7 +1015,7 @@ const mutationEdgeCases: ScenarioCase[] = [
       ...boot,
       ...[1.1666, 1.1674, 1.18, 0.5, 1.2].flatMap((level) => [st('zoomTo', { level }), st('goToPage', 0), st('next'), st('currentPage')]),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'the-fits-predicate-height',
@@ -1020,7 +1026,7 @@ const mutationEdgeCases: ScenarioCase[] = [
       ...boot,
       ...[0.815, 0.816, 0.83, 0.3, 0.9].flatMap((level) => [st('zoomTo', { level }), st('goToPage', 0), st('next'), st('currentPage')]),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'positioned-reveal-anchors-zoomed',
@@ -1057,7 +1063,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant', layout: 'horizontal', zoom: { level: 1 }, pageFrame: { top: 10, right: 20, bottom: 30, left: 40 } }),
     engine: engine(Array.from({ length: 8 }, (_, i) => page(i + 1, i, 300, 200))),
     steps: [...boot, st('reveal', 6), st('camera'), st('reveal', 0), st('camera'), st('setLayout', 'vertical'), st('reveal', 5), st('camera'), st('reveal', 1), st('camera')],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'focal-points-in-ltr',
@@ -1065,7 +1071,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant' }),
     engine: engine(),
     steps: [...boot, st('zoomTo', { level: 3 }), st('setZoomAlign', { x: 'end', y: 'start' }), st('zoomIn'), st('camera'), st('setZoomAlign', { x: 'start', y: 'end' }), st('zoomOut'), st('camera')],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'double-tap-on-a-phone',
@@ -1073,7 +1079,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant', responsive: [] }),
     engine: engine(),
     steps: [start, open, vp(348, 700), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel'), st('doubleTapZoom', { x: 100, y: 100 }), st('zoomLevel')],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'a-caught-extreme-stretch',
@@ -1081,7 +1087,7 @@ const mutationEdgeCases: ScenarioCase[] = [
     plugins: stage({ scrollBehavior: 'instant', zoom: { level: 2 } }),
     engine: engine(),
     steps: [...boot, st('beginGesture', { elastic: true }), st('panBy', 100000, 100000), st('camera'), st('zoomAround', { x: 500, y: 350 }, 1.1), st('panBy', 0, 0), st('camera'), st('endGesture')],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
 ];
 

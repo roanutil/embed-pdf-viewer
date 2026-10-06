@@ -34,6 +34,12 @@ import {
   updated,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the per-annotation commit debounce and live link targets, through engine calls and read outcomes. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const shapes = { 1: [square(1), circle(2, { rect: { left: 300, bottom: 300, right: 400, top: 400 } }), line(3)] };
 
 const cases: ScenarioCase[] = [
@@ -297,7 +303,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('setContents', [objRef(1), 'a1']),
@@ -326,7 +332,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('select', [objRef(3)]),

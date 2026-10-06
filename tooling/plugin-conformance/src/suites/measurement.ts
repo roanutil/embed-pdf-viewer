@@ -44,6 +44,12 @@ import {
   settle,
   updated,
 } from './annotation-fixtures';
+
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the setScale preflight refusals, through the settled rejections. Its dispatched actions are compared; the state they build is not.",
+} as const;
 // Registers the `interaction` factory, so emit-one can run this suite alone.
 import './interaction';
 
@@ -417,7 +423,7 @@ const cases: ScenarioCase[] = [
       "A single-page setScale runs the write preflight and rejects with its message: a conversion that is not positive, a precision that is not a whole number or is past the int32 range, a format whose unit is not a string, a text member that is not a string, a missing distance list, and an origin outside the PDF float range. A decimal format without a precision defaults to 100, and a label position, a fixed flag, a finite origin and a positive CYX all pass. calibrate writes the ratio rounded to eight significant digits.",
     plugins: PLUGINS,
     engine: { documents: { a: docOf([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       m('setScale', [pr(1), rl('m', { distance: [{ unit: 'm', conversion: 0, precision: 100 }] }), { recalculate: false }]),

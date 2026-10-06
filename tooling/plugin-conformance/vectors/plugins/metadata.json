@@ -9882,6 +9882,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins changedKeys' comparison rules, through its returned value. Its dispatched actions are compared; the state they build is not.",
       "engine": {
         "documents": {
           "a": {

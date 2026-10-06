@@ -39,6 +39,12 @@ import {
   pr,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins tool registration, touch consent, grab reach, chrome and placement decisions, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const b64 = (bytes: number[]) => Buffer.from(bytes).toString('base64');
 /** A PNG header, 100 x 50 px. */
 const PNG = { $bytes: b64([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0, 100, 0, 0, 0, 50]) };
@@ -75,7 +81,7 @@ const cases: ScenarioCase[] = [
     covers: 'With a selection plugin the markup and text-edit tools register too.',
     plugins: withSelection,
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, ix('tools')],
   },
   {
@@ -83,7 +89,7 @@ const cases: ScenarioCase[] = [
     covers: 'A config tool whose defaults its kind does not take makes the capability throw at construction.',
     plugins: [{ factory: 'interaction' }, { factory: 'annotation', config: { tools: [{ id: 'square', defaults: { fontSize: 3 } }] } }],
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('tools')],
   },
   {
@@ -166,7 +172,7 @@ const cases: ScenarioCase[] = [
       'claimsTouch: over the selection’s chrome or a selected, movable body a finger owns the gesture; over an unselected body it scrolls. A touch press grabs with the widened zones.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate({ 1: [square(1, target), markup('highlight', 3)] })]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       ix('wouldClaimTouch', [sample('down', 150, 150, { pointerType: 'touch' })]),
@@ -337,7 +343,7 @@ const cases: ScenarioCase[] = [
       'The handle and knob reach is half the hit size over the page scale, doubled for touch, and the knob offset shrinks with the scale: probes just inside and outside both at scale 2, a zero scale and a NaN scale (both read as 1).',
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate({ 1: [square(1, target)] })]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('select', [objRef(1)]),
@@ -369,7 +375,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('select', [objRef(21, 2)]),
@@ -392,7 +398,7 @@ const cases: ScenarioCase[] = [
         a: doc([hydrate({ 1: [square(1, target), textNote(9, { rect: { left: 300, bottom: 300, right: 320, top: 320 }, flags: FLAGS({ noRotate: true, noZoom: true }) })] })]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('select', [objRef(9)]),
@@ -710,7 +716,7 @@ const cases: ScenarioCase[] = [
       'setFilePickerProvider returns a remover that clears the slot only while its own provider is installed: the first remover after a second install leaves the second provider in place, the second remover clears it and the next click is declined.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       tool('attachment'),
@@ -885,7 +891,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('registerTool', [{ id: 'approved', extends: 'stamp', source: { kind: 'bytes', source: PNG } }]),
@@ -972,7 +978,7 @@ const cases: ScenarioCase[] = [
       'placeAt with nothing armed declines for a tool that is neither a stamp nor an icon kind and for an unregistered active tool; placeArmedStamp with nothing armed declines.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate()], { pages: [layout(0, 1)] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('placeAt', [1, { x: 5, y: 5 }]),

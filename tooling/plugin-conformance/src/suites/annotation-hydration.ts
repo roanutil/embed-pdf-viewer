@@ -30,6 +30,12 @@ import {
   link,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins that closing releases the event subscription, which engineState's subscriber count shows. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const remote = (serverId: unknown) => ({ kind: 'remote', serverId });
 const LOCAL = { kind: 'local', serverId: null };
 
@@ -337,7 +343,7 @@ const cases: ScenarioCase[] = [
     covers: 'The effect’s event subscription is released when the document closes.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate(seed)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
   },
   {

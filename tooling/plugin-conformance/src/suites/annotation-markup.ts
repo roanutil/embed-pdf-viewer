@@ -11,6 +11,12 @@ import type { Suite } from '../vectors';
 
 import { SNAP, boot, call, caret, created, doc, hydrate, ix, markup, objRef, pr, sel, tool } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins where replace-text carets anchor and which markup tools register, through the engine writes and call outcomes. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const W = 6;
 const H = 12;
 const ZERO = { left: 0, bottom: 0, right: 0, top: 0 };
@@ -132,7 +138,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sel('ensurePage', [1]), tool('replace-text'), sel('select', [range([1, 0], [1, 2])]), sel('end'), call('list', [1])],
   },
   {
@@ -163,7 +169,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       sel('ensurePage', [1]),
@@ -186,7 +192,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, ...load, tool('replace-text'), sel('select', [range([1, 13], [2, 4])]), sel('end'), call('list', [2])],
   },
   {
@@ -267,7 +273,7 @@ const cases: ScenarioCase[] = [
         b: doc([hydrate()], { security: { allows: ['doc.annotate.read', 'doc.text.select'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },

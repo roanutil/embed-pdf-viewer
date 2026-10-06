@@ -43,6 +43,12 @@ import {
   v3Event,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── the console.error shim ────────────────────────────────────────────────────
 
 let redactionLog: PluginEnv['log'] | null = null;
@@ -320,7 +326,7 @@ const cases: ScenarioCase[] = [
         a: withService([hydrate(), ...reads], { security: { allows: ['doc.annotate.read', 'doc.text.select', ...APPLY_CAPS] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, ...load, sel('select', [range([1, 0], [1, 4])]), call('canMark'), call('queueCurrentSelection'), sel('hasSelection')],
   },
   {
@@ -363,7 +369,7 @@ const cases: ScenarioCase[] = [
       'Without the selection plugin the composed redact tool never registers: enableRedact and toggleRedact throw the hub’s unknown-tool error, and queueCurrentSelection resolves false.',
     plugins: PLUGINS,
     engine: { documents: { a: withService([hydrate()]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('isRedactActive'), call('enableRedact'), call('toggleRedact'), call('queueCurrentSelection')],
   },
   {
@@ -372,7 +378,7 @@ const cases: ScenarioCase[] = [
       'getPending projects every loaded redact annotation in page order: its model id (obj: and nm:), ref, page, display index, area or text kind, and overlay label. preparePending asks the annotation plane for every page and resolves.',
     plugins: PLUGINS,
     engine: { documents: { a: withService([hydrate(seed)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('preparePending'), call('getPending'), call('pendingCount')],
   },
   {
@@ -381,7 +387,7 @@ const cases: ScenarioCase[] = [
       'estimateCollateral counts the non-redact annotations whose rect has positive-area overlap with a mark’s quads (else its rect), for all marks, for the named ones, and for none.',
     plugins: PLUGINS,
     engine: { documents: { a: withService([hydrate(seed)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('estimateCollateral'),
@@ -460,7 +466,7 @@ const cases: ScenarioCase[] = [
         c: doc([hydrate(seed)]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       openDoc('b'),
@@ -499,7 +505,7 @@ const cases: ScenarioCase[] = [
     covers: 'A throwing onApplied callback is reported to console.error and the next callback still runs.',
     plugins: PLUGINS,
     engine: { documents: { a: withService([hydrate(seed), { path: 'redaction.apply', value: applyResult(pagesScope) }]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('onApplied', [{ $fn: 'bad', throws: { name: 'Error', message: 'listener broke' } }]),
@@ -579,7 +585,7 @@ const cases: ScenarioCase[] = [
         a: withService([hydrate(), { path: 'page.annotations.create', pon: 1, value: created(redact(43, { rect: { left: 10, bottom: 730, right: 110, top: 780 } })) }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, rd('listPending'), rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]), rd('getPendingCount')],
   },
   {
@@ -617,7 +623,7 @@ const cases: ScenarioCase[] = [
         b: withService([hydrate()], { security: { allows: ['doc.annotate.read'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, openDoc('b'), rd('markMatches', [{ text: 'x' }]), rd('markMatches', [{ text: 'x' }], 'b'), rd('markSelection'), rd('markSelection', [], 'b')],
   },
   {
@@ -663,7 +669,7 @@ const cases: ScenarioCase[] = [
       'getPending finds a mark by any ref kind and answers null for a non-mark; listPending with a page filter reads only that page (a page the document lacks has none), a filter without a page reads them all, and repeated reads answer the same marks. getPendingCount counts one page or all.',
     plugins: PLUGINS,
     engine: { documents: { a: withService([hydrate(seed)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       rd('getPending', [objRef(10)]),
@@ -693,7 +699,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       rd('onPendingChanged', [{ $fn: 'pending' }]),

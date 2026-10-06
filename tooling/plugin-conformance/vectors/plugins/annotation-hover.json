@@ -16641,6 +16641,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins what hover reports to the actions pump and the permission twins, through call outcomes, callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -28867,6 +28868,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins what hover reports to the actions pump and the permission twins, through call outcomes, callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

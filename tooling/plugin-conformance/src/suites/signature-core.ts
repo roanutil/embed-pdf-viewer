@@ -378,13 +378,20 @@ const toJan2026: Step = { op: 'advance', ms: JAN_2026 };
 const openDoc: Step = { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'd', bytes: $b('') }] };
 const call = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'signature-core' }, method, args });
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason:
+    'signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.',
+} as const;
+
 /** One scenario: the plugin, the clock at 2026-01-15, then `steps`. */
 function scenario(name: string, covers: string, steps: Step[], engine?: Record<string, FakeDocumentSpec>): ScenarioCase {
   return {
     name,
     covers,
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     awaitCalls: true,
     ...(engine ? { engine: { documents: engine } } : {}),
     steps: [start, toJan2026, ...(engine ? [openDoc] : []), ...steps],

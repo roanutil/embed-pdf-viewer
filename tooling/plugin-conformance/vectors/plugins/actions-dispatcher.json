@@ -7943,6 +7943,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -9799,6 +9800,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -18354,6 +18356,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [

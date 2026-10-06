@@ -12,6 +12,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -192,6 +193,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -467,6 +469,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -743,6 +746,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -1018,6 +1022,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -1289,6 +1294,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -1559,6 +1565,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -1807,6 +1814,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -2055,6 +2063,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -2327,6 +2336,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -2575,6 +2585,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -2782,6 +2793,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -3026,6 +3038,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -3263,6 +3276,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -3428,6 +3442,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -3610,6 +3625,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -3952,6 +3968,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -4280,6 +4297,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -4609,6 +4627,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -4921,6 +4940,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -5233,6 +5253,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -5491,6 +5512,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -6061,6 +6083,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -6319,6 +6342,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -6593,6 +6617,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -6867,6 +6892,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -7143,6 +7169,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -7455,6 +7482,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -7764,6 +7792,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -8077,6 +8106,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -8427,6 +8457,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -8775,6 +8806,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -9123,6 +9155,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -9470,6 +9503,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {
@@ -9829,6 +9863,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
       "awaitCalls": true,
       "engine": {
         "documents": {

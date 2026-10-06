@@ -3199,6 +3199,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins the handoff between an installed submit handler and the home, through the handler callbacks and the engine calls. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [

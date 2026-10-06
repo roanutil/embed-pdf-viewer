@@ -8,6 +8,12 @@ import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins changedKeys' comparison rules, through its returned value. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 registerPlugin('metadata', { factory: () => metadataPlugin(), tokens: [MetadataToken] });
 
 const box = { left: 0, bottom: 0, right: 600, top: 800 };
@@ -277,7 +283,7 @@ const cases: ScenarioCase[] = [
     covers:
       'changedKeys compares every key but custom with !==: an equal number is unchanged and a different one changed, while an object or array member always counts as changed, even with the same contents.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: [{ path: 'metadata.read', value: meta({ pages: 3, ratio: 1.5, extra: { x: 1 }, list: [1] }) }] }) } },
     steps: [
       start,

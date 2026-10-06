@@ -42,14 +42,26 @@ export type Step =
   | { readonly op: 'abort'; readonly promise: number; readonly reason?: unknown }
   | { readonly op: 'drain' };
 
-export interface ScenarioCase {
+/** A case either snapshots state after every step, or says why it does not.
+ *  `reason` lands in the vector beside `snapshot: 'none'`: what the case
+ *  compares instead, so a reviewer can tell an outcome-only case from one
+ *  that skipped the state its reducers wrote. */
+export type ScenarioCase = ScenarioCaseBase &
+  (
+    | {
+        /** Slice keys to snapshot; absent snapshots the whole tree. */
+        readonly snapshot?: readonly string[];
+        readonly reason?: never;
+      }
+    | { readonly snapshot: 'none'; readonly reason: string }
+  );
+
+interface ScenarioCaseBase {
   readonly name: string;
   readonly covers: string;
   readonly plugins?: readonly PluginSpec[];
   readonly engine?: FakeEngineSpec;
   readonly steps: readonly Step[];
-  /** Slice keys to snapshot; absent snapshots the whole tree. */
-  readonly snapshot?: readonly string[] | 'none';
   /** Let an engine call go unanswered (it rejects with FakeEngineUnmatched). */
   readonly allowUnmatched?: boolean;
   /** Await each call's returned promise, in real time, before the step

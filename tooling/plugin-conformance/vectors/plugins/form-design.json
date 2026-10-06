@@ -93,6 +93,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins what init registers, read back through the hub's tool list and the annotation registry's call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -462,6 +463,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins what init registers, read back through the hub's tool list and the annotation registry's call outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -6061,6 +6063,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7087,6 +7090,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7843,6 +7847,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -8681,6 +8686,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -9284,6 +9290,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -12080,6 +12087,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -17450,6 +17458,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -27522,6 +27531,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -32290,6 +32300,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -36129,6 +36140,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -40316,6 +40328,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -41021,6 +41034,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -44432,6 +44446,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -47791,6 +47806,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -48414,6 +48430,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -49375,6 +49392,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -53155,6 +53173,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -53779,6 +53798,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -54414,6 +54434,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -55542,6 +55563,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -59922,6 +59944,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

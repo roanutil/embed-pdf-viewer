@@ -87,6 +87,10 @@ async function renderSuite(suite: Suite): Promise<unknown> {
   }
   const cases = [];
   for (const scenario of suite.cases) {
+    // The type asks for this too; a case built through a cast still lands here.
+    if ((scenario.snapshot === 'none') !== (typeof scenario.reason === 'string' && scenario.reason.trim() !== '')) {
+      throw new Error(`[${suite.file}] ${scenario.name}: snapshot 'none' needs a reason, and only it takes one`);
+    }
     const { trace, unmatched } = await runScenario(scenario);
     if (unmatched.length && !scenario.allowUnmatched) {
       throw new Error(`[${suite.file}] ${scenario.name}: unanswered engine calls:\n  ${unmatched.join('\n  ')}`);

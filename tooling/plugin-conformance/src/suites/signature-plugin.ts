@@ -60,6 +60,12 @@ import { annotations, list, ref, fqn, signature as sigField, text, widgetAnnot, 
 import './interaction';
 import { assetDoc, assetPage, opens, PDF, png, withWorkshop } from './stamp-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins authority twins, revision reads, placement by mode and the armed-mark handler, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
 interface Fixtures {
@@ -392,7 +398,7 @@ const reads: ScenarioCase[] = [
         }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('listSignatures'), sig('listUnsignedFields')],
   },
   {
@@ -411,7 +417,7 @@ const reads: ScenarioCase[] = [
         }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('getSignature', { annotObjectNumber: 150 }), sig('getSignature', { kind: 'objectNumber' })],
   },
   {
@@ -459,7 +465,7 @@ const reads: ScenarioCase[] = [
         b: docOf({ allows: ['doc.forms.fill'], lacks: ['forms.setSignatureAppearance'] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       open('b'),
@@ -477,7 +483,7 @@ const reads: ScenarioCase[] = [
     covers: 'canCertify is false without allowCertify, whatever the grant; an explicit mode wins over the signer default.',
     plugins: FORM_SIG({ mode: 'ask' }),
     engine: { documents: { a: docOf() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('canCertify'), sig('canSign'), sig('getMode')],
   },
 ];
@@ -573,7 +579,7 @@ const hydration: ScenarioCase[] = [
         }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       sig('analyzeChanges', { since: { signatureIndex: 0 }, until: 'persisted' }),
@@ -627,7 +633,7 @@ const events: ScenarioCase[] = [
     covers: 'An edit with nothing signed schedules no validation.',
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf({ signatures: [SIG2] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, emit({ type: 'annotation.updated' }), advance(400)],
   },
   {
@@ -642,7 +648,7 @@ const events: ScenarioCase[] = [
         }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, emit({ type: 'document.versioned' }), emit({ type: 'form.fieldCreated' }), emit({ type: 'annotation.updated' }), advance(300)],
   },
   {
@@ -650,7 +656,7 @@ const events: ScenarioCase[] = [
     covers: 'Closing the document with a validation scheduled clears its timer and disposes the hooks.',
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('onValidated', fn('validated')), emit({ type: 'annotation.updated' }), close(), advance(400)],
   },
 ];
@@ -688,7 +694,7 @@ const fills: ScenarioCase[] = [
     covers: 'An engine that cannot draw into a signature field refuses unsupported.',
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf({ lacks: ['forms.setSignatureAppearance'] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('fillField', ref(2), MARK), sig('clearField', ref(2)), sig('canFill')],
   },
   {
@@ -720,7 +726,7 @@ const fills: ScenarioCase[] = [
     covers: "A mark naming a stamp asset draws the asset's bytes; an asset the stamp plugin doesn't know refuses not-found.",
     plugins: [{ factory: 'interaction' }, { factory: 'form' }, { factory: 'stamp' }, { factory: 'signature' }],
     engine: withWorkshop({ documents: { a: docOf() } }),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, st('createAsset', { name: 'Logo', source: PNG }), sig('fillField', ref(2), { assetId: 'stamp-lib-0-0:Logo' }), sig('fillField', ref(2), { assetId: 'nope' })],
   },
 ];
@@ -779,7 +785,7 @@ const signing: ScenarioCase[] = [
     covers: "abortPending cancels a signing the engine announced, which this session can't complete.",
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf({ responses: [{ path: 'signatures.abort', value: { status: 'aborted' } }] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, emit({ type: 'signature.prepared', signingId: 'remote-1', field: ref(2) }), sig('completeSignature', 'remote-1', $b('AAEC')), sig('abortPending'), sig('getPending')],
   },
   {
@@ -806,7 +812,7 @@ const signing: ScenarioCase[] = [
         a: docOf({ responses: [listed([SIG1, SIG2], {}, { times: 3 }), { ...LIST_FAILS, times: 1 }, listed(BOTH_SIGNED), PREPARE, COMPLETE] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     awaitCalls: true,
     steps: [
       ...boot,
@@ -849,7 +855,7 @@ const signing: ScenarioCase[] = [
     covers: "sign with no signer configured or passed rejects invalid-input; a mark the stamp plugin can't resolve rejects not-found.",
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('sign', { field: ref(2), mark: MARK })],
   },
 ];
@@ -872,7 +878,7 @@ const placement: ScenarioCase[] = [
     covers: 'Mode visual fills the field; a free placement of an asset goes through the stamp plugin and of bytes through the annotation plugin.',
     plugins: FULL(),
     engine: withWorkshop({ documents: { a: PLACE_DOC() } }),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       listen('onFilled'),
@@ -887,7 +893,7 @@ const placement: ScenarioCase[] = [
     covers: 'Mode ask hands the field and the mark to the chrome.',
     plugins: FORM_SIG({ mode: 'ask' }),
     engine: { documents: { a: docOf() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, listen('onSignRequested'), sig('placeMark', { assetId: 'a-1' }, { field: ref(2) })],
   },
   {
@@ -895,7 +901,7 @@ const placement: ScenarioCase[] = [
     covers: 'A free placement of an asset with no stamp plugin refuses unsupported.',
     plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'form' }, { factory: 'signature' }],
     engine: { documents: { a: docOf() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, sig('placeMark', { assetId: 'a-1' }, at)],
   },
   {
@@ -904,7 +910,7 @@ const placement: ScenarioCase[] = [
       'Mode sign with allowCertify and nothing signed yet asks the chrome (the first signature can certify) instead of sealing.',
     plugins: FORM_SIG({ signer: CMS_SIGNER, allowCertify: true }),
     engine: { documents: { a: docOf({ signatures: [SIG2] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, listen('onSignRequested'), sig('placeMark', MARK, { field: ref(2) })],
   },
   {
@@ -916,7 +922,7 @@ const placement: ScenarioCase[] = [
         a: docOf({ responses: [listed([SIG1, SIG2], {}, { times: 2 }), listed(BOTH_SIGNED), PREPARE, COMPLETE] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     awaitCalls: true,
     steps: [...boot, drain, sig('placeMark', MARK, { field: ref(2) }), drain],
   },
@@ -938,7 +944,7 @@ const armed: ScenarioCase[] = [
       "With the interaction hub and the stamp plugin, an armed asset from a signatures library pressed over an empty signature field disarms and goes into the field by mode. Over a signed field, or a signature field that carries a value, the press is consumed and nothing happens. Over a text field, over no field, or without a page the handler declines and the annotation plugin's stamp placement runs.",
     plugins: FULL({ mode: 'ask' }),
     engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       listen('onSignRequested'),
@@ -967,7 +973,7 @@ const armed: ScenarioCase[] = [
       "An asset from a library of another kind, or a stamp the annotation plugin armed on its own, is not a person's mark: the handler declines. With another tool active the handler is not asked.",
     plugins: FULL({ mode: 'ask' }),
     engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       listen('onSignRequested'),
@@ -987,7 +993,7 @@ const armed: ScenarioCase[] = [
     covers: "The press that drops a mark into a field is the handler's gesture: onGestureStarted names signature:armed-mark-on-field.",
     plugins: FULL({ mode: 'ask' }),
     engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, ix('onGestureStarted', fn('started')), importSignatures, arm, down(150, 288), up(150, 288)],
   },
   {
@@ -996,7 +1002,7 @@ const armed: ScenarioCase[] = [
       "A tool enabling the legacy annotation-stamp tag keeps the stamp armed, but it is not the armed-stamp tool, so the handler is not asked and the annotation plugin's stamp placement runs over the field.",
     plugins: FULL({ mode: 'ask' }),
     engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       listen('onSignRequested'),
@@ -1014,7 +1020,7 @@ const armed: ScenarioCase[] = [
     covers: 'A placement the handler started that rejects is reported.',
     plugins: FULL(),
     engine: { documents: { a: PLACE_DOC({ lacks: ['forms.setSignatureAppearance'] }), lib: LIB }, responses: opens('a', 'lib') },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, importSignatures, arm, down(150, 288), up(150, 288)],
   },
   {
@@ -1022,7 +1028,7 @@ const armed: ScenarioCase[] = [
     covers: 'Without the stamp plugin no handler is registered, so an armed stamp over a field stays a stamp placement.',
     plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'form' }, { factory: 'signature', config: { mode: 'ask' } }],
     engine: { documents: { a: PLACE_DOC() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, listen('onSignRequested'), anno('armStamp', { source: PNG }), down(150, 288), up(150, 288)],
   },
 ];

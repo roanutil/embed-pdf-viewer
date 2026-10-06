@@ -29031,6 +29031,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -40163,6 +40164,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -49166,6 +49168,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -50909,6 +50912,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -51314,6 +51318,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

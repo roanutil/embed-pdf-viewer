@@ -26489,6 +26489,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the authority refusal and the engine refusal of a group write, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

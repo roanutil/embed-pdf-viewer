@@ -55,6 +55,12 @@ import { makeError, type ErrorSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks.",
+} as const;
+
 // ── the prelude, shipped as data ──────────────────────────────────────────────
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -447,14 +453,14 @@ const hostCases: ScenarioCase[] = [
     covers: 'The first boot() builds the realm, reads the name tree and boots it; a later boot() in any transaction returns null.',
     plugins: host({ sandbox: { builds: [{ boot: [{ output: { diagnostics: [{ code: 'script-error', message: 'boot#0' }] } }] }] } }),
     steps: [start, txn(boot(), run('a()')), txn(boot())],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'run-auto-boots-and-stashes-the-output',
     covers: 'A run before any boot boots defensively; that boot output waits for the next boot() and is returned exactly once.',
     plugins: host(),
     steps: [start, txn(run('a()')), txn(boot(), boot())],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'transactions-serialize',
@@ -468,14 +474,14 @@ const hostCases: ScenarioCase[] = [
       txn(run('after()')),
       { op: 'settle', label: 'slow' },
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'no-boot-sources',
     covers: 'An empty name tree marks the realm booted without calling sandbox.boot.',
     plugins: host({ bootSources: { resolves: [] } }),
     steps: [start, txn(boot(), run('a()'), boot())],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'boot-sources-read-fails',
@@ -485,21 +491,21 @@ const hostCases: ScenarioCase[] = [
       sandbox: { builds: [{ run: [{ dispose: true }] }, {}] },
     }),
     steps: [start, txn(boot(), run('a()')), txn(boot(), run('b()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'resource-fault-rebuilds-and-reboots',
     covers: 'A sandbox that reports disposed after a run poisons the realm; the next transaction builds a new one and boots it again.',
     plugins: host({ sandbox: { builds: [{ run: [{ dispose: true }] }, {}] } }),
     steps: [start, txn(boot(), run('boom()')), txn(run('after()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'boot-fault',
     covers: 'A boot that disposes the sandbox is also a fault: the next run in the same transaction auto-boots on a fresh realm.',
     plugins: host({ sandbox: { builds: [{ boot: [{ dispose: true }] }, {}] } }),
     steps: [start, txn(boot(), run('a()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'budgets',
@@ -513,7 +519,7 @@ const hostCases: ScenarioCase[] = [
         run('b()', { budget: { maxExecutionMs: 9, maxMemoryBytes: 2, maxStackBytes: 2, maxEffects: 3, maxOutputBytes: 4 } }),
       ),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'input-shape',
@@ -543,42 +549,42 @@ const hostCases: ScenarioCase[] = [
         run('b()', { world: world({ kind: 'field-format' }, { annotsCoverDocument: true }) }),
       ),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'sandbox-run-throws',
     covers: 'A sandbox call that throws rejects the transaction; the realm is not poisoned.',
     plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ run: [{ throws: { message: 'vm exploded' } }, {}] }] } }),
     steps: [start, txn(run('a()')), txn(run('b()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'sandbox-boot-throws',
     covers: 'A throwing boot rejects the transaction after the realm was marked booted: the boot never re-runs.',
     plugins: host({ sandbox: { builds: [{ boot: [{ throws: { message: 'boot exploded' } }] }] } }),
     steps: [start, txn(boot()), txn(boot(), run('a()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'boot-sources-throw',
     covers: 'bootSources() throwing synchronously is outside the degrade path: the transaction rejects.',
     plugins: host({ bootSources: { throws: { message: 'no catalog' } } }),
     steps: [start, txn(boot()), txn(run('a()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'factory-rejects',
     covers: 'A factory that rejects fails the transaction; the rejected promise stays cached for the realm.',
     plugins: host({ sandbox: { builds: [{ rejects: { message: 'no vm' } }, {}] } }),
     steps: [start, txn(run('a()')), txn(run('b()'))],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'factory-deferred',
     covers: 'The realm is built once even when two runs wait on the same pending factory.',
     plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ defer: 'vm' }] } }),
     steps: [start, txn(run('a()'), run('b()')), { op: 'settle', label: 'vm' }],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'dispose',
@@ -591,21 +597,21 @@ const hostCases: ScenarioCase[] = [
       { op: 'call', target: { token: 'script-host' }, method: 'dispose' },
       txn(run('b()')),
     ],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'dispose-before-any-realm',
     covers: 'dispose() with no realm built does nothing but refuse later transactions.',
     plugins: host(),
     steps: [start, { op: 'call', target: { token: 'script-host' }, method: 'dispose' }, txn(boot())],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
   {
     name: 'dispose-with-a-rejected-factory',
     covers: 'A factory rejection is swallowed on dispose.',
     plugins: host({ sandbox: { builds: [{ rejects: { message: 'no vm' } }] } }),
     steps: [start, txn(run('a()')), { op: 'call', target: { token: 'script-host' }, method: 'dispose' }],
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
   },
 ];
 

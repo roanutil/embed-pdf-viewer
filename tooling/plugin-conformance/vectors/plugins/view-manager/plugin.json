@@ -11984,6 +11984,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins the pane events each write fires, which the event callbacks record. Its dispatched actions are compared; the state they build is not.",
       "engine": {
         "documents": {
           "a": {

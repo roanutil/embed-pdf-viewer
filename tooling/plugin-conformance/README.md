@@ -28,7 +28,13 @@ The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use 
 everything that has no lifecycle: geometry, reducers called directly, tile planning, layout. It is
 cheaper to grow than scenarios and it is where most arithmetic should be pinned.
 
-A scenario case is `{name, covers, plugins, engine, steps, snapshot?, allowUnmatched?, awaitCalls?, trace}`.
+A scenario case is `{name, covers, plugins, engine, steps, snapshot?, reason?, allowUnmatched?, awaitCalls?, trace}`.
+
+`"snapshot": "none"` records no state, so the case is compared only through its outcomes,
+settlements, actions, engine calls and callbacks, and a reducer it drives goes unchecked. Such a case
+has to carry a `reason` saying what it compares instead; the TypeScript type and the generator both
+refuse one without it. Suites share one reason across the cases it is true for. The Rust runner
+ignores the field.
 
 ## Scenarios
 

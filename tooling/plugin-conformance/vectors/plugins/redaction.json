@@ -18561,6 +18561,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -31146,6 +31147,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -33224,6 +33226,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -36403,6 +36406,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -51578,6 +51582,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -64067,6 +64072,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -95858,6 +95864,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -106150,6 +106157,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -124879,6 +124887,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -128563,6 +128572,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

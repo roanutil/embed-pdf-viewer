@@ -88319,6 +88319,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the per-annotation commit debounce and live link targets, through engine calls and read outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -92977,6 +92978,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the per-annotation commit debounce and live link targets, through engine calls and read outcomes. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

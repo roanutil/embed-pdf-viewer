@@ -36,6 +36,12 @@ import {
   pr,
 } from './form-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const NAME = text(1, 'name', 'Ada');
 const AGREE = checkbox(2, 'agree', false);
 const COLOUR = combobox(3, 'colour', 'r');
@@ -197,7 +203,7 @@ const cases: ScenarioCase[] = [
         b: doc([list([NAME, text(6, 'ro', 'r', { flags: FLAGS({ readOnly: true }) })]), annotations(1, [widgetAnnot(1, 101), widgetAnnot(1, 106)])]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -408,7 +414,7 @@ const cases: ScenarioCase[] = [
         b: doc([list(FIELDS)], { security: { allows: ['doc.forms.modify'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -475,7 +481,7 @@ const cases: ScenarioCase[] = [
       'resetFormAction on an engine with no applyEffects resolves unchanged with an unsupported-api diagnostic and never reaches the engine; with no actions plugin there is no port to surface it through.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)], { lacks: ['forms.applyEffects'] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('resetFormAction', [null, false])],
   },
   {
@@ -483,7 +489,7 @@ const cases: ScenarioCase[] = [
     covers: 'Closing the document releases the event subscription.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, close()],
   },
   {
@@ -557,7 +563,7 @@ const v3Cases: ScenarioCase[] = [
         b: doc([{ path: 'forms.list', error: { name: 'EngineError', message: 'gone', code: 'Io' } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -581,7 +587,7 @@ const v3Cases: ScenarioCase[] = [
         b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -608,7 +614,7 @@ const v3Cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('resetAll'),
@@ -646,7 +652,7 @@ const v3Cases: ScenarioCase[] = [
         b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -663,7 +669,7 @@ const v3Cases: ScenarioCase[] = [
       'Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin, whose sub becomes the actorId. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('onValueChanged', [fnSpec('valueChanged.bad', { throws: { message: 'listener broke' } })]),
@@ -691,7 +697,7 @@ const v3Cases: ScenarioCase[] = [
     covers: 'The unsubscribe an event hook returns detaches that listener.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(FIELDS)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('onResynced', [fnSpec('resynced')]),

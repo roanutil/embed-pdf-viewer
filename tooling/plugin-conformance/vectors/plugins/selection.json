@@ -6623,6 +6623,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -36006,6 +36007,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -37488,6 +37490,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -62697,6 +62700,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -67926,6 +67930,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -69220,6 +69225,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

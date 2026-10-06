@@ -596,6 +596,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -4859,6 +4860,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -36358,6 +36360,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -57665,6 +57668,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -92195,6 +92199,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -95055,6 +95060,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -106122,6 +106128,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -107760,6 +107767,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -109442,6 +109450,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -111256,6 +111265,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

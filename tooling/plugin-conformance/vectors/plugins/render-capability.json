@@ -2637,6 +2637,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -3846,6 +3847,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -4946,6 +4948,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -6303,6 +6306,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -7447,6 +7451,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -8614,6 +8619,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -9750,6 +9756,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -12376,6 +12383,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -13602,6 +13610,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -14798,6 +14807,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -16091,6 +16101,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -17313,6 +17324,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -18447,6 +18459,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -19677,6 +19690,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -20803,6 +20817,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -22247,6 +22262,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -23573,6 +23589,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -25065,6 +25082,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -26422,6 +26440,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -27580,6 +27599,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -28659,6 +28679,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -29908,6 +29929,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -34947,6 +34969,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -36187,6 +36210,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -37271,6 +37295,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -40757,6 +40782,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -41896,6 +41922,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -43587,6 +43614,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -44786,6 +44814,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -45988,6 +46017,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -47217,6 +47247,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",
@@ -48616,6 +48647,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

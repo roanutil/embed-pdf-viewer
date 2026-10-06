@@ -31,6 +31,12 @@ import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins gesture routing between handlers, which the handler callbacks record in order. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 registerPlugin('interaction', {
   factory: (config) => interactionPlugin(config as InteractionConfig | undefined),
   tokens: [InteractionToken],
@@ -192,7 +198,7 @@ const cases: ScenarioCase[] = [
       'A down goes to eligible handlers in descending priority; the first to return true owns the gesture, and move and up go only to it. After the up, a move with no owner is hover for every eligible handler, highest first.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('low', 10)),
@@ -209,7 +215,7 @@ const cases: ScenarioCase[] = [
       'A handler that declines the down (falsy answers included) lets the next one try; truthy non-booleans capture. When nobody captures, move is hover and up reaches nobody.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('a', 30, { down: { seq: [{ returns: false }, { returns: 0 }, { returns: false }] } })),
@@ -228,7 +234,7 @@ const cases: ScenarioCase[] = [
     covers: 'Ties keep registration order (the sort is stable), for downs and for hover.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('first', 5, { down: { returns: false } })),
@@ -245,7 +251,7 @@ const cases: ScenarioCase[] = [
       'enabledFor sees the active tool (tags as a set) on every down and hover pass; a handler that answers false is skipped. The built-in text handler shape: pointer enables it, pan does not.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('text', 60, { enabled: { seq: [{ returns: true }, { returns: false }, { returns: false }] } })),
@@ -263,7 +269,7 @@ const cases: ScenarioCase[] = [
       'Optional members are optional: an owner without onMove or onUp ignores those phases, and hover skips handlers without onHover.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('bare', 9, { members: [] })),
@@ -280,7 +286,7 @@ const cases: ScenarioCase[] = [
       'cancel aborts: the owner gets onCancel, or onUp when it has none, or nothing when it has neither; the gesture is released either way, and a cancel with no owner reaches nobody.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('full', 30, { down: { seq: [{ returns: true }, { returns: false }] } })),
@@ -302,7 +308,7 @@ const cases: ScenarioCase[] = [
     covers: 'Every down starts over: the previous owner is dropped before the new pass, even when nobody captures it.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('h', 1, { down: { seq: [{ returns: true }, { returns: false }] } })),
@@ -318,7 +324,7 @@ const cases: ScenarioCase[] = [
       'A handler registered with a source only sees samples stamped with that source, or unstamped ones; a handler without a source sees everything. An options object without a source is no scope.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('lensA', 30, { down: { returns: false } }), { source: 'lens-a' }),
@@ -336,7 +342,7 @@ const cases: ScenarioCase[] = [
       'Unregistering the owner releases the gesture: the next move is hover among the remaining handlers and the up reaches nobody. Unregistering again, or a handler that does not own the gesture, is harmless.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('owner', 20)),
@@ -359,7 +365,7 @@ const cases: ScenarioCase[] = [
       'Unregistering a source-scoped handler forgets its scope along with it, and only its scope: another scoped handler keeps filtering.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('scoped', 2, { down: { returns: false } }), { source: 'lens-a' }),
@@ -495,7 +501,7 @@ const cases: ScenarioCase[] = [
       'wouldClaimTouch walks eligible handlers in priority order and stops at the first truthy claimsTouch; handlers without it never claim; source and tool gating apply; nothing is captured.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('wouldClaimTouch', s('down', { pointerType: 'touch' })),
@@ -515,7 +521,7 @@ const cases: ScenarioCase[] = [
       'The sample reaches handlers as given: page context, click count, pointer type, gesture marker, source and the project function.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerHandler', handler('h', 1)),
@@ -538,7 +544,7 @@ const cases: ScenarioCase[] = [
       'getDefaultToolId, getTool (null for an unknown id), hasTool and activeToolEnables read the registry and the armed tool.',
     plugins: [{ factory: 'interaction', config: { defaultTool: 'pan' } }],
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('getDefaultToolId'),
@@ -582,7 +588,7 @@ const cases: ScenarioCase[] = [
       'A duplicate id is refused with conflict unless replace is set; a replaced registration\'s remover is inert, and the replacement\'s remover deletes it.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('registerTool', tool('pan', 'move', [])),
@@ -602,7 +608,7 @@ const cases: ScenarioCase[] = [
       'onGestureStarted fires for the capturing handler with the page ref and pointer type (mouse when absent); onGestureEnded on up, onGestureCancelled on cancel; a down nobody captures, and an up or cancel with no owner, fire nothing. Over a gap the page is null. onCursorChanged fires on every resolved change.',
     plugins,
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       call('onGestureStarted', { $fn: 'started' }),
@@ -626,7 +632,7 @@ const cases: ScenarioCase[] = [
     covers: 'Without a provider the feedback capability is a no-op in literal member order.',
     plugins: [{ factory: 'feedback' }],
     engine,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'feedback' }] },

@@ -29,6 +29,12 @@ import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginEnv, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the raster store's keys, sharing, aborts and eviction, through call outcomes, settlements and the engine's render calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── harness shims ─────────────────────────────────────────────────────────────
 
 const controllers = new Map<string, AbortController>();
@@ -264,7 +270,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A continuous policy with a client width ladder snaps UP the sorted rungs and caps at the top rung.',
     plugins: render({ fullPage: { quantize: [1280, 320, 640], maxWidth: 1280 } }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -281,7 +287,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A client ladder whose every rung exceeds maxWidth keeps its smallest rung rather than none.',
     plugins: render({ fullPage: { quantize: [1600, 800], maxWidth: 500 } }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderSourceKey', 11, { scale: 0.1 }), cap('renderSourceKey', 11, { scale: 8 })],
   },
   {
@@ -290,7 +296,7 @@ const capabilityCases: ScenarioCase[] = [
       'An advertised lattice (read from render.policy at open) is the deployment’s ladder: the default budget never filters it, zoom inside a rung keeps the key, crossing a rung changes it.',
     plugins: render(),
     engine: { documents: { a: doc({ policy: LATTICE }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -310,7 +316,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'An explicit maxWidth filters the advertised ladder (the mobile-memory knob); rungs above it are never asked for.',
     plugins: render({ fullPage: { maxWidth: 700 } }),
     engine: { documents: { a: doc({ policy: LATTICE }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('conformViewport', 11, 8), cap('conformViewport', 11, 0.5), cap('renderSourceKey', 11, { scale: 1 })],
   },
   {
@@ -319,7 +325,7 @@ const capabilityCases: ScenarioCase[] = [
       'A strategy format the lattice does not list conforms to the deployment’s first format, joins the key, reaches the engine, and warns once.',
     plugins: render({ format: 'bmp', quality: 0.7 }),
     engine: { documents: { a: doc({ policy: LATTICE }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -334,7 +340,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'Under continuous the strategy format and quality apply as written, and the format is part of the raster identity.',
     plugins: render({ format: 'bmp', quality: 0.9 }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderSourceKey', 11, { scale: 0.5 }), cap('renderPage', 11, { scale: 0.5, includeAnnotations: false })],
     allowUnmatched: false,
   },
@@ -343,7 +349,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A format the lattice lists is kept, with no warning.',
     plugins: render({ format: 'png' }),
     engine: { documents: { a: doc({ policy: LATTICE_TILES }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderSourceKey', 11, { scale: 1 }), cap('renderPage', 11, { scale: 1 })],
   },
   {
@@ -373,7 +379,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'An engine failure rejects every attached consumer with the engine’s error and drops the entry, so the next ask fetches again.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -390,7 +396,7 @@ const capabilityCases: ScenarioCase[] = [
       'A consumer abandoning a shared in-flight fetch rejects with its signal’s reason and detaches; the engine call stays alive for the signal-less consumer, who resolves.',
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -407,7 +413,7 @@ const capabilityCases: ScenarioCase[] = [
       'The last live consumer leaving an unresolved fetch aborts the engine call (the store’s reason reaches the engine) and drops the entry; a late answer is ignored and the next ask fetches fresh.',
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -426,7 +432,7 @@ const capabilityCases: ScenarioCase[] = [
       'A pre-aborted signal rejects at once, but the fetch it created is already running and unowned: a later signal-less ask joins it, and it lands in the store.',
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -442,7 +448,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: "renderThumbnail hands its signal to the page render: aborting it rejects the thumbnail with the signal's reason.",
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), v3('renderThumbnail', pr(11), { maxWidth: 40, signal: signal('s1') }), abortSignal('s1'), settle('r0')],
   },
   {
@@ -450,7 +456,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'An abort after the fetch resolved changes nothing: the consumer already resolved, and the raster stays cached.',
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -467,7 +473,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A signal-bearing consumer attached to a fetch that fails rejects with the engine error, and its later abort does nothing.',
     plugins: withSignalsPlugin(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderPage', 11, { scale: 0.5, signal: signal('s1') }), fail('r0'), abortSignal('s1')],
   },
   {
@@ -476,7 +482,7 @@ const capabilityCases: ScenarioCase[] = [
       'The store budget (128 MiB) is cost, not count: a URL-style handle costs width × height, bytes their length, anything else 1. Over budget, the oldest consumer-free resolved entry goes first; a just-resolved entry whose consumers have not yet run is spared.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -498,7 +504,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'Eviction walks candidates oldest first and stops as soon as the ledger is back under budget, keeping the younger ones.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -518,7 +524,7 @@ const capabilityCases: ScenarioCase[] = [
       'A cache hit freshens its entry, so the entry evicted is the least recently used one, not the oldest; the cost ledger stays exact across drops, so a later resolution evicts again.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -541,7 +547,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'Entries still in flight are never evicted, and a zero-cost handle never pushes anything out.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -562,7 +568,7 @@ const capabilityCases: ScenarioCase[] = [
       'The twin: canRender mirrors doc.render, and a denied renderPage rejects locally with PermissionDenied (context render.renderPage) before conforming or calling the engine; keys stay computable.',
     plugins: render(),
     engine: { documents: { a: doc({ allows: [] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -577,7 +583,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A wildcard grant renders.',
     plugins: render(),
     engine: { documents: { a: doc({ allows: '*' }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('canRender'), cap('renderPage', 33, { scale: 1 })],
   },
   {
@@ -585,7 +591,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'A pon the registry does not know throws synchronously from renderPage, renderSourceKey and conformViewport (it is a programmer error, not a rejection).',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderPage', 99, { scale: 1 }), cap('renderSourceKey', 99, { scale: 1 }), cap('conformViewport', 99, 1)],
   },
   {
@@ -598,7 +604,7 @@ const capabilityCases: ScenarioCase[] = [
         a: doc({ responses: [{ path: 'pages.list', value: { pageCount: 4, pages: [...PAGES, layout(44, 3, 100, 100)] } }] }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderSourceKey', 44, { scale: 1 }), cap('renderPage', 44, { scale: 1 }), cap('renderPage', 44, { scale: 1 })],
   },
   {
@@ -670,7 +676,7 @@ const capabilityCases: ScenarioCase[] = [
       'With the tile plane disabled, a demand more than twice the base budget warns once (the page rests blurry); paintSettings says tiles are off and the plane never engages.',
     plugins: render({ tiles: false }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -687,7 +693,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'The tiles-off warning measures the demand against what the base supplies: a demand at the budget never warns.',
     plugins: render({ tiles: false, fullPage: { maxWidth: 5000 } }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderSourceKey', 11, { scale: 8 }), cap('renderSourceKey', 11, { scale: 20 })],
   },
   {
@@ -695,7 +701,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'paintSettings reports the resolved fade and tile switch.',
     plugins: render({ tiles: { fadeMs: 120 } }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('paintSettings')],
   },
   {
@@ -724,7 +730,7 @@ const capabilityCases: ScenarioCase[] = [
       'Closing the document removes the ledger and aborts a render already in flight: the guarded handle rejects its consumer instance-closed at close, and the late answer is dropped.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), cap('renderPage', 11, { scale: 0.5 }), close(), settle('r0')],
   },
   {
@@ -733,7 +739,7 @@ const capabilityCases: ScenarioCase[] = [
       'The public renderPage honours the requested size exactly: width wins over scale, scale defaults to 1, the width rounds and never drops below 1 px. A width that matches a conformed raster shares its store entry; an explicit quality is its own key; a page the document lacks rejects not-found.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -762,7 +768,7 @@ const capabilityCases: ScenarioCase[] = [
       'renderPage defaults its encode to the strategy (format and quality reach the engine, only the format joins the key) and per-call format and quality override it, each joining the key.',
     plugins: render({ format: 'bmp', quality: 0.9 }),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -778,7 +784,7 @@ const capabilityCases: ScenarioCase[] = [
     covers: 'renderThumbnail is renderPage at maxWidth device pixels, annotations baked unless it says otherwise.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -795,7 +801,7 @@ const capabilityCases: ScenarioCase[] = [
       'renderPages runs its pages through a bounded worker pool: a page that fails (not in the document, or refused by the engine) lands in failed and the worker moves on, a repeated page is served from the store, and both lists come back in input order (a repeated page sorts at its last index).',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -811,7 +817,7 @@ const capabilityCases: ScenarioCase[] = [
       'The pool defaults to four workers, never fewer than one (concurrency 0 runs one), and an empty batch resolves at once with nothing in it.',
     plugins: render(),
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -829,7 +835,7 @@ const capabilityCases: ScenarioCase[] = [
       'Without doc.render every public render door refuses locally with permission-denied naming its own operation (renderThumbnail is renderPage), before touching the page registry or the engine.',
     plugins: render(),
     engine: { documents: { a: doc({ allows: [] }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open(),
@@ -887,7 +893,7 @@ function tileCase(
   config: RenderPluginOptions | undefined,
   engineDoc: FakeDocumentSpec,
   build: (v: ReturnType<typeof views>) => Step[],
-  extra: Partial<ScenarioCase> = {},
+  extra: Partial<Omit<ScenarioCase, 'snapshot' | 'reason'>> = {},
 ): ScenarioCase {
   const v = views();
   return {

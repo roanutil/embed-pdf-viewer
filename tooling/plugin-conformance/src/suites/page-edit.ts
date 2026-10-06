@@ -15,6 +15,12 @@ import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "page-edit dispatches no actions. These cases pin what each verb sends the engine and how its promise settles.",
+} as const;
+
 registerPlugin('page-edit', { factory: () => pageEditPlugin(), tokens: [PageEditToken] });
 
 const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
@@ -84,7 +90,7 @@ const cases: ScenarioCase[] = [
     covers:
       'rotateBy turns a relative turn into the absolute wire from the registry rotation, wrapping into [0, 360); an unknown page rejects not-found; any number is carried through the arithmetic.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -108,7 +114,7 @@ const cases: ScenarioCase[] = [
     name: 'rotate-by-follows-the-registry',
     covers: 'After a pages.rotated event replaces the registry, rotateBy starts from the new rotation.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -121,7 +127,7 @@ const cases: ScenarioCase[] = [
     name: 'passthroughs',
     covers: 'setRotation, move and delete forward their arguments unchanged and return the engine promise, which settles with the engine answer.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [start, open('a'), edit('setRotation', [[pr(10), pr(20)], 180]), edit('move', [[pr(20), pr(30)], { index: 0 }]), edit('delete', [[pr(30)]]), edit('move', [[], { index: -1 }])],
   },
@@ -130,7 +136,7 @@ const cases: ScenarioCase[] = [
     covers:
       'Without doc.pages.assemble canEdit() is false, and every verb still calls the engine, whose PermissionDenied rejects the returned promise with its full shape.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       documents: {
         a: doc({
@@ -155,7 +161,7 @@ const cases: ScenarioCase[] = [
     name: 'deferred-and-aborted',
     covers: 'A deferred edit settles when the engine answers, and the verbs run one at a time: the delete reaches the engine only after the rotate settles.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       documents: {
         a: doc({
@@ -180,7 +186,7 @@ const cases: ScenarioCase[] = [
     covers:
       'insertBlank: append by default sized like the last page; ref placements land after/before the anchor sized like it; an index placement is forwarded verbatim and sized like its predecessor, clamped into the registry; explicit size and count win; a missing anchor rejects not-found.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -208,7 +214,7 @@ const cases: ScenarioCase[] = [
     covers:
       'An index placement that is not an integer (or NaN) makes the predecessor lookup read a page that does not exist, which throws the TypeError the TypeScript throws; an explicit size skips the lookup.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -223,7 +229,7 @@ const cases: ScenarioCase[] = [
     name: 'insert',
     covers: 'insertFromBytes forwards the bytes and the resolved placement index; a missing anchor rejects not-found before any engine call.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -241,7 +247,7 @@ const cases: ScenarioCase[] = [
     covers:
       'A capability captured before its document closed keeps its guarded handle and the last registry it saw: canEdit still answers, and each verb still reaches the engine, but its promise rejects instance-closed (the kernel no longer resolves the capability).',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -260,7 +266,7 @@ const cases: ScenarioCase[] = [
     name: 'an-empty-registry',
     covers: 'A document with no pages: rotation reads as 0, a PON anchor is not found, and a blank page defaults to US Letter wherever it goes.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ pages: [], responses: answering }) } },
     steps: [
       start,
@@ -278,7 +284,7 @@ const cases: ScenarioCase[] = [
     covers:
       'rotateBy groups pages by their resulting rotation and makes one engine call per group, in first-seen order, resolving with the last answer; no pages rejects invalid-input without an engine call.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       documents: {
         a: doc({
@@ -297,7 +303,7 @@ const cases: ScenarioCase[] = [
     name: 'move-to-the-end',
     covers: "move with 'end' (or no placement) sends the registry's page count as the destination; ref placements resolve after or before their anchor.",
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: answering }) } },
     steps: [
       start,
@@ -314,7 +320,7 @@ const cases: ScenarioCase[] = [
     covers:
       'insertFromBytes with pageIndexes opens the bytes beside the document (full scope, an id from the clock), lists its pages, extracts the chosen ones by ref, inserts the extract at the placement and closes the source. A missing index rejects not-found and still closes the source; a refused open rejects with the mapped error.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       defaultDocument: 'src',
       documents: {
@@ -342,7 +348,7 @@ const cases: ScenarioCase[] = [
     covers:
       "The source id is Date.now() in base 36. A pageIndexes entry that is negative, fractional or not finite names no page and rejects not-found, the message spelling the index as String() does (1e+21, 1e-7 and all).",
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       defaultDocument: 'src',
       documents: {
@@ -376,7 +382,7 @@ const cases: ScenarioCase[] = [
     covers:
       'A registry page with no rotation turns into NaN, which is its own Map key: the numbered pages still group apart from it, one engine call per group.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       documents: {
         a: doc({
@@ -392,7 +398,7 @@ const cases: ScenarioCase[] = [
     covers:
       "insertFromDocument extracts the pages from the other open document's handle and inserts the bytes at the placement ('end' by default); a document that is not open rejects not-found; a refused extract rejects with the mapped error.",
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: {
       documents: {
         a: doc({ responses: answering }),
@@ -414,7 +420,7 @@ const cases: ScenarioCase[] = [
     covers:
       'duplicate extracts the pages and inserts the copy right after the last of them by default, or at the placement given; no pages rejects invalid-input before any engine call.',
     plugins,
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     engine: { documents: { a: doc({ responses: [...answering, { path: 'pages.extract', value: { $bytes: 'CgsM' } }] }) } },
     steps: [
       start,

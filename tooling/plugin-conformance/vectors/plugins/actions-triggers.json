@@ -10132,6 +10132,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins when lifecycle trees are read and which trigger families fire, through the engine reads and the dispatch outcomes. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -11752,6 +11753,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins when lifecycle trees are read and which trigger families fire, through the engine reads and the dispatch outcomes. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [

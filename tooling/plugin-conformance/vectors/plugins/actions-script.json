@@ -13961,6 +13961,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -20871,6 +20872,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -21886,6 +21888,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -23066,6 +23069,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -24076,6 +24080,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -26323,6 +26328,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -28108,6 +28114,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -29267,6 +29274,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -30348,6 +30356,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -31454,6 +31463,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -32944,6 +32954,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -33419,6 +33430,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -34469,6 +34481,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -35091,6 +35104,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -35689,6 +35703,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -36192,6 +36207,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -36730,6 +36746,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [
@@ -37197,6 +37214,7 @@
         }
       ],
       "snapshot": "none",
+      "reason": "Pins what reaches the script sandbox and the UI adapter (inputs, budgets, realm rebuilds, surfaced requests), through the engine log and the adapter callbacks. Its dispatched actions are compared; the state they build is not.",
       "trace": [
         {
           "settled": [

@@ -52,6 +52,12 @@ import {
   widget,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the capability's page-space reads and its write settlements, through call outcomes and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 /** A call on the annotation capability by its v3 name. */
 const api = (method: string, args: unknown[] = [], d = 'a'): Step => ({
   op: 'call',
@@ -135,7 +141,7 @@ const cases: ScenarioCase[] = [
       'get projects a loaded record into page space (bounds, geometry per kind, props, flags, text, author, dates, group, reply, authority, raw) once per model entry; list filters by page, subtype, author and group, memoizing the whole and per-page lists; listRaw and getRaw read the DTOs; hitTestAt answers the annotation under a point, the selection for a handle, null over empty space even with a selection; getStatus is loading until hydration lands; listTools and getTool project the resolved tools.',
     plugins: PLUGINS,
     engine: { documents: { a: doc([{ path: 'annotations.listRawAll', defer: 'hydrate' }]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       api('getStatus'),
@@ -385,7 +391,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       api('setContents', [objRef(2), 'plain']),
@@ -400,7 +406,7 @@ const cases: ScenarioCase[] = [
     // The /DA size disagrees with the rich body's, so a body read and a
     // range read differ even where no run has a size of its own.
     engine: { documents: { a: doc([hydrate({ 1: [richFree(1, { fontSize: 20 })] })]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       api('select', [objRef(1)]),

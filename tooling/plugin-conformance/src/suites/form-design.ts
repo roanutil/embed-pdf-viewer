@@ -33,6 +33,16 @@ import {
   v3Widget,
 } from './form-fixtures';
 
+/** Why some cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+const UNSNAPSHOTTED_INIT = {
+  snapshot: 'none',
+  reason: "Pins what init registers, read back through the hub's tool list and the annotation registry's call outcomes. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const HYDRATE: ResponseSpec = { path: 'annotations.listRawAll', value: { pages: [] } };
 const WITH_ANNOTATION = [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'form' }];
 const WITH_PROBE = [...WITH_ANNOTATION, { factory: 'form-probe' }];
@@ -54,7 +64,7 @@ const initCases: ScenarioCase[] = [
       "Without the annotation plugin init registers form-fill, form-edit and the five palette tools as plain hub tools enabling 'form-place' and 'annotation-edit', plus the place handler.",
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list([])]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_INIT,
     steps: [...boot, ix('tools')],
   },
   {
@@ -63,7 +73,7 @@ const initCases: ScenarioCase[] = [
       "With the annotation plugin the palette tools join its registry (subtype, click policy, defaults) and a 'form-widgets' behavior is engaged for widget subtypes exactly while the active tool enables 'form-fill'.",
     plugins: WITH_PROBE,
     engine: { documents: { a: doc([list([]), HYDRATE]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED_INIT,
     steps: [
       ...boot,
       ix('tools'),
@@ -123,7 +133,7 @@ const designCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('placeField', [input({ family: 'radio' })]),
@@ -141,7 +151,7 @@ const designCases: ScenarioCase[] = [
         a: doc([list([EXISTING], { defer: 'list' }), { path: 'forms.createField', value: { field: placed(50, 'text_1') } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('placeField', [input()]),
@@ -159,7 +169,7 @@ const designCases: ScenarioCase[] = [
         a: doc([list([]), { path: 'forms.createField', value: { field: placed(50, 'text_1') } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('placeField', [input({ box: { x: -30, y: 790, width: 700, height: 40 } })]),
@@ -183,7 +193,7 @@ const designCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('placeField', [input()]), call('placeField', [input()])],
   },
   {
@@ -200,7 +210,7 @@ const designCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('placeField', [input()]), settle('reload', { annotations: [widgetAnnot(1, 160)] }), anno('get', [{ kind: 'objectNumber', page: pr(1), annotObjectNumber: 160 }])],
   },
   {
@@ -208,7 +218,7 @@ const designCases: ScenarioCase[] = [
     covers: "pageBox is the page's content box {0, 0, w, h}, or null for a page the document does not have.",
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list([])]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('pageBox', [1]), call('pageBox', [2]), call('pageBox', [99])],
   },
   {
@@ -264,7 +274,7 @@ const designCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('deleteField', ['obj:7']), call('updateField', ['obj:8', { family: 'text', name: 'renamed' }]), settle('delete', { deleted: true })],
   },
   {
@@ -346,7 +356,7 @@ const v3DesignCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
@@ -373,7 +383,7 @@ const v3DesignCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('getWidgetAt', [pr(1), { x: 100, y: 400 }]),
@@ -386,7 +396,7 @@ const v3DesignCases: ScenarioCase[] = [
     covers: 'Without the annotation plugin a page whose geometry has not landed answers null.',
     plugins: FORM_ONLY,
     engine: { documents: { a: doc([list(HIT_FIELDS), annotations(1, HIT_ANNOTS)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('getWidgetAt', [pr(1), { x: 20, y: 20 }]), call('getWidgetAt', [pr(1), { x: 20, y: 20 }])],
   },
   {
@@ -421,7 +431,7 @@ const v3DesignCases: ScenarioCase[] = [
         a: doc([list([]), { path: 'forms.createField', value: { field: placed(44, 'my.choice') } }]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('placeField', [input({ family: 'combobox', name: 'my.choice', options: [{ label: 'A', value: 'a' }] })]),
@@ -456,7 +466,7 @@ const handlerCases: ScenarioCase[] = [
       "A click (under the drag threshold in both axes) places the tool's click size centred on the down point through the shared placement layer, styled from the tool's live defaults, and selects the new widget.",
     plugins: WITH_ANNOTATION,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, tool('form-text'), pointer('down', 100, 100), pointer('up', 101, 101), anno('getSelection'), ix('activeToolId')],
   },
   {
@@ -464,7 +474,7 @@ const handlerCases: ScenarioCase[] = [
     covers: 'The click box is kept on the page by the shared placement layer.',
     plugins: WITH_ANNOTATION,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, tool('form-listbox'), pointer('down', 595, 5), pointer('up', 595, 5)],
   },
   {
@@ -472,7 +482,7 @@ const handlerCases: ScenarioCase[] = [
     covers: "Without the annotation plugin a 100 x 2 drag commits as the dragged rect, styled from the table's static defaults; nothing is selected.",
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, tool('form-text'), pointer('down', 50, 50), pointer('move', 150, 52), pointer('up', 150, 52)],
   },
   {
@@ -481,7 +491,7 @@ const handlerCases: ScenarioCase[] = [
       'Moves over another page project back onto the home page; the up sample is final; a move that projects nowhere is ignored; an up over a gap falls back to the last resolved point.',
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       tool('form-checkbox'),
@@ -500,7 +510,7 @@ const handlerCases: ScenarioCase[] = [
       "With the annotation plugin a move past the drag threshold previews the dragged box through the placement ghost, a move back under it clears the preview, and the up clears it.",
     plugins: WITH_ANNOTATION,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       tool('form-checkbox'),
@@ -521,7 +531,7 @@ const handlerCases: ScenarioCase[] = [
     covers: 'A drag exactly the drag threshold wide (or tall) is a drag, not a click: here a degenerate one, which placeField refuses.',
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, tool('form-text'), pointer('down', 50, 50), pointer('up', 53, 50), pointer('down', 50, 50), pointer('up', 50, 53)],
   },
   {
@@ -529,7 +539,7 @@ const handlerCases: ScenarioCase[] = [
     covers: "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked; the gesture starts under the id 'form-place'.",
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE(),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       ix('registerHandler', [
@@ -558,7 +568,7 @@ const handlerCases: ScenarioCase[] = [
         b: doc([list([])], { security: { allows: ['doc.forms.read', 'doc.forms.fill'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
@@ -595,7 +605,7 @@ const handlerCases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       tool('form-text'),
@@ -616,7 +626,7 @@ const handlerCases: ScenarioCase[] = [
     covers: "A placeField rejection is contained and reported to console.error: a drag that is thin in one axis after clamping, a click on a page the document does not have, an engine refusal.",
     plugins: FORM_ONLY,
     engine: PLACE_ENGINE([{ path: 'forms.createField', times: 1, error: { name: 'EngineError', message: 'refused', code: 'Refused' } }]),
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       tool('form-text'),

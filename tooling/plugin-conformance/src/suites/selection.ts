@@ -51,6 +51,12 @@ import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the permission twins and text reads (batching, ranges, cancellation), through call outcomes and engine reads. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── harness shims ────────────────────────────────────────────────────────────
 //
 // A vector cannot carry an `AbortSignal`, so the `selection` factory wraps the
@@ -329,7 +335,7 @@ const cases: ScenarioCase[] = [
         d: doc({ security: { allows: [] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -610,7 +616,7 @@ const cases: ScenarioCase[] = [
         b: doc({ security: { allows: ['doc.text.select'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -644,7 +650,7 @@ const cases: ScenarioCase[] = [
         },
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...opened, sel('selectAll'), sel('readText'), settle('first', { text: 'P0', charCount: 2 })],
   },
   {
@@ -854,7 +860,7 @@ const cases: ScenarioCase[] = [
     covers: 'Closing the document releases the store and event subscriptions.',
     plugins,
     engine: { documents: { a: doc() } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...opened, sel('ensurePage', 1), { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
   },
   {
@@ -907,7 +913,7 @@ const cases: ScenarioCase[] = [
         b: doc({ security: { allows: ['doc.text.select'] } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       openDoc('a'),
@@ -948,7 +954,7 @@ const cases: ScenarioCase[] = [
         },
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...opened,
       sel('selectAll'),

@@ -35,6 +35,12 @@ import {
   pr,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins thread order, comment permissions, link-sync chaining and the page-service reads, through call outcomes, settlements and engine calls. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const at = (d: number) => `2024-01-${String(d).padStart(2, '0')}T00:00:00Z`;
 const me = { identity: { user_id: 'me' } };
 
@@ -58,7 +64,7 @@ const cases: ScenarioCase[] = [
       'threads() are display-ordered (page order, then top of page, then creation); thread(ref) finds the thread of any member (root, reply, grouped part, status) and null for none. The lens reads hydration too.',
     plugins: WITH_LENS,
     engine: { documents: { a: doc([hydrate({ 2: page2(), 1: thread() })], { security: { allows: '*', ...me } }) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lens('threads'),
@@ -100,7 +106,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.moved', pageObjectNumber: 1, origin: { kind: 'remote', serverId: 1 }, moved: [square(9, { pageObjectNumber: 1, contents: 'z' })] }]),
@@ -155,7 +161,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, lens('setStatus', [objRef(1), 'none'])],
   },
   {
@@ -214,7 +220,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lens('permissionsFor', [objRef(1)]),
@@ -310,7 +316,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://1' }]),
@@ -338,7 +344,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       lens('linksSet', [objRef(1), { kind: 'uri', uri: 'https://1' }]),
@@ -398,7 +404,7 @@ const cases: ScenarioCase[] = [
     covers: 'With the actions plugin present, init registers commitScriptEffects as its annotation commit sink and releases it on close.',
     plugins: [{ factory: 'interaction' }, { factory: 'actions' }, { factory: 'annotation' }],
     engine: { documents: { a: doc([hydrate({ 1: [square(1)] })]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, { op: 'call', target: 'documents', method: 'close', args: ['a'] }],
   },
   {
@@ -413,7 +419,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('downloadAttachment', [objRef(1)]), call('downloadAttachment', [objRef(7)])],
   },
   {
@@ -431,7 +437,7 @@ const cases: ScenarioCase[] = [
         ]),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('appearances', [1, 2]),
@@ -463,7 +469,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [...boot, call('bakeScale', [0.5]), call('bakeScale', [1.5]), call('bakeScale', [9])],
   },
 ];

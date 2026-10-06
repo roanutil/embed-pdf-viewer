@@ -25,6 +25,12 @@ import {
   updated,
 } from './annotation-fixtures';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins the authority refusal and the engine refusal of a group write, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 const tq = (x: number, y: number, w: number, h: number) => ({
   upperStart: { x, y },
   upperEnd: { x: x + w, y },
@@ -107,7 +113,7 @@ const cases: ScenarioCase[] = [
         ),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       ...boot,
       call('select', [objRef(3)]),

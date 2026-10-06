@@ -89416,6 +89416,7 @@
         }
       },
       "snapshot": "none",
+      "reason": "Pins that closing releases the event subscription, which engineState's subscriber count shows. Its dispatched actions are compared; the state they build is not.",
       "steps": [
         {
           "op": "call",

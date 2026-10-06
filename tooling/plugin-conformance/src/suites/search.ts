@@ -24,6 +24,12 @@ import { registerPlugin, type PluginSpec, type ScenarioCase, type Step } from '.
 import type { Suite } from '../vectors';
 import { stageStep } from './stage-plugin';
 
+/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
+const UNSNAPSHOTTED = {
+  snapshot: 'none',
+  reason: "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
+} as const;
+
 // ── harness shims ─────────────────────────────────────────────────────────────
 
 const controllers = new Map<string, AbortController>();
@@ -611,7 +617,7 @@ const twinCases: ScenarioCase[] = [
         d: doc([], { security: { allows: '*' } }),
       },
     },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [
       start,
       open('a'),
@@ -822,7 +828,7 @@ const effectCases: ScenarioCase[] = [
     covers: 'Closing with nothing armed only unsubscribes.',
     plugins: search(),
     engine: { documents: { a: doc([]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), close()],
   },
 ];
@@ -1031,7 +1037,7 @@ const v3Cases: ScenarioCase[] = [
       'getHitCount with a page counts that page\'s bucket (0 for a page with none); listPagesWithHits names each page with hits once, in object-number order, and is empty before any hit.',
     plugins: search(),
     engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(33, 0), m(11, 0), m(33, 4), m(22, 1)], null, 3))]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), v3('listPagesWithHits'), s('search', Q), v3('listPagesWithHits'), v3('getHitCount', pr(33)), v3('getHitCount', pr(99)), v3('getHitCount'), v3('listHits', {})],
   },
   {
@@ -1051,7 +1057,7 @@ const turnCases: ScenarioCase[] = [
       'Closing with a session scan and a findAll both in flight settles both promises in one step: the order they settle in is fixed by how many turns each chain takes from the guarded rejection (the session resolves cancelled through the lane and its catch; findAll rejects instance-closed through collect alone).',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 'session', 1), deferAt(Q2, 'full', {}, 'find', 1)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), s('search', Q), s('findAll', Q2), close()],
   },
   {
@@ -1059,7 +1065,7 @@ const turnCases: ScenarioCase[] = [
     covers: 'The same race with findAll started first: settlement order does not follow call order.',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q2, 'full', {}, 'find', 1), deferAt(Q, 'full', {}, 'session', 1)]) } },
-    snapshot: 'none',
+    ...UNSNAPSHOTTED,
     steps: [start, open(), s('findAll', Q2), s('search', Q), close()],
   },
 ];
