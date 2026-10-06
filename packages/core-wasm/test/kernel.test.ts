@@ -76,6 +76,10 @@ async function openFixture(
   return k;
 }
 
+/** Past the next store notification: listeners hear of changes at most once
+ *  a frame (`FRAME_MS` in `src/kernel.ts`), then a frame passes quietly. */
+const notified = () => new Promise((resolve) => setTimeout(resolve, 40));
+
 describe('the Kernel shim over the Rust kernel', () => {
   test('a getter answers the same object until the store changes', async () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
@@ -227,9 +231,7 @@ describe('the Kernel shim over the Rust kernel', () => {
       seenAfterMutation = stage.listVisiblePages();
     });
     stage.panBy(0, -50);
-    // Listeners hear of a burst of changes once, in a microtask after the
-    // call that made them.
-    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    await notified();
 
     expect(seenBeforeMutation).not.toBeUndefined();
     expect(seenAfterMutation).not.toBe(seenBeforeMutation);
@@ -239,7 +241,7 @@ describe('the Kernel shim over the Rust kernel', () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
     const stage = k.capability(StageToken);
     stage.setViewportSize({ width: 800, height: 120 });
-    await new Promise<void>((resolve) => queueMicrotask(resolve));
+    await notified();
 
     let calls = 0;
     const off = k.subscribe(() => calls++);
@@ -249,8 +251,31 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(calls).toBe(0);
     // The caches don't wait for the notification.
     expect(k.getState()).not.toBe(before);
+    await notified();
+    expect(calls).toBe(1);
+    off();
+  });
+
+  test('a change after a quiet frame notifies in a microtask; the rest of the frame waits', async () => {
+    const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 120 });
+    await notified();
+
+    let calls = 0;
+    const off = k.subscribe(() => calls++);
+    stage.panBy(0, -10);
     await new Promise<void>((resolve) => queueMicrotask(resolve));
     expect(calls).toBe(1);
+    // Five more changes, each in a task of its own, inside the same frame:
+    // one notification, at the frame's end.
+    for (let i = 0; i < 5; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      stage.panBy(0, -10);
+    }
+    expect(calls).toBe(1);
+    await notified();
+    expect(calls).toBe(2);
     off();
   });
 

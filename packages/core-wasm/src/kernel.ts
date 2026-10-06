@@ -27,6 +27,9 @@ import { createEngineBridge, type EngineBridge } from './engine-bridge';
 import { isRustPlugin, type RustPluginDef } from './plugins';
 import { rusty, toError, Wire, type RustKernelClass } from './proxy';
 
+/** One frame at 60 Hz: the most often store listeners hear of changes. */
+const FRAME_MS = 16;
+
 let RustKernel: RustKernelClass | undefined;
 
 /** The `WasmKernel` class to build kernels with: `wasm/` (after its
@@ -159,18 +162,27 @@ export function createKernel(opts: {
   // inside that call: a camera move made several passes over hundreds of
   // hooks. The caches still invalidate at once, so a read in between sees
   // the new state.
+  //
+  // At most one notification a frame, too: a change after a quiet frame
+  // flushes at once, and the rest of that frame's changes wait for its end.
+  // Each engine answer is a task of its own, and opening a document answers
+  // one measurement read per page, so per-task flushing ran every hook once
+  // per page and queued every later engine answer behind those passes.
   let flushing = false;
+  let flushedAt = -Infinity;
   const flush = () => {
     flushing = false;
+    flushedAt = performance.now();
     for (const listener of [...listeners]) listener();
   };
   const subscription = rust.subscribe(() => {
     wire.changes++;
     wire.bump();
-    if (!flushing) {
-      flushing = true;
-      queueMicrotask(flush);
-    }
+    if (flushing) return;
+    flushing = true;
+    const wait = flushedAt + FRAME_MS - performance.now();
+    if (wait > 0) setTimeout(flush, wait);
+    else queueMicrotask(flush);
   });
 
   const documents = wire.documents() as DocumentsCapability;
