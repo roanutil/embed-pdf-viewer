@@ -201,6 +201,16 @@
       "ref": "research/rust-kernel-bridge-encode",
       "sha": "57f627ed5a62c58c482e6ed90a2d9dc2b10a15b0",
       "recipe": "rust-kernel"
+    },
+    "plugins-tip4": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "7455a529410a8d8464e5a9b1a45dfba7a8e97916",
+      "recipe": "rust-kernel"
+    },
+    "plugins-hostbytes": {
+      "ref": "research/rust-kernel-host-bytes",
+      "sha": "81899a80a30c0f0a9d1a8d8f35d65612d0435926",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -429,6 +439,16 @@
     },
     "plugins-encode": {
       "worktree": "plugins-encode",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip4": {
+      "worktree": "plugins-tip4",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-hostbytes": {
+      "worktree": "plugins-hostbytes",
       "kernel": "rust",
       "rustReads": false
     }
@@ -677,6 +697,14 @@
     [
       "main",
       "plugins-encode"
+    ],
+    [
+      "plugins-tip4",
+      "plugins-hostbytes"
+    ],
+    [
+      "main",
+      "plugins-hostbytes"
     ]
   ]
 }
