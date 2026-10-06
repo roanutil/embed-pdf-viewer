@@ -5,6 +5,7 @@
 //! `verify` answering false.
 
 use ecdsa::signature::hazmat::PrehashVerifier as _;
+use rsa::traits::PublicKeyParts as _;
 use rsa::{BigUint, Pkcs1v15Sign, Pss, RsaPublicKey};
 
 use crate::cert::{AlgId, Spki};
@@ -98,7 +99,12 @@ pub fn pss_params(algorithm: &AlgId) -> Result<PssParams, String> {
             }
             (der::CONTEXT, 2) => {
                 let int = member.children.first().map(|n| n.content.clone()).unwrap_or_default();
-                out.salt = Some(int.iter().fold(0u64, |acc, &b| acc * 256 + u64::from(b)));
+                // A value past u64 saturates; verify refuses it as too long.
+                out.salt = Some(
+                    int.iter()
+                        .try_fold(0u64, |acc, &b| acc.checked_mul(256)?.checked_add(u64::from(b)))
+                        .unwrap_or(u64::MAX),
+                );
             }
             _ => {}
         }
@@ -271,8 +277,14 @@ pub fn verify_with_public_key(
             if let Some(oid) = &params.hash {
                 algorithm_name(oid).ok_or_else(|| unsupported_identifier(oid))?;
             }
-            let salt = params.salt.unwrap_or(20) as usize;
-            Ok(rsa.verify(pss(sha, salt), &sha.hash(data), signature).is_ok())
+            // A salt that cannot fit the encoded message never verifies;
+            // `rsa` adds it unchecked and panics on one near usize::MAX.
+            let salt = params.salt.unwrap_or(20);
+            let room = rsa.size().saturating_sub(sha.size() + 2);
+            if salt > room as u64 {
+                return Ok(false);
+            }
+            Ok(rsa.verify(pss(sha, salt as usize), &sha.hash(data), signature).is_ok())
         }
         Key::Rsa(ref rsa) => Ok(rsa.verify(pkcs1(sha), &sha.hash(data), signature).is_ok()),
         ref ec => {
