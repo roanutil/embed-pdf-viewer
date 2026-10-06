@@ -1,8 +1,8 @@
 {
   "total": {
-    "statements": "49197/49390",
-    "branches": "12172/12495",
-    "unsnapshottedOnlyLines": 1479
+    "statements": "49226/49419",
+    "branches": "12179/12509",
+    "unsnapshottedOnlyLines": 1475
   },
   "files": {
     "packages/core/acrojs/src/actions.ts": {
@@ -200,18 +200,26 @@
       "uncoveredBranches": []
     },
     "packages/core/annotation/src/snap.ts": {
-      "statements": "119/119",
-      "branches": "38/38",
-      "uncoveredLines": [],
-      "uncoveredBranches": []
-    },
-    "packages/core/annotation/src/update.ts": {
-      "statements": "1966/1966",
-      "branches": "722/724",
+      "statements": "121/121",
+      "branches": "38/39",
       "uncoveredLines": [],
       "uncoveredBranches": [
-        "1534:63#0",
-        "1700:16#0"
+        "42:70#0"
+      ]
+    },
+    "packages/core/annotation/src/update.ts": {
+      "statements": "1980/1980",
+      "branches": "724/732",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "269:12#0",
+        "272:43#0",
+        "287:10#0",
+        "634:21#0",
+        "712:17#0",
+        "764:41#0",
+        "1538:63#0",
+        "1704:16#0"
       ]
     },
     "packages/core/annotation/src/view.ts": {
@@ -694,14 +702,14 @@
       ]
     },
     "packages/plugin/actions/src/lifecycle/document-events.ts": {
-      "statements": "162/162",
-      "branches": "40/41",
+      "statements": "175/175",
+      "branches": "44/45",
       "uncoveredLines": [],
       "uncoveredBranches": [
-        "68:61#0"
+        "69:61#0"
       ],
       "unsnapshottedOnly": [
-        "107-109"
+        "120-122"
       ]
     },
     "packages/plugin/actions/src/lifecycle/open-sequence.ts": {
@@ -753,7 +761,7 @@
     },
     "packages/plugin/actions/src/scripting/executor.ts": {
       "statements": "180/180",
-      "branches": "66/68",
+      "branches": "67/69",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "87:38#0",
@@ -796,9 +804,9 @@
       ],
       "unsnapshottedOnly": [
         "118",
-        "120",
         "124",
-        "129-133",
+        "130",
+        "132",
         "139"
       ]
     },
