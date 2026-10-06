@@ -274,6 +274,51 @@ describe("a document's bytes", () => {
     }
   });
 
+  test('a source function produces cross as a handle too, released with the session', async () => {
+    const bridges: EngineBridge[] = [];
+    setWasmKernel(function (...args: ConstructorParameters<RustKernelClass>) {
+      bridges.push(args[1]);
+      return new WasmKernel(...args);
+    } as unknown as RustKernelClass);
+    try {
+      const k = await openFixture();
+      const hold = vi.spyOn(bridges[0]!, 'hold');
+      const ready = new Promise<void>((done) => {
+        const off = k.documents.onOpened((event) => {
+          if (event.documentId !== 'produced') return;
+          off();
+          done();
+        });
+      });
+      const produced = bytes.slice();
+      k.documents.openAll([
+        {
+          source: async () => ({ kind: 'bytes', id: 'produced', bytes: produced }),
+          scope: ['*'],
+        },
+      ]);
+      await ready;
+      const call = hold.mock.calls.findIndex(([value]) => value === produced);
+      expect(call).toBeGreaterThanOrEqual(0);
+      const id = hold.mock.results[call]!.value as number;
+
+      await k.documents.close('produced');
+      const released = () => {
+        try {
+          hostBytes(id);
+          return false;
+        } catch (error) {
+          return /released/.test(String(error));
+        }
+      };
+      const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+      expect(await collectUntil(released)).toBe(true);
+      quiet.mockRestore();
+    } finally {
+      setWasmKernel(WasmKernel);
+    }
+  });
+
   test("outlive a failed open's retry", async () => {
     const bridges: EngineBridge[] = [];
     setWasmKernel(function (...args: ConstructorParameters<RustKernelClass>) {

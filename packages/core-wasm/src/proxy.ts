@@ -354,12 +354,18 @@ export class Wire {
   /** `value` as canonical JSON (an object, not text). `member` names the
    *  call it is encoded for in the error a `Blob` throws. */
   encode(value: unknown, signals?: AbortSignal[], member?: string): unknown {
+    const opens = member !== undefined && OPENS.test(member);
     return canonical(value, {
       hold: this.bridge.hold,
-      fn: (f) => ({ $fn: `js:${this.fnId(f)}` }),
+      fn: (f) => {
+        const id = this.fnId(f);
+        // A source the kernel calls for the document's input.
+        if (opens) this.sources.add(id);
+        return { $fn: `js:${id}` };
+      },
       signal: signals ? (s) => signals.push(s) : undefined,
       blob: () => unprepared(member),
-      bytes: member !== undefined && OPENS.test(member) ? this.holdBytes : undefined,
+      bytes: opens ? this.holdBytes : undefined,
     });
   }
 
@@ -368,6 +374,10 @@ export class Wire {
    *  `$host` back to this same array, so the bytes never cross. The kernel
    *  releases it with the last session that can open it. */
   private readonly holdBytes = (bytes: Uint8Array) => ({ $host: this.bridge.hold(bytes) });
+
+  /** Functions passed to `open`/`openAll` as a source: what they produce
+   *  holds its bytes too. An id leaves with its function. */
+  private readonly sources = new Set<number>();
 
   decode(value: unknown): unknown {
     return decode(value, this.bridge.host, this.hook);
@@ -381,11 +391,12 @@ export class Wire {
    *  about to hand over; the kernel says `release_js` again once it drops
    *  the callbacks it makes from this value. The next task runs after every
    *  microtask, so the kernel has read the value by then. */
-  private encodeInFlight(value: unknown): unknown {
+  private encodeInFlight(value: unknown, bytes?: (bytes: Uint8Array) => unknown): unknown {
     const ids: number[] = [];
     const out = canonical(value, {
       hold: this.bridge.hold,
       blob: () => unprepared('a callback value'),
+      bytes,
       fn: (f) => {
         const id = this.fnId(f);
         ids.push(id);
@@ -417,6 +428,7 @@ export class Wire {
     }
     this.fns.delete(n);
     this.fnIds.delete(fn);
+    this.sources.delete(n);
   };
 
   /** `call_js`: a `$fn` callback's call from the kernel. */
@@ -442,11 +454,17 @@ export class Wire {
     } catch (error) {
       throw errorSpec(error, (v) => this.encode(v));
     }
-    if (!isThenable(out)) return this.encode(out);
+    if (!isThenable(out)) {
+      return this.sources.has(n) ? this.encodeInFlight(out, this.holdBytes) : this.encode(out);
+    }
     return Promise.resolve(out).then(
       // `readBinarySources`, not `readBlobs`: the file picker answers
       // `{ data: file }`, and an attachment needs the file's name.
-      async (value) => this.encodeInFlight(await readBinarySources(value)),
+      async (value) =>
+        this.encodeInFlight(
+          await readBinarySources(value),
+          this.sources.has(n) ? this.holdBytes : undefined,
+        ),
       (error) => {
         throw errorSpec(error, (v) => this.encode(v));
       },

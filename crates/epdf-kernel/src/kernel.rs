@@ -135,6 +135,10 @@ struct HostHold(Vec<Value>);
 impl HostHold {
     fn of(input: &OpenSource) -> Option<Rc<HostHold>> {
         let OpenSource::Input(value) = input else { return None };
+        HostHold::of_value(value)
+    }
+
+    fn of_value(value: &Value) -> Option<Rc<HostHold>> {
         let mut held = Vec::new();
         collect_hosts(value, &mut held);
         (!held.is_empty()).then(|| Rc::new(HostHold(held)))
@@ -168,6 +172,9 @@ struct Session {
     instance_id: String,
     name: RefCell<Option<String>>,
     source: RefCell<Option<Recorded>>,
+    /// The hold on what a thunk source produced, which a retry produces
+    /// afresh.
+    produced: RefCell<Option<Rc<HostHold>>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
     staged_meta: RefCell<Option<DocumentMeta>>,
@@ -362,6 +369,7 @@ impl Inner {
             id: RefCell::new(id),
             name: RefCell::new(name),
             source: RefCell::new(None),
+            produced: RefCell::new(None),
             phase: Cell::new(Phase::Opening),
             handle: RefCell::new(None),
             staged_meta: RefCell::new(None),
@@ -533,6 +541,7 @@ impl Inner {
             // long after: its source goes now, and with it the host's bytes
             // unless a `retry()` took them on to the next session.
             drop(s.source.borrow_mut().take());
+            drop(s.produced.borrow_mut().take());
             // Each capability's context holds this session, so while the
             // session holds the capabilities (and their connects) the two
             // keep each other alive past the close, and past the kernel.
@@ -1002,7 +1011,9 @@ impl Inner {
                     Ok(promise) => promise,
                     Err(error) => Promise::rejected(error),
                 };
-                rt::returned(Self::engine_call(&session, produced, None)).await?
+                let value = rt::returned(Self::engine_call(&session, produced, None)).await?;
+                *session.produced.borrow_mut() = HostHold::of_value(&value);
+                value
             }
             OpenSource::Input(value) => value,
         };
