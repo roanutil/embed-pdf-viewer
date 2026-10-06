@@ -351,8 +351,8 @@ static HOLDS: std::sync::LazyLock<epdf_kernel::Token<Rc<Holds>>> =
 /// nothing outside holds one, it is dropped. Its context holds the
 /// document's session, and the session held the capability, so without the
 /// close letting go this is a cycle that outlives the kernel. This is the
-/// web build's behaviour (`release_closed_sessions: true`), exercised here
-/// without going through `epdf-web`.
+/// default (`release_closed_sessions: true`), so an embedder that takes
+/// `KernelOptions::default()` does not leak a session per open and close.
 #[test]
 fn a_closed_documents_capability_is_dropped() {
     use epdf_kernel::rt;
@@ -367,8 +367,7 @@ fn a_closed_documents_capability_is_dropped() {
         .capability(&HOLDS, |ctx| Ok(Rc::new(Holds { _ctx: ctx })))
         .build();
     let engine = Rc::new(plugin_conformance::fake_engine::AsEngine(fake));
-    let options = KernelOptions { release_closed_sessions: true, ..KernelOptions::default() };
-    let kernel = Kernel::new(engine, vec![plugin], options).unwrap();
+    let kernel = Kernel::new(engine, vec![plugin], KernelOptions::default()).unwrap();
     let _ = kernel.start();
     let input = json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } });
     let _ = kernel.documents().open(OpenSource::Input(input), OpenOptions::default());
@@ -381,11 +380,10 @@ fn a_closed_documents_capability_is_dropped() {
     assert!(capability.upgrade().is_none(), "the closed session still holds its capability");
 }
 
-/// `release_closed_sessions` defaults to `false`: native callers keep
-/// today's behaviour, where a closed session's capabilities (and their
-/// connects) stay put and only go quiet once nothing outside holds them.
-/// `epdf-web` turns the flag on; this is the same session, with the flag
-/// off, kept alive by the cycle the flag would otherwise break.
+/// With `release_closed_sessions` turned off, a closed session's
+/// capabilities (and their connects) stay put and only go quiet once nothing
+/// outside holds them: the same session, kept alive by the cycle the flag
+/// otherwise breaks.
 #[test]
 fn a_closed_sessions_capabilities_survive_without_the_flag() {
     use epdf_kernel::rt;
@@ -400,7 +398,8 @@ fn a_closed_sessions_capabilities_survive_without_the_flag() {
         .capability(&HOLDS, |ctx| Ok(Rc::new(Holds { _ctx: ctx })))
         .build();
     let engine = Rc::new(plugin_conformance::fake_engine::AsEngine(fake));
-    let kernel = Kernel::new(engine, vec![plugin], KernelOptions::default()).unwrap();
+    let options = KernelOptions { release_closed_sessions: false, ..KernelOptions::default() };
+    let kernel = Kernel::new(engine, vec![plugin], options).unwrap();
     let _ = kernel.start();
     let input = json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } });
     let _ = kernel.documents().open(OpenSource::Input(input), OpenOptions::default());

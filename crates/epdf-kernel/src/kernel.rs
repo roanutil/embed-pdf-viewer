@@ -109,7 +109,6 @@ pub struct InitialDocument {
     pub options: OpenOptions,
 }
 
-#[derive(Default)]
 pub struct KernelOptions {
     pub report: Option<Report>,
     /// Observe every plugin dispatch, with its slice key, before the reducer
@@ -117,10 +116,16 @@ pub struct KernelOptions {
     pub on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
     /// Once a session finishes closing, drop its capabilities and connectors
     /// so nothing keeps their context (and the session) alive past the
-    /// close. Off by default: native callers rely on a closing session's
-    /// Weak-guarded deferred work going quiet on its own, not on the lists
-    /// being emptied. The web build turns this on.
+    /// close. On by default: each context holds its session, so with this
+    /// off a closed session and its capabilities keep each other alive past
+    /// the kernel.
     pub release_closed_sessions: bool,
+}
+
+impl Default for KernelOptions {
+    fn default() -> Self {
+        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: true }
+    }
 }
 
 // ── sessions ──────────────────────────────────────────────────────────────────
@@ -546,9 +551,8 @@ impl Inner {
             // session holds the capabilities (and their connects) the two
             // keep each other alive past the close, and past the kernel.
             // Nothing resolves a closing session's capabilities again, so
-            // dropping them here is safe; native callers still rely on
-            // Weak-guarded deferred work going quiet on its own, so this
-            // only runs when the caller opts in.
+            // dropping them here is safe. A caller can opt out and rely on
+            // Weak-guarded deferred work going quiet on its own instead.
             if this.release_closed_sessions {
                 let capabilities = std::mem::take(&mut *s.capabilities.borrow_mut());
                 let connectors = std::mem::take(&mut *s.connectors.borrow_mut());
