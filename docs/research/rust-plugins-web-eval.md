@@ -234,11 +234,11 @@ second `off()` arrives too late to find anything to call, and the removed handle
 until the next `up` or `cancel`, receiving `move` events for the rest of the gesture. Found by
 tracing the code, not reproduced in the browser.
 
-Closing a document drops its session's capabilities only because `epdf-web` sets
-`KernelOptions.release_closed_sessions` (`crates/epdf-kernel/src/kernel.rs`). The flag defaults
-to `false`. Native callers and the conformance vectors rely on a closed session's deferred work
-going quiet through its `Weak` guards, not on the lists being emptied, and the default keeps their
-behavior exactly as it was.
+Closing a document drops its session's capabilities because
+`KernelOptions.release_closed_sessions` (`crates/epdf-kernel/src/kernel.rs`) defaults to `true`.
+Before `19a614a9a` it defaulted to `false`, and a closed session and its capability contexts kept
+each other alive for any embedder that left it unset. The conformance scenario still sets it to
+`false`, and the vectors pass either way.
 
 Destroy logs 16 `[kernel] capability("stage") on a destroying kernel` reports from a fresh
 `ebook.pdf` load, where the TypeScript logs 17. That is a faithful port of a TypeScript bug; see
