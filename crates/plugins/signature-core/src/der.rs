@@ -139,13 +139,23 @@ impl Node {
 
 // ── reading ──────────────────────────────────────────────────────────────────
 
+/// How deep elements may nest. Real CMS stays near a dozen levels; asn1js has
+/// no cap but throws a RangeError when the JS stack runs out, which the
+/// callers turn into `malformed`. The cap keeps the recursion off the native
+/// or wasm stack's end, and bounds the `raw` copies to this many times the
+/// input.
+const MAX_DEPTH: usize = 64;
+
 /// `asn1js.fromBER(bytes)`: the first element, or `None` where asn1js answers
-/// `offset: -1`.
+/// `offset: -1` (or would run out of stack).
 pub fn from_ber(bytes: &[u8]) -> Option<Node> {
-    read(bytes, 0).map(|(node, _)| node)
+    read(bytes, 0, 0).map(|(node, _)| node)
 }
 
-fn read(bytes: &[u8], start: usize) -> Option<(Node, usize)> {
+fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
+    if depth > MAX_DEPTH {
+        return None;
+    }
     let mut at = start;
     let first = *bytes.get(at)?;
     at += 1;
@@ -201,7 +211,7 @@ fn read(bytes: &[u8], start: usize) -> Option<(Node, usize)> {
             if constructed {
                 let mut cursor = 0;
                 while cursor < body.len() {
-                    let (child, next) = read(body, cursor)?;
+                    let (child, next) = read(body, cursor, depth + 1)?;
                     children.push(child);
                     cursor = next;
                 }
@@ -228,7 +238,7 @@ fn read(bytes: &[u8], start: usize) -> Option<(Node, usize)> {
                     at += 2;
                     break;
                 }
-                let (child, next) = read(bytes, at)?;
+                let (child, next) = read(bytes, at, depth + 1)?;
                 children.push(child);
                 at = next;
             }
