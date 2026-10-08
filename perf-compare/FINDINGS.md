@@ -705,6 +705,22 @@ slower: `zoomLarge` main-thread JavaScript, 1.063x [1.024, 1.088], with its sett
 The zoom flow passes no bytes; we haven't looked into it. It's merged into
 `research/multi-platform-rust-core-impl-plugins`.
 
+### Page geometry in one pass
+
+`selectLarge` failing under `slow` first looked like the geometry decode. `PageGeometryRun`'s
+deserializer (`crates/plugins/selection/src/text_layout.rs`) built a `serde_json::Value` per run
+to check for `rotation`, then converted that into the run. `e5e1c8d65` on `research/rust-kernel-geometry-decode` reads each
+run in one pass through wire structs, and `crates/plugins/selection/tests/geometry_decode.rs` pins
+it to the old decode's results, the answers it rejected included.
+
+It was measured only on this machine (Apple M4 Max), not on the remote: a probe that hovers page
+200 of `large.pdf` and times until its geometry is usable, 5 runs per arm under the 4x throttle.
+The median drops from 229 ms (range 224 to 381) on the plugins tip (`a8252d0ea`) to 207 ms (202 to
+333), about 20 ms. A drag with no pause after the hover still succeeded in 3 of 5 runs on both, so
+it didn't close the race; the next section's fix did. It's merged into
+`research/multi-platform-rust-core-impl-plugins` (`a14b6502d`) for the 20 ms. Rust workspace 996
+of 996 on the merged tip.
+
 ### Store notifications, at most once a frame
 
 Under the `slow` profile (4x CPU throttle on the main thread) the plugins tip (`a8252d0ea`) failed
