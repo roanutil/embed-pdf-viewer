@@ -87,14 +87,86 @@ pub enum PageGeometryRun {
     Rotated(RotatedGeometryRun),
 }
 
+/// Either kind of run in one pass. `rotation` may come after `glyphs`, so the
+/// glyphs carry both kinds' members until it is known which they are.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WireRun {
+    rect: PdfRect,
+    char_start: usize,
+    glyphs: Vec<WireGlyph>,
+    /// Present, even as `null`, makes the run rotated: `'rotation' in run`.
+    #[serde(default, deserialize_with = "present")]
+    rotation: Option<Value>,
+    #[serde(default)]
+    ascent_flip: Option<bool>,
+    #[serde(default)]
+    font_size: Option<f64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WireGlyph {
+    #[serde(default)]
+    loose_box: Option<PdfRect>,
+    #[serde(default)]
+    tight_box: Option<PdfRect>,
+    #[serde(default)]
+    loose_quad: Option<PdfQuad>,
+    #[serde(default)]
+    tight_quad: Option<PdfQuad>,
+    flags: u32,
+}
+
+fn present<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Value>, D::Error> {
+    Value::deserialize(deserializer).map(Some)
+}
+
 impl<'de> Deserialize<'de> for PageGeometryRun {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = Value::deserialize(deserializer)?;
-        if value.get("rotation").is_some() {
-            serde_json::from_value(value).map(PageGeometryRun::Rotated).map_err(D::Error::custom)
-        } else {
-            serde_json::from_value(value).map(PageGeometryRun::Upright).map_err(D::Error::custom)
-        }
+        let run = WireRun::deserialize(deserializer)?;
+        let missing = |field: &str| D::Error::custom(format!("missing field `{field}`"));
+        let Some(rotation) = run.rotation else {
+            let glyphs = run
+                .glyphs
+                .into_iter()
+                .map(|g| {
+                    Ok(PageGeometryGlyph {
+                        loose_box: g.loose_box.ok_or_else(|| missing("looseBox"))?,
+                        flags: g.flags,
+                        tight_box: g.tight_box,
+                    })
+                })
+                .collect::<Result<_, D::Error>>()?;
+            return Ok(PageGeometryRun::Upright(UprightGeometryRun {
+                rect: run.rect,
+                char_start: run.char_start,
+                glyphs,
+                font_size: run.font_size,
+            }));
+        };
+        let rotation = rotation.as_f64().ok_or_else(|| {
+            D::Error::custom(format!("invalid type: {rotation}, expected f64 for `rotation`"))
+        })?;
+        let glyphs = run
+            .glyphs
+            .into_iter()
+            .map(|g| {
+                Ok(RotatedGeometryGlyph {
+                    loose_quad: g.loose_quad.ok_or_else(|| missing("looseQuad"))?,
+                    flags: g.flags,
+                    tight_quad: g.tight_quad,
+                })
+            })
+            .collect::<Result<_, D::Error>>()?;
+        Ok(PageGeometryRun::Rotated(RotatedGeometryRun {
+            rect: run.rect,
+            char_start: run.char_start,
+            glyphs,
+            rotation,
+            ascent_flip: run.ascent_flip.ok_or_else(|| missing("ascentFlip"))?,
+            font_size: run.font_size,
+        }))
     }
 }
 
