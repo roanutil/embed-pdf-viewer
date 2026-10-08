@@ -713,13 +713,18 @@ to check for `rotation`, then converted that into the run. `e5e1c8d65` on `resea
 run in one pass through wire structs, and `crates/plugins/selection/tests/geometry_decode.rs` pins
 it to the old decode's results, the answers it rejected included.
 
-It was measured only on this machine (Apple M4 Max), not on the remote: a probe that hovers page
-200 of `large.pdf` and times until its geometry is usable, 5 runs per arm under the 4x throttle.
-The median drops from 229 ms (range 224 to 381) on the plugins tip (`a8252d0ea`) to 207 ms (202 to
+It was first measured on this machine (Apple M4 Max): a probe that hovers page 200 of `large.pdf`
+and times until its geometry is usable, 5 runs per arm under the 4x throttle. The median drops from 229 ms (range 224 to 381) on the plugins tip (`a8252d0ea`) to 207 ms (202 to
 333), about 20 ms. A drag with no pause after the hover still succeeded in 3 of 5 runs on both, so
 it didn't close the race; the next section's fix did. It's merged into
 `research/multi-platform-rust-core-impl-plugins` (`a14b6502d`) for the 20 ms. Rust workspace 996
 of 996 on the merged tip.
+
+On the remote since (R=10, `results/2026-10-08T14-34-05-698Z-macmini2020-desktop`, A/A 62 of 63, no
+failed samples), the plugins tip with it (`faa2c6189`, arm `plugins-tip6`) against the tip before it
+(`c0fcd2746`): `jump` main-thread JavaScript drops 11% (116.6 to 103.9 ms), `open(large)` 3.6%
+(258.0 to 248.9 ms), and `search` 18% (8.2 to 6.8 ms). No row is slower. Against `main` the median
+row goes from 1.112x to 1.097x latency and from 1.583x to 1.571x main-thread time.
 
 ### Store notifications, at most once a frame
 

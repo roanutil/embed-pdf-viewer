@@ -226,6 +226,11 @@
       "ref": "research/rust-kernel-coalesce-notify",
       "sha": "c0fcd2746eb7c7c1bb22844758010ba305f71469",
       "recipe": "rust-kernel"
+    },
+    "plugins-tip6": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "faa2c6189eeecb1c62552fc8cfe7fa09a7c1c7cb",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -479,6 +484,11 @@
     },
     "plugins-coalesce": {
       "worktree": "plugins-coalesce",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip6": {
+      "worktree": "plugins-tip6",
       "kernel": "rust",
       "rustReads": false
     }
@@ -751,6 +761,14 @@
     [
       "main",
       "plugins-coalesce"
+    ],
+    [
+      "plugins-coalesce",
+      "plugins-tip6"
+    ],
+    [
+      "main",
+      "plugins-tip6"
     ]
   ]
 }
