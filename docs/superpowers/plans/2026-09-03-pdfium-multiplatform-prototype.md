@@ -5,6 +5,8 @@
 > simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
 > portable device packaging, and full platform/browser coverage remain incomplete.
 
+`$REPO_ROOT` below is the root of your `embed-pdf-viewer` checkout.
+
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -143,7 +145,7 @@ Expected: FAIL, all four tests error with `ENOENT` on `runtime-build.json` and `
 Create `pdfium-multiplatform-prototype/build/runtime-build.json` by copying `packages/engine/runtime/engine-runtime-build.json` verbatim, then adding the four pending mobile entries inside `artifacts`. The nine published entries keep their exact `url` and `sha256` values; do not retype them, copy them.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 node -e '
 const fs = require("node:fs");
 const pin = JSON.parse(fs.readFileSync("packages/engine/runtime/engine-runtime-build.json", "utf8"));
@@ -384,7 +386,7 @@ The generator imports the runtime's built Node entry. `packages/engine/runtime/d
 
 Run:
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 pnpm --filter @embedpdf/engine-runtime build
 ls packages/engine/runtime/dist/index.node.js
 ```
@@ -393,7 +395,7 @@ Expected: the file exists.
 - [ ] **Step 2: Copy the fixture**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 mkdir -p pdfium-multiplatform-prototype/fixtures
 cp examples/snippet-react/public/report.pdf pdfium-multiplatform-prototype/fixtures/report.pdf
 shasum -a 256 pdfium-multiplatform-prototype/fixtures/report.pdf

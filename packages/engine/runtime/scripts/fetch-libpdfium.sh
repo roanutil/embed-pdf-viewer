@@ -59,6 +59,9 @@ if needs_refresh; then
   echo "Downloading $TARGET from $URL"
   if [[ "$URL" == file://* ]]; then
     LOCAL_PATH="${URL#file://}"
+    # A relative path is relative to the pin file, so a checked-in local pin
+    # names no one's home directory.
+    [[ "$LOCAL_PATH" == /* ]] || LOCAL_PATH="$(cd "$(dirname "$PIN_FILE")" && pwd)/$LOCAL_PATH"
     cp "$LOCAL_PATH" "$ARCHIVE"
   else
     curl -fL "$URL" -o "$ARCHIVE"

@@ -23,7 +23,8 @@ sha256_file() {
 }
 
 SHA256="$(sha256_file "$ARCHIVE")"
-URL="file://$ARCHIVE"
+# Relative to the manifest; fetch-libpdfium.sh resolves it against the pin file.
+URL="file://$(node -e 'const p=require("node:path");process.stdout.write(p.relative(process.argv[1],p.resolve(process.argv[2])))' "$ROOT" "$ARCHIVE")"
 
 node - <<'NODE' "$MANIFEST" "$TARGET" "$URL" "$SHA256"
 const fs = require('node:fs');

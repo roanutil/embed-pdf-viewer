@@ -5,6 +5,8 @@
 > simulator/emulator renders, and local-pin WASM builds now work; release artifacts,
 > portable device packaging, and full platform/browser coverage remain incomplete.
 
+`$REPO_ROOT` below is the root of your `embed-pdf-viewer` checkout.
+
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -42,7 +44,7 @@ Nothing in this plan can be verified until `gclient sync` has run once. This tas
 - [ ] **Step 1: Confirm the checkout is currently unsynced**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 ls -d build third_party/llvm-build 2>&1
 ```
 
@@ -61,7 +63,7 @@ Expected: a version string. Every later step in this plan assumes this `export P
 - [ ] **Step 3: Create the fork branch before anything mutates the tree**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 git rev-parse HEAD
 git checkout -b embedpdf/feature/mobile-and-wasm-eh
 ```
@@ -71,7 +73,7 @@ Expected: `git rev-parse HEAD` prints `fce2b000cc7a9e2cabc92db41cd57ca03233f07d`
 - [ ] **Step 4: Sync dependencies for the host platform**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 PDF_RUNTIME_TARGET_OS_LIST=mac bash scripts/embedpdf-runtime/ensure-deps.sh
 ```
 
@@ -80,7 +82,7 @@ Expected: a long `gclient sync` (gigabytes, tens of minutes). It writes `package
 - [ ] **Step 5: Verify the sync satisfied what ensure-deps.sh requires**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 ls -d build/config/BUILDCONFIG.gn build/toolchain third_party/llvm-build
 cat .embedpdf-runtime/deps-sync.stamp
 ```
@@ -90,7 +92,7 @@ Expected: all three paths listed, and the stamp contains `target_os_list=mac`.
 - [ ] **Step 6: Build an existing target end to end**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/build-target.sh darwin-arm64
 ```
 
@@ -99,7 +101,7 @@ Expected: prints the out dir `out/embedpdf-runtime/darwin-arm64` after ninja com
 - [ ] **Step 7: Package it and confirm the artifact shape**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/package-target.sh darwin-arm64
 tar -tzf out/embedpdf-runtime-artifacts/libembedpdf-runtime-darwin-arm64-*.tar.gz | sort | head -20
 ```
@@ -123,7 +125,7 @@ Write `packages/engine/runtime/runtime-src/.embedpdf-runtime/BASELINE.md` (this 
 There is no commit in this task. `gclient sync` writes only gitignored paths and `.gclient` lives outside the repo. Confirm the fork tree is clean apart from patch application:
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 git status --short
 ```
 
@@ -151,7 +153,7 @@ The cost of this task, stated plainly: it restructures a file the fork's maintai
 Run this BEFORE changing anything. It is the only proof that the extraction preserves behavior.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 mkdir -p /tmp/args-golden
 for t in wasm32 darwin-arm64 darwin-x64 linux-x64 linux-arm64 \
          linuxmusl-x64 linuxmusl-arm64 win32-x64 win32-arm64; do
@@ -256,7 +258,7 @@ echo "all target-args assertions passed"
 - [ ] **Step 3: Run the test to verify it fails**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -372,7 +374,7 @@ Note the one deliberate behavior change: `!= wasm32*` where `build-target.sh:76`
 - [ ] **Step 5: Run the test to verify it passes**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 chmod +x scripts/embedpdf-runtime/target-args.sh scripts/embedpdf-runtime/tests/target-args.test.sh
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
@@ -406,7 +408,7 @@ Place that immediately after the `target-args.sh` call, before line 80's use of 
 - [ ] **Step 7: Verify build-target.sh still produces the golden args**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 PDF_RUNTIME_SYNC=skip bash scripts/embedpdf-runtime/build-target.sh darwin-arm64 >/dev/null 2>&1 || true
 diff -u /tmp/args-golden/darwin-arm64.gn out/embedpdf-runtime/darwin-arm64/args.gn && echo "args.gn unchanged"
 ```
@@ -416,7 +418,7 @@ Expected: `args.gn unchanged`. The build itself may re-run or fail past that poi
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 git add scripts/embedpdf-runtime/target-args.sh \
         scripts/embedpdf-runtime/tests/target-args.test.sh \
         scripts/embedpdf-runtime/build-target.sh
@@ -450,7 +452,7 @@ If the answer is "legacy", Firefox cannot load the module: Firefox shipped the f
 - [ ] **Step 1: Install the pinned emsdk**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 mkdir -p third_party
 git clone https://github.com/emscripten-core/emsdk.git third_party/emsdk 2>/dev/null || true
 third_party/emsdk/emsdk install 3.1.72
@@ -544,7 +546,7 @@ building. Say which, and why.>
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 git add docs/research/wasm-eh-encoding.md
 git commit -m "research: record which Wasm EH encoding emsdk 3.1.72 emits
 
@@ -572,7 +574,7 @@ A second wasm target compiled so that PDFium's setjmp/longjmp uses the native Wa
 - [ ] **Step 1: Read Task 3's verdict and pick the emsdk version**
 
 ```bash
-grep -A1 '^Verdict:' /Users/andrew/repos/embed-pdf-viewer/docs/research/wasm-eh-encoding.md
+grep -A1 '^Verdict:' "$REPO_ROOT"/docs/research/wasm-eh-encoding.md
 ```
 
 If the verdict is `final`: use emsdk 3.1.72 for `wasm32-eh`, same as `wasm32`. Nothing in this step changes.
@@ -580,7 +582,7 @@ If the verdict is `final`: use emsdk 3.1.72 for `wasm32-eh`, same as `wasm32`. N
 If the verdict is `legacy`: `wasm32-eh` needs both a newer emsdk AND a flag. I measured this rather than assuming it, and my original claim here was wrong: 4.0.0 does NOT default to the final encoding either. Its `src/settings.js:785` sets `WASM_LEGACY_EXCEPTIONS = true`, and its ChangeLog says plainly that this is deliberate because major browsers did not support the final encoding by default at that release. What 4.0.0 does have, and 3.1.72 does not have at all, is the setting itself, so the encoding is forceable. Verified on this machine with 4.0.0: `-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -sSUPPORT_LONGJMP=wasm` compiles, links, disassembles to 12 `try_table`, 3 `throw_ref` and 2 `catch_all_ref`, and the resulting module runs under Node returning the expected value. Install 4.0.0:
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 third_party/emsdk/emsdk install 4.0.0
 third_party/emsdk/emsdk activate 4.0.0
 source third_party/emsdk/emsdk_env.sh
@@ -609,7 +611,7 @@ fi
 - [ ] **Step 3: Run the test to verify it fails**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -632,7 +634,7 @@ The `wasm32*` prefix match added in Task 2 already keeps `embedpdf_thread_local_
 - [ ] **Step 5: Run the test to verify it passes**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -740,7 +742,7 @@ remove_copied_wasm_config
 - [ ] **Step 9: Prove switching wasm targets both ways works**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/apply-patches.sh wasm32-eh
 cmp patches/embedpdf-runtime/wasm/config-eh.gn build/config/wasm/BUILD.gn && echo "eh config in place"
 bash scripts/embedpdf-runtime/apply-patches.sh wasm32
@@ -754,7 +756,7 @@ Expected: `eh config in place`, then `plain config in place`, then `switched awa
 - [ ] **Step 10: Build it**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 source third_party/emsdk/emsdk_env.sh
 bash scripts/embedpdf-runtime/build-target.sh wasm32-eh
 ```
@@ -766,7 +768,7 @@ Expected: prints `out/embedpdf-runtime/wasm32-eh`. Budget an hour.
 This is the assertion the whole target exists for. The old archive has undefined references to `emscripten_longjmp`; the new one must not.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 source third_party/emsdk/emsdk_env.sh
 echo "--- wasm32-eh ---"
 llvm-nm out/embedpdf-runtime/wasm32-eh/obj/libembedpdf.a 2>/dev/null \
@@ -778,7 +780,7 @@ Expected: `0`. If it prints 8, the flags did not reach the compile: check that `
 - [ ] **Step 12: Package and commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/package-target.sh wasm32-eh
 tar -tzf out/embedpdf-runtime-artifacts/libembedpdf-runtime-wasm32-eh-*.tar.gz | grep libembedpdf
 git add scripts/embedpdf-runtime/target-args.sh \
@@ -841,7 +843,7 @@ bash "$SCRIPT" android-x64 | grep -qx 'target_cpu="x64"' \
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -867,7 +869,7 @@ In `packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/target-args.sh`
 - [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -901,7 +903,7 @@ Do not add Android to the existing `linux-*)` case: the glob would not match `an
 The sync writes `target_os = [ "android" ]` into `.gclient`, which is what turns on `checkout_android` and fetches the NDK. `build-target.sh:80` passes `$GN_TARGET_OS` through automatically, and the stamp in `ensure-deps.sh` forces a re-sync because `target_os_list` changed.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/build-target.sh android-arm64
 ```
 
@@ -910,7 +912,7 @@ Expected: a re-sync fetching the Android NDK and SDK, then a ninja build, then `
 - [ ] **Step 8: Verify the artifact is a real Android arm64 shared object**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 file out/embedpdf-runtime/android-arm64/libembedpdf.so
 ```
 
@@ -919,7 +921,7 @@ Expected: `ELF 64-bit LSB shared object, ARM aarch64`. A mention of `GNU/Linux` 
 - [ ] **Step 9: Build and verify the second ABI**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/build-target.sh android-x64
 file out/embedpdf-runtime/android-x64/libembedpdf.so
 ```
@@ -929,7 +931,7 @@ Expected: `ELF 64-bit LSB shared object, x86-64`.
 - [ ] **Step 10: Package both and commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/package-target.sh android-arm64
 bash scripts/embedpdf-runtime/package-target.sh android-x64
 tar -tzf out/embedpdf-runtime-artifacts/libembedpdf-runtime-android-arm64-*.tar.gz | grep libembedpdf
@@ -997,7 +999,7 @@ bash "$SCRIPT" ios-sim-arm64 | grep -qx 'target_environment="simulator"' \
 - [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -1023,7 +1025,7 @@ In `packages/engine/runtime/runtime-src/scripts/embedpdf-runtime/target-args.sh`
 - [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/tests/target-args.test.sh
 ```
 
@@ -1038,7 +1040,7 @@ That matters because the next two steps edit `BUILD.gn` and then capture the res
 The line numbers in the next step also assume a clean tree. With `shared-library.patch` applied, everything below line 285 shifts by three.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/unapply-patches.sh
 git status --short
 ```
@@ -1094,7 +1096,7 @@ Those five files include only `<CoreGraphics/CoreGraphics.h>` plus standard head
 The patch set is applied with `patch -p1` from `$SOURCE_DIR`, so generate it from git and then restore the originals:
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 mkdir -p patches/embedpdf-runtime/apple
 git diff -- BUILD.gn core/fxge/BUILD.gn > patches/embedpdf-runtime/apple/pdfium.patch
 git checkout -- BUILD.gn core/fxge/BUILD.gn
@@ -1133,7 +1135,7 @@ remove_patch_backup "$SOURCE_DIR/core/fxge/BUILD.gn.orig"
 - [ ] **Step 9: Verify apply and unapply round-trip**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/apply-patches.sh ios-arm64
 grep -n "is_apple" BUILD.gn core/fxge/BUILD.gn
 bash scripts/embedpdf-runtime/apply-patches.sh darwin-arm64
@@ -1147,7 +1149,7 @@ Expected: after the first `apply-patches.sh`, `is_apple` appears in both files. 
 This is the unknown. Run it and record exactly what happens.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 PDF_RUNTIME_TARGET_OS_LIST=ios bash scripts/embedpdf-runtime/ensure-deps.sh
 bash scripts/embedpdf-runtime/apply-patches.sh ios-sim-arm64
 mkdir -p out/embedpdf-runtime/ios-sim-arm64
@@ -1187,7 +1189,7 @@ sources include only <CoreGraphics/CoreGraphics.h> and standard headers.
 Then commit both repos separately:
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 git add scripts/embedpdf-runtime/target-args.sh \
         scripts/embedpdf-runtime/tests/target-args.test.sh \
         scripts/embedpdf-runtime/apply-patches.sh \
@@ -1201,7 +1203,7 @@ really is macOS-only, is referenced exactly once and stays behind is_mac.
 
 Adds ios-arm64 and ios-sim-arm64 target arguments. Both are static."
 
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 git add docs/research/pdfium-ios-toolchain.md
 git commit -m "research: record whether PDFium's standalone build accepts iOS"
 ```
@@ -1224,7 +1226,7 @@ If Step 9 did not succeed after trying the documented failure modes, report BLOC
 - [ ] **Step 1: Build the simulator slice**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/build-target.sh ios-sim-arm64
 ```
 
@@ -1235,7 +1237,7 @@ Expected: `out/embedpdf-runtime/ios-sim-arm64`. Budget an hour.
 This is the exact check that would have caught the bug that started this whole spec: an artifact can be the right architecture and the wrong platform.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 OBJ=$(ar t out/embedpdf-runtime/ios-sim-arm64/obj/libembedpdf.a | head -1)
 ar x out/embedpdf-runtime/ios-sim-arm64/obj/libembedpdf.a "$OBJ" --output=/tmp
 vtool -show-build "/tmp/$OBJ" | grep -E "platform|minos|sdk"
@@ -1246,7 +1248,7 @@ Expected: `platform IOSSIMULATOR`. If it says `platform IOS` the simulator slice
 - [ ] **Step 3: Build the device slice**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/build-target.sh ios-arm64
 ```
 
@@ -1255,7 +1257,7 @@ Expected: `out/embedpdf-runtime/ios-arm64`.
 - [ ] **Step 4: Verify the device slice's platform**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 OBJ=$(ar t out/embedpdf-runtime/ios-arm64/obj/libembedpdf.a | head -1)
 ar x out/embedpdf-runtime/ios-arm64/obj/libembedpdf.a "$OBJ" --output=/tmp
 vtool -show-build "/tmp/$OBJ" | grep -E "platform|minos|sdk"
@@ -1266,7 +1268,7 @@ Expected: `platform IOS`, and specifically NOT `IOSSIMULATOR` and NOT `MACOS`.
 - [ ] **Step 5: Package both**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 bash scripts/embedpdf-runtime/package-target.sh ios-arm64
 bash scripts/embedpdf-runtime/package-target.sh ios-sim-arm64
 for t in ios-arm64 ios-sim-arm64; do
@@ -1351,7 +1353,7 @@ The `Select Xcode` step at line 137 runs for `runner.os == 'macOS'` and already 
 - [ ] **Step 6: Validate the workflow parses**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 python3 -c "
 import yaml, sys
 d = yaml.safe_load(open('.github/workflows/release-libpdfium.yml'))
@@ -1367,7 +1369,7 @@ Expected: `matrix rows: 14` (or 12 if iOS was blocked), with each new target lis
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/packages/engine/runtime/runtime-src
+cd "$REPO_ROOT"/packages/engine/runtime/runtime-src
 git add .github/workflows/release-libpdfium.yml
 git commit -m "ci: build the five new targets
 
@@ -1404,7 +1406,7 @@ Pushing this branch and dispatching the workflow needs write access to `embedpdf
 The Global Constraints require every artifact to come from one sha. The nine existing entries currently point at `d7b4caa26289d4846e94ff54e63b586b9bbe9fd6`; they must move to the new release too, not just the five new ones.
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 SHA=<the sha the release was cut from>
 for t in wasm32 wasm32-eh darwin-arm64 darwin-x64 linux-x64 linux-arm64 \
          linuxmusl-x64 linuxmusl-arm64 win32-x64 win32-arm64 \
@@ -1419,7 +1421,7 @@ Write the resulting URL and sha256 into each entry of `build/runtime-build.json`
 - [ ] **Step 2: Verify every artifact fetches and verifies**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 for t in wasm32 wasm32-eh ios-arm64 ios-sim-arm64 android-arm64 android-x64; do
   bash build/fetch-libpdfium.sh "$t" >/dev/null && echo "ok: $t" || echo "FAILED: $t"
 done
@@ -1519,7 +1521,7 @@ Lines 100-140 of `pdfium-multiplatform-prototype/build/link-wasm.sh` explain at 
 - [ ] **Step 6: Build the web target and prove a panic is recoverable**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 bash build/link-wasm.sh
 node -e "
 const { default: create } = await import('./build/out/web/epdf.mjs');
@@ -1545,7 +1547,7 @@ Expected: `ok: panic surfaced as ...` followed by `ok: the instance survived and
 - [ ] **Step 7: Run the iOS gate that started this**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 bash build/build-swift.sh ios-sim-arm64
 cd apps/ios && xcodebuild -project EpdfScaffold.xcodeproj -scheme EpdfScaffold \
   -destination "platform=iOS Simulator,name=iPhone 17" build 2>&1 | tail -5
@@ -1556,7 +1558,7 @@ Expected: `build-swift.sh` no longer exits 2, and `xcodebuild` prints `** BUILD 
 - [ ] **Step 8: Run the Android gate**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 bash build/build-kotlin.sh android-arm64
 ls -l packages/kotlin/epdf-ops/src/main/jniLibs/arm64-v8a/libepdf_uniffi.so
 cd apps/android && ./gradlew assembleDebug 2>&1 | tail -5
@@ -1567,7 +1569,7 @@ Expected: the `.so` exists and `BUILD SUCCESSFUL`. The `requireNativeLibraries` 
 - [ ] **Step 9: Run the whole suite**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer/pdfium-multiplatform-prototype
+cd "$REPO_ROOT"/pdfium-multiplatform-prototype
 bash build/test-all.sh
 ```
 
@@ -1582,7 +1584,7 @@ Expected: every previously-skipped section now runs. Report the counts verbatim,
 - [ ] **Step 11: Commit**
 
 ```bash
-cd /Users/andrew/repos/embed-pdf-viewer
+cd "$REPO_ROOT"
 git add pdfium-multiplatform-prototype/build/runtime-build.json \
         pdfium-multiplatform-prototype/build/link-wasm.sh \
         pdfium-multiplatform-prototype/build/test-all.sh \
