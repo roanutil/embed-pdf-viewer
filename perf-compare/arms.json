@@ -783,6 +783,10 @@
     [
       "plugins-tip6",
       "plugins-plainargs"
+    ],
+    [
+      "main",
+      "plugins-plainargs"
     ]
   ]
 }

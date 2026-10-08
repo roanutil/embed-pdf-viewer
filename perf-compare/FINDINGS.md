@@ -765,3 +765,33 @@ slower on 26 rows and faster on none: `coldScroll` settles 46.5 ms later [+15.3,
 55.7 ms later, `selectLarge` 31.3 ms later, and `zoomLarge` JavaScript is 1.108x. The hook pass
 runs inside the frame, before its paint, where the fixed wait lets it run between frames. It was
 dropped, and not run on desktop.
+
+### Where the plugins tip goes now, and the shim's arguments
+
+We profiled the plugins tip again after the fixes above (`faa2c6189`, arm `plugins-tip6`), on this
+machine (Apple M4 Max), the same way as before: a kernel that keeps its names, byte-identical to
+the shipped one once stripped (`5bf5fb28d0f2`), 5 runs per flow against 3 of `main`. `open(large)`
+is no longer behind: 182 ms of main-thread JavaScript against `main`'s 220. `jump` is 58 against
+30, spread over many small costs. `scroll` is the gap that is left, 354 against 208 ms. Of the 146
+ms, about 80 ms is each call's arguments and result crossing the boundary as JSON: `canonical()`
+encoding the arguments in the shim (17 ms), the result's `serde_json::Value` written as text in
+`invoke_ref` (22 ms), `dlmalloc` mostly building and freeing those results (29 ms), and the shim
+decoding the text (15 ms). Command resolution with its scripted predicates (item 12) is 24 ms, and
+SipHash (item 13) is 10 ms.
+
+`45c920b26` on `research/rust-kernel-plain-args` takes the first of those. The shim's `invoke`
+(`packages/core-wasm/src/proxy.ts`) writes a call's arguments with `JSON.stringify` when they are
+plain data, the check item 14 added to the engine bridge, now exported as `isPlainJson`, and builds
+the canonical copy only otherwise. A test holds that plain values never reach one of the shim's
+encode hooks, and that functions, signals, `Blob`s, bytes, `undefined`, `NaN` and dates do not
+pass. `core-wasm` 65 of 65 and 13 of 13. On this machine `scroll` JavaScript drops 17 ms (364.6 to
+347.5 ms, 8 runs each, interleaved).
+
+On the remote (R=10, `results/2026-10-08T20-19-04-702Z-macmini2020-desktop`, A/A 61 of 63, no
+failed samples), against `faa2c6189`: `coldScroll` main-thread JavaScript drops 4.4% (604.2 to
+577.9 ms) and `open(ebook)` main-thread task time 3.8%. `scroll` JavaScript reads 3.5% lower (616.9
+to 595.4 ms), with an interval of 0.929 to 1.002, so the report doesn't count it. No row is slower.
+Against `main` the median row goes from 1.55x to 1.503x main-thread time; latency reads 1.063x and
+1.073x, inside the noise between arms. The result's text (`invoke_ref`) and its allocations are
+the larger part of the 80 ms, and need each plugin's harness `call` to write JSON without a
+`Value`; that's not tried yet.
