@@ -375,6 +375,15 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
     and kept: see that section.
 15. The search panel reading `listHits()` at most once a frame during a search (Search on the Rust
     kernel). Only `searchLarge` would gain.
+16. `rustReads` with the Rust kernel. Every plugins arm runs with `rustReads: false`, and
+    `lib/config.mjs:18` refuses the pair ("rustReads needs the typescript kernel"), a rule from the
+    harness's first commit (`400575787`) that nobody has checked is still needed; the plugins
+    branch still has `rustRouting` (`packages/engine/main/src/index.ts:359`). To find out for
+    certain: lift the guard, add an arm with both, and time it. Expected small: geometry was about
+    2% of the worker's time (`impl-ts` against `impl-rust`, above), and it runs in the worker, not
+    on the main thread where the plugins gap is. Added 2026-10-08.
+17. Each call's result written straight to JSON text, without a `serde_json::Value` (Where the
+    plugins tip goes now). Up to about 40 ms of `scroll`. Added 2026-10-08.
 
 Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
 time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
