@@ -226,11 +226,6 @@
       "ref": "research/rust-kernel-coalesce-notify",
       "sha": "c0fcd2746eb7c7c1bb22844758010ba305f71469",
       "recipe": "rust-kernel"
-    },
-    "plugins-raf": {
-      "ref": "research/rust-kernel-coalesce-raf",
-      "sha": "41714a1fc223cb4ed64ef1507f043b6e4fe5a930",
-      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -484,11 +479,6 @@
     },
     "plugins-coalesce": {
       "worktree": "plugins-coalesce",
-      "kernel": "rust",
-      "rustReads": false
-    },
-    "plugins-raf": {
-      "worktree": "plugins-raf",
       "kernel": "rust",
       "rustReads": false
     }
@@ -761,14 +751,6 @@
     [
       "main",
       "plugins-coalesce"
-    ],
-    [
-      "plugins-coalesce",
-      "plugins-raf"
-    ],
-    [
-      "main",
-      "plugins-raf"
     ]
   ]
 }

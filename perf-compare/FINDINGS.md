@@ -79,6 +79,9 @@ ten lines. The proxy already tolerates a notification that lags the dispatch (`p
 the risk is low. A stable `getSnapshot` in `runtime.tsx` cuts the Preact re-reads, but that adapter is
 shared with `main`.
 
+Done since, and capped at one notification a frame: see "Store notifications, at most once a
+frame" below.
+
 ### 3. The page registry is deep-cloned on almost every read
 
 `DocumentMeta.pages` is a bare `serde_json::Value`, and `PluginContext::document()`
@@ -701,3 +704,43 @@ The base64 copies are gone from the heap: 5.5 MiB less after opening `ebook.pdf`
 slower: `zoomLarge` main-thread JavaScript, 1.063x [1.024, 1.088], with its settle times unmoved.
 The zoom flow passes no bytes; we haven't looked into it. It's merged into
 `research/multi-platform-rust-core-impl-plugins`.
+
+### Store notifications, at most once a frame
+
+Under the `slow` profile (4x CPU throttle on the main thread) the plugins tip (`a8252d0ea`) failed
+`selectLarge` in 10 of 10 rounds (`results/2026-10-06T06-29-40-908Z-macmini2020-slow`). The drag
+pressed on page 200 before that page's geometry answer had been processed, so `isOverText` was
+false and no selection started. The geometry had been requested early. Its answer sat behind about
+400 `page.measure.viewports` answers, one per page, which the measurement plugin asks for at
+connect, as the TypeScript reference does. On the Rust kernel each answer is a task of its own,
+each makes a store change, and each change ran every subscribed hook through the wasm boundary. The
+page 200 answer was processed 2.2 to 2.6 s late. Section 2's fix had moved the flush into a
+microtask, which batches a call's changes but not a run of tasks.
+
+`c0fcd2746` on `research/rust-kernel-coalesce-notify` caps listeners at one notification per
+16 ms (`packages/core-wasm/src/kernel.ts`). A change after a quiet frame still flushes in a
+microtask; the frame's later changes flush once, by `setTimeout`, at its end. The caches still
+invalidate on every change, so a read in between sees the new state. `core-wasm` 64 of 64 and 13
+of 13, one test new.
+
+On the remote, desktop (R=10, `results/2026-10-06T22-32-02-965Z-macmini2020-desktop`, A/A 63 of
+63, no failed samples), against `a8252d0ea`: `open(large)` main-thread JavaScript drops 47% (488.1
+to 259.4 ms) and settles 6.5% sooner, and `scroll` and `coldScroll` take 15% less wall time. Two
+rows are slower: `select` main-thread task time 1.084x, and `searchLarge` JavaScript 1.033x. Under
+`slow` (R=10, `results/2026-10-06T23-28-56-580Z-macmini2020-slow`, A/A 61 of 63), `selectLarge`
+fails in no round. `scroll` takes 32% less wall time (4,190.8 to 2,857.9 ms), `coldScroll`
+JavaScript drops 42% and its jank frames go from 2 to 0, and `searchLarge` takes 24% less time
+(4,592.8 to 3,470.2 ms). `zoomLarge` settles 96.9 ms sooner. The cost is the frame's last change:
+`scroll` and `coldScroll` settle 28.2 and 36.6 ms after the last wheel event (they settled at once
+before), and `jump` settles 40.1 ms later [+1.0, +77.9]. Against `main` under `slow`, the median
+row goes from 1.449x to 1.319x latency and from 2.322x to 1.986x main-thread time. It's merged into
+`research/multi-platform-rust-core-impl-plugins`.
+
+Flushing at the next animation frame instead of after a fixed 16 ms was meant to shorten that tail,
+and did the reverse. `41714a1fc` kept the microtask for a change after a quiet frame and flushed the
+rest in `requestAnimationFrame`, with a 100 ms timer for hidden tabs. Under `slow` (R=10,
+`results/2026-10-08T00-30-29-463Z-macmini2020-slow`, A/A 62 of 63), against `c0fcd2746`, it was
+slower on 26 rows and faster on none: `coldScroll` settles 46.5 ms later [+15.3, +78.7], `zoom`
+55.7 ms later, `selectLarge` 31.3 ms later, and `zoomLarge` JavaScript is 1.108x. The hook pass
+runs inside the frame, before its paint, where the fixed wait lets it run between frames. It was
+dropped, and not run on desktop.
