@@ -8,6 +8,7 @@ import type { Engine } from '@embedpdf/engine-core/runtime';
 import {
   canonical,
   canonicalText,
+  isPlainJson,
   createEngineBridge,
   decode,
   encodeInput,
@@ -430,5 +431,38 @@ describe('canonicalText', () => {
     const cyclic: Record<string, unknown> = {};
     cyclic.self = cyclic;
     expect(() => canonicalText(cyclic, hooks)).toThrow(TypeError);
+  });
+  test('plain data never reaches a hook, so any caller can skip canonical', () => {
+    // The hooks the kernel shim encodes a call's arguments with: each one
+    // marks what it touched, so a value that reaches one cannot pass.
+    const reached = { $reached: true };
+    const shim = {
+      hold: () => 7,
+      fn: () => reached,
+      signal: () => {},
+      blob: () => reached,
+      bytes: () => reached,
+    };
+    const plain: unknown[] = [
+      [],
+      [1, 'a', null, true],
+      [{ page: 3, rect: { x: 1, y: -0, width: 2, height: 3 } }],
+      [{ kept: 1, dropped: undefined }],
+    ];
+    for (const value of plain) {
+      expect(isPlainJson(value)).toBe(true);
+      expect(JSON.stringify(value)).toBe(JSON.stringify(canonical(value, shim)));
+    }
+    const notPlain: unknown[] = [
+      [() => {}],
+      [{ onChange() {} }],
+      [new AbortController().signal],
+      [new Blob(['x'])],
+      [new Uint8Array([1])],
+      [undefined],
+      [NaN],
+      [new Date(5)],
+    ];
+    for (const value of notPlain) expect(isPlainJson(value)).toBe(false);
   });
 });

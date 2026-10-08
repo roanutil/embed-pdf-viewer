@@ -282,10 +282,16 @@ function plainJson(value: unknown, depth: number): boolean {
   return true;
 }
 
+/** Whether `JSON.stringify(value)` is already `value`'s canonical text,
+ *  whatever the hooks: nothing in it reaches one. */
+export function isPlainJson(value: unknown): boolean {
+  return plainJson(value, 0);
+}
+
 /** `value` as canonical JSON text: straight through `JSON.stringify` when
  *  it is plain data, else through `canonical`. */
 export function canonicalText(value: unknown, hooks: EncodeHooks): string {
-  return JSON.stringify(plainJson(value, 0) ? value : canonical(value, hooks));
+  return JSON.stringify(isPlainJson(value) ? value : canonical(value, hooks));
 }
 
 /** A decoder's own markers: `{ value }` when `object` is one, else

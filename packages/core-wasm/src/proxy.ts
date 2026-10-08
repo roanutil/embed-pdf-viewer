@@ -54,7 +54,14 @@
  * is not cached, and a callback from the kernel (`callJs`) clears the cache.
  */
 import { CancelledError, PluginError, type PluginErrorCode } from '@embedpdf/core';
-import { canonical, decode, errorSpec, type DecodeHook, type EngineBridge } from './engine-bridge';
+import {
+  canonical,
+  decode,
+  errorSpec,
+  isPlainJson,
+  type DecodeHook,
+  type EngineBridge,
+} from './engine-bridge';
 import { hasBlob, prepareArgs, readBinarySources, rehydrate } from './rehydrate';
 
 /** What this package uses of `WasmKernel` (`wasm/epdf_web.d.ts`). */
@@ -739,7 +746,8 @@ export class Wire {
 
   private invoke(id: number, member: string, args: unknown[]): unknown {
     const signals: AbortSignal[] = [];
-    const json = JSON.stringify(this.encode(args, signals, member));
+    // Most calls pass plain data, which needs no canonical copy.
+    const json = JSON.stringify(isPlainJson(args) ? args : this.encode(args, signals, member));
     const key = `${id}:${json}`;
     this.sync();
     if (this.results.has(key)) return this.results.get(key);
