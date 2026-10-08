@@ -31,6 +31,10 @@ window.__epdfCounts = () => kernelCounts();
 const el = EmbedPDF.init({
   target: '#viewer',
   src: '/ebook.pdf',
+  // Page geometry through the Rust engine core linked into the PDFium payload
+  // (`RustPageGeometryReader`). The engine falls back to TypeScript on a
+  // payload built without the core.
+  engine: { rustRouting: { rustReads: true } },
   annotations: {
     fonts: [
       { key: 'roboto', url: '/fonts/Roboto-Regular.ttf', label: 'Roboto', familyName: 'Roboto' },
