@@ -49,6 +49,10 @@ function rustKernel(): Plugin {
 export default defineConfig({
   plugins: [rustKernel(), tailwindcss()],
   resolve: {
+    // `vite build` matches `production`, where the workspace packages' exports
+    // point at dist/, which nothing here builds. `development` points at src/,
+    // so the build compiles the same source `pnpm eval` serves.
+    conditions: ['module', 'browser', 'development'],
     alias: [
       { find: 'react-dom/client', replacement: preact('preact/compat/client') },
       { find: 'react-dom', replacement: preact('preact/compat') },
@@ -71,4 +75,7 @@ export default defineConfig({
   // The dev harness's demo PDF and font.
   publicDir: path.join(root, 'packages/viewer/main/public'),
   server: { port: 5250, strictPort: true },
+  preview: { port: 5251, strictPort: true },
+  // The default target (es2020) rejects the top-level await in the bundle.
+  build: { target: 'es2022' },
 });

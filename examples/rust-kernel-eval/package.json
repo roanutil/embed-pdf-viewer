@@ -7,6 +7,8 @@
   "scripts": {
     "bootstrap": "node scripts/setup.mjs",
     "eval": "pnpm --filter @embedpdf/core-wasm build:wasm && vite",
+    "build": "pnpm --filter @embedpdf/core-wasm build:wasm && vite build",
+    "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
