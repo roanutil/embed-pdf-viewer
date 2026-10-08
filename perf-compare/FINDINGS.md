@@ -79,6 +79,9 @@ ten lines. The proxy already tolerates a notification that lags the dispatch (`p
 the risk is low. A stable `getSnapshot` in `runtime.tsx` cuts the Preact re-reads, but that adapter is
 shared with `main`.
 
+Done since, and capped at one notification a frame: see "Store notifications, at most once a
+frame" below.
+
 ### 3. The page registry is deep-cloned on almost every read
 
 `DocumentMeta.pages` is a bare `serde_json::Value`, and `PluginContext::document()`
@@ -354,7 +357,8 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
    transferable typed arrays, and a cached `FPDF_TEXTPAGE`. Profiled since: only the per-glyph
    reads paid, and their fix is below. Measuring it turned up the search regression below it.
 8. The PDF's bytes as a `$host` handle instead of base64 at open (section 5). About 20 ms of main
-   thread, and every Rust call site that takes bytes changes.
+   thread, and every Rust call site that takes bytes changes. Tried since, and kept: see "The PDF's bytes as a
+   host handle" below.
 9. SIMD, PDFium with `-flto`, and `float_roundtrip` (Build settings). All three expectations are
    guesses, and `float_roundtrip` risks JS parity.
 10. The harness gaps above: a cold-geometry flow, a gate that proves the Rust route ran, and a
@@ -367,7 +371,8 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
 13. `rustc-hash` in place of SipHash for the kernel's own maps (Serialization formats, and Where the
     plugins tip's main thread goes). About 5 ms of `jump`.
 14. The engine bridge's `canonical()` encoding of every engine answer, the JavaScript half of item
-    11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile.
+    11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile. Tried since,
+    and kept: see that section.
 15. The search panel reading `listHits()` at most once a frame during a search (Search on the Rust
     kernel). Only `searchLarge` would gain.
 
@@ -662,3 +667,80 @@ JavaScript goes from 3.28x to 2.53x. `open` doesn't move: its cost is item 12. T
 MiB (7.94 to 8.03), 0.01 MiB brotli. The JavaScript half, `canonical()` encoding the answer, is
 still there (10.5 ms of `jump` in the profile). Both are merged into
 `research/multi-platform-rust-core-impl-plugins`.
+
+Item 14 is `57f627ed5` on `research/rust-kernel-bridge-encode`. The bridge's `canonicalText`
+(`packages/core-wasm/src/engine-bridge.ts`) checks whether an answer is plain JSON data (finite
+numbers, strings, booleans, `null`, and arrays and plain objects of them) and writes it with
+`JSON.stringify` without building the canonical copy; anything else still goes through
+`canonical()`. A test holds the two to the same text for 22 kinds of value, cycles included.
+`core-wasm` 61 of 61 and 10 of 10. On the remote (R=10,
+`results/2026-10-05T23-13-18-049Z-macmini2020-desktop`, A/A 62 of 63, no failed samples), against
+the plugins tip before it (`adda0bbea`), `searchLarge` main-thread JavaScript drops 7.4% (864.8 to
+801.0 ms) and its time 3.2%. `jump` JavaScript reads 8% lower (136.5 to 125.4 ms, interval 0.868
+to 0.979), inside that row's noise band, so the report doesn't count it. No row is slower, and the
+kernel is unchanged. It's merged into `research/multi-platform-rust-core-impl-plugins`.
+
+### The PDF's bytes as a host handle
+
+Item 8 is two commits on `research/rust-kernel-host-bytes`. No Rust call site had to change: the
+kernel never reads an open source's bytes, it only passes the source to `engine.open`, and the
+bridge's `decode` already turns a `$host` back into the value it holds. So the shim
+(`packages/core-wasm/src/proxy.ts`) holds a document's `Uint8Array` in the bridge's host table and
+sends `{"$host": n}` in its place, for bytes passed to `documents.open` or `openAll`
+(`db0bc2fd8`) and for bytes a source function passed to them produces (`81899a80a`). The viewer
+opens through such a function (`packages/viewer/main/src/kernel/config.ts:47`), so the first
+commit alone moved nothing in the harness. The kernel releases the handle when `close()` drops the
+session's record of its source: a `HostHold` in `crates/epdf-kernel/src/kernel.rs`, which a failed
+tab's `retry()` carries to the next session so the bytes outlive it. Two test files never installed
+the releaser `initWasm()` installs in the browser; they do now. Rust workspace 981 of 981,
+`core-wasm` 61 of 61 and 13 of 13, three of them new.
+
+On the remote (R=10, `results/2026-10-06T01-37-19-460Z-macmini2020-desktop`, A/A 62 of 63, no
+failed samples), against the plugins tip before it (`7455a5294`): `open(ebook)` opens 15% sooner
+(210.1 to 178.1 ms) and settles 8% sooner, now level with `main` (396.3 against 397.9 ms), and
+`open(large)` opens 13% and settles 8% sooner. Main-thread JavaScript at open drops 12% and 6%.
+The base64 copies are gone from the heap: 5.5 MiB less after opening `ebook.pdf`, 3.5 MiB after
+`large.pdf`, 4.4 MiB less across the soak, whose slope stays at 0.02 MiB a cycle. One row is
+slower: `zoomLarge` main-thread JavaScript, 1.063x [1.024, 1.088], with its settle times unmoved.
+The zoom flow passes no bytes; we haven't looked into it. It's merged into
+`research/multi-platform-rust-core-impl-plugins`.
+
+### Store notifications, at most once a frame
+
+Under the `slow` profile (4x CPU throttle on the main thread) the plugins tip (`a8252d0ea`) failed
+`selectLarge` in 10 of 10 rounds (`results/2026-10-06T06-29-40-908Z-macmini2020-slow`). The drag
+pressed on page 200 before that page's geometry answer had been processed, so `isOverText` was
+false and no selection started. The geometry had been requested early. Its answer sat behind about
+400 `page.measure.viewports` answers, one per page, which the measurement plugin asks for at
+connect, as the TypeScript reference does. On the Rust kernel each answer is a task of its own,
+each makes a store change, and each change ran every subscribed hook through the wasm boundary. The
+page 200 answer was processed 2.2 to 2.6 s late. Section 2's fix had moved the flush into a
+microtask, which batches a call's changes but not a run of tasks.
+
+`c0fcd2746` on `research/rust-kernel-coalesce-notify` caps listeners at one notification per
+16 ms (`packages/core-wasm/src/kernel.ts`). A change after a quiet frame still flushes in a
+microtask; the frame's later changes flush once, by `setTimeout`, at its end. The caches still
+invalidate on every change, so a read in between sees the new state. `core-wasm` 64 of 64 and 13
+of 13, one test new.
+
+On the remote, desktop (R=10, `results/2026-10-06T22-32-02-965Z-macmini2020-desktop`, A/A 63 of
+63, no failed samples), against `a8252d0ea`: `open(large)` main-thread JavaScript drops 47% (488.1
+to 259.4 ms) and settles 6.5% sooner, and `scroll` and `coldScroll` take 15% less wall time. Two
+rows are slower: `select` main-thread task time 1.084x, and `searchLarge` JavaScript 1.033x. Under
+`slow` (R=10, `results/2026-10-06T23-28-56-580Z-macmini2020-slow`, A/A 61 of 63), `selectLarge`
+fails in no round. `scroll` takes 32% less wall time (4,190.8 to 2,857.9 ms), `coldScroll`
+JavaScript drops 42% and its jank frames go from 2 to 0, and `searchLarge` takes 24% less time
+(4,592.8 to 3,470.2 ms). `zoomLarge` settles 96.9 ms sooner. The cost is the frame's last change:
+`scroll` and `coldScroll` settle 28.2 and 36.6 ms after the last wheel event (they settled at once
+before), and `jump` settles 40.1 ms later [+1.0, +77.9]. Against `main` under `slow`, the median
+row goes from 1.449x to 1.319x latency and from 2.322x to 1.986x main-thread time. It's merged into
+`research/multi-platform-rust-core-impl-plugins`.
+
+Flushing at the next animation frame instead of after a fixed 16 ms was meant to shorten that tail,
+and did the reverse. `41714a1fc` kept the microtask for a change after a quiet frame and flushed the
+rest in `requestAnimationFrame`, with a 100 ms timer for hidden tabs. Under `slow` (R=10,
+`results/2026-10-08T00-30-29-463Z-macmini2020-slow`, A/A 62 of 63), against `c0fcd2746`, it was
+slower on 26 rows and faster on none: `coldScroll` settles 46.5 ms later [+15.3, +78.7], `zoom`
+55.7 ms later, `selectLarge` 31.3 ms later, and `zoomLarge` JavaScript is 1.108x. The hook pass
+runs inside the frame, before its paint, where the fixed wait lets it run between frames. It was
+dropped, and not run on desktop.

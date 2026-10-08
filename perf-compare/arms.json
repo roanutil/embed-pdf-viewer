@@ -191,6 +191,41 @@
       "ref": "research/rust-kernel-typed-results",
       "sha": "b8821702787f6c22b60be95c22f848bed5e9e559",
       "recipe": "rust-kernel"
+    },
+    "plugins-fixes": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "adda0bbea2eda9047dd0e2e16183e08381841dba",
+      "recipe": "rust-kernel"
+    },
+    "plugins-encode": {
+      "ref": "research/rust-kernel-bridge-encode",
+      "sha": "57f627ed5a62c58c482e6ed90a2d9dc2b10a15b0",
+      "recipe": "rust-kernel"
+    },
+    "plugins-tip4": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "7455a529410a8d8464e5a9b1a45dfba7a8e97916",
+      "recipe": "rust-kernel"
+    },
+    "plugins-hostbytes": {
+      "ref": "research/rust-kernel-host-bytes",
+      "sha": "81899a80a30c0f0a9d1a8d8f35d65612d0435926",
+      "recipe": "rust-kernel"
+    },
+    "plugins-tip5": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "a8252d0ead1c7267dd569aebc94a0279cf73349e",
+      "recipe": "rust-kernel"
+    },
+    "plugins-geomdecode": {
+      "ref": "research/rust-kernel-geometry-decode",
+      "sha": "e5e1c8d65b674104872150f95891b1a26be3d5a9",
+      "recipe": "rust-kernel"
+    },
+    "plugins-coalesce": {
+      "ref": "research/rust-kernel-coalesce-notify",
+      "sha": "c0fcd2746eb7c7c1bb22844758010ba305f71469",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -409,6 +444,41 @@
     },
     "plugins-typed": {
       "worktree": "plugins-typed",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-fixes": {
+      "worktree": "plugins-fixes",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-encode": {
+      "worktree": "plugins-encode",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip4": {
+      "worktree": "plugins-tip4",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-hostbytes": {
+      "worktree": "plugins-hostbytes",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-tip5": {
+      "worktree": "plugins-tip5",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-geomdecode": {
+      "worktree": "plugins-geomdecode",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-coalesce": {
+      "worktree": "plugins-coalesce",
       "kernel": "rust",
       "rustReads": false
     }
@@ -645,6 +715,42 @@
     [
       "main",
       "plugins-typed"
+    ],
+    [
+      "plugins-typed",
+      "plugins-fixes"
+    ],
+    [
+      "plugins-fixes",
+      "plugins-encode"
+    ],
+    [
+      "main",
+      "plugins-encode"
+    ],
+    [
+      "plugins-tip4",
+      "plugins-hostbytes"
+    ],
+    [
+      "main",
+      "plugins-hostbytes"
+    ],
+    [
+      "plugins-tip5",
+      "plugins-geomdecode"
+    ],
+    [
+      "main",
+      "plugins-geomdecode"
+    ],
+    [
+      "plugins-tip5",
+      "plugins-coalesce"
+    ],
+    [
+      "main",
+      "plugins-coalesce"
     ]
   ]
 }
