@@ -200,6 +200,22 @@ fn permission_denied(operation: &str, scope: &str) -> Error {
     )
 }
 
+/// A content change landed while a text read was in flight: the pages
+/// already read may hold text the change removed (a redaction). The
+/// TypeScript returns that text; this is a Rust-only refusal.
+fn throw_if_stale(at: u64, now: u64) -> Result<(), Error> {
+    if at != now {
+        return Err(plugin_error(
+            code::CONFLICT,
+            "selection",
+            "selection.readText: the page content changed while it was read",
+            None,
+            None,
+        ));
+    }
+    Ok(())
+}
+
 fn throw_if_aborted(signal: Option<&AbortSignal>) -> Result<(), Error> {
     if signal.is_some_and(AbortSignal::aborted) {
         return Err(plugin_error(
@@ -871,6 +887,10 @@ impl SelectionCapability {
     ) -> Promise<String> {
         let this = self.clone();
         Promise::spawn(async move {
+            // The content generation the read starts in. A redaction or
+            // flatten that lands while batches are in flight fails the read
+            // rather than return text from before it.
+            let at = this.0.epoch.get();
             this.assert_scope(COPY_SCOPE, "selection.readText")?;
             this.cx().assert_page_ref(range.start.page)?;
             this.cx().assert_page_ref(range.end.page)?;
@@ -903,6 +923,7 @@ impl SelectionCapability {
                 throw_if_aborted(signal)?;
                 let reads = batch.iter().map(|(pon, _, _)| this.page_text(*pon)).collect();
                 let snapshots = all(reads).await?;
+                throw_if_stale(at, this.0.epoch.get())?;
                 for (snap, (_, from, to)) in snapshots.iter().zip(batch) {
                     parts.push(slice_text_by_chars(snap, *from as f64, *to as f64));
                 }
