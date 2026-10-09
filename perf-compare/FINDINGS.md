@@ -369,7 +369,13 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
 12. Resolved commands cached per kernel revision (Where the plugins tip's main thread goes). Added
     2026-10-05. It's what `open` still costs.
 13. `rustc-hash` in place of SipHash for the kernel's own maps (Serialization formats, and Where the
-    plugins tip's main thread goes). About 5 ms of `jump`.
+    plugins tip's main thread goes). About 5 ms of `jump`. Decided against, 2026-10-09: of the 9.6
+    ms of SipHash in the `plugins-tip6` `scroll` profile, 3.9 ms was the `json!` wrapper item 17
+    removed, and about 4 ms is `serde_json` objects, which are `IndexMap`s with the standard hasher
+    in every crate because `plugin-conformance` turns on `preserve_order` and Cargo unifies the
+    feature; `serde_json` has no way to change that hasher. The kernel's own maps are 1 to 2 ms. A
+    new hasher also changes iteration order in 47 files that use `HashMap` or `HashSet`, where any
+    map iterated into output could drift from the conformance vectors.
 14. The engine bridge's `canonical()` encoding of every engine answer, the JavaScript half of item
     11 (Where the plugins tip's main thread goes). 10.5 ms of `jump` in the profile. Tried since,
     and kept: see that section.
