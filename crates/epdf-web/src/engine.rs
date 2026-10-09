@@ -115,16 +115,28 @@ fn release_hosts(value: &Value) {
 /// dropped. A later answer is dropped too, and nothing ever sees it, so its
 /// `$host` values are released rather than left in the bridge's table.
 fn engine_call(started: Result<js_sys::Promise, JsValue>) -> EngineCall<Value> {
-    engine_call_with(started, |text| {
-        serde_json::from_str(text)
-            .map_err(|e| Error::new(format!("[engine-bridge] malformed answer: {e}")))
-    })
+    engine_call_with(started, parse_answer)
+}
+
+fn parse_answer(text: &str) -> Result<Value, Error> {
+    serde_json::from_str(text)
+        .map_err(|e| Error::new(format!("[engine-bridge] malformed answer: {e}")))
 }
 
 /// [`engine_call`] with the answer's text read by `read`.
 fn engine_call_with<T: Clone + 'static>(
     started: Result<js_sys::Promise, JsValue>,
     read: impl FnOnce(&str) -> Result<T, Error> + 'static,
+) -> EngineCall<T> {
+    engine_call_late(started, read, release_hosts)
+}
+
+/// [`engine_call_with`], with `late` run on an answer that lands after an
+/// abort already settled the call, in place of releasing its `$host`s.
+fn engine_call_late<T: Clone + 'static>(
+    started: Result<js_sys::Promise, JsValue>,
+    read: impl FnOnce(&str) -> Result<T, Error> + 'static,
+    late: impl FnOnce(&Value) + 'static,
 ) -> EngineCall<T> {
     let js = match started {
         Ok(js) => js,
@@ -139,9 +151,9 @@ fn engine_call_with<T: Clone + 'static>(
         // Only the abort below settles the promise before this does.
         if settle.promise().is_settled() {
             if let Ok(Value::String(text)) = result
-                && let Ok(late) = serde_json::from_str::<Value>(text)
+                && let Ok(answer) = serde_json::from_str::<Value>(text)
             {
-                release_hosts(&late);
+                late(&answer);
             }
             return;
         }
@@ -180,8 +192,20 @@ impl JsEngine {
 
 impl Engine for JsEngine {
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
-        let raw = engine_call(
+        // An open the abort beat by a microtask (the bridge's promise had
+        // already resolved, so its abort did nothing) still opened the
+        // document in the engine, and its id reaches nobody: close it here.
+        let closer = self.bridge.clone();
+        let raw = engine_call_late(
             self.bridge.open(&input.to_string(), options.as_ref().map(Value::to_string)),
+            parse_answer,
+            move |answer| {
+                if let Value::String(id) = answer {
+                    // Nobody waits on this close. Through `engine_call`, so
+                    // a refusal is observed rather than left unhandled.
+                    drop(engine_call(closer.call(id, "close", None, "[]")));
+                }
+            },
         );
         let abort = raw.abort_handle();
         let (promise, resolver) = Promise::<Rc<dyn DocumentHandle>>::pending();
