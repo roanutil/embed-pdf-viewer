@@ -530,12 +530,16 @@ impl Inner {
             }
             let operation = s.operation.borrow().clone();
             if let Some(operation) = operation {
+                // `await session.operation?.catch(...)`: the handler runs in
+                // the `.catch` reaction, one turn after the operation
+                // settles, and the await resumes a turn after that.
                 if let Err(error) = operation.await
                     && !is_cancelled(&error)
                     && !is_abort_like(&error)
                 {
                     (this.report)(&error);
                 }
+                rt::tick().await;
             } else {
                 // `await session.operation?.catch(...)` on null is `await undefined`.
                 rt::tick().await;
@@ -1465,12 +1469,15 @@ impl Kernel {
             let start = this.start_promise.borrow().clone();
             match start {
                 Some(start) => {
+                    // `await startPromise?.catch(...)`: the `.catch` reaction,
+                    // then the await's own turn.
                     if let Err(error) = start.await
                         && !is_cancelled(&error)
                         && !was_failed
                     {
                         (this.report)(&error);
                     }
+                    rt::tick().await;
                 }
                 None => rt::tick().await,
             }

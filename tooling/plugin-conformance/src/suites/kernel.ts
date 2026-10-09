@@ -1713,6 +1713,30 @@ const turnCases: ScenarioCase[] = [
     },
     steps: [start, open(bytes('a')), metered(docs('retry', 'a'))],
   },
+  {
+    name: 'close-joins-a-thunk-open-on-its-turn',
+    covers:
+      'close() while a thunk source is pending: the open rejects after its `.finally` and adoption, and close joins the operation with `await operation?.catch(...)`, two turns, before it disposes the scope and emits `closed`.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      docs('onClosed', { $fn: 'closed' }),
+      open({ $fn: 'source', defer: 'source' }),
+      metered(docs('close', 'pending:1')),
+    ],
+  },
+  {
+    name: 'destroy-joins-start-on-its-turn',
+    covers:
+      'destroy() after a settled start: `await startPromise?.catch(...)` is two turns before the workspace scope disposes.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the teardown fall among the `@@turn` callbacks.',
+    plugins: [probe({ id: 'ws', token: 'ws', effects: { cleanup: true } })],
+    steps: [start, metered(destroy)],
+  },
 ];
 
 export const suites: Suite[] = [
