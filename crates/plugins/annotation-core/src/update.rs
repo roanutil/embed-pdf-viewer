@@ -4,7 +4,7 @@
 //! store skips its notification for that. [`update`] returns `None` for that
 //! branch: `Some` is a new model even when its contents equal the old one's.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
@@ -1928,20 +1928,21 @@ fn merge_loaded(m: &Model, annots: &[Annot]) -> Model {
 }
 
 fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
-    let incoming: Vec<&str> = annots.iter().map(|a| a.id.as_str()).collect();
-    let locked = draft_ids(m.draft.as_ref());
+    let incoming: HashSet<&str> = annots.iter().map(|a| a.id.as_str()).collect();
+    let locked: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
     let reaped: Vec<&Id> = m
         .order
         .iter()
         .filter(|id| {
             !incoming.contains(&id.as_str())
-                && !locked.contains(id)
+                && !locked.contains(*id)
                 && m.by_id.get(*id).is_some_and(|a| a.ref_.is_some())
         })
         .collect();
     let mut next = m.clone();
     if !reaped.is_empty() {
-        let gone = |id: &Id| reaped.contains(&id);
+        let reaped_set: HashSet<&Id> = reaped.iter().copied().collect();
+        let gone = |id: &Id| reaped_set.contains(id);
         let mut by_id = m.by_id.clone();
         for id in &reaped {
             Rc::make_mut(&mut by_id).remove(*id);
@@ -1962,7 +1963,7 @@ fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
 }
 
 fn upsert_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
-    let dragging = draft_ids(m.draft.as_ref());
+    let dragging: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
     let mut by_id = m.by_id.clone();
     let mut order = m.order.clone();
     for a in annots {
@@ -2008,9 +2009,10 @@ fn draft_ids(draft: Option<&Draft>) -> Vec<Id> {
 }
 
 fn remove_annots(m: &Model, ids: &[Id]) -> Model {
+    let ids: HashSet<&Id> = ids.iter().collect();
     let mut by_id = m.by_id.clone();
-    for id in ids {
-        Rc::make_mut(&mut by_id).remove(id);
+    for id in &ids {
+        Rc::make_mut(&mut by_id).remove(*id);
     }
     let editing = match &m.editing {
         Some(e) if !e.is_empty() && ids.contains(e) => None,

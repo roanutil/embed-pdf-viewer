@@ -1,6 +1,8 @@
 //! `snap.ts`: alignment snapping for the move gesture. One snap per axis,
 //! the closest in-threshold key pair wins.
 
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::anchor::anchor_mode_of;
@@ -72,10 +74,11 @@ pub fn compute_move_snap(
     let base = to_bounds(union_rect(&corners));
     let moving_box = shift(&base, raw);
 
+    let moving: HashSet<&Id> = ids.iter().collect();
     let mut targets: Vec<Bounds> = page_box.map(to_bounds).into_iter().collect();
     for id in m.order.iter() {
         let a = &m.by_id[id];
-        if !ids.contains(id)
+        if !moving.contains(id)
             && a.page.pon() == pon
             && is_selectable(m, id)
             && anchor_mode_of(a).is_none()

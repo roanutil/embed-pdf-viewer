@@ -2,6 +2,8 @@
 //! id>`; the primary is the annotation whose id is the key. Attached link
 //! children ride the same wire relationship but never count as members.
 
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::flags::annot_transformable;
@@ -76,9 +78,10 @@ pub fn group_members(m: &Model, id: &str) -> Vec<Id> {
 /// Union of every id's full group, first-seen order.
 pub fn expand_groups(m: &Model, ids: &[Id]) -> Vec<Id> {
     let mut out: Vec<Id> = Vec::new();
+    let mut seen: HashSet<Id> = HashSet::new();
     for id in ids {
         for member in group_members(m, id) {
-            if !out.contains(&member) {
+            if seen.insert(member.clone()) {
                 out.push(member);
             }
         }
