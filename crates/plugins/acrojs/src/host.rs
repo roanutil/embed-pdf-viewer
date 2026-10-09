@@ -143,13 +143,16 @@ struct Inner {
     boot_sources: RefCell<Option<Promise<Vec<String>>>>,
     sequence: Cell<f64>,
     disposed: Cell<bool>,
+    /// Transactions enqueued and not yet settled.
+    in_flight: Cell<usize>,
 }
 
 /// The one realm per document. `transaction(body)` is the realm mutex; the
 /// body does everything for one logical script transaction (prefetch, runs,
 /// commits through the owner sinks) before it releases. A sandbox that
-/// reports itself disposed poisons the realm for the rest of the transaction;
-/// the next one rebuilds it and boots again.
+/// reports itself disposed is dropped; the next run, in this transaction or
+/// a later one, builds a fresh realm and boots it again (as the TypeScript
+/// does).
 #[derive(Clone)]
 pub struct ScriptHost(Rc<Inner>);
 
@@ -310,6 +313,7 @@ impl ScriptHost {
             boot_sources: RefCell::new(None),
             sequence: Cell::new(0.0),
             disposed: Cell::new(false),
+            in_flight: Cell::new(0),
         }))
     }
 
@@ -323,25 +327,145 @@ impl ScriptHost {
             return Promise::rejected(Error::new("script host is disposed"));
         }
         let txn = ScriptTransaction(self.0.clone());
-        self.0.queue.run(move || body(txn))
+        self.0.in_flight.set(self.0.in_flight.get() + 1);
+        let result = self.0.queue.run(move || body(txn));
+        let weak = Rc::downgrade(&self.0);
+        result.on_settle(move |_| {
+            let Some(inner) = weak.upgrade() else { return };
+            inner.in_flight.set(inner.in_flight.get() - 1);
+            if inner.disposed.get() && inner.in_flight.get() == 0 {
+                release_sandbox(&inner);
+            }
+        });
+        result
     }
 
     pub fn dispose(&self) {
         self.0.disposed.set(true);
-        let dying = self.0.sandbox.borrow_mut().take();
-        self.0.booted.set(false);
-        *self.0.pending_boot.borrow_mut() = None;
-        if let Some(dying) = dying {
-            rt::spawn(async move {
-                if let Ok(sandbox) = dying.await {
-                    sandbox.dispose();
-                }
-            });
-        }
+        release_sandbox(&self.0);
+    }
+}
+
+/// Drop the realm and dispose it once its build settles.
+///
+/// `dispose()` releases the current realm, but a transaction enqueued before
+/// it still runs and lazily builds a fresh one (as the TypeScript does).
+/// The TypeScript leaves that realm alive forever; here the last such
+/// transaction to settle releases it, so a closed document never strands a
+/// QuickJS runtime. Script output is unchanged: no transaction can start
+/// after `dispose()`, and the realm lives until every queued one is done.
+fn release_sandbox(inner: &Inner) {
+    let dying = inner.sandbox.borrow_mut().take();
+    inner.booted.set(false);
+    *inner.pending_boot.borrow_mut() = None;
+    if let Some(dying) = dying {
+        rt::spawn(async move {
+            if let Ok(sandbox) = dying.await {
+                sandbox.dispose();
+            }
+        });
     }
 }
 
 /// `createScriptHost(options)`.
 pub fn create_script_host(options: ScriptHostOptions) -> ScriptHost {
     ScriptHost::new(options)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct CountingSandbox {
+        disposed: Cell<bool>,
+        disposals: Rc<Cell<usize>>,
+    }
+
+    impl ScriptSandbox for CountingSandbox {
+        fn disposed(&self) -> bool {
+            self.disposed.get()
+        }
+        fn boot(
+            &self,
+            _: &[String],
+            _: &ScriptInput,
+            _: Option<&ScriptBudget>,
+        ) -> Result<ScriptOutput, Error> {
+            Ok(ScriptOutput::empty())
+        }
+        fn run(
+            &self,
+            _: &str,
+            _: &ScriptInput,
+            _: Option<&ScriptBudget>,
+        ) -> Result<ScriptOutput, Error> {
+            Ok(ScriptOutput::empty())
+        }
+        fn dispose(&self) {
+            self.disposed.set(true);
+            self.disposals.set(self.disposals.get() + 1);
+        }
+    }
+
+    fn world() -> ScriptWorldInput {
+        ScriptWorldInput {
+            fields: Vec::new(),
+            annots: None,
+            annot_pages: None,
+            annots_cover_document: None,
+            page_number: None,
+            event: ScriptEventInput::of(ScriptEventKind::NameTreeBoot),
+        }
+    }
+
+    #[test]
+    fn a_realm_built_after_dispose_is_released_when_the_queue_drains() {
+        rt::reset();
+        let (built, disposals) = (Rc::new(Cell::new(0)), Rc::new(Cell::new(0)));
+        let (factory_built, factory_disposals) = (built.clone(), disposals.clone());
+        let host = ScriptHost::new(ScriptHostOptions {
+            sandbox_factory: Rc::new(move || {
+                factory_built.set(factory_built.get() + 1);
+                let sandbox: Rc<dyn ScriptSandbox> = Rc::new(CountingSandbox {
+                    disposed: Cell::new(false),
+                    disposals: factory_disposals.clone(),
+                });
+                Promise::resolved(sandbox)
+            }),
+            document: Rc::new(|| ScriptDocumentInput {
+                id: "a".into(),
+                file_name: "a.pdf".into(),
+                page_count: 1.0,
+                page_number: 0.0,
+            }),
+            identity: Rc::new(Default::default),
+            environment: Rc::new(|_| ScriptEnvironment {
+                now_ms: 0.0,
+                utc_offset_minutes: 0.0,
+                random_seed: 1.0,
+            }),
+            boot_sources: Rc::new(|| Ok(Promise::resolved(Vec::new()))),
+            budget: None,
+        });
+        let (gate, open) = Promise::<()>::pending();
+        let first = host.transaction(move |txn| {
+            Ok(Promise::spawn(async move {
+                gate.await?;
+                txn.run("a", world(), None).await?;
+                Ok(())
+            }))
+        });
+        let second = host.transaction(|txn| Ok(txn.run("b", world(), None).map(|_| Ok(()))));
+        host.dispose();
+        rt::run_until_stalled();
+        assert_eq!(built.get(), 0);
+        open.resolve(());
+        rt::run_until_stalled();
+        assert!(first.peek().is_some_and(|r| r.is_ok()));
+        assert!(second.peek().is_some_and(|r| r.is_ok()));
+        // Both queued transactions shared one realm, as in the TypeScript,
+        // and it was disposed once they were done.
+        assert_eq!(built.get(), 1);
+        assert_eq!(disposals.get(), 1);
+    }
 }
