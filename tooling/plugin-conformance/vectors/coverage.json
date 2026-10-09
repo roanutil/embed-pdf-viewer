@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12179/12509",
+    "branches": "12177/12507",
     "unsnapshottedOnlyLines": 1475
   },
   "files": {
@@ -313,7 +313,7 @@
     },
     "packages/core/main/src/kernel.ts": {
       "statements": "1050/1050",
-      "branches": "334/342",
+      "branches": "332/340",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "204:22#0",

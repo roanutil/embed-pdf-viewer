@@ -37,9 +37,13 @@ impl Outcome {
         Outcome::Promise(promise.map(|v| Ok(serde_json::to_value(v).unwrap_or(Value::Null))))
     }
 
-    /// A promise of nothing: resolves to `undefined`.
+    /// A promise of nothing: resolves to `undefined`, in the turn `promise`
+    /// does. The TypeScript hands the caller the kernel's own promise, so a
+    /// `.map` here would put a step's turn meter one turn behind it.
     pub fn promise_unit(promise: Promise<()>) -> Outcome {
-        Outcome::Promise(promise.map(|_| Ok(undefined())))
+        let (unit, resolver) = Promise::pending();
+        promise.on_settle(move |result| resolver.settle(result.clone().map(|_| undefined())));
+        Outcome::Promise(unit)
     }
 }
 
@@ -169,6 +173,9 @@ pub(crate) struct Inner {
     pub release: Option<ReleaseFn>,
     /// Live callbacks by `$fn` name, counted by their guards.
     pub held: RefCell<HashMap<String, usize>>,
+    /// Set while a step's turn meter runs (`meter` in the README): a
+    /// tracked promise that settles then also logs `@@settled`.
+    pub metering: std::cell::Cell<bool>,
 }
 
 /// The per-run harness. Cheap to clone.
@@ -198,6 +205,7 @@ impl Harness {
             promises: RefCell::new(promises),
             tokens: RefCell::new(tokens),
             fake: RefCell::new(None),
+            metering: std::cell::Cell::new(false),
             adapters,
             built: RefCell::new(HashMap::new()),
             live,
@@ -400,6 +408,22 @@ impl Harness {
                 Err(error) => json!({ "promise": id, "rejected": error.to_canonical() }),
             };
             h.entry.borrow_mut().settled.push(record);
+            if h.metering.get() {
+                // The TypeScript logs from the `.then` reaction it attached
+                // when it tracked the promise: one turn after settlement.
+                let h = Rc::downgrade(&h);
+                epdf_kernel::rt::spawn(async move {
+                    epdf_kernel::rt::tick().await;
+                    if let Some(h) = h.upgrade()
+                        && h.metering.get()
+                    {
+                        h.entry
+                            .borrow_mut()
+                            .callbacks
+                            .push(json!({ "fn": "@@settled", "args": [id] }));
+                    }
+                });
+            }
         });
         json!({ "$promise": id })
     }
@@ -442,6 +466,17 @@ impl Harness {
         let (promise, resolver) = Promise::pending();
         if let Some(fake) = self.0.fake.borrow().as_ref() {
             fake.defer(label, Box::new(move |result| resolver.settle(result)));
+        }
+        promise
+    }
+
+    /// [`defer`](Self::defer) for a promise of nothing, settled in the turn
+    /// the settle step settles it: `new Promise((resolve) => defer(label,
+    /// () => resolve()))`, with no `.then` between.
+    pub fn defer_unit(&self, label: &str) -> Promise<()> {
+        let (promise, resolver) = Promise::pending();
+        if let Some(fake) = self.0.fake.borrow().as_ref() {
+            fake.defer(label, Box::new(move |result| resolver.settle(result.map(|_| ()))));
         }
         promise
     }

@@ -472,7 +472,12 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
     let mut logged = 0;
     for step in case.get("steps").and_then(Value::as_array).into_iter().flatten() {
         run_step(step, &kernel, &fake, &h);
+        if let Some(turns) = step.get("meter").and_then(Value::as_u64) {
+            assert!(step["op"] != "advance", "[scenario] an advance step cannot be metered");
+            start_meter(&h, turns);
+        }
         rt::run_until_stalled();
+        h.0.metering.set(false);
         let mut extra = serde_json::Map::new();
         extra.insert("engine".into(), Value::Array(fake.log_since(logged)));
         logged = fake.log_len();
@@ -493,6 +498,18 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
     drop(kernel);
     rt::reset();
     run
+}
+
+/// The turn meter: `@@turn [i]` for each of `turns` turns, starting now.
+fn start_meter(h: &Harness, turns: u64) {
+    h.0.metering.set(true);
+    let h = h.clone();
+    rt::spawn(async move {
+        for i in 0..turns {
+            h.log("@@turn", vec![json!(i)]);
+            rt::tick().await;
+        }
+    });
 }
 
 fn run_step(step: &Value, kernel: &Kernel, fake: &Rc<FakeEngine>, h: &Harness) {

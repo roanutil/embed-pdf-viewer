@@ -452,7 +452,10 @@ impl Inner {
         rt::spawn(async move {
             let result = run.await;
             // `.finally(() => { if (session.operation === operation) session.operation = null })`
-            // runs one turn after `run` settles, before the returned promise does.
+            // runs one turn after `run` settles. `.finally` then settles its
+            // promise through `Promise.resolve(onFinally()).then(() => value)`,
+            // which the returned promise adopts: one turn for that `.then`
+            // and one for the adoption's reaction, so it settles on the third.
             rt::tick().await;
             let current = s.operation.borrow().clone();
             if let Some(current) = current
@@ -460,6 +463,8 @@ impl Inner {
             {
                 *s.operation.borrow_mut() = None;
             }
+            rt::tick().await;
+            rt::tick().await;
             resolver.settle(result);
         });
         *session.operation.borrow_mut() = Some(operation.clone());
@@ -948,9 +953,10 @@ impl Inner {
         options: OpenOptions,
         hold: Option<Rc<HostHold>>,
     ) -> Promise<Value> {
-        // An async function: its synchronous throws are rejections.
+        // An async function: its synchronous throws are rejections, and the
+        // operation it returns is adopted.
         match self.reserve_and_open(input, options, hold) {
-            Ok((_, promise)) => promise,
+            Ok((_, operation)) => adopt(operation),
             Err(error) => Promise::rejected(error),
         }
     }
@@ -1123,6 +1129,9 @@ impl Inner {
             Ok(Value::Null)
         };
         let operation = self.begin_operation(&session, run)?;
+        // `return beginOperation(...)` from an async function adopts the
+        // operation. It is still pending here, so the adoption settles one
+        // turn after it does, which is what `.then` costs as well.
         Ok(operation.map(|_| Ok(())))
     }
 
@@ -1478,6 +1487,16 @@ impl Kernel {
         *inner.destroy_promise.borrow_mut() = Some(destroy.clone());
         destroy
     }
+}
+
+/// `return promise` from an `async` function: the function's own promise
+/// adopts it, through a resolve-thenable job that registers one turn after
+/// the return, then the reaction one turn after `promise` settles.
+fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Promise<T> {
+    Promise::spawn(async move {
+        rt::tick().await;
+        promise.await
+    })
 }
 
 /// `Promise.allSettled`, awaited: settles one turn after the last input.

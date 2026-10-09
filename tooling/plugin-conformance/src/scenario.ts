@@ -34,13 +34,23 @@ export type Target =
   | { readonly token: string; readonly doc?: string }
   | { readonly ref: number };
 
+/** `meter: n` on a synchronous step counts microtask turns: right after the
+ *  step's action the runner logs `@@turn [i]` for i = 0..n-1, one per turn,
+ *  and every tracked promise that settles while it runs also logs
+ *  `@@settled [promise]` from its `.then` reaction. Where the two interleave
+ *  in `callbacks` is the turn a promise settled on, which `settled` alone,
+ *  an order within one step, cannot show. */
+interface Metered {
+  readonly meter?: number;
+}
+
 export type Step =
-  | { readonly op: 'call'; readonly target: Target; readonly method?: string; readonly args?: readonly unknown[] }
-  | { readonly op: 'emit'; readonly doc: string; readonly event: unknown }
-  | { readonly op: 'settle'; readonly label: string; readonly value?: unknown; readonly error?: ErrorSpec }
+  | ({ readonly op: 'call'; readonly target: Target; readonly method?: string; readonly args?: readonly unknown[] } & Metered)
+  | ({ readonly op: 'emit'; readonly doc: string; readonly event: unknown } & Metered)
+  | ({ readonly op: 'settle'; readonly label: string; readonly value?: unknown; readonly error?: ErrorSpec } & Metered)
   | { readonly op: 'advance'; readonly ms: number }
-  | { readonly op: 'abort'; readonly promise: number; readonly reason?: unknown }
-  | { readonly op: 'drain' };
+  | ({ readonly op: 'abort'; readonly promise: number; readonly reason?: unknown } & Metered)
+  | ({ readonly op: 'drain' } & Metered);
 
 /** A case either snapshots state after every step, or says why it does not.
  *  `reason` lands in the vector beside `snapshot: 'none'`: what the case
@@ -178,6 +188,7 @@ async function runInstalled(
   clock: ReturnType<typeof FakeTimers.install>,
 ): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
   let entry = blankEntry();
+  let metering = false;
   const refs: { fn: (...args: unknown[]) => unknown; self?: unknown }[] = [];
   const promises: PromiseLike<unknown>[] = [];
 
@@ -185,9 +196,18 @@ async function runInstalled(
     fn: (fn, self) => refs.push({ fn, self }) - 1,
     promise: (promise) => {
       const id = promises.push(promise) - 1;
+      const metered = () => {
+        if (metering) entry.callbacks.push({ fn: '@@settled', args: [id] });
+      };
       promise.then(
-        (value) => entry.settled.push({ promise: id, resolved: canonical(value, hooks) }),
-        (error) => entry.settled.push({ promise: id, rejected: canonicalError(error, hooks) }),
+        (value) => {
+          metered();
+          entry.settled.push({ promise: id, resolved: canonical(value, hooks) });
+        },
+        (error) => {
+          metered();
+          entry.settled.push({ promise: id, rejected: canonicalError(error, hooks) });
+        },
       );
       return id;
     },
@@ -244,11 +264,24 @@ async function runInstalled(
   let loggedEngine = 0;
   for (const step of scenario.steps) {
     entry = blankEntry();
-    await runStep(step, { kernel, fake, clock, refs, promises, hooks, decode, entry });
+    const log = entry.callbacks;
+    // Started inside runStep, in the same synchronous run as the step's
+    // action: awaiting runStep first would put the meter a turn behind.
+    const startMeter = (turns: number) => {
+      metering = true;
+      void (async () => {
+        for (let i = 0; i < turns; i += 1) {
+          log.push({ fn: '@@turn', args: [i] });
+          await undefined;
+        }
+      })();
+    };
+    await runStep(step, { kernel, fake, clock, refs, promises, hooks, decode, entry, startMeter });
     if (scenario.awaitCalls && step.op === 'call' && entry.outcome && 'promise' in entry.outcome) {
       await settledInRealTime(promises[entry.outcome.promise]);
     }
     await drainMicrotasks();
+    metering = false;
     entry.engine = fake.log.slice(loggedEngine);
     loggedEngine = fake.log.length;
     entry.status = kernel.status();
@@ -370,9 +403,20 @@ interface StepContext {
   hooks: CanonicalHooks;
   decode: (value: unknown) => unknown;
   entry: TraceEntry;
+  startMeter: (turns: number) => void;
 }
 
 async function runStep(step: Step, ctx: StepContext): Promise<void> {
+  if (step.op === 'advance') {
+    if ('meter' in step) throw new Error('[scenario] an advance step cannot be metered');
+    await ctx.clock.tickAsync(step.ms);
+    return;
+  }
+  runSyncStep(step, ctx);
+  if (step.meter) ctx.startMeter(step.meter);
+}
+
+function runSyncStep(step: Exclude<Step, { op: 'advance' }>, ctx: StepContext): void {
   switch (step.op) {
     case 'call':
       ctx.entry.outcome = invoke(step, ctx);
@@ -382,9 +426,6 @@ async function runStep(step: Step, ctx: StepContext): Promise<void> {
       return;
     case 'settle':
       if (!ctx.fake.settle(step.label, step)) throw new Error(`[scenario] nothing pending as "${step.label}"`);
-      return;
-    case 'advance':
-      await ctx.clock.tickAsync(step.ms);
       return;
     case 'abort': {
       const promise = ctx.promises[step.promise] as { abort?: (reason?: unknown) => void };

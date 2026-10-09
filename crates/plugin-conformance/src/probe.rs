@@ -32,7 +32,7 @@ fn finish(step: Option<&Value>, h: &Harness) -> Result<Option<Promise<()>>, Erro
         return Ok(Some(Promise::rejected(Error::from_spec(error))));
     }
     if let Some(label) = step.get("defer").and_then(Value::as_str) {
-        return Ok(Some(h.defer(label).map(|_| Ok(()))));
+        return Ok(Some(h.defer_unit(label)));
     }
     Ok(None)
 }

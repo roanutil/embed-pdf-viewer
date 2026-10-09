@@ -62,6 +62,13 @@ the generator.
 | `abort` | `promise`, `reason?` | calls `abort` on a returned `AbortablePromise` |
 | `drain` | | nothing; records an entry |
 
+`meter: n` on any step but `advance` counts microtask turns. Right after the step's synchronous
+action the runner logs a `@@turn` callback with argument `i` for each of `n` turns, and every tracked
+promise that settles while the meter runs also logs `@@settled` with its promise number, from the
+`.then` reaction the runner attached to it. `settled` only orders promises within a step, so a
+promise that settles four turns early still matches; where `@@settled` lands among the `@@turn`
+entries does not. `kernel/turns.json` uses it to pin the turn each document transition settles on.
+
 A trace entry has:
 
 | field | holds |

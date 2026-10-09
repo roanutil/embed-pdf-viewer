@@ -19,6 +19,11 @@ fn the_kernel_matches_the_typescript() {
     assert_suite("kernel/lifecycle.json", &Registry::new(), &Vec::new());
 }
 
+#[test]
+fn the_kernel_settles_on_the_turns_the_typescript_does() {
+    assert_suite("kernel/turns.json", &Registry::new(), &Vec::new());
+}
+
 fn info(value: &Value) -> Result<DocInfo, Error> {
     serde_json::from_value(value.clone()).map_err(|e| Error::new(e.to_string()))
 }

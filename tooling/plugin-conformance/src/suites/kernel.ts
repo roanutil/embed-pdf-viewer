@@ -1651,7 +1651,78 @@ const v3Cases: ScenarioCase[] = [
   },
 ];
 
+/** `meter` (see `Metered` in `scenario.ts`): enough turns to outlast every
+ *  chain these cases start. */
+const metered = (step: Step, turns = 40): Step => ({ ...step, meter: turns }) as Step;
+
+const turnCases: ScenarioCase[] = [
+  {
+    name: 'open-settles-on-its-turn',
+    covers:
+      "open() resolves on the turn TypeScript's does: the operation's `.finally` takes three turns after the open body, and the `async` openDocument wrapper two more to adopt it.",
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: { documents: { a: doc() } },
+    steps: [start, metered(open(bytes('a')))],
+  },
+  {
+    name: 'a-failed-open-rejects-on-its-turn',
+    covers: 'The same turns on the failure path: the rollback, then the `.finally` and the adoption.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    engine: {
+      documents: { a: doc() },
+      responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
+    },
+    steps: [start, metered(open(bytes('a')))],
+  },
+  {
+    name: 'unlock-settles-on-its-turn',
+    covers: 'unlock() is an `async` function returning the operation, so it adopts it in two turns, like open().',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: {
+        a: doc({
+          security: { passwordPrompt: { state: 'required' } },
+          responses: [
+            { path: 'security.unlock', args: [{ password: 'wrong' }], error: { name: 'EngineError', message: 'incorrect password', code: 'DocPasswordIncorrect' } },
+            { path: 'security.unlock', args: [{ password: 'right' }], value: { security: {} } },
+          ],
+        }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a')),
+      metered(docs('unlock', 'a', { password: 'wrong' })),
+      metered(docs('unlock', 'a', { password: 'right' })),
+    ],
+  },
+  {
+    name: 'retry-settles-on-its-turn',
+    covers: "retry() closes the failed tab, then returns openDocument's promise from an `async` arrow: the open's turns plus one adoption.",
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: { a: doc() },
+      responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
+    },
+    steps: [start, open(bytes('a')), metered(docs('retry', 'a'))],
+  },
+];
+
 export const suites: Suite[] = [
+  {
+    kind: 'scenario',
+    file: 'kernel/turns.json',
+    describes:
+      'packages/core/main: the microtask turn on which each document transition and the kernel teardown settle, measured with the runner\'s turn meter.',
+    cases: turnCases,
+  },
   {
     kind: 'scenario',
     file: 'kernel/lifecycle.json',
