@@ -12,7 +12,9 @@
 //! 2. Awaiting a promise always yields at least once. An `await` in
 //!    JavaScript is at least one turn of the microtask queue even when the
 //!    promise has settled, and a continuation that ran inline instead would
-//!    reorder two chains the TypeScript interleaves.
+//!    reorder two chains the TypeScript interleaves. Awaiting an
+//!    `AbortablePromise` costs two turns more, because `await` adopts a
+//!    `Promise` subclass as a thenable.
 //! 3. The ready queue is FIFO, and a woken task runs in wake order, as
 //!    microtask reactions do.
 //!
@@ -365,9 +367,14 @@ struct Inner<T> {
     /// call's JavaScript promise, and through it the task, its signal and
     /// its answer), which a cached promise would otherwise keep alive.
     abort: RefCell<Option<Rc<dyn Fn(Option<serde_json::Value>)>>>,
-    /// Whether this is an `AbortablePromise`. Outlives `abort`, because it
-    /// decides how many turns a reaction to it takes.
-    abortable: Cell<bool>,
+    /// Whether this is an `AbortablePromise`, a `Promise` subclass that
+    /// `await` and `Promise.resolve` adopt as a thenable. Outlives `abort`,
+    /// because it decides how many turns a reaction to it takes.
+    subclass: Cell<bool>,
+    /// Whether it was given an abort, as an `AbortablePromise` or as a plain
+    /// promise carrying an `abort` member (the guarded handle's). Outlives
+    /// `abort` too: a derived promise still has one after this settles.
+    has_abort: Cell<bool>,
     /// Live [`Resolver`]s. When the last one drops while the promise is
     /// pending, nothing can settle it any more.
     resolvers: Cell<usize>,
@@ -453,7 +460,8 @@ impl<T: Clone + 'static> Promise<T> {
             state: RefCell::new(State::Pending(Vec::new())),
             on_settle: RefCell::new(Vec::new()),
             abort: RefCell::new(None),
-            abortable: Cell::new(false),
+            subclass: Cell::new(false),
+            has_abort: Cell::new(false),
             resolvers: Cell::new(0),
             abandoned: Cell::new(false),
         }))
@@ -542,15 +550,53 @@ impl<T: Clone + 'static> Promise<T> {
     /// Make this promise an `AbortablePromise`: `abort` runs the given
     /// function, which is expected to reject it.
     pub fn with_abort(self, abort: impl Fn(Option<serde_json::Value>) + 'static) -> Self {
-        self.0.abortable.set(true);
+        self.0.subclass.set(true);
+        self.with_abort_member(abort)
+    }
+
+    /// Give this plain promise an `abort` member without making it an
+    /// `AbortablePromise`: `Object.defineProperty(promise, 'abort', ...)` on
+    /// a `new Promise`, as the guarded handle does. Awaiting it costs the one
+    /// turn any plain promise does.
+    pub fn with_abort_member(self, abort: impl Fn(Option<serde_json::Value>) + 'static) -> Self {
+        self.0.has_abort.set(true);
         if !self.is_settled() {
             *self.0.abort.borrow_mut() = Some(Rc::new(abort));
         }
         self
     }
 
+    /// Whether this is an `AbortablePromise`, which `await` and
+    /// `Promise.resolve` adopt with two extra turns.
     pub fn is_abortable(&self) -> bool {
-        self.0.abortable.get()
+        self.0.subclass.get()
+    }
+
+    /// Whether this has an `abort` member, subclass or not.
+    pub fn has_abort(&self) -> bool {
+        self.0.has_abort.get()
+    }
+
+    /// This promise as another type, settling in the same turn and keeping
+    /// its abort and whether it is an `AbortablePromise`: the one promise
+    /// the TypeScript has, where Rust wants a different `T`.
+    pub fn convert<U: Clone + 'static>(
+        &self,
+        f: impl FnOnce(&T) -> Result<U, Error> + 'static,
+    ) -> Promise<U> {
+        let (out, resolver) = Promise::<U>::pending();
+        let abort = self.abort_handle();
+        self.on_settle(move |result| {
+            resolver.settle(match result {
+                Ok(value) => f(value),
+                Err(error) => Err(error.clone()),
+            })
+        });
+        match abort {
+            Some(abort) if self.is_abortable() => out.with_abort(move |reason| abort(reason)),
+            Some(abort) => out.with_abort_member(move |reason| abort(reason)),
+            None => out,
+        }
     }
 
     /// `AbortablePromise.abort(reason)`. A promise without an abort, or one
@@ -570,9 +616,16 @@ impl<T: Clone + 'static> Promise<T> {
         match &*self.0.abort.borrow() {
             Some(abort) => Some(abort.clone()),
             // Settled, so there is nothing left to cancel.
-            None if self.0.abortable.get() => Some(Rc::new(|_| {})),
+            None if self.0.has_abort.get() => Some(Rc::new(|_| {})),
             None => None,
         }
+    }
+
+    /// A `.then` reaction rather than an `await`: resumes one turn after
+    /// this settles, even for an `AbortablePromise`, whose `then` reacts as
+    /// any promise's does. `.await` on a subclass takes two turns more.
+    pub fn reaction(&self) -> PromiseFuture<T> {
+        PromiseFuture { promise: self.clone(), yielded: false, adopt: Adopt::No }
     }
 
     /// `.then(f)` for a synchronous `f`: a new promise settled one turn
@@ -581,13 +634,13 @@ impl<T: Clone + 'static> Promise<T> {
         &self,
         f: impl FnOnce(T) -> Result<U, Error> + 'static,
     ) -> Promise<U> {
-        let source = self.clone();
+        let source = self.reaction();
         Promise::spawn(async move { f(source.await?) })
     }
 
-    /// `promise.catch(() => {})`: await and discard.
+    /// `promise.catch(() => {})`: react and discard.
     pub fn ignore(&self) {
-        let source = self.clone();
+        let source = self.reaction();
         spawn(async move {
             let _ = source.await;
         });
@@ -605,10 +658,10 @@ impl<T: Clone + 'static> Promise<T> {
         for promise in promises {
             let resolver = resolver.clone();
             if promise.is_abortable() {
+                // `.await` on a subclass is that adoption: the job, its
+                // reaction, then the race's own reaction.
                 spawn(async move {
-                    tick().await;
                     let result = promise.await;
-                    tick().await;
                     resolver.settle(result);
                 });
                 continue;
@@ -629,11 +682,41 @@ impl<T: Clone + 'static> Promise<T> {
 pub struct PromiseFuture<T> {
     promise: Promise<T>,
     yielded: bool,
+    adopt: Adopt<T>,
 }
+
+/// `await` on an `AbortablePromise`: `PromiseResolve` wraps the subclass in
+/// a new promise that adopts it, one turn for the resolve-thenable job to
+/// call its `then`, then the usual reaction, then one turn for the wrapper's
+/// own reaction to resume the awaiting function.
+enum Adopt<T> {
+    /// A plain promise: no adoption.
+    No,
+    /// The job's turn is still to come.
+    Job,
+    /// Awaiting the subclass itself.
+    Awaiting,
+    /// Settled; the wrapper's reaction turn is still to come.
+    Wrapper(Option<Result<T, Error>>),
+}
+
+// Nothing in it is ever pinned in place: the result it may hold moves out.
+impl<T> Unpin for PromiseFuture<T> {}
 
 impl<T: Clone + 'static> Future for PromiseFuture<T> {
     type Output = Result<T, Error>;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match &mut self.adopt {
+            Adopt::Job => {
+                self.adopt = Adopt::Awaiting;
+                cx.waker().wake_by_ref();
+                return Poll::Pending;
+            }
+            Adopt::Wrapper(result) => {
+                return Poll::Ready(result.take().expect("polled after completion"));
+            }
+            Adopt::No | Adopt::Awaiting => {}
+        }
         let yielded = self.yielded;
         // This future holds the promise's last handle: nothing can read the
         // result after it, so it moves out instead of being cloned.
@@ -662,6 +745,11 @@ impl<T: Clone + 'static> Future for PromiseFuture<T> {
             }
         };
         match ready {
+            Some(Some(result)) if matches!(self.adopt, Adopt::Awaiting) => {
+                self.adopt = Adopt::Wrapper(Some(result));
+                cx.waker().wake_by_ref();
+                Poll::Pending
+            }
             Some(Some(result)) => Poll::Ready(result),
             Some(None) => {
                 self.yielded = true;
@@ -682,7 +770,8 @@ impl<T: Clone + 'static> std::future::IntoFuture for Promise<T> {
     type Output = Result<T, Error>;
     type IntoFuture = PromiseFuture<T>;
     fn into_future(self) -> PromiseFuture<T> {
-        PromiseFuture { promise: self, yielded: false }
+        let adopt = if self.is_abortable() { Adopt::Job } else { Adopt::No };
+        PromiseFuture { promise: self, yielded: false, adopt }
     }
 }
 

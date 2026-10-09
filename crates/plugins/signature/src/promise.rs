@@ -9,6 +9,10 @@ use epdf_kernel::rt::{self, Promise};
 /// `AbortablePromise`, a `Promise` subclass that `await` adopts as a
 /// thenable, one turn more than a plain promise.
 pub async fn await_engine<T: Clone + 'static>(call: Promise<T>) -> Result<T, Error> {
+    if call.is_abortable() {
+        // `await` on the subclass takes the adoption turns itself.
+        return call.await;
+    }
     let adopted = Promise::spawn(async move {
         rt::tick().await;
         call.await
@@ -20,7 +24,7 @@ pub async fn await_engine<T: Clone + 'static>(call: Promise<T>) -> Result<T, Err
 /// then the reaction.
 pub async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
 /// `void promise.catch(onError)`: `on_error` runs one turn after `promise`

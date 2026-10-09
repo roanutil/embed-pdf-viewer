@@ -1737,6 +1737,70 @@ const turnCases: ScenarioCase[] = [
     plugins: [probe({ id: 'ws', token: 'ws', effects: { cleanup: true } })],
     steps: [start, metered(destroy)],
   },
+  {
+    name: 'close-joins-an-open-on-its-turn',
+    covers:
+      'close() during pages.list: the open rejects after its `.finally` and adoption, and close joins the operation with `await operation?.catch(...)`, two turns, before it disposes the scope and emits `closed`.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: { documents: { a: doc({ responses: [{ path: 'pages.list', defer: 'list-a' }] }) } },
+    steps: [
+      start,
+      docs('onClosed', { $fn: 'closed' }),
+      open(bytes('a')),
+      metered(docs('close', 'a')),
+    ],
+  },
+  {
+    name: 'close-joins-a-pending-init-on-its-turn',
+    covers:
+      'close() while a plugin init is pending waits for the init; when it settles, the open rejects and close finishes, each on the turn TypeScript reaches it.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha', { init: { defer: 'init' } }))],
+    engine: { documents: { a: doc() } },
+    steps: [
+      start,
+      docs('onClosed', { $fn: 'closed' }),
+      open(bytes('a')),
+      docs('close', 'a'),
+      metered(settle('init')),
+    ],
+  },
+  {
+    name: 'close-of-a-ready-document-on-its-turn',
+    covers: 'close() with no operation in flight: `await session.operation?.catch(...)` on null is one turn.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: { documents: { a: doc() } },
+    steps: [start, docs('onClosed', { $fn: 'closed' }), open(bytes('a')), metered(docs('close', 'a'))],
+  },
+  {
+    name: 'destroy-closes-a-document-on-its-turn',
+    covers:
+      'destroy() with a document open: the start join, then the session close, whose scope awaits `handle.close()`, an `AbortablePromise` that `await` adopts in three turns, then the workspace scope.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the teardowns fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha')), probe({ id: 'ws', token: 'ws', effects: { cleanup: true } })],
+    engine: { documents: { a: doc() } },
+    steps: [start, docs('onClosed', { $fn: 'closed' }), open(bytes('a')), metered(destroy)],
+  },
+  {
+    name: 'bring-up-awaits-the-render-policy-on-its-turn',
+    covers:
+      'Bring-up reads `await session.handle.render?.policy()` from the raw engine handle: an `AbortablePromise`, which `await` adopts as a thenable, two turns more than a plain promise.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` and the init fall among the `@@turn` callbacks.',
+    plugins: [probe(docProbe('alpha'))],
+    engine: {
+      documents: {
+        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { kind: 'continuous' } }] }),
+      },
+    },
+    steps: [start, metered(open(bytes('a')))],
+  },
 ];
 
 export const suites: Suite[] = [

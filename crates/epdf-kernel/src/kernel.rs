@@ -420,7 +420,8 @@ impl Inner {
             let scope = session.scope.clone();
             let on_late = on_late_result.clone();
             rt::spawn(async move {
-                if let Ok(value) = call.await
+                // `void call.then(...)`: a reaction, not an await.
+                if let Ok(value) = call.reaction().await
                     && let Some(on_late) = on_late
                 {
                     scope.defer(Box::new(move || on_late(value)));
@@ -1037,9 +1038,7 @@ impl Inner {
         }
 
         let on_late: Rc<dyn Fn(Rc<dyn DocumentHandle>) -> Result<Option<Promise<()>>, Error>> =
-            Rc::new(|late: Rc<dyn DocumentHandle>| {
-                Ok(Some(late.call("close", None, Vec::new()).map(|_| Ok(()))))
-            });
+            Rc::new(|late: Rc<dyn DocumentHandle>| Ok(Some(close_handle(&late))));
         let options_value = Value::Object(engine_options.clone());
         let handle = rt::returned(Self::engine_call(
             &session,
@@ -1050,9 +1049,7 @@ impl Inner {
         *session.handle.borrow_mut() = Some(handle.clone());
         {
             let handle = handle.clone();
-            session.scope.defer(Box::new(move || {
-                Ok(Some(handle.call("close", None, Vec::new()).map(|_| Ok(()))))
-            }));
+            session.scope.defer(Box::new(move || Ok(Some(close_handle(&handle)))));
         }
         Self::checkpoint(&session)?;
         if handle.id() != session.id() {
@@ -1496,13 +1493,20 @@ impl Kernel {
     }
 }
 
+/// `handle.close()` as a teardown returns it: the engine's
+/// `AbortablePromise` itself, which the scope's `await` adopts, not a
+/// `.then` of it.
+fn close_handle(handle: &Rc<dyn DocumentHandle>) -> Promise<()> {
+    handle.call("close", None, Vec::new()).convert(|_| Ok(()))
+}
+
 /// `return promise` from an `async` function: the function's own promise
 /// adopts it, through a resolve-thenable job that registers one turn after
 /// the return, then the reaction one turn after `promise` settles.
 fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Promise<T> {
     Promise::spawn(async move {
         rt::tick().await;
-        promise.await
+        promise.reaction().await
     })
 }
 
@@ -1564,7 +1568,7 @@ impl Documents {
             let reopened = inner.open_document(source, options, hold);
             // `return openDocument(...)` from an async function adopts it.
             rt::tick().await;
-            reopened.await
+            reopened.reaction().await
         })
     }
 

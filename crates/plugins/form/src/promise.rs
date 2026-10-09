@@ -13,6 +13,10 @@ use serde_json::Value;
 
 /// `await doc.x(...)` on an engine call.
 pub async fn await_engine(call: Promise<Value>) -> Result<Value, Error> {
+    if call.is_abortable() {
+        // `await` on the subclass takes the adoption turns itself.
+        return call.await;
+    }
     let adopted = Promise::spawn(async move {
         rt::tick().await;
         call.await
@@ -24,7 +28,7 @@ pub async fn await_engine(call: Promise<Value>) -> Result<Value, Error> {
 /// then the reaction.
 pub async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
 /// `return asyncFn()` from an `async` function whose body runs inline: the

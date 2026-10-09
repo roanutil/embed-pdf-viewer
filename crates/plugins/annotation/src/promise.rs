@@ -14,6 +14,10 @@ use serde_json::Value;
 /// `await doc.x(...)` on an engine call: the resolve-thenable job, the
 /// reaction, then the `await`'s own resumption.
 pub async fn await_engine(call: Promise<Value>) -> Result<Value, Error> {
+    if call.is_abortable() {
+        // `await` on the subclass takes the adoption turns itself.
+        return call.await;
+    }
     let adopted = Promise::spawn(async move {
         rt::tick().await;
         call.await
@@ -73,15 +77,9 @@ pub fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
 /// its reaction, then the wrapper's reaction); a plain promise reacts in
 /// one turn.
 async fn observe<T: Clone + 'static>(p: Promise<T>) -> Result<T, Error> {
-    if p.is_abortable() {
-        let adopted = Promise::spawn(async move {
-            rt::tick().await;
-            p.await
-        });
-        adopted.await
-    } else {
-        p.await
-    }
+    // `.await` on a subclass is the adoption, and a plain promise reacts in
+    // one turn either way.
+    p.await
 }
 
 /// `Promise.allSettled(promises)`: every outcome, in order, settling in the

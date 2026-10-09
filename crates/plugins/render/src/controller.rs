@@ -563,7 +563,7 @@ fn viewport_width(viewport: PageRenderViewport) -> f64 {
 /// as a thenable, one turn for the adoption job and one for its reaction.
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
 /// `Promise.all` over promises that never reject: settles one turn after the

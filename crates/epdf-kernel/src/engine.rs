@@ -64,14 +64,7 @@ pub trait DocumentHandle {
     /// the turn `call` would, and keeps its abort. A host whose answers
     /// arrive as JSON text hands the text over unparsed.
     fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
-        let call = self.call(path, pon, args);
-        let abort = call.abort_handle();
-        let (answer, resolver) = Promise::pending();
-        call.on_settle(move |result| resolver.settle(result.clone().map(Answer::Value)));
-        match abort {
-            Some(abort) => answer.with_abort(move |reason| abort(reason)),
-            None => answer,
-        }
+        self.call(path, pon, args).convert(|value| Ok(Answer::Value(value.clone())))
     }
     /// `page(ref)` for the page whose `PageRef` names object number `pon`:
     /// the page's display index, or `EngineError(NotFound)`.

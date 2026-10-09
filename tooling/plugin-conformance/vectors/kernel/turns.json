@@ -2950,6 +2950,2537 @@
           }
         }
       ]
+    },
+    {
+      "name": "close-joins-an-open-on-its-turn",
+      "covers": "close() during pages.list: the open rejects after its `.finally` and adoption, and close joins the operation with `await operation?.catch(...)`, two turns, before it disposes the scope and emits `closed`.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "responses": [
+              {
+                "path": "pages.list",
+                "defer": "list-a"
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "onClosed",
+          "args": [
+            {
+              "$fn": "closed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ],
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "abort": 1,
+              "reason": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "close-joins-a-pending-init-on-its-turn",
+      "covers": "close() while a plugin init is pending waits for the init; when it settles, the open rejects and close finishes, each on the turn TypeScript reaches it.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": {
+              "defer": "init"
+            },
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "onClosed",
+          "args": [
+            {
+              "$fn": "closed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "init",
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "CancelledError",
+                  "message": "[kernel] cancelled: closed while opening: a"
+                }
+              }
+            },
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "close-of-a-ready-document-on-its-turn",
+      "covers": "close() with no operation in flight: `await session.operation?.catch(...)` on null is one turn.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "onClosed",
+          "args": [
+            {
+              "$fn": "closed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "a"
+          ],
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "alpha.teardown",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "destroy-closes-a-document-on-its-turn",
+      "covers": "destroy() with a document open: the start join, then the session close, whose scope awaits `handle.close()`, an `AbortablePromise` that `await` adopts in three turns, then the workspace scope.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` and the teardowns fall among the `@@turn` callbacks.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        },
+        {
+          "factory": "probe",
+          "config": {
+            "id": "ws",
+            "token": "ws",
+            "effects": {
+              "cleanup": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "onClosed",
+          "args": [
+            {
+              "$fn": "closed"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy",
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "ws.effects",
+              "args": [
+                null
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$ref": 0
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-removed"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "close",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "alpha.teardown",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "ws.teardown",
+              "args": [
+                null
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "bring-up-awaits-the-render-policy-on-its-turn",
+      "covers": "Bring-up reads `await session.handle.render?.policy()` from the raw engine handle: an `AbortablePromise`, which `await` adopts as a thenable, two turns more than a plain promise.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` and the init fall among the `@@turn` callbacks.",
+      "plugins": [
+        {
+          "factory": "probe",
+          "config": {
+            "id": "alpha",
+            "scope": "document",
+            "token": "alpha",
+            "initialState": {
+              "n": 0
+            },
+            "reduce": {
+              "SET": "replace",
+              "MERGE": "merge",
+              "SAME": "same"
+            },
+            "init": true,
+            "effects": {
+              "onAction": [
+                "@@core/document-added",
+                "@@core/active-changed"
+              ],
+              "cleanup": true,
+              "watchState": true
+            }
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "services": [
+              "render"
+            ],
+            "responses": [
+              {
+                "path": "render.policy",
+                "value": {
+                  "kind": "continuous"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ],
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.policy",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "alpha.init",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "alpha.effects",
+              "args": [
+                "a"
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "alpha.onAction",
+              "args": [
+                "a",
+                {
+                  "type": "@@core/document-added"
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
     }
   ]
 }

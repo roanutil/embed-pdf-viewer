@@ -47,7 +47,7 @@ impl SerialQueue {
             let _ = previous.await;
             let promise = operation()?;
             rt::tick().await;
-            promise.await
+            promise.reaction().await
         });
         let done = result.clone();
         *self.tail.borrow_mut() = Promise::spawn(async move {

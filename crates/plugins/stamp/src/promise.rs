@@ -10,6 +10,10 @@ use epdf_kernel::rt::{self, Promise};
 
 /// `await doc.x(...)` or `await engine.open(...)` on an engine call.
 pub async fn await_engine<T: Clone + 'static>(call: Promise<T>) -> Result<T, Error> {
+    if call.is_abortable() {
+        // `await` on the subclass takes the adoption turns itself.
+        return call.await;
+    }
     let adopted = Promise::spawn(async move {
         rt::tick().await;
         call.await
@@ -21,7 +25,7 @@ pub async fn await_engine<T: Clone + 'static>(call: Promise<T>) -> Result<T, Err
 /// then the reaction.
 pub async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
 /// `promise.finally(onFinally)` with a synchronous `onFinally`: the callback

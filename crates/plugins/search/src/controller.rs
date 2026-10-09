@@ -44,6 +44,10 @@ const RERUN_DELAY_MS: f64 = 250.0;
 /// `await pending` for an `AbortablePromise`: not a native promise, so
 /// `await` adopts it as a thenable, one turn before the await's own.
 async fn await_engine(call: Promise<Value>) -> Result<Value, Error> {
+    if call.is_abortable() {
+        // `await` on the subclass takes the adoption turns itself.
+        return call.await;
+    }
     Promise::spawn(async move {
         rt::tick().await;
         call.await

@@ -24,7 +24,7 @@ use crate::services::{Diagnose, get, truthy};
 /// adoption, two turns after an already-settled promise.
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
 impl ActionsCapability {

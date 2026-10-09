@@ -762,3 +762,145 @@ fn awaiting_an_already_abandoned_promise_drops_the_new_waiter() {
     });
     assert_eq!(Rc::strong_count(&held), 1, "dropped during its first, inline poll");
 }
+
+// ── AbortablePromise is a subclass; a promise with an abort member is not ─────
+
+/// The turn (counted by a ticking task spawned beside it) on which `wait`
+/// resumes. JavaScript: `await settledPlain` resumes on turn 1, `await
+/// settledAbortable` on turn 3 (`PromiseResolve` wraps the subclass, a
+/// resolve-thenable job calls its `then`, the wrapper settles, and its
+/// reaction resumes the function), and `.then` on either reacts on turn 1.
+fn resume_turn(wait: impl std::future::Future<Output = ()> + 'static) -> usize {
+    rt::reset();
+    let turn = Rc::new(Cell::new(0));
+    let resumed = Rc::new(Cell::new(None));
+    let r = resumed.clone();
+    let t = turn.clone();
+    rt::spawn(async move {
+        wait.await;
+        r.set(Some(t.get()));
+    });
+    let t = turn.clone();
+    rt::spawn(async move {
+        // Turn n starts when this sets n; the waiter, queued ahead of it in
+        // every turn, reads n while turn n runs.
+        for _ in 0..10 {
+            t.set(t.get() + 1);
+            rt::tick().await;
+        }
+    });
+    rt::run_until_stalled();
+    resumed.get().expect("resumed")
+}
+
+fn abortable_settled() -> Promise<u32> {
+    Promise::resolved(1).with_abort(|_| {})
+}
+
+#[test]
+fn awaiting_an_abortable_promise_adopts_it_in_three_turns() {
+    assert_eq!(
+        resume_turn(async {
+            let _ = Promise::resolved(1u32).await;
+        }),
+        1
+    );
+    assert_eq!(
+        resume_turn(async {
+            let _ = abortable_settled().await;
+        }),
+        3
+    );
+    assert_eq!(
+        resume_turn(async {
+            let _ = abortable_settled().reaction().await;
+        }),
+        1,
+        "a `.then` reaction does not adopt"
+    );
+    // Pending at the await, settled on turn 2: the job registered on turn 1,
+    // the reaction runs on 3 and the wrapper's on 4.
+    assert_eq!(
+        resume_turn(async {
+            let (p, r) = Promise::<u32>::pending();
+            let p = p.with_abort(|_| {});
+            rt::spawn(async move {
+                rt::tick().await;
+                rt::tick().await;
+                r.resolve(1);
+            });
+            let _ = p.await;
+        }),
+        4
+    );
+}
+
+#[test]
+fn a_promise_with_an_abort_member_is_not_a_subclass() {
+    rt::reset();
+    let aborted = Rc::new(Cell::new(false));
+    let a = aborted.clone();
+    let (p, _r) = Promise::<u32>::pending();
+    let member = p.with_abort_member(move |_| a.set(true));
+    assert!(!member.is_abortable() && member.has_abort());
+    assert!(member.abort_handle().is_some());
+    member.abort(None);
+    assert!(aborted.get());
+
+    // `Promise.race` hands a plain promise straight to `.then`: one turn.
+    let race_turn = |input: Promise<u32>| {
+        resume_turn(async move {
+            let _ = Promise::race(vec![input]).reaction().await;
+        })
+    };
+    assert_eq!(race_turn(Promise::resolved(1).with_abort_member(|_| {})), 2);
+    assert_eq!(race_turn(abortable_settled()), 4, "a subclass is adopted first");
+}
+
+/// A handle whose every call answers an already-settled `AbortablePromise`.
+struct Answers;
+
+impl DocumentHandle for Answers {
+    fn id(&self) -> String {
+        "a".into()
+    }
+    fn capabilities(&self) -> Value {
+        json!({})
+    }
+    fn security(&self) -> Rc<dyn DocumentSecurity> {
+        unimplemented!()
+    }
+    fn has(&self, _: &str) -> bool {
+        true
+    }
+    fn call(&self, _: &str, _: Option<u32>, _: Vec<Value>) -> EngineCall<Value> {
+        Promise::resolved(json!(1)).with_abort(|_| {})
+    }
+    fn page_index(&self, _: u32) -> Result<u32, Error> {
+        Ok(0)
+    }
+    fn subscribe(&self, _: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
+        epdf_kernel::Unsubscribe::noop()
+    }
+}
+
+/// `guardPromise` builds `new Promise(...)` and defines `abort` on it, so
+/// the guarded call is a plain promise with an abort, and it settles after
+/// the guard's own `Promise.resolve(pending).then(...)` adopts the engine's
+/// subclass: turn 3. Awaiting it is then one more turn, not three.
+#[test]
+fn a_guarded_call_is_a_plain_promise_with_an_abort() {
+    let lifetime = GuardedLifetime { signal: AbortSignal::new(), instance_id: "a#1".into() };
+    let guarded = guard_handle(Rc::new(Answers), lifetime.clone(), "probe");
+    let call = guarded.call("metadata.read", None, Vec::new());
+    assert!(!call.is_abortable());
+    assert!(call.has_abort());
+    assert!(guarded.call_answer("metadata.read", None, Vec::new()).has_abort());
+    assert_eq!(
+        resume_turn(async move {
+            let guarded = guard_handle(Rc::new(Answers), lifetime, "probe");
+            let _ = guarded.call("metadata.read", None, Vec::new()).await;
+        }),
+        4
+    );
+}

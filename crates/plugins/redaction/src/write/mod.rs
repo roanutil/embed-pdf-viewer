@@ -11,5 +11,5 @@ use epdf_kernel::rt::{self, Promise};
 /// then the `.then` reaction one turn after `promise` settles.
 pub(crate) async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }

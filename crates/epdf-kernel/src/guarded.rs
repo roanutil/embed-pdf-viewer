@@ -68,15 +68,11 @@ impl Guard {
             Some(signal.on_abort(on_abort))
         };
         let guard = self.clone();
-        let adopted = abort.is_some();
         rt::spawn(async move {
-            if adopted {
-                rt::tick().await; // the resolve-thenable job
-            }
+            // `Promise.resolve(pending).then(...)`: awaiting an
+            // `AbortablePromise` takes the same adoption turns, and a plain
+            // promise reacts in one either way.
             let result = pending.await;
-            if adopted {
-                rt::tick().await; // the adopting promise's reaction
-            }
             if let Some(id) = registration {
                 guard.lifetime.signal.remove(id);
             }
@@ -85,8 +81,9 @@ impl Guard {
             }
             resolver.settle(result.map_err(|e| to_plugin_error(&guard.capability, &e)));
         });
+        // `new Promise(...)` with an `abort` member: not a subclass.
         match abort {
-            Some(abort) => guarded.with_abort(move |reason| abort(reason)),
+            Some(abort) => guarded.with_abort_member(move |reason| abort(reason)),
             None => guarded,
         }
     }
