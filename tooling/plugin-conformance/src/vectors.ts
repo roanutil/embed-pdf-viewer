@@ -6,8 +6,8 @@
  * kinds land in `vectors/<suite>.json` under one envelope the Rust runner
  * asserts the version of.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { canonical, canonicalError, isThenable, snapshotHooks } from './canonical';
@@ -18,6 +18,47 @@ export const SCHEMA_VERSION = 1;
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const vectorsRoot = join(packageRoot, 'vectors');
+const cratesRoot = join(packageRoot, '..', '..', 'crates');
+
+/** Written by `coverage.ts`, not by a suite, and replayed by nothing. */
+const NOT_A_SUITE = new Set(['coverage.json']);
+
+async function filesUnder(root: string, keep: (name: string) => boolean): Promise<string[]> {
+  const out: string[] = [];
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'target' || entry.name === 'node_modules') continue;
+      out.push(...(await filesUnder(path, keep)));
+    } else if (keep(entry.name)) {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
+/**
+ * Vector files no suite writes (left behind by a deleted or renamed suite),
+ * and vector files no Rust source names (a suite with no `assert_suite`).
+ * Either one stays green under a content check alone.
+ *
+ * "Replayed" is read from the source: some `.rs` file under `crates/` must
+ * hold the path as a string literal, `"plugins/actions.json"`, which is how
+ * every `assert_suite` call and replay helper names its file. A literal in a
+ * test that never runs would pass; a missing one cannot.
+ */
+async function unaccounted(written: ReadonlySet<string>, only?: string): Promise<{ orphaned: string[]; unreplayed: string[] }> {
+  const onDisk = (await filesUnder(vectorsRoot, (name) => name.endsWith('.json')))
+    .map((path) => relative(vectorsRoot, path).split(sep).join('/'))
+    .filter((file) => !NOT_A_SUITE.has(file) && (!only || file.startsWith(only)))
+    .sort();
+  const orphaned = onDisk.filter((file) => !written.has(file));
+  const rust = (
+    await Promise.all((await filesUnder(cratesRoot, (name) => name.endsWith('.rs'))).map((path) => readFile(path, 'utf8')))
+  ).join('\n');
+  const unreplayed = onDisk.filter((file) => written.has(file) && !rust.includes(`"${file}"`));
+  return { orphaned, unreplayed };
+}
 
 export interface FunctionCase {
   readonly name: string;
@@ -101,7 +142,7 @@ async function renderSuite(suite: Suite): Promise<unknown> {
 }
 
 /** Write each suite, or with `check` fail on any file whose content would
- *  change. `render` runs every case and keeps nothing: the coverage gate's
+ *  change, any vector file no suite writes, or any no Rust test replays. `render` runs every case and keeps nothing: the coverage gate's
  *  second pass, over a filtered set of cases no file holds. */
 export async function emit(suites: readonly Suite[], mode: 'write' | 'check' | 'render', only?: string): Promise<void> {
   const check = mode === 'check';
@@ -128,8 +169,22 @@ export async function emit(suites: readonly Suite[], mode: 'write' | 'check' | '
     console.error(`stale vectors (run \`pnpm --filter @embedpdf/tooling-plugin-conformance run vectors\`):`);
     for (const file of stale) console.error(`  vectors/${file}`);
     process.exitCode = 1;
-  } else if (check) {
-    console.log(`${names.size} vector files are current`);
+  }
+  if (check) {
+    const { orphaned, unreplayed } = await unaccounted(names, only);
+    if (orphaned.length) {
+      console.error('vector files no suite writes (delete them, or restore the suite in src/suites/):');
+      for (const file of orphaned) console.error(`  vectors/${file}`);
+      process.exitCode = 1;
+    }
+    if (unreplayed.length) {
+      console.error('vector files no Rust test replays (no `.rs` file under crates/ names them; add an `assert_suite`):');
+      for (const file of unreplayed) console.error(`  vectors/${file}`);
+      process.exitCode = 1;
+    }
+    if (!stale.length && !orphaned.length && !unreplayed.length) {
+      console.log(`${names.size} vector files are current, and each is replayed`);
+    }
   } else if (mode === 'render') {
     console.log(`rendered ${names.size} suites`);
   }

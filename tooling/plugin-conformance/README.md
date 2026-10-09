@@ -7,7 +7,7 @@ implement.
 
 ```sh
 pnpm --filter @embedpdf/tooling-plugin-conformance run vectors          # write
-pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check    # fail if stale
+pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check    # fail if stale, orphaned or unreplayed
 pnpm --filter @embedpdf/tooling-plugin-conformance run coverage         # write vectors/coverage.json
 pnpm --filter @embedpdf/tooling-plugin-conformance run coverage:check
 cargo test -p plugin-conformance                                        # replay the kernel
@@ -22,6 +22,12 @@ plugin's generator is one new file there. A suite writes one vector file:
 ```json
 { "schemaVersion": 1, "kind": "scenario" | "function", "describes": "...", "cases": [...] }
 ```
+
+`vectors:check` also fails on a file under `vectors/` that no suite writes, which is what a deleted
+or renamed suite leaves behind, and on a file no Rust test replays. It reads the second from the
+source: some `.rs` file under `crates/` must hold the path as a string literal
+(`"plugins/actions.json"`), as every `assert_suite` call does. A literal in a test that never runs
+would still pass.
 
 A function case is `{name, fn, args, outcome}`: a pure function called with canonical arguments.
 The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use this family for
