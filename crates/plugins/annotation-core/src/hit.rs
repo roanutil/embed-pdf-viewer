@@ -53,7 +53,7 @@ pub fn paint_order(m: &Model, page: PageRef) -> Vec<Id> {
     let pon = page.pon();
     let mut markup = Vec::new();
     let mut other = Vec::new();
-    for id in &m.order {
+    for id in m.order.iter() {
         let Some(a) = m.by_id.get(id) else { continue };
         if a.page.pon() != pon {
             continue;

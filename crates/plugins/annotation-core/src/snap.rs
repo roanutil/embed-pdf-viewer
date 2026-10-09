@@ -73,7 +73,7 @@ pub fn compute_move_snap(
     let moving_box = shift(&base, raw);
 
     let mut targets: Vec<Bounds> = page_box.map(to_bounds).into_iter().collect();
-    for id in &m.order {
+    for id in m.order.iter() {
         let a = &m.by_id[id];
         if !ids.contains(id)
             && a.page.pon() == pon

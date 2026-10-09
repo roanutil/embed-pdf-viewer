@@ -43,7 +43,7 @@ pub fn group_key_of(m: &Model, id: &str) -> Option<Id> {
     if let Some(group) = a.group.as_ref().filter(|g| !g.is_empty()) {
         return if is_attached_link(a) { None } else { Some(group.clone()) };
     }
-    for other in &m.order {
+    for other in m.order.iter() {
         let sub = m.by_id.get(other);
         if sub.is_some_and(|s| s.group.as_deref() == Some(id)) && visual_member(sub) {
             return Some(id.to_string());
@@ -61,7 +61,7 @@ pub fn group_members(m: &Model, id: &str) -> Vec<Id> {
     if m.by_id.contains_key(&key) {
         members.push(key.clone());
     }
-    for other in &m.order {
+    for other in m.order.iter() {
         let sub = m.by_id.get(other);
         if *other != key
             && sub.is_some_and(|s| s.group.as_deref() == Some(&key))

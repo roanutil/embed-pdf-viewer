@@ -355,7 +355,7 @@ pub struct TextBox {
 pub fn text_boxes(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Vec<TextBox> {
     let pon = page.pon();
     let mut out = Vec::new();
-    for id in &m.order {
+    for id in m.order.iter() {
         let a = &m.by_id[id];
         if a.page.pon() != pon || !matches!(a.geom, Geom::Text { .. }) {
             continue;

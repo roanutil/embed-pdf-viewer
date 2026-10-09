@@ -17,7 +17,7 @@ harness = ["dep:plugin-conformance", "dep:epdf-kernel"]
 
 [dependencies]
 epdf-geometry = { path = "../geometry", default-features = false }
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 # `Annot.data` carries the engine DTO verbatim, and a props patch keeps keys
 # it does not know; both are JSON values. `preserve_order` keeps a patch's
 # keys in the order they arrived, which the `props` patch effect reports.
