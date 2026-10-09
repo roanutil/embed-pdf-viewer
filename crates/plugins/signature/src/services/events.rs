@@ -3,10 +3,11 @@
 use std::rc::Rc;
 
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::{Controller, Error};
+use epdf_kernel::{Controller, Error, Unsubscribe};
 use serde_json::{Value, json};
 
 use crate::contract::*;
+use crate::controller::SignatureCapability;
 use crate::model::{SignatureAction, SignatureState};
 
 /// `ORIGIN_API`: a change this session made through the public API.
@@ -73,4 +74,57 @@ impl SignatureEvents {
         }));
         events
     }
+}
+
+macro_rules! hook {
+    ($(#[$doc:meta])* $name:ident, $field:ident, $event:ty) => {
+        $(#[$doc])*
+        pub fn $name(
+            &self,
+            listener: impl Fn(&$event) -> Result<(), Error> + 'static,
+        ) -> Unsubscribe {
+            self.0.events.$field.on(listener)
+        }
+    };
+}
+
+impl SignatureCapability {
+    hook!(
+        /// `onSigned(listener)`: a field was signed.
+        on_signed, signed, SignatureSignedEvent
+    );
+    hook!(
+        /// `onFilled(listener)`: a visual mark was drawn into a field.
+        on_filled, filled, SignatureFieldEvent
+    );
+    hook!(
+        /// `onCleared(listener)`: a field's visual mark was removed.
+        on_cleared, cleared, SignatureFieldEvent
+    );
+    hook!(
+        /// `onValidated(listener)`.
+        on_validated, validated, SignatureValidatedEvent
+    );
+    hook!(
+        /// `onProtectionChanged(listener)`.
+        on_protection_changed, protection_changed, SignatureProtectionChangedEvent
+    );
+    hook!(
+        /// `onInvalidating(listener)`: an unsaved edit just turned a
+        /// signature that held into one a save would invalidate.
+        on_invalidating, invalidating, SignatureInvalidatingEvent
+    );
+    hook!(
+        /// `onTargetChanged(listener)`.
+        on_target_changed, target_changed, SignatureTargetChangedEvent
+    );
+    hook!(
+        /// `onSignRequested(listener)`: mode `ask`, a mark met a field and
+        /// the host decides (opens its dialog, then signs or fills).
+        on_sign_requested, sign_requested, SignatureSignRequestedEvent
+    );
+    hook!(
+        /// `onInspectionRequested(listener)`: a signed field was activated.
+        on_inspection_requested, inspection_requested, SignatureInspectionRequestedEvent
+    );
 }
