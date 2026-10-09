@@ -1,5 +1,7 @@
 # Start here: the Rust port
 
+> Current build hosted at: https://embed-pdf-rust-kernel-eval.roan-util-cloudfare.workers.dev
+
 This branch, `research/multi-platform-rust-core-impl-plugins`, runs EmbedPDF's kernel and plugins
 in Rust, compiled to WASM under the web viewer. Separately, `platforms/apple` and
 `platforms/android` package the Rust engine core for Swift and Kotlin. The viewer chrome stays
