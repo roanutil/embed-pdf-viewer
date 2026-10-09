@@ -39,7 +39,17 @@ mkdir -p "$QUEUE"
 # breaks ties and names the owner.
 TICKET="$QUEUE/$(printf '%012d' "$(date +%s)")-$$"
 : >"$TICKET"
-trap 'rm -f "$TICKET"; [ "$(cat "$LOCK/pid" 2>/dev/null)" = "$$" ] && rm -rf "$LOCK"' EXIT INT TERM HUP
+cleanup() {
+  rm -f "$TICKET"
+  if [ "$(cat "$LOCK/pid" 2>/dev/null)" = "$$" ]; then rm -rf "$LOCK"; fi
+}
+# A trap on a signal runs and then resumes the script, so each one exits
+# (128 + the signal number). Without the exit, a waiter that got SIGTERM
+# dropped its ticket and went on polling forever.
+trap cleanup EXIT
+trap 'cleanup; exit 129' HUP
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
 
 alive() { kill -0 "$1" 2>/dev/null; }
 
@@ -71,4 +81,10 @@ while :; do
 done
 rm -f "$TICKET"
 
-CARGO_BUILD_JOBS=$BUILD_JOBS nice -n 19 cargo mutants -j 1 "$@"
+# exec, so cargo-mutants runs as this pid: the lock names it, a signal sent
+# to this pid reaches cargo-mutants itself, and the lock stays held until
+# cargo-mutants is gone. No trap survives exec. The lock is left behind, and
+# the next caller removes it once this pid no longer exists.
+trap - EXIT HUP INT TERM
+export CARGO_BUILD_JOBS="$BUILD_JOBS"
+exec nice -n 19 cargo mutants -j 1 "$@"
