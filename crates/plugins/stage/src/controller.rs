@@ -39,6 +39,11 @@ pub(crate) fn read_of_undefined(member: &str) -> Error {
     Error::named("TypeError", format!("Cannot read properties of undefined (reading '{member}')"))
 }
 
+/// A stage-core failure as the error the TypeScript throws.
+pub(crate) fn stage_error(error: sc::StageError) -> Error {
+    Error::named(error.name(), error.to_string())
+}
+
 /// JavaScript falsiness of a number: `0`, `-0` and `NaN`.
 pub(crate) fn falsy(x: f64) -> bool {
     x == 0.0 || x.is_nan()

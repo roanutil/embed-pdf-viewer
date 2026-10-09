@@ -64,10 +64,7 @@ pub fn register_stage_watchers(
         &fx,
         move || Ok(revision_ctx.document().map_or(0, |d| d.revision)),
         |a, b| a == b,
-        move |_, _| {
-            refit_ctx.get(&refit_token)?.refit();
-            Ok(())
-        },
+        move |_, _| refit_ctx.get(&refit_token)?.refit(),
     )?;
 
     if !feed_actions {

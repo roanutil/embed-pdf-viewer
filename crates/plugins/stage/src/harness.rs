@@ -256,6 +256,13 @@ fn done(result: Result<(), Error>) -> Outcome {
     }
 }
 
+fn returned<T: serde::Serialize>(result: Result<T, Error>) -> Outcome {
+    match result {
+        Ok(value) => Outcome::Returned(to_value(&value)),
+        Err(error) => Outcome::Threw(error),
+    }
+}
+
 fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
@@ -429,7 +436,7 @@ fn call_stage(
         "getViewRotation" => r(to_value(&cap.get_view_rotation())),
         "getZoomLevel" => r(to_value(&cap.get_zoom_level())),
         "getZoomMode" => r(to_value(&cap.get_zoom_mode())),
-        "getViewpoint" => r(to_value(&cap.get_viewpoint())),
+        "getViewpoint" => returned(cap.get_viewpoint()),
         // camera/animation
         "fling" => done(cap.fling(arg(args, 0)?, arg(args, 1)?)),
         "isMoving" => r(json!(cap.is_moving())),
@@ -440,14 +447,8 @@ fn call_stage(
         // camera/gestures
         "setCamera" => done(cap.set_camera(arg::<Camera>(args, 0)?)),
         "panBy" => done(cap.pan_by(arg(args, 0)?, arg(args, 1)?)),
-        "scrollTo" => {
-            cap.scroll_to(arg(args, 0)?);
-            unit()
-        }
-        "scrollBy" => {
-            cap.scroll_by(arg(args, 0)?);
-            unit()
-        }
+        "scrollTo" => done(cap.scroll_to(arg(args, 0)?)),
+        "scrollBy" => done(cap.scroll_by(arg(args, 0)?)),
         "zoomAround" => done(cap.zoom_around(arg(args, 0)?, arg(args, 1)?)),
         "beginGesture" => {
             cap.begin_gesture(opt(args, 0)?);
@@ -517,10 +518,7 @@ fn call_stage(
             unit()
         }
         // navigation/zoom
-        "doubleTapZoom" => {
-            cap.double_tap_zoom(arg(args, 0)?);
-            unit()
-        }
+        "doubleTapZoom" => done(cap.double_tap_zoom(arg(args, 0)?)),
         "zoomIn" => done(cap.zoom_in()),
         "zoomOut" => done(cap.zoom_out()),
         "zoomTo" => done(cap.zoom_to(arg::<ZoomTarget>(args, 0)?, opt(args, 1)?)),
@@ -532,19 +530,13 @@ fn call_stage(
         "setViewRotation" => done(cap.set_view_rotation(arg::<PageRotation>(args, 0)?)),
         "rotateViewBy" => done(cap.rotate_view_by(arg(args, 0)?)),
         // view/lifecycle
-        "setViewportSize" => {
-            cap.set_viewport_size(arg::<Size>(args, 0)?);
-            unit()
-        }
+        "setViewportSize" => done(cap.set_viewport_size(arg::<Size>(args, 0)?)),
         "setDevicePixelRatio" => {
             cap.set_device_pixel_ratio(arg(args, 0)?);
             unit()
         }
-        "refit" => {
-            cap.refit();
-            unit()
-        }
-        "getViewState" => r(to_value(&cap.get_view_state())),
+        "refit" => done(cap.refit()),
+        "getViewState" => returned(cap.get_view_state()),
         "getLensId" => r(json!(cap.get_lens_id())),
         "provideInitialView" => {
             let priority: f64 = arg(args, 0)?;

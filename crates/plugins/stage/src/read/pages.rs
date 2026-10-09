@@ -289,8 +289,9 @@ impl StageCapability {
     }
 
     /// What the viewer is looking at plus the zoom intent, for per-page
-    /// view memory.
-    pub fn get_viewpoint(&self) -> Viewpoint {
-        Viewpoint { anchor: self.current_anchor(), zoom: self.st().settings.zoom }
+    /// view memory. `Err` where the TypeScript throws: no item under the
+    /// anchor point.
+    pub fn get_viewpoint(&self) -> Result<Viewpoint, Error> {
+        Ok(Viewpoint { anchor: self.current_anchor()?, zoom: self.st().settings.zoom })
     }
 }

@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12179/12509",
+    "branches": "12181/12511",
     "unsnapshottedOnlyLines": 1475
   },
   "files": {
@@ -2948,7 +2948,7 @@
     },
     "packages/plugin/stage/src/navigation/zoom.ts": {
       "statements": "94/94",
-      "branches": "33/34",
+      "branches": "34/35",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "65:27#0"
@@ -3035,7 +3035,7 @@
     },
     "packages/plugin/stage/src/settings/settings.ts": {
       "statements": "173/173",
-      "branches": "46/46",
+      "branches": "47/47",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

@@ -28,7 +28,7 @@ impl StageCapability {
         } else {
             self.st().settings.anchor_align
         };
-        let anchor = self.anchor_at(self.align_point(align, self.vp()));
+        let anchor = self.anchor_at(self.align_point(align, self.vp()))?;
         let scene = touched(SettingEffect::Scene);
         let reflow = touched(SettingEffect::Reflow);
         let refit = touched(SettingEffect::Refit);

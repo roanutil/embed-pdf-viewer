@@ -252,6 +252,7 @@ const fnSpec = (name: string, answer: AnswerSpec = {}) => ({ $fn: name, ...answe
 type StageConfigJson = Record<string, unknown>;
 const stage = (config: StageConfigJson = {}) => [{ factory: 'stage', config: { viewUnitsPerPoint: 1, ...config } }];
 const SNAP = ['stage::a'];
+const NAN = { $number: 'NaN' };
 
 const view = (over: Record<string, unknown> = {}) => ({
   flow: 'continuous',
@@ -838,6 +839,31 @@ const manipulationCases: ScenarioCase[] = [
       st('zoomAround', { x: 0, y: 0 }, 1000),
       st('zoomAround', { x: 0, y: 0 }, 0),
     ],
+    snapshot: SNAP,
+  },
+  {
+    name: 'grid-nan-camera',
+    covers:
+      'On a grid a NaN camera coordinate leaves the nearest-item lookup without an item: setCamera writes the camera, then throws a TypeError syncing the cursor, and every later anchor read throws the same way.',
+    plugins: stage({ layout: 'grid', columns: 2, scrollBehavior: 'instant' }),
+    engine: engine(),
+    steps: [...boot, st('setCamera', { x: NAN, y: 0, zoom: 1 }), st('camera'), st('currentPage'), st('viewpoint'), vp(900, 700), st('setCamera', { x: 0, y: 0, zoom: 1 }), st('currentPage')],
+    snapshot: SNAP,
+  },
+  {
+    name: 'grid-nan-zoom-factor',
+    covers: 'On a grid zoomBy(NaN) and zoomAround at a NaN point throw a TypeError reading the focal point; panBy(NaN) throws syncing the cursor.',
+    plugins: stage({ layout: 'grid', columns: 2, scrollBehavior: 'instant' }),
+    engine: engine(),
+    steps: [...boot, st('zoomBy', NAN), st('camera'), st('zoomAround', { x: NAN, y: 0 }, 2), st('camera'), st('panBy', NAN, 0), st('camera'), st('currentPage')],
+    snapshot: SNAP,
+  },
+  {
+    name: 'grid-fractional-columns',
+    covers: 'A fractional grid column count makes the nearest-item index fractional past the last column: unbounded, a camera out there throws a TypeError syncing the cursor and reading the viewpoint, and so does a later settings write, which captures its anchor first.',
+    plugins: stage({ layout: 'grid', columns: 2.5, scrollBehavior: 'instant' }),
+    engine: engine(),
+    steps: [...boot, st('setBounded', false), st('setCamera', { x: 1500, y: 0, zoom: 1 }), st('camera'), st('currentPage'), st('viewpoint'), st('setColumns', 2), st('currentPage'), st('viewpoint')],
     snapshot: SNAP,
   },
   {

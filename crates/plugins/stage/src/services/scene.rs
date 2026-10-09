@@ -182,7 +182,8 @@ impl StageCapability {
         let gap = self.world_gap();
         let vupp = s.view_units_per_point;
         // stage-core fails only on a grouping that names a missing page or
-        // a NaN column count; the grouping comes from the same registry.
+        // a NaN column count (a NaN `columns`, or an auto wrap at a NaN
+        // zoom); the grouping comes from the same registry.
         let scene = if s.layout == LayoutKind::Grid {
             sc::grid_layout(
                 &pages,
@@ -220,7 +221,13 @@ impl StageCapability {
                 },
             )
         };
-        scene.unwrap_or_else(|e| panic!("[stage] layout: {}: {e}", e.name()))
+        // The TypeScript throws a RangeError wherever the scene is built,
+        // and the stage stays broken until the count changes. Here the
+        // scene is empty instead, so every verb is a no-op until then.
+        scene.unwrap_or_else(|_| {
+            sc::linear_layout(&[], &[], sc::LinearOptions::default())
+                .expect("an empty linear layout cannot fail")
+        })
     }
 
     pub(crate) fn columns_key(&self) -> String {
@@ -428,17 +435,17 @@ impl StageCapability {
 
     // ── anchors ───────────────────────────────────────────────────────────────
 
-    pub(crate) fn anchor_at(&self, at: Point) -> Anchor {
+    /// `Err` where the TypeScript throws: no item under the point.
+    pub(crate) fn anchor_at(&self, at: Point) -> Result<Anchor, Error> {
         let scene = self.build_scene();
         if scene.item_count > 0 {
-            sc::anchor_from_camera(self.cam(), &scene, self.vp(), Some(at))
-                .expect("a scene with items has an anchor")
+            sc::anchor_from_camera(self.cam(), &scene, self.vp(), Some(at)).map_err(stage_error)
         } else {
-            Anchor { page_index: self.st().cursor, fx: 0.5, fy: 0.0 }
+            Ok(Anchor { page_index: self.st().cursor, fx: 0.5, fy: 0.0 })
         }
     }
 
-    pub(crate) fn current_anchor(&self) -> Anchor {
+    pub(crate) fn current_anchor(&self) -> Result<Anchor, Error> {
         self.anchor_at(self.anchor_point())
     }
 

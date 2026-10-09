@@ -162,20 +162,23 @@ impl StageCapability {
     }
 
     /// Manipulation derives the cursor from the camera. Paged never syncs.
-    pub(crate) fn sync_cursor_from_camera(&self) {
+    /// `Err` where the TypeScript throws: a camera with no item under it
+    /// (a NaN coordinate, or a fractional grid column count).
+    pub(crate) fn sync_cursor_from_camera(&self) -> Result<(), Error> {
         if self.paged() {
-            return;
+            return Ok(());
         }
         let scene = self.build_scene();
         if scene.item_count == 0 {
-            return;
+            return Ok(());
         }
         let page = sc::anchor_from_camera(self.cam(), &scene, self.vp(), None)
-            .expect("a scene with items has an anchor")
+            .map_err(stage_error)?
             .page_index;
         if page != self.st().cursor {
             self.dispatch(StageAction::Cursor { cursor: page });
         }
+        Ok(())
     }
 
     // ── navigation ────────────────────────────────────────────────────────────

@@ -20,6 +20,7 @@ pub(crate) use epdf_stage_core::{
 pub(crate) use crate::contract::*;
 pub(crate) use crate::controller::{
     Grouping, REST_MS, StageCapability, TWEEN_MS, falsy, num, read_of_undefined, serde_str,
+    stage_error,
 };
 pub(crate) use crate::destination::{PageLayout, without_undefined};
 pub(crate) use crate::host_contract::GestureOptions;
