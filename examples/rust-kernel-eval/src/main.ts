@@ -13,6 +13,13 @@ import { initWasm } from '@embedpdf/core-wasm/browser';
 import EmbedPDF from '../../../packages/viewer/main/src/doors/local';
 import { installHosts } from './hosts';
 
+// Which source this build came from, so a screenshot or a deployed copy
+// names its commit. Set before anything that can fail to boot.
+const build = __BUILD_INFO__;
+const buildLabel = document.querySelector<HTMLSpanElement>('#build')!;
+buildLabel.textContent = `${build.commit.slice(0, 9)}${build.dirty ? '-dirty' : ''}`;
+buildLabel.title = `${build.branch} @ ${build.commit}${build.dirty ? ' (uncommitted changes)' : ''}\nbuilt ${build.builtAt}`;
+
 // The kernel is built when the element mounts: the wasm module and the
 // hosts must be in place first.
 await initWasm();

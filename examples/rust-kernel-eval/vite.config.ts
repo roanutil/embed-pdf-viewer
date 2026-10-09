@@ -9,6 +9,7 @@
  * does every import made from inside `packages/core-wasm`: the redirect
  * modules `export *` from the real packages.
  */
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,6 +47,18 @@ function rustKernel(): Plugin {
   };
 }
 
+// What the top bar names as this build's source. `dirty` means the working
+// tree had uncommitted changes, so the commit alone doesn't reproduce it.
+function buildInfo() {
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: here, encoding: 'utf8' }).trim();
+  return {
+    commit: git('rev-parse', 'HEAD'),
+    branch: git('rev-parse', '--abbrev-ref', 'HEAD'),
+    dirty: git('status', '--porcelain', '--untracked-files=no') !== '',
+    builtAt: new Date().toISOString(),
+  };
+}
+
 export default defineConfig({
   plugins: [rustKernel(), tailwindcss()],
   resolve: {
@@ -61,7 +74,10 @@ export default defineConfig({
       { find: /^react$/, replacement: preact('preact/compat') },
     ],
   },
-  define: { 'process.env.NODE_ENV': JSON.stringify('production') },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    __BUILD_INFO__: JSON.stringify(buildInfo()),
+  },
   // Both found late by the dependency scan, so a cold cache reloaded the
   // page for each: the JSX dev runtime on first load, and QuickJS, which the
   // form sandbox reaches through a `#quickjs-variant` subpath import, on the

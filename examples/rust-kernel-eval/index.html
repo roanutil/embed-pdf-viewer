@@ -30,6 +30,11 @@
         color: #fff;
         font-weight: 600;
       }
+      #build {
+        margin-left: auto;
+        font-family: ui-monospace, monospace;
+        color: #9ca3af;
+      }
       #viewer {
         height: calc(100vh - 36px);
       }
@@ -41,6 +46,7 @@
       <button id="zoom-in">Zoom in</button>
       <button id="zoom-out">Zoom out</button>
       <span id="doc-label">loading the Rust kernel</span>
+      <span id="build"></span>
     </div>
     <div id="viewer"></div>
     <script type="module" src="/src/main.ts"></script>
