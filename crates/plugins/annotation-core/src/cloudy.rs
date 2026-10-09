@@ -15,6 +15,25 @@ const ANGLE_34: f64 = (34.0 * PI) / 180.0;
 const ANGLE_30: f64 = (30.0 * PI) / 180.0;
 const ANGLE_12: f64 = (12.0 * PI) / 180.0;
 
+/// The most curls one cloudy border may ask for. Curls sit at least
+/// `2 * cos(34deg) * 0.5` (about 0.83) units apart, so this is a perimeter
+/// of roughly 830,000 units: about fourteen times round the largest page a
+/// PDF allows (14,400 units a side). Geometry from a hostile /Rect,
+/// /Vertices or /BE past it would make the loops below allocate without
+/// bound (or, past 2^53, never advance), so it draws no border instead. The
+/// TypeScript has no such limit; every real document stays far below it,
+/// and there the output is identical.
+pub(crate) const MAX_CLOUDY_CURLS: f64 = 1_000_000.0;
+
+/// The narrowest curl spacing any path here can reach.
+const MIN_CURL_ADVANCE: f64 = 0.8;
+
+/// True when tracing `length` units of border could exceed
+/// [`MAX_CLOUDY_CURLS`]. NaN is let through: the loops never run on it.
+fn over_budget(length: f64) -> bool {
+    length / MIN_CURL_ADVANCE > MAX_CLOUDY_CURLS
+}
+
 /// `Number(n.toFixed(4)).toString()`.
 fn r(n: f64) -> String {
     js::number_to_string(js::fixed(n, 4))
@@ -564,6 +583,10 @@ pub fn cloudy_poly_path(points: &[Point], intensity: f64, stroke_width: f64) -> 
     {
         ring.push(first);
     }
+    let length: f64 = ring.windows(2).map(|w| distance(w[0], w[1])).sum();
+    if over_budget(length) {
+        return String::new();
+    }
     cloudy_polygon_impl(&ring, false, intensity, stroke_width, &mut out);
     out.close();
     out.build()
@@ -578,6 +601,11 @@ pub fn cloudy_path(bx: Rect, ellipse: bool, intensity: f64, stroke_width: f64) -
     let top = inset;
     let right = bx.width - inset;
     let bottom = bx.height - inset;
+    // Twice the box's semi-perimeter bounds both the ring and the flattened
+    // ellipse (which takes about `2 * max(rx, ry)` points).
+    if over_budget(2.0 * ((right - left).abs() + (bottom - top).abs())) {
+        return String::new();
+    }
     if ellipse {
         cloudy_ellipse_impl(left, -bottom, right, -top, intensity, stroke_width, &mut out);
     } else {
