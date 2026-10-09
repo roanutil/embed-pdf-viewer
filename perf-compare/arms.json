@@ -236,6 +236,11 @@
       "ref": "research/rust-kernel-plain-args",
       "sha": "45c920b26172a04e8e3b317ca9f80aafb42a728c",
       "recipe": "rust-kernel"
+    },
+    "plugins-resulttext": {
+      "ref": "research/rust-kernel-result-text",
+      "sha": "34644a2b4a2bf76c41eb95e0e63410d8b5daacf1",
+      "recipe": "rust-kernel"
     }
   },
   "arms": {
@@ -499,6 +504,11 @@
     },
     "plugins-plainargs": {
       "worktree": "plugins-plainargs",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-resulttext": {
+      "worktree": "plugins-resulttext",
       "kernel": "rust",
       "rustReads": false
     }
@@ -787,6 +797,14 @@
     [
       "main",
       "plugins-plainargs"
+    ],
+    [
+      "plugins-plainargs",
+      "plugins-resulttext"
+    ],
+    [
+      "main",
+      "plugins-resulttext"
     ]
   ]
 }

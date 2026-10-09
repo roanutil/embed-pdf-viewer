@@ -375,6 +375,17 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
     and kept: see that section.
 15. The search panel reading `listHits()` at most once a frame during a search (Search on the Rust
     kernel). Only `searchLarge` would gain.
+16. `rustReads` with the Rust kernel. Every plugins arm runs with `rustReads: false`, and
+    `lib/config.mjs:18` refuses the pair ("rustReads needs the typescript kernel"), a rule from the
+    harness's first commit (`400575787`) that nobody has checked is still needed; the plugins
+    branch still has `rustRouting` (`packages/engine/main/src/index.ts:359`). To find out for
+    certain: lift the guard, add an arm with both, and time it. Expected small: geometry was about
+    2% of the worker's time (`impl-ts` against `impl-rust`, above), and it runs in the worker, not
+    on the main thread where the plugins gap is. Added 2026-10-08.
+17. Each call's result written straight to JSON text, without a `serde_json::Value` (Where the
+    plugins tip goes now). Up to about 40 ms of `scroll`. Added 2026-10-08. Tried since, and kept:
+    the copy came from `json!`, not from the plugins, so no harness `call` had to change. See that
+    section.
 
 Decided against: a binary wire format (Serialization formats; JS-side decode is about 2% of busy
 time), skipping `after_entry` on read-only exports (section 5; the capability cache removed most of
@@ -795,3 +806,25 @@ Against `main` the median row goes from 1.55x to 1.503x main-thread time; latenc
 1.073x, inside the noise between arms. The result's text (`invoke_ref`) and its allocations are
 the larger part of the 80 ms, and need each plugin's harness `call` to write JSON without a
 `Value`; that's not tried yet.
+
+Most of the result's cost turned out to be a copy, not the writing. `outcome_json_raw`
+(`crates/plugin-conformance/src/harness.rs`) wrapped each result as `json!({ "returned": value })`,
+and `json!` copies an interpolated value by serializing it into a new `Value`: every `invoke_ref`
+deep-copied its answer, printed the copy, and freed both. That was 20 ms of `scroll` in the
+profile, 12.5 of it the copy. `34644a2b4` on `research/rust-kernel-result-text` adds
+`outcome_text_raw`, which writes the wrapper and the value straight to text, and `invoke_ref`
+(`crates/epdf-web/src/exports.rs`) uses it. A test holds its text to the old output for a returned
+value, `undefined`, a throw and a promise. No plugin's harness changed. Rust workspace 997 of 997.
+On this machine `scroll` JavaScript drops 32 ms (352.9 to 321.0 ms, 8 runs each, interleaved), more
+than the copy alone: the allocator's share went with it.
+
+On the remote (R=10, `results/2026-10-09T21-14-02-964Z-macmini2020-desktop`, A/A 62 of 63, no
+failed samples), against `45c920b26`, 11 rows are faster and none slower. Main-thread JavaScript
+drops 14% on `searchLarge` (816.0 to 698.8 ms), whose answers are the largest, 12% on `select`
+(71.5 to 63.2 ms), 10% on `coldScroll` (584.7 to 527.0 ms), 8% on `scroll` (585.3 to 540.2 ms) and
+7% on `zoomLarge` (210.0 to 195.7 ms). Against `main` the median row goes from 1.529x to 1.417x
+main-thread time and from 1.081x to 1.034x latency. It's merged into
+`research/multi-platform-rust-core-impl-plugins` (`910980671`). What is left of the round trip is
+the plugins building their answers as `Value`s and the shim parsing the text, which is about 15 ms
+of `scroll`.
+
