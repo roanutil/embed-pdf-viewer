@@ -17,8 +17,11 @@
  *   function           → `{"$ref":n}`, registered with the harness so a later step can call it
  *   Promise            → `{"$promise":n}`, tracked so its settlement lands in the trace
  *
- * Numbers are compared as f64, so `1` and `1.0` are the same value. Object
- * member order is not compared; array order is.
+ * Numbers are compared as f64, so `1` and `1.0` are the same value. Two
+ * integers below 2^53 in magnitude (`Number.isSafeInteger`) compare exactly,
+ * so a `$date` or an epoch in milliseconds off by one is a difference; any
+ * other pair compares within one part in 10^12. Object member order is not
+ * compared; array order is.
  */
 
 export interface CanonicalHooks {

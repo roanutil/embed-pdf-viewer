@@ -98,8 +98,10 @@ answer per call and repeats the last. An interaction handler, a listener, an ope
   `PermissionDenied.required` are compared. Messages are compared exactly.
 - A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
   in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
-- Member order is not compared; array order is. Numbers compare as `f64` within one part in 10^12,
-  which absorbs a last-bit difference in a transcendental and nothing a coordinate could carry.
+- Member order is not compared; array order is. Numbers compare as `f64`. Two integers below 2^53
+  in magnitude compare exactly, so an epoch in milliseconds off by one fails. Any other pair
+  compares within one part in 10^12, which absorbs a last-bit difference in a transcendental and
+  nothing a coordinate could carry.
 
 A Rust capability printed as an outcome lists its members in the order the TypeScript object
 literal defines them (`HarnessPlugin::members`), because that order numbers the refs.
