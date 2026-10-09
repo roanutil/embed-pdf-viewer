@@ -825,6 +825,6 @@ drops 14% on `searchLarge` (816.0 to 698.8 ms), whose answers are the largest, 1
 7% on `zoomLarge` (210.0 to 195.7 ms). Against `main` the median row goes from 1.529x to 1.417x
 main-thread time and from 1.081x to 1.034x latency. It's merged into
 `research/multi-platform-rust-core-impl-plugins` (`910980671`). What is left of the round trip is
-the plugins building their answers as `Value`s and the shim parsing the text, which is about 15 ms
+the plugins building their answers as `Value`s (about 8 ms) and the shim parsing the text (15 ms)
 of `scroll`.
 
