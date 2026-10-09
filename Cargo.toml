@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-# The crate split is fixed by multiplatform-plan-claude.md ("The crates follow
+# The crate split is fixed by multiplatform-plan.md ("The crates follow
 # the prototype's split, keeping only what survives it").
 #
 # Building any of this needs the fork's prebuilt artifacts for the host, which

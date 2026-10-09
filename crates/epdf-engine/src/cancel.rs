@@ -6,7 +6,7 @@
 //! unportable (`multiplatform-port-hazards.md` 3.2).
 //!
 //! What cancellation means, per the four cases in
-//! `multiplatform-plan-claude-remix.md` Section 7:
+//! `multiplatform-plan.md` Section 7:
 //!
 //! 1. Queued, not started: the job is dropped, inputs released, nothing
 //!    published. That is the scheduler's decision, not this token's.

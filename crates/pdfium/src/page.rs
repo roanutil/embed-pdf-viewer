@@ -14,7 +14,7 @@ const FPDF_RENDER_ANNOT: i32 = 0x01;
 ///
 /// The two callers are different by design. `Page` derefs to it and closes on
 /// drop. Stage A of the ownership migration
-/// (`multiplatform-plan-claude-remix.md` Section 6) builds one from a pointer
+/// (`multiplatform-plan.md` Section 6) builds one from a pointer
 /// the TypeScript `PagePtrPool` lends for the duration of a single call: Rust
 /// must not call `FPDF_LoadPage` itself there, because doing so would bypass
 /// normalized rotation, the pool's shared refcounts and its structural-mutation

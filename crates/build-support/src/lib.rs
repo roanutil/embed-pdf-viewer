@@ -166,7 +166,7 @@ pub fn sysroot_clang_args(target_os: &str) -> Vec<String> {
                 None => panic!(
                     "building for Android needs the NDK sysroot: set ANDROID_NDK_HOME (or \
                      ANDROID_NDK_ROOT / NDK_HOME) to an NDK root, the one \
-                     multiplatform-plan-claude-remix.md pins being 29.0.14206865"
+                     platforms/android/build-aar.sh defaults to being 29.0.14206865"
                 ),
             }
         }

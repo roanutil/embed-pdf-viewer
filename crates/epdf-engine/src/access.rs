@@ -5,7 +5,7 @@
 //! read rather than just the form model.
 //!
 //! The ownership migration runs a reader in two modes
-//! (`multiplatform-plan-claude-remix.md` Section 6):
+//! (`multiplatform-plan.md` Section 6):
 //!
 //! - Stage A, on web. TypeScript owns the session. It lends a validated page
 //!   pointer for the duration of one call through

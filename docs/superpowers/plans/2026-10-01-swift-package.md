@@ -8,20 +8,20 @@
 
 **Tech Stack:** Rust 2024 edition, `uniffi =0.32.0` (proc-macros, library mode), `futures` 0.3 (oneshot channels behind async exports), Swift 6.2 tools, Swift Testing, `swift-custom-dump` 1.3, Xcode 27.0, iOS 17 simulator.
 
-**Spec:** No standalone spec exists. The plan argues from four documents: `multiplatform-plugins-plan.md` (§2.2 engine contract, §4 P6, §5 facades), `multiplatform-plan-claude-remix.md` §8 (native API rules), `multiplatform-plan-claude.md:370-435` ("Native APIs that feel native"), and `platforms/apple/README.md`. Executors read those alongside this plan.
+**Spec:** No standalone spec exists. The plan argues from three documents: `multiplatform-plugins-plan.md` (§2.2 engine contract, §4 P6, §5 facades), `multiplatform-plan.md` §8 (native API rules), and `platforms/apple/README.md`. Executors read those alongside this plan.
 
 ## Global Constraints
 
 - `uniffi` is pinned at `=0.32.0` in every crate that uses it. That pin is already in the root `Cargo.toml` comment and in `crates/epdf-uniffi/Cargo.toml`.
 - iOS deployment floor is 17.0. It comes from the fork's `ios_deployment_target`, noted in the `platforms/apple/build-xcframework.sh` heredoc comment.
 - Slices are `aarch64-apple-ios` and `aarch64-apple-ios-sim` only. There's no macOS slice: darwin PDFium ships as a dylib (`crates/build-support/src/lib.rs:122`), and a static XCFramework can't carry one.
-- PDFium never crosses threads. One engine owns one OS thread (`multiplatform-plan-claude.md` constraints, `:48`).
+- PDFium never crosses threads. One engine owns one OS thread (`multiplatform-plan.md` §4, constraint 5).
 - The kernel is `!Send`. It's built from `Rc` and `RefCell`, with a `thread_local!` runtime (`crates/epdf-kernel/src/rt.rs:64`). Every kernel touch happens on the kernel thread, through `epdf_ffi::KernelBound` or a kernel job.
 - `[profile.release]` keeps unwinding (no `panic = "abort"`). UniFFI catches panics at the boundary.
 - UniFFI type names are unique across the whole workspace. All generated Swift compiles into one module, `EmbedPDFBindings`, so two crates that each export a `Status` collide. Types shared between plugins (`PageRef`, `Rect`, `Point`, `Size`, `ViewerError`, `Subscription`) live in `epdf-ffi` and nowhere else.
 - UniFFI has no `usize`, `isize`, `Rc`, or `serde_json::Value`. A plugin type with any of those gets an FFI mirror record in its crate's `ffi` module, with a `From` impl. A type without them derives `uniffi::Record` or `uniffi::Enum` in place, behind `cfg_attr(feature = "uniffi", ...)`.
 - Error fields are named `detail`, not `message`. Teardown methods are named `shutdown`, not `close`. Both avoid Kotlin generator collisions that already bit `epdf-uniffi`.
-- Facades don't decide PDF semantics (`multiplatform-plan-claude.md:370-435`). Swift renames and reshapes; behaviour stays in Rust.
+- Facades don't decide PDF semantics (`multiplatform-plan.md` §5.1, the facades row). Swift renames and reshapes; behaviour stays in Rust.
 - Text offsets are UTF-16 code units. Swift's `String.count` counts grapheme clusters and is wrong for them.
 - A returned `CGImage` owns its pixels (remix §8).
 - Swift test targets never link what the target under test already provides (pfw-testing). Value assertions use `expectNoDifference`.
@@ -56,7 +56,7 @@ The engine runs on its own thread behind `OwnerThread` (`crates/epdf-engine/src/
 
 We don't actually know how much UniFFI costs compared with a hand-written C ABI for this kernel, so Task 11 measures it. It hand-bridges the search plugin and render's `render_page` through `extern "C"` functions, `#[repr(C)]` structs and C callbacks, then runs the same workloads through both bridges. The manual bridge is experimental and ships in no product. If it wins clearly on a workload, the likely outcome is a hybrid: UniFFI for most of the API, plus hand-written entry points for the hot paths it wins on (raster bytes, pointer samples). Task 11's results doc records that decision.
 
-`multiplatform-plan-claude.md` says UniFFI's output isn't the public API, and `crates/epdf-uniffi/src/lib.rs` repeats it. With typed exports we're relaxing that rule for records only. `EmbedPDF` re-exports generated records under their own names, which is the only way to avoid duplicating them. Objects, errors and events stay wrapped. The cost: a UniFFI upgrade that changes how records are generated changes our public API. We'll pin and review on each bump.
+`multiplatform-plan.md` §8 says UniFFI's output isn't the public API, and `crates/epdf-uniffi/src/lib.rs` repeats it. With typed exports we're relaxing that rule for records only. `EmbedPDF` re-exports generated records under their own names, which is the only way to avoid duplicating them. Objects, errors and events stay wrapped. The cost: a UniFFI upgrade that changes how records are generated changes our public API. We'll pin and review on each bump.
 
 ## File Structure
 
@@ -2538,7 +2538,7 @@ func makeImage(_ page: EmbedPDFBindings.PageImage) -> CGImage? {
 }
 ```
 
-`page.pixels` is `Data` (UniFFI's `Vec<u8>`), and `CGDataProvider(data:)` retains that buffer. The `CGImage` owns its pixels and doesn't depend on Rust. A render costs two copies: Rust table to UniFFI buffer, then UniFFI buffer to `Data`. `multiplatform-plan-claude.md` Phase 3 asks for a benchmark of UniFFI bytes against a C buffer bridge before any zero-copy claim. That benchmark is follow-on plan B5. The `colors` fixture has a red region and a blue region, as the smoke tests check. If the first run shows the channels swapped, `PixelFormat` mapping is wrong, so add that pixel assertion here.
+`page.pixels` is `Data` (UniFFI's `Vec<u8>`), and `CGDataProvider(data:)` retains that buffer. The `CGImage` owns its pixels and doesn't depend on Rust. A render costs two copies: Rust table to UniFFI buffer, then UniFFI buffer to `Data`. `multiplatform-plan.md` Phase 2 asks for the pixel delivery path to be measured before it is chosen. That benchmark is follow-on plan B5. The `colors` fixture has a red region and a blue region, as the smoke tests check. If the first run shows the channels swapped, `PixelFormat` mapping is wrong, so add that pixel assertion here.
 
 The rest of `Render.swift` follows `Metadata.swift`'s shape: typealiases, `RenderCapability`, the relay one-liner, and `extension PDFViewer { func render(in:) }`.
 
@@ -3239,7 +3239,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 | B2 content | annotation, form, redaction, measurement and stamp slices; their engine paths | B1 (`interaction`) |
 | B3 document | page-edit, view-manager, shell, commands, i18n and actions slices; JavaScriptCore `ScriptSandbox` | this plan |
 | B4 signatures and security | `signatures.*` in `epdf-engine`; Keychain signer; `SecTrust` port; `NativeSecurity` that enforces document permissions | B2 (`form`) |
-| B5 hardening | TSAN soak of two concurrent viewers (`multiplatform-plan-claude.md` Phase 5); signed device run (Phase 1 exit), including Task 11's benchmarks on device; a hand-written raster path if Task 11 recommends one; binary size budget for all 19 slices; macOS slice once a static darwin PDFium exists | this plan |
+| B5 hardening | TSAN soak of two concurrent viewers (`multiplatform-plan.md` Phase 5); signed device run (Phase 1 exit), including Task 11's benchmarks on device; a hand-written raster path if Task 11 recommends one; binary size budget for all 19 slices; macOS slice once a static darwin PDFium exists | this plan |
 
 ## Appendix C: Kernel engine paths and their native status
 
