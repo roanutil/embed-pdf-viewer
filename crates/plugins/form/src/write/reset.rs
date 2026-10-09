@@ -151,7 +151,7 @@ impl FormCapability {
                 Some(snapshot) => snapshot,
                 None => {
                     let doc = this.doc().ok_or_else(|| Error::new("no document"))?;
-                    await_engine(doc.call("forms.list", None, Vec::new())).await?
+                    std::rc::Rc::new(await_engine(doc.call("forms.list", None, Vec::new())).await?)
                 }
             };
             let fields = fields_of(&snapshot);

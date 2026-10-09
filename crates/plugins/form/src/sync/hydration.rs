@@ -22,7 +22,7 @@ async fn read_snapshot(this: FormCapability) -> Result<(), Error> {
     }
     match await_engine(doc.call("forms.list", None, Vec::new())).await {
         Ok(snapshot) => {
-            this.apply(Msg::Snapshot { snapshot: snapshot.clone() });
+            this.apply(Msg::Snapshot { snapshot: std::rc::Rc::new(snapshot.clone()) });
             this.set_status(ResourceStatus::Ready);
             this.0.events.resynced.emit(&FormResyncedEvent { snapshot });
         }

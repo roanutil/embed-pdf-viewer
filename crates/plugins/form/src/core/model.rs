@@ -41,11 +41,13 @@ pub fn field_key_of(field: &Value) -> FieldKey {
 #[serde(rename_all = "camelCase")]
 pub struct Model {
     /// Engine truth; replaced wholesale on refresh, patched on write-backs.
-    pub snapshot: Option<Value>,
+    /// Shared between models the way the TypeScript shares it by
+    /// reference: an update that leaves it alone does not copy it.
+    pub snapshot: Option<Rc<Value>>,
     /// fieldKey to index into `snapshot.fields`.
-    pub by_key: BTreeMap<FieldKey, f64>,
+    pub by_key: Rc<BTreeMap<FieldKey, f64>>,
     /// annotObjectNumber (as a property key) to index into `snapshot.fields`.
-    pub by_widget: BTreeMap<String, f64>,
+    pub by_widget: Rc<BTreeMap<String, f64>>,
     /// Fields with an in-flight engine write.
     pub writing: BTreeMap<FieldKey, bool>,
     /// Widget geometry per page: pon, then annotObjectNumber, to a box.
@@ -64,7 +66,7 @@ pub fn initial_model() -> Model {
 #[serde(tag = "t", rename_all = "camelCase", rename_all_fields = "camelCase")]
 pub enum Msg {
     Snapshot {
-        snapshot: Value,
+        snapshot: Rc<Value>,
     },
     WriteStart {
         key: FieldKey,
@@ -90,7 +92,7 @@ fn fields_of(snapshot: &Value) -> &[Value] {
     get(snapshot, "fields").and_then(Value::as_array).map_or(&[], Vec::as_slice)
 }
 
-type Index = (BTreeMap<FieldKey, f64>, BTreeMap<String, f64>);
+type Index = (Rc<BTreeMap<FieldKey, f64>>, Rc<BTreeMap<String, f64>>);
 
 fn index(snapshot: &Value) -> Index {
     let mut by_key = BTreeMap::new();
@@ -107,7 +109,7 @@ fn index(snapshot: &Value) -> Index {
             }
         }
     }
-    (by_key, by_widget)
+    (Rc::new(by_key), Rc::new(by_widget))
 }
 
 /// `update(model, msg)`. Returns the model itself (the same `Rc`) where the
@@ -140,15 +142,24 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
             // prints as null.
             fields.resize(fields.len().max(i + 1), Value::Null);
             fields[i] = field.clone();
-            let mut snapshot = current.clone();
-            if let Value::Object(members) = &mut snapshot {
-                members.insert("fields".into(), Value::Array(fields));
-            }
+            // `{ ...snapshot, fields }`: the other members are copied, the
+            // old fields array is not copied a second time.
+            let snapshot = match &**current {
+                Value::Object(members) => {
+                    let mut next = serde_json::Map::with_capacity(members.len() + 1);
+                    for (k, v) in members {
+                        next.insert(k.clone(), if k == "fields" { Value::Null } else { v.clone() });
+                    }
+                    next.insert("fields".into(), Value::Array(fields));
+                    Value::Object(next)
+                }
+                other => other.clone(),
+            };
             let mut writing = model.writing.clone();
             writing.remove(key);
             let (by_key, by_widget) = index(&snapshot);
             Rc::new(Model {
-                snapshot: Some(snapshot),
+                snapshot: Some(Rc::new(snapshot)),
                 by_key,
                 by_widget,
                 writing,
@@ -181,10 +192,20 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
 }
 
 fn field_at(model: &Model, i: Option<&f64>) -> Option<Value> {
+    field_ref_at(model, i).cloned()
+}
+
+/// `snapshot.fields[i] ?? null`, borrowed: a hole or an index past the end
+/// is `None`.
+fn field_ref_at<'m>(model: &'m Model, i: Option<&f64>) -> Option<&'m Value> {
     let i = *i?;
-    let snapshot = model.snapshot.as_ref()?;
-    // `snapshot.fields[i] ?? null`: a hole or an index past the end is null.
-    fields_of(snapshot).get(i as usize).filter(|f| !f.is_null()).cloned()
+    let snapshot = model.snapshot.as_deref()?;
+    fields_of(snapshot).get(i as usize).filter(|f| !f.is_null())
+}
+
+/// The snapshot's fields, borrowed; empty before the snapshot lands.
+pub fn snapshot_fields(model: &Model) -> &[Value] {
+    model.snapshot.as_deref().map_or(&[], fields_of)
 }
 
 /// `fieldByKey(model, key)`.
