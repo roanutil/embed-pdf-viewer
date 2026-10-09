@@ -3,6 +3,7 @@
 //! links no engine, so the composer is transcribed here; DTOs stay JSON.
 
 use std::cmp::Ordering;
+use std::collections::{HashMap, HashSet};
 
 use epdf_annotation_core::js::Record;
 use serde_json::{Map, Value, json};
@@ -248,58 +249,45 @@ pub fn build_comment_threads(
         .filter(|a| !matches!(str_of(a, "subtype"), Some("widget" | "link" | "unsupported")))
         .collect();
 
-    let mut by_key: Vec<(String, &Value)> = Vec::new();
-    let find = |by_key: &Vec<(String, &Value)>, k: &str| -> Option<usize> {
-        by_key.iter().position(|(key, _)| key == k)
-    };
+    // First writer wins for each key, as `if (!byKey.has(k))` does.
+    let mut by_key: HashMap<String, &Value> = HashMap::new();
     for a in &eligible {
         let key = rel_key(&ref_of(a));
-        if find(&by_key, &key).is_none() {
-            by_key.push((key, a));
-        }
+        by_key.entry(key).or_insert(a);
         if let Some(nm) = non_empty(a, "nm") {
             let alias = rel_key(&json!({
                 "kind": "nm",
                 "page": get(a, "page").cloned().unwrap_or(Value::Null),
                 "nm": nm,
             }));
-            if find(&by_key, &alias).is_none() {
-                by_key.push((alias, a));
-            }
+            by_key.entry(alias).or_insert(a);
         }
     }
 
-    let mut children: Vec<(String, Vec<&Value>)> = Vec::new();
+    let mut children: HashMap<String, Vec<&Value>> = HashMap::new();
     for a in &eligible {
         let Some(irt) = get(a, "inReplyTo").filter(|v| crate::value::truthy(Some(v))) else {
             continue;
         };
-        let Some(i) = find(&by_key, &rel_key(irt)) else { continue };
-        let parent_key = rel_key(&ref_of(by_key[i].1));
-        match children.iter_mut().find(|(k, _)| *k == parent_key) {
-            Some((_, list)) => list.push(a),
-            None => children.push((parent_key, vec![a])),
-        }
+        let Some(parent) = by_key.get(&rel_key(irt)) else { continue };
+        children.entry(rel_key(&ref_of(parent))).or_default().push(a);
     }
-    let children_of = |key: &str| -> Vec<&Value> {
-        children.iter().find(|(k, _)| k == key).map(|(_, l)| l.clone()).unwrap_or_default()
-    };
+    let children_of = |key: &str| -> Vec<&Value> { children.get(key).cloned().unwrap_or_default() };
 
-    let mut visited: Vec<String> = Vec::new();
+    let mut visited: HashSet<String> = HashSet::new();
     let mut threads: Vec<CommentThread> = Vec::new();
-    let walk = |root: &Value, visited: &mut Vec<String>, threads: &mut Vec<CommentThread>| {
+    let walk = |root: &Value, visited: &mut HashSet<String>, threads: &mut Vec<CommentThread>| {
         let mut replies: Vec<Value> = Vec::new();
         let mut grouped: Vec<Value> = Vec::new();
         let mut states: Vec<Value> = Vec::new();
         let root_key = rel_key(&ref_of(root));
-        visited.push(root_key.clone());
+        visited.insert(root_key.clone());
         let mut stack: Vec<&Value> = children_of(&root_key);
         while let Some(a) = stack.pop() {
             let key = rel_key(&ref_of(a));
-            if visited.contains(&key) {
+            if !visited.insert(key.clone()) {
                 continue;
             }
-            visited.push(key.clone());
             if is_state_annotation(a) {
                 states.push(a.clone());
             } else if is_grouped_subordinate(a) {

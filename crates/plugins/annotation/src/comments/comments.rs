@@ -102,7 +102,7 @@ fn status_flags() -> Value {
 impl CommentsLens {
     /// `listThreads()`: every thread, display-ordered.
     pub fn list_threads(&self) -> Vec<CommentThread> {
-        self.0.threads_index().threads
+        self.0.threads_index().threads.clone()
     }
 
     /// `getThread(ref)`: the thread containing a member.
