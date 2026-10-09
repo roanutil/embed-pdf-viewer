@@ -297,6 +297,8 @@ const OPTIONS: [string, RenderPluginOptions][] = [
   ['empty-tiles-object', { tiles: {} }],
   ['empty-full-page', { fullPage: {} }],
   ['debug-false', { debug: false }],
+  ['empty-ladder', { fullPage: { quantize: [] } }],
+  ['empty-tile-ladder', { tiles: { quantize: [] } }],
 ];
 
 const strategyFns: Record<string, Fn> = {
@@ -322,6 +324,12 @@ for (const [pName, policy] of POLICIES.slice(0, 3)) {
     }
   }
 }
+
+// An empty ladder is not rejected: the TypeScript answers undefined.
+for (const demand of [0, 640, 1e6]) {
+  strategy.push(c('baseAskWidth', `continuous/empty-ladder/${demand}`, CONTINUOUS, { fullPage: { quantize: [] } }, demand));
+}
+strategy.push(c('resolveStrategy', 'lattice-empty-tile-scales/defaults', { ...LATTICE_TILES, tiles: { tileSizes: [256], scales: [] } }, {}));
 
 const policyFns: Record<string, Fn> = {
   CONTINUOUS_RENDER_POLICY: () => CONTINUOUS_RENDER_POLICY,

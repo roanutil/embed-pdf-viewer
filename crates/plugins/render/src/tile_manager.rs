@@ -213,7 +213,8 @@ impl TileManager {
         }
 
         // Engagement: the deficit of what the base actually supplies.
-        let supplied = base_ask_width(&strategy, demand.desired_device_width);
+        // An empty ladder supplies `undefined`: the deficit is NaN.
+        let supplied = base_ask_width(&strategy, demand.desired_device_width).unwrap_or(f64::NAN);
         let deficit = demand.desired_device_width / supplied;
         if deficit <= strategy.engage_at {
             let engaged = {
@@ -271,7 +272,11 @@ impl TileManager {
                         .copied()
                         .filter(|s| js::round(s * page.width) <= max_stageless_width)
                         .collect();
-                    want_scale = fitting.last().copied().unwrap_or(pyramid[0]);
+                    // An empty pyramid answers NaN, the TypeScript's `undefined`.
+                    want_scale = fitting
+                        .last()
+                        .copied()
+                        .unwrap_or_else(|| pyramid.first().copied().unwrap_or(f64::NAN));
                     want_width = js::round(want_scale * page.width);
                 } else {
                     want_width = max_stageless_width;
