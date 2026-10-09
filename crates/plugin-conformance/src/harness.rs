@@ -535,6 +535,28 @@ impl Harness {
             }
         }
     }
+
+    /// [`outcome_json_raw`](Self::outcome_json_raw) as JSON text, written
+    /// straight from the outcome. `json!` copies an interpolated `Value` by
+    /// serializing it into a new one, which for a live host's every call
+    /// was a deep copy of the answer it then only printed.
+    pub fn outcome_text_raw(&self, outcome: Outcome) -> String {
+        let (key, value) = match outcome {
+            Outcome::Returned(value) => ("returned", value),
+            Outcome::Threw(error) => ("threw", error.to_canonical()),
+            Outcome::Promise(promise) => {
+                let mut tracked = self.track(promise);
+                ("promise", tracked["$promise"].take())
+            }
+        };
+        let mut out = Vec::with_capacity(64);
+        out.extend_from_slice(b"{\"");
+        out.extend_from_slice(key.as_bytes());
+        out.extend_from_slice(b"\":");
+        serde_json::to_writer(&mut out, &value).expect("a Value always serializes");
+        out.push(b'}');
+        String::from_utf8(out).expect("serde_json writes UTF-8")
+    }
 }
 
 /// What a scripted callback answered.
@@ -633,6 +655,34 @@ impl Callback {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn outcome_text_is_the_raw_outcome_printed() {
+        let live: LiveFn = Rc::new(|_spec, _args| Answer::Returns(json!(null)));
+        // Two harnesses, so each tracks its promise under the same id.
+        let (text, raw) = (
+            Harness::live(Vec::new(), HashMap::new(), live.clone()),
+            Harness::live(Vec::new(), HashMap::new(), live),
+        );
+        let answer = json!({
+            "pages": [{ "index": 0, "rect": { "x": 1.5, "y": -2, "w": 3e21 } }],
+            "label": "a \"quoted\" é",
+            "gone": { "$undefined": true },
+            "none": null,
+        });
+        let outcomes: [fn(&Value) -> Outcome; 4] = [
+            |v| Outcome::Returned(v.clone()),
+            |_| Outcome::undefined(),
+            |_| Outcome::Threw(Error::named("TypeError", "no page 7")),
+            |v| Outcome::Promise(Promise::resolved(v.clone())),
+        ];
+        for outcome in outcomes {
+            assert_eq!(
+                text.outcome_text_raw(outcome(&answer)),
+                raw.outcome_json_raw(outcome(&answer)).to_string()
+            );
+        }
+    }
 
     #[test]
     fn a_live_harness_does_not_record_into_the_trace() {

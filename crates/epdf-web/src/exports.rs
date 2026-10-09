@@ -493,7 +493,7 @@ impl WasmKernel {
                     Outcome::Threw(error)
                 }
             };
-            Ok(self.harness.outcome_json_raw(outcome).to_string())
+            Ok(self.harness.outcome_text_raw(outcome))
         })
     }
 
