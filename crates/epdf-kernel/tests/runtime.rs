@@ -671,3 +671,94 @@ fn a_settled_promise_drops_its_abort_and_what_it_captured() {
     promise.abort(None);
     assert_eq!(promise.peek().map(|r| r.ok()), Some(Some(7)));
 }
+
+// ── abandoned promises: what a collector would reclaim ────────────────────────
+
+/// A JavaScript promise whose resolve and reject functions are unreachable
+/// never settles, and once nothing else holds it, neither it nor the async
+/// function suspended on it is kept. The Rust task is dropped unrun.
+#[test]
+fn a_task_awaiting_a_promise_with_no_resolver_left_is_dropped_unrun() {
+    rt::reset();
+    let held = Rc::new(());
+    let resumed = Rc::new(Cell::new(false));
+    let (promise, resolver) = Promise::<()>::pending();
+    let (h, r) = (held.clone(), resumed.clone());
+    rt::spawn(async move {
+        let _held = h;
+        let _ = promise.await;
+        r.set(true);
+    });
+    rt::run_until_stalled();
+    assert_eq!(Rc::strong_count(&held), 2, "the waiting task holds it");
+
+    drop(resolver);
+    rt::run_until_stalled();
+    assert_eq!(Rc::strong_count(&held), 1, "the task went, with what it held");
+    assert!(!resumed.get(), "and the code after the await never ran");
+}
+
+#[test]
+fn a_remaining_resolver_clone_keeps_the_waiter() {
+    rt::reset();
+    let resumed = Rc::new(Cell::new(false));
+    let (promise, resolver) = Promise::<u32>::pending();
+    let kept = resolver.clone();
+    let r = resumed.clone();
+    rt::spawn(async move {
+        assert_eq!(promise.await.unwrap(), 7);
+        r.set(true);
+    });
+    drop(resolver);
+    rt::run_until_stalled();
+    kept.resolve(7);
+    rt::run_until_stalled();
+    assert!(resumed.get());
+}
+
+/// The start task waiting on an abandoned plugin init holds the resolver of
+/// `start()`'s promise, and a destroy waits on that: dropping the first
+/// frees the whole chain, as a collector would.
+#[test]
+fn abandonment_cascades_through_the_resolvers_a_dropped_task_held() {
+    rt::reset();
+    let held = Rc::new(());
+    let (init, init_resolver) = Promise::<()>::pending();
+    let h = held.clone();
+    let start = Promise::spawn(async move {
+        let _held = h;
+        init.await
+    });
+    let observed = Rc::new(Cell::new(false));
+    let o = observed.clone();
+    start.on_settle(move |_| o.set(true));
+    let joined = start.map(Ok);
+    let h = held.clone();
+    let destroy = Promise::spawn(async move {
+        let _held = h;
+        joined.await
+    });
+    rt::run_until_stalled();
+    assert_eq!(Rc::strong_count(&held), 3);
+
+    drop(init_resolver);
+    rt::run_until_stalled();
+    assert_eq!(Rc::strong_count(&held), 1, "both waiting tasks were dropped");
+    assert!(!observed.get(), "an observer of a promise that never settles never runs");
+    assert!(!start.is_settled() && !destroy.is_settled());
+}
+
+#[test]
+fn awaiting_an_already_abandoned_promise_drops_the_new_waiter() {
+    rt::reset();
+    let held = Rc::new(());
+    let (promise, resolver) = Promise::<()>::pending();
+    drop(resolver);
+    let h = held.clone();
+    rt::spawn(async move {
+        let _held = h;
+        let _ = promise.await;
+        unreachable!("an abandoned promise never resumes its waiter");
+    });
+    assert_eq!(Rc::strong_count(&held), 1, "dropped during its first, inline poll");
+}

@@ -60,6 +60,10 @@ struct Runtime {
     timer_data: RefCell<HashMap<TimerId, (Timer, (u64, u64))>>,
     next_timer: Cell<u64>,
     next_order: Cell<u64>,
+    /// Set by a [`PromiseFuture`] that found its promise abandoned: the task
+    /// being polled can never resume, so [`poll_task`] drops it instead of
+    /// keeping it.
+    abandon_current: Cell<bool>,
 }
 
 thread_local! {
@@ -70,7 +74,9 @@ thread_local! {
 // ── wakers: a task id, pushed onto this thread's ready queue ──────────────────
 
 fn wake_id(id: usize) {
-    RT.with(|rt| {
+    // `try_with`: a resolver dropped while the thread-local itself is being
+    // destroyed has nobody left to wake.
+    let _ = RT.try_with(|rt| {
         if rt.queued.borrow_mut().insert(id) {
             rt.ready.borrow_mut().push_back(id);
         }
@@ -101,7 +107,16 @@ fn waker_for(id: usize) -> Waker {
 fn poll_task(id: usize, mut task: Task) {
     let waker = waker_for(id);
     let mut cx = Context::from_waker(&waker);
+    RT.with(|rt| rt.abandon_current.set(false));
     if task.as_mut().poll(&mut cx).is_pending() {
+        if RT.with(|rt| rt.abandon_current.replace(false)) {
+            // Waiting on a promise nothing can settle: JavaScript would
+            // collect this continuation, so it goes now, with whatever it
+            // holds. Dropped outside any borrow: its destructors may drop
+            // more resolvers.
+            drop(task);
+            return;
+        }
         RT.with(|rt| rt.tasks.borrow_mut().insert(id, task));
     }
 }
@@ -353,6 +368,36 @@ struct Inner<T> {
     /// Whether this is an `AbortablePromise`. Outlives `abort`, because it
     /// decides how many turns a reaction to it takes.
     abortable: Cell<bool>,
+    /// Live [`Resolver`]s. When the last one drops while the promise is
+    /// pending, nothing can settle it any more.
+    resolvers: Cell<usize>,
+    /// Pending with no resolver left: it never settles, and a task awaiting
+    /// it is dropped rather than kept forever.
+    abandoned: Cell<bool>,
+}
+
+impl<T> Inner<T> {
+    /// The last resolver is gone and the promise is still pending. A
+    /// JavaScript promise in this state is garbage once nothing else holds
+    /// it, and so is every continuation waiting on it. Here the waiters are
+    /// woken, find the promise abandoned, and are dropped by the executor
+    /// without running; observers go now. Dropping them may drop the last
+    /// resolver of another promise, which abandons that one in turn, as a
+    /// collector would reclaim the whole chain. The abort stays: it can no
+    /// longer settle this promise, but whoever still holds the promise may
+    /// call it to stop the work behind it.
+    fn abandon(&self) {
+        let wakers = match &mut *self.state.borrow_mut() {
+            State::Pending(wakers) => std::mem::take(wakers),
+            State::Settled(_) => return,
+        };
+        self.abandoned.set(true);
+        let observers = std::mem::take(&mut *self.on_settle.borrow_mut());
+        drop(observers);
+        for waker in wakers {
+            waker.wake();
+        }
+    }
 }
 
 /// A JavaScript promise: settles once, any number of parties await it, and
@@ -370,7 +415,20 @@ pub struct Resolver<T>(Promise<T>);
 
 impl<T> Clone for Resolver<T> {
     fn clone(&self) -> Self {
+        let inner = &(self.0).0;
+        inner.resolvers.set(inner.resolvers.get() + 1);
         Resolver(self.0.clone())
+    }
+}
+
+impl<T> Drop for Resolver<T> {
+    fn drop(&mut self) {
+        let inner = &(self.0).0;
+        let left = inner.resolvers.get() - 1;
+        inner.resolvers.set(left);
+        if left == 0 {
+            inner.abandon();
+        }
     }
 }
 
@@ -396,11 +454,14 @@ impl<T: Clone + 'static> Promise<T> {
             on_settle: RefCell::new(Vec::new()),
             abort: RefCell::new(None),
             abortable: Cell::new(false),
+            resolvers: Cell::new(0),
+            abandoned: Cell::new(false),
         }))
     }
 
     pub fn pending() -> (Self, Resolver<T>) {
         let promise = Self::new_pending();
+        promise.0.resolvers.set(1);
         (promise.clone(), Resolver(promise))
     }
 
@@ -472,6 +533,8 @@ impl<T: Clone + 'static> Promise<T> {
         let settled = self.peek();
         match settled {
             Some(result) => observer(&result),
+            // It never settles, so the observer never runs.
+            None if self.0.abandoned.get() => drop(observer),
             None => self.0.on_settle.borrow_mut().push(Box::new(observer)),
         }
     }
@@ -578,6 +641,12 @@ impl<T: Clone + 'static> Future for PromiseFuture<T> {
         let ready = {
             let mut state = self.promise.0.state.borrow_mut();
             match &mut *state {
+                State::Pending(_) if self.promise.0.abandoned.get() => {
+                    // Nothing can settle it: tell the executor this task is
+                    // finished with, and register no waker.
+                    RT.with(|rt| rt.abandon_current.set(true));
+                    return Poll::Pending;
+                }
                 State::Pending(wakers) => {
                     wakers.push(cx.waker().clone());
                     None
