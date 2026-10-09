@@ -47,8 +47,9 @@ So the Rust viewer is now close to `main` on wall time and still does about half
 main-thread work. `open(large)` is no longer behind. `scroll` is the gap that's left: 354 ms of
 main-thread JavaScript against 208 on an M4 Max, and about 80 ms of that is each call's arguments
 and result crossing the WASM boundary as JSON ("Where the plugins tip goes now" in
-`FINDINGS.md`). `45c920b26` on `research/rust-kernel-plain-args` takes about 17 ms of that and
-isn't merged here.
+`FINDINGS.md`). `45c920b26`, merged here from `research/rust-kernel-plain-args`, takes about
+17 ms of that. In its own run against `main`, the median row's main-thread time went from 1.55x
+to 1.503x, and its latency read 1.063x to 1.073x, inside the noise between arms.
 
 The engine's Rust geometry reader doesn't move these numbers either way. Geometry is about 2% of
 the worker's time in the `select` flow (5.8 ms in TypeScript, 5.4 in Rust), and search doesn't use
