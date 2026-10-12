@@ -20,6 +20,12 @@
  * A call made after the viewer shut down answers EPDF_ERROR_CLOSED, which
  * may happen on the calling thread before the call returns. Every
  * EpdfComplete runs exactly once.
+ *
+ * Null handles. A null EpdfSearch* or EpdfRender* answers
+ * EPDF_ERROR_KERNEL with code "invalid-input" on the calling thread, and a
+ * call that answers a call id answers 0. epdf_search_subscribe with a null
+ * search runs `release` on the calling thread and returns null. A freed or
+ * foreign handle is still undefined behavior.
  */
 #ifndef EPDF_MANUAL_H
 #define EPDF_MANUAL_H

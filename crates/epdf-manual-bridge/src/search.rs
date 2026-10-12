@@ -15,7 +15,7 @@ use epdf_kernel::{Error, Unsubscribe};
 use epdf_plugin_search::ffi::{open, start_find_all, start_search, whole};
 use epdf_plugin_search::{SearchCancelReason, SearchCapability, SearchQuery};
 
-use crate::{Call, Completion, EpdfComplete, SendPtr, arg, registry};
+use crate::{Call, Completion, EpdfComplete, SendPtr, arg, live, registry};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -91,7 +91,9 @@ struct HitsOwner {
 }
 
 impl HitsOwner {
-    fn build<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(hits: &[H]) -> Result<Box<HitsOwner>, Error> {
+    fn build<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(
+        hits: &[H],
+    ) -> Result<Box<HitsOwner>, Error> {
         let mut text = Vec::new();
         for hit in hits.iter().map(H::borrow) {
             if let Some(snippet) = &hit.snippet {
@@ -163,7 +165,10 @@ fn rect(r: epdf_ffi::Rect) -> EpdfRect {
 }
 
 /// Hand a hit list to `completion`; the caller owns it from here.
-fn answer_hits<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(completion: Completion, hits: Result<&[H], Error>) {
+fn answer_hits<H: std::borrow::Borrow<epdf_plugin_search::SearchHit>>(
+    completion: Completion,
+    hits: Result<&[H], Error>,
+) {
     match hits.and_then(HitsOwner::build) {
         Ok(owner) => {
             let raw = Box::into_raw(owner);
@@ -232,7 +237,8 @@ pub unsafe extern "C" fn epdf_search_free(search: *mut EpdfSearch) {
 /// How many hits the session holds. `result` is a `const uint32_t*`.
 ///
 /// # Safety
-/// `search` is live; `done` is called once with `ctx`.
+/// `search` is live or null (which answers `invalid-input`); `done` is
+/// called once with `ctx`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_search_hit_count(
     search: *mut EpdfSearch,
@@ -240,7 +246,10 @@ pub unsafe extern "C" fn epdf_search_hit_count(
     done: EpdfComplete,
 ) {
     let completion = Completion::new(ctx, done);
-    let search = unsafe { &*search };
+    let search = match live(search, "the search handle") {
+        Ok(search) => search,
+        Err(error) => return completion.fail(error),
+    };
     search.bound.fire(move |cap| {
         match open(cap).and_then(|c| whole(c.get_hit_count(None), "a hit count")) {
             Ok(n) => completion.ok(&n),
@@ -252,7 +261,8 @@ pub unsafe extern "C" fn epdf_search_hit_count(
 /// The session's hits. `result` is a `const EpdfHits*`; free its `owner`.
 ///
 /// # Safety
-/// `search` is live; `done` is called once with `ctx`.
+/// `search` is live or null (which answers `invalid-input`); `done` is
+/// called once with `ctx`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_search_hits(
     search: *mut EpdfSearch,
@@ -260,7 +270,10 @@ pub unsafe extern "C" fn epdf_search_hits(
     done: EpdfComplete,
 ) {
     let completion = Completion::new(ctx, done);
-    let search = unsafe { &*search };
+    let search = match live(search, "the search handle") {
+        Ok(search) => search,
+        Err(error) => return completion.fail(error),
+    };
     search.bound.fire(move |cap| match open(cap) {
         Ok(cap) => answer_hits(completion, Ok(cap.list_hits(None).as_slice())),
         Err(error) => completion.fail(error),
@@ -272,7 +285,8 @@ pub unsafe extern "C" fn epdf_search_hits(
 /// count. Cancelling keeps the hits found so far and still answers.
 ///
 /// # Safety
-/// `search` is live, `text` NUL-terminated; `done` is called once.
+/// `search` is live or null, `text` NUL-terminated or null (either null
+/// answers `invalid-input`); `done` is called once.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_search_search(
     search: *mut EpdfSearch,
@@ -288,7 +302,13 @@ pub unsafe extern "C" fn epdf_search_search(
             return 0;
         }
     };
-    let search = unsafe { &*search };
+    let search = match live(search, "the search handle") {
+        Ok(search) => search,
+        Err(error) => {
+            completion.fail(error);
+            return 0;
+        }
+    };
     let call = Call::begin(&search.post);
     let id = call.id();
     search.bound.fire(move |cap| {
@@ -313,7 +333,8 @@ pub unsafe extern "C" fn epdf_search_search(
 /// `operation-cancelled`.
 ///
 /// # Safety
-/// `search` is live, `text` NUL-terminated; `done` is called once.
+/// `search` is live or null, `text` NUL-terminated or null (either null
+/// answers `invalid-input`); `done` is called once.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_search_find_all(
     search: *mut EpdfSearch,
@@ -329,7 +350,13 @@ pub unsafe extern "C" fn epdf_search_find_all(
             return 0;
         }
     };
-    let search = unsafe { &*search };
+    let search = match live(search, "the search handle") {
+        Ok(search) => search,
+        Err(error) => {
+            completion.fail(error);
+            return 0;
+        }
+    };
     let call = Call::begin(&search.post);
     let id = call.id();
     search.bound.fire(move |cap| {
@@ -435,8 +462,11 @@ fn c(s: &str) -> CString {
 /// when the listener is gone: after `epdf_subscription_free` takes effect,
 /// or with the end of the document.
 ///
+/// A null `search` answers a null subscription, after running `release`
+/// on the calling thread.
+///
 /// # Safety
-/// `search` is live; `ctx` stays valid until `release`.
+/// `search` is live or null; `ctx` stays valid until `release`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_search_subscribe(
     search: *mut EpdfSearch,
@@ -444,9 +474,13 @@ pub unsafe extern "C" fn epdf_search_subscribe(
     on_event: EpdfSearchEvent,
     release: Option<EpdfRelease>,
 ) -> *mut EpdfSubscription {
-    let search = unsafe { &*search };
-    let (subscription, slot) = Subscription::pending(search.post.clone());
     let listener = Listener { ctx: SendPtr(ctx), on_event, release };
+    let Ok(search) = live(search, "the search handle") else {
+        // No kernel thread to release on: the listener goes here and now.
+        drop(listener);
+        return std::ptr::null_mut();
+    };
+    let (subscription, slot) = Subscription::pending(search.post.clone());
     search.bound.fire(move |cap| {
         let listener = Rc::new(listener);
         let ending = listener.clone();

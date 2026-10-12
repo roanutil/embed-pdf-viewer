@@ -160,6 +160,18 @@ pub(crate) fn arg(s: *const c_char, what: &str) -> Result<String, EpdfError> {
     unsafe { std::ffi::CStr::from_ptr(s) }.to_str().map(String::from).map_err(|_| invalid())
 }
 
+/// A live handle, or `invalid-input` for a null one. A null is the one bad
+/// handle this can catch; a freed or foreign pointer is still undefined.
+pub(crate) fn live<'a, T>(handle: *const T, what: &str) -> Result<&'a T, EpdfError> {
+    if handle.is_null() {
+        return Err(EpdfError::from(
+            Error::named("TypeError", format!("[manual-bridge] {what} is null"))
+                .with("code", "invalid-input"),
+        ));
+    }
+    Ok(unsafe { &*handle })
+}
+
 // ── cancellable calls ─────────────────────────────────────────────────────────
 //
 // A promise-returning export answers a call id. The id maps to the kernel
