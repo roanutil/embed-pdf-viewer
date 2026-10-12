@@ -345,6 +345,9 @@ function createApi(config: ProbeConfig, env: PluginEnv, ctx: ControllerContext<u
     tryForDocument: (tokenName: string, documentId: string) =>
       ctx.tryForDocument(token(tokenName), documentId) !== null,
     cleanup: (label: string) => ctx.cleanup(() => log(`${name}.cleanup`, [label])),
+    /** The named controller's `signal.reason`: what `abortSignal` aborted
+     *  it with, the platform's AbortError when no reason was given. */
+    signalReason: (label: string) => controllers.get(label)?.signal.reason,
   };
 
   const connect = create.connect;
