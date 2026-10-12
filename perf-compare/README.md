@@ -24,7 +24,9 @@ This directory isn't a pnpm workspace member. Keep it out of `pnpm-workspace.yam
 
 ## What it compares
 
-Six arms, defined in `arms.json`, which is the only file that knows which branches exist:
+`arms.json` is the only file that knows which branches exist. It defines 54 arms. These six are
+the original set; the other 48 are experiment arms added since (fixes, build variants, branch
+tips), and each names its worktree and kernel in `arms.json`:
 
 | Arm | Branch | Kernel | Engine requests |
 | --- | --- | --- | --- |
