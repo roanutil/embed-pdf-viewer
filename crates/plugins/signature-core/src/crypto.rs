@@ -113,7 +113,9 @@ pub fn pss_params(algorithm: &AlgId) -> Result<PssParams, String> {
 }
 
 enum Key {
-    Rsa(RsaPublicKey),
+    /// `None`: a modulus past [`WEBCRYPTO_MAX_RSA_BITS`], which imports but
+    /// never verifies.
+    Rsa(Option<RsaPublicKey>),
     P256(p256::ecdsa::VerifyingKey),
     P384(p384::ecdsa::VerifyingKey),
     P521(p521::ecdsa::VerifyingKey),
@@ -121,11 +123,23 @@ enum Key {
 
 const IMPORT_FAILED: &str = "DataError: the key data could not be imported";
 
-fn rsa_key(spki: &Spki) -> Result<RsaPublicKey, String> {
+/// OpenSSL's `OPENSSL_RSA_MAX_MODULUS_BITS`. Node's WebCrypto, which the
+/// vectors run on, imports a longer modulus but fails every verify with it
+/// (`RSA_R_MODULUS_TOO_LARGE`), so `verify` answers false. Below it a key
+/// verifies; `rsa`'s own default stops at 4096 bits, which would read a
+/// valid 8192-bit signature as tampered.
+const WEBCRYPTO_MAX_RSA_BITS: usize = 16384;
+
+fn rsa_key(spki: &Spki) -> Result<Option<RsaPublicKey>, String> {
     let node = der::from_ber(&spki.key).filter(|n| n.is_sequence()).ok_or(IMPORT_FAILED)?;
     let n = node.children.first().filter(|n| n.is_universal(der::INTEGER)).ok_or(IMPORT_FAILED)?;
     let e = node.children.get(1).filter(|n| n.is_universal(der::INTEGER)).ok_or(IMPORT_FAILED)?;
-    RsaPublicKey::new(BigUint::from_bytes_be(&n.content), BigUint::from_bytes_be(&e.content))
+    let (n, e) = (BigUint::from_bytes_be(&n.content), BigUint::from_bytes_be(&e.content));
+    if n.bits() > WEBCRYPTO_MAX_RSA_BITS {
+        return Ok(None);
+    }
+    RsaPublicKey::new_with_max_size(n, e, WEBCRYPTO_MAX_RSA_BITS)
+        .map(Some)
         .map_err(|_| IMPORT_FAILED.to_string())
 }
 
@@ -279,6 +293,7 @@ pub fn verify_with_public_key(
             }
             // A salt that cannot fit the encoded message never verifies;
             // `rsa` adds it unchecked and panics on one near usize::MAX.
+            let Some(rsa) = rsa else { return Ok(false) };
             let salt = params.salt.unwrap_or(20);
             let room = rsa.size().saturating_sub(sha.size() + 2);
             if salt > room as u64 {
@@ -286,7 +301,8 @@ pub fn verify_with_public_key(
             }
             Ok(rsa.verify(pss(sha, salt as usize), &sha.hash(data), signature).is_ok())
         }
-        Key::Rsa(ref rsa) => Ok(rsa.verify(pkcs1(sha), &sha.hash(data), signature).is_ok()),
+        Key::Rsa(None) => Ok(false),
+        Key::Rsa(Some(ref rsa)) => Ok(rsa.verify(pkcs1(sha), &sha.hash(data), signature).is_ok()),
         ref ec => {
             let size = match curve {
                 Some("P-256") => 32,

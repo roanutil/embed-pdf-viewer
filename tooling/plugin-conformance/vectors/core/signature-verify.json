@@ -578,6 +578,170 @@
       ]
     },
     {
+      "name": "verify-rsa8192",
+      "covers": "verifyCmsSignature over the rsa8192 fixture.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "verifyCmsSignature",
+          "args": [
+            {
+              "$bytes": "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"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "valid"
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "verify-pss8192",
+      "covers": "verifyCmsSignature over the pss8192 fixture.",
+      "plugins": [
+        {
+          "factory": "signature-core"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "signature-core is a probe plugin with no slice. Each case compares the outcome and settled value of the core function it calls, and any engine reads it makes.",
+      "awaitCalls": true,
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "advance",
+          "ms": 1768435200000
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "signature-core"
+          },
+          "method": "verifyCmsSignature",
+          "args": [
+            {
+              "$bytes": "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"
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "valid"
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
       "name": "verify-ecP256",
       "covers": "verifyCmsSignature over the ecP256 fixture.",
       "plugins": [

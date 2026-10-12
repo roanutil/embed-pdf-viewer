@@ -2,9 +2,9 @@
 
 `packages/core/signature` in Rust: parse, verify and build detached CMS signatures, the completion
 gate, certificate chain validation, `sign()` and `validateSignatures()` over a document handle, and
-the signer ports. All 455 cases in the five `vectors/core/signature-*.json` files replay identically
-(`cargo test -p epdf-signature-core`): 202 parse cases, 95 for verify, build and the gate, 96 for
-trust, 34 for signing and validation over a document, and 28 for the signers.
+the signer ports. All 460 cases in the five `vectors/core/signature-*.json` files replay identically
+(`cargo test -p epdf-signature-core`): 204 parse cases, 97 for verify, build and the gate, 96 for
+trust, 35 for signing and validation over a document, and 28 for the signers.
 
 ## What ports and what the host supplies
 

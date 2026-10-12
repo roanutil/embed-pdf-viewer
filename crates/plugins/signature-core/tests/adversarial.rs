@@ -3,7 +3,7 @@
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
-use epdf_signature_core::cert::AlgId;
+use epdf_signature_core::cert::{AlgId, Spki};
 use epdf_signature_core::{Cryptography, crypto, der, oids, parse, verify_cms_signature};
 
 fn fixture(section: &str, name: &str) -> Vec<u8> {
@@ -81,4 +81,43 @@ fn pss_salt_length_past_the_modulus_is_not_verified() {
     // 2048-bit key, SHA-256: 256 - 32 - 2 = 222 is the largest that fits.
     assert_eq!(verify_with_salt(&[0x00, 0xdf]), Ok(false));
     assert_eq!(verify_with_salt(&[0x01, 0x00, 0x00, 0x00, 0x14]), Ok(false));
+}
+
+/// An RSA public key with a `bits`-bit odd modulus (not a product of two
+/// primes: nothing here needs the private half) and exponent `e`.
+fn rsa_spki(bits: usize, e: u64) -> Spki {
+    let mut n = vec![0x5au8; bits / 8];
+    n[0] = 0x80 | 0x5a;
+    *n.last_mut().unwrap() |= 1;
+    let mut n_der = vec![0];
+    n_der.extend(n);
+    let key = der::sequence(&[der::integer_bytes(&n_der), der::integer(e)]);
+    let algorithm =
+        AlgId { oid: oids::RSA_ENCRYPTION.to_string(), params: der::from_ber(&der::null()) };
+    Spki { raw: Vec::new(), algorithm, key }
+}
+
+fn verify_sha256_with_rsa(spki: &Spki) -> Result<bool, String> {
+    let algorithm =
+        AlgId { oid: oids::SHA256_WITH_RSA.to_string(), params: der::from_ber(&der::null()) };
+    let signature = vec![0x11; (spki.key.len() - 8).max(1)];
+    crypto::verify_with_public_key(b"data", &signature, spki, &algorithm, None)
+}
+
+#[test]
+fn rsa_keys_up_to_webcrypto_s_limit_import() {
+    // `vectors/core/signature-verify.json` (`verify-rsa8192`) verifies a real
+    // 8192-bit signature; here a 16384-bit key imports and a junk signature
+    // is simply false.
+    for bits in [8192, 16384] {
+        assert_eq!(verify_sha256_with_rsa(&rsa_spki(bits, 65537)), Ok(false), "{bits} bits");
+    }
+}
+
+#[test]
+fn rsa_keys_past_webcrypto_s_limit_never_verify() {
+    // Node's WebCrypto imports a 16400-bit key and answers false to every
+    // verify with it (OpenSSL's modulus limit), whatever its exponent.
+    assert_eq!(verify_sha256_with_rsa(&rsa_spki(16400, 65537)), Ok(false));
+    assert_eq!(verify_sha256_with_rsa(&rsa_spki(16400, 2)), Ok(false));
 }
