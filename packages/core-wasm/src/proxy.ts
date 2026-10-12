@@ -52,7 +52,8 @@
  * `getState` does the same per slice. A call whose member makes something
  * new (`create*`, `register*`, `on*`) is not cached or reused; neither is
  * `undefined`, a throw or a promise. A call during which the store changed
- * is not cached, and a callback from the kernel (`callJs`) clears the cache.
+ * is not cached, and a callback from the kernel (`callJs`) clears the cache
+ * if the store has moved since it was filled.
  */
 import { CancelledError, PluginError, type PluginErrorCode } from '@embedpdf/core';
 import {
@@ -243,12 +244,12 @@ export function rusty<T>(run: () => T): T {
   }
 }
 
-/** Members that only read: their calls change no state, so answers cached
- *  before them stay good while the store's revision holds. */
 /** `documents.open` and `documents.openAll`: their bytes only pass through
  *  the kernel. */
 const OPENS = /^open(All)?$/;
 
+/** Members that only read: their calls change no state, so answers cached
+ *  before them stay good while the store's revision holds. */
 const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
 
 export class Wire {
@@ -532,11 +533,9 @@ export class Wire {
    *  even if the kernel's own `closed` listener
    *  (`crates/epdf-web/src/exports.rs`, which fills the evicted list) has
    *  not yet run ahead of whatever registered this wire's `onClosed`
-   *  eviction. Not done in `bump`: that also runs inside `callJs`, called
-   *  reentrantly from a Rust callback already on the stack, where a second
-   *  call into the same wasm object throws "recursive use of an object".
-   *  `capability`/`tryCapability` are only ever called from outside such a
-   *  callback. */
+   *  eviction. Not done in `bump`, which runs on every store change: a
+   *  lookup here is the only place an evicted proxy could be handed out
+   *  again, so draining on the lookup is enough. */
   capability(tokenName: string, doc?: string | null): object {
     const key = this.capabilityKey(tokenName, doc);
     const cached = key === undefined ? undefined : this.capabilities.get(key);
