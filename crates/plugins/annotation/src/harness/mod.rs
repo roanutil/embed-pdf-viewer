@@ -38,7 +38,7 @@ use crate::rich_text::TextFormat;
 use crate::write::measurement::PageMeasurementViewport;
 use crate::{
     ANNOTATION, AnnotationCapability, AnnotationConfig, AnnotationHost, Behavior, HitView, HoverAt,
-    StampPlacement, StampPreview, StampToolInput, annotation_plugin,
+    QuarterTurn, StampPlacement, StampPreview, StampToolInput, annotation_plugin,
 };
 
 /// The generator's `crypto.randomUUID` stand-in: the `n`th id of a run.
@@ -805,7 +805,7 @@ fn call_capability(
             untyped(cap.update_selection_flags(decode(args, 0)?), |b| b.to_json())
         }
         "deleteSelection" => untyped(cap.delete_selection(), |b| b.to_json()),
-        "rotateSelectionBy" => unit(cap.rotate_selection_by(num(args, 0))),
+        "rotateSelectionBy" => unit(cap.rotate_selection_by(QuarterTurn::from_delta(num(args, 0)))),
         "resetSelectionRotation" => unit(cap.reset_selection_rotation()),
         "toggleTextFormat" => {
             let format: TextFormat = decode(args, 0)?;

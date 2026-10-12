@@ -293,6 +293,33 @@ pub struct SelectionProps {
     pub mixed: Vec<PropKey>,
 }
 
+/// `90 | -90`: the quarter turn `rotateSelectionBy` takes. The TypeScript
+/// types the delta as one of the two literals, so no other angle can be
+/// asked for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QuarterTurn {
+    /// `90`: the core's `rotate90` step over the selection.
+    Plus90,
+    /// `-90`: each member's rotation less 90, through `setRotation`.
+    Minus90,
+}
+
+impl QuarterTurn {
+    /// The TypeScript's runtime test, `delta === 90`: anything else takes
+    /// the `-90` branch, which is what an untyped caller passing `45` gets.
+    pub fn from_delta(delta: f64) -> Self {
+        if delta == 90.0 { QuarterTurn::Plus90 } else { QuarterTurn::Minus90 }
+    }
+
+    /// The literal this turn stands for.
+    pub fn delta(self) -> f64 {
+        match self {
+            QuarterTurn::Plus90 => 90.0,
+            QuarterTurn::Minus90 => -90.0,
+        }
+    }
+}
+
 /// `SelectionFlags`: per flag, `true`/`false` when every member agrees,
 /// `null` when they differ. Keys in `FLAG_KEYS` order.
 pub type SelectionFlags = Map<String, Value>;

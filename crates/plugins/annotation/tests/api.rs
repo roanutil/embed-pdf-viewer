@@ -61,3 +61,14 @@ fn render_appearances_lets_go_of_the_signal_once_it_settles() {
         assert_eq!(signal.listener_count(), 0);
     }
 }
+
+#[test]
+fn a_quarter_turn_is_one_of_two_literals() {
+    assert_eq!(QuarterTurn::from_delta(90.0), QuarterTurn::Plus90);
+    assert_eq!(QuarterTurn::from_delta(-90.0), QuarterTurn::Minus90);
+    // An untyped TypeScript caller's 45 takes the -90 branch.
+    assert_eq!(QuarterTurn::from_delta(45.0), QuarterTurn::Minus90);
+    for turn in [QuarterTurn::Plus90, QuarterTurn::Minus90] {
+        assert_eq!(QuarterTurn::from_delta(turn.delta()), turn);
+    }
+}
