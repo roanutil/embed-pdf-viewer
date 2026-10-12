@@ -61,8 +61,6 @@ pub struct OperationOptions {
 #[serde(rename_all = "camelCase")]
 struct PageLayout {
     index: f64,
-    #[serde(rename = "ref", deserialize_with = "page_ref")]
-    page: PageRef,
     rotation: PageRotation,
     user_unit: f64,
     boxes: PageBoxes,
@@ -76,9 +74,10 @@ struct PageBoxes {
 /// The page registry, decoded.
 #[derive(Default)]
 struct Registry {
-    /// Every page in order, or none when one fails to decode (the
-    /// registry read as a whole).
-    listed: Vec<PageLayout>,
+    /// Each row's page, in order, `None` where its ref fails to decode
+    /// (`pages[i]?.ref.pageObjectNumber`). A malformed row costs only
+    /// itself, as in the TypeScript.
+    pons: Vec<Option<PageObjectNumber>>,
     /// Each row on its own, `None` where it fails to decode.
     rows: Vec<Option<PageLayout>>,
     /// The first row naming each page, as a linear scan finds it.
@@ -95,28 +94,24 @@ impl Registry {
             .flatten()
             .map(|row| serde::Deserialize::deserialize(row).ok())
             .collect();
+        let pons: Vec<Option<PageObjectNumber>> = pages
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|row| row.get("ref").and_then(PageRef::from_json).map(|r| r.page_object_number))
+            .collect();
         let mut by_pon = HashMap::with_capacity(rows.len());
-        for (i, row) in pages.as_array().into_iter().flatten().enumerate() {
-            if let Some(r) = row.get("ref").and_then(PageRef::from_json) {
-                by_pon.entry(r.page_object_number).or_insert(i);
+        for (i, pon) in pons.iter().enumerate() {
+            if let Some(pon) = pon {
+                by_pon.entry(*pon).or_insert(i);
             }
         }
-        let listed = if pages.is_array() && rows.iter().all(Option::is_some) {
-            rows.iter().flatten().cloned().collect()
-        } else {
-            Vec::new()
-        };
-        Registry { listed, rows, by_pon }
+        Registry { pons, rows, by_pon }
     }
 
     fn layout_of(&self, pon: PageObjectNumber) -> Option<&PageLayout> {
         self.rows.get(*self.by_pon.get(&pon)?)?.as_ref()
     }
-}
-
-fn page_ref<'de, D: serde::Deserializer<'de>>(d: D) -> Result<PageRef, D::Error> {
-    let value = Value::deserialize(d)?;
-    PageRef::from_json(&value).ok_or_else(|| serde::de::Error::custom("not a PageRef"))
 }
 
 #[derive(Clone, Copy)]
@@ -347,7 +342,7 @@ impl SelectionCapability {
 
     fn pon_at_index(&self, i: i64) -> Option<PageObjectNumber> {
         let i = usize::try_from(i).ok()?;
-        self.registry().listed.get(i).map(|p| p.page.page_object_number)
+        self.registry().pons.get(i).copied().flatten()
     }
 
     // ── geometry ──
@@ -502,9 +497,12 @@ impl SelectionCapability {
         let mut segments = BTreeMap::new();
         let pages = self.pages();
         for i in si..=ei {
-            let Some(layout) = pages.listed.get(i as usize) else { continue };
-            let pon = layout.page.page_object_number;
-            let Some(geom) = self.geometry_with(pon, layout) else {
+            let Some(pon) = pages.pons.get(i as usize).copied().flatten() else { continue };
+            let geom = match pages.layout_of(pon) {
+                Some(layout) => self.geometry_with(pon, layout),
+                None => None,
+            };
+            let Some(geom) = geom else {
                 let _ = self.load(PageRef::new(pon)); // recomputes on arrival
                 continue;
             };
@@ -681,7 +679,7 @@ impl SelectionCapability {
     /// then recompute. Raw snapshots are never refetched here.
     fn on_pages_updated(&self) {
         let alive: HashSet<PageObjectNumber> =
-            self.pages().listed.iter().map(|p| p.page.page_object_number).collect();
+            self.pages().pons.iter().flatten().copied().collect();
         let gone: Vec<PageObjectNumber> =
             self.0.raw_geometry.borrow().keys().filter(|p| !alive.contains(p)).copied().collect();
         for pon in gone {
@@ -765,13 +763,13 @@ impl SelectionCapability {
     pub fn select_all(&self) -> Result<(), Error> {
         self.assert_scope(SELECT_SCOPE, "selection.selectAll")?;
         let pages = self.pages();
-        let (Some(first), Some(last)) = (pages.listed.first(), pages.listed.last()) else {
+        let (Some(Some(first)), Some(Some(last))) = (pages.pons.first(), pages.pons.last()) else {
             return Ok(());
         };
         self.recompute(
             SelectionRange {
-                anchor: GlyphPointer { page: first.page, glyph: 0 },
-                focus: GlyphPointer { page: last.page, glyph: OPEN_END },
+                anchor: GlyphPointer { page: PageRef::new(*first), glyph: 0 },
+                focus: GlyphPointer { page: PageRef::new(*last), glyph: OPEN_END },
             },
             self.write_trigger(),
         );
@@ -909,8 +907,7 @@ impl SelectionCapability {
             let mut spans: Vec<(PageObjectNumber, i64, i64)> = Vec::new();
             let pages = this.pages();
             for i in si..=ei {
-                let Some(pon) = pages.listed.get(i as usize).map(|p| p.page.page_object_number)
-                else {
+                let Some(pon) = pages.pons.get(i as usize).copied().flatten() else {
                     continue;
                 };
                 let from = if i == si { range.start.index.max(0) } else { 0 };
