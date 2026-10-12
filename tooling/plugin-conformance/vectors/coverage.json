@@ -2,8 +2,36 @@
   "total": {
     "statements": "49226/49419",
     "branches": "12179/12509",
-    "unsnapshottedOnlyLines": 1475
+    "unsnapshottedOnlyLines": 1475,
+    "unloadedFiles": 25
   },
+  "unloaded": [
+    "packages/core/annotation/src/types.ts",
+    "packages/core/main/src/testing.ts",
+    "packages/plugin/actions/src/dispatch/core.ts",
+    "packages/plugin/actions/src/index.ts",
+    "packages/plugin/actions/src/internal.ts",
+    "packages/plugin/actions/src/services/context.ts",
+    "packages/plugin/annotation/src/internal.ts",
+    "packages/plugin/annotation/src/services/context.ts",
+    "packages/plugin/form/src/internal.ts",
+    "packages/plugin/form/src/services/context.ts",
+    "packages/plugin/link/src/index.ts",
+    "packages/plugin/measurement/src/internal.ts",
+    "packages/plugin/measurement/src/services/context.ts",
+    "packages/plugin/page-edit/src/internal.ts",
+    "packages/plugin/redaction/src/internal.ts",
+    "packages/plugin/redaction/src/services/context.ts",
+    "packages/plugin/shell/src/internal.ts",
+    "packages/plugin/signature/src/index.ts",
+    "packages/plugin/signature/src/internal.ts",
+    "packages/plugin/signature/src/services/context.ts",
+    "packages/plugin/stage/src/services/context.ts",
+    "packages/plugin/stamp/src/index.ts",
+    "packages/plugin/stamp/src/internal.ts",
+    "packages/plugin/stamp/src/services/context.ts",
+    "packages/plugin/view-manager/src/internal.ts"
+  ],
   "files": {
     "packages/core/acrojs/src/actions.ts": {
       "statements": "26/26",

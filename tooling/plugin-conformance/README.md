@@ -272,7 +272,9 @@ comparison explicitly, and a port picks the one that fires on the same changes.
    uncovered line is either reached by a new case or explained in `multiplatform-plugins-status.md`.
    A file's `unsnapshottedOnly` ranges are lines that only `snapshot: "none"` cases reach. They
    count as covered, but no vector compares the state they leave behind, so a reducer listed there
-   wants a case that snapshots its slice.
+   wants a case that snapshots its slice. The top-level `unloaded` list names ported files no
+   generator imports at all, which c8 would otherwise leave out of the report; a file of the new
+   plugin that shows up there is either type-only or untested.
 3. In the plugin's crate, implement `HarnessPlugin` behind the `harness` feature and add a test
    that calls `assert_suite` for each of its vector files.
 
