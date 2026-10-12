@@ -214,9 +214,12 @@ pub fn set_timeout(delay: f64, callback: impl FnOnce() + 'static) -> TimerId {
     )
 }
 
-/// `setInterval`.
+/// `setInterval`. The period is at least 1 ms, as browsers and Node clamp
+/// it: a period of 0 would rearm at the same instant and `advance` would
+/// never get past it. (Fake timers do not clamp, and loop.)
 pub fn set_interval(delay: f64, callback: impl FnMut() + 'static) -> TimerId {
-    schedule(delay, Some(delay), Box::new(callback))
+    let period = if delay.is_finite() && delay <= 2_147_483_647.0 { delay.trunc() } else { 1.0 };
+    schedule(delay, Some(period.max(1.0)), Box::new(callback))
 }
 
 /// `clearTimeout` and `clearInterval`. Clearing a timer that fired or never

@@ -89,6 +89,21 @@ fn intervals_sharing_a_deadline_fire_in_rearm_order() {
 }
 
 #[test]
+fn a_zero_interval_repeats_every_millisecond_instead_of_looping() {
+    rt::reset();
+    let fired = Rc::new(Cell::new(0));
+    let f = fired.clone();
+    let id = rt::set_interval(0.0, move || f.set(f.get() + 1));
+    rt::advance(5.0);
+    // At 0, then each millisecond through 5.
+    assert_eq!(fired.get(), 6);
+    rt::clear_timer(id);
+    let nan = rt::set_interval(f64::NAN, || {});
+    rt::advance(3.0);
+    rt::clear_timer(nan);
+}
+
+#[test]
 fn a_timer_cleared_by_an_earlier_one_in_the_same_advance_does_not_fire() {
     rt::reset();
     let fired = log();
