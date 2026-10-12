@@ -162,8 +162,13 @@ struct Core {
 pub struct SelectionCapability(Rc<Core>);
 
 /// `Promise.all` over promises of one type: settles one turn after the last
-/// element's reaction, or with the first rejection.
+/// element's reaction, or with the first rejection, and at once when empty.
+/// The same as `epdf_plugin_annotation::promise::all`, which this crate
+/// can't reach: the annotation plugin depends on this one.
 fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
+    if promises.is_empty() {
+        return Promise::resolved(Vec::new());
+    }
     let (out, resolver) = Promise::pending();
     let slots: Rc<RefCell<Vec<Option<T>>>> = Rc::new(RefCell::new(vec![None; promises.len()]));
     let remaining = Rc::new(Cell::new(promises.len()));
@@ -1018,5 +1023,18 @@ impl SelectionCapability {
 
     pub fn is_highlight_visible(&self) -> bool {
         !self.state().highlight_hidden
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_of_nothing_settles_empty() {
+        rt::reset();
+        let none = all::<u32>(Vec::new());
+        rt::run_until_stalled();
+        assert_eq!(none.peek().expect("settled").expect("resolved"), Vec::<u32>::new());
     }
 }
