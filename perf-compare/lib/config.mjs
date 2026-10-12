@@ -15,7 +15,6 @@ export function loadConfig(file = DEFAULT) {
   for (const [id, arm] of Object.entries(raw.arms)) {
     if (!raw.worktrees[arm.worktree]) throw new Error(`arm ${id}: unknown worktree ${arm.worktree}`);
     if (!KERNELS.has(arm.kernel)) throw new Error(`arm ${id}: unknown kernel ${arm.kernel}`);
-    if (arm.kernel === 'rust' && arm.rustReads) throw new Error(`arm ${id}: rustReads needs the typescript kernel`);
   }
   for (const pair of raw.pairs) {
     for (const id of pair) {

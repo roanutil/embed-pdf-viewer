@@ -511,6 +511,11 @@
       "worktree": "plugins-resulttext",
       "kernel": "rust",
       "rustReads": false
+    },
+    "plugins-rustreads": {
+      "worktree": "plugins-resulttext",
+      "kernel": "rust",
+      "rustReads": true
     }
   },
   "pairs": [
@@ -805,6 +810,14 @@
     [
       "main",
       "plugins-resulttext"
+    ],
+    [
+      "plugins-resulttext",
+      "plugins-rustreads"
+    ],
+    [
+      "main",
+      "plugins-rustreads"
     ]
   ]
 }
