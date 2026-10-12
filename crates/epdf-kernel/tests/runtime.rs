@@ -16,6 +16,7 @@ use epdf_kernel::error::Error;
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::guarded::{GuardedLifetime, guard_handle};
+use epdf_kernel::lanes::{LatestLane, LatestRun};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::scope::Scope;
 use epdf_kernel::signal::AbortSignal;
@@ -571,6 +572,27 @@ fn an_abort_skips_a_listener_an_earlier_one_removed() {
     signal.on_abort(Rc::new(move |_| s3.borrow_mut().push("third".into())));
     signal.abort(Error::new("stop"));
     assert_eq!(*seen.borrow(), ["first", "third"]);
+}
+
+#[test]
+fn a_cancelled_run_is_still_running_inside_its_abort_listener() {
+    // `lanes.ts` `cancel`: `active?.abort(...)` and only then `active = null`.
+    let lane = LatestLane::new(AbortSignal::new(), "probe", "lane");
+    let seen: Rc<RefCell<Vec<bool>>> = Rc::default();
+    let (l, s) = (lane.clone(), seen.clone());
+    let _run = lane.run(
+        move |run: LatestRun| {
+            let (l, s) = (l.clone(), s.clone());
+            run.signal.on_abort(Rc::new(move |_| s.borrow_mut().push(l.running())));
+            Promise::<Value>::pending().0
+        },
+        None,
+    );
+    rt::run_until_stalled();
+    assert!(lane.running());
+    lane.cancel(None);
+    assert_eq!(*seen.borrow(), [true]);
+    assert!(!lane.running());
 }
 
 #[test]
