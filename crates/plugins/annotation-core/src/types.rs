@@ -1192,6 +1192,26 @@ impl Draft {
         }
     }
 
+    /// `draft.g.startsWith('create-')`: a creation draft, not an edit
+    /// gesture. No wildcard arm, so a new variant has to pick a side.
+    pub fn is_create(&self) -> bool {
+        match self {
+            Draft::CreateRect { .. }
+            | Draft::CreateDistance { .. }
+            | Draft::CreateLine { .. }
+            | Draft::CreatePoly { .. }
+            | Draft::CreateInk { .. }
+            | Draft::CreateCallout { .. } => true,
+            Draft::Move { .. }
+            | Draft::Handle { .. }
+            | Draft::Rotate { .. }
+            | Draft::Group { .. }
+            | Draft::Caption { .. }
+            | Draft::Leader { .. }
+            | Draft::Marquee { .. } => false,
+        }
+    }
+
     /// `'page' in draft`: the creation drafts and the marquee.
     pub fn page(&self) -> Option<PageRef> {
         match self {

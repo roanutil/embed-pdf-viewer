@@ -13,13 +13,6 @@ use crate::controller::AnnotationCapability;
 use crate::host_contract::CapturedAnnotationDraft;
 use crate::services::write_sink::create_effects_of;
 
-fn is_create_draft(d: &Draft) -> bool {
-    serde_json::to_value(d)
-        .ok()
-        .and_then(|v| v.get("g").and_then(|g| g.as_str()).map(|g| g.starts_with("create-")))
-        .unwrap_or(false)
-}
-
 impl AnnotationCapability {
     pub(crate) fn run_captured_effect(&self, tool: String, page: PageRef, geom: Geom) {
         if self.doc().is_none() {
@@ -47,13 +40,13 @@ impl AnnotationCapability {
 
     /// `hasCreationDraft()`.
     pub fn has_creation_draft(&self) -> bool {
-        self.model().draft.as_ref().is_some_and(is_create_draft)
+        self.model().draft.as_ref().is_some_and(Draft::is_create)
     }
 
     /// `finishCreationDraft()`: commit the draft; `None` when there was none.
     pub fn finish_creation_draft(&self) -> Promise<Option<AnnotationRef>> {
         let draft = self.model().draft.clone();
-        let Some(draft) = draft.filter(is_create_draft) else { return Promise::resolved(None) };
+        let Some(draft) = draft.filter(Draft::is_create) else { return Promise::resolved(None) };
         let msg = if matches!(draft, Draft::CreateInk { .. }) {
             Msg::FinishInkDraft
         } else {
