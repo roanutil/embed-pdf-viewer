@@ -8,7 +8,7 @@ import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import type { CapabilityToken, Engine, Kernel } from '@embedpdf/core';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
-import { commandsPlugin, createKernel, setWasmKernel } from '../src';
+import { commandsPlugin, createKernel, kernelCounts, setWasmKernel } from '../src';
 
 const DocumentsToken = { name: 'documents' } as CapabilityToken<unknown>;
 const CommandsToken = { name: 'commands' } as CapabilityToken<unknown>;
@@ -176,5 +176,19 @@ describe('the documents capability', () => {
     await k.start();
     expect(k.capability(DocumentsToken)).toBe(k.documents);
     expect(k.tryCapability(DocumentsToken)).toBe(k.documents);
+  });
+});
+
+describe('tokens by name', () => {
+  test('an unknown token name is refused without adding a token', async () => {
+    const k = build();
+    await k.start();
+    const before = kernelCounts(k).tokens;
+    for (let i = 0; i < 20; i++) {
+      const token = { name: `made-up-${i}` } as CapabilityToken<unknown>;
+      expect(k.tryCapability(token)).toBe(null);
+      expect(() => k.capability(token)).toThrow(`No capability "made-up-${i}".`);
+    }
+    expect(kernelCounts(k).tokens).toBe(before);
   });
 });
