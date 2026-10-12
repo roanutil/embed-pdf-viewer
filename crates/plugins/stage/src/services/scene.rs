@@ -37,8 +37,10 @@ impl StageCapability {
         matches!(self.st().settings.zoom, ZoomSpec::Mode { mode: ZoomMode::FitAll })
     }
 
-    /// `ctx.document()?.pages`, parsed once per registry revision.
-    pub(crate) fn registry(&self) -> Rc<Vec<PageLayout>> {
+    /// `ctx.document()?.pages`, parsed once per registry revision. A row
+    /// that does not parse stays in place as `None`, so every other row
+    /// keeps its display index.
+    pub(crate) fn registry(&self) -> Rc<Vec<Option<PageLayout>>> {
         let Some(doc) = self.ctx.document() else { return Rc::new(Vec::new()) };
         let key = (doc.page_count, doc.revision);
         if let Some((k, pages)) = self.inner.registry_cache.borrow().as_ref()
@@ -46,14 +48,11 @@ impl StageCapability {
         {
             return pages.clone();
         }
-        let pages: Vec<PageLayout> = doc
+        let pages: Vec<Option<PageLayout>> = doc
             .pages
             .as_array()
             .map(|pages| {
-                pages
-                    .iter()
-                    .filter_map(|p| serde_json::from_value(without_undefined(p)).ok())
-                    .collect()
+                pages.iter().map(|p| serde_json::from_value(without_undefined(p)).ok()).collect()
             })
             .unwrap_or_default();
         let pages = Rc::new(pages);
@@ -165,9 +164,15 @@ impl StageCapability {
         // The view-rotation injection point: each page's display rotation
         // is its /Rotate plus this lens's viewRotation.
         let vr = s.view_rotation;
+        // A row that does not parse (a page with no size, say) makes the
+        // TypeScript throw wherever the scene is built. Here the pages stop
+        // short of it instead, so the grouping names a missing page and the
+        // scene below comes out empty: a Rust-only divergence, as for a NaN
+        // column count.
         let pages: Vec<PageGeom> = self
             .registry()
             .iter()
+            .map_while(Option::as_ref)
             .map(|p| PageGeom {
                 size: p.size,
                 rotation: Some(if vr.0 == 0.0 {
@@ -452,6 +457,6 @@ impl StageCapability {
     /// `indexOfPage(page)`: the page's display index, `None` when the
     /// registry has no such page.
     pub(crate) fn index_of_page(&self, page: PageRef) -> Option<usize> {
-        self.registry().iter().position(|p| p.page_ref == page)
+        self.registry().iter().position(|p| p.as_ref().is_some_and(|p| p.page_ref == page))
     }
 }

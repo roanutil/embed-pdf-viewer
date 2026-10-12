@@ -92,7 +92,9 @@ pub(crate) struct Inner {
     pub(crate) camera_kept: Cell<bool>,
     pub(crate) grouping_cache: RefCell<Option<Rc<Grouping>>>,
     pub(crate) scene_cache: RefCell<Option<(String, Rc<Scene>)>>,
-    pub(crate) registry_cache: RefCell<Option<((u32, u64), Rc<Vec<PageLayout>>)>>,
+    /// One entry per registry row, `None` for a row that does not parse,
+    /// so display indexes stay aligned with the document's.
+    pub(crate) registry_cache: RefCell<Option<((u32, u64), Rc<Vec<Option<PageLayout>>>)>>,
     /// `services/placement-latch.ts`: flips when initial placement starts,
     /// while `state.placed` flips only after it finishes.
     pub(crate) placement_started: Cell<bool>,

@@ -14,6 +14,11 @@ use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use serde_json::json;
 
 fn kernel(scheduler: bool) -> Kernel {
+    kernel_with(scheduler, |_| {})
+}
+
+/// A kernel over three 600x800 pages, `edit` given the page rows first.
+fn kernel_with(scheduler: bool, edit: impl FnOnce(&mut Vec<serde_json::Value>)) -> Kernel {
     rt::reset();
     let box_ = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
     let page = |pon: u32, index: u32| {
@@ -22,9 +27,9 @@ fn kernel(scheduler: bool) -> Kernel {
             "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
             "boxes": { "media": box_, "crop": box_ } })
     };
-    let fake = FakeEngine::new(json!({
-        "documents": { "a": { "pages": [page(1, 0), page(2, 1), page(3, 2)] } }
-    }));
+    let mut pages = vec![page(1, 0), page(2, 1), page(3, 2)];
+    edit(&mut pages);
+    let fake = FakeEngine::new(json!({ "documents": { "a": { "pages": pages } } }));
     let config = StageConfig {
         scheduler: scheduler.then(|| Rc::new(FrameScheduler::default()) as Rc<dyn Scheduler>),
         ..Default::default()
@@ -187,4 +192,25 @@ fn a_nan_zoom_on_an_auto_wrapped_grid_does_not_panic() {
     let _ = stage.get_viewpoint();
     let _ = stage.list_visible_pages();
     let _ = stage.set_viewport_size(Size { width: 800.0, height: 600.0 });
+}
+
+#[test]
+fn an_unreadable_page_row_keeps_the_others_at_their_indexes() {
+    // Page 2's row has no size, so it does not parse as a layout row.
+    let kernel = kernel_with(false, |pages| {
+        pages[1].as_object_mut().expect("row").remove("size");
+    });
+    let stage = kernel.capability(&STAGE, Some("a")).expect("stage");
+    stage.set_viewport_size(Size { width: 1000.0, height: 700.0 }).expect("viewport");
+    // The TypeScript throws building any scene over a size-less row; the
+    // scene here is empty instead, as for a NaN column count.
+    assert!(stage.list_visible_pages().is_empty());
+    stage.go_to_page(PageRef::new(3), None);
+    assert_eq!(stage.get_current_page_index(), 2, "page 3 is still display index 2");
+    stage.go_to_page_index(1, None);
+    stage.next_page(None);
+    stage.fit_page().expect("fit");
+    stage.zoom_by(2.0, None).expect("zoom");
+    stage.get_viewpoint().expect("viewpoint");
+    assert!(stage.get_page_frame(PageRef::new(3)).is_none());
 }

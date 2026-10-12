@@ -22,6 +22,7 @@ impl StageCapability {
     pub(crate) fn ref_for_index(&self, index: usize) -> PageRef {
         self.registry()
             .get(index)
+            .and_then(Option::as_ref)
             .map_or(PageRef::new(index as PageObjectNumber + 1), |p| p.page_ref)
     }
 
@@ -33,7 +34,7 @@ impl StageCapability {
 
     pub(crate) fn with_transform(&self, b: &PageBox) -> VisiblePage {
         let registry = self.registry();
-        let reg = registry.get(b.page_index);
+        let reg = registry.get(b.page_index).and_then(Option::as_ref);
         let page_size = reg.map_or_else(|| Self::unrotated_points(b), |r| r.size);
         let c = self.cam();
         let ratio = self.dpr();
