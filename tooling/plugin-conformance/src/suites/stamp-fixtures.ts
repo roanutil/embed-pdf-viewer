@@ -40,7 +40,6 @@ import { register } from 'node:module';
 import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 import type { Engine } from '@embedpdf/engine-core/runtime';
 
-import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/model';
 import {
   memoryStampStore,
   persistStampLibraries,
@@ -48,11 +47,8 @@ import {
 } from '../../../../packages/plugin/stamp/src/persistence';
 import { stampPlugin } from '../../../../packages/plugin/stamp/src/stamp.plugin';
 import { StampToken } from '../../../../packages/plugin/stamp/src/host-contract';
-import type { StampConfig, StampHostCapability } from '../../../../packages/plugin/stamp/src/host-contract';
-import type { StampAction, StampState } from '../../../../packages/plugin/stamp/src/model';
-import { ActionsToken } from '../../../../packages/plugin/actions/src/contract';
+import type { StampConfig } from '../../../../packages/plugin/stamp/src/host-contract';
 import { ActionsToken as ActionsHostToken } from '../../../../packages/plugin/actions/src/host-contract';
-import { AnnotationToken } from '../../../../packages/plugin/annotation/src/contract';
 
 import { makeError, type ErrorSpec, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type PluginEnv, type Step } from '../scenario';
@@ -225,16 +221,14 @@ registerPlugin('stamp', {
     stampRandomCalls = 0;
     const instance = freshCapability();
     const spec = (config ?? {}) as StampSpec;
-    // `stamp.plugin.ts`, over this case's own controller module.
-    return definePlugin<StampState, StampAction, StampHostCapability>({
-      id: 'stamp',
-      token: StampToken,
-      scope: 'workspace',
-      optional: [AnnotationToken, ActionsToken],
-      initialState: initialStampState,
-      reduce: stampReducer,
+    // `stamp.plugin.ts` itself, with only `create` swapped to run over this
+    // case's own controller module: id, token, scope, dependencies and the
+    // reducer stay the shipping definition's.
+    const shipped = stampPlugin();
+    return {
+      ...shipped,
       create: (ctx) => ({ api: instance.createStampController(ctx as never, configOf(spec, ctx.engine, env)) }),
-    }) as AnyPlugin;
+    } satisfies typeof shipped as AnyPlugin;
   },
   tokens: [StampToken],
 });
