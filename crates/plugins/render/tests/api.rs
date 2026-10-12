@@ -313,3 +313,25 @@ fn a_synchronous_tile_refusal_frees_its_slot() {
     tiles.plan("v", 11, &demand, false).expect("plan");
     assert_eq!(tiles.stats("v", 11).in_flight, 8);
 }
+
+#[test]
+fn a_zero_tile_span_yields_no_tiles_instead_of_looping() {
+    use epdf_geometry::Rect;
+    use epdf_plugin_render::tiles::{region_covered, tile_grid, tiles_in_rect};
+    let page = PageSizePt { width: 600.0, height: 800.0 };
+    let rect = |x, y| Rect { x, y, width: 100.0, height: 100.0 };
+    // A tile size of 0 and an infinite scale both make the span 0. The
+    // TypeScript loops here until it runs out of memory.
+    for grid in [tile_grid(page, 1.0, 0.0), tile_grid(page, f64::INFINITY, 256.0)] {
+        for at in [rect(0.0, 0.0), rect(10.0, 0.0), rect(0.0, 10.0), rect(10.0, 10.0)] {
+            assert!(tiles_in_rect(&grid, page, at).is_empty());
+            assert!(region_covered(&grid, page, at, |_| false));
+        }
+    }
+    // A normal grid is untouched: 256 px tiles over 600x800 points at 1x.
+    let grid = tile_grid(page, 1.0, 256.0);
+    let tiles = tiles_in_rect(&grid, page, Rect { x: 0.0, y: 0.0, width: 600.0, height: 800.0 });
+    assert_eq!(tiles.len(), 3 * 4);
+    assert_eq!(tiles[0], TileCoord { ix: 0.0, iy: 0.0 });
+    assert_eq!(tiles[11], TileCoord { ix: 2.0, iy: 3.0 });
+}

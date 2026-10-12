@@ -62,6 +62,13 @@ pub fn tiles_in_rect(grid: &TileGrid, _page: PageSizePt, rect: Rect) -> Vec<Tile
     let y0 = js::max(0.0, (rect.y / span).floor());
     let x1 = js::min(grid.cols - 1.0, ((rect.x + rect.width) / span).ceil() - 1.0);
     let y1 = js::min(grid.rows - 1.0, ((rect.y + rect.height) / span).ceil() - 1.0);
+    // Rust only: a zero span (a `tile_size` of 0, an infinite scale) puts a
+    // bound at infinity, and the TypeScript's loop then runs until it is out
+    // of memory. Whenever a bound is infinite the loops either yield nothing
+    // or never end, so answering no tiles changes no output that finishes.
+    if [x0, x1, y0, y1].iter().any(|bound| bound.is_infinite()) {
+        return Vec::new();
+    }
     let mut out = Vec::new();
     let mut iy = y0;
     while iy <= y1 {
