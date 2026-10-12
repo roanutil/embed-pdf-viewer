@@ -1022,10 +1022,9 @@ impl Inner {
     ) -> Result<String, Error> {
         let source = match input {
             OpenSource::Thunk(thunk) => {
-                let produced = match thunk(session.cancel.clone()) {
-                    Ok(promise) => promise,
-                    Err(error) => Promise::rejected(error),
-                };
+                // A synchronous throw skips `engineCall`: it leaves
+                // `input(signal)` before there is a promise to race.
+                let produced = thunk(session.cancel.clone())?;
                 let value = rt::returned(Self::engine_call(&session, produced, None)).await?;
                 *session.produced.borrow_mut() = HostHold::of_value(&value);
                 value

@@ -1678,6 +1678,14 @@ const turnCases: ScenarioCase[] = [
     steps: [start, metered(open(bytes('a')))],
   },
   {
+    name: 'a-throwing-thunk-rejects-on-its-turn',
+    covers:
+      'A thunk source that throws synchronously never reaches `engineCall`: the open fails in its own turn, then the `.finally` and the adoption.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    steps: [start, metered(open({ $fn: 'throwing', throws: { message: 'bad url' } }))],
+  },
+  {
     name: 'unlock-settles-on-its-turn',
     covers: 'unlock() is an `async` function returning the operation, so it adopts it in two turns, like open().',
     snapshot: 'none',

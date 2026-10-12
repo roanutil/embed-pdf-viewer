@@ -832,6 +832,346 @@
       ]
     },
     {
+      "name": "a-throwing-thunk-rejects-on-its-turn",
+      "covers": "A thunk source that throws synchronously never reaches `engineCall`: the open fails in its own turn, then the `.finally` and the adoption.",
+      "snapshot": "none",
+      "reason": "Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.",
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "$fn": "throwing",
+              "throws": {
+                "message": "bad url"
+              }
+            }
+          ],
+          "meter": 40
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "rejected": {
+                "$error": {
+                  "name": "Error",
+                  "message": "bad url"
+                }
+              }
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-open-failed"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "throwing",
+              "args": [
+                {
+                  "$signal": {
+                    "aborted": false
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                8
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                10
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                11
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                14
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                15
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                16
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                17
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                18
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                20
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                21
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                22
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                23
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                24
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                25
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                26
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                27
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                28
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                29
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                30
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                31
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                32
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                33
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                34
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                35
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                36
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                37
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                38
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                39
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
+    {
       "name": "unlock-settles-on-its-turn",
       "covers": "unlock() is an `async` function returning the operation, so it adopts it in two turns, like open().",
       "snapshot": "none",
