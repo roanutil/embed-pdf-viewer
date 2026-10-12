@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12179/12509",
+    "branches": "12195/12524",
     "unsnapshottedOnlyLines": 1475,
     "unloadedFiles": 25
   },
@@ -85,7 +85,7 @@
     },
     "packages/core/annotation/src/cloudy.ts": {
       "statements": "561/570",
-      "branches": "119/130",
+      "branches": "122/132",
       "uncoveredLines": [
         111,
         112,
@@ -107,7 +107,6 @@
         "311:56#0",
         "347:26#0",
         "359:17#0",
-        "428:23#0",
         "453:22#0"
       ]
     },
@@ -237,7 +236,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1980/1980",
-      "branches": "724/732",
+      "branches": "726/734",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "269:12#0",
@@ -1180,7 +1179,7 @@
     },
     "packages/plugin/annotation/src/services/records.ts": {
       "statements": "69/69",
-      "branches": "12/13",
+      "branches": "14/15",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "33:14#0"
@@ -1216,7 +1215,7 @@
     },
     "packages/plugin/annotation/src/sync/hydration.ts": {
       "statements": "165/165",
-      "branches": "44/46",
+      "branches": "46/48",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "59:14#0",
@@ -1228,7 +1227,7 @@
     },
     "packages/plugin/annotation/src/sync/remote.ts": {
       "statements": "78/78",
-      "branches": "19/19",
+      "branches": "21/21",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -1612,7 +1611,7 @@
     },
     "packages/plugin/form/src/read/fields.ts": {
       "statements": "73/73",
-      "branches": "45/45",
+      "branches": "46/46",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },
@@ -1890,7 +1889,7 @@
     },
     "packages/plugin/form/src/write/values.ts": {
       "statements": "136/136",
-      "branches": "43/46",
+      "branches": "45/48",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "29:14#0",
@@ -2984,7 +2983,7 @@
     },
     "packages/plugin/stage/src/read/pages.ts": {
       "statements": "246/250",
-      "branches": "77/83",
+      "branches": "78/84",
       "uncoveredLines": [
         36,
         37,
@@ -3069,7 +3068,7 @@
     },
     "packages/plugin/stage/src/stage.plugin.ts": {
       "statements": "124/124",
-      "branches": "20/23",
+      "branches": "21/24",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "87:32#0",
