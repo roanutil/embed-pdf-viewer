@@ -3,11 +3,13 @@
  * plugins, built from the descriptors `./plugins` makes.
  *
  * A plugin without `$rust` is a TypeScript `PluginDef`. One that only has
- * `id`, `scope`, `requires`, `optional` and `init` (and `token`) runs here:
- * once `start()` resolves, `init(ctx)` runs once for a workspace plugin, or
- * once per opened document for a document plugin, with a context whose
- * `get` and `tryGet` answer the same capability proxies `capability` does.
- * Anything with its own state, reducer, capability or effects throws.
+ * `id`, `scope`, `requires`, `optional` and `init` (and `token`) runs here.
+ * A workspace plugin's `init(ctx)` runs inside `start()`, after the Rust
+ * plugins start, awaited, and a failure fails `start()`; a document
+ * plugin's runs once per opened document. Its context answers the same
+ * capability proxies `capability` does; `doc`, `documentHandle` and
+ * `dispatch` throw. Anything with its own state, reducer, capability or
+ * effects throws.
  *
  * Everything here imports `@embedpdf/core` as types only, so the eval app
  * can point `@embedpdf/core` at `./redirect/core` without a cycle.
@@ -108,7 +110,7 @@ function checkJsPlugin(plugin: AnyPlugin): void {
   }
 }
 
-type Cleanup = () => void;
+type Cleanup = () => void | Promise<void>;
 
 /** Render's live `host.releaseImage`: the render plugin's raster store
  *  reports the `$host` id of each image its last Rust handle let go of, and
@@ -192,44 +194,101 @@ export function createKernel(opts: {
   const name = (token: CapabilityToken<unknown>) => token.name;
 
   // ── init-only JS plugins ──
+  /** Teardowns by owner (`null` for the workspace), until the owner goes:
+   *  a document's entry leaves with it. */
   const cleanups = new Map<string | null, Cleanup[]>();
-  const runInit = (plugin: AnyPlugin, doc: string | null) => {
-    const list = cleanups.get(doc) ?? [];
-    cleanups.set(doc, list);
-    const ctx = {
-      id: plugin.id,
-      engine,
-      documentId: doc ?? undefined,
-      get: (token: CapabilityToken<unknown>) => wire.capability(name(token), doc),
-      tryGet: (token: CapabilityToken<unknown>) => wire.tryCapability(name(token), doc),
-      forDocument: (token: CapabilityToken<unknown>, id: string) =>
-        wire.capability(name(token), id),
-      tryForDocument: (token: CapabilityToken<unknown>, id: string) =>
-        wire.tryCapability(name(token), id),
-      core: () => (wire.getState() as GlobalState).core,
-      cleanup: (fn: Cleanup) => list.push(fn),
-    };
+  /** Every teardown `fn` returned a promise from, as `destroy` awaits. */
+  const teardowns: Promise<void>[] = [];
+  const runCleanup = (fn: Cleanup) => {
     try {
-      Promise.resolve(plugin.init?.(ctx as never)).catch(report);
+      const done = fn();
+      if (done && typeof (done as Promise<void>).then === 'function') {
+        teardowns.push(Promise.resolve(done).then(undefined, report));
+      }
     } catch (error) {
       report(error);
     }
   };
-  const runCleanups = (doc: string | null) => {
-    for (const fn of cleanups.get(doc)?.splice(0) ?? []) {
-      try {
-        fn();
-      } catch (error) {
-        report(error);
-      }
-    }
+  const unsupported = (plugin: AnyPlugin, member: string) => () => {
+    throw new Error(
+      `[core-wasm] JS plugin "${plugin.id}": ctx.${member} is not supported; only init-only JS plugins run in the eval build`,
+    );
   };
-  const startJsPlugins = () => {
+  const makeContext = (plugin: AnyPlugin, doc: string | null) => {
+    const list: Cleanup[] = cleanups.get(doc) ?? [];
+    cleanups.set(doc, list);
+    const core = () => (kernel.getState() as GlobalState).core;
+    const ctx = {
+      id: plugin.id,
+      engine,
+      documentId: doc ?? undefined,
+      // The engine's handles live behind the Rust kernel's sessions.
+      documentHandle: unsupported(plugin, 'documentHandle'),
+      // An init-only plugin has no slice: the TS kernel's lease for it
+      // reads `undefined`. Its actions could reach no reducer here.
+      getState: () => undefined,
+      dispatch: unsupported(plugin, 'dispatch'),
+      subscribe: (listener: () => void) => kernel.subscribe(listener),
+      core,
+      document: () => {
+        const { documents: metas, activeId } = core() as {
+          documents: Record<string, unknown>;
+          activeId: string | null;
+        };
+        const id = doc ?? activeId;
+        return id ? (metas[id] ?? null) : null;
+      },
+      get: (token: CapabilityToken<unknown>) => kernel.capability(token, doc ?? undefined),
+      tryGet: (token: CapabilityToken<unknown>) => kernel.tryCapability(token, doc ?? undefined),
+      forDocument: (token: CapabilityToken<unknown>, id: string) => kernel.capability(token, id),
+      tryForDocument: (token: CapabilityToken<unknown>, id: string) =>
+        kernel.tryCapability(token, id),
+      // Once its owner is gone, at once, as the TS kernel does: a late
+      // registration cannot leak.
+      cleanup: (fn: Cleanup) => (cleanups.get(doc) === list ? list.push(fn) : runCleanup(fn)),
+    };
+    Object.defineProperty(ctx, 'doc', { enumerable: true, get: unsupported(plugin, 'doc') });
+    return ctx;
+  };
+  const runCleanups = (doc: string | null) => {
+    const list = cleanups.get(doc);
+    cleanups.delete(doc);
+    for (const fn of list ?? []) runCleanup(fn);
+  };
+  /** Set while the workspace plugins' inits run inside `start()`, and for
+   *  good if one fails. */
+  let jsPhase: 'idle' | 'starting' | 'failed' = 'idle';
+  /** The workspace plugins' inits, one at a time and awaited, as the TS
+   *  kernel runs them inside `start()`; then the hooks that run each
+   *  document plugin's init per opened document. A failed init fails
+   *  `start()` and the kernel. */
+  const startJsPlugins = async () => {
+    jsPhase = 'starting';
+    try {
+      for (const plugin of jsPlugins) {
+        if (plugin.scope === 'document') continue;
+        if (wire.lifecycle === 'ending') return; // destroy() raced us
+        await plugin.init?.(makeContext(plugin, null) as never);
+      }
+    } catch (error) {
+      jsPhase = 'failed';
+      wire.lifecycle = 'ending';
+      runCleanups(null);
+      throw error;
+    }
+    jsPhase = 'idle';
+    if (wire.lifecycle === 'ending') return;
+    wire.lifecycle = 'started';
     const perDocument = jsPlugins.filter((p) => p.scope === 'document');
-    for (const plugin of jsPlugins) if (plugin.scope !== 'document') runInit(plugin, null);
     if (perDocument.length === 0) return;
     const opened = (doc: string) => {
-      for (const plugin of perDocument) runInit(plugin, doc);
+      for (const plugin of perDocument) {
+        try {
+          Promise.resolve(plugin.init?.(makeContext(plugin, doc) as never)).catch(report);
+        } catch (error) {
+          report(error);
+        }
+      }
     };
     // Deferred, so an init's calls do not re-enter the kernel mid-event.
     documents.onOpened((event) => queueMicrotask(() => opened(event.documentId)));
@@ -247,21 +306,32 @@ export function createKernel(opts: {
     engine,
     documents,
     capability: <T>(token: CapabilityToken<T>, documentId?: string) => {
-      if (finalState) {
-        throw new Error(`[kernel] capability("${name(token)}") on a destroyed kernel`);
+      if (finalState || jsPhase === 'failed') {
+        throw new Error(`[kernel] capability("${name(token)}") on a ${kernel.status()} kernel`);
       }
       return wire.capability(name(token), documentId) as T;
     },
+    // A kernel failed by a JS plugin's init: the TS kernel has cleared its
+    // workspace capabilities and opens no document, so nothing resolves.
     tryCapability: <T>(token: CapabilityToken<T>, documentId?: string) =>
-      finalState ? null : (wire.tryCapability(name(token), documentId) as T | null),
+      finalState || jsPhase === 'failed'
+        ? null
+        : (wire.tryCapability(name(token), documentId) as T | null),
     scopeOf: (token) => rusty(() => wire.rust.scope_of(name(token))) as PluginScope,
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
     getState: () => finalState ?? (wire.getState() as GlobalState),
-    status: () =>
-      finalState ? 'destroyed' : (rusty(() => wire.rust.status()) as KernelStatus),
+    status: () => {
+      if (finalState) return 'destroyed';
+      const now = rusty(() => wire.rust.status()) as KernelStatus;
+      if (now === 'destroying' || now === 'destroyed') return now;
+      if (jsPhase === 'failed') return 'failed';
+      // Rust is through its own plugins; the JS ones still init.
+      if (jsPhase === 'starting' && now === 'started') return 'starting';
+      return now;
+    },
     start: () => {
       // Before the memo, as the TS kernel checks: a failed kernel's second
       // `start()` rejects with this, not with the first one's error.
@@ -269,15 +339,9 @@ export function createKernel(opts: {
       if (now === 'destroying' || now === 'destroyed' || now === 'failed') {
         return Promise.reject(new Error(`[kernel] start() on a ${now} kernel`));
       }
-      return (started ??= wire.rust.start().then(
-        () => {
-          if (wire.lifecycle === 'unknown') wire.lifecycle = 'started';
-          startJsPlugins();
-        },
-        (error) => {
-          throw toError(error, (v) => wire.decode(v));
-        },
-      ));
+      return (started ??= wire.rust.start().then(startJsPlugins, (error) => {
+        throw toError(error, (v) => wire.decode(v));
+      }));
     },
     // Frees the Rust side once its destroy settles. After that, as on the
     // TS kernel, `status()` answers 'destroyed', `tryCapability` null,
@@ -294,6 +358,10 @@ export function createKernel(opts: {
         } catch (error) {
           report(toError(error));
         }
+        // Asynchronous teardowns are awaited, as the TS kernel's scopes
+        // await them; after `rust.destroy()` starts, so it still starts at
+        // once.
+        await Promise.all(teardowns.splice(0));
         // After destroy settles, not before: `rust.destroy()` closes every
         // session, and closing dispatches document-removed actions the
         // shim's subscription (`wire.bump()`) still needs to see, matching

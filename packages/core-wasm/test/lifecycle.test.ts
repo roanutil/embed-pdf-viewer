@@ -86,3 +86,86 @@ describe('a kernel whose start failed', () => {
     await expect(k.start()).rejects.toThrow('[kernel] start() on a failed kernel');
   });
 });
+
+describe('init-only JS plugins', () => {
+  type Ctx = Record<string, (...args: never[]) => unknown> & { doc: unknown };
+
+  test("a workspace plugin's init runs inside start(), awaited", async () => {
+    let k!: Kernel;
+    const seen: string[] = [];
+    const plugin = {
+      id: 'late',
+      init: async () => {
+        seen.push(k.status());
+        await new Promise((done) => setTimeout(done, 5));
+        seen.push('init done');
+      },
+    };
+    k = build([commandsPlugin(), plugin]);
+    await k.start();
+    seen.push('started');
+    expect(seen).toEqual(['starting', 'init done', 'started']);
+    expect(k.status()).toBe('started');
+  });
+
+  test('a failing init fails start() and the kernel', async () => {
+    const torn: string[] = [];
+    const plugin = {
+      id: 'broken',
+      init: async (ctx: { cleanup(fn: () => void): void }) => {
+        ctx.cleanup(() => void torn.push('cleanup'));
+        throw new Error('init failed');
+      },
+    };
+    const k = build([commandsPlugin(), plugin]);
+    await expect(k.start()).rejects.toThrow('init failed');
+    expect(k.status()).toBe('failed');
+    expect(torn).toEqual(['cleanup']);
+    expect(k.tryCapability(CommandsToken)).toBe(null);
+    expect(() => k.capability(CommandsToken)).toThrow(
+      '[kernel] capability("commands") on a failed kernel',
+    );
+    await expect(k.start()).rejects.toThrow('[kernel] start() on a failed kernel');
+  });
+
+  test('the context has every PluginContext member', async () => {
+    let ctx!: Ctx;
+    const plugin = { id: 'probe', init: (c: Ctx) => void (ctx = c) };
+    const k = build([commandsPlugin(), plugin]);
+    await k.start();
+    expect(ctx.getState()).toBeUndefined();
+    expect(ctx.core()).toEqual(k.getState().core);
+    expect(ctx.document()).toBe(null);
+    expect(ctx.tryGet(CommandsToken as never)).toBe(k.tryCapability(CommandsToken));
+    const off = ctx.subscribe((() => {}) as never);
+    expect(typeof off).toBe('function');
+    const refused = 'is not supported; only init-only JS plugins run in the eval build';
+    expect(() => ctx.dispatch({ type: 'x' } as never)).toThrow(`ctx.dispatch ${refused}`);
+    expect(() => ctx.documentHandle()).toThrow(`ctx.documentHandle ${refused}`);
+    expect(() => ctx.doc).toThrow(`ctx.doc ${refused}`);
+  });
+
+  test('a rejected cleanup is reported, awaited by destroy, and a late one runs at once', async () => {
+    const reported: unknown[] = [];
+    let ctx!: { cleanup(fn: () => void | Promise<void>): void };
+    const plugin = {
+      id: 'tears',
+      init: (c: typeof ctx) => {
+        ctx = c;
+        c.cleanup(() => Promise.reject(new Error('teardown failed')));
+      },
+    };
+    const k = createKernel({
+      engine: {} as Engine,
+      plugins: [commandsPlugin(), plugin],
+      report: (error) => reported.push(error),
+    });
+    kernel = k;
+    await k.start();
+    await k.destroy();
+    expect(reported).toEqual([new Error('teardown failed')]);
+    const late = vi.fn();
+    ctx.cleanup(late);
+    expect(late).toHaveBeenCalledOnce();
+  });
+});
