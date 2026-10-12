@@ -13,6 +13,7 @@
  *   Map                → `{"$map":[[key, value], ...]}` in insertion order
  *   Set                → `{"$set":[value, ...]}` in insertion order
  *   Error              → `{"$error":{"name","message", ...own enumerable members}}`
+ *                        (only an Error: a non-Error throw is its own canonical value)
  *   AbortSignal        → `{"$signal":{"aborted":bool}}`
  *   function           → `{"$ref":n}`, registered with the harness so a later step can call it
  *   Promise            → `{"$promise":n}`, tracked so its settlement lands in the trace
@@ -20,9 +21,10 @@
  * Numbers are compared as f64, so `1` and `1.0` are the same value. Two
  * integers below 2^53 in magnitude (`Number.isSafeInteger`) compare exactly,
  * so a `$date` or an epoch in milliseconds off by one is a difference; any
- * other pair compares within one part in 10^12. Object member order is not
- * compared; array order is.
+ * other pair compares within one part in 10^12. Array order is compared;
+ * object member order only with `PLUGIN_CONFORMANCE_MEMBER_ORDER` set.
  */
+import { types } from 'node:util';
 
 export interface CanonicalHooks {
   /** Register a function the plugin handed back; returns its ref id, or null
@@ -63,8 +65,18 @@ function base64(bytes: Uint8Array): string {
   return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
 }
 
+/** An `Error` from any realm: a sandbox's errors are not `instanceof` this
+ *  realm's `Error`. */
+function isError(value: unknown): value is Error {
+  return value instanceof Error || types.isNativeError(value);
+}
+
+/** A thrown or rejected value. An `Error` is `{"$error": ...}`; anything
+ *  else (`throw 'text'`, a rejection with a plain object) is that value's own
+ *  canonical form, so a non-Error throw never reads as an `Error`. */
 export function canonicalError(error: unknown, hooks: CanonicalHooks = noHooks): unknown {
-  const e = error as Record<string, unknown> | null;
+  if (!isError(error)) return canonical(error, hooks);
+  const e = error as unknown as Record<string, unknown>;
   const out: Record<string, unknown> = {
     name: typeof e?.name === 'string' ? e.name : 'Error',
     message: typeof e?.message === 'string' ? e.message : String(error),
@@ -72,11 +84,9 @@ export function canonicalError(error: unknown, hooks: CanonicalHooks = noHooks):
   // Every own enumerable member beyond those two: EngineError's `code` and
   // `details`, PermissionDenied's `required` and `context`, AbortError's
   // `reason`. A refusal's shape is behaviour a caller branches on.
-  if (e && typeof e === 'object') {
-    for (const key of Object.keys(e)) {
-      if (key === 'stack' || key === 'name' || key === 'message' || e[key] === undefined) continue;
-      out[key] = canonical(e[key], hooks);
-    }
+  for (const key of Object.keys(e)) {
+    if (key === 'stack' || key === 'name' || key === 'message' || e[key] === undefined) continue;
+    out[key] = canonical(e[key], hooks);
   }
   return { $error: out };
 }
@@ -102,7 +112,7 @@ export function canonical(value: unknown, hooks: CanonicalHooks = noHooks, seen 
   }
   const object = value as object;
   if (isThenable(object)) return { $promise: hooks.promise(object) };
-  if (object instanceof Error) return canonicalError(object, hooks);
+  if (isError(object)) return canonicalError(object, hooks);
   if (object instanceof Uint8Array) return { $bytes: base64(object) };
   if (ArrayBuffer.isView(object)) {
     return { $bytes: base64(new Uint8Array(object.buffer, object.byteOffset, object.byteLength)) };

@@ -109,12 +109,19 @@ answer per call and repeats the last. An interaction handler, a listener, an ope
 - Bytes are `{"$bytes": base64}`, a `Map` is `{"$map": [[k, v], ...]}`, a `Set` is `{"$set": [...]}`.
 - An error is `{"$error": {name, message, ...own enumerable members}}`, so `EngineError.code` and
   `PermissionDenied.required` are compared. Messages are compared exactly.
+  Only an `Error` (from any realm) is written this way. A thrown or rejected value that is not
+  one, `throw 'text'` or a rejection with a plain object, is written as its own canonical form, so
+  it never compares equal to an `Error` with the same message.
 - A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
   in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
-- Member order is not compared; array order is. Numbers compare as `f64`. Two integers below 2^53
-  in magnitude compare exactly, so an epoch in milliseconds off by one fails. Any other pair
-  compares within one part in 10^12, which absorbs a last-bit difference in a transcendental and
-  nothing a coordinate could carry.
+- Array order is compared. Object member order is compared only with
+  `PLUGIN_CONFORMANCE_MEMBER_ORDER=1` set, and never for a trace entry's own members (the
+  runner's envelope). It is opt-in because the Rust plugins do not match it yet: on the vectors
+  of 2026-10-12, 896 cases in 59 vector files differ in member order alone, mostly sorted maps
+  (state keyed by id, `model.defaults`) and struct field order.
+- Numbers compare as `f64`. Two integers below 2^53 in magnitude compare exactly, so an epoch in
+  milliseconds off by one fails. Any other pair compares within one part in 10^12, which absorbs a
+  last-bit difference in a transcendental and nothing a coordinate could carry.
 
 A Rust capability printed as an outcome lists its members in the order the TypeScript object
 literal defines them (`HarnessPlugin::members`), because that order numbers the refs.
