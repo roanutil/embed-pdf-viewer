@@ -595,6 +595,32 @@ fn a_cancelled_run_is_still_running_inside_its_abort_listener() {
     assert!(!lane.running());
 }
 
+#[derive(serde::Serialize)]
+struct Count(u32);
+
+#[derive(serde::Serialize)]
+#[serde(tag = "type")]
+enum Bump {
+    Bump,
+}
+
+#[test]
+#[should_panic(expected = "[counter] a plugin with a reducer needs an initial_state")]
+fn a_reducer_without_an_initial_state_is_refused() {
+    epdf_kernel::plugin::define::<Count, Bump>("counter")
+        .reduce(|count, _| Some(Count(count.0 + 1)))
+        .build();
+}
+
+#[test]
+fn a_reducer_with_an_initial_state_or_over_json_builds() {
+    epdf_kernel::plugin::define::<Count, Bump>("counter")
+        .initial_state(|| Count(0))
+        .reduce(|count, _| Some(Count(count.0 + 1)))
+        .build();
+    epdf_kernel::plugin::define::<Value, Bump>("json").reduce(|_, _| None).build();
+}
+
 #[test]
 fn signals_compare_by_controller() {
     let signal = AbortSignal::new();

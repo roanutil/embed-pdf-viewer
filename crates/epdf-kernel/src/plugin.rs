@@ -1006,7 +1006,17 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
         self
     }
 
+    /// Panics for a reducer without an [`initial_state`](Self::initial_state)
+    /// (unless the state is a JSON [`Value`]): the slice would start as
+    /// `{}`, which is not an `S`, so the reducer could never run.
     pub fn build(self) -> AnyPlugin {
+        assert!(
+            self.reduce.is_none()
+                || self.initial_state.is_some()
+                || std::any::TypeId::of::<S>() == std::any::TypeId::of::<Value>(),
+            "[{}] a plugin with a reducer needs an initial_state",
+            self.id
+        );
         let initial_state: Rc<dyn Fn() -> SliceState> = match self.initial_state {
             Some(initial) => Rc::new(move || Rc::new(initial()) as SliceState),
             // `plugin.initialState ?? {}`
