@@ -52,7 +52,7 @@ import { InteractionToken } from '../../../../packages/plugin/interaction/src/ho
 import { StampToken } from '../../../../packages/plugin/stamp/src/contract';
 
 import { makeError, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 import type { AnswerSpec } from './acrojs';
 import { created, hydrate, stamp as stampDto } from './annotation-fixtures';
@@ -84,6 +84,9 @@ const GOOD_DIGEST = $b(Buffer.from(digestBytes(32, 3)).toString('base64'));
 // ── the harness factory ───────────────────────────────────────────────────────
 
 let signatureLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  signatureLog = null;
+});
 const previousError = console.error;
 console.error = (...args: unknown[]) => {
   if (signatureLog && typeof args[0] === 'string' && args[0].startsWith('[signature]')) {

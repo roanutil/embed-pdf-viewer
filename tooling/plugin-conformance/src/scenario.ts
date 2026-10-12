@@ -131,8 +131,20 @@ export function tokenNamed(name: string, hint?: string): CapabilityToken<unknown
 }
 
 export function registerPlugin(name: string, entry: PluginEntry): void {
+  // Two suites registering one name would leave every case of the first
+  // building the second's plugin, depending on import order.
+  if (factories.has(name)) throw new Error(`[scenario] plugin factory "${name}" is registered twice`);
   factories.set(name, entry);
   for (const token of entry.tokens ?? []) tokens.set(token.name, token);
+}
+
+/** Resets run when each case ends. A suite that routes a module-global hook
+ *  (a console shim) to the current case's env registers one, so output after
+ *  the case reaches the real console instead of a finished case's trace. */
+const caseEndResets: (() => void)[] = [];
+
+export function onCaseEnd(reset: () => void): void {
+  caseEndResets.push(reset);
 }
 
 export function registerToken(token: CapabilityToken<unknown>): void {
@@ -168,6 +180,7 @@ export async function runScenario(scenario: ScenarioCase): Promise<{ trace: Trac
 }
 
 async function runScenarioRaw(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
+  assertPlainAnswers(scenario);
   runTokens = new Map();
   const clock = FakeTimers.install({
     now: 0,
@@ -180,6 +193,7 @@ async function runScenarioRaw(scenario: ScenarioCase): Promise<{ trace: TraceEnt
   } finally {
     process.off('unhandledRejection', onUnhandled);
     clock.uninstall();
+    for (const reset of caseEndResets) reset();
   }
 }
 
@@ -533,4 +547,56 @@ function scriptedFn(spec: FnSpec, dc: DecodeContext): (...args: unknown[]) => un
     if ('resolves' in answer) return Promise.resolve(decodeValue(answer.resolves, dc));
     return decodeValue(answer.returns, dc);
   };
+}
+
+/** Tags this runner would turn into live objects, which the Rust runner
+ *  (`harness.rs` `Callback::call`, `fake_engine.rs`) hands a plugin as the
+ *  tagged JSON itself. An answer carrying one would replay differently, so
+ *  `assertPlainAnswers` refuses the case. `$undefined`, `$number` and
+ *  `$bytes` are how the Rust kernel holds those values, and a nested `$fn`
+ *  is turned into a function by the adapter that reads it, so those stay. */
+const LIVE_TAGS = ['$error', '$map', '$set', '$token', '$ref'] as const;
+
+function refuseLiveTags(value: unknown, where: string): void {
+  if (Array.isArray(value)) return value.forEach((item) => refuseLiveTags(item, where));
+  if (value === null || typeof value !== 'object') return;
+  const tag = LIVE_TAGS.find((t) => t in value);
+  if (tag) {
+    throw new Error(`[scenario] ${where} carries ${tag}, which the Rust runner would replay as raw JSON`);
+  }
+  for (const member of Object.values(value)) refuseLiveTags(member, where);
+}
+
+/** Every `$fn` spec in `value`: its `returns` and `resolves` answers. */
+function refuseInCallbackAnswers(value: unknown, where: string): void {
+  if (Array.isArray(value)) return value.forEach((item) => refuseInCallbackAnswers(item, where));
+  if (value === null || typeof value !== 'object') return;
+  const spec = value as Partial<FnSpec>;
+  if (typeof spec.$fn === 'string') {
+    for (const answer of [spec, ...(spec.seq ?? [])]) {
+      refuseLiveTags(answer.returns, `${where}: callback "${spec.$fn}"`);
+      refuseLiveTags(answer.resolves, `${where}: callback "${spec.$fn}"`);
+    }
+  }
+  for (const member of Object.values(value)) refuseInCallbackAnswers(member, where);
+}
+
+/** Refuse a case whose callback or fake-engine answers carry a `LIVE_TAGS`
+ *  member: the two runners would hand the plugin different values. */
+function assertPlainAnswers(scenario: ScenarioCase): void {
+  const where = `case "${scenario.name}"`;
+  const engine = scenario.engine ?? {};
+  for (const response of engine.responses ?? []) refuseLiveTags(response.value, `${where}: engine ${response.path}`);
+  for (const [key, document] of Object.entries(engine.documents ?? {})) {
+    for (const response of document.responses ?? []) {
+      refuseLiveTags(response.value, `${where}: document ${key} ${response.path}`);
+    }
+    refuseLiveTags([document.capabilities, document.security, document.pages], `${where}: document ${key}`);
+  }
+  refuseInCallbackAnswers(scenario.plugins, where);
+  for (const step of scenario.steps) {
+    if (step.op === 'settle') refuseLiveTags(step.value, `${where}: settle ${step.label}`);
+    if (step.op === 'emit') refuseLiveTags(step.event, `${where}: emit to ${step.doc}`);
+    if (step.op === 'call') refuseInCallbackAnswers(step.args, where);
+  }
 }

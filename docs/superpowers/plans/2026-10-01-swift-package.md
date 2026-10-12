@@ -3118,9 +3118,9 @@ Each test asserts only that both bridges returned equal results: the same hit co
 
 - [ ] **Step 8: Run on the perf machine**
 
-Timed runs go to the dedicated perf machine, not the dev laptop: `andrew@2023mbp16grey.local` over SSH. That's the convention the viewer perf comparison already uses. Build Release for both Rust (`PROFILE=release`, the script default) and Swift:
+Timed runs go to the dedicated perf machine, not the dev laptop: `user@remote-host` over SSH. That's the convention the viewer perf comparison already uses. Build Release for both Rust (`PROFILE=release`, the script default) and Swift:
 ```bash
-ssh andrew@2023mbp16grey.local 'cd ~/repos/embed-pdf-viewer && git fetch && git checkout <branch> \
+ssh user@remote-host 'cd ~/repos/embed-pdf-viewer && git fetch && git checkout <branch> \
   && bash platforms/apple/build-xcframework.sh --experimental-manual-bridge \
   && cd platforms/apple/EmbedPDF \
   && EMBEDPDF_EXPERIMENTAL_BRIDGE=1 xcodebuild test -scheme EmbedPDF-Package -configuration Release \

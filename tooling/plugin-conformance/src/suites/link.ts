@@ -19,7 +19,7 @@ import { initialLinkState, linkReducer } from '../../../../packages/plugin/link/
 import { LinkToken, type LinkActivatedEvent, type LinkAction, type LinkHostCapability, type LinkState } from '../../../../packages/plugin/link/src/host-contract';
 
 import type { ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
 import { stageStep } from './stage-plugin';
@@ -66,6 +66,9 @@ const printable = (event: LinkActivatedEvent) => ({
  *  `[link]` prefix; while a link factory is current that logs as the
  *  callback `console.error`, as the annotation and redaction suites do. */
 let linkLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  linkLog = null;
+});
 {
   const previous = console.error;
   console.error = (...args: unknown[]) => {

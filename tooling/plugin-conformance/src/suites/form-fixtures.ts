@@ -31,7 +31,7 @@ import { ActionsToken as ActionsHostToken, type ActionsHostCapability } from '..
 import { javaScriptProgramFromActionTree } from '../../../../packages/core/acrojs/src/index';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 import type { AnswerSpec, SandboxSpec } from './acrojs';
 import './actions';
@@ -42,6 +42,9 @@ export { pr };
 // ── shims ─────────────────────────────────────────────────────────────────────
 
 let consoleEnv: PluginEnv | null = null;
+onCaseEnd(() => {
+  consoleEnv = null;
+});
 /** Installed on the first `form` build rather than at import, so it wraps the
  *  shims later suites install (render and i18n route every warning to their
  *  own last case) instead of sitting underneath them. */

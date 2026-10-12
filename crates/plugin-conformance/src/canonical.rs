@@ -1,6 +1,8 @@
 //! Comparing canonical JSON (`tooling/plugin-conformance/src/canonical.ts`).
 //!
-//! Object member order is not compared; array order is. Numbers compare as
+//! Array order is compared. Object member order is compared only when
+//! `PLUGIN_CONFORMANCE_MEMBER_ORDER` is set (see [`member_order_checked`]):
+//! the Rust plugins do not match it yet. Numbers compare as
 //! `f64`. Two integers below 2^53 in magnitude compare exactly. Anything else
 //! compares with a relative tolerance of one part in 10^12. The tolerance is
 //! there for transcendental functions: V8's `Math.sin` and the platform libm
@@ -35,9 +37,25 @@ pub fn numbers_equal(a: f64, b: f64) -> bool {
     (a - b).abs() <= RELATIVE_TOLERANCE * scale
 }
 
+/// Whether object member order is compared: `PLUGIN_CONFORMANCE_MEMBER_ORDER`
+/// set to anything. Order is behaviour (a caller walking `Object.keys` sees
+/// it), but the Rust plugins write many objects in another order (sorted
+/// maps, struct field order), so the check is opt-in until they match.
+pub fn member_order_checked() -> bool {
+    static CHECKED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *CHECKED.get_or_init(|| std::env::var_os("PLUGIN_CONFORMANCE_MEMBER_ORDER").is_some())
+}
+
 /// `None` when equal, else the path to the first difference and both sides.
 pub fn diff(expected: &Value, actual: &Value) -> Option<String> {
-    diff_at("$", expected, actual)
+    diff_at("$", expected, actual, member_order_checked())
+}
+
+/// [`diff`] for a trace entry: the entry's own members are the runner's
+/// envelope (`outcome`, `settled`, ...), which each runner writes in its own
+/// order, so only the values inside them can have their member order compared.
+pub fn diff_entry(expected: &Value, actual: &Value) -> Option<String> {
+    diff_members("$", expected, actual, false, member_order_checked())
 }
 
 pub fn equal(expected: &Value, actual: &Value) -> bool {
@@ -53,7 +71,19 @@ fn short(value: &Value) -> String {
     }
 }
 
-fn diff_at(path: &str, expected: &Value, actual: &Value) -> Option<String> {
+fn diff_at(path: &str, expected: &Value, actual: &Value, ordered: bool) -> Option<String> {
+    diff_members(path, expected, actual, ordered, ordered)
+}
+
+/// `ordered` compares this object's member order; `nested` is the flag every
+/// value below it gets.
+fn diff_members(
+    path: &str,
+    expected: &Value,
+    actual: &Value,
+    ordered: bool,
+    nested: bool,
+) -> Option<String> {
     match (expected, actual) {
         (Value::Number(a), Value::Number(b)) => {
             let (a, b) = (a.as_f64().unwrap_or(f64::NAN), b.as_f64().unwrap_or(f64::NAN));
@@ -61,7 +91,7 @@ fn diff_at(path: &str, expected: &Value, actual: &Value) -> Option<String> {
         }
         (Value::Array(a), Value::Array(b)) => {
             for (i, (x, y)) in a.iter().zip(b.iter()).enumerate() {
-                if let Some(d) = diff_at(&format!("{path}[{i}]"), x, y) {
+                if let Some(d) = diff_at(&format!("{path}[{i}]"), x, y, nested) {
                     return Some(d);
                 }
             }
@@ -80,7 +110,7 @@ fn diff_at(path: &str, expected: &Value, actual: &Value) -> Option<String> {
             for (key, x) in a {
                 match b.get(key) {
                     Some(y) => {
-                        if let Some(d) = diff_at(&format!("{path}.{key}"), x, y) {
+                        if let Some(d) = diff_at(&format!("{path}.{key}"), x, y, nested) {
                             return Some(d);
                         }
                     }
@@ -91,6 +121,18 @@ fn diff_at(path: &str, expected: &Value, actual: &Value) -> Option<String> {
                 if !a.contains_key(key) {
                     return Some(format!("{path}.{key}: unexpected {}", short(y)));
                 }
+            }
+            // Same members, same values: the order is still behaviour, since
+            // a caller that walks `Object.keys` sees it.
+            if ordered && !a.keys().eq(b.keys()) {
+                let order = |m: &serde_json::Map<String, Value>| {
+                    m.keys().cloned().collect::<Vec<_>>().join(", ")
+                };
+                return Some(format!(
+                    "{path}: member order: expected [{}], got [{}]",
+                    order(a),
+                    order(b)
+                ));
             }
             None
         }
@@ -129,7 +171,25 @@ pub fn key(value: &Value) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::numbers_equal;
+    use super::{diff_members, numbers_equal};
+    use serde_json::json;
+
+    #[test]
+    fn member_order_is_compared_below_the_envelope_when_asked() {
+        let (a, b) =
+            (json!({"x": 1, "y": {"p": 1, "q": 2}}), json!({"y": {"q": 2, "p": 1}, "x": 1}));
+        assert_eq!(diff_members("$", &a, &b, false, false), None);
+        assert_eq!(
+            diff_members("$", &a, &b, false, true).as_deref(),
+            Some("$.y: member order: expected [p, q], got [q, p]")
+        );
+        let c = json!({"y": {"p": 1, "q": 2}, "x": 1});
+        assert_eq!(diff_members("$", &a, &c, false, true), None);
+        assert_eq!(
+            diff_members("$", &a, &c, true, true).as_deref(),
+            Some("$: member order: expected [x, y], got [y, x]")
+        );
+    }
 
     #[test]
     fn integers_below_2_pow_53_compare_exactly() {

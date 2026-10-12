@@ -20,8 +20,54 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const vectorsRoot = join(packageRoot, 'vectors');
 const cratesRoot = join(packageRoot, '..', '..', 'crates');
 
-/** Written by `coverage.ts`, not by a suite, and replayed by nothing. */
-const NOT_A_SUITE = new Set(['coverage.json']);
+/** The ICU the vectors were written with. */
+const ENVIRONMENT_FILE = 'environment.json';
+
+/** Written by `coverage.ts` or by `emit` itself, not by a suite, and
+ *  replayed by nothing. */
+const NOT_A_SUITE = new Set(['coverage.json', ENVIRONMENT_FILE]);
+
+/**
+ * Node's ICU decides what some cases print: `Intl.PluralRules` (i18n
+ * plurals) and `localeCompare` (render tiles, sorting). A Node with another
+ * ICU can write other vectors from the same TypeScript, so a write records
+ * the versions and a check compares against them.
+ */
+interface Environment {
+  readonly icu: string | null;
+  readonly unicode: string | null;
+}
+
+function currentEnvironment(): Environment {
+  return { icu: process.versions.icu ?? null, unicode: process.versions.unicode ?? null };
+}
+
+async function recordedEnvironment(): Promise<Environment | null> {
+  const text = await readFile(join(vectorsRoot, ENVIRONMENT_FILE), 'utf8').catch(() => null);
+  return text === null ? null : (JSON.parse(text) as Environment);
+}
+
+function describeEnvironment(environment: Environment): string {
+  return `ICU ${environment.icu ?? 'none'} (Unicode ${environment.unicode ?? 'none'})`;
+}
+
+/** The difference between the recorded and the running ICU, or null. */
+async function environmentDrift(): Promise<string | null> {
+  const recorded = await recordedEnvironment();
+  const current = currentEnvironment();
+  if (!recorded) return `vectors/${ENVIRONMENT_FILE} is missing, so the ICU the vectors were written with is unknown`;
+  if (recorded.icu === current.icu && recorded.unicode === current.unicode) return null;
+  return `the vectors were written with ${describeEnvironment(recorded)}, and this Node (${process.version}) has ${describeEnvironment(current)}`;
+}
+
+async function writeEnvironment(): Promise<void> {
+  const recorded = await recordedEnvironment();
+  const current = currentEnvironment();
+  if (recorded && (recorded.icu !== current.icu || recorded.unicode !== current.unicode)) {
+    console.log(`ICU changed: ${describeEnvironment(recorded)} to ${describeEnvironment(current)}; review i18n and sorting cases in the diff`);
+  }
+  await writeFile(join(vectorsRoot, ENVIRONMENT_FILE), `${JSON.stringify(current, null, 2)}\n`);
+}
 
 async function filesUnder(root: string, keep: (name: string) => boolean): Promise<string[]> {
   const out: string[] = [];
@@ -165,11 +211,22 @@ export async function emit(suites: readonly Suite[], mode: 'write' | 'check' | '
       console.log(`wrote vectors/${suite.file}`);
     }
   }
+  const drift = check ? await environmentDrift() : null;
   if (stale.length) {
     console.error(`stale vectors (run \`pnpm --filter @embedpdf/tooling-plugin-conformance run vectors\`):`);
     for (const file of stale) console.error(`  vectors/${file}`);
+    if (drift) {
+      console.error(
+        `and ${drift}. An ICU difference changes plural and collation output, so these files may be stale ` +
+          'only because of it. Check with the recorded ICU before regenerating.',
+      );
+    }
     process.exitCode = 1;
+  } else if (drift) {
+    // stderr directly: suites replace `console.warn` to capture plugin output.
+    process.stderr.write(`warning: ${drift}. Every file still matches, but i18n plural and localeCompare cases may not on the next change.\n`);
   }
+  if (mode === 'write' && !only) await writeEnvironment();
   if (check) {
     const { orphaned, unreplayed } = await unaccounted(names, only);
     if (orphaned.length) {

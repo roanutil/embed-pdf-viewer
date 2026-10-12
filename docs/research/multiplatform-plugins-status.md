@@ -12,9 +12,10 @@ cargo test -p <crate>                                                   # the Ru
 needs no fork artifacts.
 
 Groups K0 through P5 are done, against the v3 TypeScript that `research/multi-platform-rust-core-impl`
-carries at `278019267`. The kernel, every core library a plugin imports, and all 20 plugin packages
+carries at `278019267`. The kernel, every core library a plugin imports, and all 19 plugin packages
 have a Rust crate that replays vectors generated from that TypeScript. P6, the adapter onto
-`crates/epdf-engine` and the uniffi exports, is not started. How the port caught up with the v3
+`crates/epdf-engine` and the uniffi exports, ships as `crates/epdf-viewer-host` (added in
+`57617919c`); its gate is `crates/epdf-viewer-host/tests/viewer_host.rs`. How the port caught up with the v3
 restructure is in `multiplatform-plugins-rebase.md`.
 
 ## What is ported
@@ -167,8 +168,9 @@ from parallel worktrees crashed the development machine twice before it existed.
 above came from running it file by file over every crate, from a worktree kept apart from the ones
 agents were editing.
 
-## Not started
+## P6
 
-P6: an `epdf-viewer-host` crate that puts the kernel and plugins on `crates/epdf-engine` through
-its `host.rs` wire, and the uniffi exports for the native facades. Its gate is an integration test
-over a fixture, not vectors, because the engine is pinned on its own.
+`crates/epdf-viewer-host` puts the kernel and plugins on `crates/epdf-engine` and exports them
+through uniffi for the native facades. Its gate is an integration test over a fixture
+(`crates/epdf-viewer-host/tests/viewer_host.rs`), not vectors, because the engine is pinned on its
+own.

@@ -17,6 +17,12 @@
  * `multiplatform-plugins-status.md` gives the reason for each one that
  * remains: unreachable from the public surface, DOM-only, or a gap.
  *
+ * c8 runs with `--all=false`, so a ported file no generator imports would
+ * be missing from the report rather than counted as uncovered. `unloaded`
+ * lists those files, found on disk: type-only modules and barrels, mostly.
+ * It is held to the same either-direction check, so a new file no vector
+ * loads shows up in review instead of passing unseen.
+ *
  * Reaching a line is not the same as comparing what it did. A scenario case
  * with `snapshot: 'none'` records no state, so a reducer it drives is checked
  * only through the actions, outcomes and engine calls around it. A second run
@@ -26,7 +32,7 @@
  * that skips the snapshot shows up in review as lines added here.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 
@@ -85,6 +91,27 @@ async function measure(args: readonly string[]): Promise<Map<string, IstanbulFil
   } finally {
     await rm(reportDir, { recursive: true, force: true });
   }
+}
+
+/** Every ported source file on disk, repo-relative: what `measure` would
+ *  report if each one were loaded. */
+async function portedOnDisk(): Promise<string[]> {
+  const out: string[] = [];
+  const walk = async (dir: string): Promise<void> => {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules') await walk(path);
+        continue;
+      }
+      const rel = relative(repoRoot, path);
+      if (!/\.tsx?$/.test(rel) || /\.test\.tsx?$|\.d\.ts$/.test(rel)) continue;
+      if (PORTED.test(rel) && !NOT_PORTED.has(rel)) out.push(rel);
+    }
+  };
+  await walk(join(repoRoot, 'packages/core'));
+  await walk(join(repoRoot, 'packages/plugin'));
+  return out.sort();
 }
 
 /** The lines of every statement `file` never ran. */
@@ -152,19 +179,22 @@ for (const [path, file] of all) {
   };
 }
 const sorted = Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b)));
+const unloaded = (await portedOnDisk()).filter((path) => !all.has(path));
 const text = `${JSON.stringify(
   {
     total: {
       statements: `${statementsHit}/${statements}`,
       branches: `${branchesHit}/${branches}`,
       unsnapshottedOnlyLines: unsnapshottedLines,
+      unloadedFiles: unloaded.length,
     },
+    unloaded,
     files: sorted,
   },
   null,
   2,
 )}\n`;
-const summary = `statements ${statementsHit}/${statements}, branches ${branchesHit}/${branches}, ${unsnapshottedLines} lines reached only by snapshot-none cases`;
+const summary = `statements ${statementsHit}/${statements}, branches ${branchesHit}/${branches}, ${unsnapshottedLines} lines reached only by snapshot-none cases, ${unloaded.length} ported files no generator loads`;
 const target = join(vectorsRoot, 'coverage.json');
 if (check) {
   const current = await readFile(target, 'utf8').catch(() => null);

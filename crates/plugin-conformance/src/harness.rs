@@ -32,9 +32,13 @@ impl Outcome {
         }
     }
 
-    /// A promise whose value serializes.
+    /// A promise whose value serializes. A value that does not rejects,
+    /// rather than resolving to a `null` the TypeScript never produced.
     pub fn promise<T: serde::Serialize + Clone + 'static>(promise: Promise<T>) -> Outcome {
-        Outcome::Promise(promise.map(|v| Ok(serde_json::to_value(v).unwrap_or(Value::Null))))
+        Outcome::Promise(promise.map(|v| {
+            serde_json::to_value(v)
+                .map_err(|e| Error::new(format!("[harness] a result does not serialize: {e}")))
+        }))
     }
 
     /// A promise of nothing: resolves to `undefined`, in the turn `promise`

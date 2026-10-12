@@ -62,7 +62,7 @@ pub fn load(file: &str) -> Value {
 /// Compare one case's trace, returning the first difference.
 pub fn compare_trace(expected: &[Value], actual: &[Value]) -> Option<String> {
     for (index, (want, got)) in expected.iter().zip(actual.iter()).enumerate() {
-        if let Some(diff) = canonical::diff(want, got) {
+        if let Some(diff) = canonical::diff_entry(want, got) {
             return Some(format!("step {index}: {diff}"));
         }
     }
@@ -120,6 +120,14 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                         }
                         if let Some(diff) = compare_trace(&expected, &run.trace) {
                             failures.push(format!("{name}: {diff}"));
+                        } else if !run.unmatched.is_empty()
+                            && case["allowUnmatched"].as_bool() != Some(true)
+                        {
+                            // The generator refuses the same case (`vectors.ts`).
+                            failures.push(format!(
+                                "{name}: unanswered engine calls:\n    {}",
+                                run.unmatched.join("\n    ")
+                            ));
                         }
                     }
                 }

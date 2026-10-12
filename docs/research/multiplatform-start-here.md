@@ -16,11 +16,11 @@ Read these five, in order. Everything else at the root is a detail they link to.
 2. [`multiplatform-plugins-plan.md`](multiplatform-plugins-plan.md): why the kernel and plugins
    moved too, and the method. The shipping TypeScript is the oracle, and recorded vectors in
    `tooling/plugin-conformance/vectors/` hold the Rust to it.
-3. [`examples/rust-kernel-eval/README.md`](examples/rust-kernel-eval/README.md): building and
+3. [`examples/rust-kernel-eval/README.md`](../../examples/rust-kernel-eval/README.md): building and
    running the web viewer on the Rust kernel. Read "Building it" below first.
-4. [`docs/research/rust-plugins-web-eval.md`](docs/research/rust-plugins-web-eval.md): a manual
+4. [`docs/research/rust-plugins-web-eval.md`](rust-plugins-web-eval.md): a manual
    pass over the viewer, feature by feature, against the TypeScript viewer on the same PDFs.
-5. [`perf-compare/FINDINGS.md`](perf-compare/FINDINGS.md): performance against `main`. Read the
+5. [`perf-compare/FINDINGS.md`](../../perf-compare/FINDINGS.md): performance against `main`. Read the
    numbers below before its opening section, which is dated 2026-09-29 and out of date.
 
 ## Building it
@@ -65,11 +65,11 @@ mostly Stage B's 65-op `Host`, and that growth hasn't been timed on its own.
   [`multiplatform-plugins-status.md`](multiplatform-plugins-status.md) for the plugins. Both date
   from late September.
 - Review findings on the plugins branch (0 critical, 4 high, 34 medium, 89 low):
-  [`docs/research/rust-plugins-branch-review.md`](docs/research/rust-plugins-branch-review.md).
+  [`docs/research/rust-plugins-branch-review.md`](rust-plugins-branch-review.md).
 - Native packaging, built locally and published nowhere:
-  [`platforms/apple/README.md`](platforms/apple/README.md) and
-  [`platforms/android/README.md`](platforms/android/README.md).
-- How the benchmark works: [`perf-compare/README.md`](perf-compare/README.md).
+  [`platforms/apple/README.md`](../../platforms/apple/README.md) and
+  [`platforms/android/README.md`](../../platforms/android/README.md).
+- How the benchmark works: [`perf-compare/README.md`](../../perf-compare/README.md).
   `perf-compare/RESULTS.md` is about the engine-only branch,
   `research/multi-platform-rust-core-impl`, not this one.
 

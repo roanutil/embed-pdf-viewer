@@ -29,7 +29,7 @@ import type { AnnotationConfig } from '../../../../packages/plugin/annotation/sr
 import { AnnotationToken, type AnnotationHostCapability } from '../../../../packages/plugin/annotation/src/host-contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 
 export const suites: Suite[] = [];
@@ -48,6 +48,9 @@ Object.defineProperty(globalThis.crypto, 'randomUUID', {
 });
 
 let currentLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  currentLog = null;
+});
 const originalError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
   if (currentLog && typeof args[0] === 'string' && args[0].startsWith('[annotation]')) {

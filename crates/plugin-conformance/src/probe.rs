@@ -410,7 +410,13 @@ const API: &[&str] = &[
     "forDocument",
     "tryForDocument",
     "cleanup",
+    "signalReason",
 ];
+
+/// `controller.abort()` with no reason: the platform's `DOMException`.
+fn dom_abort_error() -> Error {
+    Error::named("AbortError", "This operation was aborted")
+}
 
 /// `probeError`: the classes a table cannot make.
 fn probe_error(spec: &Value) -> Error {
@@ -659,7 +665,7 @@ impl ProbeController {
             }
             "abortSignal" => {
                 if let Some(signal) = signal_arg(0) {
-                    signal.abort(Error::new("aborted"));
+                    signal.abort(arg(args, 1).map_or_else(dom_abort_error, Error::from_spec));
                 }
                 Outcome::undefined()
             }
@@ -776,6 +782,13 @@ impl ProbeController {
                 cx.cleanup_fn(move || h2.log(&format!("{name}.cleanup"), vec![label]));
                 Outcome::undefined()
             }
+            "signalReason" => Outcome::Returned(
+                self.controllers
+                    .borrow()
+                    .get(&str_arg(args, 0))
+                    .and_then(AbortSignal::reason)
+                    .map_or_else(epdf_kernel::undefined, |reason| reason.to_canonical()),
+            ),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }

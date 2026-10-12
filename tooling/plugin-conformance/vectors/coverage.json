@@ -1,9 +1,37 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12190/12519",
-    "unsnapshottedOnlyLines": 1475
+    "branches": "12179/12509",
+    "unsnapshottedOnlyLines": 1475,
+    "unloadedFiles": 25
   },
+  "unloaded": [
+    "packages/core/annotation/src/types.ts",
+    "packages/core/main/src/testing.ts",
+    "packages/plugin/actions/src/dispatch/core.ts",
+    "packages/plugin/actions/src/index.ts",
+    "packages/plugin/actions/src/internal.ts",
+    "packages/plugin/actions/src/services/context.ts",
+    "packages/plugin/annotation/src/internal.ts",
+    "packages/plugin/annotation/src/services/context.ts",
+    "packages/plugin/form/src/internal.ts",
+    "packages/plugin/form/src/services/context.ts",
+    "packages/plugin/link/src/index.ts",
+    "packages/plugin/measurement/src/internal.ts",
+    "packages/plugin/measurement/src/services/context.ts",
+    "packages/plugin/page-edit/src/internal.ts",
+    "packages/plugin/redaction/src/internal.ts",
+    "packages/plugin/redaction/src/services/context.ts",
+    "packages/plugin/shell/src/internal.ts",
+    "packages/plugin/signature/src/index.ts",
+    "packages/plugin/signature/src/internal.ts",
+    "packages/plugin/signature/src/services/context.ts",
+    "packages/plugin/stage/src/services/context.ts",
+    "packages/plugin/stamp/src/index.ts",
+    "packages/plugin/stamp/src/internal.ts",
+    "packages/plugin/stamp/src/services/context.ts",
+    "packages/plugin/view-manager/src/internal.ts"
+  ],
   "files": {
     "packages/core/acrojs/src/actions.ts": {
       "statements": "26/26",
@@ -57,7 +85,7 @@
     },
     "packages/core/annotation/src/cloudy.ts": {
       "statements": "561/570",
-      "branches": "122/132",
+      "branches": "119/130",
       "uncoveredLines": [
         111,
         112,
@@ -79,6 +107,7 @@
         "311:56#0",
         "347:26#0",
         "359:17#0",
+        "428:23#0",
         "453:22#0"
       ]
     },
@@ -208,7 +237,7 @@
     },
     "packages/core/annotation/src/update.ts": {
       "statements": "1980/1980",
-      "branches": "726/734",
+      "branches": "724/732",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "269:12#0",
@@ -1151,7 +1180,7 @@
     },
     "packages/plugin/annotation/src/services/records.ts": {
       "statements": "69/69",
-      "branches": "14/15",
+      "branches": "12/13",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "33:14#0"
@@ -1187,7 +1216,7 @@
     },
     "packages/plugin/annotation/src/sync/hydration.ts": {
       "statements": "165/165",
-      "branches": "46/48",
+      "branches": "44/46",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "59:14#0",
@@ -1199,7 +1228,7 @@
     },
     "packages/plugin/annotation/src/sync/remote.ts": {
       "statements": "78/78",
-      "branches": "21/21",
+      "branches": "19/19",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

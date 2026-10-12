@@ -29,6 +29,13 @@ source: some `.rs` file under `crates/` must hold the path as a string literal
 (`"plugins/actions.json"`), as every `assert_suite` call does. A literal in a test that never runs
 would still pass.
 
+`vectors/environment.json` records the ICU and Unicode versions of the Node that wrote the vectors
+(`process.versions.icu`). ICU decides `Intl.PluralRules` (i18n plurals) and `localeCompare` (render
+tiles, sorting), so another Node can write other vectors from the same TypeScript. A full write
+updates the file and says when the version changed. `vectors:check` compares it with the running
+Node: when every file still matches it only warns, and when some file is stale it says the ICU
+differs, so a stale plural is not mistaken for a TypeScript change.
+
 A function case is `{name, fn, args, outcome}`: a pure function called with canonical arguments.
 The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use this family for
 everything that has no lifecycle: geometry, reducers called directly, tile planning, layout. It is
@@ -56,8 +63,8 @@ its empty slice is in every snapshot.
 promise to settle before it drains. WebCrypto answers from libuv's thread pool, which no number of
 microtask turns reaches, so without it a `crypto.subtle` result would land in whichever later step
 happened to be running. The Rust runner ignores the field: a Rust step already runs until nothing
-is left. Only `core/signature-*` sets it, and a call that has not settled after 5 real seconds fails
-the generator.
+is left. The `core/signature-*` suites and `plugins/signature.json` set it, and a call that has not
+settled after 5 real seconds fails the generator.
 
 | op | fields | does |
 |---|---|---|
@@ -100,6 +107,14 @@ callback: every call logs `{fn: name, args}` and answers with `throws`, `defer` 
 answer per call and repeats the last. An interaction handler, a listener, an open thunk: each is a
 `$fn`, or an object of them.
 
+Answers are not arguments. A `$fn`'s `returns` and `resolves`, a fake-engine response `value`, a
+`settle` value, an `emit` event and a document's `capabilities`, `security` and `pages` reach the
+Rust plugin as the JSON itself (`Callback::call`, `fake_engine.rs`), while the TypeScript decodes
+them. The two agree on `$undefined`, `$number` and `$bytes`, which are how the Rust kernel holds
+those values, and on a nested `$fn`, which the adapter that reads it turns into a function. They
+would not agree on `$error`, `$map`, `$set`, `$token` or `$ref`, so the generator refuses a case
+that puts one in an answer.
+
 ### Canonical JSON
 
 `src/canonical.ts` defines it and `crates/plugin-conformance/src/canonical.rs` compares it.
@@ -109,12 +124,19 @@ answer per call and repeats the last. An interaction handler, a listener, an ope
 - Bytes are `{"$bytes": base64}`, a `Map` is `{"$map": [[k, v], ...]}`, a `Set` is `{"$set": [...]}`.
 - An error is `{"$error": {name, message, ...own enumerable members}}`, so `EngineError.code` and
   `PermissionDenied.required` are compared. Messages are compared exactly.
+  Only an `Error` (from any realm) is written this way. A thrown or rejected value that is not
+  one, `throw 'text'` or a rejection with a plain object, is written as its own canonical form, so
+  it never compares equal to an `Error` with the same message.
 - A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
   in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
-- Member order is not compared; array order is. Numbers compare as `f64`. Two integers below 2^53
-  in magnitude compare exactly, so an epoch in milliseconds off by one fails. Any other pair
-  compares within one part in 10^12, which absorbs a last-bit difference in a transcendental and
-  nothing a coordinate could carry.
+- Array order is compared. Object member order is compared only with
+  `PLUGIN_CONFORMANCE_MEMBER_ORDER=1` set, and never for a trace entry's own members (the
+  runner's envelope). It is opt-in because the Rust plugins do not match it yet: on the vectors
+  of 2026-10-12, 896 cases in 59 vector files differ in member order alone, mostly sorted maps
+  (state keyed by id, `model.defaults`) and struct field order.
+- Numbers compare as `f64`. Two integers below 2^53 in magnitude compare exactly, so an epoch in
+  milliseconds off by one fails. Any other pair compares within one part in 10^12, which absorbs a
+  last-bit difference in a transcendental and nothing a coordinate could carry.
 
 A Rust capability printed as an outcome lists its members in the order the TypeScript object
 literal defines them (`HarnessPlugin::members`), because that order numbers the refs.
@@ -165,7 +187,8 @@ member but `submit` is present unless `lacks` names it, which is how a case take
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
 with `FakeEngineUnmatched`, and the generator refuses to write that trace unless the case sets
-`allowUnmatched`: it is almost always a case that forgot a response.
+`allowUnmatched`: it is almost always a case that forgot a response. The Rust runner fails such a
+case the same way.
 
 An `open` that no entry answers and whose input `id` keys no document falls back to
 `defaultDocument`, when the engine spec names one: `{"defaultDocument": "workshop", "documents":
@@ -250,7 +273,9 @@ comparison explicitly, and a port picks the one that fires on the same changes.
    uncovered line is either reached by a new case or explained in `multiplatform-plugins-status.md`.
    A file's `unsnapshottedOnly` ranges are lines that only `snapshot: "none"` cases reach. They
    count as covered, but no vector compares the state they leave behind, so a reducer listed there
-   wants a case that snapshots its slice.
+   wants a case that snapshots its slice. The top-level `unloaded` list names ported files no
+   generator imports at all, which c8 would otherwise leave out of the report; a file of the new
+   plugin that shows up there is either type-only or untested.
 3. In the plugin's crate, implement `HarnessPlugin` behind the `harness` feature and add a test
    that calls `assert_suite` for each of its vector files.
 

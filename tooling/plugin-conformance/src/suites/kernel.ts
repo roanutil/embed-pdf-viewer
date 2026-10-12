@@ -1008,6 +1008,7 @@ const API = [
   'forDocument',
   'tryForDocument',
   'cleanup',
+  'signalReason',
 ] as const;
 /** The ref of an api member when the capability printed at `base`. */
 const at = (member: (typeof API)[number], base = 0) => base + API.indexOf(member);
@@ -1206,7 +1207,7 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'controller-events',
     covers:
-      'events.source: synchronous fan-out, a signal ends a subscription and a pre-aborted one never registers, a throwing listener is reported, and the source is disposed with the instance.',
+      'events.source: synchronous fan-out, a signal ends a subscription and a pre-aborted one never registers, a throwing listener is reported, and the source is disposed with the instance. A signal keeps the reason it was first aborted with, the platform AbortError when none.',
     plugins: [probe(ctl('ctl'))],
     engine: { documents: { a: doc() } },
     steps: [
@@ -1216,7 +1217,12 @@ const v3Cases: ScenarioCase[] = [
       api('on', 'first'),
       api('on', 'second', 'sig'),
       api('emit', { v: 1 }),
+      api('signalReason', 'sig'),
       api('abortSignal', 'sig'),
+      api('signalReason', 'sig'),
+      api('abortSignal', 'why', { $error: { name: 'Error', message: 'user left', code: 7 } }),
+      api('abortSignal', 'why', { $error: { name: 'Error', message: 'second abort is ignored' } }),
+      api('signalReason', 'why'),
       api('emit', { v: 2 }),
       callRef(API.length),
       api('emit', { v: 3 }),
