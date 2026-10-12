@@ -20,6 +20,7 @@ use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Value, json};
 
+use crate::controller::is_link;
 use crate::*;
 
 /// The adapter.
@@ -51,10 +52,6 @@ fn arg<T: serde::de::DeserializeOwned>(args: &[Value], index: usize) -> Result<T
 }
 
 /// `'target' in value && 'bounds' in value`.
-fn is_link(value: &Value) -> bool {
-    value.get("target").is_some() && value.get("bounds").is_some()
-}
-
 fn input_arg(args: &[Value]) -> Result<LinkInput, Error> {
     let value = args.first().cloned().unwrap_or(Value::Null);
     Ok(if is_link(&value) {
@@ -134,8 +131,7 @@ fn call_capability(
         }
         "getLabel" => {
             let input = args.first().cloned().unwrap_or(Value::Null);
-            let target = if is_link(&input) { input["target"].clone() } else { input };
-            Outcome::Returned(json!(cap.get_label(&target)))
+            Outcome::Returned(json!(cap.get_label(&input)))
         }
         "onActivated" => hook(h, args.first(), printable, |l| cap.on_activated(l)),
         "onLoaded" => {
