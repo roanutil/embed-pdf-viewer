@@ -438,13 +438,8 @@ impl EffectContext {
         action_type: &str,
         handler: impl Fn(&dyn Action) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        let action_type = action_type.to_string();
         let unsubscribe = match self.ctx.services() {
-            Some(services) => {
-                services.store().subscribe_action(Rc::new(move |action: &dyn Action| {
-                    if action.action_type() == action_type { handler(action) } else { Ok(()) }
-                }))
-            }
+            Some(services) => services.store().subscribe_action_of(action_type, Rc::new(handler)),
             None => Unsubscribe::noop(),
         };
         if let Some(scope) = self.ctx.own_scope() {

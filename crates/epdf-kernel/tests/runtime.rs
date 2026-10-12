@@ -394,6 +394,63 @@ fn a_nested_action_pass_leaves_the_outer_pass_whole() {
     assert_eq!(*seen.borrow(), ["a", "b:@@nested", "c:@@nested", "b:@@test", "c:@@test"]);
 }
 
+/// An action that counts how often its `type` is read.
+struct Counted {
+    reads: Rc<Cell<u32>>,
+}
+
+impl Action for Counted {
+    fn action_type(&self) -> String {
+        self.reads.set(self.reads.get() + 1);
+        "@@counted".into()
+    }
+    fn to_json(&self) -> Value {
+        json!({ "type": "@@counted" })
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[test]
+fn typed_action_listeners_read_the_type_once_per_pass() {
+    let (store, _) = change_store();
+    let seen = log();
+    for name in ["a", "b", "c"] {
+        let s = seen.clone();
+        store.subscribe_action_of(
+            "@@counted",
+            Rc::new(move |_: &dyn Action| {
+                s.borrow_mut().push(name.into());
+                Ok(())
+            }),
+        );
+    }
+    let s = seen.clone();
+    store.subscribe_action_of(
+        "@@other",
+        Rc::new(move |_: &dyn Action| {
+            s.borrow_mut().push("other".into());
+            Ok(())
+        }),
+    );
+    let reads = Rc::new(Cell::new(0));
+    store.set_core(|_| {}, &Counted { reads: reads.clone() });
+    assert_eq!(*seen.borrow(), ["a", "b", "c"]);
+    assert_eq!(reads.get(), 1);
+}
+
+#[test]
+fn an_action_that_serde_json_refuses_has_no_type_and_does_not_panic() {
+    #[derive(serde::Serialize)]
+    struct Keyed {
+        r#type: &'static str,
+        by_pair: std::collections::HashMap<(u8, u8), u8>,
+    }
+    let action = Keyed { r#type: "@@keyed", by_pair: [((1, 2), 3)].into_iter().collect() };
+    assert_eq!(action.action_type(), "");
+}
+
 #[test]
 fn a_listener_that_fails_is_reported_and_the_pass_continues() {
     let (store, reported) = change_store();

@@ -20,8 +20,14 @@ pub trait Action: Any {
 
 impl<T: Serialize + 'static> Action for T {
     fn action_type(&self) -> String {
-        match self.to_json().get("type") {
-            Some(Value::String(t)) => t.clone(),
+        // Plain `serde_json`, not `to_json`: only `type` is read, and a
+        // member `serde_json` refuses (a map with non-string keys) must not
+        // panic here. An action without a string `type` has the type "".
+        match serde_json::to_value(self) {
+            Ok(Value::Object(mut members)) => match members.remove("type") {
+                Some(Value::String(t)) => t,
+                _ => String::new(),
+            },
             _ => String::new(),
         }
     }
