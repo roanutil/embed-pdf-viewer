@@ -3,6 +3,7 @@
 //! lands identically whether it arrived live or inside a hydration window.
 
 use epdf_annotation_core::{AnnotationRef, Msg, PageRef, Source, is_substrate_only};
+use epdf_kernel::Error;
 use serde_json::Value;
 
 use crate::controller::AnnotationCapability;
@@ -14,12 +15,14 @@ use crate::value::{get, str_of, truthy};
 impl AnnotationCapability {
     /// `upsertRemote(dtos, bumpAp)`: `bump` re-fetches rasters, `keep`
     /// doesn't; conversation-plane records never bump.
-    fn upsert_remote(&self, dtos: &[Value], bump_ap: bool) {
+    /// A record that cannot be ingested fails the whole batch before
+    /// anything commits, as the TypeScript's throw out of the loop does.
+    fn upsert_remote(&self, dtos: &[Value], bump_ap: bool) -> Result<(), Error> {
         let mut bump = Vec::new();
         let mut keep = Vec::new();
         for dto in dtos {
             let Some(crop) = page_of_dto(dto).and_then(|p| self.crop_of(p)) else { continue };
-            let a = self.ingest(dto, crop, Source::Baked);
+            let a = self.ingest(dto, crop, Source::Baked)?;
             if bump_ap && !is_substrate_only(&a) { bump.push(a) } else { keep.push(a) }
         }
         if !bump.is_empty() {
@@ -28,30 +31,31 @@ impl AnnotationCapability {
         if !keep.is_empty() {
             self.commit(Msg::Upsert { annots: keep, bump_ap: None });
         }
+        Ok(())
     }
 
     /// `remote.apply(event)`.
-    pub(crate) fn apply_remote(&self, event: &Value) {
+    pub(crate) fn apply_remote(&self, event: &Value) -> Result<(), Error> {
         match str_of(event, "type") {
             Some("annotation.created") => {
                 let dto = get(event, "created").cloned().unwrap_or(Value::Null);
-                self.upsert_remote(std::slice::from_ref(&dto), true);
+                self.upsert_remote(std::slice::from_ref(&dto), true)?;
                 self.announce_created(&dto, origin_of(event));
             }
             Some("annotation.updated") => {
                 let dto = get(event, "updated").cloned().unwrap_or(Value::Null);
                 let changed = get(event, "appearance").and_then(|a| get(a, "changed"));
-                self.upsert_remote(std::slice::from_ref(&dto), truthy(changed));
+                self.upsert_remote(std::slice::from_ref(&dto), truthy(changed))?;
                 self.announce_updated(&dto, origin_of(event));
             }
             Some("annotation.moved") => {
                 let moved =
                     get(event, "moved").and_then(Value::as_array).cloned().unwrap_or_default();
-                self.upsert_remote(&moved, false);
+                self.upsert_remote(&moved, false)?;
             }
             Some("annotation.deleted") => {
                 let Some(deleted) = get(event, "deleted").filter(|d| truthy(Some(d))) else {
-                    return;
+                    return Ok(());
                 };
                 let page: PageRef = get(event, "page")
                     .and_then(|p| serde_json::from_value(p.clone()).ok())
@@ -68,6 +72,7 @@ impl AnnotationCapability {
             }
             _ => {}
         }
+        Ok(())
     }
 }
 

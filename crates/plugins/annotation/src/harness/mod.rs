@@ -671,7 +671,7 @@ fn call_capability(
         }
         "reloadPage" => unit(cap.reload_page(page(args, 0)?)),
         "deliverRemoteEvent" => {
-            cap.deliver_remote_event(present(args, 0).cloned().unwrap_or(Value::Null));
+            cap.deliver_remote_event(present(args, 0).cloned().unwrap_or(Value::Null))?;
             undef()
         }
         "setContents" => unit(cap.set_contents(r(0)?, text(args, 1))),

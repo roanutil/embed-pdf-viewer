@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12184/12513",
+    "branches": "12190/12519",
     "unsnapshottedOnlyLines": 1475
   },
   "files": {
@@ -1151,7 +1151,7 @@
     },
     "packages/plugin/annotation/src/services/records.ts": {
       "statements": "69/69",
-      "branches": "12/13",
+      "branches": "14/15",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "33:14#0"
@@ -1187,7 +1187,7 @@
     },
     "packages/plugin/annotation/src/sync/hydration.ts": {
       "statements": "165/165",
-      "branches": "44/46",
+      "branches": "46/48",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "59:14#0",
@@ -1199,7 +1199,7 @@
     },
     "packages/plugin/annotation/src/sync/remote.ts": {
       "statements": "78/78",
-      "branches": "19/19",
+      "branches": "21/21",
       "uncoveredLines": [],
       "uncoveredBranches": []
     },

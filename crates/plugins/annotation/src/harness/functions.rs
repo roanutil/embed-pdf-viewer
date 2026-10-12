@@ -42,7 +42,7 @@ fn source(a: &[Value], i: usize) -> Source {
 }
 
 fn from_dto(a: &[Value]) -> Out {
-    Ok(to_value(&repository::from_dto(&a[0], crop(a, 1), source(a, 2))))
+    Ok(to_value(&repository::from_dto(&a[0], crop(a, 1), source(a, 2))?))
 }
 
 fn to_patch(a: &[Value]) -> Out {

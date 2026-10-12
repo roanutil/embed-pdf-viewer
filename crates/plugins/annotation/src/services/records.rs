@@ -5,6 +5,7 @@
 use epdf_annotation_core::{
     Annot, AnnotationRef, Authority, Msg, PageObjectNumber, PdfRect, Source,
 };
+use epdf_kernel::Error;
 use serde_json::Value;
 
 use crate::controller::AnnotationCapability;
@@ -23,26 +24,32 @@ pub(crate) fn page_of_dto(dto: &Value) -> Option<PageObjectNumber> {
 impl AnnotationCapability {
     /// `records.ingest(dto, crop, source)`: the DTO with this session's
     /// per-record authority projected onto it.
-    pub(crate) fn ingest(&self, dto: &Value, crop: PdfRect, source: Source) -> Annot {
-        let mut a = from_dto(dto, crop, source);
-        let Some(doc) = self.doc() else { return a };
+    pub(crate) fn ingest(
+        &self,
+        dto: &Value,
+        crop: PdfRect,
+        source: Source,
+    ) -> Result<Annot, Error> {
+        let mut a = from_dto(dto, crop, source)?;
+        let Some(doc) = self.doc() else { return Ok(a) };
         let sec = doc.security();
         let target = owner_of(Some(dto));
         a.authority = Some(Authority {
             update: sec.allows_annotation_mutation("update", &target),
             delete: sec.allows_annotation_mutation("delete", &target),
         });
-        a
+        Ok(a)
     }
 
     /// `records.sync(dto, source, bumpAp)`: re-sync one annotation from the
-    /// authoritative DTO.
-    pub(crate) fn sync(&self, dto: &Value, source: Source, bump_ap: bool) {
-        let Some(pon) = page_of_dto(dto) else { return };
+    /// authoritative DTO. Fails where `ingest` does, with nothing committed.
+    pub(crate) fn sync(&self, dto: &Value, source: Source, bump_ap: bool) -> Result<(), Error> {
+        let Some(pon) = page_of_dto(dto) else { return Ok(()) };
         if let Some(crop) = self.crop_of(pon) {
-            let annot = self.ingest(dto, crop, source);
+            let annot = self.ingest(dto, crop, source)?;
             self.commit(Msg::Upsert { annots: vec![annot], bump_ap: Some(bump_ap) });
         }
+        Ok(())
     }
 
     /// `records.pageOf(ref)`: the page it was ingested on, else the ref's own.

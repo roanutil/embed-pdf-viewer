@@ -8,6 +8,7 @@
 use std::cell::{Cell, RefCell};
 
 use epdf_annotation_core::{Id, Msg, PageObjectNumber, PageRef, Source};
+use epdf_kernel::Error;
 use epdf_kernel::rt::{self, Promise};
 use serde_json::Value;
 
@@ -50,7 +51,7 @@ impl AnnotationCapability {
         self.cx().dispatch(AnnotationAction::SetHydration { hydration });
     }
 
-    fn ingest_snapshot(&self, snap: &Value, bump_ap: bool) {
+    fn ingest_snapshot(&self, snap: &Value, bump_ap: bool) -> Result<(), Error> {
         let mut annots = Vec::new();
         for page in get(snap, "pages").and_then(Value::as_array).into_iter().flatten() {
             let pon = get(page, "pageState")
@@ -60,10 +61,11 @@ impl AnnotationCapability {
                 .map(|p| p as PageObjectNumber);
             let Some(crop) = pon.and_then(|p| self.crop_of(p)) else { continue };
             for d in get(page, "annotations").and_then(Value::as_array).into_iter().flatten() {
-                annots.push(self.ingest(d, crop, Source::Baked));
+                annots.push(self.ingest(d, crop, Source::Baked)?);
             }
         }
         self.commit(Msg::Hydrated { annots, bump_ap: Some(bump_ap) });
+        Ok(())
     }
 
     fn run_hydration(&self, bump_ap: bool) -> Promise<()> {
@@ -81,7 +83,7 @@ impl AnnotationCapability {
         // `.then(ingest)`
         let ingested: Promise<()> = Promise::spawn(async move {
             let snap = call.await?;
-            this.ingest_snapshot(&snap, bump_ap);
+            this.ingest_snapshot(&snap, bump_ap)?;
             let head = get(&snap, "auditHead").cloned();
             let queued = std::mem::take(&mut *this.0.hydration.pending.borrow_mut());
             this.0.hydration.window.set(false);
@@ -99,20 +101,20 @@ impl AnnotationCapability {
                 {
                     continue;
                 }
-                this.apply_remote(&event);
+                this.apply_remote(&event)?;
             }
             this.set_hydration(AnnotationHydration::Complete);
             this.0.events.resynced.emit(&AnnotationResyncedEvent { pages: ResyncedPages::All });
             Ok(())
         });
         let this = self.clone();
-        // `.catch(degrade)`
+        // `.catch(degrade)`: a replayed event that throws rejects it too.
         let caught: Promise<()> = Promise::spawn(async move {
             if let Err(error) = ingested.await {
                 this.0.hydration.window.set(false);
                 let queued = std::mem::take(&mut *this.0.hydration.pending.borrow_mut());
                 for event in queued {
-                    this.apply_remote(&event);
+                    this.apply_remote(&event)?;
                 }
                 this.set_hydration(AnnotationHydration::Error(error));
             }
@@ -174,7 +176,7 @@ impl AnnotationCapability {
                     .into_iter()
                     .flatten()
                     .map(|d| this.ingest(d, crop, Source::Baked))
-                    .collect();
+                    .collect::<Result<Vec<_>, _>>()?;
                 this.commit(Msg::Loaded { annots });
                 this.0.events.resynced.emit(&AnnotationResyncedEvent {
                     pages: ResyncedPages::Pages(vec![PageRef::new(pon)]),
@@ -229,12 +231,13 @@ impl AnnotationCapability {
     }
 
     /// `deliverRemoteEvent(event)` (host): queued during a hydration
-    /// window, applied otherwise.
-    pub fn deliver_remote_event(&self, event: Value) {
+    /// window, applied otherwise. Fails where applying throws: a record with
+    /// no `ref`.
+    pub fn deliver_remote_event(&self, event: Value) -> Result<(), Error> {
         if self.0.hydration.window.get() {
             self.0.hydration.pending.borrow_mut().push(event);
-            return;
+            return Ok(());
         }
-        self.apply_remote(&event);
+        self.apply_remote(&event)
     }
 }

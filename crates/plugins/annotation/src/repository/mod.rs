@@ -23,6 +23,7 @@ use epdf_annotation_core::{
     Annot, AnnotationFlags, AnnotationRef, PageRef, PatchScope, PdfRect, PropKey, Source,
     geom_rotation, pdf_to_content_rect, props_for,
 };
+use epdf_kernel::Error;
 use serde_json::{Value, json};
 
 pub use links::link_child_rects;
@@ -40,7 +41,22 @@ fn wire_subtype_of(a: &Annot) -> String {
 
 /// `fromDTO(dto, crop, source)`: engine DTO to content-space `Annot`.
 /// `Baked` shows the engine's appearance raster, `Vector` renders live.
-pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
+///
+/// A record with no `ref` fails with the TypeError `annotationKey(dto.ref)`
+/// throws, rather than taking the id `""` every such record would share. A
+/// `ref` that is present but not an address fails too; the TypeScript keys
+/// that one `"undefined"` (or `"obj:undefined"`) instead of throwing.
+pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Result<Annot, Error> {
+    let ref_: AnnotationRef = match get(dto, "ref") {
+        None => return Err(no_ref("undefined")),
+        Some(Value::Null) => return Err(no_ref("null")),
+        Some(r) => serde_json::from_value(r.clone()).map_err(|e| {
+            Error::named(
+                "TypeError",
+                format!("[annotation] the record's ref is not an address: {e}"),
+            )
+        })?,
+    };
     let subtype = str_of(dto, "subtype").unwrap_or_default();
     let slice = Kind::of(subtype).ingest(dto, crop);
     let is_callout = subtype == "free-text" && str_of(dto, "intent") == Some("free-text-callout");
@@ -53,17 +69,15 @@ pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
     } else {
         None
     };
-    let ref_: Option<AnnotationRef> =
-        get(dto, "ref").and_then(|r| serde_json::from_value(r.clone()).ok());
     let irt = get(dto, "inReplyTo").filter(|v| truthy(Some(v))).and_then(seam::annotation_key_of);
     let group = if str_of(dto, "replyType") == Some("group") { irt.clone() } else { None };
     let flags: AnnotationFlags =
         get(dto, "flags").and_then(|f| serde_json::from_value(f.clone()).ok()).unwrap_or_default();
     let ap_box =
         pdf_to_content_rect(stripped.unwrap_or_else(|| pdf_rect_of(get(dto, "rect"))), crop);
-    Annot {
-        id: ref_.as_ref().map(annotation_key).unwrap_or_default(),
-        ref_,
+    Ok(Annot {
+        id: annotation_key(&ref_),
+        ref_: Some(ref_),
         page: get(dto, "page")
             .and_then(|p| serde_json::from_value::<PageRef>(p.clone()).ok())
             .unwrap_or_default(),
@@ -89,7 +103,11 @@ pub fn from_dto(dto: &Value, crop: PdfRect, source: Source) -> Annot {
         irt,
         group,
         geom: slice.geom,
-    }
+    })
+}
+
+fn no_ref(what: &str) -> Error {
+    Error::named("TypeError", format!("Cannot read properties of {what} (reading 'kind')"))
 }
 
 /// `emitProps(a, crop, keys)`: lower `keys` through the kind's overrides and
