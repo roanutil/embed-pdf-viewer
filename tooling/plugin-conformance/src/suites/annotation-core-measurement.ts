@@ -640,6 +640,9 @@ const RUNS: [string, Partial<Model>, Msg[]][] = [
   ['caption-drag-area', MS({ selected: ['area'] }), [ed('down', AREA_CAPTION.x, AREA_CAPTION.y), ed('move', AREA_CAPTION.x, AREA_CAPTION.y - 15), ed('up', 0, 0)]],
   ['caption-unselected-hit', MS(), [ed('down', DIST_CAPTION.x, DIST_CAPTION.y), ed('move', DIST_CAPTION.x + 5, DIST_CAPTION.y), ed('up', 0, 0)]],
   ['leader-drag', MS({ selected: ['dist'] }), [ed('down', 100, 120), ed('move', 110, 150), ed('up', 110, 150)]],
+  // The measured annotation goes away mid-gesture: the next sample clears the draft.
+  ['leader-drag-removed', MS({ selected: ['dist'] }), [ed('down', 100, 120), { t: 'remove', ids: ['dist'] }, ed('move', 110, 150), ed('up', 110, 150)]],
+  ['caption-drag-removed', MS({ selected: ['perim'] }), [ed('down', PERIM_CAPTION.x, PERIM_CAPTION.y), { t: 'remove', ids: ['perim'] }, ed('move', PERIM_CAPTION.x - 20, PERIM_CAPTION.y + 5), ed('up', 0, 0)]],
   ['leader-drag-end', MS({ selected: ['dist'] }), [ed('down', 244, 120), ed('move', 244, 120), ed('up', 244, 120)]],
   ['leader-drag-close-handles', MS({ selected: ['dist-close'] }), [ed('down', 100, 602), ed('move', 100, 640), ed('up', 100, 640)]],
   ['vertex-drag-distance', MS({ selected: ['dist-close'] }), [ed('down', 101, 599), ed('move', 90, 590), ed('up', 90, 590)]],
