@@ -91,6 +91,15 @@ expressed. The hover pump compares an index ref's `revision` by value; the TypeS
 reference identity for a `RevisionToken` object, which a feed holding one token object means the
 same way.
 
+`can_dispatch` answers `false` where the TypeScript throws. Its `ctx.doc !== null` reads the
+`ctx.doc` getter, which throws `not-ready` while the document has no engine handle
+(`packages/core/main/src/controller.ts:44-49`). Rust's `self.doc().is_ok()` turns that same error
+into `false` (`dispatch/dispatcher.rs:236-238`). The review behind
+`docs/research/rust-plugins-branch-review.md` (L-A4) found no caller that asks before the handle
+exists, and no vector does. Matching it
+would mean `can_dispatch` returning `Result`, which every caller then has to unwrap for a case that
+does not occur.
+
 ## Coverage
 
 The generators reach 3,184 of the package's 3,195 statements and 754 of its 780 branches. This port
