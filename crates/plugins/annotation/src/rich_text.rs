@@ -426,7 +426,7 @@ pub fn range_props(
     doc: &RichTextDocument,
     range: RichTextRange,
     fonts: FontLookup,
-) -> (Map<String, Value>, Vec<PropKey>) {
+) -> Result<(Map<String, Value>, Vec<PropKey>), epdf_kernel::Error> {
     let body = &doc.body;
     let runs = runs_in_range(&doc.paragraphs, range);
     let runs = if runs.is_empty() { vec![RichTextStyleDelta::default()] } else { runs };
@@ -453,31 +453,54 @@ pub fn range_props(
     let body_italic = body.get("italic").and_then(Value::as_bool);
     let mut values = Map::new();
     let mut mixed = Vec::new();
-    let mut read = |key: PropKey, of: &dyn Fn(&Map<String, Value>) -> Value| {
-        let first = of(&styles[0]);
-        values.insert(key.as_str().into(), first.clone());
-        if styles.iter().any(|s| of(s) != first) {
-            mixed.push(key);
+    // `of` answers `None` for `undefined`: the key stays out of `values`. A
+    // style is read only until the first one that differs, as `some` stops.
+    type Of<'a> = &'a dyn Fn(&Map<String, Value>) -> Result<Option<Value>, epdf_kernel::Error>;
+    let mut read = |key: PropKey, of: Of| -> Result<(), epdf_kernel::Error> {
+        let first = of(&styles[0])?;
+        match &first {
+            Some(v) => values.insert(key.as_str().into(), v.clone()),
+            None => values.remove(key.as_str()),
+        };
+        for s in &styles {
+            if of(s)? != first {
+                mixed.push(key);
+                break;
+            }
         }
+        Ok(())
     };
     read(PropKey::FontFamily, &|s| {
         let family = s.get("family").and_then(Value::as_str).unwrap_or_default().to_string();
-        json!(font_for_face(&Face { family, weight: body_weight, italic: body_italic }, fonts))
-    });
-    read(PropKey::FontSize, &|s| s.get("size").cloned().unwrap_or(Value::Null));
-    read(PropKey::FontColor, &|s| {
-        json!(s.get("color").and_then(Value::as_str).unwrap_or_default().to_lowercase())
-    });
+        Ok(Some(json!(font_for_face(
+            &Face { family, weight: body_weight, italic: body_italic },
+            fonts
+        ))))
+    })?;
+    read(PropKey::FontSize, &|s| Ok(s.get("size").cloned()))?;
+    // `s.color!.toLowerCase()`: a body and run with no color throw.
+    read(PropKey::FontColor, &|s| match s.get("color") {
+        Some(Value::String(color)) => Ok(Some(json!(color.to_lowercase()))),
+        other => Err(epdf_kernel::Error::named(
+            "TypeError",
+            format!(
+                "Cannot read properties of {} (reading 'toLowerCase')",
+                if other.is_some_and(Value::is_null) { "null" } else { "undefined" }
+            ),
+        )),
+    })?;
     read(PropKey::Bold, &|s| {
-        json!(s.get("weight").and_then(Value::as_f64).unwrap_or(400.0) >= 600.0)
-    });
-    read(PropKey::Italic, &|s| json!(s.get("italic").and_then(Value::as_bool).unwrap_or(false)));
+        Ok(Some(json!(s.get("weight").and_then(Value::as_f64).unwrap_or(400.0) >= 600.0)))
+    })?;
+    read(PropKey::Italic, &|s| {
+        Ok(Some(json!(s.get("italic").and_then(Value::as_bool).unwrap_or(false))))
+    })?;
     read(PropKey::Underline, &|s| {
-        json!(
+        Ok(Some(json!(
             s.get("decoration")
                 .and_then(Value::as_array)
                 .is_some_and(|d| d.iter().any(|x| x.as_str() == Some("underline")))
-        )
-    });
-    (values, mixed)
+        )))
+    })?;
+    Ok((values, mixed))
 }

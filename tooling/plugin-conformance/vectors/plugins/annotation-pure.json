@@ -16691,6 +16691,316 @@
       }
     },
     {
+      "name": "rangeProps/no-size",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 2
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica",
+            "fontColor": "#ef4444",
+            "bold": false,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": []
+        }
+      }
+    },
+    {
+      "name": "rangeProps/no-size-mixed",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "color": "#EF4444",
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 12
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica",
+            "fontColor": "#ef4444",
+            "bold": false,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": [
+            "fontColor",
+            "bold",
+            "italic",
+            "underline"
+          ]
+        }
+      }
+    },
+    {
+      "name": "rangeProps/no-color",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "Hel"
+                },
+                {
+                  "text": "lo",
+                  "style": {
+                    "weight": 700
+                  }
+                }
+              ],
+              "align": "left",
+              "dir": "ltr"
+            },
+            {
+              "runs": [
+                {
+                  "text": "world",
+                  "style": {
+                    "italic": true,
+                    "decoration": [
+                      "underline"
+                    ],
+                    "color": "#0000FF"
+                  }
+                }
+              ],
+              "align": "center"
+            },
+            {
+              "runs": [
+                {
+                  "text": ""
+                },
+                {
+                  "text": "x",
+                  "style": {
+                    "family": "Courier",
+                    "size": 20
+                  }
+                }
+              ],
+              "dir": "rtl"
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 2
+        }
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'toLowerCase')"
+          }
+        }
+      }
+    },
+    {
+      "name": "rangeProps/no-color-after-a-difference",
+      "fn": "rangeProps",
+      "args": [
+        {
+          "body": {
+            "family": "Helvetica",
+            "weight": 400,
+            "italic": false,
+            "size": 12,
+            "decoration": [],
+            "script": "normal",
+            "letterSpacing": 0,
+            "horizontalScale": 1,
+            "align": "left",
+            "dir": "ltr"
+          },
+          "paragraphs": [
+            {
+              "runs": [
+                {
+                  "text": "ab",
+                  "style": {
+                    "color": "#111111"
+                  }
+                },
+                {
+                  "text": "cd",
+                  "style": {
+                    "color": "#222222"
+                  }
+                },
+                {
+                  "text": "ef"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "start": 0,
+          "end": 6
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "values": {
+            "fontFamily": "helvetica",
+            "fontSize": 12,
+            "fontColor": "#111111",
+            "bold": false,
+            "italic": false,
+            "underline": false
+          },
+          "mixed": [
+            "fontColor"
+          ]
+        }
+      }
+    },
+    {
       "name": "geometryFromInput/square",
       "fn": "geometryFromInput",
       "args": [

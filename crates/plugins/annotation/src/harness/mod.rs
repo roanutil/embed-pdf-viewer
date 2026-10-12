@@ -618,7 +618,7 @@ fn call_capability(
             let rect = crate::value::pdf_rect_of(present(args, 1));
             out_opt(cap.pdf_to_page_rect(page(args, 0)?, rect))
         }
-        "getSelectionProps" => out(&cap.get_selection_props()),
+        "getSelectionProps" => out(&cap.get_selection_props()?),
         "getSelectionFlags" => {
             Outcome::Returned(cap.get_selection_flags().map_or(Value::Null, Value::Object))
         }

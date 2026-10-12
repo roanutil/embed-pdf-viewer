@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 use epdf_annotation_core::richtext::RichTextRange;
 use epdf_annotation_core::{Annot, FLAG_KEYS, Model, PropKey, link_of, read_prop, shared_props};
+use epdf_kernel::Error;
 use serde_json::{Map, Value};
 
 use crate::contract::*;
@@ -24,8 +25,9 @@ impl AnnotationCapability {
         .then_some(ts)
     }
 
-    /// `getSelectionProps()`.
-    pub fn get_selection_props(&self) -> SelectionProps {
+    /// `getSelectionProps()`. Fails where the TypeScript throws: a text
+    /// range over runs whose resolved style has no color.
+    pub fn get_selection_props(&self) -> Result<SelectionProps, Error> {
         let m = self.model();
         let range = self.active_text_range(&m);
         let members: Vec<&Annot> = m.selected.iter().filter_map(|id| m.by_id.get(id)).collect();
@@ -60,22 +62,24 @@ impl AnnotationCapability {
                 &rich_doc_of(members[0], Some(&fonts)),
                 RichTextRange { start: range.start, end: range.end },
                 Some(&fonts),
-            );
+            )?;
             for spec in &specs {
                 if !RANGE_KEYS.contains(&spec.key) {
                     continue;
                 }
-                values.insert(
-                    spec.key.as_str().into(),
-                    rv.get(spec.key.as_str()).cloned().unwrap_or(Value::Null),
-                );
+                // `values[key] = rp.values[key]`: an undefined value leaves
+                // the key out.
+                match rv.get(spec.key.as_str()) {
+                    Some(v) => values.insert(spec.key.as_str().into(), v.clone()),
+                    None => values.remove(spec.key.as_str()),
+                };
                 mixed.retain(|k| *k != spec.key);
                 if rmixed.contains(&spec.key) {
                     mixed.push(spec.key);
                 }
             }
         }
-        SelectionProps { specs, values, mixed }
+        Ok(SelectionProps { specs, values, mixed })
     }
 
     /// `getSelectionFlags()`: `None` with nothing selected.

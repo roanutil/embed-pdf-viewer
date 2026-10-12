@@ -169,7 +169,7 @@ impl AnnotationCapability {
         let this = self.clone();
         promise::spawn(async move {
             let key = format.key();
-            let current = this.get_selection_props().values.get(key.as_str()).cloned();
+            let current = this.get_selection_props()?.values.get(key.as_str()).cloned();
             let on = crate::value::truthy(current.as_ref());
             let patch: AnnotationPropsPatch =
                 serde_json::from_value(json!({ key.as_str(): !on })).unwrap_or_default();
