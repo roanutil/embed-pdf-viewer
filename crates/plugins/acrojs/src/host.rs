@@ -147,6 +147,22 @@ struct Inner {
     in_flight: Cell<usize>,
 }
 
+/// The last handle is gone, so no transaction can start or still be running
+/// (each holds the realm): dispose a realm still held, as `dispose()` would.
+/// The caller of `createDetachedScriptRealm` owns that realm, and one it
+/// drops without disposing would otherwise strand its sandbox.
+impl Drop for Inner {
+    fn drop(&mut self) {
+        if let Some(dying) = self.sandbox.get_mut().take() {
+            dying.on_settle(|built| {
+                if let Ok(sandbox) = built {
+                    sandbox.dispose();
+                }
+            });
+        }
+    }
+}
+
 /// The one realm per document. `transaction(body)` is the realm mutex; the
 /// body does everything for one logical script transaction (prefetch, runs,
 /// commits through the owner sinks) before it releases. A sandbox that
@@ -405,6 +421,62 @@ mod tests {
             self.disposed.set(true);
             self.disposals.set(self.disposals.get() + 1);
         }
+    }
+
+    fn counting_host(built: Rc<Cell<usize>>, disposals: Rc<Cell<usize>>) -> ScriptHost {
+        ScriptHost::new(ScriptHostOptions {
+            sandbox_factory: Rc::new(move || {
+                built.set(built.get() + 1);
+                let sandbox: Rc<dyn ScriptSandbox> = Rc::new(CountingSandbox {
+                    disposed: Cell::new(false),
+                    disposals: disposals.clone(),
+                });
+                Promise::resolved(sandbox)
+            }),
+            document: Rc::new(|| ScriptDocumentInput {
+                id: "a".into(),
+                file_name: "a.pdf".into(),
+                page_count: 1.0,
+                page_number: 0.0,
+            }),
+            identity: Rc::new(Default::default),
+            environment: Rc::new(|_| ScriptEnvironment {
+                now_ms: 0.0,
+                utc_offset_minutes: 0.0,
+                random_seed: 1.0,
+            }),
+            boot_sources: Rc::new(|| Ok(Promise::resolved(Vec::new()))),
+            budget: None,
+        })
+    }
+
+    #[test]
+    fn a_realm_dropped_without_dispose_releases_its_sandbox() {
+        rt::reset();
+        let (built, disposals) = (Rc::new(Cell::new(0)), Rc::new(Cell::new(0)));
+        let host = counting_host(built.clone(), disposals.clone());
+        let done = host.transaction(|txn| Ok(txn.run("a", world(), None).map(|_| Ok(()))));
+        rt::run_until_stalled();
+        assert!(done.peek().is_some_and(|r| r.is_ok()));
+        assert_eq!((built.get(), disposals.get()), (1, 0));
+        let clone = host.clone();
+        drop(host);
+        assert_eq!(disposals.get(), 0, "a clone still holds the realm");
+        drop(clone);
+        assert_eq!(disposals.get(), 1);
+    }
+
+    #[test]
+    fn a_disposed_realm_is_not_released_again_when_dropped() {
+        rt::reset();
+        let (built, disposals) = (Rc::new(Cell::new(0)), Rc::new(Cell::new(0)));
+        let host = counting_host(built.clone(), disposals.clone());
+        let _ = host.transaction(|txn| Ok(txn.run("a", world(), None).map(|_| Ok(()))));
+        rt::run_until_stalled();
+        host.dispose();
+        rt::run_until_stalled();
+        drop(host);
+        assert_eq!((built.get(), disposals.get()), (1, 1));
     }
 
     fn world() -> ScriptWorldInput {
