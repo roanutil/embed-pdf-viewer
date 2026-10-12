@@ -26,7 +26,7 @@ pub use contract::{
     Panel, RegisterCommandOptions, RejectReason, ResolvedCommand, RunFn, Shortcut, ShortcutBinding,
     resolved_commands_equal,
 };
-pub use controller::{CommandsCapability, create_commands_controller};
+pub use controller::{CommandsCapability, WeakCommandsCapability, create_commands_controller};
 pub use model::{CommandsAction, CommandsState, commands_reducer, initial_commands_state};
 pub use registry::{CommandRegistry, RegisteredCommand, register_command};
 

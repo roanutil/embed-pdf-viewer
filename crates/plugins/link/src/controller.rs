@@ -310,8 +310,11 @@ impl LinkCapability {
         self.activate(&LinkInput::Link(Box::new(link)), Some(&merged)).map(Some)
     }
 
-    /// A human label for tooltips, from the target's `kind` as JSON.
-    pub fn get_label(&self, target: &Value) -> String {
+    /// A human label for tooltips, from the target's `kind` as JSON. A
+    /// whole link (an object with `target` and `bounds`, the TypeScript's
+    /// `isLink`) answers for its target.
+    pub fn get_label(&self, input: &Value) -> String {
+        let target = if is_link(input) { &input["target"] } else { input };
         match str_of(target, "kind") {
             Some("uri") => get(target, "uri").map_or("undefined".into(), |u| {
                 u.as_str().map_or_else(|| u.to_string(), str::to_string)
@@ -321,6 +324,14 @@ impl LinkCapability {
                 n.as_str().map_or_else(|| n.to_string(), str::to_string)
             }),
             _ => "Link".into(),
+        }
+    }
+
+    /// [`get_label`](Self::get_label) for a typed input.
+    pub fn get_input_label(&self, input: &LinkInput) -> String {
+        match input {
+            LinkInput::Link(link) => self.get_label(&link.target),
+            LinkInput::Target(target) => self.get_label(&epdf_kernel::js::to_value(target)),
         }
     }
 
@@ -387,4 +398,9 @@ impl LinkCapability {
             }
         });
     }
+}
+
+/// `isLink`: `'target' in value && 'bounds' in value`.
+pub(crate) fn is_link(value: &Value) -> bool {
+    value.get("target").is_some() && value.get("bounds").is_some()
 }

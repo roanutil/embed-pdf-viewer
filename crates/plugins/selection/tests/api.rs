@@ -100,3 +100,19 @@ fn a_handle_drag_drives_the_capability() {
     assert!(!selection.is_gesture_active());
     assert_eq!(commits.get(), 1);
 }
+
+#[test]
+fn a_search_hits_float_span_selects_without_casts() {
+    let kernel = kernel();
+    let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
+    let _ = selection.ensure_loaded(PAGE);
+    rt::run_until_stalled();
+    let (char_start, char_count) = (1.0_f64, 2.0_f64); // a SearchHit's fields
+    selection.select(SelectionRangeInput::span(PAGE, char_start, char_count)).unwrap();
+    let range = selection.get_snapshot().range.unwrap();
+    assert_eq!((range.start.index, range.end.index), (1, 3));
+    assert_eq!(
+        SelectionRangeInput::span(PAGE, f64::NAN, 1e300),
+        SelectionRangeInput::Span { page: PAGE, start: 0, count: i64::MAX }
+    );
+}

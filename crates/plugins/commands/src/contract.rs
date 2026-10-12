@@ -102,6 +102,10 @@ pub enum Panel {
     Target { id: String, exclusive: Option<String> },
 }
 
+/// `CommandDef`. The registry owns the closures, so a closure that holds
+/// the [`CommandsCapability`] (or the remover its registration returned)
+/// keeps the registry alive for good; hold a
+/// [`WeakCommandsCapability`](crate::WeakCommandsCapability) instead.
 #[derive(Clone, Default)]
 pub struct CommandDef {
     /// Convention: `domain:verb`.
@@ -250,12 +254,10 @@ pub struct ShortcutBinding {
     pub shortcut: String,
 }
 
-/// `getMenuTarget(id)`: the one fact the overflow projection needs.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
-pub struct MenuTarget {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub menu: Option<String>,
-}
+/// `getMenuTarget(id)`: the one fact the overflow projection needs. The
+/// ui-core type itself (`ResolveMenuTarget`-shaped), so a
+/// `get_menu_target` closure passes straight to `project_overflow`.
+pub use epdf_ui_core::MenuTarget;
 
 pub static COMMANDS: LazyLock<Token<CommandsCapability>> = LazyLock::new(|| {
     Token::with_hint(

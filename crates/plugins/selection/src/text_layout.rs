@@ -402,10 +402,9 @@ pub fn text_glyph_at(
         if !in_rect(&run.rect, q) {
             continue;
         }
-        for i in 0..run.count {
-            let g = &layout.glyphs[run.char_start + i];
+        for (index, g) in run_glyphs(layout, run) {
             if in_rect(g.tight.as_ref().unwrap_or(&g.loose), q) {
-                return Some(run.char_start + i);
+                return Some(index);
             }
         }
     }
@@ -426,8 +425,7 @@ pub fn text_glyph_at(
         {
             continue;
         }
-        for i in 0..run.count {
-            let g = &layout.glyphs[run.char_start + i];
+        for (index, g) in run_glyphs(layout, run) {
             if is_empty(g.flags) {
                 continue;
             }
@@ -443,11 +441,34 @@ pub fn text_glyph_at(
             let dy = js::min((q.y - b.bottom).abs(), (q.y - b.top).abs());
             if dx + dy < best_dist {
                 best_dist = dx + dy;
-                best = Some(run.char_start + i);
+                best = Some(index);
             }
         }
     }
     best
+}
+
+/// A run's glyphs with their indices. The runs of a PDFium snapshot tile
+/// the glyphs; another host's may not, and the glyphs a run claims past
+/// the end are skipped here where the TypeScript reads `undefined` and
+/// throws.
+fn run_glyphs<'a>(
+    layout: &'a PageTextLayout,
+    run: &TextLayoutRun,
+) -> impl Iterator<Item = (usize, &'a TextLayoutGlyph)> {
+    let end = run.char_start.saturating_add(run.count).min(layout.glyphs.len());
+    let start = run.char_start.min(end);
+    layout.glyphs[start..end].iter().enumerate().map(move |(i, g)| (start + i, g))
+}
+
+/// A run's first character, saturating where a host's value passes `i64`.
+fn run_start(run: &TextLayoutRun) -> i64 {
+    i64::try_from(run.char_start).unwrap_or(i64::MAX)
+}
+
+/// One past a run's last character, saturating likewise.
+fn run_end(run: &TextLayoutRun) -> i64 {
+    i64::try_from(run.char_start.saturating_add(run.count)).unwrap_or(i64::MAX)
 }
 
 fn glyph(layout: &PageTextLayout, index: i64) -> Option<&TextLayoutGlyph> {
@@ -472,9 +493,7 @@ pub fn expand_text_range_to_word(layout: &PageTextLayout, glyph_index: i64) -> (
 }
 
 fn run_of(layout: &PageTextLayout, glyph_index: i64) -> Option<usize> {
-    layout.runs.iter().position(|r| {
-        glyph_index >= r.char_start as i64 && glyph_index < (r.char_start + r.count) as i64
-    })
+    layout.runs.iter().position(|r| glyph_index >= run_start(r) && glyph_index < run_end(r))
 }
 
 fn is_zero(r: &PdfRect) -> bool {
@@ -497,8 +516,8 @@ pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph_index: i64) -> (
     let anchor = &layout.runs[ri];
     let bottom = anchor.rect.bottom;
     let top = anchor.rect.top;
-    let mut from = anchor.char_start as i64;
-    let mut to = (anchor.char_start + anchor.count) as i64 - 1;
+    let mut from = run_start(anchor);
+    let mut to = run_end(anchor) - 1;
     for run in layout.runs[..ri].iter().rev() {
         if is_zero(&run.rect) {
             continue;
@@ -506,7 +525,7 @@ pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph_index: i64) -> (
         if run.frame != anchor.frame || !overlap_v(run.rect.bottom, run.rect.top, bottom, top) {
             break;
         }
-        from = run.char_start as i64;
+        from = run_start(run);
     }
     for run in &layout.runs[ri + 1..] {
         if is_zero(&run.rect) {
@@ -515,7 +534,7 @@ pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph_index: i64) -> (
         if run.frame != anchor.frame || !overlap_v(run.rect.bottom, run.rect.top, bottom, top) {
             break;
         }
-        to = (run.char_start + run.count) as i64 - 1;
+        to = run_end(run) - 1;
     }
     (from, to)
 }
@@ -631,11 +650,11 @@ pub fn text_segments_for_range(
     let mut sub_runs: Vec<SubRun> = Vec::new();
 
     for run in &layout.runs {
-        let run_end = (run.char_start + run.count) as i64 - 1;
-        if run_end < lo || run.char_start as i64 > hi {
+        let run_end = run_end(run) - 1;
+        if run_end < lo || run_start(run) > hi {
             continue;
         }
-        let s = lo.max(run.char_start as i64);
+        let s = lo.max(run_start(run));
         let e = hi.min(run_end);
 
         let mut acc = Accumulator::new();

@@ -33,6 +33,13 @@ fn arg<T: DeserializeOwned>(args: &[Value], i: usize) -> Result<T, Error> {
     serde_json::from_value(value).map_err(|e| Error::new(format!("[harness] argument {i}: {e}")))
 }
 
+/// Argument `i` as given, `null` when absent, as [`arg`] reads it: a
+/// malformed vector fails the case instead of panicking the runner.
+fn raw(args: &[Value], i: usize) -> &Value {
+    static NULL: Value = Value::Null;
+    args.get(i).unwrap_or(&NULL)
+}
+
 fn out<T: Serialize>(value: T) -> Result<Value, Error> {
     serde_json::to_value(value).map_err(|e| Error::new(format!("[harness] result: {e}")))
 }
@@ -107,7 +114,7 @@ fn normalize_bar_fn(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn filter_bar_fn(args: &[Value]) -> Result<Value, Error> {
-    let keep = strings(&args[1]);
+    let keep = strings(raw(args, 1));
     out(filter_bar(&arg(args, 0)?, |u| keep.iter().any(|k| k == u.key())))
 }
 
@@ -116,46 +123,46 @@ fn define_chrome_fn(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn validate_chrome_fn(args: &[Value]) -> Result<Value, Error> {
-    let known: HashSet<String> = strings(&args[1]["$set"]).into_iter().collect();
+    let known: HashSet<String> = strings(&raw(args, 1)["$set"]).into_iter().collect();
     out(validate_chrome(&arg(args, 0)?, &known)?)
 }
 
 fn solve_fn(args: &[Value]) -> Result<Value, Error> {
     let bar: NormalizedBar = arg(args, 0)?;
-    out(solve(&bar, &TableMetrics(args[1].clone()), number_arg(args, 2)?))
+    out(solve(&bar, &TableMetrics(raw(args, 1).clone()), number_arg(args, 2)?))
 }
 
 fn solve_schema_fn(args: &[Value]) -> Result<Value, Error> {
     let bar = normalize_bar(&arg::<BarSchema>(args, 0)?)?;
-    out(solve(&bar, &TableMetrics(args[1].clone()), number_arg(args, 2)?))
+    out(solve(&bar, &TableMetrics(raw(args, 1).clone()), number_arg(args, 2)?))
 }
 
 fn project_overflow_fn(args: &[Value]) -> Result<Value, Error> {
-    out(project_overflow(&arg(args, 0)?, &arg(args, 1)?, resolver(&args[2])))
+    out(project_overflow(&arg(args, 0)?, &arg(args, 1)?, resolver(raw(args, 2))))
 }
 
 fn project_shed_fn(args: &[Value]) -> Result<Value, Error> {
-    out(project_shed(&arg(args, 0)?, &arg(args, 1)?, resolver(&args[2])))
+    out(project_shed(&arg(args, 0)?, &arg(args, 1)?, resolver(raw(args, 2))))
 }
 
 fn project_strip_fn(args: &[Value]) -> Result<Value, Error> {
-    let visible = strings(&args[1]);
+    let visible = strings(raw(args, 1));
     out(project_strip(&arg(args, 0)?, |c| visible.iter().any(|v| v == c)))
 }
 
 fn solve_and_project_fn(args: &[Value]) -> Result<Value, Error> {
     let bar = normalize_bar(&arg::<BarSchema>(args, 0)?)?;
-    let fit = solve(&bar, &TableMetrics(args[1].clone()), number_arg(args, 2)?);
+    let fit = solve(&bar, &TableMetrics(raw(args, 1).clone()), number_arg(args, 2)?);
     let mut shed = Record::new();
     for section in &bar.sections {
         for g in &section.groups {
-            let rows = project_shed(g, &fit, resolver(&args[3]));
+            let rows = project_shed(g, &fit, resolver(raw(args, 3)));
             if !rows.is_empty() {
                 shed.insert(g.id.clone(), rows);
             }
         }
     }
-    let overflow = project_overflow(&bar, &fit, resolver(&args[3]));
+    let overflow = project_overflow(&bar, &fit, resolver(raw(args, 3)));
     out(json!({ "fit": out(fit)?, "overflow": out(overflow)?, "shed": out(shed)? }))
 }
 
@@ -200,7 +207,7 @@ fn helper_identity(_: &[Value]) -> Result<Value, Error> {
 
 fn helper_call(args: &[Value]) -> Result<Value, Error> {
     let name: String = arg(args, 0)?;
-    let rest = &args[1..];
+    let rest = args.get(1..).unwrap_or_default();
     let h = CHROME_HELPERS;
     match name.as_str() {
         "addItem" => out((h.add_item)(&arg(rest, 0)?, &arg(rest, 1)?)?),

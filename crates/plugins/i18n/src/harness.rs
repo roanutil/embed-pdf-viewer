@@ -7,10 +7,11 @@
 //! as the callback `console.warn`, which is where the generator records the
 //! TypeScript's `console.warn`.
 //!
-//! The runner reads a vector with `serde_json`, whose objects are sorted by
-//! key, so a config's `loaders` arrive in key order rather than as written.
-//! The generator refuses a vector whose loaders are not written in key order,
-//! so the two agree (integer-like keys enumerate first either way).
+//! The runner reads a vector with `serde_json` and `preserve_order` (this
+//! crate declares it), so a config's `loaders` arrive as written, which is
+//! the TypeScript's enumeration order (integer-like keys first). The
+//! generator also refuses loaders not written in key order, a guard from
+//! when objects were read sorted.
 
 use std::any::Any;
 use std::rc::Rc;

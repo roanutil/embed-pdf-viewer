@@ -54,6 +54,18 @@ pub enum SelectionRangeInput {
     Span { page: PageRef, start: i64, count: i64 },
 }
 
+impl SelectionRangeInput {
+    /// A span from a search hit's `f64` fields:
+    /// `SelectionRangeInput::span(hit.page, hit.char_start, hit.char_count)`
+    /// needs no casts, as `select({ page, start: hit.charStart, count:
+    /// hit.charCount })` needs none in the TypeScript. Fractions truncate,
+    /// values past `i64` saturate and NaN is 0 (Rust's `as`); a hit's are
+    /// whole numbers.
+    pub fn span(page: PageRef, start: f64, count: f64) -> Self {
+        SelectionRangeInput::Span { page, start: start as i64, count: count as i64 }
+    }
+}
+
 // ── the read model ────────────────────────────────────────────────────────────
 
 /// A selection boundary on its boundary glyph's own oriented cell.

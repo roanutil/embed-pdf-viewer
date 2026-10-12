@@ -33,7 +33,7 @@ pub struct OverflowSection {
 }
 
 /// What `ResolveMenuTarget` returns for a known command: `{ menu?: string }`.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MenuTarget {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub menu: Option<String>,

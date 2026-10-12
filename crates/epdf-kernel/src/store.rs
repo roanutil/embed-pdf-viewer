@@ -534,3 +534,12 @@ impl Unsubscribe {
         }
     }
 }
+
+/// A plugin's remover (`register_command`, `register_locale`) as an
+/// `Unsubscribe`, so both kinds of teardown sit in one list. Like any
+/// `Unsubscribe` it runs the remover once; later calls do nothing.
+impl From<Rc<dyn Fn()>> for Unsubscribe {
+    fn from(remove: Rc<dyn Fn()>) -> Self {
+        Unsubscribe::new(move || remove())
+    }
+}

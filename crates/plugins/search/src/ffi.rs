@@ -460,7 +460,9 @@ impl SearchHandle {
             .await
     }
 
-    /// The pages with at least one hit, in document order.
+    /// The pages with at least one hit, by ascending page object number
+    /// (the order of the TypeScript's `Object.values(hitsByPage)`), which
+    /// is not document order once pages are moved or inserted.
     pub async fn pages_with_hits(&self) -> Result<Vec<PageRef>, ViewerError> {
         self.cap
             .call(|c| Ok(open(c)?.list_pages_with_hits().into_iter().map(PageRef::from).collect()))

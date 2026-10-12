@@ -3,7 +3,7 @@
 //! category gating, and the host-only keystroke matcher.
 
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use epdf_kernel::error::to_plugin_error;
 use epdf_kernel::event_hook::EventHookSource;
@@ -63,7 +63,26 @@ struct Inner {
 #[derive(Clone)]
 pub struct CommandsCapability(Rc<Inner>);
 
+/// A [`CommandsCapability`] that doesn't keep the registry alive. Rust
+/// only: a definition's closures live in the registry, so one that holds
+/// the capability itself forms an `Rc` cycle no garbage collector reclaims.
+/// Hold this instead, or resolve `COMMANDS` through the `CommandCtx`.
+#[derive(Clone)]
+pub struct WeakCommandsCapability(Weak<Inner>);
+
+impl WeakCommandsCapability {
+    /// The capability, while anything else still holds it.
+    pub fn upgrade(&self) -> Option<CommandsCapability> {
+        self.0.upgrade().map(CommandsCapability)
+    }
+}
+
 impl CommandsCapability {
+    /// A handle for a definition's closures; see [`WeakCommandsCapability`].
+    pub fn downgrade(&self) -> WeakCommandsCapability {
+        WeakCommandsCapability(Rc::downgrade(&self.0))
+    }
+
     fn state(&self) -> Rc<CommandsState> {
         self.0.cx.state()
     }
@@ -139,12 +158,18 @@ impl CommandsCapability {
         options: RegisterCommandOptions,
     ) -> Result<Rc<dyn Fn()>, Error> {
         let id = def.id.clone();
-        let entry = register_command(&mut self.0.registry.borrow_mut(), def, options)?;
+        // Weak both ways, so a remover the definition's own closures hold
+        // doesn't keep the definition alive.
+        let entry =
+            Rc::downgrade(&register_command(&mut self.0.registry.borrow_mut(), def, options)?);
         let inner = Rc::downgrade(&self.0);
         Ok(Rc::new(move || {
             let Some(inner) = inner.upgrade() else { return };
             let mut registry = inner.registry.borrow_mut();
-            if registry.get(&id).is_some_and(|current| Rc::ptr_eq(&current, &entry)) {
+            if registry
+                .get(&id)
+                .is_some_and(|current| Weak::ptr_eq(&Rc::downgrade(&current), &entry))
+            {
                 registry.delete(&id);
             }
         }))

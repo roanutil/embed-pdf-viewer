@@ -22,5 +22,11 @@ epdf-ui-core = { path = "../ui-core", default-features = false }
 epdf-plugin-i18n = { path = "../i18n", default-features = false }
 epdf-plugin-shell = { path = "../shell", default-features = false }
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["float_roundtrip"] }
+# `preserve_order`: objects keep the order they arrived in, as JS objects do,
+# whatever else is linked (the harness turned it on only in its builds).
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "teardown"
+required-features = ["harness"]
