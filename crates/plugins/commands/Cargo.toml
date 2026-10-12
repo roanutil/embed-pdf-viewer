@@ -26,3 +26,7 @@ serde = { version = "1", features = ["derive"] }
 # whatever else is linked (the harness turned it on only in its builds).
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[[test]]
+name = "teardown"
+required-features = ["harness"]

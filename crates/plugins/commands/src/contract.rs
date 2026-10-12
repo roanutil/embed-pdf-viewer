@@ -102,6 +102,10 @@ pub enum Panel {
     Target { id: String, exclusive: Option<String> },
 }
 
+/// `CommandDef`. The registry owns the closures, so a closure that holds
+/// the [`CommandsCapability`] (or the remover its registration returned)
+/// keeps the registry alive for good; hold a
+/// [`WeakCommandsCapability`](crate::WeakCommandsCapability) instead.
 #[derive(Clone, Default)]
 pub struct CommandDef {
     /// Convention: `domain:verb`.
