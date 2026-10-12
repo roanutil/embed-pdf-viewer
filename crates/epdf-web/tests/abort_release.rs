@@ -80,3 +80,40 @@ async fn a_late_answer_after_an_abort_releases_its_hosts() {
     ids.sort_by(f64::total_cmp);
     assert_eq!(ids, vec![5.0, 6.0]);
 }
+
+/// A bridge whose `open` has already resolved when it returns, so its
+/// `abort` can no longer stop anything, and which records every `call`.
+const OPENED_STUB: &str = r#"
+const calls = [];
+return {
+  calls,
+  open(input) {
+    const p = Promise.resolve(JSON.stringify(JSON.parse(input).id));
+    p.abort = () => {};
+    return p;
+  },
+  call(doc, path) {
+    calls.push(doc + ':' + path);
+    return Promise.resolve('null');
+  },
+};
+"#;
+
+#[wasm_bindgen_test]
+async fn an_open_aborted_after_the_engine_answered_closes_the_late_document() {
+    reset();
+    let stub = js_sys::Function::new_no_args(OPENED_STUB).call0(&JsValue::UNDEFINED).unwrap();
+    let engine = JsEngine::new(stub.clone().unchecked_into::<EngineBridge>());
+    let opened = engine.open(json!({"kind": "bytes", "id": "late"}), None);
+    // The bridge's promise has resolved; this side hears of it a microtask
+    // later, so the abort still wins here.
+    opened.abort(Some(json!("stop")));
+    let Some(Err(error)) = opened.peek() else { panic!("the abort did not reject the open") };
+    assert_eq!(error.name, "AbortError");
+
+    js_sleep(0.0).await;
+    let calls: js_sys::Array =
+        js_sys::Reflect::get(&stub, &"calls".into()).unwrap().unchecked_into();
+    let calls: Vec<String> = calls.iter().map(|c| c.as_string().unwrap()).collect();
+    assert_eq!(calls, vec!["late:close".to_string()]);
+}
