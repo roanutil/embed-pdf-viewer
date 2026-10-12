@@ -259,10 +259,18 @@ impl Core {
     /// The one base-sizing path: `render_source`, `get_source_key`,
     /// `conform_viewport` and (through the tile manager) engagement.
     fn conform_viewport(&self, page: PageRef, scale: f64) -> Result<PageRenderViewport, Error> {
+        // The TypeScript's width-less viewport (an empty ladder) has no
+        // Rust shape; NaN stands in.
+        Ok(PageRenderViewport::Width { width: self.base_width(page, scale)?.unwrap_or(f64::NAN) })
+    }
+
+    /// The conformed base width, `None` where the TypeScript's is
+    /// `undefined` (an empty client ladder).
+    fn base_width(&self, page: PageRef, scale: f64) -> Result<Option<f64>, Error> {
         let demand_width = scale * self.page_width_of(page)?;
         let width = base_ask_width(&self.strategy(), demand_width);
-        self.warn_past_budget_no_tiles(demand_width, width);
-        Ok(PageRenderViewport::Width { width })
+        self.warn_past_budget_no_tiles(demand_width, width.unwrap_or(f64::NAN));
+        Ok(width)
     }
 
     fn epoch_of(&self, pon: u32, include_annotations: bool) -> f64 {
@@ -279,14 +287,14 @@ impl Core {
     fn raster_key(
         &self,
         pon: u32,
-        width: f64,
+        width: Option<f64>,
         annotations: bool,
         format: Option<RenderFormat>,
         quality: Option<f64>,
     ) -> String {
         format!(
             "{pon}|w{}|a{}|e{}{}{}",
-            num(width),
+            width.map_or_else(|| "undefined".to_string(), num),
             u8::from(annotations),
             num(self.epoch_of(pon, annotations)),
             format.map_or(String::new(), |f| format!("|f{}", f.as_str())),
@@ -355,15 +363,11 @@ impl Core {
         Promise::spawn(async move {
             this.assert_can_render("render.renderSource")?;
             let annotations = options.include_annotations.unwrap_or(true);
-            let viewport = this.conform_viewport(page, options.scale)?;
+            let width = this.base_width(page, options.scale)?;
+            let viewport = PageRenderViewport::Width { width: width.unwrap_or(f64::NAN) };
             let strategy = this.strategy();
-            let key = this.raster_key(
-                page.page_object_number,
-                viewport_width(viewport),
-                annotations,
-                strategy.format,
-                None,
-            );
+            let key =
+                this.raster_key(page.page_object_number, width, annotations, strategy.format, None);
             let request = RasterRequest {
                 viewport,
                 include_annotations: annotations,
@@ -396,7 +400,7 @@ impl Core {
             // quality) is the same key, so the cached image serves it.
             let key = this.raster_key(
                 page.page_object_number,
-                width,
+                Some(width),
                 annotations,
                 format,
                 options.quality,
@@ -552,13 +556,6 @@ impl Core {
     }
 }
 
-fn viewport_width(viewport: PageRenderViewport) -> f64 {
-    match viewport {
-        PageRenderViewport::Width { width } => width,
-        PageRenderViewport::Scale { .. } => 0.0,
-    }
-}
-
 /// `return promise` from an `async` function: the outer promise adopts it
 /// as a thenable, one turn for the adoption job and one for its reaction.
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
@@ -707,10 +704,10 @@ impl RenderCapability {
         scale: f64,
         include_annotations: Option<bool>,
     ) -> Result<String, Error> {
-        let viewport = self.0.conform_viewport(page, scale)?;
+        let width = self.0.base_width(page, scale)?;
         Ok(self.0.raster_key(
             page.page_object_number,
-            viewport_width(viewport),
+            width,
             include_annotations.unwrap_or(true),
             self.0.strategy().format,
             None,

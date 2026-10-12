@@ -291,6 +291,15 @@ const capabilityCases: ScenarioCase[] = [
     steps: [start, open(), cap('renderSourceKey', 11, { scale: 0.1 }), cap('renderSourceKey', 11, { scale: 8 })],
   },
   {
+    name: 'empty-width-ladder',
+    // conformViewport is left out: its width-less answer has no Rust shape (the port answers a NaN width).
+    covers: 'An empty client width ladder is not rejected: the base asks for an undefined width, which the source key spells out.',
+    plugins: render({ fullPage: { quantize: [] } }),
+    engine: { documents: { a: doc() } },
+    ...UNSNAPSHOTTED,
+    steps: [start, open(), cap('renderSourceKey', 11, { scale: 1 }), cap('renderSourceKey', 11, { scale: 8 })],
+  },
+  {
     name: 'lattice-default-budget',
     covers:
       'An advertised lattice (read from render.policy at open) is the deployment’s ladder: the default budget never filters it, zoom inside a rung keeps the key, crossing a rung changes it.',
@@ -1219,6 +1228,20 @@ const tileCases: ScenarioCase[] = [
     { tiles: { prefetch: { margin: 0 }, quantize: [4, 8], size: 64 } },
     doc(),
     (v) => [...v.plan('stage', 11, { desiredDeviceWidth: 80_000 })],
+  ),
+  tileCase(
+    'empty-tile-ladder',
+    'An empty client tile ladder is not rejected: the level snaps to an undefined scale and the plan engages with nothing to fetch, staged or stage-less.',
+    { tiles: { prefetch: { margin: 0 }, quantize: [] } },
+    doc(),
+    (v) => [...v.plan('stage', 11, DEEP), ...v.plan('stage', 22, { desiredDeviceWidth: 80_000 })],
+  ),
+  tileCase(
+    'empty-lattice-tile-scales',
+    'An advertised tiles block with no scales is an empty pyramid: the plan engages with nothing to fetch, staged or stage-less.',
+    { tiles: { prefetch: { margin: 0 } } },
+    doc({ policy: { ...LATTICE_TILES, tiles: { tileSizes: [256], scales: [] } } }),
+    (v) => [...v.plan('stage', 11, demand(3000, visible(0, 0, 100, 100))), ...v.plan('stage', 22, { desiredDeviceWidth: 80_000 })],
   ),
   tileCase(
     'evicted-tile-bytes-refetch',

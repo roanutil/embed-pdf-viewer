@@ -180,7 +180,7 @@ fn call_form(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     Ok(match method {
-        "getSnapshot" => Outcome::Returned(or_null(cap.get_snapshot())),
+        "getSnapshot" => Outcome::Returned(or_null(cap.get_snapshot().map(|s| (*s).clone()))),
         "getField" => Outcome::Returned(or_null(cap.get_field(&value_arg(args, 0)))),
         "getFieldForWidget" => {
             Outcome::Returned(or_null(cap.get_field_for_widget(&value_arg(args, 0))))

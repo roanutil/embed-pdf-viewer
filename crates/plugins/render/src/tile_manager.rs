@@ -213,7 +213,8 @@ impl TileManager {
         }
 
         // Engagement: the deficit of what the base actually supplies.
-        let supplied = base_ask_width(&strategy, demand.desired_device_width);
+        // An empty ladder supplies `undefined`: the deficit is NaN.
+        let supplied = base_ask_width(&strategy, demand.desired_device_width).unwrap_or(f64::NAN);
         let deficit = demand.desired_device_width / supplied;
         if deficit <= strategy.engage_at {
             let engaged = {
@@ -271,7 +272,11 @@ impl TileManager {
                         .copied()
                         .filter(|s| js::round(s * page.width) <= max_stageless_width)
                         .collect();
-                    want_scale = fitting.last().copied().unwrap_or(pyramid[0]);
+                    // An empty pyramid answers NaN, the TypeScript's `undefined`.
+                    want_scale = fitting
+                        .last()
+                        .copied()
+                        .unwrap_or_else(|| pyramid.first().copied().unwrap_or(f64::NAN));
                     want_width = js::round(want_scale * page.width);
                 } else {
                     want_width = max_stageless_width;
@@ -671,7 +676,7 @@ impl TileManager {
             });
             state.borrow_mut().entries.insert(key.clone(), entry.clone());
             let fetch_tile = self.deps().fetch_tile.clone();
-            let promise = self.deps().store.acquire(
+            let acquired = self.deps().store.acquire(
                 &key,
                 |signal| {
                     // The rendered region is the bled rect, matching the
@@ -681,7 +686,26 @@ impl TileManager {
                     fetch_tile(pon, rendered, grid.scale, include_annotations, signal)
                 },
                 Some(&entry.abort),
-            )?;
+            );
+            let promise = match acquired {
+                Ok(promise) => promise,
+                Err(error) => {
+                    // A synchronous refusal (the engine refusing a page the
+                    // registry still lists) settles like a rejection: free
+                    // the slot, drop the entry, and do not retry the key at
+                    // this level. Otherwise the entry never resolves and,
+                    // after MAX_IN_FLIGHT of them, no tile fetches again.
+                    // The TypeScript strands both here; this is a Rust-only
+                    // divergence the vectors cannot reach.
+                    self.release_slot(&entry);
+                    let mut s = state.borrow_mut();
+                    s.entries.shift_remove(&key);
+                    s.failed_keys.insert(key);
+                    s.version += 1;
+                    s.plan_cache = None;
+                    return Err(error);
+                }
+            };
             let this = self.clone();
             let state = state.clone();
             rt::spawn(async move {

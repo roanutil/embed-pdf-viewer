@@ -140,8 +140,13 @@ pub fn inflate_rect(rect: Rect, margin: f64, velocity: Option<Velocity>) -> Rect
     }
 }
 
-/// Snap UP through a pyramid's sorted scales; cap at the top.
+/// Snap UP through a pyramid's sorted scales; cap at the top. An empty
+/// pyramid answers NaN, the TypeScript's `undefined`.
 pub fn snap_to_pyramid(scales: &[f64], needed: f64) -> f64 {
     let sorted = ascending(scales);
-    sorted.iter().copied().find(|&s| s >= needed).unwrap_or(sorted[sorted.len() - 1])
+    sorted
+        .iter()
+        .copied()
+        .find(|&s| s >= needed)
+        .unwrap_or_else(|| sorted.last().copied().unwrap_or(f64::NAN))
 }

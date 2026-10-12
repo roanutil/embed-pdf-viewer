@@ -467,7 +467,10 @@ fn resolve_strategy_fn(a: &[Value]) -> Out {
 fn base_ask_width_fn(a: &[Value]) -> Out {
     let policy: EngineRenderPolicy = arg(a, 0)?;
     let strategy = resolve_strategy(&policy, &resolve_render_options(&arg(a, 1)?));
-    ok(&base_ask_width(&strategy, arg(a, 2)?))
+    match base_ask_width(&strategy, arg(a, 2)?) {
+        Some(width) => ok(&width),
+        None => Ok(epdf_kernel::undefined()),
+    }
 }
 fn default_tile_pyramid(_: &[Value]) -> Out {
     ok(&DEFAULT_TILE_PYRAMID)

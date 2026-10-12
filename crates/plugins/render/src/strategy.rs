@@ -103,12 +103,14 @@ pub fn resolve_strategy(
 
 /// `baseAskWidth`: the one base-sizing function. Exact mode returns the
 /// demand itself up to the budget; ladder mode snaps UP and caps at the top.
-pub fn base_ask_width(strategy: &ResolvedStrategy, demand_width: f64) -> f64 {
+/// `None` is the TypeScript's `undefined`, which only an empty ladder
+/// answers.
+pub fn base_ask_width(strategy: &ResolvedStrategy, demand_width: f64) -> Option<f64> {
     let wanted = js::max(1.0, js::round(demand_width));
     match &strategy.widths {
-        None => js::min(wanted, strategy.max_width),
+        None => Some(js::min(wanted, strategy.max_width)),
         Some(widths) => {
-            widths.iter().copied().find(|&w| w >= wanted).unwrap_or(widths[widths.len() - 1])
+            widths.iter().copied().find(|&w| w >= wanted).or_else(|| widths.last().copied())
         }
     }
 }

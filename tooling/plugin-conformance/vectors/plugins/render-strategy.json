@@ -877,6 +877,86 @@
       }
     },
     {
+      "name": "resolveRenderOptions/empty-ladder",
+      "fn": "resolveRenderOptions",
+      "args": [
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fullPage": {
+            "maxWidth": 640,
+            "maxWidthExplicit": false,
+            "quantize": []
+          },
+          "tiles": {
+            "enabled": true,
+            "size": 512,
+            "quantize": "exact",
+            "maxScale": 128,
+            "bleedPx": 1,
+            "prefetchMargin": 0.5,
+            "velocityBias": true,
+            "settleMs": 150,
+            "fadeMs": 0,
+            "fallbackPyramid": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32
+            ]
+          },
+          "debug": false
+        }
+      }
+    },
+    {
+      "name": "resolveRenderOptions/empty-tile-ladder",
+      "fn": "resolveRenderOptions",
+      "args": [
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "fullPage": {
+            "maxWidth": 640,
+            "maxWidthExplicit": false,
+            "quantize": "exact"
+          },
+          "tiles": {
+            "enabled": true,
+            "size": 512,
+            "quantize": [],
+            "maxScale": 128,
+            "bleedPx": 1,
+            "prefetchMargin": 0.5,
+            "velocityBias": true,
+            "settleMs": 150,
+            "fadeMs": 0,
+            "fallbackPyramid": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32
+            ]
+          },
+          "debug": false
+        }
+      }
+    },
+    {
       "name": "resolveStrategy/continuous/defaults",
       "fn": "resolveStrategy",
       "args": [
@@ -1391,6 +1471,54 @@
           "widths": null,
           "maxWidth": 640,
           "pyramid": null,
+          "tileSize": 512,
+          "engageAt": 1,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/continuous/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [],
+          "maxWidth": 640,
+          "pyramid": null,
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/continuous/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": null,
+          "maxWidth": 640,
+          "pyramid": [],
           "tileSize": 512,
           "engageAt": 1,
           "tileMaxScale": 128
@@ -2532,6 +2660,111 @@
       }
     },
     {
+      "name": "resolveStrategy/lattice/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
       "name": "resolveStrategy/lattice-unsorted/defaults",
       "fn": "resolveStrategy",
       "args": [
@@ -3659,6 +3892,111 @@
             16,
             32
           ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-unsorted/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2,
+            4,
+            8,
+            16,
+            32
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-unsorted/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              2560,
+              320,
+              1280,
+              640
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [],
           "tileSize": 512,
           "engageAt": 1.25,
           "tileMaxScale": 128
@@ -5067,6 +5405,144 @@
       }
     },
     {
+      "name": "resolveStrategy/lattice-tiles/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2,
+            4,
+            8,
+            16
+          ],
+          "tileSize": 256,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-tiles/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256,
+              1024
+            ],
+            "scales": [
+              16,
+              1,
+              4,
+              2,
+              8
+            ]
+          }
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2,
+            4,
+            8,
+            16
+          ],
+          "tileSize": 256,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
       "name": "resolveStrategy/lattice-tiles-512/defaults",
       "fn": "resolveStrategy",
       "args": [
@@ -6348,6 +6824,132 @@
       }
     },
     {
+      "name": "resolveStrategy/lattice-tiles-512/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              1024,
+              512
+            ],
+            "scales": [
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-tiles-512/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              1024,
+              512
+            ],
+            "scales": [
+              1,
+              2
+            ]
+          }
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            1,
+            2
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
       "name": "resolveStrategy/lattice-no-tile-sizes/defaults",
       "fn": "resolveStrategy",
       "args": [
@@ -7527,6 +8129,124 @@
         },
         {
           "debug": false
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            3,
+            6
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-no-tile-sizes/empty-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [],
+            "scales": [
+              3,
+              6
+            ]
+          }
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [
+            3,
+            6
+          ],
+          "tileSize": 512,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-no-tile-sizes/empty-tile-ladder",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [],
+            "scales": [
+              3,
+              6
+            ]
+          }
+        },
+        {
+          "tiles": {
+            "quantize": []
+          }
         }
       ],
       "outcome": {
@@ -17704,6 +18424,118 @@
       ],
       "outcome": {
         "returned": 2560
+      }
+    },
+    {
+      "name": "baseAskWidth/continuous/empty-ladder/0",
+      "fn": "baseAskWidth",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "$undefined": true
+        }
+      }
+    },
+    {
+      "name": "baseAskWidth/continuous/empty-ladder/640",
+      "fn": "baseAskWidth",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        },
+        640
+      ],
+      "outcome": {
+        "returned": {
+          "$undefined": true
+        }
+      }
+    },
+    {
+      "name": "baseAskWidth/continuous/empty-ladder/1000000",
+      "fn": "baseAskWidth",
+      "args": [
+        {
+          "kind": "continuous"
+        },
+        {
+          "fullPage": {
+            "quantize": []
+          }
+        },
+        1000000
+      ],
+      "outcome": {
+        "returned": {
+          "$undefined": true
+        }
+      }
+    },
+    {
+      "name": "resolveStrategy/lattice-empty-tile-scales/defaults",
+      "fn": "resolveStrategy",
+      "args": [
+        {
+          "kind": "lattice",
+          "fullPage": {
+            "widths": [
+              320,
+              640,
+              1280,
+              2560
+            ]
+          },
+          "appearances": {
+            "scales": [
+              1,
+              2,
+              4
+            ]
+          },
+          "formats": [
+            "webp",
+            "png"
+          ],
+          "background": "white",
+          "enforced": false,
+          "tiles": {
+            "tileSizes": [
+              256
+            ],
+            "scales": []
+          }
+        },
+        {}
+      ],
+      "outcome": {
+        "returned": {
+          "widths": [
+            320,
+            640,
+            1280,
+            2560
+          ],
+          "maxWidth": 640,
+          "pyramid": [],
+          "tileSize": 256,
+          "engageAt": 1.25,
+          "tileMaxScale": 128
+        }
       }
     }
   ]

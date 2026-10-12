@@ -1,11 +1,13 @@
 //! `read/fields.ts`: reads over the reconciled snapshot: fields, values,
 //! the widget-to-field map.
 
+use std::rc::Rc;
+
 use serde_json::{Map, Value, json};
 
 use crate::contract::FormFilter;
 use crate::controller::{FormCapability, key_of};
-use crate::core::model::{field_by_key, field_for_widget};
+use crate::core::model::{field_by_key, field_for_widget, snapshot_fields};
 use crate::value::{get, num, str_of};
 
 /// `widgetObjectOf(widget)`: a `WidgetAddress` (an annotation ref, or
@@ -20,10 +22,6 @@ pub(crate) fn widget_object_of(widget: &Value) -> f64 {
         };
     }
     num(widget, "annotObjectNumber").unwrap_or(f64::NAN)
-}
-
-fn snapshot_fields(snapshot: Option<&Value>) -> Vec<Value> {
-    snapshot.and_then(|s| get(s, "fields")).and_then(Value::as_array).cloned().unwrap_or_default()
 }
 
 /// `valueOf(field)`: the value in the write vocabulary, or `None` for a
@@ -62,7 +60,8 @@ pub(crate) fn value_of(field: &Value) -> Option<Value> {
 
 impl FormCapability {
     /// `getSnapshot()`: the reconciled field tree, null until it lands.
-    pub fn get_snapshot(&self) -> Option<Value> {
+    /// Shared with the model, as the TypeScript returns it by reference.
+    pub fn get_snapshot(&self) -> Option<Rc<Value>> {
         self.model().snapshot.clone()
     }
 
@@ -80,10 +79,11 @@ impl FormCapability {
     /// member of the filter (a widget on `page`; an unplaced widget matches
     /// no page).
     pub fn list_fields(&self, filter: Option<&FormFilter>) -> Vec<Value> {
-        let fields = snapshot_fields(self.model().snapshot.as_ref());
-        let Some(filter) = filter else { return fields };
+        let model = self.model();
+        let fields = snapshot_fields(&model);
+        let Some(filter) = filter else { return fields.to_vec() };
         fields
-            .into_iter()
+            .iter()
             .filter(|f| {
                 filter
                     .family
@@ -100,6 +100,7 @@ impl FormCapability {
                         })
                     })
             })
+            .cloned()
             .collect()
     }
 
@@ -113,9 +114,10 @@ impl FormCapability {
     /// unsupported entries omitted.
     pub fn export_values(&self) -> Map<String, Value> {
         let mut out = Map::new();
-        for field in snapshot_fields(self.model().snapshot.as_ref()) {
-            if let Some(value) = value_of(&field) {
-                out.insert(crate::value::string_of(get(&field, "name")), value);
+        let model = self.model();
+        for field in snapshot_fields(&model) {
+            if let Some(value) = value_of(field) {
+                out.insert(crate::value::string_of(get(field, "name")), value);
             }
         }
         out

@@ -255,7 +255,8 @@ impl StageCapability {
             convert(&mut ay, ncl.y);
             *state.borrow_mut() = (ax, ay, true, now);
             this.set_cam_raw(Camera { x: ax.p / zoom, y: ay.p / zoom, zoom });
-            this.sync_cursor_from_camera();
+            // A throw in a frame callback is uncaught in the TypeScript.
+            let _ = this.sync_cursor_from_camera();
             if ax.done && ay.done {
                 // The exact landing: clamped, snapped, settled.
                 if this.set_cam_current().is_ok() {

@@ -7,12 +7,13 @@ use crate::prelude::*;
 
 impl StageCapability {
     /// The double-tap ladder: automatic, fit-width, 2.5 times automatic,
-    /// wrapping; off the ladder it resets to the base rung.
-    pub fn double_tap_zoom(&self, pt: Point) {
+    /// wrapping; off the ladder it resets to the base rung. `Err` where
+    /// the TypeScript throws: no item under the tapped point.
+    pub fn double_tap_zoom(&self, pt: Point) -> Result<(), Error> {
         self.cancel_anim();
         let sc0 = self.build_scene();
         if sc0.item_count == 0 {
-            return;
+            return Ok(());
         }
         let item = if self.paged() {
             &sc0.items[0]
@@ -54,16 +55,20 @@ impl StageCapability {
         });
         let scene = self.build_scene();
         if scene.item_count == 0 {
-            return;
+            return Ok(());
         }
-        let focal = sc::anchor_at_point(&scene, sc::to_world(self.cam(), pt))
-            .expect("a scene with items has an anchor");
+        let focal =
+            sc::anchor_at_point(&scene, sc::to_world(self.cam(), pt)).map_err(stage_error)?;
+        // A throw in a frame callback is uncaught in the TypeScript.
         self.animate_zoom_anchored(
             focal,
             pt,
             target,
-            Some(Rc::new(|s: &Self| s.sync_cursor_from_camera())),
+            Some(Rc::new(|s: &Self| {
+                let _ = s.sync_cursor_from_camera();
+            })),
         );
+        Ok(())
     }
 
     /// Magnify by 1.2 around the zoomAlign point.

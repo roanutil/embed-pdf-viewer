@@ -9,8 +9,7 @@ impl StageCapability {
         self.mark_cause(MotionCause::User);
         self.cancel_anim();
         self.set_cam_stay(c)?;
-        self.sync_cursor_from_camera();
-        Ok(())
+        self.sync_cursor_from_camera()
     }
 
     pub fn pan_by(&self, dx: f64, dy: f64) -> Result<(), Error> {
@@ -28,17 +27,17 @@ impl StageCapability {
         } else {
             self.set_cam_stay(sc::pan_by_screen(self.cam(), dx, dy))?;
         }
-        self.sync_cursor_from_camera();
-        Ok(())
+        self.sync_cursor_from_camera()
     }
 
     /// `Element.scrollTo` for the camera: absolute, clamped, cursor-synced.
-    pub fn scroll_to(&self, opts: StageScrollToOptions) {
+    /// `Err` where the TypeScript throws: no item under the camera.
+    pub fn scroll_to(&self, opts: StageScrollToOptions) -> Result<(), Error> {
         self.mark_cause(MotionCause::User);
         self.cancel_anim();
         let scene = self.build_scene();
         if scene.item_count == 0 {
-            return;
+            return Ok(());
         }
         let bounds = self.stay_bounds().expect("a scene with items has bounds");
         let next = sc::camera_from_scroll(
@@ -50,31 +49,36 @@ impl StageCapability {
         );
         if opts.behavior == Some(ScrollBehaviorKind::Smooth) {
             let bounds = self.stay_bounds().expect("a scene with items has bounds");
-            self.animate_to(next, bounds, Some(Rc::new(|s: &Self| s.sync_cursor_from_camera())));
+            // A throw in a frame callback is uncaught in the TypeScript.
+            self.animate_to(
+                next,
+                bounds,
+                Some(Rc::new(|s: &Self| {
+                    let _ = s.sync_cursor_from_camera();
+                })),
+            );
+            Ok(())
         } else {
             self.set_cam(next, bounds);
-            self.sync_cursor_from_camera();
+            self.sync_cursor_from_camera()
         }
     }
 
     /// `Element.scrollBy`: relative offsets over `scroll_to`.
-    pub fn scroll_by(&self, opts: StageScrollToOptions) {
+    pub fn scroll_by(&self, opts: StageScrollToOptions) -> Result<(), Error> {
         let m = self.scroll_metrics_now();
         self.scroll_to(StageScrollToOptions {
             left: opts.left.map(|left| m.scroll_left + left),
             top: opts.top.map(|top| m.scroll_top + top),
             behavior: opts.behavior,
-        });
+        })
     }
 
     pub fn zoom_around(&self, pt: Point, factor: f64) -> Result<(), Error> {
         self.cancel_anim();
         let before = self.build_scene();
         let focal = if before.item_count > 0 {
-            Some(
-                sc::anchor_at_point(&before, sc::to_world(self.cam(), pt))
-                    .expect("a scene with items has an anchor"),
-            )
+            Some(sc::anchor_at_point(&before, sc::to_world(self.cam(), pt)).map_err(stage_error)?)
         } else {
             None
         };
@@ -95,8 +99,7 @@ impl StageCapability {
         if self.inner.gesture_depth.get() > 0 && self.inner.gesture_elastic.get() {
             self.inner.gesture_raw.set(Some(self.unrubberize(self.cam())?));
         }
-        self.sync_cursor_from_camera();
-        Ok(())
+        self.sync_cursor_from_camera()
     }
 
     /// Bracket a continuous gesture; re-entrant. Opening one catches any
@@ -129,7 +132,7 @@ impl StageCapability {
             });
             self.arm_rest();
         }
-        self.sync_cursor_from_camera();
+        self.sync_cursor_from_camera()?;
         if was_elastic {
             let c = self.cam();
             let cl = sc::clamp_camera(c, self.stay_bounds()?, self.vp(), self.constraint());

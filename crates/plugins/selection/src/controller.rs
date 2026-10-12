@@ -73,6 +73,47 @@ struct PageBoxes {
     crop: PdfRect,
 }
 
+/// The page registry, decoded.
+#[derive(Default)]
+struct Registry {
+    /// Every page in order, or none when one fails to decode (the
+    /// registry read as a whole).
+    listed: Vec<PageLayout>,
+    /// Each row on its own, `None` where it fails to decode.
+    rows: Vec<Option<PageLayout>>,
+    /// The first row naming each page, as a linear scan finds it.
+    by_pon: HashMap<PageObjectNumber, usize>,
+}
+
+impl Registry {
+    fn decode(pages: &Value) -> Self {
+        // Read in place: `&Value` is a deserializer, so the shared layouts
+        // aren't copied first.
+        let rows: Vec<Option<PageLayout>> = pages
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|row| serde::Deserialize::deserialize(row).ok())
+            .collect();
+        let mut by_pon = HashMap::with_capacity(rows.len());
+        for (i, row) in pages.as_array().into_iter().flatten().enumerate() {
+            if let Some(r) = row.get("ref").and_then(PageRef::from_json) {
+                by_pon.entry(r.page_object_number).or_insert(i);
+            }
+        }
+        let listed = if pages.is_array() && rows.iter().all(Option::is_some) {
+            rows.iter().flatten().cloned().collect()
+        } else {
+            Vec::new()
+        };
+        Registry { listed, rows, by_pon }
+    }
+
+    fn layout_of(&self, pon: PageObjectNumber) -> Option<&PageLayout> {
+        self.rows.get(*self.by_pon.get(&pon)?)?.as_ref()
+    }
+}
+
 fn page_ref<'de, D: serde::Deserializer<'de>>(d: D) -> Result<PageRef, D::Error> {
     let value = Value::deserialize(d)?;
     PageRef::from_json(&value).ok_or_else(|| serde::de::Error::custom("not a PageRef"))
@@ -113,6 +154,8 @@ struct Core {
     /// Bumped on content invalidation; reads in flight from before are dropped.
     epoch: Cell<u64>,
     model: RefCell<Option<Rc<ReadModel>>>,
+    /// The decoded registry and the page list it came from.
+    registry: RefCell<Option<(Rc<Value>, Rc<Registry>)>>,
     changed: EventHookSource<SelectionChangedEvent>,
     committed: EventHookSource<SelectionCommittedEvent>,
     cleared: EventHookSource<SelectionClearedEvent>,
@@ -157,6 +200,22 @@ fn permission_denied(operation: &str, scope: &str) -> Error {
     )
 }
 
+/// A content change landed while a text read was in flight: the pages
+/// already read may hold text the change removed (a redaction). The
+/// TypeScript returns that text; this is a Rust-only refusal.
+fn throw_if_stale(at: u64, now: u64) -> Result<(), Error> {
+    if at != now {
+        return Err(plugin_error(
+            code::CONFLICT,
+            "selection",
+            "selection.readText: the page content changed while it was read",
+            None,
+            None,
+        ));
+    }
+    Ok(())
+}
+
 fn throw_if_aborted(signal: Option<&AbortSignal>) -> Result<(), Error> {
     if signal.is_some_and(AbortSignal::aborted) {
         return Err(plugin_error(
@@ -199,6 +258,7 @@ pub fn create_selection_controller(
         text_snapshots: RefCell::default(),
         epoch: Cell::new(0),
         model: RefCell::new(None),
+        registry: RefCell::new(None),
     });
     let api = SelectionCapability(core);
     let this = api.clone();
@@ -258,25 +318,36 @@ impl SelectionCapability {
         }
     }
 
-    fn pages(&self) -> Vec<PageLayout> {
-        let Some(meta) = self.cx().document() else { return Vec::new() };
-        // Read in place: `&Value` is a deserializer, so the shared layouts
-        // aren't copied first.
-        serde::Deserialize::deserialize(&*meta.pages).unwrap_or_default()
+    /// The registry decoded once per page list: a lookup per page or per
+    /// index would rescan and redecode it, which made a span O(n^2) and a
+    /// settling select-all O(n^3). Keyed on the shared list's identity.
+    fn registry(&self) -> Rc<Registry> {
+        let Some(meta) = self.cx().document() else { return Rc::new(Registry::default()) };
+        if let Some(cached) = self.0.registry.borrow().as_ref()
+            && Rc::ptr_eq(&cached.0, &meta.pages)
+        {
+            return cached.1.clone();
+        }
+        let registry = Rc::new(Registry::decode(&meta.pages));
+        *self.0.registry.borrow_mut() = Some((meta.pages.clone(), registry.clone()));
+        registry
+    }
+
+    fn pages(&self) -> Rc<Registry> {
+        self.registry()
     }
 
     fn layout_of(&self, pon: PageObjectNumber) -> Option<PageLayout> {
-        let value = self.cx().get_page(PageRef::new(pon))?;
-        serde_json::from_value(value).ok()
+        self.registry().layout_of(pon).cloned()
     }
 
     fn page_index_of(&self, pon: PageObjectNumber) -> i64 {
-        self.layout_of(pon).map_or(-1, |l| l.index as i64)
+        self.registry().layout_of(pon).map_or(-1, |l| l.index as i64)
     }
 
     fn pon_at_index(&self, i: i64) -> Option<PageObjectNumber> {
         let i = usize::try_from(i).ok()?;
-        self.pages().get(i).map(|p| p.page.page_object_number)
+        self.registry().listed.get(i).map(|p| p.page.page_object_number)
     }
 
     // ── geometry ──
@@ -286,8 +357,19 @@ impl SelectionCapability {
     /// changes the key and re-derives; the engine is never asked again. A
     /// page whose crop box has no area has none (the TypeScript throws).
     fn geometry_for(&self, pon: PageObjectNumber) -> Option<Rc<SelectionPageGeometry>> {
+        if !self.0.raw_geometry.borrow().contains_key(&pon) {
+            return None;
+        }
+        self.geometry_with(pon, &self.layout_of(pon)?)
+    }
+
+    /// `geometry_for` against a layout the caller already decoded.
+    fn geometry_with(
+        &self,
+        pon: PageObjectNumber,
+        layout: &PageLayout,
+    ) -> Option<Rc<SelectionPageGeometry>> {
         let raw = self.0.raw_geometry.borrow().get(&pon).cloned()?;
-        let layout = self.layout_of(pon)?;
         let crop = layout.boxes.crop;
         let key = format!(
             "{}|{}|{},{},{},{}",
@@ -418,9 +500,11 @@ impl SelectionCapability {
             return;
         }
         let mut segments = BTreeMap::new();
+        let pages = self.pages();
         for i in si..=ei {
-            let Some(pon) = self.pon_at_index(i) else { continue };
-            let Some(geom) = self.geometry_for(pon) else {
+            let Some(layout) = pages.listed.get(i as usize) else { continue };
+            let pon = layout.page.page_object_number;
+            let Some(geom) = self.geometry_with(pon, layout) else {
                 let _ = self.load(PageRef::new(pon)); // recomputes on arrival
                 continue;
             };
@@ -457,7 +541,8 @@ impl SelectionCapability {
         let mut with_segments: Vec<PageObjectNumber> =
             s.segments.iter().filter(|(_, segs)| !segs.is_empty()).map(|(pon, _)| *pon).collect();
         // A stable sort by page index, as `Array.prototype.sort` is.
-        with_segments.sort_by_key(|pon| self.page_index_of(*pon));
+        let registry = self.registry();
+        with_segments.sort_by_key(|pon| registry.layout_of(*pon).map_or(-1, |l| l.index as i64));
         let pages: Vec<PageRef> = with_segments.iter().map(|pon| PageRef::new(*pon)).collect();
         let snapshot_pages = with_segments
             .iter()
@@ -596,7 +681,7 @@ impl SelectionCapability {
     /// then recompute. Raw snapshots are never refetched here.
     fn on_pages_updated(&self) {
         let alive: HashSet<PageObjectNumber> =
-            self.pages().iter().map(|p| p.page.page_object_number).collect();
+            self.pages().listed.iter().map(|p| p.page.page_object_number).collect();
         let gone: Vec<PageObjectNumber> =
             self.0.raw_geometry.borrow().keys().filter(|p| !alive.contains(p)).copied().collect();
         for pon in gone {
@@ -680,7 +765,9 @@ impl SelectionCapability {
     pub fn select_all(&self) -> Result<(), Error> {
         self.assert_scope(SELECT_SCOPE, "selection.selectAll")?;
         let pages = self.pages();
-        let (Some(first), Some(last)) = (pages.first(), pages.last()) else { return Ok(()) };
+        let (Some(first), Some(last)) = (pages.listed.first(), pages.listed.last()) else {
+            return Ok(());
+        };
         self.recompute(
             SelectionRange {
                 anchor: GlyphPointer { page: first.page, glyph: 0 },
@@ -800,6 +887,10 @@ impl SelectionCapability {
     ) -> Promise<String> {
         let this = self.clone();
         Promise::spawn(async move {
+            // The content generation the read starts in. A redaction or
+            // flatten that lands while batches are in flight fails the read
+            // rather than return text from before it.
+            let at = this.0.epoch.get();
             this.assert_scope(COPY_SCOPE, "selection.readText")?;
             this.cx().assert_page_ref(range.start.page)?;
             this.cx().assert_page_ref(range.end.page)?;
@@ -816,8 +907,12 @@ impl SelectionCapability {
             // Per-page half-open character spans; interior pages span their
             // whole text, which the slice clamps to.
             let mut spans: Vec<(PageObjectNumber, i64, i64)> = Vec::new();
+            let pages = this.pages();
             for i in si..=ei {
-                let Some(pon) = this.pon_at_index(i) else { continue };
+                let Some(pon) = pages.listed.get(i as usize).map(|p| p.page.page_object_number)
+                else {
+                    continue;
+                };
                 let from = if i == si { range.start.index.max(0) } else { 0 };
                 let to = if i == ei { end_index } else { OPEN_END };
                 spans.push((pon, from, to));
@@ -828,6 +923,7 @@ impl SelectionCapability {
                 throw_if_aborted(signal)?;
                 let reads = batch.iter().map(|(pon, _, _)| this.page_text(*pon)).collect();
                 let snapshots = all(reads).await?;
+                throw_if_stale(at, this.0.epoch.get())?;
                 for (snap, (_, from, to)) in snapshots.iter().zip(batch) {
                     parts.push(slice_text_by_chars(snap, *from as f64, *to as f64));
                 }

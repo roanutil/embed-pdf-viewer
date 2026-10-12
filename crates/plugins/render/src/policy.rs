@@ -101,7 +101,7 @@ pub struct SnapOptions {
 
 /// Snap UP a sorted list; cap at the largest.
 fn snap_up(sorted: &[f64], wanted: f64) -> f64 {
-    sorted.iter().copied().find(|&v| v >= wanted).unwrap_or(sorted[sorted.len() - 1])
+    sorted.iter().copied().find(|&v| v >= wanted).unwrap_or_else(|| sorted[sorted.len() - 1])
 }
 
 /// `snapFullPageViewport`: conform a full-page viewport. Under a lattice the

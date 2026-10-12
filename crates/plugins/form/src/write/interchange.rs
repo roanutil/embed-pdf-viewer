@@ -31,7 +31,7 @@ impl FormCapability {
                 let args = vec![data, format.unwrap_or_else(undefined)];
                 let result = await_engine(doc.call("forms.importData", None, args)).await?;
                 let snapshot = get(&result, "snapshot").cloned().unwrap_or(Value::Null);
-                this.apply(Msg::Snapshot { snapshot });
+                this.apply(Msg::Snapshot { snapshot: std::rc::Rc::new(snapshot) });
                 Ok(result)
             }))
         })

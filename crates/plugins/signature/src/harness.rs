@@ -314,7 +314,6 @@ fn call_signature(
 ) -> Result<Outcome, Error> {
     let arg = |i: usize| args.get(i).filter(|v| !is_undefined(v));
     let field = || arg(0).cloned().unwrap_or_else(undefined);
-    let events = &cap.0.events;
     Ok(match method {
         "getSnapshot" => Outcome::Returned(optional(cap.get_snapshot())),
         "getStatus" => Outcome::Returned(to_value(&cap.get_status())),
@@ -371,15 +370,15 @@ fn call_signature(
         "canSign" => Outcome::Returned(json!(cap.can_sign())),
         "canFill" => Outcome::Returned(json!(cap.can_fill())),
         "canCertify" => Outcome::Returned(json!(cap.can_certify())),
-        "onSigned" => hook(h, arg(0), |f| events.signed.on(f)),
-        "onFilled" => hook(h, arg(0), |f| events.filled.on(f)),
-        "onCleared" => hook(h, arg(0), |f| events.cleared.on(f)),
-        "onValidated" => hook(h, arg(0), |f| events.validated.on(f)),
-        "onProtectionChanged" => hook(h, arg(0), |f| events.protection_changed.on(f)),
-        "onInvalidating" => hook(h, arg(0), |f| events.invalidating.on(f)),
-        "onTargetChanged" => hook(h, arg(0), |f| events.target_changed.on(f)),
-        "onSignRequested" => hook(h, arg(0), |f| events.sign_requested.on(f)),
-        "onInspectionRequested" => hook(h, arg(0), |f| events.inspection_requested.on(f)),
+        "onSigned" => hook(h, arg(0), |f| cap.on_signed(f)),
+        "onFilled" => hook(h, arg(0), |f| cap.on_filled(f)),
+        "onCleared" => hook(h, arg(0), |f| cap.on_cleared(f)),
+        "onValidated" => hook(h, arg(0), |f| cap.on_validated(f)),
+        "onProtectionChanged" => hook(h, arg(0), |f| cap.on_protection_changed(f)),
+        "onInvalidating" => hook(h, arg(0), |f| cap.on_invalidating(f)),
+        "onTargetChanged" => hook(h, arg(0), |f| cap.on_target_changed(f)),
+        "onSignRequested" => hook(h, arg(0), |f| cap.on_sign_requested(f)),
+        "onInspectionRequested" => hook(h, arg(0), |f| cap.on_inspection_requested(f)),
         other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
     })
 }

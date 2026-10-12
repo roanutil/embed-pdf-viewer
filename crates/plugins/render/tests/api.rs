@@ -206,3 +206,53 @@ fn a_handle_without_a_hook_releases_nothing() {
     drop(handle);
     assert_eq!(clone.json()["width"], 1);
 }
+
+/// A manager over one 612x792 page whose `fetch_tile` refuses synchronously
+/// while `refuse` is set, and otherwise answers a promise that never settles.
+fn refusing_manager(
+    refuse: Rc<std::cell::Cell<bool>>,
+    calls: Rc<std::cell::Cell<u32>>,
+) -> TileManager {
+    TileManager::new(TileManagerDeps {
+        store: RasterStore::default(),
+        options: Rc::new(resolve_render_options(&RenderConfig::default())),
+        get_policy: Rc::new(|| CONTINUOUS_RENDER_POLICY),
+        get_page_size: Rc::new(|_| Some(PageSizePt { width: 612.0, height: 792.0 })),
+        get_epoch: Rc::new(|_, _| 0.0),
+        fetch_tile: Rc::new(move |_, _, _, _, _| {
+            calls.set(calls.get() + 1);
+            if refuse.get() {
+                Err(epdf_kernel::Error::new("page is not in this document"))
+            } else {
+                Ok(Promise::pending().0)
+            }
+        }),
+        on_advance: Rc::new(|_| {}),
+        debug: None,
+        warn: Rc::new(|_| {}),
+    })
+}
+
+#[test]
+fn a_synchronous_tile_refusal_frees_its_slot() {
+    rt::reset();
+    let refuse = Rc::new(std::cell::Cell::new(true));
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let tiles = refusing_manager(refuse.clone(), calls.clone());
+    let demand = PageViewDemand {
+        desired_device_width: 612.0 * 8.0,
+        visible_rect: Some(epdf_geometry::Rect { x: 0.0, y: 0.0, width: 612.0, height: 792.0 }),
+        velocity: None,
+    };
+    // More refusals than MAX_IN_FLIGHT (8): each would strand a slot.
+    for _ in 0..12 {
+        assert!(tiles.plan("v", 11, &demand, false).is_err());
+        let stats = tiles.stats("v", 11);
+        assert_eq!((stats.entries, stats.in_flight), (0, 0), "nothing stranded");
+    }
+    assert_eq!(calls.get(), 12, "each plan tried one new key");
+    // The engine accepts again: fetching resumes up to the transit bound.
+    refuse.set(false);
+    tiles.plan("v", 11, &demand, false).expect("plan");
+    assert_eq!(tiles.stats("v", 11).in_flight, 8);
+}

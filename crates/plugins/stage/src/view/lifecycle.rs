@@ -11,8 +11,9 @@ use crate::prelude::*;
 impl StageCapability {
     /// Report the viewport. The first report with both axes positive and a
     /// document with pages runs initial placement; later ones keep the
-    /// anchor and re-resolve fit modes.
-    pub fn set_viewport_size(&self, v: Size) {
+    /// anchor and re-resolve fit modes. `Err` where the TypeScript throws:
+    /// no item under the anchor point.
+    pub fn set_viewport_size(&self, v: Size) -> Result<(), Error> {
         if !self.inner.placement_started.get() {
             self.dispatch(StageAction::Vp { vp: v });
             // Rules see the box before placement resolves. With react false
@@ -21,10 +22,10 @@ impl StageCapability {
             if v.width > 0.0 && v.height > 0.0 && self.page_count_now() > 0 {
                 self.place_initial();
             }
-            return;
+            return Ok(());
         }
         self.cancel_anim();
-        let anchor = self.current_anchor(); // against the old viewport
+        let anchor = self.current_anchor()?; // against the old viewport
         self.dispatch(StageAction::Vp { vp: v });
         let fx = self.sync_responsive(false).unwrap_or(SettingEffect::None);
         if fx == SettingEffect::Reflow {
@@ -35,6 +36,7 @@ impl StageCapability {
         } else {
             self.reapply(anchor, None);
         }
+        Ok(())
     }
 
     /// Report the device pixel ratio. Only a positive, changed ratio lands.
@@ -47,21 +49,22 @@ impl StageCapability {
     /// Re-resolve the zoom intent against the current scene, keeping the
     /// anchor. A no-op before the first placement. The watchers call it on
     /// every page-registry revision.
-    pub fn refit(&self) {
+    pub fn refit(&self) -> Result<(), Error> {
         if !self.inner.placement_started.get() {
-            return;
+            return Ok(());
         }
         self.cancel_anim();
-        self.reapply(self.current_anchor(), None);
+        self.reapply(self.current_anchor()?, None);
+        Ok(())
     }
 
     /// Serializable view state: the unit of session persistence.
-    pub fn get_view_state(&self) -> StageViewState {
-        StageViewState {
+    pub fn get_view_state(&self) -> Result<StageViewState, Error> {
+        Ok(StageViewState {
             settings: self.snapshot_settings(),
             cursor: Some(self.st().cursor),
-            anchor: self.current_anchor(),
-        }
+            anchor: self.current_anchor()?,
+        })
     }
 
     /// This lens's identity: the stage plugin id it registered under.
