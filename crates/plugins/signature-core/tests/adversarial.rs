@@ -121,3 +121,40 @@ fn rsa_keys_past_webcrypto_s_limit_never_verify() {
     assert_eq!(verify_sha256_with_rsa(&rsa_spki(16400, 65537)), Ok(false));
     assert_eq!(verify_sha256_with_rsa(&rsa_spki(16400, 2)), Ok(false));
 }
+
+#[test]
+fn lengths_past_the_input_are_refused_not_allocated() {
+    // A definite length near u32::MAX, and one near u64::MAX, over a few bytes.
+    for bytes in [
+        vec![0x30, 0x84, 0xff, 0xff, 0xff, 0xff, 0x05, 0x00],
+        vec![0x30, 0x88, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x05, 0x00],
+        // Nine length octets: wider than any length the reader can hold.
+        vec![0x30, 0x89, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0x05, 0x00],
+        // The reserved length octet 0xff.
+        vec![0x30, 0xff, 0x05, 0x00],
+    ] {
+        assert_eq!(der::from_ber(&bytes), None, "{bytes:02x?}");
+        assert_eq!(verify_cms_signature(&bytes), Cryptography::Invalid, "{bytes:02x?}");
+    }
+}
+
+#[test]
+fn truncated_and_unterminated_encodings_are_refused() {
+    let unterminated = [0x30, 0x80, 0x05, 0x00];
+    let cut_tag = [0x1f, 0xff, 0xff];
+    let huge_tag = [0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0x00];
+    for bytes in [&unterminated[..], &cut_tag[..], &huge_tag[..], &[0x30][..], &[][..]] {
+        assert_eq!(verify_cms_signature(bytes), Cryptography::Invalid, "{bytes:02x?}");
+    }
+    assert_eq!(der::from_ber(&unterminated), None);
+}
+
+#[test]
+fn every_prefix_of_a_real_cms_is_a_verdict() {
+    // No cut of a valid signature panics or verifies.
+    let whole = fixture("cms", "psssha256");
+    assert_eq!(verify_cms_signature(&whole), Cryptography::Valid);
+    for end in (0..whole.len()).step_by(7) {
+        assert_ne!(verify_cms_signature(&whole[..end]), Cryptography::Valid, "cut at {end}");
+    }
+}
