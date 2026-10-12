@@ -239,30 +239,55 @@ export function createKernel(opts: {
 
   let started: Promise<void> | undefined;
   let destroyed: Promise<void> | undefined;
+  /** The state once the Rust side is freed: what its destroyed store
+   *  answered last, as the TS kernel's `getState()` keeps answering. */
+  let finalState: GlobalState | undefined;
 
   const kernel: Kernel = {
     engine,
     documents,
-    capability: <T>(token: CapabilityToken<T>, documentId?: string) =>
-      wire.capability(name(token), documentId) as T,
+    capability: <T>(token: CapabilityToken<T>, documentId?: string) => {
+      if (finalState) {
+        throw new Error(`[kernel] capability("${name(token)}") on a destroyed kernel`);
+      }
+      return wire.capability(name(token), documentId) as T;
+    },
     tryCapability: <T>(token: CapabilityToken<T>, documentId?: string) =>
-      wire.tryCapability(name(token), documentId) as T | null,
+      finalState ? null : (wire.tryCapability(name(token), documentId) as T | null),
     scopeOf: (token) => rusty(() => wire.rust.scope_of(name(token))) as PluginScope,
     subscribe: (listener): Unsubscribe => {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
-    getState: () => wire.getState() as GlobalState,
-    status: () => rusty(() => wire.rust.status()) as KernelStatus,
-    start: () =>
-      (started ??= wire.rust.start().then(startJsPlugins, (error) => {
-        throw toError(error, (v) => wire.decode(v));
-      })),
-    // Frees the Rust side once its destroy settles; every call after that
-    // throws `[core-wasm] kernel destroyed` (`Wire.rust`).
+    getState: () => finalState ?? (wire.getState() as GlobalState),
+    status: () =>
+      finalState ? 'destroyed' : (rusty(() => wire.rust.status()) as KernelStatus),
+    start: () => {
+      // Before the memo, as the TS kernel checks: a failed kernel's second
+      // `start()` rejects with this, not with the first one's error.
+      const now = kernel.status();
+      if (now === 'destroying' || now === 'destroyed' || now === 'failed') {
+        return Promise.reject(new Error(`[kernel] start() on a ${now} kernel`));
+      }
+      return (started ??= wire.rust.start().then(
+        () => {
+          if (wire.lifecycle === 'unknown') wire.lifecycle = 'started';
+          startJsPlugins();
+        },
+        (error) => {
+          throw toError(error, (v) => wire.decode(v));
+        },
+      ));
+    },
+    // Frees the Rust side once its destroy settles. After that, as on the
+    // TS kernel, `status()` answers 'destroyed', `tryCapability` null,
+    // `getState()` the destroyed store's state, and `start()` rejects;
+    // `capability` throws, and the rest throws `[core-wasm] kernel
+    // destroyed` (`Wire.rust`).
     destroy: () =>
       (destroyed ??= (async () => {
         liveKernels.delete(kernel);
+        wire.lifecycle = 'ending';
         for (const doc of [...cleanups.keys()]) runCleanups(doc);
         try {
           await rust.destroy();
@@ -283,9 +308,12 @@ export function createKernel(opts: {
         // the "Review fixes" deviation in `.superpowers/sdd/task-7-report.md`
         // for why moving `wire.dispose()` earlier, as first proposed, is not
         // safe here: it silently drops that release instead of throwing.
+        const last = wire.getState() as GlobalState;
+        const kept = { core: last.core, plugins: { ...last.plugins } };
         rust.free();
         wire.dispose();
         bridge.dispose();
+        finalState = kept;
       })()),
   };
   tables.set(kernel, { bridge, wire });

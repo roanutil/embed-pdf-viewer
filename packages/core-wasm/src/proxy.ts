@@ -282,6 +282,11 @@ export class Wire {
   private state: { revision: number; value: unknown } | undefined;
   private capabilities = new Map<string, object | null>();
   private capabilitiesRevision = -1;
+  /** Where the kernel's lifecycle stands, as far as the capability cache
+   *  cares (`cacheable`). `kernel.ts` sets `started` once `start()` resolves
+   *  and `ending` when `destroy()` is called; the kernel cannot leave
+   *  `started` any other way, so only before that is its status read. */
+  lifecycle: 'unknown' | 'started' | 'ending' = 'unknown';
   /** How many times the kernel's `subscribe` listener has fired
    *  (`kernel.ts` counts them). A call during which it moved changed the
    *  store, so its answer is not cached. */
@@ -525,32 +530,47 @@ export class Wire {
    *  callback. */
   capability(tokenName: string, doc?: string | null): object {
     const key = this.capabilityKey(tokenName, doc);
-    const cached = this.capabilities.get(key);
+    const cached = key === undefined ? undefined : this.capabilities.get(key);
     if (cached) return cached;
     this.evict();
     // Throws the kernel's own refusal for a capability that isn't there.
     const found = this.proxy(rusty(() => this.rust.capability(tokenName, doc ?? null)));
-    this.capabilities.set(key, found);
+    if (key !== undefined) this.capabilities.set(key, found);
     return found;
   }
 
   tryCapability(tokenName: string, doc?: string | null): object | null {
     const key = this.capabilityKey(tokenName, doc);
-    if (this.capabilities.has(key)) return this.capabilities.get(key) ?? null;
+    if (key !== undefined && this.capabilities.has(key)) return this.capabilities.get(key) ?? null;
     this.evict();
     const text = rusty(() => this.rust.try_capability(tokenName, doc ?? null));
     const found = text === undefined || text === null ? null : this.proxy(text);
-    this.capabilities.set(key, found);
+    if (key !== undefined) this.capabilities.set(key, found);
     return found;
   }
 
-  /** The key into `capabilities`, emptied first if core moved. Which
+  /** Whether the kernel's answers may be cached: not once it is
+   *  `destroying` or `failed`, when it refuses or answers null where a
+   *  cached proxy would still be served. */
+  private cacheable(): boolean {
+    if (this.lifecycle === 'started') return true;
+    if (this.lifecycle === 'unknown') {
+      const status = this.rust.status();
+      if (status === 'created' || status === 'starting' || status === 'started') return true;
+    }
+    this.capabilities = new Map();
+    return false;
+  }
+
+  /** The key into `capabilities`, emptied first if core moved, or
+   *  `undefined` while nothing may be cached (`cacheable`). Which
    *  capabilities exist, and for which documents, only changes when a
    *  document opens, closes or becomes ready, all core changes. Hooks read
    *  capabilities on every render, and each miss is an eviction check, a
    *  lookup in the kernel, and hashing the answer's description text to find
    *  its proxy. */
-  private capabilityKey(tokenName: string, doc?: string | null): string {
+  private capabilityKey(tokenName: string, doc?: string | null): string | undefined {
+    if (!this.cacheable()) return undefined;
     const revision = this.rust.core_revision();
     if (revision !== this.capabilitiesRevision) {
       this.capabilities = new Map();
@@ -595,6 +615,10 @@ export class Wire {
       Object.defineProperty(plugins, id, {
         enumerable: true,
         get: () => {
+          // A snapshot held past the kernel's end: the TS kernel's store
+          // drops every slice on destroy, held snapshots' included, so
+          // this reads as none.
+          if (this.dead) return undefined;
           if (!read) {
             slice =
               this.state?.value === value

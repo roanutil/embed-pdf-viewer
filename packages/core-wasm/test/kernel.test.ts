@@ -468,15 +468,20 @@ describe('closed documents and destroyed kernels', () => {
     expect(k.capability(StageToken)).toBe(k.capability(StageToken, 'fixture'));
   });
 
-  test('a destroyed kernel throws its own error on every later call', async () => {
+  test('a destroyed kernel answers as the TS kernel does, and throws for the rest', async () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
     await k.destroy();
+    // As `packages/core/main/src/kernel.ts` answers once destroyed.
+    expect(k.status()).toBe('destroyed');
+    expect(k.tryCapability(StageToken)).toBe(null);
+    expect(() => k.capability(StageToken)).toThrow(
+      '[kernel] capability("stage") on a destroyed kernel',
+    );
+    expect(k.getState().core.order).toEqual([]);
+    expect(k.getState().plugins).toEqual({});
+    // Nothing the TS contract keeps answering: the shim's own error.
     const destroyed = '[core-wasm] kernel destroyed';
-    expect(() => k.capability(StageToken)).toThrow(destroyed);
-    expect(() => k.tryCapability(StageToken)).toThrow(destroyed);
-    expect(() => k.status()).toThrow(destroyed);
     expect(() => k.scopeOf(StageToken)).toThrow(destroyed);
-    expect(() => k.getState()).toThrow(destroyed);
     expect(() => kernelCounts(k)).toThrow(destroyed);
     await k.destroy();
   });
