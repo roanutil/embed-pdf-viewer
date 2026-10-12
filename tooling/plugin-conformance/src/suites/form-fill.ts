@@ -602,6 +602,34 @@ const v3Cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'values-keyed-by-integer-like-names',
+    covers:
+      "exportValues and importValues follow JavaScript object key order: integer-like names ('2', '10') first in ascending numeric order, then the rest in insertion order, whatever the field order.",
+    plugins: FORM_ONLY,
+    engine: {
+      documents: {
+        a: doc([
+          list([text(1, 'b', 'x'), text(2, '10', 'y'), text(3, '2', 'z'), text(4, 'a', 'w'), text(5, '02', 'v')]),
+          { path: 'forms.setValue', value: { changedWidgets: [] } },
+        ]),
+      },
+    },
+    ...UNSNAPSHOTTED,
+    steps: [
+      ...boot,
+      call('exportValues'),
+      call('importValues', [
+        {
+          b: { type: 'text', value: 'B' },
+          10: { type: 'text', value: 'Ten' },
+          2: { type: 'text', value: 'Two' },
+          a: { type: 'text', value: 'A' },
+          '02': { type: 'text', value: 'Zero-two' },
+        },
+      ]),
+    ],
+  },
+  {
     name: 'reset-all',
     covers:
       'resetAll resets every resettable field (buttons and signatures skipped), a listed subset by object number or name, or its complement with exclude, through the one reset batch; it answers the refs it resolved from the current snapshot.',

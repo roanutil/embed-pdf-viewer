@@ -2,13 +2,13 @@
 
 `packages/plugin/form` in Rust at the v3 contract: the field plane over the engine's `forms.*`
 services, the fill projection, value writes and their batch doors, reset, interchange, field design
-with the draw-to-place handler, ISO field selection, and the K/V/C/F scripting transaction. All 216
+with the draw-to-place handler, ISO field selection, and the K/V/C/F scripting transaction. All 217
 cases in five vector files replay identically (`cargo test -p epdf-plugin-form`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
 | `vectors/plugins/form-core.json` | function | 100 | `core/model.ts` (with `widgetAt`), `core/fill-items.ts`, the reducer, the tool table, `fieldRef`, `resolveFieldSelection` and `buildSubmitEntries` |
-| `vectors/plugins/form-fill.json` | scenario | 30 | hydration, `getStatus` and `refresh`, widget geometry, the fused fill projection, the field reads, typed and batch writes, `reset` and `resetAll`, interchange, the twins, the six confirmed-change events |
+| `vectors/plugins/form-fill.json` | scenario | 31 | hydration, `getStatus` and `refresh`, widget geometry, the fused fill projection, the field reads, typed and batch writes, `reset` and `resetAll`, interchange, the twins, the six confirmed-change events |
 | `vectors/plugins/form-design.json` | scenario | 28 | tool and behavior registration with and without the annotation plugin, `createField` and the other design verbs, the hit test, the place handler as `PointerSample` sequences |
 | `vectors/plugins/form-actions.json` | scenario | 13 | the `reset-form` executor, the submit resolver, the script commit sink, widget activation, the widget event feed |
 | `vectors/plugins/form-scripting.json` | scenario | 45 | the standalone controller over a detached realm, and the capability over the actions plugin's realm |

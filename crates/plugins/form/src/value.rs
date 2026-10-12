@@ -186,3 +186,41 @@ mod tests {
         assert!(!strict_eq(Some(&json!("x")), Some(&undefined())));
     }
 }
+
+/// The key as an array index (a canonical numeric string below 2^32 - 1),
+/// which JavaScript orders before every other key.
+fn array_index(key: &str) -> Option<u32> {
+    if key == "0" {
+        return Some(0);
+    }
+    if key.is_empty() || key.starts_with('0') || !key.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    key.parse::<u64>().ok().filter(|&n| n < u64::from(u32::MAX)).map(|n| n as u32)
+}
+
+/// A plain object's entries in the order `Object.keys` gives them:
+/// integer-like keys first in ascending numeric order, then the rest in
+/// insertion order.
+pub fn js_key_order(object: serde_json::Map<String, Value>) -> Vec<(String, Value)> {
+    let mut entries: Vec<(String, Value)> = object.into_iter().collect();
+    entries.sort_by_key(|(key, _)| array_index(key).map_or((1, 0), |index| (0, index)));
+    entries
+}
+
+#[cfg(test)]
+mod key_order_tests {
+    use super::*;
+    use serde_json::{Map, json};
+
+    #[test]
+    fn integer_like_keys_come_first_in_numeric_order() {
+        let mut object = Map::new();
+        for key in ["b", "10", "2", "a", "02", "0", "4294967295", "4294967294", "-1", "1.5"] {
+            object.insert(key.into(), json!(null));
+        }
+        let keys: Vec<String> = js_key_order(object).into_iter().map(|(k, _)| k).collect();
+        // `Object.keys({b, 10, 2, a, '02', 0, 4294967295, 4294967294, '-1', '1.5'})`.
+        assert_eq!(keys, ["0", "2", "10", "4294967294", "b", "a", "02", "4294967295", "-1", "1.5"]);
+    }
+}
