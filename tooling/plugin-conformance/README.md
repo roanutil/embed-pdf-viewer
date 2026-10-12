@@ -107,6 +107,14 @@ callback: every call logs `{fn: name, args}` and answers with `throws`, `defer` 
 answer per call and repeats the last. An interaction handler, a listener, an open thunk: each is a
 `$fn`, or an object of them.
 
+Answers are not arguments. A `$fn`'s `returns` and `resolves`, a fake-engine response `value`, a
+`settle` value, an `emit` event and a document's `capabilities`, `security` and `pages` reach the
+Rust plugin as the JSON itself (`Callback::call`, `fake_engine.rs`), while the TypeScript decodes
+them. The two agree on `$undefined`, `$number` and `$bytes`, which are how the Rust kernel holds
+those values, and on a nested `$fn`, which the adapter that reads it turns into a function. They
+would not agree on `$error`, `$map`, `$set`, `$token` or `$ref`, so the generator refuses a case
+that puts one in an answer.
+
 ### Canonical JSON
 
 `src/canonical.ts` defines it and `crates/plugin-conformance/src/canonical.rs` compares it.
