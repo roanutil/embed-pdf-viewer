@@ -86,7 +86,8 @@ impl PageImageHandle {
 
     /// Approximate memory cost: encoded bytes when known, raw pixel bytes
     /// for a native host's pixels, the pixel count as a decoded-order
-    /// estimate for URL handles, 1 when nothing is known.
+    /// estimate for URL handles and for bytes whose length the JSON does not
+    /// carry, 1 when nothing is known.
     pub fn cost(&self) -> f64 {
         let source = self.0.value.get("source");
         if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("bytes") {
@@ -100,7 +101,13 @@ impl PageImageHandle {
             {
                 return len;
             }
-            return self.bytes().map_or(f64::NAN, |b| b.0.len() as f64);
+            if let Some(bytes) = self.bytes() {
+                return bytes.0.len() as f64;
+            }
+            // Neither: fall through to the pixel estimate. A NaN here would
+            // turn the store's running total into NaN and stop eviction for
+            // good. The TypeScript's bytes are a `Uint8Array`, which always
+            // has a `byteLength`, so it never reaches this case.
         }
         // A native host's raw pixels (`epdf-viewer-host`), kept on its side
         // behind the handle's `$host` id with only the byte count crossing.

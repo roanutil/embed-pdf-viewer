@@ -111,12 +111,38 @@ fn handle_costs() {
             "width": 3, "height": 5, "stride": 16 })),
         64.0
     );
+    // Bytes with neither an inline payload nor a byte count: the pixel
+    // estimate, never NaN (which would stop the LRU evicting for good).
+    assert_eq!(
+        cost(json!({ "source": { "kind": "bytes", "bytes": {} }, "width": 3, "height": 5 })),
+        15.0
+    );
+    assert_eq!(cost(json!({ "source": { "kind": "bytes", "bytes": {} } })), 1.0);
     assert_eq!(cost(json!({ "width": null, "height": 5 })), 0.0);
     assert_eq!(cost(json!({ "width": true, "height": 5 })), 5.0);
     assert_eq!(cost(json!({ "width": 7 })), 1.0);
     assert!(cost(json!({ "width": "7", "height": 1 })).is_nan());
     let url = PageImageHandle::new(json!({ "source": { "kind": "url", "url": "x" } }));
     assert_eq!(url.bytes(), None);
+}
+
+#[test]
+fn a_lengthless_bytes_handle_keeps_the_lru_working() {
+    rt::reset();
+    // A budget of one ten-byte image.
+    let store = RasterStore::new(10.0);
+    let fetch = |id: &str, value: Value| {
+        let image =
+            store.acquire(id, move |_| Ok(Promise::resolved(value)), None).expect("acquire");
+        rt::run_until_stalled();
+        assert!(image.peek().expect("settled").is_ok());
+    };
+    fetch("a", json!({ "source": { "kind": "bytes", "bytes": {} }, "width": 2, "height": 4 }));
+    assert_eq!(store.cost_used(), 8.0, "the pixel estimate, not NaN");
+    fetch("b", json!({ "source": { "kind": "bytes", "bytes": { "$byteLength": 10 } } }));
+    assert_eq!(store.size(), 1, "over budget, a was evicted");
+    assert!(store.peek("a").is_none());
+    assert_eq!(store.cost_used(), 10.0);
 }
 
 #[test]
