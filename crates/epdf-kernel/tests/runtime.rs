@@ -552,6 +552,28 @@ fn a_signal_aborts_once_and_forgets_removed_listeners() {
 }
 
 #[test]
+fn an_abort_skips_a_listener_an_earlier_one_removed() {
+    // `AbortSignal`'s dispatch, as the DOM runs it: a listener removed by
+    // an earlier listener of the same abort does not run.
+    let signal = AbortSignal::new();
+    let seen = log();
+    let second: Rc<Cell<Option<u64>>> = Rc::default();
+    let (s1, sig, id) = (seen.clone(), signal.clone(), second.clone());
+    signal.on_abort(Rc::new(move |_| {
+        s1.borrow_mut().push("first".into());
+        if let Some(id) = id.get() {
+            sig.remove(id);
+        }
+    }));
+    let s2 = seen.clone();
+    second.set(Some(signal.on_abort(Rc::new(move |_| s2.borrow_mut().push("second".into())))));
+    let s3 = seen.clone();
+    signal.on_abort(Rc::new(move |_| s3.borrow_mut().push("third".into())));
+    signal.abort(Error::new("stop"));
+    assert_eq!(*seen.borrow(), ["first", "third"]);
+}
+
+#[test]
 fn signals_compare_by_controller() {
     let signal = AbortSignal::new();
     assert!(signal.same(&signal.clone()));
