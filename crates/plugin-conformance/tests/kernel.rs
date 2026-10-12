@@ -416,3 +416,46 @@ fn a_closed_sessions_capabilities_survive_without_the_flag() {
     rt::run_until_stalled();
     assert!(capability.upgrade().is_some(), "the closed session let go of its capability");
 }
+
+/// A ready document needs its open source no longer: only a failed open
+/// retries. The source goes when the document commits (here, the thunk and
+/// what it captured), while a `$host` it names stays held until close.
+#[test]
+fn a_ready_document_drops_its_source_and_keeps_its_host_hold() {
+    use epdf_kernel::bytes::set_host_releaser;
+    use epdf_kernel::rt::{self, Promise};
+    use epdf_kernel::{Kernel, KernelOptions, OpenOptions, OpenSource};
+
+    rt::reset();
+    let released: Rc<RefCell<Vec<Value>>> = Rc::default();
+    let log = released.clone();
+    set_host_releaser(Some(Rc::new(move |value: &Value| log.borrow_mut().push(value.clone()))));
+    let fake = plugin_conformance::fake_engine::FakeEngine::new(json!({
+        "documents": { "a": { "pages": [] }, "b": { "pages": [] } },
+    }));
+    let engine = Rc::new(plugin_conformance::fake_engine::AsEngine(fake));
+    let kernel = Kernel::new(engine, Vec::new(), KernelOptions::default()).unwrap();
+    let _ = kernel.start();
+
+    let captured = Rc::new(());
+    let watch = Rc::downgrade(&captured);
+    let thunk = move |_: AbortSignal| {
+        let _keep = &captured;
+        Ok(Promise::resolved(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })))
+    };
+    let _ = kernel.documents().open(OpenSource::Thunk(Rc::new(thunk)), OpenOptions::default());
+    let host = json!({ "$host": 7 });
+    let input = json!({ "kind": "bytes", "id": "b", "bytes": host });
+    let _ = kernel.documents().open(OpenSource::Input(input), OpenOptions::default());
+    rt::run_until_stalled();
+
+    let statuses: Vec<Value> =
+        kernel.documents().list().iter().map(|d| json!([d.id, d.status])).collect();
+    assert_eq!(statuses, [json!(["a", "ready"]), json!(["b", "ready"])]);
+    assert!(watch.upgrade().is_none(), "a ready document still holds its open thunk");
+    assert!(released.borrow().is_empty(), "the host hold went before close");
+    let _ = kernel.documents().close("b");
+    rt::run_until_stalled();
+    assert_eq!(*released.borrow(), vec![host]);
+    set_host_releaser(None);
+}
