@@ -112,7 +112,7 @@ impl<S: 'static> KernelThread<S> {
         f: impl FnOnce(&mut S) -> T + Send + 'static,
     ) -> oneshot::Receiver<T> {
         let (reply, rx) = oneshot::channel();
-        if let Some(tx) = self.tx.lock().unwrap().as_ref() {
+        if let Some(tx) = sender(&self.tx) {
             let _ = tx.send(Msg::Job(Box::new(move |s| {
                 let _ = reply.send(f(s));
             })));
@@ -150,10 +150,17 @@ impl<S: 'static> Drop for KernelThread<S> {
 
 fn post_for<S: 'static>(tx: &SharedSender<S>) -> KernelPost {
     let tx = tx.clone();
-    Arc::new(move |job: Box<dyn FnOnce() + Send>| match tx.lock().unwrap().as_ref() {
+    Arc::new(move |job: Box<dyn FnOnce() + Send>| match sender(&tx) {
         Some(tx) => tx.send(Msg::Job(Box::new(move |_| job()))).is_ok(),
         None => false,
     })
+}
+
+/// A clone of the live sender, taken out of the lock. A failed send hands
+/// the job back and drops it; that must happen with the lock released, or
+/// a job whose Drop posts again would re-lock it.
+fn sender<S>(tx: &SharedSender<S>) -> Option<Sender<Msg<S>>> {
+    tx.lock().unwrap().clone()
 }
 
 /// Catch the virtual clock up to wall time, then run everything runnable.
