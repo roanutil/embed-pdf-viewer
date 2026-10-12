@@ -96,6 +96,8 @@ impl OpenOptions {
     /// the engine's rest.
     pub fn from_json(value: &Value) -> Self {
         let mut engine = value.as_object().cloned().unwrap_or_default();
+        // An `undefined` member is no member once the engine reads it.
+        engine.retain(|_, member| !crate::is_undefined(member));
         let activate = engine.remove("activate").and_then(|v| v.as_bool());
         let name = engine.remove("name").and_then(|v| v.as_str().map(str::to_string));
         OpenOptions { activate, name, engine }
@@ -848,6 +850,7 @@ impl Inner {
             // `(await handle.render?.policy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
             if let Ok(policy) = handle.call("render.policy", None, Vec::new()).await
                 && !policy.is_null()
+                && !crate::is_undefined(&policy)
             {
                 render_policy = policy;
             }
@@ -1020,7 +1023,7 @@ impl Inner {
         input: OpenSource,
         engine_options: serde_json::Map<String, Value>,
     ) -> Result<String, Error> {
-        let source = match input {
+        let mut source = match input {
             OpenSource::Thunk(thunk) => {
                 // A synchronous throw skips `engineCall`: it leaves
                 // `input(signal)` before there is a promise to race.
@@ -1031,6 +1034,10 @@ impl Inner {
             }
             OpenSource::Input(value) => value,
         };
+        // As for the options: an `undefined` member is no member.
+        if let Value::Object(members) = &mut source {
+            members.retain(|_, member| !crate::is_undefined(member));
+        }
         Self::checkpoint(&session)?;
         if let Some(source_id) = id_of_input(&source) {
             this.rekey_session(&session, &source_id)?;
@@ -1057,8 +1064,10 @@ impl Inner {
 
         let prompt = handle.security().password_prompt();
         if prompt.get("state").and_then(Value::as_str) == Some("required") {
-            let password_provided = engine_options.get("password").is_some_and(|p| !p.is_null())
-                || source.get("password").is_some_and(|p| !p.is_null());
+            // `password != null`: neither `null` nor `undefined`.
+            let given = |p: &Value| !p.is_null() && !crate::is_undefined(p);
+            let password_provided = engine_options.get("password").is_some_and(given)
+                || source.get("password").is_some_and(given);
             session.phase.set(Phase::Locked);
             this.publish_locked(&session, password_provided);
             return Ok(session.id());

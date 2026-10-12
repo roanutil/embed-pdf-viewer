@@ -11437,6 +11437,372 @@
       ]
     },
     {
+      "name": "an-undefined-password-is-not-provided",
+      "covers": "A `password` member that is `undefined`, in the options or on the input, is not a supplied password: the locked tab is not `passwordProvided`.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "passwordPrompt": {
+                "state": "required"
+              }
+            }
+          },
+          "b": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "passwordPrompt": {
+                "state": "required"
+              }
+            }
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            },
+            {
+              "password": {
+                "$undefined": true
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "b",
+              "bytes": {
+                "$bytes": ""
+              },
+              "password": {
+                "$undefined": true
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-locked"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": "b"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-locked"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "b",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                },
+                "b": {
+                  "id": "b",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 0
+            },
+            "b": {
+              "subscribers": 0
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "a",
+                "status": "locked",
+                "pageCount": 0,
+                "passwordProvided": false
+              },
+              {
+                "id": "b",
+                "status": "locked",
+                "pageCount": 0,
+                "passwordProvided": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {
+                "a": {
+                  "id": "a",
+                  "status": "locked",
+                  "passwordProvided": false
+                },
+                "b": {
+                  "id": "b",
+                  "status": "locked",
+                  "passwordProvided": false
+                }
+              },
+              "order": [
+                "a",
+                "b"
+              ],
+              "activeId": "b"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "unlock-concurrency-and-cancellation",
       "covers": "A second unlock while one is in flight refuses (one transition at a time); closing during an unlock cancels it; unlock on an unknown document refuses.",
       "plugins": [],
@@ -18415,6 +18781,223 @@
                 "d"
               ],
               "activeId": "d"
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "an-undefined-render-policy-is-continuous",
+      "covers": "A render service whose policy answers `undefined` means `continuous`, as `null` does.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "boxes": {
+                  "media": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 600,
+                    "top": 800
+                  }
+                }
+              }
+            ],
+            "services": [
+              "render"
+            ],
+            "responses": [
+              {
+                "path": "render.policy",
+                "value": {
+                  "$undefined": true
+                }
+              }
+            ]
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "actions": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "@@conformance/spy": {}
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": "a"
+            }
+          ],
+          "actions": [
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-opening"
+              }
+            },
+            {
+              "slice": "@@core",
+              "action": {
+                "type": "@@core/document-added"
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.policy",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 1
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "pageObjectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "boxes": {
+                        "media": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        },
+                        "crop": {
+                          "left": 0,
+                          "bottom": 0,
+                          "right": 600,
+                          "top": 800
+                        }
+                      }
+                    }
+                  ],
+                  "revision": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  }
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
             },
             "plugins": {
               "@@conformance/spy": {}

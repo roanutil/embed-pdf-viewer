@@ -250,6 +250,24 @@ const cases: ScenarioCase[] = [
     steps: [start, open(bytes('a'), { password: 'x' }), open(bytes('b', { password: 'y' })), open(bytes('c')), docs('list')],
   },
   {
+    name: 'an-undefined-password-is-not-provided',
+    covers:
+      'A `password` member that is `undefined`, in the options or on the input, is not a supplied password: the locked tab is not `passwordProvided`.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({ security: { passwordPrompt: { state: 'required' } } }),
+        b: doc({ security: { passwordPrompt: { state: 'required' } } }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a'), { password: { $undefined: true } }),
+      open(bytes('b', { password: { $undefined: true } })),
+      docs('list'),
+    ],
+  },
+  {
     name: 'unlock-concurrency-and-cancellation',
     covers:
       'A second unlock while one is in flight refuses (one transition at a time); closing during an unlock cancels it; unlock on an unknown document refuses.',
@@ -389,6 +407,17 @@ const cases: ScenarioCase[] = [
       },
     },
     steps: [start, open(bytes('a')), open(bytes('b')), open(bytes('c')), open(bytes('d'))],
+  },
+  {
+    name: 'an-undefined-render-policy-is-continuous',
+    covers: 'A render service whose policy answers `undefined` means `continuous`, as `null` does.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { $undefined: true } }] }),
+      },
+    },
+    steps: [start, open(bytes('a'))],
   },
   {
     name: 'capability-resolution',
