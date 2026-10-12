@@ -26,7 +26,7 @@ import { RenderToken, type RenderHostCapability } from '../../../../packages/plu
 import type { RenderConfig as RenderPluginOptions } from '../../../../packages/plugin/render/src/contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
@@ -48,6 +48,9 @@ const controllerNamed = (name: string): AbortController => {
 };
 
 let currentLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  currentLog = null;
+});
 const originalConsole = { warn: console.warn, debug: console.debug };
 console.warn = (...args: unknown[]) => (currentLog ? currentLog('console.warn', args) : originalConsole.warn(...args));
 console.debug = (...args: unknown[]) =>

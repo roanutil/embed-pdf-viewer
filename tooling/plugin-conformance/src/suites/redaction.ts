@@ -19,7 +19,7 @@ import { RedactionToken, type RedactionConfig } from '../../../../packages/plugi
 import type { RedactionAction, RedactionState } from '../../../../packages/plugin/redaction/src/model';
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 
-import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
 import {
@@ -52,6 +52,9 @@ const UNSNAPSHOTTED = {
 // ── the console.error shim ────────────────────────────────────────────────────
 
 let redactionLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  redactionLog = null;
+});
 const previousError = console.error;
 console.error = (...args: unknown[]) => {
   if (redactionLog && typeof args[0] === 'string' && args[0].startsWith('[redaction]')) {

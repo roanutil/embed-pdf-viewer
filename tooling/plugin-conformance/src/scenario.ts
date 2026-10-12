@@ -138,6 +138,15 @@ export function registerPlugin(name: string, entry: PluginEntry): void {
   for (const token of entry.tokens ?? []) tokens.set(token.name, token);
 }
 
+/** Resets run when each case ends. A suite that routes a module-global hook
+ *  (a console shim) to the current case's env registers one, so output after
+ *  the case reaches the real console instead of a finished case's trace. */
+const caseEndResets: (() => void)[] = [];
+
+export function onCaseEnd(reset: () => void): void {
+  caseEndResets.push(reset);
+}
+
 export function registerToken(token: CapabilityToken<unknown>): void {
   tokens.set(token.name, token);
 }
@@ -184,6 +193,7 @@ async function runScenarioRaw(scenario: ScenarioCase): Promise<{ trace: TraceEnt
   } finally {
     process.off('unhandledRejection', onUnhandled);
     clock.uninstall();
+    for (const reset of caseEndResets) reset();
   }
 }
 

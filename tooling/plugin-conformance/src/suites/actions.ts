@@ -35,7 +35,7 @@ import {
   type ActionTriggerResult,
 } from '../../../../packages/plugin/actions/src/contract';
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 import { scriptedCallback, scriptedSandboxFactory, type AnswerSpec, type SandboxSpec } from './acrojs';
 
@@ -64,6 +64,9 @@ const UNSNAPSHOTTED_ACTIONS_TRIGGERS = {
 // ── the observer-error host input ─────────────────────────────────────────────
 
 let observerEnv: PluginEnv | null = null;
+onCaseEnd(() => {
+  observerEnv = null;
+});
 {
   const original = console.error.bind(console);
   console.error = (...args: unknown[]) => {

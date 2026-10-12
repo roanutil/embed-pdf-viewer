@@ -25,7 +25,7 @@ import {
 } from '../../../../packages/plugin/measurement/src/scale';
 
 import type { ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
 import {
@@ -56,6 +56,9 @@ import './interaction';
 // ── the shim ──────────────────────────────────────────────────────────────────
 
 let currentLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  currentLog = null;
+});
 const previousError = console.error;
 console.error = (...args: unknown[]) => {
   if (currentLog && typeof args[0] === 'string' && args[0].startsWith('[measurement]')) {

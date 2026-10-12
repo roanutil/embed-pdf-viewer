@@ -24,12 +24,15 @@ import type { I18nConfig, Locale } from '../../../../packages/plugin/i18n/src/co
 import type { I18nAction, I18nState } from '../../../../packages/plugin/i18n/src/model';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
-import { registerPlugin, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
 // ── the factory ───────────────────────────────────────────────────────────────
 
 let warnEnv: PluginEnv | null = null;
+onCaseEnd(() => {
+  warnEnv = null;
+});
 const realWarn = console.warn.bind(console);
 console.warn = (...args: unknown[]) => {
   if (warnEnv) warnEnv.log('console.warn', args);

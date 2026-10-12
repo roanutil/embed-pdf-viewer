@@ -55,7 +55,7 @@ import { ActionsToken as ActionsHostToken } from '../../../../packages/plugin/ac
 import { AnnotationToken } from '../../../../packages/plugin/annotation/src/contract';
 
 import { makeError, type ErrorSpec, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
-import { registerPlugin, type PluginEnv, type Step } from '../scenario';
+import { onCaseEnd, registerPlugin, type PluginEnv, type Step } from '../scenario';
 import type { Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec, type SandboxSpec } from './acrojs';
 import './actions';
@@ -88,6 +88,9 @@ const freshCapability = (): ControllerModule => {
 // ── the console.error shim ────────────────────────────────────────────────────
 
 let stampLog: PluginEnv['log'] | null = null;
+onCaseEnd(() => {
+  stampLog = null;
+});
 const previousError = console.error;
 console.error = (...args: unknown[]) => {
   if (stampLog && typeof args[0] === 'string' && args[0].startsWith('[stamp]')) {
