@@ -131,6 +131,9 @@ export function tokenNamed(name: string, hint?: string): CapabilityToken<unknown
 }
 
 export function registerPlugin(name: string, entry: PluginEntry): void {
+  // Two suites registering one name would leave every case of the first
+  // building the second's plugin, depending on import order.
+  if (factories.has(name)) throw new Error(`[scenario] plugin factory "${name}" is registered twice`);
   factories.set(name, entry);
   for (const token of entry.tokens ?? []) tokens.set(token.name, token);
 }
