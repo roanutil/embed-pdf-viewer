@@ -1292,7 +1292,10 @@ pub struct Model {
     pub order: Rc<Vec<Id>>,
     pub selected: Vec<Id>,
     pub hovered: Option<Id>,
-    pub draft: Option<Draft>,
+    /// Shared, so a step that keeps the draft keeps the same one: a new
+    /// `Rc` is the TypeScript's new draft object, which is what
+    /// `draftChanged` announces.
+    pub draft: Option<Rc<Draft>>,
     pub preview: Option<MarkupPreview>,
     pub seq: f64,
     pub style: Style,

@@ -40,14 +40,14 @@ impl AnnotationCapability {
 
     /// `hasCreationDraft()`.
     pub fn has_creation_draft(&self) -> bool {
-        self.model().draft.as_ref().is_some_and(Draft::is_create)
+        self.model().draft.as_deref().is_some_and(Draft::is_create)
     }
 
     /// `finishCreationDraft()`: commit the draft; `None` when there was none.
     pub fn finish_creation_draft(&self) -> Promise<Option<AnnotationRef>> {
         let draft = self.model().draft.clone();
-        let Some(draft) = draft.filter(Draft::is_create) else { return Promise::resolved(None) };
-        let msg = if matches!(draft, Draft::CreateInk { .. }) {
+        let Some(draft) = draft.filter(|d| d.is_create()) else { return Promise::resolved(None) };
+        let msg = if matches!(*draft, Draft::CreateInk { .. }) {
             Msg::FinishInkDraft
         } else {
             Msg::FinishCreationDraft
@@ -84,7 +84,7 @@ impl AnnotationCapability {
     /// `distanceCreationPage()` (host): the page of a distance draft placing
     /// its offset.
     pub fn distance_creation_page(&self) -> Option<PageRef> {
-        match &self.model().draft {
+        match self.model().draft.as_deref() {
             Some(Draft::CreateDistance { step, page, .. })
                 if *step == epdf_annotation_core::DistanceStep::Offset =>
             {

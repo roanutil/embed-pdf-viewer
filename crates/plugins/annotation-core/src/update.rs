@@ -550,17 +550,17 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
     match hit {
         Target::Handle { id, handle, .. } if handle == "caption" => {
             let draft = Draft::Caption { id, start: input.point, delta: Point { x: 0.0, y: 0.0 } };
-            changed(Model { draft: Some(draft), ..m.clone() })
+            changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
         }
         Target::Handle { id, handle, .. } if handle == "leader-start" || handle == "leader-end" => {
             let draft = Draft::Leader { id, start: input.point, delta: 0.0 };
-            changed(Model { draft: Some(draft), ..m.clone() })
+            changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
         }
         Target::Handle { id, handle, .. } => {
             let a = &m.by_id[&id];
             let base = anchored_geom(&a.geom, anchor_mode_of(a), view);
             let draft = Draft::Handle { id, handle, cur: base.clone(), base, view };
-            changed(Model { draft: Some(draft), ..m.clone() })
+            changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
         }
         Target::Rotate { ids, pivot } => {
             let draft = Draft::Rotate {
@@ -571,7 +571,7 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
                 free: None,
                 view,
             };
-            changed(Model { draft: Some(draft), ..m.clone() })
+            changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
         }
         Target::GroupHandle { ids, handle, box_, .. } => {
             let anchor = group_resize_anchor(box_, &handle);
@@ -584,7 +584,7 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
                 cur: box_,
                 view,
             };
-            changed(Model { draft: Some(draft), ..m.clone() })
+            changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
         }
         Target::Annot { id } => {
             let grp = group_members(m, &id);
@@ -603,11 +603,13 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
                 grp
             };
             let movable = !selected.is_empty() && selected.iter().all(|id| can_move(m, id));
-            let draft = movable.then(|| Draft::Move {
-                ids: selected.clone(),
-                start: input.point,
-                delta: Point { x: 0.0, y: 0.0 },
-                guides: Vec::new(),
+            let draft = movable.then(|| {
+                Rc::new(Draft::Move {
+                    ids: selected.clone(),
+                    start: input.point,
+                    delta: Point { x: 0.0, y: 0.0 },
+                    guides: Vec::new(),
+                })
             });
             changed(Model { selected, draft, ..m.clone() })
         }
@@ -616,11 +618,11 @@ fn edit_down(m: &Model, input: &PointerInput) -> Step {
 }
 
 fn with_draft(m: &Model, draft: Draft) -> Step {
-    changed(Model { draft: Some(draft), ..m.clone() })
+    changed(Model { draft: Some(Rc::new(draft)), ..m.clone() })
 }
 
 fn edit_move(m: &Model, input: &PointerInput) -> Step {
-    let d = m.draft.as_ref().expect("a draft");
+    let d = m.draft.as_deref().expect("a draft");
     if let Some(home) = edit_draft_page(m, d)
         && input.page.pon() != home.pon()
     {
@@ -710,7 +712,7 @@ fn edit_move(m: &Model, input: &PointerInput) -> Step {
 }
 
 fn edit_up(m: &Model) -> Step {
-    let d = m.draft.as_ref().expect("a draft");
+    let d = m.draft.as_deref().expect("a draft");
     let cleared = || Model { draft: None, ..m.clone() };
     match d {
         Draft::Leader { id, delta, .. } => {
@@ -851,7 +853,7 @@ fn marquee_pointer(m: &Model, phase: Phase, input: &PointerInput) -> Step {
     if phase == Phase::Down {
         return with_draft(m, Draft::Marquee { page: input.page, from: point, to: point });
     }
-    let Some(Draft::Marquee { page, from, .. }) = &m.draft else {
+    let Some(Draft::Marquee { page, from, .. }) = m.draft.as_deref() else {
         return same();
     };
     if page.pon() != input.page.pon() {
@@ -947,7 +949,8 @@ fn distance_pointer(
     measure: Option<&DistanceAppearance>,
     flags: Option<&AnnotationFlagsPatch>,
 ) -> Step {
-    let Some(Draft::CreateDistance { step, page, from, to, measure: draft_measure, .. }) = &m.draft
+    let Some(Draft::CreateDistance { step, page, from, to, measure: draft_measure, .. }) =
+        m.draft.as_deref()
     else {
         let Some(measure) = measure.filter(|_| phase == Phase::Down) else {
             return same();
@@ -962,9 +965,9 @@ fn distance_pointer(
             measure: measure.with_leader_length(0.0),
             flags: flags.copied(),
         };
-        return changed(Model { selected: Vec::new(), draft: Some(draft), ..m.clone() });
+        return changed(Model { selected: Vec::new(), draft: Some(Rc::new(draft)), ..m.clone() });
     };
-    let draft = m.draft.as_ref().expect("a distance draft");
+    let draft = m.draft.as_deref().expect("a distance draft");
     if input.page.pon() != page.pon() {
         return same();
     }
@@ -1046,7 +1049,7 @@ fn create_pointer(
     capture: Option<&str>,
 ) -> Step {
     if phase != Phase::Down
-        && let Some(page) = m.draft.as_ref().and_then(Draft::page)
+        && let Some(page) = m.draft.as_deref().and_then(Draft::page)
         && page.pon() != input.page.pon()
     {
         return same();
@@ -1057,7 +1060,7 @@ fn create_pointer(
     }
     let input = &input;
     let distance = measure.and_then(MeasurementAppearance::as_distance);
-    if matches!(m.draft, Some(Draft::CreateDistance { .. }))
+    if matches!(m.draft.as_deref(), Some(Draft::CreateDistance { .. }))
         || (distance.is_some() && capture.is_none_or(str::is_empty))
     {
         return distance_pointer(m, phase, input, preset, distance, flags);
@@ -1071,12 +1074,13 @@ fn create_pointer(
                 if input.finish == Some(true) {
                     return finish_poly_create(m);
                 }
-                if let Some(Draft::CreatePoly { subtype: s, preset: p, page, .. }) = &m.draft
+                if let Some(Draft::CreatePoly { subtype: s, preset: p, page, .. }) =
+                    m.draft.as_deref()
                     && s == subtype
                     && p.as_deref() == Some(preset.as_str())
                     && page.pon() == input.page.pon()
                 {
-                    let mut next = m.draft.clone().expect("a poly draft");
+                    let mut next = m.draft.as_deref().cloned().expect("a poly draft");
                     if let Draft::CreatePoly { points, cur, .. } = &mut next {
                         points.push(input.point);
                         *cur = input.point;
@@ -1093,7 +1097,11 @@ fn create_pointer(
                     closed: subtype == "polygon",
                     flags: flags.copied(),
                 };
-                return changed(Model { selected: Vec::new(), draft: Some(draft), ..m.clone() });
+                return changed(Model {
+                    selected: Vec::new(),
+                    draft: Some(Rc::new(draft)),
+                    ..m.clone()
+                });
             }
             let draft = match subtype {
                 "line" => Some(Draft::CreateLine {
@@ -1107,7 +1115,7 @@ fn create_pointer(
                     click_create,
                     flags: flags.copied(),
                 }),
-                "ink" => match m.draft.clone() {
+                "ink" => match m.draft.as_deref().cloned() {
                     Some(Draft::CreateInk {
                         subtype: s,
                         preset: p,
@@ -1157,26 +1165,31 @@ fn create_pointer(
                 _ => None,
             };
             match draft {
-                Some(draft) => {
-                    changed(Model { selected: Vec::new(), draft: Some(draft), ..m.clone() })
-                }
+                Some(draft) => changed(Model {
+                    selected: Vec::new(),
+                    draft: Some(Rc::new(draft)),
+                    ..m.clone()
+                }),
                 None => same(),
             }
         }
-        Phase::Move => match m.draft.clone() {
-            Some(mut d @ Draft::CreatePoly { .. }) => {
+        Phase::Move => match m.draft.as_deref() {
+            Some(d @ Draft::CreatePoly { .. }) => {
+                let mut d = d.clone();
                 if let Draft::CreatePoly { cur, .. } = &mut d {
                     *cur = input.point;
                 }
                 with_draft(m, d)
             }
-            Some(mut d @ (Draft::CreateRect { .. } | Draft::CreateLine { .. })) => {
+            Some(d @ (Draft::CreateRect { .. } | Draft::CreateLine { .. })) => {
+                let mut d = d.clone();
                 if let Draft::CreateRect { to, .. } | Draft::CreateLine { to, .. } = &mut d {
                     *to = input.point;
                 }
                 with_draft(m, d)
             }
-            Some(mut d @ Draft::CreateInk { .. }) => {
+            Some(d @ Draft::CreateInk { .. }) => {
+                let mut d = d.clone();
                 if let Draft::CreateInk { strokes, .. } = &mut d
                     && let Some(last) = strokes.last_mut()
                 {
@@ -1196,7 +1209,7 @@ fn create_up(
     defer_ink_commit: bool,
     straighten_ink: Option<&InkStraightenOptions>,
 ) -> Step {
-    let Some(d) = &m.draft else {
+    let Some(d) = m.draft.as_deref() else {
         return same();
     };
     if let Draft::CreateInk { subtype, preset, page, strokes, intent, flags } = d {
@@ -1207,14 +1220,14 @@ fn create_up(
         let last = strokes.len() - 1;
         strokes[last] = straighten_ink_stroke(&strokes[last], opts);
         let next = Model {
-            draft: Some(Draft::CreateInk {
+            draft: Some(Rc::new(Draft::CreateInk {
                 subtype: subtype.clone(),
                 preset: preset.clone(),
                 page: *page,
                 strokes,
                 intent: *intent,
                 flags: *flags,
-            }),
+            })),
             ..m.clone()
         };
         if defer_ink_commit {
@@ -1334,7 +1347,9 @@ fn create_up(
 
 /// Commit all strokes of an ink draft.
 fn finish_ink_create(m: &Model) -> Step {
-    let Some(Draft::CreateInk { subtype, preset, page, strokes, intent, flags }) = &m.draft else {
+    let Some(Draft::CreateInk { subtype, preset, page, strokes, intent, flags }) =
+        m.draft.as_deref()
+    else {
         return same();
     };
     let points: Vec<Point> = strokes.concat();
@@ -1466,7 +1481,7 @@ fn callout_pointer(
     preset: String,
     flags: Option<&AnnotationFlagsPatch>,
 ) -> Step {
-    let d = m.draft.as_ref();
+    let d = m.draft.as_deref();
     let callout = match d {
         Some(Draft::CreateCallout { .. }) => d,
         _ => None,
@@ -1495,7 +1510,11 @@ fn callout_pointer(
                     upright: upright.then_some(true),
                     flags: flags.copied(),
                 };
-                return changed(Model { selected: Vec::new(), draft: Some(draft), ..m.clone() });
+                return changed(Model {
+                    selected: Vec::new(),
+                    draft: Some(Rc::new(draft)),
+                    ..m.clone()
+                });
             }
             let Some(Draft::CreateCallout { step, .. }) = callout else { unreachable!() };
             let mut next = callout.cloned().expect("a callout draft");
@@ -1565,7 +1584,7 @@ fn callout_pointer(
 
 fn finish_poly_create(m: &Model) -> Step {
     let Some(Draft::CreatePoly { subtype, preset, page, points, closed, flags, measure, .. }) =
-        &m.draft
+        m.draft.as_deref()
     else {
         return same();
     };
@@ -1929,7 +1948,7 @@ fn merge_loaded(m: &Model, annots: &[Annot]) -> Model {
 
 fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
     let incoming: HashSet<&str> = annots.iter().map(|a| a.id.as_str()).collect();
-    let locked: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
+    let locked: HashSet<Id> = draft_ids(m.draft.as_deref()).into_iter().collect();
     let reaped: Vec<&Id> = m
         .order
         .iter()
@@ -1963,7 +1982,7 @@ fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
 }
 
 fn upsert_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
-    let dragging: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
+    let dragging: HashSet<Id> = draft_ids(m.draft.as_deref()).into_iter().collect();
     let mut by_id = m.by_id.clone();
     let mut order = m.order.clone();
     for a in annots {
@@ -2046,20 +2065,26 @@ fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option
     }
     let swap = |x: &Id| if x == temp_id { id.to_string() } else { x.clone() };
     // A gesture that began before the ack keeps working on the durable id.
-    let mut draft = m.draft.clone();
-    match &mut draft {
-        Some(Draft::Move { ids, .. } | Draft::Rotate { ids, .. } | Draft::Group { ids, .. }) => {
-            for x in ids.iter_mut() {
-                *x = swap(x);
-            }
+    // An edit draft is rebuilt (a new one, as the TypeScript's spread is);
+    // a creation draft or the marquee stays the same one.
+    let draft = m.draft.as_ref().map(|d| {
+        if d.id().is_none() && d.ids().is_none() {
+            return d.clone();
         }
-        Some(
+        let mut next = Draft::clone(d);
+        match &mut next {
+            Draft::Move { ids, .. } | Draft::Rotate { ids, .. } | Draft::Group { ids, .. } => {
+                for x in ids.iter_mut() {
+                    *x = swap(x);
+                }
+            }
             Draft::Handle { id: x, .. }
             | Draft::Caption { id: x, .. }
-            | Draft::Leader { id: x, .. },
-        ) => *x = swap(x),
-        _ => {}
-    }
+            | Draft::Leader { id: x, .. } => *x = swap(x),
+            _ => {}
+        }
+        Rc::new(next)
+    });
     Some(Model {
         by_id,
         draft,

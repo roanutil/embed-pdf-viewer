@@ -21,6 +21,7 @@ import {
   SNAP,
   advance,
   boot,
+  call,
   circle,
   created,
   doc,
@@ -135,6 +136,26 @@ const READS = {
 };
 
 const cases: ScenarioCase[] = [
+  {
+    name: 'draft-changed-per-draft',
+    covers:
+      'onDraftChanged fires whenever a step builds a new draft, not only when its value changes: a second pointermove to the same point fires again, and a step that keeps the draft (the up that clears it fires once) does not.',
+    plugins: PLUGINS,
+    engine: { documents: { a: doc([hydrate({ 1: [square(1)] })]) } },
+    ...UNSNAPSHOTTED,
+    steps: [
+      ...boot,
+      api('onDraftChanged', [{ $fn: 'draft' }]),
+      call('select', [objRef(1)]),
+      call('editPointer', ['down', 1, { x: 150, y: 150 }, false]),
+      call('editPointer', ['move', 1, { x: 160, y: 150 }, false]),
+      call('editPointer', ['move', 1, { x: 160, y: 150 }, false]),
+      // A foreign page's sample leaves the model as it was.
+      call('editPointer', ['move', 2, { x: 170, y: 150 }, false]),
+      call('editPointer', ['move', 1, { x: 150, y: 150 }, false]),
+      call('editPointer', ['up', 1, { x: 150, y: 150 }, false]),
+    ],
+  },
   {
     name: 'page-space-reads',
     covers:
