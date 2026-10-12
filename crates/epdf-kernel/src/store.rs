@@ -34,6 +34,13 @@ pub type SliceText = Rc<dyn Fn(&dyn Any) -> Option<String>>;
 pub type ChangeListener = dyn Fn() -> Result<(), Error>;
 pub type ActionListener = dyn Fn(&dyn Action) -> Result<(), Error>;
 
+/// An action listener, and the one `type` it hears when it has one
+/// (`ctx.onAction(type, handler)`).
+pub(crate) struct ActionEntry {
+    kind: Option<String>,
+    listener: Rc<ActionListener>,
+}
+
 /// A `Set`-like listener list. Entries are tombstoned rather than removed
 /// while a pass is walking it.
 pub(crate) struct Listeners<F: ?Sized> {
@@ -210,7 +217,7 @@ pub struct Store {
     leases: RefCell<BTreeMap<String, SliceLease>>,
     lease_counter: Cell<u64>,
     change: Listeners<ChangeListener>,
-    action: Listeners<ActionListener>,
+    action: Listeners<ActionEntry>,
     emitting: Cell<bool>,
     pending: Cell<bool>,
     report: Report,
@@ -289,8 +296,18 @@ impl Store {
         self.emitting.set(false);
     }
 
+    /// The action's `type` is read once per pass, and only if a typed
+    /// listener asks: reading it serializes the whole action.
     fn emit_action(&self, action: &dyn Action) {
-        self.action.walk(|listener| self.guarded(|| listener(action)));
+        let mut kind: Option<String> = None;
+        self.action.walk(|entry| {
+            if let Some(wanted) = &entry.kind
+                && kind.get_or_insert_with(|| action.action_type()) != wanted
+            {
+                return;
+            }
+            self.guarded(|| (entry.listener)(action))
+        });
     }
 
     /// Report an error a listener raised, keeping the pass going. Listeners
@@ -483,7 +500,24 @@ impl Store {
     }
 
     pub fn subscribe_action(self: &Rc<Self>, listener: Rc<ActionListener>) -> Unsubscribe {
-        let id = self.action.add(listener);
+        self.add_action_listener(None, listener)
+    }
+
+    /// [`subscribe_action`](Self::subscribe_action) for one action `type`.
+    pub fn subscribe_action_of(
+        self: &Rc<Self>,
+        kind: &str,
+        listener: Rc<ActionListener>,
+    ) -> Unsubscribe {
+        self.add_action_listener(Some(kind.to_string()), listener)
+    }
+
+    fn add_action_listener(
+        self: &Rc<Self>,
+        kind: Option<String>,
+        listener: Rc<ActionListener>,
+    ) -> Unsubscribe {
+        let id = self.action.add(Rc::new(ActionEntry { kind, listener }));
         let store = Rc::downgrade(self);
         Unsubscribe::new(move || {
             if let Some(store) = store.upgrade() {

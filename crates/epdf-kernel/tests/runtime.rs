@@ -16,6 +16,7 @@ use epdf_kernel::error::Error;
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::guarded::{GuardedLifetime, guard_handle};
+use epdf_kernel::lanes::{LatestLane, LatestRun};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::scope::Scope;
 use epdf_kernel::signal::AbortSignal;
@@ -85,6 +86,21 @@ fn intervals_sharing_a_deadline_fire_in_rearm_order() {
     rt::set_interval(2.0, move || b.borrow_mut().push(format!("b@{}", rt::now())));
     rt::advance(4.0);
     assert_eq!(*fired.borrow(), ["a@2", "b@2", "a@4", "b@4"]);
+}
+
+#[test]
+fn a_zero_interval_repeats_every_millisecond_instead_of_looping() {
+    rt::reset();
+    let fired = Rc::new(Cell::new(0));
+    let f = fired.clone();
+    let id = rt::set_interval(0.0, move || f.set(f.get() + 1));
+    rt::advance(5.0);
+    // At 0, then each millisecond through 5.
+    assert_eq!(fired.get(), 6);
+    rt::clear_timer(id);
+    let nan = rt::set_interval(f64::NAN, || {});
+    rt::advance(3.0);
+    rt::clear_timer(nan);
 }
 
 #[test]
@@ -394,6 +410,63 @@ fn a_nested_action_pass_leaves_the_outer_pass_whole() {
     assert_eq!(*seen.borrow(), ["a", "b:@@nested", "c:@@nested", "b:@@test", "c:@@test"]);
 }
 
+/// An action that counts how often its `type` is read.
+struct Counted {
+    reads: Rc<Cell<u32>>,
+}
+
+impl Action for Counted {
+    fn action_type(&self) -> String {
+        self.reads.set(self.reads.get() + 1);
+        "@@counted".into()
+    }
+    fn to_json(&self) -> Value {
+        json!({ "type": "@@counted" })
+    }
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+#[test]
+fn typed_action_listeners_read_the_type_once_per_pass() {
+    let (store, _) = change_store();
+    let seen = log();
+    for name in ["a", "b", "c"] {
+        let s = seen.clone();
+        store.subscribe_action_of(
+            "@@counted",
+            Rc::new(move |_: &dyn Action| {
+                s.borrow_mut().push(name.into());
+                Ok(())
+            }),
+        );
+    }
+    let s = seen.clone();
+    store.subscribe_action_of(
+        "@@other",
+        Rc::new(move |_: &dyn Action| {
+            s.borrow_mut().push("other".into());
+            Ok(())
+        }),
+    );
+    let reads = Rc::new(Cell::new(0));
+    store.set_core(|_| {}, &Counted { reads: reads.clone() });
+    assert_eq!(*seen.borrow(), ["a", "b", "c"]);
+    assert_eq!(reads.get(), 1);
+}
+
+#[test]
+fn an_action_that_serde_json_refuses_has_no_type_and_does_not_panic() {
+    #[derive(serde::Serialize)]
+    struct Keyed {
+        r#type: &'static str,
+        by_pair: std::collections::HashMap<(u8, u8), u8>,
+    }
+    let action = Keyed { r#type: "@@keyed", by_pair: [((1, 2), 3)].into_iter().collect() };
+    assert_eq!(action.action_type(), "");
+}
+
 #[test]
 fn a_listener_that_fails_is_reported_and_the_pass_continues() {
     let (store, reported) = change_store();
@@ -492,6 +565,76 @@ fn a_signal_aborts_once_and_forgets_removed_listeners() {
     signal.abort(Error::new("again"));
     assert_eq!(*seen.borrow(), ["a:why", "c"]);
     assert_eq!(signal.reason().unwrap().message, "why");
+}
+
+#[test]
+fn an_abort_skips_a_listener_an_earlier_one_removed() {
+    // `AbortSignal`'s dispatch, as the DOM runs it: a listener removed by
+    // an earlier listener of the same abort does not run.
+    let signal = AbortSignal::new();
+    let seen = log();
+    let second: Rc<Cell<Option<u64>>> = Rc::default();
+    let (s1, sig, id) = (seen.clone(), signal.clone(), second.clone());
+    signal.on_abort(Rc::new(move |_| {
+        s1.borrow_mut().push("first".into());
+        if let Some(id) = id.get() {
+            sig.remove(id);
+        }
+    }));
+    let s2 = seen.clone();
+    second.set(Some(signal.on_abort(Rc::new(move |_| s2.borrow_mut().push("second".into())))));
+    let s3 = seen.clone();
+    signal.on_abort(Rc::new(move |_| s3.borrow_mut().push("third".into())));
+    signal.abort(Error::new("stop"));
+    assert_eq!(*seen.borrow(), ["first", "third"]);
+}
+
+#[test]
+fn a_cancelled_run_is_still_running_inside_its_abort_listener() {
+    // `lanes.ts` `cancel`: `active?.abort(...)` and only then `active = null`.
+    let lane = LatestLane::new(AbortSignal::new(), "probe", "lane");
+    let seen: Rc<RefCell<Vec<bool>>> = Rc::default();
+    let (l, s) = (lane.clone(), seen.clone());
+    let _run = lane.run(
+        move |run: LatestRun| {
+            let (l, s) = (l.clone(), s.clone());
+            run.signal.on_abort(Rc::new(move |_| s.borrow_mut().push(l.running())));
+            Promise::<Value>::pending().0
+        },
+        None,
+    );
+    rt::run_until_stalled();
+    assert!(lane.running());
+    lane.cancel(None);
+    assert_eq!(*seen.borrow(), [true]);
+    assert!(!lane.running());
+}
+
+#[derive(serde::Serialize)]
+struct Count(u32);
+
+#[derive(serde::Serialize)]
+#[serde(tag = "type")]
+#[allow(dead_code)] // only its type is used
+enum Bump {
+    Bump,
+}
+
+#[test]
+#[should_panic(expected = "[counter] a plugin with a reducer needs an initial_state")]
+fn a_reducer_without_an_initial_state_is_refused() {
+    epdf_kernel::plugin::define::<Count, Bump>("counter")
+        .reduce(|count, _| Some(Count(count.0 + 1)))
+        .build();
+}
+
+#[test]
+fn a_reducer_with_an_initial_state_or_over_json_builds() {
+    epdf_kernel::plugin::define::<Count, Bump>("counter")
+        .initial_state(|| Count(0))
+        .reduce(|count, _| Some(Count(count.0 + 1)))
+        .build();
+    epdf_kernel::plugin::define::<Value, Bump>("json").reduce(|_, _| None).build();
 }
 
 #[test]
@@ -903,4 +1046,46 @@ fn a_guarded_call_is_a_plain_promise_with_an_abort() {
         }),
         4
     );
+}
+
+/// A pending future that counts its polls and keeps the waker it was given.
+struct Parked {
+    polls: Rc<Cell<u32>>,
+    waker: Rc<RefCell<Option<std::task::Waker>>>,
+}
+
+impl std::future::Future for Parked {
+    type Output = ();
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<()> {
+        self.polls.set(self.polls.get() + 1);
+        *self.waker.borrow_mut() = Some(cx.waker().clone());
+        std::task::Poll::Pending
+    }
+}
+
+#[test]
+fn a_waker_woken_on_another_thread_wakes_none_of_its_tasks() {
+    // Each thread's first task: with per-thread ids both would be task 0,
+    // and thread A's waker would wake thread B's task.
+    let waker = std::thread::spawn(|| {
+        let slot: Rc<RefCell<Option<std::task::Waker>>> = Rc::default();
+        rt::spawn(Parked { polls: Rc::default(), waker: slot.clone() });
+        let waker = slot.borrow_mut().take();
+        waker.expect("polled once")
+    })
+    .join()
+    .unwrap();
+    let polls = std::thread::spawn(move || {
+        let polls: Rc<Cell<u32>> = Rc::default();
+        rt::spawn(Parked { polls: polls.clone(), waker: Rc::default() });
+        waker.wake();
+        rt::run_until_stalled();
+        polls.get()
+    })
+    .join()
+    .unwrap();
+    assert_eq!(polls, 1);
 }

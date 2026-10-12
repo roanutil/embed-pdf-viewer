@@ -12,6 +12,7 @@ import {
   createEngineBridge,
   decode,
   encodeInput,
+  errorSpec,
   hostBytes,
   releaseHost,
   type EngineBridge,
@@ -390,6 +391,24 @@ describe('encodeInput', () => {
       bytes: { $bytes: 'AQID' },
       n: { $number: 'NaN' },
     });
+  });
+});
+
+describe('errorSpec', () => {
+  test('an error that refers to itself still crosses as itself', () => {
+    const hold = { hold: () => 7 };
+    const error = Object.assign(new Error('bad xref'), { code: 'Format' }) as Error & {
+      self?: unknown;
+    };
+    error.self = error;
+    const once = { name: 'Error', message: 'bad xref', code: 'Format' };
+    // How the bridge encodes an engine rejection (`reason`): the member
+    // that leads back is encoded once, and left out the second time.
+    expect(errorSpec(error, (v) => canonical(v, hold))).toEqual({
+      $error: { ...once, self: { $error: once } },
+    });
+    expect(canonical(error, hold)).toEqual({ $error: once });
+    expect(canonical({ error }, hold)).toEqual({ error: { $error: once } });
   });
 });
 

@@ -67,7 +67,8 @@ const liveKernels = new Set<Kernel>();
  *  `kernel` (built by [`createKernel`]; defaults to the sole live kernel,
  *  throwing if there is none or more than one): the harness's
  *  `refs`/`promises`/`heldFns` (the `$fn` ids some Rust callback still
- *  holds), `described` capabilities, `aborts`, the engine bridge's
+ *  holds), `described` capabilities, `aborts`, `tokens` (the token names
+ *  the harness knows), the engine bridge's
  *  `hosts` (its own entries), `allHosts` (every bridge's: the one table
  *  they share) and `documents`, the wire's `fns`/`wireRefs`/`proxies`, and
  *  `wasmBytes`, the wasm module's own linear memory.

@@ -274,6 +274,17 @@ impl Harness {
         self.0.entry.borrow_mut().reports.push(error.to_canonical());
     }
 
+    /// The token with this name, if a plugin registered it or a request
+    /// made it. Unlike [`token`](Self::token), never adds one.
+    pub fn find_token(&self, name: &str) -> Option<AnyToken> {
+        self.0.tokens.borrow().get(name).cloned()
+    }
+
+    /// How many tokens the table holds.
+    pub fn token_count(&self) -> usize {
+        self.0.tokens.borrow().len()
+    }
+
     /// The token with this name: a registered plugin's, else one made for
     /// this run (the first request decides its hint).
     pub fn token(&self, name: &str, hint: Option<&str>) -> AnyToken {

@@ -278,7 +278,8 @@ pub struct WasmKernel {
     memo: Rc<Memo>,
     /// The documents' closed listener that evicts from `memo`.
     on_closed: Option<Unsubscribe>,
-    /// `kernel.documents()`, made once so its description memoizes too.
+    /// `kernel.documents`: the documents capability, held so its
+    /// description memoizes too.
     documents: Rc<dyn Any>,
     /// A taken promise's abort handle, by id, kept until it settles:
     /// [`promise`](Self::promise) takes the promise out of the harness's own
@@ -362,7 +363,9 @@ impl WasmKernel {
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
-        let documents: Rc<dyn Any> = Rc::new(kernel.documents());
+        // The capability `kernel.capability(DocumentsToken)` answers, so the
+        // two describe as one proxy with one set of pinned refs.
+        let documents = kernel.capability_any(DOCUMENTS.any(), None)?;
         let memo = Rc::new(Memo {
             harness: harness.clone(),
             described: RefCell::new(HashMap::new()),
@@ -427,7 +430,7 @@ impl WasmKernel {
         doc_id: Option<String>,
     ) -> Result<String, JsValue> {
         entry(|| {
-            let token = self.harness.token(&token_name, None);
+            let token = self.token(&token_name);
             let doc = self.document_of(&token, doc_id.as_deref());
             self.kernel
                 .capability_any(&token, doc_id.as_deref())
@@ -445,7 +448,7 @@ impl WasmKernel {
         doc_id: Option<String>,
     ) -> Result<Option<String>, JsValue> {
         entry(|| {
-            let token = self.harness.token(&token_name, None);
+            let token = self.token(&token_name);
             let doc = self.document_of(&token, doc_id.as_deref());
             self.kernel
                 .try_capability_any(&token, doc_id.as_deref())
@@ -457,7 +460,7 @@ impl WasmKernel {
     /// `kernel.scopeOf(token)`: `"document"` or `"workspace"`.
     pub fn scope_of(&self, token_name: String) -> String {
         entry(|| {
-            let token = self.harness.token(&token_name, None);
+            let token = self.token(&token_name);
             match self.kernel.scope_of(&token) {
                 PluginScope::Document => "document".into(),
                 PluginScope::Workspace => "workspace".into(),
@@ -599,6 +602,15 @@ impl WasmKernel {
         })
     }
 
+    /// Whether a live callback made from `{"$fn": "js:<id>"}` holds that
+    /// function. The shim forgets a function it handed over once a task has
+    /// passed with no callback made from it (`Wire.sweep` in
+    /// `packages/core-wasm/src/proxy.ts`): one the kernel ignored, so no
+    /// `release_js` would ever come for it.
+    pub fn holds_js(&self, id: String) -> bool {
+        entry(|| self.harness.holds_fn(&format!("js:{id}")))
+    }
+
     pub fn unsubscribe(&self, id: u32) {
         entry(|| {
             let off = self.subscriptions.borrow_mut().remove(&id);
@@ -609,22 +621,31 @@ impl WasmKernel {
     }
 
     /// The harness's live-table counts plus how many capabilities this
-    /// kernel has described (`describe`'s memo) and how many taken promises
+    /// kernel has described (`describe`'s memo), how many taken promises
     /// it keeps abortable (`aborts`, which holds a never-settling promise's
-    /// entry for good): `{"refs": n, "promises": n, "heldFns": n,
-    /// "described": n, "aborts": n}`. Dev-only, for the eval build's memory
+    /// entry for good) and how many tokens the harness knows by name:
+    /// `{"refs": n, "promises": n, "heldFns": n, "described": n,
+    /// "aborts": n, "tokens": n}`. Dev-only, for the eval build's memory
     /// soak test.
     pub fn debug_counts(&self) -> String {
         entry(|| {
             let mut counts = self.harness.counts();
             counts["described"] = json!(self.memo.described.borrow().len());
             counts["aborts"] = json!(self.aborts.borrow().len());
+            counts["tokens"] = json!(self.harness.token_count());
             counts.to_string()
         })
     }
 }
 
 impl WasmKernel {
+    /// The token named `name`. An unknown name gets a token of its own that
+    /// is not kept: the kernel refuses it all the same, and a caller asking
+    /// for made-up names must not grow the harness's table.
+    fn token(&self, name: &str) -> AnyToken {
+        self.harness.find_token(name).unwrap_or_else(|| AnyToken::new(name, None))
+    }
+
     /// The document a capability of `token` asked for with `doc_id`
     /// resolves to: `doc_id`, or the active document for a document
     /// plugin's token, and `None` for a workspace plugin's.

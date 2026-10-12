@@ -96,6 +96,8 @@ impl OpenOptions {
     /// the engine's rest.
     pub fn from_json(value: &Value) -> Self {
         let mut engine = value.as_object().cloned().unwrap_or_default();
+        // An `undefined` member is no member once the engine reads it.
+        engine.retain(|_, member| !crate::is_undefined(member));
         let activate = engine.remove("activate").and_then(|v| v.as_bool());
         let name = engine.remove("name").and_then(|v| v.as_str().map(str::to_string));
         OpenOptions { activate, name, engine }
@@ -180,6 +182,9 @@ struct Session {
     /// The hold on what a thunk source produced, which a retry produces
     /// afresh.
     produced: RefCell<Option<Rc<HostHold>>>,
+    /// The recorded source's hold, kept once the document is ready and the
+    /// source itself is dropped: the engine may still read the host's bytes.
+    held: RefCell<Option<Rc<HostHold>>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
     staged_meta: RefCell<Option<DocumentMeta>>,
@@ -375,6 +380,7 @@ impl Inner {
             name: RefCell::new(name),
             source: RefCell::new(None),
             produced: RefCell::new(None),
+            held: RefCell::new(None),
             phase: Cell::new(Phase::Opening),
             handle: RefCell::new(None),
             staged_meta: RefCell::new(None),
@@ -557,6 +563,7 @@ impl Inner {
             // unless a `retry()` took them on to the next session.
             drop(s.source.borrow_mut().take());
             drop(s.produced.borrow_mut().take());
+            drop(s.held.borrow_mut().take());
             // Each capability's context holds this session, so while the
             // session holds the capabilities (and their connects) the two
             // keep each other alive past the close, and past the kernel.
@@ -680,6 +687,13 @@ impl Inner {
 
     fn commit_ready(&self, session: &Session) {
         session.phase.set(Phase::Ready);
+        // Only a failed open retries, so a ready document needs its source
+        // no longer (inline `$bytes` can be the whole PDF). Its host hold
+        // stays until close.
+        let recorded = session.source.borrow_mut().take();
+        if let Some((_, _, hold)) = recorded {
+            *session.held.borrow_mut() = hold;
+        }
         let meta = session.staged_meta().expect("staged meta");
         let id = session.id();
         self.set_core(
@@ -848,6 +862,7 @@ impl Inner {
             // `(await handle.render?.policy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
             if let Ok(policy) = handle.call("render.policy", None, Vec::new()).await
                 && !policy.is_null()
+                && !crate::is_undefined(&policy)
             {
                 render_policy = policy;
             }
@@ -1020,18 +1035,21 @@ impl Inner {
         input: OpenSource,
         engine_options: serde_json::Map<String, Value>,
     ) -> Result<String, Error> {
-        let source = match input {
+        let mut source = match input {
             OpenSource::Thunk(thunk) => {
-                let produced = match thunk(session.cancel.clone()) {
-                    Ok(promise) => promise,
-                    Err(error) => Promise::rejected(error),
-                };
+                // A synchronous throw skips `engineCall`: it leaves
+                // `input(signal)` before there is a promise to race.
+                let produced = thunk(session.cancel.clone())?;
                 let value = rt::returned(Self::engine_call(&session, produced, None)).await?;
                 *session.produced.borrow_mut() = HostHold::of_value(&value);
                 value
             }
             OpenSource::Input(value) => value,
         };
+        // As for the options: an `undefined` member is no member.
+        if let Value::Object(members) = &mut source {
+            members.retain(|_, member| !crate::is_undefined(member));
+        }
         Self::checkpoint(&session)?;
         if let Some(source_id) = id_of_input(&source) {
             this.rekey_session(&session, &source_id)?;
@@ -1058,8 +1076,10 @@ impl Inner {
 
         let prompt = handle.security().password_prompt();
         if prompt.get("state").and_then(Value::as_str) == Some("required") {
-            let password_provided = engine_options.get("password").is_some_and(|p| !p.is_null())
-                || source.get("password").is_some_and(|p| !p.is_null());
+            // `password != null`: neither `null` nor `undefined`.
+            let given = |p: &Value| !p.is_null() && !crate::is_undefined(p);
+            let password_provided = engine_options.get("password").is_some_and(given)
+                || source.get("password").is_some_and(given);
             session.phase.set(Phase::Locked);
             this.publish_locked(&session, password_provided);
             return Ok(session.id());

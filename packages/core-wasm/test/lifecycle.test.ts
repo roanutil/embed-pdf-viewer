@@ -1,14 +1,15 @@
 /**
  * The shim's `Kernel` lifecycle against the TS kernel's contract
  * (`packages/core/main/src/kernel.ts`), over the real `WasmKernel` and an
- * engine that is never asked for anything: no document opens here, so
- * these run without the PDFium runtime.
+ * engine that is never asked for anything: no document gets as far as the
+ * engine here, so these run without the PDFium runtime.
  */
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { isPluginError, PluginError } from '@embedpdf/core';
 import type { CapabilityToken, Engine, Kernel } from '@embedpdf/core';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
-import { commandsPlugin, createKernel, setWasmKernel } from '../src';
+import { commandsPlugin, createKernel, kernelCounts, setWasmKernel } from '../src';
 
 const DocumentsToken = { name: 'documents' } as CapabilityToken<unknown>;
 const CommandsToken = { name: 'commands' } as CapabilityToken<unknown>;
@@ -167,5 +168,116 @@ describe('init-only JS plugins', () => {
     const late = vi.fn();
     ctx.cleanup(late);
     expect(late).toHaveBeenCalledOnce();
+  });
+});
+
+describe('the documents capability', () => {
+  test('kernel.documents is the proxy capability(DocumentsToken) answers', async () => {
+    const k = build();
+    await k.start();
+    expect(k.capability(DocumentsToken)).toBe(k.documents);
+    expect(k.tryCapability(DocumentsToken)).toBe(k.documents);
+  });
+});
+
+describe('tokens by name', () => {
+  test('an unknown token name is refused without adding a token', async () => {
+    const k = build();
+    await k.start();
+    const before = kernelCounts(k).tokens;
+    for (let i = 0; i < 20; i++) {
+      const token = { name: `made-up-${i}` } as CapabilityToken<unknown>;
+      expect(k.tryCapability(token)).toBe(null);
+      expect(() => k.capability(token)).toThrow(`No capability "made-up-${i}".`);
+    }
+    expect(kernelCounts(k).tokens).toBe(before);
+  });
+});
+
+describe('functions the kernel never calls', () => {
+  /** Two tasks: the sweep's, and one more for an id a value carried. */
+  const tasks = async () => {
+    for (let i = 0; i < 2; i++) await new Promise((r) => setTimeout(r, 0));
+  };
+
+  test('a member Rust ignores is forgotten a task later; one it holds is kept', async () => {
+    const k = build();
+    await k.start();
+    const commands = k.capability(CommandsToken) as {
+      registerCommand(def: object): () => void;
+    };
+    await tasks();
+    const start = kernelCounts(k).fns;
+    const off = commands.registerCommand({
+      id: 'probe:run',
+      labelKey: 'probe',
+      run: () => {},
+      // Not a `CommandDef` member: the kernel reads past it.
+      ignored: () => {},
+    });
+    expect(kernelCounts(k).fns).toBe(start + 2);
+    await tasks();
+    expect(kernelCounts(k).fns).toBe(start + 1);
+    // `run` is still the kernel's to call.
+    await expect(
+      (k.capability(CommandsToken) as { execute(id: string): Promise<unknown> }).execute(
+        'probe:run',
+      ),
+    ).resolves.toEqual({ status: 'executed' });
+    off();
+  });
+});
+
+describe('a kernel being destroyed', () => {
+  test('answers tryCapability with null and refuses capability while destroying', async () => {
+    const k = build();
+    await k.start();
+    expect(k.tryCapability(CommandsToken)).not.toBe(null);
+    // A document still opening, so destroy has a session to close, and a
+    // `closed` listener that runs while it does.
+    const opening = k.documents.open(() => new Promise<never>(() => {}));
+    opening.catch(() => {});
+    const seen: unknown[] = [];
+    k.documents.onClosed(() => {
+      seen.push(k.status(), k.tryCapability(CommandsToken), k.tryCapability(DocumentsToken));
+      try {
+        k.capability(CommandsToken);
+      } catch (error) {
+        seen.push((error as Error).message);
+      }
+    });
+    await k.destroy();
+    expect(seen).toEqual([
+      'destroying',
+      null,
+      null,
+      '[kernel] capability("commands") on a destroying kernel',
+    ]);
+  });
+});
+
+describe('a Rust rejection across the boundary', () => {
+  test("a failed command's rejection is a PluginError, as the TS kernel's is", async () => {
+    const k = build();
+    await k.start();
+    const commands = k.capability(CommandsToken) as {
+      registerCommand(def: object): () => void;
+      execute(id: string): Promise<unknown>;
+    };
+    commands.registerCommand({
+      id: 'probe:boom',
+      labelKey: 'boom',
+      run: () => {
+        throw new Error('boom');
+      },
+    });
+    const error = await commands.execute('probe:boom').then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(PluginError);
+    expect(isPluginError(error)).toBe(true);
+    expect((error as PluginError).capability).toBe('commands');
+    expect((error as Error).message).toBe('boom');
   });
 });

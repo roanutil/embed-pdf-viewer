@@ -102,8 +102,10 @@ impl LatestLane {
     }
 
     /// Cancel the current run, if any, with `String(reason ?? 'cancelled')`.
+    /// As the TypeScript orders it, the run aborts first and the lane
+    /// forgets it after, so an abort listener still reads `running()`.
     pub fn cancel(&self, reason: Option<&Value>) {
-        let active = self.0.active.borrow_mut().take();
+        let active = self.0.active.borrow().clone();
         if let Some(active) = active {
             let why = match reason {
                 Some(r) if !r.is_null() && !crate::is_undefined(r) => js_string(r),
@@ -111,6 +113,7 @@ impl LatestLane {
             };
             active.abort(Error::new(why));
         }
+        *self.0.active.borrow_mut() = None;
     }
 
     fn closed(&self) -> Error {

@@ -126,7 +126,10 @@ function isByteImageSource(value: unknown): value is { kind: 'bytes'; bytes: Uin
   return source.kind === 'bytes' && source.bytes instanceof Uint8Array;
 }
 
-/** `canonicalError`: `name`, `message`, then every own enumerable member. */
+/** `canonicalError`: `name`, `message`, then every own enumerable member.
+ *  A member that cannot be encoded (one that leads back to the error, so
+ *  `canonical` refuses it as cyclic) is left out: the error it describes
+ *  still crosses, rather than the encoder's own error in its place. */
 export function errorSpec(error: unknown, encode: (value: unknown) => unknown): unknown {
   const e = error as Record<string, unknown> | null;
   const out: Record<string, unknown> = {
@@ -136,7 +139,11 @@ export function errorSpec(error: unknown, encode: (value: unknown) => unknown): 
   if (e && typeof e === 'object') {
     for (const key of Object.keys(e)) {
       if (key === 'stack' || key === 'name' || key === 'message' || e[key] === undefined) continue;
-      out[key] = encode(e[key]);
+      try {
+        out[key] = encode(e[key]);
+      } catch {
+        // Left out (see above).
+      }
     }
   }
   return { $error: out };
@@ -192,14 +199,21 @@ export function canonical(
   const object = value as object;
   if (h.blob && typeof Blob !== 'undefined' && object instanceof Blob) return h.blob(object);
   const recur = (v: unknown) => canonical(v, h, seen);
-  if (object instanceof Error) return errorSpec(object, recur);
+  if (seen.has(object)) throw new TypeError('[engine-bridge] cyclic value');
+  if (object instanceof Error) {
+    seen.add(object);
+    try {
+      return errorSpec(object, recur);
+    } finally {
+      seen.delete(object);
+    }
+  }
   if (object instanceof Uint8Array) return h.bytes ? h.bytes(object) : { $bytes: base64(object) };
   if (ArrayBuffer.isView(object)) {
     return { $bytes: base64(new Uint8Array(object.buffer, object.byteOffset, object.byteLength)) };
   }
   if (object instanceof ArrayBuffer) return { $bytes: base64(new Uint8Array(object)) };
   if (object instanceof Date) return { $date: object.getTime() };
-  if (seen.has(object)) throw new TypeError('[engine-bridge] cyclic value');
   seen.add(object);
   try {
     if (Array.isArray(object)) return object.map(recur);

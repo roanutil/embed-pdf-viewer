@@ -16,8 +16,9 @@
  *     `{"$fn": "js:<id>"}`, one id per function however often it crosses,
  *     and stays in the table until the kernel's `release_js(id)` says no
  *     callback holds it (the kernel counts those per id, so one release
- *     means all of them). The same function passed after that crosses
- *     under a new id; the kernel calling a released id throws. An
+ *     means all of them), or, one the kernel never made a callback from,
+ *     until a task later (`sweep`). The same function passed after that
+ *     crosses under a new id; the kernel calling a released id throws. An
  *     `AbortSignal` argument is taken out and aborts the call's promise
  *     instead. A `Blob` argument (a picked `File`) is read to bytes first
  *     (`readBinarySources`), so its call waits for the read and answers a
@@ -51,7 +52,8 @@
  * `getState` does the same per slice. A call whose member makes something
  * new (`create*`, `register*`, `on*`) is not cached or reused; neither is
  * `undefined`, a throw or a promise. A call during which the store changed
- * is not cached, and a callback from the kernel (`callJs`) clears the cache.
+ * is not cached, and a callback from the kernel (`callJs`) clears the cache
+ * if the store has moved since it was filled.
  */
 import { CancelledError, PluginError, type PluginErrorCode } from '@embedpdf/core';
 import {
@@ -91,6 +93,9 @@ export interface RustKernel {
   slice_text(key: string): string | undefined;
   subscribe(listener: () => void): number;
   unsubscribe(id: number): void;
+  /** Whether a live Rust callback made from `{"$fn": "js:<id>"}` holds
+   *  that function. */
+  holds_js(id: string): boolean;
   status(): string;
   scope_of(tokenName: string): string;
   start(): Promise<unknown>;
@@ -239,12 +244,12 @@ export function rusty<T>(run: () => T): T {
   }
 }
 
-/** Members that only read: their calls change no state, so answers cached
- *  before them stay good while the store's revision holds. */
 /** `documents.open` and `documents.openAll`: their bytes only pass through
  *  the kernel. */
 const OPENS = /^open(All)?$/;
 
+/** Members that only read: their calls change no state, so answers cached
+ *  before them stay good while the store's revision holds. */
 const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
 
 export class Wire {
@@ -257,6 +262,10 @@ export class Wire {
   private readonly fnIds = new Map<Fn, number>();
   /** Ids are never reused, so one below this that `fns` lacks was released. */
   private nextFn = 0;
+  /** Ids handed over since the last `sweep`, which the kernel may never
+   *  have made a callback from. */
+  private unswept = new Set<number>();
+  private sweepQueued = false;
   /** Ids in a promise's settled value, encoded but not yet read by the
    *  kernel, with how many such values carry each: `releaseJs` leaves these
    *  alone (see `encodeInFlight`). */
@@ -315,6 +324,7 @@ export class Wire {
     this.dead = true;
     this.fns.clear();
     this.fnIds.clear();
+    this.unswept.clear();
     this.inFlight.clear();
     this.pinned.clear();
     this.loose.clear();
@@ -523,11 +533,9 @@ export class Wire {
    *  even if the kernel's own `closed` listener
    *  (`crates/epdf-web/src/exports.rs`, which fills the evicted list) has
    *  not yet run ahead of whatever registered this wire's `onClosed`
-   *  eviction. Not done in `bump`: that also runs inside `callJs`, called
-   *  reentrantly from a Rust callback already on the stack, where a second
-   *  call into the same wasm object throws "recursive use of an object".
-   *  `capability`/`tryCapability` are only ever called from outside such a
-   *  callback. */
+   *  eviction. Not done in `bump`, which runs on every store change: a
+   *  lookup here is the only place an evicted proxy could be handed out
+   *  again, so draining on the lookup is enough. */
   capability(tokenName: string, doc?: string | null): object {
     const key = this.capabilityKey(tokenName, doc);
     const cached = key === undefined ? undefined : this.capabilities.get(key);
@@ -700,8 +708,55 @@ export class Wire {
       id = this.nextFn++;
       this.fns.set(id, f);
       this.fnIds.set(f, id);
+      this.unswept.add(id);
+      this.queueSweep();
     }
     return id;
+  }
+
+  private queueSweep(): void {
+    if (this.sweepQueued) return;
+    this.sweepQueued = true;
+    setTimeout(() => this.sweep(), 0);
+  }
+
+  /** Forget each function handed over since the last sweep that no Rust
+   *  callback holds. The kernel makes its callbacks when a `$fn` arrives
+   *  (`Harness::callback` in `crates/plugin-conformance/src/harness.rs`),
+   *  and reads a value carrying one within the task it is handed over in
+   *  (`encodeInFlight`), so a task later one it never made a callback
+   *  from (an ignored config member, an error's member, an abort reason)
+   *  will get no `release_js` either. An id still in flight waits for the
+   *  next task; one the kernel cannot be asked about yet (it is being
+   *  destroyed, and holds itself exclusively) waits for the next id handed
+   *  over, or for `dispose`. */
+  private sweep(): void {
+    this.sweepQueued = false;
+    if (this.dead || this.attached === undefined) return;
+    const ids = this.unswept;
+    this.unswept = new Set();
+    let inFlight = false;
+    for (const id of ids) {
+      const fn = this.fns.get(id);
+      if (!fn) continue;
+      if (this.inFlight.has(id)) {
+        this.unswept.add(id);
+        inFlight = true;
+        continue;
+      }
+      let held: boolean;
+      try {
+        held = this.attached.holds_js(String(id));
+      } catch {
+        this.unswept.add(id);
+        continue;
+      }
+      if (held) continue;
+      this.fns.delete(id);
+      this.fnIds.delete(fn);
+      this.sources.delete(id);
+    }
+    if (inFlight) this.queueSweep();
   }
 
   /** The function behind ref `id`, one per ref. `member` names it for the

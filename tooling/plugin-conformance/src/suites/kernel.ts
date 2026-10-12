@@ -250,6 +250,24 @@ const cases: ScenarioCase[] = [
     steps: [start, open(bytes('a'), { password: 'x' }), open(bytes('b', { password: 'y' })), open(bytes('c')), docs('list')],
   },
   {
+    name: 'an-undefined-password-is-not-provided',
+    covers:
+      'A `password` member that is `undefined`, in the options or on the input, is not a supplied password: the locked tab is not `passwordProvided`.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({ security: { passwordPrompt: { state: 'required' } } }),
+        b: doc({ security: { passwordPrompt: { state: 'required' } } }),
+      },
+    },
+    steps: [
+      start,
+      open(bytes('a'), { password: { $undefined: true } }),
+      open(bytes('b', { password: { $undefined: true } })),
+      docs('list'),
+    ],
+  },
+  {
     name: 'unlock-concurrency-and-cancellation',
     covers:
       'A second unlock while one is in flight refuses (one transition at a time); closing during an unlock cancels it; unlock on an unknown document refuses.',
@@ -389,6 +407,17 @@ const cases: ScenarioCase[] = [
       },
     },
     steps: [start, open(bytes('a')), open(bytes('b')), open(bytes('c')), open(bytes('d'))],
+  },
+  {
+    name: 'an-undefined-render-policy-is-continuous',
+    covers: 'A render service whose policy answers `undefined` means `continuous`, as `null` does.',
+    plugins: [],
+    engine: {
+      documents: {
+        a: doc({ services: ['render'], responses: [{ path: 'render.policy', value: { $undefined: true } }] }),
+      },
+    },
+    steps: [start, open(bytes('a'))],
   },
   {
     name: 'capability-resolution',
@@ -1676,6 +1705,14 @@ const turnCases: ScenarioCase[] = [
       responses: [{ path: 'open', times: 1, error: { name: 'EngineError', message: 'bad xref', code: 'Format' } }],
     },
     steps: [start, metered(open(bytes('a')))],
+  },
+  {
+    name: 'a-throwing-thunk-rejects-on-its-turn',
+    covers:
+      'A thunk source that throws synchronously never reaches `engineCall`: the open fails in its own turn, then the `.finally` and the adoption.',
+    snapshot: 'none',
+    reason: 'Pins turn counts: what matters is where `@@settled` falls among the `@@turn` callbacks.',
+    steps: [start, metered(open({ $fn: 'throwing', throws: { message: 'bad url' } }))],
   },
   {
     name: 'unlock-settles-on-its-turn',
