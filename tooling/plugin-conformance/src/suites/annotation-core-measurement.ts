@@ -364,6 +364,9 @@ measurementCases.push(
   c('automaticShapeCaptionCenter', 'closed-single', [v(7, 8)], true),
   c('automaticShapeCaptionCenter', 'closed-ring-far', [v(1000, 1000), v(1100, 1000), v(1100, 1100), v(1000, 1100)], true),
   c('automaticShapeCaptionCenter', 'closed-c-shape-wide-right', [v(0, 0), v(100, 0), v(100, 100), v(0, 100), v(0, 60), v(80, 60), v(80, 40), v(0, 40)], true),
+  // An infinite vertex makes one crossing NaN, so `a - b` is no total
+  // order: the widest span is read off the order V8's sort leaves.
+  c('automaticShapeCaptionCenter', 'closed-nan-crossing', [v(28, 52), v(96, 40), v(32, 88), v(32, 88), v(44, 8), v(32, 52), v(52, 96), v(Infinity, 48), v(76, 72)], true),
   c('automaticShapeCaptionCenter', 'open-later-segment', [v(0, 0), v(10, 0), v(100, 0)], false),
   // A centroid inside, away from the bounds' centre and the origin.
   c('automaticShapeCaptionCenter', 'closed-triangle-offset', [v(100, 300), v(400, 300), v(100, 420)], true),

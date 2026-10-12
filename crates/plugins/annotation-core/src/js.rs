@@ -444,6 +444,593 @@ impl<'de> Deserialize<'de> for IdSet {
     }
 }
 
+// ── Array.prototype.sort ────────────────────────────────────────────────────
+
+/// `array.sort(compare)` as V8 runs it: the TimSort in V8's
+/// `third_party/v8/builtins/array-sort.tq`, step for step, so even a
+/// comparator that is not a total order (one that answers `NaN`, which the
+/// spec reads as `0`) leaves the elements where V8 leaves them, and never
+/// panics. A consistent comparator gets the one stable order any stable sort
+/// gives.
+///
+/// `compare` answers like a JavaScript comparator: negative, zero, positive,
+/// or `NaN` for "equal".
+pub fn sort_by<T>(items: &mut Vec<T>, mut compare: impl FnMut(&T, &T) -> f64) {
+    if items.len() < 2 {
+        return;
+    }
+    let order = {
+        let items = &*items;
+        let mut sort = TimSort {
+            work: (0..items.len()).collect(),
+            temp: Vec::new(),
+            runs: Vec::new(),
+            min_gallop: MIN_GALLOP,
+            compare: |a: usize, b: usize| {
+                let v = compare(&items[a], &items[b]);
+                if v.is_nan() { 0.0 } else { v }
+            },
+        };
+        sort.run();
+        sort.work
+    };
+    let mut slots: Vec<Option<T>> = std::mem::take(items).into_iter().map(Some).collect();
+    items.extend(order.into_iter().map(|i| slots[i].take().expect("a permutation")));
+}
+
+/// [`sort_by`] with a comparator that answers an [`Ordering`](std::cmp::Ordering).
+pub fn sort_by_ordering<T>(
+    items: &mut Vec<T>,
+    mut compare: impl FnMut(&T, &T) -> std::cmp::Ordering,
+) {
+    sort_by(items, |a, b| compare(a, b) as i8 as f64);
+}
+
+const MIN_GALLOP: usize = 7;
+
+/// One sort's state, over indices into the caller's elements.
+struct TimSort<F: FnMut(usize, usize) -> f64> {
+    work: Vec<usize>,
+    temp: Vec<usize>,
+    /// Pending runs, `(base, length)`.
+    runs: Vec<(usize, usize)>,
+    min_gallop: usize,
+    compare: F,
+}
+
+impl<F: FnMut(usize, usize) -> f64> TimSort<F> {
+    fn cmp(&mut self, a: usize, b: usize) -> f64 {
+        (self.compare)(a, b)
+    }
+
+    /// `ArrayTimSortImpl`.
+    fn run(&mut self) {
+        let length = self.work.len();
+        let mut remaining = length;
+        let mut low = 0;
+        let min_run = min_run_length(remaining);
+        while remaining != 0 {
+            let mut current = self.count_and_make_run(low, low + remaining);
+            if current < min_run {
+                let forced = min_run.min(remaining);
+                self.binary_insertion_sort(low, low + current, low + forced);
+                current = forced;
+            }
+            self.runs.push((low, current));
+            self.merge_collapse();
+            low += current;
+            remaining -= current;
+        }
+        self.merge_force_collapse();
+    }
+
+    /// `BinaryInsertionSort(low, start, high)`: `[low, start)` is sorted.
+    fn binary_insertion_sort(&mut self, low: usize, start: usize, high: usize) {
+        let mut start = if low == start { start + 1 } else { start };
+        while start < high {
+            let mut left = low;
+            let mut right = start;
+            let pivot = self.work[start];
+            while left < right {
+                let mid = left + ((right - left) >> 1);
+                let order = self.cmp(pivot, self.work[mid]);
+                if order < 0.0 {
+                    right = mid;
+                } else {
+                    left = mid + 1;
+                }
+            }
+            self.work.copy_within(left..start, left + 1);
+            self.work[left] = pivot;
+            start += 1;
+        }
+    }
+
+    /// `CountAndMakeRun(low, high)`: the run starting at `low`, reversed in
+    /// place when strictly descending.
+    fn count_and_make_run(&mut self, low_arg: usize, high: usize) -> usize {
+        let low = low_arg + 1;
+        if low == high {
+            return 1;
+        }
+        let mut run_length = 2;
+        let element_low = self.work[low];
+        let element_low_pre = self.work[low - 1];
+        let order = self.cmp(element_low, element_low_pre);
+        let descending = order < 0.0;
+        let mut previous = element_low;
+        for idx in low + 1..high {
+            let current = self.work[idx];
+            let order = self.cmp(current, previous);
+            if descending {
+                if order >= 0.0 {
+                    break;
+                }
+            } else if order < 0.0 {
+                break;
+            }
+            previous = current;
+            run_length += 1;
+        }
+        if descending {
+            self.work[low_arg..low_arg + run_length].reverse();
+        }
+        run_length
+    }
+
+    fn run_invariant_established(&self, n: usize) -> bool {
+        if n < 2 {
+            return true;
+        }
+        self.runs[n - 2].1 > self.runs[n - 1].1 + self.runs[n].1
+    }
+
+    /// `MergeCollapse`.
+    fn merge_collapse(&mut self) {
+        while self.runs.len() > 1 {
+            let mut n = self.runs.len() - 2;
+            if !self.run_invariant_established(n + 1) || !self.run_invariant_established(n) {
+                if self.runs[n - 1].1 < self.runs[n + 1].1 {
+                    n -= 1;
+                }
+                self.merge_at(n);
+            } else if self.runs[n].1 <= self.runs[n + 1].1 {
+                self.merge_at(n);
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// `MergeForceCollapse`.
+    fn merge_force_collapse(&mut self) {
+        while self.runs.len() > 1 {
+            let mut n = self.runs.len() - 2;
+            if n > 0 && self.runs[n - 1].1 < self.runs[n + 1].1 {
+                n -= 1;
+            }
+            self.merge_at(n);
+        }
+    }
+
+    /// `MergeAt(i)`: merge runs `i` and `i + 1`.
+    fn merge_at(&mut self, i: usize) {
+        let (mut base_a, mut length_a) = self.runs[i];
+        let (base_b, mut length_b) = self.runs[i + 1];
+        self.runs[i].1 = length_a + length_b;
+        self.runs.remove(i + 1);
+
+        let key_right = self.work[base_b];
+        let k = self.gallop_right(false, key_right, base_a, length_a, 0);
+        base_a += k;
+        length_a -= k;
+        if length_a == 0 {
+            return;
+        }
+        let key_left = self.work[base_a + length_a - 1];
+        length_b = self.gallop_left(false, key_left, base_b, length_b, length_b - 1);
+        if length_b == 0 {
+            return;
+        }
+        if length_a <= length_b {
+            self.merge_low(base_a, length_a, base_b, length_b);
+        } else {
+            self.merge_high(base_a, length_a, base_b, length_b);
+        }
+    }
+
+    fn at(&self, temp: bool, i: usize) -> usize {
+        if temp { self.temp[i] } else { self.work[i] }
+    }
+
+    /// `GallopLeft(array, key, base, length, hint)`: where `key` goes in the
+    /// sorted `array[base..base + length]`, left of any equal elements.
+    fn gallop_left(
+        &mut self,
+        temp: bool,
+        key: usize,
+        base: usize,
+        length: usize,
+        hint: usize,
+    ) -> usize {
+        let mut last_ofs: isize = 0;
+        let mut offset: isize = 1;
+        let (length, hint) = (length as isize, hint as isize);
+        let base_hint = self.at(temp, base + hint as usize);
+        let order = self.cmp(base_hint, key);
+        if order < 0.0 {
+            let max_ofs = length - hint;
+            while offset < max_ofs {
+                let element = self.at(temp, (base as isize + hint + offset) as usize);
+                if self.cmp(element, key) >= 0.0 {
+                    break;
+                }
+                last_ofs = offset;
+                offset = (offset << 1) + 1;
+            }
+            offset = offset.min(max_ofs);
+            last_ofs += hint;
+            offset += hint;
+        } else {
+            let max_ofs = hint + 1;
+            while offset < max_ofs {
+                let element = self.at(temp, (base as isize + hint - offset) as usize);
+                if self.cmp(element, key) < 0.0 {
+                    break;
+                }
+                last_ofs = offset;
+                offset = (offset << 1) + 1;
+            }
+            offset = offset.min(max_ofs);
+            let tmp = last_ofs;
+            last_ofs = hint - offset;
+            offset = hint - tmp;
+        }
+        last_ofs += 1;
+        while last_ofs < offset {
+            let m = last_ofs + ((offset - last_ofs) >> 1);
+            let element = self.at(temp, (base as isize + m) as usize);
+            if self.cmp(element, key) < 0.0 {
+                last_ofs = m + 1;
+            } else {
+                offset = m;
+            }
+        }
+        offset as usize
+    }
+
+    /// `GallopRight(array, key, base, length, hint)`: as
+    /// [`gallop_left`](Self::gallop_left), right of any equal elements.
+    fn gallop_right(
+        &mut self,
+        temp: bool,
+        key: usize,
+        base: usize,
+        length: usize,
+        hint: usize,
+    ) -> usize {
+        let mut last_ofs: isize = 0;
+        let mut offset: isize = 1;
+        let (length, hint) = (length as isize, hint as isize);
+        let base_hint = self.at(temp, base + hint as usize);
+        let order = self.cmp(key, base_hint);
+        if order < 0.0 {
+            let max_ofs = hint + 1;
+            while offset < max_ofs {
+                let element = self.at(temp, (base as isize + hint - offset) as usize);
+                if self.cmp(key, element) >= 0.0 {
+                    break;
+                }
+                last_ofs = offset;
+                offset = (offset << 1) + 1;
+            }
+            offset = offset.min(max_ofs);
+            let tmp = last_ofs;
+            last_ofs = hint - offset;
+            offset = hint - tmp;
+        } else {
+            let max_ofs = length - hint;
+            while offset < max_ofs {
+                let element = self.at(temp, (base as isize + hint + offset) as usize);
+                if self.cmp(key, element) < 0.0 {
+                    break;
+                }
+                last_ofs = offset;
+                offset = (offset << 1) + 1;
+            }
+            offset = offset.min(max_ofs);
+            last_ofs += hint;
+            offset += hint;
+        }
+        last_ofs += 1;
+        while last_ofs < offset {
+            let m = last_ofs + ((offset - last_ofs) >> 1);
+            let element = self.at(temp, (base as isize + m) as usize);
+            if self.cmp(key, element) < 0.0 {
+                offset = m;
+            } else {
+                last_ofs = m + 1;
+            }
+        }
+        offset as usize
+    }
+
+    /// `MergeLow`: run A (the shorter) goes to `temp`, the merge runs
+    /// forward.
+    fn merge_low(&mut self, base_a: usize, length_a: usize, base_b: usize, length_b: usize) {
+        let (mut length_a, mut length_b) = (length_a, length_b);
+        self.temp.clear();
+        self.temp.extend_from_slice(&self.work[base_a..base_a + length_a]);
+        let mut dest = base_a;
+        let mut cursor_temp = 0;
+        let mut cursor_b = base_b;
+        self.work[dest] = self.work[cursor_b];
+        dest += 1;
+        cursor_b += 1;
+
+        enum Exit {
+            Succeed,
+            CopyB,
+        }
+        let exit = 'merge: {
+            length_b -= 1;
+            if length_b == 0 {
+                break 'merge Exit::Succeed;
+            }
+            if length_a == 1 {
+                break 'merge Exit::CopyB;
+            }
+            let mut min_gallop = self.min_gallop;
+            loop {
+                let mut wins_a = 0;
+                let mut wins_b = 0;
+                loop {
+                    let order = self.cmp(self.work[cursor_b], self.temp[cursor_temp]);
+                    if order < 0.0 {
+                        self.work[dest] = self.work[cursor_b];
+                        dest += 1;
+                        cursor_b += 1;
+                        wins_b += 1;
+                        length_b -= 1;
+                        wins_a = 0;
+                        if length_b == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                        if wins_b >= min_gallop {
+                            break;
+                        }
+                    } else {
+                        self.work[dest] = self.temp[cursor_temp];
+                        dest += 1;
+                        cursor_temp += 1;
+                        wins_a += 1;
+                        length_a -= 1;
+                        wins_b = 0;
+                        if length_a == 1 {
+                            break 'merge Exit::CopyB;
+                        }
+                        if wins_a >= min_gallop {
+                            break;
+                        }
+                    }
+                }
+                min_gallop += 1;
+                let mut first = true;
+                while wins_a >= MIN_GALLOP || wins_b >= MIN_GALLOP || first {
+                    first = false;
+                    min_gallop = min_gallop.saturating_sub(1).max(1);
+                    self.min_gallop = min_gallop;
+                    let key = self.work[cursor_b];
+                    wins_a = self.gallop_right(true, key, cursor_temp, length_a, 0);
+                    if wins_a > 0 {
+                        self.work[dest..dest + wins_a]
+                            .copy_from_slice(&self.temp[cursor_temp..cursor_temp + wins_a]);
+                        dest += wins_a;
+                        cursor_temp += wins_a;
+                        length_a -= wins_a;
+                        if length_a == 1 {
+                            break 'merge Exit::CopyB;
+                        }
+                        // Impossible for a consistent comparator; not assumed.
+                        if length_a == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                    }
+                    self.work[dest] = self.work[cursor_b];
+                    dest += 1;
+                    cursor_b += 1;
+                    length_b -= 1;
+                    if length_b == 0 {
+                        break 'merge Exit::Succeed;
+                    }
+
+                    let key = self.temp[cursor_temp];
+                    wins_b = self.gallop_left(false, key, cursor_b, length_b, 0);
+                    if wins_b > 0 {
+                        self.work.copy_within(cursor_b..cursor_b + wins_b, dest);
+                        dest += wins_b;
+                        cursor_b += wins_b;
+                        length_b -= wins_b;
+                        if length_b == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                    }
+                    self.work[dest] = self.temp[cursor_temp];
+                    dest += 1;
+                    cursor_temp += 1;
+                    length_a -= 1;
+                    if length_a == 1 {
+                        break 'merge Exit::CopyB;
+                    }
+                }
+                min_gallop += 1;
+                self.min_gallop = min_gallop;
+            }
+        };
+        match exit {
+            Exit::Succeed => {
+                if length_a > 0 {
+                    self.work[dest..dest + length_a]
+                        .copy_from_slice(&self.temp[cursor_temp..cursor_temp + length_a]);
+                }
+            }
+            Exit::CopyB => {
+                // The last element of run A belongs at the end of the merge.
+                self.work.copy_within(cursor_b..cursor_b + length_b, dest);
+                self.work[dest + length_b] = self.temp[cursor_temp];
+            }
+        }
+    }
+
+    /// `MergeHigh`: run B (the shorter) goes to `temp`, the merge runs
+    /// backward.
+    fn merge_high(&mut self, base_a: usize, length_a: usize, base_b: usize, length_b: usize) {
+        let (mut length_a, mut length_b) = (length_a as isize, length_b as isize);
+        self.temp.clear();
+        self.temp.extend_from_slice(&self.work[base_b..base_b + length_b as usize]);
+        let base_a = base_a as isize;
+        let mut dest = base_b as isize + length_b - 1;
+        let mut cursor_temp = length_b - 1;
+        let mut cursor_a = base_a + length_a - 1;
+        let w = |i: isize| i as usize;
+        self.work[w(dest)] = self.work[w(cursor_a)];
+        dest -= 1;
+        cursor_a -= 1;
+
+        enum Exit {
+            Succeed,
+            CopyA,
+        }
+        let exit = 'merge: {
+            length_a -= 1;
+            if length_a == 0 {
+                break 'merge Exit::Succeed;
+            }
+            if length_b == 1 {
+                break 'merge Exit::CopyA;
+            }
+            let mut min_gallop = self.min_gallop;
+            loop {
+                let mut wins_a: isize = 0;
+                let mut wins_b: isize = 0;
+                loop {
+                    let order = self.cmp(self.temp[w(cursor_temp)], self.work[w(cursor_a)]);
+                    if order < 0.0 {
+                        self.work[w(dest)] = self.work[w(cursor_a)];
+                        dest -= 1;
+                        cursor_a -= 1;
+                        wins_a += 1;
+                        length_a -= 1;
+                        wins_b = 0;
+                        if length_a == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                        if wins_a >= min_gallop as isize {
+                            break;
+                        }
+                    } else {
+                        self.work[w(dest)] = self.temp[w(cursor_temp)];
+                        dest -= 1;
+                        cursor_temp -= 1;
+                        wins_b += 1;
+                        length_b -= 1;
+                        wins_a = 0;
+                        if length_b == 1 {
+                            break 'merge Exit::CopyA;
+                        }
+                        if wins_b >= min_gallop as isize {
+                            break;
+                        }
+                    }
+                }
+                min_gallop += 1;
+                let mut first = true;
+                while wins_a >= MIN_GALLOP as isize || wins_b >= MIN_GALLOP as isize || first {
+                    first = false;
+                    min_gallop = min_gallop.saturating_sub(1).max(1);
+                    self.min_gallop = min_gallop;
+                    let key = self.temp[w(cursor_temp)];
+                    let k = self.gallop_right(false, key, w(base_a), w(length_a), w(length_a - 1))
+                        as isize;
+                    wins_a = length_a - k;
+                    if wins_a > 0 {
+                        dest -= wins_a;
+                        cursor_a -= wins_a;
+                        self.work
+                            .copy_within(w(cursor_a + 1)..w(cursor_a + 1 + wins_a), w(dest + 1));
+                        length_a -= wins_a;
+                        if length_a == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                    }
+                    self.work[w(dest)] = self.temp[w(cursor_temp)];
+                    dest -= 1;
+                    cursor_temp -= 1;
+                    length_b -= 1;
+                    if length_b == 1 {
+                        break 'merge Exit::CopyA;
+                    }
+
+                    let key = self.work[w(cursor_a)];
+                    let k = self.gallop_left(true, key, 0, w(length_b), w(length_b - 1)) as isize;
+                    wins_b = length_b - k;
+                    if wins_b > 0 {
+                        dest -= wins_b;
+                        cursor_temp -= wins_b;
+                        let from = w(cursor_temp + 1);
+                        let to = w(dest + 1);
+                        let n = w(wins_b);
+                        self.work[to..to + n].copy_from_slice(&self.temp[from..from + n]);
+                        length_b -= wins_b;
+                        if length_b == 1 {
+                            break 'merge Exit::CopyA;
+                        }
+                        // Impossible for a consistent comparator; not assumed.
+                        if length_b == 0 {
+                            break 'merge Exit::Succeed;
+                        }
+                    }
+                    self.work[w(dest)] = self.work[w(cursor_a)];
+                    dest -= 1;
+                    cursor_a -= 1;
+                    length_a -= 1;
+                    if length_a == 0 {
+                        break 'merge Exit::Succeed;
+                    }
+                }
+                min_gallop += 1;
+                self.min_gallop = min_gallop;
+            }
+        };
+        match exit {
+            Exit::Succeed => {
+                if length_b > 0 {
+                    let to = w(dest - (length_b - 1));
+                    let n = w(length_b);
+                    self.work[to..to + n].copy_from_slice(&self.temp[..n]);
+                }
+            }
+            Exit::CopyA => {
+                // The first element of run B belongs at the front of the merge.
+                dest -= length_a;
+                cursor_a -= length_a;
+                self.work.copy_within(w(cursor_a + 1)..w(cursor_a + 1 + length_a), w(dest + 1));
+                self.work[w(dest)] = self.temp[w(cursor_temp)];
+            }
+        }
+    }
+}
+
+/// `ComputeMinRunLength(n)`.
+fn min_run_length(mut n: usize) -> usize {
+    let mut r = 0;
+    while n >= 64 {
+        r |= n & 1;
+        n >>= 1;
+    }
+    n + r
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

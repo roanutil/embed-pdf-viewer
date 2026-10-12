@@ -215,12 +215,11 @@ pub fn hit_test(
                     None => geom_handles(&geometry),
                 };
                 if distance.is_some() {
-                    // The closest visible handle wins; a stable sort keeps
-                    // declaration order on ties, as V8's does.
+                    // The closest visible handle wins; V8's stable sort keeps
+                    // declaration order on ties, and places a NaN distance
+                    // where V8 does.
                     let d = |at: Point| js::hypot(at.x - p.x, at.y - p.y);
-                    handles.sort_by(|l, r| {
-                        d(l.at).partial_cmp(&d(r.at)).unwrap_or(std::cmp::Ordering::Equal)
-                    });
+                    js::sort_by(&mut handles, |l, r| d(l.at) - d(r.at));
                 }
                 if let Some(layout) = hit_layout(a, &geometry, stroke_width)
                     && distance_caption_hit(

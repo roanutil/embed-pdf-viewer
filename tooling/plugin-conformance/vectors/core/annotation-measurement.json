@@ -56734,6 +56734,59 @@
       }
     },
     {
+      "name": "automaticShapeCaptionCenter/closed-nan-crossing",
+      "fn": "automaticShapeCaptionCenter",
+      "args": [
+        [
+          {
+            "x": 28,
+            "y": 52
+          },
+          {
+            "x": 96,
+            "y": 40
+          },
+          {
+            "x": 32,
+            "y": 88
+          },
+          {
+            "x": 32,
+            "y": 88
+          },
+          {
+            "x": 44,
+            "y": 8
+          },
+          {
+            "x": 32,
+            "y": 52
+          },
+          {
+            "x": 52,
+            "y": 96
+          },
+          {
+            "x": {
+              "$number": "Infinity"
+            },
+            "y": 48
+          },
+          {
+            "x": 76,
+            "y": 72
+          }
+        ],
+        true
+      ],
+      "outcome": {
+        "returned": {
+          "x": 58.7,
+          "y": 52
+        }
+      }
+    },
+    {
       "name": "automaticShapeCaptionCenter/open-later-segment",
       "fn": "automaticShapeCaptionCenter",
       "args": [
