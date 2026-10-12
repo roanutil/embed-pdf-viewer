@@ -18,14 +18,31 @@ use crate::{CancelToken, KernelPost, ViewerError};
 
 thread_local! {
     static SLAB: RefCell<HashMap<u64, Box<dyn Any>>> = RefCell::new(HashMap::new());
+    static AT_TEARDOWN: RefCell<Vec<Box<dyn FnOnce()>>> = const { RefCell::new(Vec::new()) };
 }
-/// Empty this thread's slab and drop what it held: the kernel thread's last
-/// step, while its thread locals (the runtime, the host table) are alive.
-/// Left to thread-local teardown, a capability a foreign handle still holds
-/// would drop after the locals its drop reaches, and abort the process.
+/// Run the teardown hooks, then empty this thread's slab and drop what it
+/// held: the kernel thread's last step, while its thread locals (the
+/// runtime, the host table) are alive. Left to thread-local teardown, a
+/// capability a foreign handle still holds would drop after the locals its
+/// drop reaches, and abort the process.
 pub(crate) fn drop_all() {
+    loop {
+        let hooks = AT_TEARDOWN.with(|h| std::mem::take(&mut *h.borrow_mut()));
+        if hooks.is_empty() {
+            break;
+        }
+        hooks.into_iter().for_each(|hook| hook());
+    }
     let held = SLAB.with(|s| std::mem::take(&mut *s.borrow_mut()));
     drop(held);
+}
+
+/// On the kernel thread: run `hook` when the thread tears down, just before
+/// the slab empties. For a crate that keeps its own kernel-thread locals
+/// (the manual bridge's abort table): what they hold must drop here, not in
+/// thread-local teardown, for the reason `drop_all` gives.
+pub fn at_teardown(hook: impl FnOnce() + 'static) {
+    AT_TEARDOWN.with(|h| h.borrow_mut().push(Box::new(hook)));
 }
 
 static NEXT: AtomicU64 = AtomicU64::new(1);

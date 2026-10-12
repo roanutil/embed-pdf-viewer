@@ -14,7 +14,7 @@ use epdf_plugin_render::ffi::{
     PixelSource, RenderPageOptions, RenderPixelFormat, start_render_page,
 };
 
-use crate::{Call, Completion, EpdfComplete, arg, registry};
+use crate::{Call, Completion, EpdfComplete, arg, live, registry};
 
 /// Four bytes a pixel in memory order red, green, blue, alpha, straight
 /// (not premultiplied) alpha: the uniffi bridge's `RenderPixelFormat::Rgba8`.
@@ -96,7 +96,8 @@ pub unsafe extern "C" fn epdf_render_free(render: *mut EpdfRender) {
 /// caller frees.
 ///
 /// # Safety
-/// `render` is live; `done` is called once with `ctx`.
+/// `render` is live or null (which answers `invalid-input`); `done` is
+/// called once with `ctx`.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn epdf_render_page(
     render: *mut EpdfRender,
@@ -106,7 +107,13 @@ pub unsafe extern "C" fn epdf_render_page(
     done: EpdfComplete,
 ) -> u64 {
     let completion = Completion::new(ctx, done);
-    let render = unsafe { &*render };
+    let render = match live(render, "the render handle") {
+        Ok(render) => render,
+        Err(error) => {
+            completion.fail(error);
+            return 0;
+        }
+    };
     let call = Call::begin(&render.post);
     let id = call.id();
     render.bound.fire(move |b| {

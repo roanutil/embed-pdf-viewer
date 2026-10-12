@@ -17,7 +17,7 @@ pub mod registry;
 pub mod render;
 pub mod search;
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ffi::{CString, c_char, c_void};
 use std::rc::Rc;
@@ -160,6 +160,18 @@ pub(crate) fn arg(s: *const c_char, what: &str) -> Result<String, EpdfError> {
     unsafe { std::ffi::CStr::from_ptr(s) }.to_str().map(String::from).map_err(|_| invalid())
 }
 
+/// A live handle, or `invalid-input` for a null one. A null is the one bad
+/// handle this can catch; a freed or foreign pointer is still undefined.
+pub(crate) fn live<'a, T>(handle: *const T, what: &str) -> Result<&'a T, EpdfError> {
+    if handle.is_null() {
+        return Err(EpdfError::from(
+            Error::named("TypeError", format!("[manual-bridge] {what} is null"))
+                .with("code", "invalid-input"),
+        ));
+    }
+    Ok(unsafe { &*handle })
+}
+
 // ── cancellable calls ─────────────────────────────────────────────────────────
 //
 // A promise-returning export answers a call id. The id maps to the kernel
@@ -175,6 +187,22 @@ fn posts() -> &'static Mutex<HashMap<u64, KernelPost>> {
 
 thread_local! {
     static ABORTS: RefCell<HashMap<u64, Rc<dyn Fn()>>> = RefCell::new(HashMap::new());
+    /// Whether this thread's teardown already drains `ABORTS`.
+    static DRAINED_AT_TEARDOWN: Cell<bool> = const { Cell::new(false) };
+}
+
+/// On the kernel thread: park an abort. The first one also asks the kernel
+/// thread to empty the table at teardown, while the thread locals a parked
+/// promise reaches are alive; left to thread-local teardown, what it holds
+/// would drop after them.
+fn park_abort(id: u64, abort: Rc<dyn Fn()>) {
+    if !DRAINED_AT_TEARDOWN.replace(true) {
+        epdf_ffi::at_teardown(|| {
+            let parked = ABORTS.with(|a| std::mem::take(&mut *a.borrow_mut()));
+            drop(parked);
+        });
+    }
+    ABORTS.with(|a| a.borrow_mut().insert(id, abort));
 }
 
 static NEXT_CALL: AtomicU64 = AtomicU64::new(1);
@@ -202,7 +230,7 @@ impl Call {
     ) {
         let id = self.0;
         let parked = promise.clone();
-        ABORTS.with(|a| a.borrow_mut().insert(id, Rc::new(move || parked.abort(None))));
+        park_abort(id, Rc::new(move || parked.abort(None)));
         promise.on_settle(move |result| {
             let _ = ABORTS.try_with(|a| a.borrow_mut().remove(&id));
             drop(self);
@@ -228,5 +256,56 @@ pub extern "C" fn epdf_cancel(call_id: u64) {
                 abort();
             }
         }));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    use epdf_ffi::KernelThread;
+    use futures::executor::block_on;
+
+    use super::*;
+
+    thread_local! {
+        static GUARD: Guard = const { Guard };
+    }
+    struct Guard;
+    impl Drop for Guard {
+        fn drop(&mut self) {}
+    }
+
+    /// Held by a parked promise's abort; reports whether `GUARD`, a thread
+    /// local first touched after `ABORTS`, was still alive when it dropped.
+    struct Witness(mpsc::Sender<bool>);
+    impl Drop for Witness {
+        fn drop(&mut self) {
+            let _ = self.0.send(GUARD.try_with(|_| ()).is_ok());
+        }
+    }
+
+    #[test]
+    fn a_parked_call_is_dropped_before_thread_local_teardown() {
+        let (tx, dropped) = mpsc::channel();
+        let mut thread = KernelThread::spawn(|_| Ok(())).unwrap();
+        let post = thread.post();
+        block_on(thread.call(move |_| {
+            // Its resolver is gone, so it never settles, but its abort
+            // stays, and the parked call keeps the promise.
+            let witness = Witness(tx);
+            let (promise, resolver) = Promise::<()>::pending();
+            let promise = promise.with_abort(move |_| {
+                let _ = &witness;
+            });
+            drop(resolver);
+            Call::begin(&post).settle(promise, |_| {});
+            GUARD.with(|_| ());
+        }))
+        .unwrap();
+        thread.shutdown();
+        let alive = dropped.recv_timeout(Duration::from_secs(2)).expect("never dropped");
+        assert!(alive, "the parked call was dropped during thread-local teardown");
     }
 }

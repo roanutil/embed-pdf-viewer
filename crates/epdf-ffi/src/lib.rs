@@ -10,7 +10,7 @@ pub mod kernel_thread;
 pub mod status;
 pub mod subscription;
 
-pub use bound::{KernelBound, PromiseSlot};
+pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};

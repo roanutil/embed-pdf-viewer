@@ -8,6 +8,7 @@ use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
 use serde_json::{Value, json};
+use std::collections::HashSet;
 
 use crate::contract::{CreateFieldInput, CreatedField};
 use crate::controller::{FormCapability, key_of};
@@ -41,20 +42,15 @@ impl FormCapability {
     /// snapshot.
     fn auto_name(&self, family: &str) -> String {
         let model = self.model();
-        let names: Vec<&str> = model
+        let names = model
             .snapshot
             .as_ref()
             .and_then(|s| get(s, "fields"))
             .and_then(Value::as_array)
             .into_iter()
             .flatten()
-            .filter_map(|f| str_of(f, "name"))
-            .collect();
-        let mut n = 1u64;
-        while names.contains(&format!("{family}_{n}").as_str()) {
-            n += 1;
-        }
-        format!("{family}_{n}")
+            .filter_map(|f| str_of(f, "name"));
+        next_auto_name(family, names)
     }
 
     async fn place_field(&self, input: CreateFieldInput) -> Result<CreatedField, Error> {
@@ -228,5 +224,42 @@ impl FormCapability {
     /// field.
     pub fn attach_widget(&self, field_ref: Value, widget: Value) -> Promise<()> {
         self.relink_widget("forms.attachWidget", field_ref, widget)
+    }
+}
+
+/// The first `{family}_{n}`, from `n = 1`, that is not in `names`: the
+/// TypeScript's `Set` and `has` loop, linear in the field count.
+fn next_auto_name<'a>(family: &str, names: impl Iterator<Item = &'a str>) -> String {
+    let names: HashSet<&str> = names.collect();
+    let mut n = 1u64;
+    let mut name = format!("{family}_{n}");
+    while names.contains(name.as_str()) {
+        n += 1;
+        name = format!("{family}_{n}");
+    }
+    name
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_name_takes_the_first_free_number() {
+        let names = ["text_1", "text_3", "check_2", "text_2x"];
+        assert_eq!(next_auto_name("text", names.into_iter()), "text_2");
+        assert_eq!(next_auto_name("check", names.into_iter()), "check_1");
+        assert_eq!(next_auto_name("radio", std::iter::empty()), "radio_1");
+    }
+
+    #[test]
+    fn auto_name_is_linear_in_the_field_count() {
+        // 50,000 taken names in a row: the old `Vec::contains` loop made
+        // 1.25 billion string comparisons here, about 7 s in a debug build.
+        let names: Vec<String> = (1..=50_000).map(|n| format!("text_{n}")).collect();
+        let started = std::time::Instant::now();
+        let name = next_auto_name("text", names.iter().map(String::as_str));
+        assert_eq!(name, "text_50001");
+        assert!(started.elapsed() < std::time::Duration::from_secs(2), "{:?}", started.elapsed());
     }
 }

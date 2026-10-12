@@ -272,6 +272,8 @@ const keys = {
   corpus: storedKey('corpus') ?? corpusKey,
   // A 3072-bit key: its modulus is not a power of two bytes long, which pkijs's JWK import rounds.
   rsa3072: storedKey('rsa3072') ?? (await generate('rsa', 3072)),
+  // An 8192-bit key: past the 4096 bits RustCrypto's `rsa` imports by default, within WebCrypto's 16384.
+  rsa8192: storedKey('rsa8192') ?? (await generate('rsa', 8192)),
 };
 
 const rootName = 'Conformance Root CA';
@@ -506,6 +508,11 @@ cms.rsaPkcs7 = await build(rawSigner(keys.leaf, chain, 'RSA-PKCS1-v1_5', 'sha256
 cms.rsaPkcs7NoTime = await build(rawSigner(keys.leaf, chain, 'RSA-PKCS1-v1_5', 'sha256'), 'pkcs7');
 cms.rsaSha384 = await build(rawSigner(keys.leaf, chain, 'RSA-PKCS1-v1_5', 'sha384'), 'cades-b');
 cms.rsaSha512 = await build(rawSigner(keys.leaf, chain, 'RSA-PKCS1-v1_5', 'sha512'), 'cades-b');
+certs.leaf8192 = await certificate({
+  subject: 'Conformance 8192-bit Signer', issuer: interIssuer, key: keys.rsa8192, serial: 501, ...VALID, keyUsage: [0xc0, 6], ski: true, aki: true,
+});
+cms.rsa8192 = await build(rawSigner(keys.rsa8192, [certs.leaf8192, certs.inter], 'RSA-PKCS1-v1_5', 'sha256'), 'cades-b');
+cms.pss8192 = await build(rawSigner(keys.rsa8192, [certs.leaf8192, certs.inter], 'RSA-PSS', 'sha256'), 'cades-b');
 for (const hash of ['sha256', 'sha384', 'sha512'] as const) {
   cms[`pss${hash}`] = await build(rawSigner(keys.leaf, chain, 'RSA-PSS', hash), 'cades-b');
 }

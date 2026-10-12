@@ -15,7 +15,7 @@ use crate::contract::{
 use crate::controller::{FormCapability, key_of};
 use crate::core::model::Msg;
 use crate::promise::{adopt, await_engine};
-use crate::value::get;
+use crate::value::{get, js_key_order};
 
 fn not_ready() -> Error {
     plugin_error(code::NOT_READY, "form", "no document", None, None)
@@ -198,10 +198,14 @@ impl FormCapability {
     }
 
     /// `importValues(values)`: set values from an object keyed by fully
-    /// qualified name; a failure is reported by its name.
+    /// qualified name, in `Object.keys` order; a failure is reported by its
+    /// name.
     pub fn import_values(&self, values: Map<String, Value>) -> Promise<BatchResult> {
         self.write_batch(
-            values.into_iter().map(|(name, value)| (json!(name), fqn(&name), value)).collect(),
+            js_key_order(values)
+                .into_iter()
+                .map(|(name, value)| (json!(name), fqn(&name), value))
+                .collect(),
         )
     }
 }

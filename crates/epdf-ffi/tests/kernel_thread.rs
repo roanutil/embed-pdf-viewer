@@ -194,3 +194,37 @@ fn a_task_that_panics_in_a_later_poll_tears_the_thread_down_cleanly() {
         });
     });
 }
+
+/// Posts again from its Drop, and reports what that post answered.
+struct PostsOnDrop(epdf_ffi::KernelPost, mpsc::Sender<bool>);
+impl Drop for PostsOnDrop {
+    fn drop(&mut self) {
+        let _ = self.1.send((self.0)(Box::new(|| {})));
+    }
+}
+
+#[test]
+fn a_refused_job_that_posts_from_its_drop_does_not_relock_the_sender() {
+    // A panicking job ends the loop and drops the receiver, but leaves the
+    // sender in place, so the next post's send fails and drops the job.
+    let (dropped_tx, dropped) = mpsc::channel();
+    let thread = KernelThread::spawn(|_| Ok(())).unwrap();
+    let post = thread.post();
+    let bound = bind(&thread, dropped_tx);
+    post(Box::new(|| panic!("a kernel job panicked")));
+    dropped.recv_timeout(Duration::from_secs(2)).expect("never torn down");
+    // Both drops take the sender's lock: if a post below leaves it stuck,
+    // they would hang the test instead of failing it.
+    std::mem::forget(bound);
+    std::mem::forget(thread);
+    let (answer_tx, answer) = mpsc::channel();
+    let (done_tx, done) = mpsc::channel();
+    std::thread::spawn(move || {
+        let inner = PostsOnDrop(post.clone(), answer_tx);
+        let accepted = post(Box::new(move || drop(inner)));
+        let _ = done_tx.send(accepted);
+    });
+    let accepted = done.recv_timeout(Duration::from_secs(2)).expect("the post deadlocked");
+    assert!(!accepted);
+    assert_eq!(answer.recv_timeout(Duration::from_secs(2)), Ok(false));
+}

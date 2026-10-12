@@ -111,7 +111,8 @@ impl FormCapability {
     }
 
     /// `exportValues()`: values keyed by fully qualified name, valueless and
-    /// unsupported entries omitted.
+    /// unsupported entries omitted, in the key order the TypeScript's object
+    /// iterates.
     pub fn export_values(&self) -> Map<String, Value> {
         let mut out = Map::new();
         let model = self.model();
@@ -120,6 +121,6 @@ impl FormCapability {
                 out.insert(crate::value::string_of(get(field, "name")), value);
             }
         }
-        out
+        crate::value::js_key_order(out).into_iter().collect()
     }
 }

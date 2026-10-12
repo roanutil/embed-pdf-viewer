@@ -421,7 +421,7 @@ const prepared = (over: Record<string, unknown> = {}) => ({
 // ── verify ───────────────────────────────────────────────────────────────────
 
 const verifyNames = [
-  'rsaCades', 'rsaPkcs7', 'rsaSha384', 'rsaSha512', 'psssha256', 'psssha384', 'psssha512',
+  'rsaCades', 'rsaPkcs7', 'rsaSha384', 'rsaSha512', 'psssha256', 'psssha384', 'psssha512', 'rsa8192', 'pss8192',
   'ecP256', 'ecP384', 'ecP521', 'ecP256Sha512', 'pdfCertified', 'pdfApproval', 'pdfCompat', 'skiSid', 'withTimestamp',
   'unknownSignatureAlgorithm', 'sha1Digest', 'rsaCadesTampered', 'ecP256Tampered', 'ecP256GarbageSignature',
   'ecP256NotSequence', 'rsaShortSignature', 'essMismatch', 'essExplicitSha256', 'essSha1', 'essNoHash',
