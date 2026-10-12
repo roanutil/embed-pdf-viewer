@@ -23,6 +23,7 @@ for (const t of ['wasm32-unknown-emscripten', 'wasm32-unknown-unknown']) {
   if (!targets.split('\n').includes(t)) failures.push(`rustup target ${t}: missing (rustup target add ${t})`);
 }
 need('wasm-bindgen', run('wasm-bindgen', ['--version']), '0.2.127');
+need('wasm-opt', run('wasm-opt', ['--version']), 'version 133');
 if (run('git', ['--version']) === null) failures.push('git: not found');
 
 if (process.platform === 'darwin') {

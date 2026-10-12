@@ -7,7 +7,7 @@ implement.
 
 ```sh
 pnpm --filter @embedpdf/tooling-plugin-conformance run vectors          # write
-pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check    # fail if stale
+pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check    # fail if stale, orphaned or unreplayed
 pnpm --filter @embedpdf/tooling-plugin-conformance run coverage         # write vectors/coverage.json
 pnpm --filter @embedpdf/tooling-plugin-conformance run coverage:check
 cargo test -p plugin-conformance                                        # replay the kernel
@@ -22,6 +22,12 @@ plugin's generator is one new file there. A suite writes one vector file:
 ```json
 { "schemaVersion": 1, "kind": "scenario" | "function", "describes": "...", "cases": [...] }
 ```
+
+`vectors:check` also fails on a file under `vectors/` that no suite writes, which is what a deleted
+or renamed suite leaves behind, and on a file no Rust test replays. It reads the second from the
+source: some `.rs` file under `crates/` must hold the path as a string literal
+(`"plugins/actions.json"`), as every `assert_suite` call does. A literal in a test that never runs
+would still pass.
 
 A function case is `{name, fn, args, outcome}`: a pure function called with canonical arguments.
 The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use this family for
@@ -105,8 +111,10 @@ answer per call and repeats the last. An interaction handler, a listener, an ope
   `PermissionDenied.required` are compared. Messages are compared exactly.
 - A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
   in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
-- Member order is not compared; array order is. Numbers compare as `f64` within one part in 10^12,
-  which absorbs a last-bit difference in a transcendental and nothing a coordinate could carry.
+- Member order is not compared; array order is. Numbers compare as `f64`. Two integers below 2^53
+  in magnitude compare exactly, so an epoch in milliseconds off by one fails. Any other pair
+  compares within one part in 10^12, which absorbs a last-bit difference in a transcendental and
+  nothing a coordinate could carry.
 
 A Rust capability printed as an outcome lists its members in the order the TypeScript object
 literal defines them (`HarnessPlugin::members`), because that order numbers the refs.

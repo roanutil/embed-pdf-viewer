@@ -11,6 +11,10 @@ work against.
 - `wasm-bindgen-cli` 0.2.127 exactly, on `PATH`. `crates/epdf-web/Cargo.toml` pins
   `wasm-bindgen =0.2.127`; a different CLI version fails at build time with a version-mismatch
   error. Install with `cargo install wasm-bindgen-cli --version 0.2.127`.
+- `wasm-opt` from binaryen 133, on `PATH`. `crates/epdf-web/scripts/build.sh` runs it on
+  wasm-bindgen's output and stops before the cargo build if it is missing. Install with
+  `brew install binaryen`, or take the `version_133` release from
+  https://github.com/WebAssembly/binaryen/releases.
 - The `wasm32-unknown-unknown` Rust target. `rust-toolchain.toml` lists it already, so `rustup`
   installs it on the first `cargo` command anywhere in the repo.
 - The PDFium runtime artifacts under `packages/engine/runtime/dist/` and

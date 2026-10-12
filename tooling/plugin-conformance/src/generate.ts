@@ -1,6 +1,6 @@
 /**
  * Writes every vector file under `vectors/`, or with `--check` fails if any
- * would change.
+ * would change, if a file there has no suite, or if no Rust source names it.
  *
  *   pnpm --filter @embedpdf/tooling-plugin-conformance run vectors
  *   pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check

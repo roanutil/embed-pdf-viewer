@@ -4,6 +4,13 @@
 # directories are build output and gitignored.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../../.." && pwd)"
+# Checked before the cargo build, which takes minutes and would otherwise
+# end in a half-written wasm/ when wasm-opt turns out to be missing.
+if ! command -v wasm-opt >/dev/null 2>&1; then
+  echo "build.sh: wasm-opt not found on PATH. It comes from binaryen (version 133):" >&2
+  echo "  brew install binaryen, or https://github.com/WebAssembly/binaryen/releases/tag/version_133" >&2
+  exit 1
+fi
 cargo build -p epdf-web --release --target wasm32-unknown-unknown -j 4 --manifest-path "$root/Cargo.toml"
 wasm="$root/target/wasm32-unknown-unknown/release/epdf_web.wasm"
 wasm-bindgen --target web --out-dir "$root/packages/core-wasm/wasm" "$wasm"

@@ -1,18 +1,35 @@
 //! Comparing canonical JSON (`tooling/plugin-conformance/src/canonical.ts`).
 //!
 //! Object member order is not compared; array order is. Numbers compare as
-//! `f64`, with a relative tolerance of one part in 10^12. The tolerance is
+//! `f64`. Two integers below 2^53 in magnitude compare exactly. Anything else
+//! compares with a relative tolerance of one part in 10^12. The tolerance is
 //! there for transcendental functions: V8's `Math.sin` and the platform libm
 //! may differ in the last bit, and that is not a difference in behaviour. It
-//! is far below anything a coordinate, a zoom or a count could carry.
+//! is far below anything a coordinate or a zoom could carry, but not below an
+//! epoch in milliseconds (about 2.5e12 scales it to 2.5 ms), which is why
+//! integers are exempt: a timestamp off by one millisecond is a real
+//! difference.
 
 use serde_json::Value;
 
 pub const RELATIVE_TOLERANCE: f64 = 1e-12;
 
+/// 2^53: every integer below this in magnitude is exact in an `f64`, as in
+/// JavaScript's `Number.isSafeInteger`.
+const SAFE_INTEGER_BOUND: f64 = 9_007_199_254_740_992.0;
+
+fn is_safe_integer(x: f64) -> bool {
+    x.fract() == 0.0 && x.abs() < SAFE_INTEGER_BOUND
+}
+
 pub fn numbers_equal(a: f64, b: f64) -> bool {
     if a == b {
         return true;
+    }
+    // Counts, ids and epoch milliseconds: no rounding can make two of these
+    // differ, so any difference is behaviour.
+    if is_safe_integer(a) && is_safe_integer(b) {
+        return false;
     }
     let scale = a.abs().max(b.abs()).max(1.0);
     (a - b).abs() <= RELATIVE_TOLERANCE * scale
@@ -108,4 +125,27 @@ pub fn key(value: &Value) -> String {
         }
     }
     norm(value).to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::numbers_equal;
+
+    #[test]
+    fn integers_below_2_pow_53_compare_exactly() {
+        // An epoch in milliseconds off by 2 ms used to pass the relative
+        // tolerance (2.5e12 * 1e-12 = 2.5).
+        assert!(!numbers_equal(2_559_009_906_002.0, 2_559_009_906_000.0));
+        assert!(!numbers_equal(1_700_000_000_001.0, 1_700_000_000_000.0));
+        assert!(numbers_equal(2_559_009_906_000.0, 2_559_009_906_000.0));
+        assert!(!numbers_equal(-3.0, 3.0));
+    }
+
+    #[test]
+    fn fractions_keep_the_relative_tolerance() {
+        let x = 0.1_f64.sin();
+        assert!(numbers_equal(x, f64::from_bits(x.to_bits() + 1)));
+        assert!(numbers_equal(1.0, 1.0 + f64::EPSILON));
+        assert!(!numbers_equal(1.0, 1.000_000_001));
+    }
 }
