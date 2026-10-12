@@ -29,6 +29,13 @@ source: some `.rs` file under `crates/` must hold the path as a string literal
 (`"plugins/actions.json"`), as every `assert_suite` call does. A literal in a test that never runs
 would still pass.
 
+`vectors/environment.json` records the ICU and Unicode versions of the Node that wrote the vectors
+(`process.versions.icu`). ICU decides `Intl.PluralRules` (i18n plurals) and `localeCompare` (render
+tiles, sorting), so another Node can write other vectors from the same TypeScript. A full write
+updates the file and says when the version changed. `vectors:check` compares it with the running
+Node: when every file still matches it only warns, and when some file is stale it says the ICU
+differs, so a stale plural is not mistaken for a TypeScript change.
+
 A function case is `{name, fn, args, outcome}`: a pure function called with canonical arguments.
 The Rust side looks `fn` up in the table its test passes to `assert_suite`. Use this family for
 everything that has no lifecycle: geometry, reducers called directly, tile planning, layout. It is
