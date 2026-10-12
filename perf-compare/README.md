@@ -86,9 +86,9 @@ A run on the machine you're working on picks up whatever else it's doing. To tim
 instead, set `PERF_REMOTE`:
 
 ```sh
-PERF_REMOTE=andrew@2023mbp16grey.local pnpm compare -- --rounds 10 --profile desktop
+PERF_REMOTE=user@remote-host pnpm compare -- --rounds 10 --profile desktop
 # or, with the entries already built:
-PERF_REMOTE=andrew@2023mbp16grey.local node scripts/remote.mjs --quick --arms main,main-aa,plugins
+PERF_REMOTE=user@remote-host node scripts/remote.mjs --quick --arms main,main-aa,plugins
 ```
 
 Builds stay local. `scripts/remote.mjs` copies the harness, its `node_modules`, the fixtures, the

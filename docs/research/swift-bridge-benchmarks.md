@@ -232,16 +232,15 @@ For the perf Mac, build locally and ship the built package, rather than fetching
 ```bash
 bash platforms/apple/build-xcframework.sh --experimental-manual-bridge
 rsync -a --delete platforms/apple/EmbedPDF/ \
-  andrew@2023mbp16grey.local:~/bench/EmbedPDF/
-ssh andrew@2023mbp16grey.local 'cd ~/bench/EmbedPDF \
+  user@remote-host:~/bench/EmbedPDF/
+ssh user@remote-host 'cd ~/bench/EmbedPDF \
   && EMBEDPDF_EXPERIMENTAL_BRIDGE=1 xcodebuild test -scheme EmbedPDF-Package \
        -configuration Release -destination "platform=iOS Simulator,name=iPhone 17" \
        -only-testing:EmbedPDFBridgeBenchmarks 2>&1 | grep "^BENCH "' > bench-simulator.jsonl
 ```
 
 The rsync carries the XCFramework, the generated `EmbedPDFBindings` sources and the fixtures, all of
-which are ignored by git. Off the home network, the same machine is
-`andrew@2023mbp16grey.squeaker-algol.ts.net` over Tailscale.
+which are ignored by git. Off the home network, reach the same machine by its Tailscale name.
 
 ## Appendix: run 2's raw output
 
