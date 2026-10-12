@@ -1,10 +1,11 @@
 /**
  * The shim's `Kernel` lifecycle against the TS kernel's contract
  * (`packages/core/main/src/kernel.ts`), over the real `WasmKernel` and an
- * engine that is never asked for anything: no document opens here, so
- * these run without the PDFium runtime.
+ * engine that is never asked for anything: no document gets as far as the
+ * engine here, so these run without the PDFium runtime.
  */
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
+import { isPluginError, PluginError } from '@embedpdf/core';
 import type { CapabilityToken, Engine, Kernel } from '@embedpdf/core';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
@@ -224,5 +225,59 @@ describe('functions the kernel never calls', () => {
       ),
     ).resolves.toEqual({ status: 'executed' });
     off();
+  });
+});
+
+describe('a kernel being destroyed', () => {
+  test('answers tryCapability with null and refuses capability while destroying', async () => {
+    const k = build();
+    await k.start();
+    expect(k.tryCapability(CommandsToken)).not.toBe(null);
+    // A document still opening, so destroy has a session to close, and a
+    // `closed` listener that runs while it does.
+    const opening = k.documents.open(() => new Promise<never>(() => {}));
+    opening.catch(() => {});
+    const seen: unknown[] = [];
+    k.documents.onClosed(() => {
+      seen.push(k.status(), k.tryCapability(CommandsToken), k.tryCapability(DocumentsToken));
+      try {
+        k.capability(CommandsToken);
+      } catch (error) {
+        seen.push((error as Error).message);
+      }
+    });
+    await k.destroy();
+    expect(seen).toEqual([
+      'destroying',
+      null,
+      null,
+      '[kernel] capability("commands") on a destroying kernel',
+    ]);
+  });
+});
+
+describe('a Rust rejection across the boundary', () => {
+  test("a failed command's rejection is a PluginError, as the TS kernel's is", async () => {
+    const k = build();
+    await k.start();
+    const commands = k.capability(CommandsToken) as {
+      registerCommand(def: object): () => void;
+      execute(id: string): Promise<unknown>;
+    };
+    commands.registerCommand({
+      id: 'probe:boom',
+      labelKey: 'boom',
+      run: () => {
+        throw new Error('boom');
+      },
+    });
+    const error = await commands.execute('probe:boom').then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(PluginError);
+    expect(isPluginError(error)).toBe(true);
+    expect((error as PluginError).capability).toBe('commands');
+    expect((error as Error).message).toBe('boom');
   });
 });
