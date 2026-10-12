@@ -725,7 +725,7 @@ impl SelectionCapability {
             SelectionRangeInput::Range(range) => range,
             SelectionRangeInput::Span { page, start, count } => TextRange {
                 start: TextPosition { page, index: start },
-                end: TextPosition { page, index: start + count },
+                end: TextPosition { page, index: start.saturating_add(count) },
             },
         };
         self.cx().assert_page_ref(range.start.page)?;
@@ -752,7 +752,10 @@ impl SelectionCapability {
         self.recompute(
             SelectionRange {
                 anchor: GlyphPointer { page: range.start.page, glyph: range.start.index.max(0) },
-                focus: GlyphPointer { page: PageRef::new(focus_pon), glyph: end_index - 1 },
+                focus: GlyphPointer {
+                    page: PageRef::new(focus_pon),
+                    glyph: end_index.saturating_sub(1),
+                },
             },
             self.write_trigger(),
         );
