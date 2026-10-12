@@ -2,6 +2,8 @@
 //! id>`; the primary is the annotation whose id is the key. Attached link
 //! children ride the same wire relationship but never count as members.
 
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 
 use crate::flags::annot_transformable;
@@ -43,7 +45,7 @@ pub fn group_key_of(m: &Model, id: &str) -> Option<Id> {
     if let Some(group) = a.group.as_ref().filter(|g| !g.is_empty()) {
         return if is_attached_link(a) { None } else { Some(group.clone()) };
     }
-    for other in &m.order {
+    for other in m.order.iter() {
         let sub = m.by_id.get(other);
         if sub.is_some_and(|s| s.group.as_deref() == Some(id)) && visual_member(sub) {
             return Some(id.to_string());
@@ -61,7 +63,7 @@ pub fn group_members(m: &Model, id: &str) -> Vec<Id> {
     if m.by_id.contains_key(&key) {
         members.push(key.clone());
     }
-    for other in &m.order {
+    for other in m.order.iter() {
         let sub = m.by_id.get(other);
         if *other != key
             && sub.is_some_and(|s| s.group.as_deref() == Some(&key))
@@ -76,9 +78,10 @@ pub fn group_members(m: &Model, id: &str) -> Vec<Id> {
 /// Union of every id's full group, first-seen order.
 pub fn expand_groups(m: &Model, ids: &[Id]) -> Vec<Id> {
     let mut out: Vec<Id> = Vec::new();
+    let mut seen: HashSet<Id> = HashSet::new();
     for id in ids {
         for member in group_members(m, id) {
-            if !out.contains(&member) {
+            if seen.insert(member.clone()) {
                 out.push(member);
             }
         }

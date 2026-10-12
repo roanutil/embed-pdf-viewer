@@ -8,6 +8,7 @@
 //! `epdf_geometry` types.
 
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 use serde::de::{self, MapAccess, Visitor};
 use serde::ser::SerializeMap;
@@ -1264,8 +1265,11 @@ pub struct CreationDraftAnchor {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Model {
-    pub by_id: BTreeMap<Id, Annot>,
-    pub order: Vec<Id>,
+    /// Shared so a step that leaves the annotations alone (every draft
+    /// pointermove) clones a pointer rather than every annotation's JSON,
+    /// as the TypeScript's spread shares the object.
+    pub by_id: Rc<BTreeMap<Id, Annot>>,
+    pub order: Rc<Vec<Id>>,
     pub selected: Vec<Id>,
     pub hovered: Option<Id>,
     pub draft: Option<Draft>,

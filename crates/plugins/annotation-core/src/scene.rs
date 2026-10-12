@@ -41,6 +41,14 @@ fn shape_paint(style: &Style, closed: bool) -> Paint {
 /// reflected `T` segments.
 fn squiggle_path(start: Point, u: Point, n: Point, w: f64, amp: f64) -> String {
     let half = js::max(2.0, amp * 1.5);
+    // One segment per `half` (at least 2) units. A hostile /QuadPoints width
+    // would otherwise grow the string without bound, or past 2^53 never
+    // advance `t`. Every real quad is a few thousand units at most, so the
+    // limit (the same budget as a cloudy border's) never engages there; the
+    // TypeScript has none.
+    if w / half > crate::cloudy::MAX_CLOUDY_CURLS {
+        return String::new();
+    }
     let at = |t: f64, off: f64| Point {
         x: start.x + u.x * t + n.x * off,
         y: start.y + u.y * t + n.y * off,
@@ -317,4 +325,26 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
         nodes.extend(measurement_caption_scene(caption.as_ref(), &item.style));
     }
     nodes
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ORIGIN: Point = Point { x: 0.0, y: 0.0 };
+    const RIGHT: Point = Point { x: 1.0, y: 0.0 };
+    const UP: Point = Point { x: 0.0, y: 1.0 };
+
+    #[test]
+    fn a_normal_squiggle_draws() {
+        let d = squiggle_path(ORIGIN, RIGHT, UP, 600.0, 1.5);
+        assert!(d.starts_with("M 0 0 Q") && d.contains(" T "));
+    }
+
+    #[test]
+    fn an_absurd_squiggle_draws_nothing() {
+        for w in [1e12, 1e17, f64::INFINITY] {
+            assert_eq!(squiggle_path(ORIGIN, RIGHT, UP, w, 1.5), "", "{w}");
+        }
+    }
 }

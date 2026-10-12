@@ -30,7 +30,7 @@ impl AnnotationCapability {
         }
         let m = self.model();
         let mut out: Option<IdSet> = None;
-        for id in &m.order {
+        for id in m.order.iter() {
             let Some(a) = m.by_id.get(id) else { continue };
             if a.page.page_object_number != pon {
                 continue;

@@ -27,6 +27,7 @@ use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::{Controller, Error};
 use epdf_plugin_actions::ACTIONS;
 
+use crate::comments::threads::ThreadsMemo;
 use crate::contract::*;
 use crate::model::{AnnotationAction, AnnotationState};
 use crate::rich_text::FontHandle;
@@ -62,6 +63,8 @@ pub(crate) struct Core {
     pub(crate) viewports: PageViewports,
     pub(crate) hover_feed: Option<AnnotationHoverFeed>,
     pub(crate) uuid_seq: Cell<u64>,
+    // comments/
+    pub(crate) threads_memo: ThreadsMemo,
 }
 
 /// `AnnotationHostCapability`, which includes the public
@@ -106,6 +109,7 @@ pub fn create_annotation_controller(
         viewports: PageViewports::default(),
         hover_feed,
         uuid_seq: Cell::new(0),
+        threads_memo: ThreadsMemo::default(),
     };
     let api = AnnotationCapability(Rc::new(core));
     let weak = Rc::downgrade(&api.0);

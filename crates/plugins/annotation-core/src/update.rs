@@ -4,7 +4,8 @@
 //! store skips its notification for that. [`update`] returns `None` for that
 //! branch: `Some` is a new model even when its contents equal the old one's.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
+use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -71,8 +72,8 @@ pub fn initial_style() -> Style {
 
 pub fn initial_model() -> Model {
     Model {
-        by_id: BTreeMap::new(),
-        order: Vec::new(),
+        by_id: Rc::new(BTreeMap::new()),
+        order: Rc::new(Vec::new()),
         selected: Vec::new(),
         hovered: None,
         draft: None,
@@ -448,9 +449,9 @@ pub fn update(m: &Model, msg: &Msg) -> (Option<Model>, Vec<Effect>) {
     }
 }
 
-fn with_annot(m: &Model, id: &str, a: Annot) -> BTreeMap<Id, Annot> {
+fn with_annot(m: &Model, id: &str, a: Annot) -> Rc<BTreeMap<Id, Annot>> {
     let mut by_id = m.by_id.clone();
-    by_id.insert(id.to_string(), a);
+    Rc::make_mut(&mut by_id).insert(id.to_string(), a);
     by_id
 }
 
@@ -787,7 +788,7 @@ fn edit_up(m: &Model) -> Step {
                 });
                 let next = own_geometry(Annot { geom, measure, ..a.clone() });
                 fx.push(patch_fx(id, &next, &a.geom));
-                by_id.insert(id.clone(), next);
+                Rc::make_mut(&mut by_id).insert(id.clone(), next);
             }
             (Some(Model { by_id, draft: None, ..m.clone() }), fx)
         }
@@ -808,7 +809,7 @@ fn edit_up(m: &Model) -> Step {
                 });
                 let next = own_geometry(Annot { geom, measure, ..a.clone() });
                 fx.push(patch_fx(id, &next, &a.geom));
-                by_id.insert(id.clone(), next);
+                Rc::make_mut(&mut by_id).insert(id.clone(), next);
             }
             (Some(Model { by_id, draft: None, ..m.clone() }), fx)
         }
@@ -832,7 +833,7 @@ fn edit_up(m: &Model) -> Step {
                     ap_box: a.ap_box.map(|r| Rect { x: r.x + delta.x, y: r.y + delta.y, ..r }),
                     ..a
                 };
-                by_id.insert(id.clone(), moved);
+                Rc::make_mut(&mut by_id).insert(id.clone(), moved);
                 fx.push(Effect::Patch {
                     id: id.clone(),
                     scope: PatchScope::Geometry,
@@ -922,7 +923,7 @@ fn fresh_annot(id: Id, page: PageRef, subtype: String, geom: Geom, style: Style)
 fn commit_created(m: &Model, annot: Annot, editing: Option<Id>, clear_preview: bool) -> Step {
     let id = annot.id.clone();
     let mut order = m.order.clone();
-    order.push(id.clone());
+    Rc::make_mut(&mut order).push(id.clone());
     let next = Model {
         seq: m.seq + 1.0,
         by_id: with_annot(m, &id, annot),
@@ -1017,7 +1018,7 @@ fn distance_pointer(
     annot.measure = Some(MeasurementAppearance::Distance(appearance));
     annot.flags = drawn_flags(flags.as_ref());
     let mut order = m.order.clone();
-    order.push(id.clone());
+    Rc::make_mut(&mut order).push(id.clone());
     let next = Model {
         seq: m.seq + 1.0,
         by_id: with_annot(m, &id, annot),
@@ -1658,11 +1659,11 @@ fn create_replace_text(
     strikeout.irt = Some(primary_id.clone());
     strikeout.group = Some(primary_id.clone());
     let mut by_id = m.by_id.clone();
-    by_id.insert(primary_id.clone(), caret);
-    by_id.insert(strikeout_id.clone(), strikeout);
+    Rc::make_mut(&mut by_id).insert(primary_id.clone(), caret);
+    Rc::make_mut(&mut by_id).insert(strikeout_id.clone(), strikeout);
     let mut order = m.order.clone();
-    order.push(primary_id.clone());
-    order.push(strikeout_id.clone());
+    Rc::make_mut(&mut order).push(primary_id.clone());
+    Rc::make_mut(&mut order).push(strikeout_id.clone());
     let next = Model {
         seq: m.seq + 2.0,
         by_id,
@@ -1743,7 +1744,7 @@ fn set_props(m: &Model, patch: &AnnotationPropsPatch) -> Step {
         let other_changed = what.style || what.geom || what.text || what.icon;
         let stored =
             if caps_for(&a.subtype).opaque_body || !other_changed { next } else { to_vector(next) };
-        by_id.insert(id.clone(), stored);
+        Rc::make_mut(&mut by_id).insert(id.clone(), stored);
         if other_changed || (what.link && a.subtype == "link") {
             fx.push(Effect::Patch {
                 id: id.clone(),
@@ -1772,7 +1773,7 @@ fn set_flags(m: &Model, patch: &AnnotationFlagsPatch, ids: Option<&[Id]>) -> Ste
         if flags == a.flags {
             continue;
         }
-        let map = by_id.get_or_insert_with(|| m.by_id.clone());
+        let map = by_id.get_or_insert_with(|| (*m.by_id).clone());
         let has_ref = a.ref_.is_some();
         map.insert(id.clone(), Annot { flags, ..a });
         if has_ref {
@@ -1780,7 +1781,7 @@ fn set_flags(m: &Model, patch: &AnnotationFlagsPatch, ids: Option<&[Id]>) -> Ste
         }
     }
     match by_id {
-        Some(by_id) => (Some(Model { by_id, ..m.clone() }), fx),
+        Some(by_id) => (Some(Model { by_id: Rc::new(by_id), ..m.clone() }), fx),
         None => same(),
     }
 }
@@ -1833,7 +1834,7 @@ fn rotate_selection(m: &Model, delta_deg: f64) -> Step {
             ..a.clone()
         });
         fx.push(patch_fx(id, &next, &a.geom));
-        by_id.insert(id.clone(), next);
+        Rc::make_mut(&mut by_id).insert(id.clone(), next);
     }
     (Some(Model { by_id, ..m.clone() }), fx)
 }
@@ -1856,7 +1857,7 @@ fn reset_rotation(m: &Model) -> Step {
             ..a.clone()
         });
         fx.push(patch_fx(id, &next, &a.geom));
-        by_id.insert(id.clone(), next);
+        Rc::make_mut(&mut by_id).insert(id.clone(), next);
     }
     if fx.is_empty() { same() } else { (Some(Model { by_id, ..m.clone() }), fx) }
 }
@@ -1920,37 +1921,38 @@ fn merge_loaded(m: &Model, annots: &[Annot]) -> Model {
         if by_id.contains_key(&a.id) {
             continue;
         }
-        by_id.insert(a.id.clone(), a.clone());
-        order.push(a.id.clone());
+        Rc::make_mut(&mut by_id).insert(a.id.clone(), a.clone());
+        Rc::make_mut(&mut order).push(a.id.clone());
     }
     Model { by_id, order, ..m.clone() }
 }
 
 fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
-    let incoming: Vec<&str> = annots.iter().map(|a| a.id.as_str()).collect();
-    let locked = draft_ids(m.draft.as_ref());
+    let incoming: HashSet<&str> = annots.iter().map(|a| a.id.as_str()).collect();
+    let locked: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
     let reaped: Vec<&Id> = m
         .order
         .iter()
         .filter(|id| {
             !incoming.contains(&id.as_str())
-                && !locked.contains(id)
+                && !locked.contains(*id)
                 && m.by_id.get(*id).is_some_and(|a| a.ref_.is_some())
         })
         .collect();
     let mut next = m.clone();
     if !reaped.is_empty() {
-        let gone = |id: &Id| reaped.contains(&id);
+        let reaped_set: HashSet<&Id> = reaped.iter().copied().collect();
+        let gone = |id: &Id| reaped_set.contains(id);
         let mut by_id = m.by_id.clone();
         for id in &reaped {
-            by_id.remove(*id);
+            Rc::make_mut(&mut by_id).remove(*id);
         }
         let clear = |x: &Option<Id>| {
             x.as_ref().filter(|h| !h.is_empty() && gone(h)).map_or_else(|| x.clone(), |_| None)
         };
         next = Model {
             by_id,
-            order: m.order.iter().filter(|id| !gone(id)).cloned().collect(),
+            order: Rc::new(m.order.iter().filter(|id| !gone(id)).cloned().collect()),
             selected: m.selected.iter().filter(|id| !gone(id)).cloned().collect(),
             hovered: clear(&m.hovered),
             editing: clear(&m.editing),
@@ -1961,7 +1963,7 @@ fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
 }
 
 fn upsert_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
-    let dragging = draft_ids(m.draft.as_ref());
+    let dragging: HashSet<Id> = draft_ids(m.draft.as_ref()).into_iter().collect();
     let mut by_id = m.by_id.clone();
     let mut order = m.order.clone();
     for a in annots {
@@ -1970,10 +1972,11 @@ fn upsert_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
         }
         let prev = by_id.get(&a.id).and_then(|p| p.ap_version);
         if !by_id.contains_key(&a.id) {
-            order.push(a.id.clone());
+            Rc::make_mut(&mut order).push(a.id.clone());
         }
         let ap_version = prev.unwrap_or(0.0) + if bump { 1.0 } else { 0.0 };
-        by_id.insert(a.id.clone(), Annot { ap_version: Some(ap_version), ..a.clone() });
+        Rc::make_mut(&mut by_id)
+            .insert(a.id.clone(), Annot { ap_version: Some(ap_version), ..a.clone() });
     }
     Model { by_id, order, ..m.clone() }
 }
@@ -1982,7 +1985,7 @@ fn bump_ap(m: &Model, ids: &[Id]) -> Option<Model> {
     let mut by_id: Option<BTreeMap<Id, Annot>> = None;
     for id in ids {
         let Some(a) = m.by_id.get(id) else { continue };
-        let map = by_id.get_or_insert_with(|| m.by_id.clone());
+        let map = by_id.get_or_insert_with(|| (*m.by_id).clone());
         // Read the model's original entry, as the TypeScript does: a repeated
         // id bumps once.
         map.insert(
@@ -1990,7 +1993,7 @@ fn bump_ap(m: &Model, ids: &[Id]) -> Option<Model> {
             Annot { ap_version: Some(a.ap_version.unwrap_or(0.0) + 1.0), ..a.clone() },
         );
     }
-    by_id.map(|by_id| Model { by_id, ..m.clone() })
+    by_id.map(|by_id| Model { by_id: Rc::new(by_id), ..m.clone() })
 }
 
 fn draft_ids(draft: Option<&Draft>) -> Vec<Id> {
@@ -2006,9 +2009,10 @@ fn draft_ids(draft: Option<&Draft>) -> Vec<Id> {
 }
 
 fn remove_annots(m: &Model, ids: &[Id]) -> Model {
+    let ids: HashSet<&Id> = ids.iter().collect();
     let mut by_id = m.by_id.clone();
-    for id in ids {
-        by_id.remove(id);
+    for id in &ids {
+        Rc::make_mut(&mut by_id).remove(*id);
     }
     let editing = match &m.editing {
         Some(e) if !e.is_empty() && ids.contains(e) => None,
@@ -2016,7 +2020,7 @@ fn remove_annots(m: &Model, ids: &[Id]) -> Model {
     };
     Model {
         by_id,
-        order: m.order.iter().filter(|id| !ids.contains(id)).cloned().collect(),
+        order: Rc::new(m.order.iter().filter(|id| !ids.contains(id)).cloned().collect()),
         selected: m.selected.iter().filter(|id| !ids.contains(id)).cloned().collect(),
         draft: None,
         editing,
@@ -2027,12 +2031,12 @@ fn remove_annots(m: &Model, ids: &[Id]) -> Model {
 fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option<Model> {
     let a = m.by_id.get(temp_id)?;
     let mut by_id = m.by_id.clone();
-    by_id.remove(temp_id);
-    by_id.insert(
+    Rc::make_mut(&mut by_id).remove(temp_id);
+    Rc::make_mut(&mut by_id).insert(
         id.to_string(),
         Annot { id: id.to_string(), ref_: Some(ref_.clone()), ..a.clone() },
     );
-    for other in by_id.values_mut() {
+    for other in Rc::make_mut(&mut by_id).values_mut() {
         if other.irt.as_deref() == Some(temp_id) {
             other.irt = Some(id.to_string());
         }
@@ -2059,7 +2063,7 @@ fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option
     Some(Model {
         by_id,
         draft,
-        order: m.order.iter().map(swap).collect(),
+        order: Rc::new(m.order.iter().map(swap).collect()),
         selected: m.selected.iter().map(swap).collect(),
         editing: if m.editing.as_deref() == Some(temp_id) {
             Some(id.to_string())
@@ -2113,7 +2117,7 @@ fn create_annot(
         None => base,
     };
     let mut order = m.order.clone();
-    order.push(id.clone());
+    Rc::make_mut(&mut order).push(id.clone());
     let next = Model {
         seq: m.seq + 1.0,
         by_id: with_annot(m, &id, annot),

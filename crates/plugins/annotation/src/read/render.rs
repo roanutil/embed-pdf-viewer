@@ -67,7 +67,7 @@ impl AnnotationCapability {
     pub fn list_link_items(&self, page: PageRef) -> Vec<LinkNavItem> {
         let m = self.model();
         let mut v = Vec::new();
-        for id in &m.order {
+        for id in m.order.iter() {
             let Some(a) = m.by_id.get(id) else { continue };
             if !a.page.same_page(&page) || a.subtype != "link" || !viewable(&a.flags, false) {
                 continue;
@@ -114,7 +114,7 @@ impl AnnotationCapability {
     pub fn get_appearance_epoch(&self, page: PageRef) -> String {
         let m = self.model();
         let mut parts: Vec<String> = Vec::new();
-        for id in &m.order {
+        for id in m.order.iter() {
             let Some(a) = m.by_id.get(id) else { continue };
             if !a.page.same_page(&page)
                 || a.source != Source::Baked
