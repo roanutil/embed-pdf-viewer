@@ -378,6 +378,8 @@ describe("the wire's answer reuse", () => {
       release_ref: (id: number) => released.push(id),
       // `capability` drains this first (`Wire.evict`); nothing here closes.
       take_evicted: () => '[]',
+      // A started kernel: the wire caches only while one is running.
+      status: () => 'started',
       core_revision: () => 0,
       state_revision: () => 0,
     } as unknown as RustKernel;
