@@ -1531,6 +1531,20 @@ const feedCases: ScenarioCase[] = [
     snapshot: SNAP,
   },
   {
+    name: 'a-goto-without-a-destination',
+    covers:
+      'A goto node with no destination, or a destination with no page, throws out of the goto executor (reading its page) instead of failing, once the document has pages.',
+    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
+    engine: withActions(FIVE),
+    steps: [
+      ...boot,
+      act('execute', tree({ type: 'goto', subtype: 'GoTo', next: [] }), USER),
+      act('execute', tree(goto({ kind: 'fit' })), USER),
+      st('currentPage'),
+    ],
+    snapshot: SNAP,
+  },
+  {
     name: 'executors-navigate-smoothly',
     covers: 'The executors navigate smoothly whatever the scrollBehavior setting: with frames each lands over a tween.',
     plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant', frames: true })],

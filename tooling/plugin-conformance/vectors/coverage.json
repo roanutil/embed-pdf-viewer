@@ -1,7 +1,7 @@
 {
   "total": {
     "statements": "49226/49419",
-    "branches": "12179/12509",
+    "branches": "12181/12511",
     "unsnapshottedOnlyLines": 1475
   },
   "files": {
@@ -2956,7 +2956,7 @@
     },
     "packages/plugin/stage/src/read/pages.ts": {
       "statements": "246/250",
-      "branches": "77/83",
+      "branches": "78/84",
       "uncoveredLines": [
         36,
         37,
@@ -3041,7 +3041,7 @@
     },
     "packages/plugin/stage/src/stage.plugin.ts": {
       "statements": "124/124",
-      "branches": "20/23",
+      "branches": "21/24",
       "uncoveredLines": [],
       "uncoveredBranches": [
         "87:32#0",

@@ -111,6 +111,12 @@ fn smooth() -> Option<GoToOptions> {
     Some(GoToOptions::behavior(ScrollBehaviorKind::Smooth))
 }
 
+/// `value[key]` as JavaScript reads it: absent, an `undefined` marker, or a
+/// non-object all read as undefined (`None`).
+fn js_get<'a>(value: &'a Value, key: &str) -> Option<&'a Value> {
+    value.get(key).filter(|v| !epdf_kernel::is_undefined(v))
+}
+
 /// The navigation executors the main lens gives the action engine. The
 /// bodies resolve the stage at call time.
 fn goto_executor(
@@ -122,6 +128,29 @@ fn goto_executor(
             return inert("not a goto node");
         }
         let stage = ctx.try_get(&token)?;
+        // The TypeScript reads `node.destination.page.pageObjectNumber`
+        // inside its `pages.find` callback, so a missing destination or page
+        // throws there, but only when the document has a page to test.
+        let has_pages = ctx
+            .document()
+            .is_some_and(|doc| doc.pages.as_array().is_some_and(|pages| !pages.is_empty()));
+        if has_pages {
+            let (missing, key) = match js_get(node, "destination") {
+                Some(Value::Null) => (Some("null"), "page"),
+                None => (Some("undefined"), "page"),
+                Some(destination) => match js_get(destination, "page") {
+                    Some(Value::Null) => (Some("null"), "pageObjectNumber"),
+                    None => (Some("undefined"), "pageObjectNumber"),
+                    Some(_) => (None, ""),
+                },
+            };
+            if let Some(missing) = missing {
+                return Err(Error::named(
+                    "TypeError",
+                    format!("Cannot read properties of {missing} (reading '{key}')"),
+                ));
+            }
+        }
         let destination: Option<PdfDestination> =
             node.get("destination").and_then(|d| serde_json::from_value(without_undefined(d)).ok());
         let pon = node
