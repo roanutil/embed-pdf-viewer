@@ -169,3 +169,12 @@ describe('init-only JS plugins', () => {
     expect(late).toHaveBeenCalledOnce();
   });
 });
+
+describe('the documents capability', () => {
+  test('kernel.documents is the proxy capability(DocumentsToken) answers', async () => {
+    const k = build();
+    await k.start();
+    expect(k.capability(DocumentsToken)).toBe(k.documents);
+    expect(k.tryCapability(DocumentsToken)).toBe(k.documents);
+  });
+});

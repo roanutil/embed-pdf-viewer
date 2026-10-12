@@ -278,7 +278,8 @@ pub struct WasmKernel {
     memo: Rc<Memo>,
     /// The documents' closed listener that evicts from `memo`.
     on_closed: Option<Unsubscribe>,
-    /// `kernel.documents()`, made once so its description memoizes too.
+    /// `kernel.documents`: the documents capability, held so its
+    /// description memoizes too.
     documents: Rc<dyn Any>,
     /// A taken promise's abort handle, by id, kept until it settles:
     /// [`promise`](Self::promise) takes the promise out of the harness's own
@@ -362,7 +363,9 @@ impl WasmKernel {
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let kernel = Kernel::new(Rc::new(JsEngine::new(bridge)), plugins, options)?;
-        let documents: Rc<dyn Any> = Rc::new(kernel.documents());
+        // The capability `kernel.capability(DocumentsToken)` answers, so the
+        // two describe as one proxy with one set of pinned refs.
+        let documents = kernel.capability_any(DOCUMENTS.any(), None)?;
         let memo = Rc::new(Memo {
             harness: harness.clone(),
             described: RefCell::new(HashMap::new()),
