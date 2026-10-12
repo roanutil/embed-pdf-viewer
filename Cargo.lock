@@ -474,6 +474,7 @@ dependencies = [
  "epdf-kernel",
  "epdf-plugin-render",
  "epdf-plugin-search",
+ "futures",
 ]
 
 [[package]]
