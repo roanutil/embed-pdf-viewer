@@ -53,7 +53,6 @@ struct Runtime {
     tasks: RefCell<HashMap<usize, Task>>,
     ready: RefCell<VecDeque<usize>>,
     queued: RefCell<HashSet<usize>>,
-    next_task: Cell<usize>,
     now: Cell<f64>,
     during_tick: Cell<bool>,
     /// Keyed (deadline bits, order): `f64` deadlines are never negative, so
@@ -67,6 +66,10 @@ struct Runtime {
     /// keeping it.
     abandon_current: Cell<bool>,
 }
+
+/// Task ids, unique across threads: a waker that crosses to another thread
+/// and wakes there names no task of that thread's runtime.
+static NEXT_TASK: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
 thread_local! {
     static RT: Runtime = Runtime::default();
@@ -102,7 +105,8 @@ static VTABLE: RawWakerVTable =
 fn waker_for(id: usize) -> Waker {
     // SAFETY: the data pointer is a task id, not a pointer; the vtable never
     // dereferences it. Waking from another thread pushes onto that thread's
-    // queue, where no such task exists, and is a no-op there.
+    // queue, where no task has that id (ids are unique across threads), so
+    // the wake is lost there rather than delivered to an unrelated task.
     unsafe { Waker::from_raw(RawWaker::new(id as *const (), &VTABLE)) }
 }
 
@@ -126,11 +130,7 @@ fn poll_task(id: usize, mut task: Task) {
 /// Run a future to completion on this thread. The first poll happens now,
 /// inline; later ones when it is woken and the queue reaches it.
 pub fn spawn(future: impl Future<Output = ()> + 'static) {
-    let id = RT.with(|rt| {
-        let id = rt.next_task.get();
-        rt.next_task.set(id + 1);
-        id
-    });
+    let id = NEXT_TASK.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     poll_task(id, Box::pin(future));
 }
 

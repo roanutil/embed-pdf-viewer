@@ -101,6 +101,9 @@ unviable). The run measured only the kernel's own tests and vectors, not the plu
 also exercise it. 67 of those kills come from new tests, each checked by applying the mutant by
 hand. Five more mutants no longer exist, because the code they mutated was wrong and is rewritten.
 
+The file and line numbers in this section are as of `76ae3b597`, the commit that recorded the run.
+The code has moved since: `kernel.rs:419`, for one, was line 481 when this note was added.
+
 The new vectors in `kernel.ts`:
 
 - `a-rekey-onto-a-closing-id-refuses`: a ticket whose input names a document still tearing down.

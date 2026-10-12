@@ -1046,3 +1046,45 @@ fn a_guarded_call_is_a_plain_promise_with_an_abort() {
         4
     );
 }
+
+/// A pending future that counts its polls and keeps the waker it was given.
+struct Parked {
+    polls: Rc<Cell<u32>>,
+    waker: Rc<RefCell<Option<std::task::Waker>>>,
+}
+
+impl std::future::Future for Parked {
+    type Output = ();
+    fn poll(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<()> {
+        self.polls.set(self.polls.get() + 1);
+        *self.waker.borrow_mut() = Some(cx.waker().clone());
+        std::task::Poll::Pending
+    }
+}
+
+#[test]
+fn a_waker_woken_on_another_thread_wakes_none_of_its_tasks() {
+    // Each thread's first task: with per-thread ids both would be task 0,
+    // and thread A's waker would wake thread B's task.
+    let waker = std::thread::spawn(|| {
+        let slot: Rc<RefCell<Option<std::task::Waker>>> = Rc::default();
+        rt::spawn(Parked { polls: Rc::default(), waker: slot.clone() });
+        let waker = slot.borrow_mut().take();
+        waker.expect("polled once")
+    })
+    .join()
+    .unwrap();
+    let polls = std::thread::spawn(move || {
+        let polls: Rc<Cell<u32>> = Rc::default();
+        rt::spawn(Parked { polls: polls.clone(), waker: Rc::default() });
+        waker.wake();
+        rt::run_until_stalled();
+        polls.get()
+    })
+    .join()
+    .unwrap();
+    assert_eq!(polls, 1);
+}
