@@ -139,7 +139,12 @@ struct Entry {
     /// Approximate bytes, set at resolution.
     cost: Cell<Option<f64>>,
     refs: Cell<i64>,
-    abort: AbortSignal,
+    /// The fetch's signal, until the fetch settles. Its listeners (the
+    /// engine task's abort, which retains the task and so its answer) go
+    /// with it: a resolved entry never aborts, and holding them would keep
+    /// a second, uncosted copy of the image alive for as long as it is
+    /// cached.
+    abort: RefCell<Option<AbortSignal>>,
     used: Cell<u64>,
 }
 
@@ -215,15 +220,20 @@ impl RasterStore {
             handle: RefCell::new(None),
             cost: Cell::new(None),
             refs: Cell::new(0),
-            abort: AbortSignal::new(),
+            abort: RefCell::new(Some(AbortSignal::new())),
             used: Cell::new(self.next_tick()),
         });
-        let task = fetch(&entry.abort)?;
+        let task = {
+            let abort = entry.abort.borrow();
+            fetch(abort.as_ref().expect("a new entry has its signal"))?
+        };
         let store = self.clone();
         let settled = entry.clone();
         let owned_key = key.to_string();
         let promise = Promise::spawn(async move {
-            match task.await {
+            let result = task.await;
+            drop(settled.abort.borrow_mut().take());
+            match result {
                 Ok(value) => {
                     let handle = match &store.0.release {
                         Some(release) => PageImageHandle::with_release(value, release.clone()),
@@ -314,7 +324,10 @@ impl RasterStore {
                 entry.refs.set(entry.refs.get() - 1);
                 // The last live consumer leaving an unresolved fetch kills it.
                 if entry.refs.get() <= 0 && entry.handle.borrow().is_none() {
-                    entry.abort.abort(reason.clone());
+                    let abort = entry.abort.borrow().clone();
+                    if let Some(abort) = abort {
+                        abort.abort(reason.clone());
+                    }
                     store.drop_entry(&key, &entry);
                 }
                 resolver.reject(reason.clone());

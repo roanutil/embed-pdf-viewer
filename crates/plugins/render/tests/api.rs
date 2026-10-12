@@ -198,6 +198,37 @@ fn a_clone_held_outside_the_store_defers_release_until_it_drops() {
 }
 
 #[test]
+fn a_settled_fetch_lets_go_of_its_abort_listeners() {
+    // The controller's fetch hangs the engine task's abort on the store's
+    // signal, and that listener retains the task and its answer. Once the
+    // fetch settles the store must drop it, or every cached raster keeps a
+    // second, uncosted copy of its image alive.
+    rt::reset();
+    let store = RasterStore::default();
+    let task_answer = Rc::new(());
+    let held = task_answer.clone();
+    let (task, resolver) = Promise::pending();
+    let image = store
+        .acquire(
+            "a",
+            move |signal| {
+                signal.on_abort(Rc::new(move |_| {
+                    let _ = &held;
+                }));
+                Ok(task)
+            },
+            None,
+        )
+        .expect("acquire");
+    assert_eq!(Rc::strong_count(&task_answer), 2, "in flight, the listener is live");
+    resolver.resolve(json!({ "width": 1, "height": 1 }));
+    rt::run_until_stalled();
+    assert!(image.peek().expect("settled").is_ok());
+    assert!(store.peek("a").is_some(), "the raster is still cached");
+    assert_eq!(Rc::strong_count(&task_answer), 1, "the listener went with the fetch");
+}
+
+#[test]
 fn a_handle_without_a_hook_releases_nothing() {
     // `PageImageHandle::new` keeps today's shape: no hook, nothing to call.
     let handle = PageImageHandle::new(json!({ "width": 1 }));
