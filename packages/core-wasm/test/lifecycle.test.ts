@@ -192,3 +192,37 @@ describe('tokens by name', () => {
     expect(kernelCounts(k).tokens).toBe(before);
   });
 });
+
+describe('functions the kernel never calls', () => {
+  /** Two tasks: the sweep's, and one more for an id a value carried. */
+  const tasks = async () => {
+    for (let i = 0; i < 2; i++) await new Promise((r) => setTimeout(r, 0));
+  };
+
+  test('a member Rust ignores is forgotten a task later; one it holds is kept', async () => {
+    const k = build();
+    await k.start();
+    const commands = k.capability(CommandsToken) as {
+      registerCommand(def: object): () => void;
+    };
+    await tasks();
+    const start = kernelCounts(k).fns;
+    const off = commands.registerCommand({
+      id: 'probe:run',
+      labelKey: 'probe',
+      run: () => {},
+      // Not a `CommandDef` member: the kernel reads past it.
+      ignored: () => {},
+    });
+    expect(kernelCounts(k).fns).toBe(start + 2);
+    await tasks();
+    expect(kernelCounts(k).fns).toBe(start + 1);
+    // `run` is still the kernel's to call.
+    await expect(
+      (k.capability(CommandsToken) as { execute(id: string): Promise<unknown> }).execute(
+        'probe:run',
+      ),
+    ).resolves.toEqual({ status: 'executed' });
+    off();
+  });
+});

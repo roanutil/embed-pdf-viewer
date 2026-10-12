@@ -602,6 +602,15 @@ impl WasmKernel {
         })
     }
 
+    /// Whether a live callback made from `{"$fn": "js:<id>"}` holds that
+    /// function. The shim forgets a function it handed over once a task has
+    /// passed with no callback made from it (`Wire.sweep` in
+    /// `packages/core-wasm/src/proxy.ts`): one the kernel ignored, so no
+    /// `release_js` would ever come for it.
+    pub fn holds_js(&self, id: String) -> bool {
+        entry(|| self.harness.holds_fn(&format!("js:{id}")))
+    }
+
     pub fn unsubscribe(&self, id: u32) {
         entry(|| {
             let off = self.subscriptions.borrow_mut().remove(&id);
