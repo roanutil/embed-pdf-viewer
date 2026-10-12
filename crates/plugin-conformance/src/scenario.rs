@@ -155,8 +155,6 @@ impl HarnessPlugin for DocumentsAdapter {
         h: &Harness,
     ) -> Option<Outcome> {
         let docs = capability.downcast_ref::<Documents>()?;
-        let json_of = |v: &dyn erased::Ser| v.json();
-        let _ = json_of;
         Some(match method {
             "open" => {
                 let source = open_source(arg(&args, 0).unwrap_or(&Value::Null), h);
@@ -295,12 +293,6 @@ impl HarnessPlugin for DocumentsAdapter {
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
         capability.downcast_ref::<Documents>()?;
         Some(DOCUMENTS_MEMBERS.to_vec())
-    }
-}
-
-mod erased {
-    pub trait Ser {
-        fn json(&self) -> serde_json::Value;
     }
 }
 

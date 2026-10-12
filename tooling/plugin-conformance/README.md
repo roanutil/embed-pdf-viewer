@@ -63,8 +63,8 @@ its empty slice is in every snapshot.
 promise to settle before it drains. WebCrypto answers from libuv's thread pool, which no number of
 microtask turns reaches, so without it a `crypto.subtle` result would land in whichever later step
 happened to be running. The Rust runner ignores the field: a Rust step already runs until nothing
-is left. Only `core/signature-*` sets it, and a call that has not settled after 5 real seconds fails
-the generator.
+is left. The `core/signature-*` suites and `plugins/signature.json` set it, and a call that has not
+settled after 5 real seconds fails the generator.
 
 | op | fields | does |
 |---|---|---|
@@ -187,7 +187,8 @@ member but `submit` is present unless `lacks` names it, which is how a case take
 Four calls have fallbacks: `open` hands out the document whose key is the input's `id`,
 `pages.list` answers from `pages`, `close` and `destroy` resolve. Anything else unanswered rejects
 with `FakeEngineUnmatched`, and the generator refuses to write that trace unless the case sets
-`allowUnmatched`: it is almost always a case that forgot a response.
+`allowUnmatched`: it is almost always a case that forgot a response. The Rust runner fails such a
+case the same way.
 
 An `open` that no entry answers and whose input `id` keys no document falls back to
 `defaultDocument`, when the engine spec names one: `{"defaultDocument": "workshop", "documents":

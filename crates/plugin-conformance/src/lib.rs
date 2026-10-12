@@ -120,6 +120,14 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                         }
                         if let Some(diff) = compare_trace(&expected, &run.trace) {
                             failures.push(format!("{name}: {diff}"));
+                        } else if !run.unmatched.is_empty()
+                            && case["allowUnmatched"].as_bool() != Some(true)
+                        {
+                            // The generator refuses the same case (`vectors.ts`).
+                            failures.push(format!(
+                                "{name}: unanswered engine calls:\n    {}",
+                                run.unmatched.join("\n    ")
+                            ));
                         }
                     }
                 }
