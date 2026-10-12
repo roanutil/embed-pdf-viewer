@@ -615,6 +615,7 @@ struct Count(u32);
 
 #[derive(serde::Serialize)]
 #[serde(tag = "type")]
+#[allow(dead_code)] // only its type is used
 enum Bump {
     Bump,
 }
