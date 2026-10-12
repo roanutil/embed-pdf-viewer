@@ -377,6 +377,17 @@ const RUNS: Case[] = [
   // The Created ack lands mid-gesture: the draft must follow the temp→durable id swap.
   ['created-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 170, 150), ed('up', 170, 150)]],
   ['created-mid-handle', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 200, 160), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 220, 180), ed('up', 220, 180)]],
+  // More messages that land mid-gesture: the ack under a rotate, the ack then
+  // its upsert echo (the durable id stays locked to the drag), a failed
+  // create or a remove taking the dragged annotation away, and an ack for an
+  // earlier annotation while a polygon is still being drawn.
+  ['created-mid-rotate', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 76), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, ed('move', 200, 90), ed('up', 200, 90)]],
+  ['created-then-echo-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, { t: 'upsert', annots: [sq('c1', rc(0, 0, 5, 5))] }, ed('move', 170, 150), ed('up', 170, 150)]],
+  ['create-failed-mid-move', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 150, 130), { t: 'createFailed', tempId: 'tmp:1' }, ed('move', 170, 150), ed('up', 170, 150)]],
+  ['create-failed-mid-handle', {}, [...drag('square', v(100, 100), v(200, 160)), ed('down', 200, 160), { t: 'createFailed', tempId: 'tmp:1' }, ed('move', 220, 180), ed('up', 220, 180)]],
+  ['removed-mid-move', S({ selected: ['sq'] }), [ed('down', 140, 130), { t: 'remove', ids: ['sq'] }, ed('move', 170, 170), ed('up', 170, 170)]],
+  ['removed-mid-handle', S({ selected: ['sq'] }), [ed('down', 180, 160), { t: 'remove', ids: ['sq'] }, ed('move', 200, 180), ed('up', 200, 180)]],
+  ['created-mid-poly-draft', {}, [...drag('square', v(100, 100), v(200, 160)), cr('polygon', 'down', 300, 300), { t: 'created', tempId: 'tmp:1', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }, cr('polygon', 'move', 350, 300), cr('polygon', 'down', 350, 300), cr('polygon', 'down', 330, 350), cr('polygon', 'down', 330, 350, { finish: true })]],
   ['created-unknown', GROUP, [{ t: 'created', tempId: 'tmp:9', id: 'c1', ref: { kind: 'nm', page: pageRef(PON), nm: 'abc' } }]],
   ['created-index-ref', GROUP, [{ t: 'created', tempId: 'tmp:2', id: 'c2', ref: { kind: 'index', page: pageRef(PON), index: 3, revision: { docSessionId: 's', page: pageRef(PON), generation: 2 } } }]],
   ['create-failed', GROUP, [{ t: 'createFailed', tempId: 'tmp:2' }]],

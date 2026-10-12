@@ -14462,6 +14462,143 @@
       }
     },
     {
+      "name": "fromDTO/no-ref",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "index": 1,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "square",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "borderStyle": "solid",
+          "cloudyIntensity": null,
+          "rectDifferences": null
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of undefined (reading 'kind')"
+          }
+        }
+      }
+    },
+    {
+      "name": "fromDTO/null-ref",
+      "fn": "fromDTO",
+      "args": [
+        {
+          "ref": null,
+          "page": {
+            "kind": "objectNumber",
+            "pageObjectNumber": 1
+          },
+          "index": 1,
+          "identityQuality": "durable",
+          "nm": null,
+          "flags": {
+            "invisible": false,
+            "hidden": false,
+            "print": true,
+            "noZoom": false,
+            "noRotate": false,
+            "noView": false,
+            "readOnly": false,
+            "locked": false,
+            "toggleNoView": false,
+            "lockedContents": false
+          },
+          "rect": {
+            "left": 100,
+            "bottom": 600,
+            "right": 200,
+            "top": 700
+          },
+          "contents": null,
+          "subject": null,
+          "author": null,
+          "created": null,
+          "modified": null,
+          "blendMode": "normal",
+          "inReplyTo": null,
+          "replyType": null,
+          "subtype": "square",
+          "color": {
+            "r": 239,
+            "g": 68,
+            "b": 68
+          },
+          "interiorColor": null,
+          "opacity": 1,
+          "strokeWidth": 2,
+          "borderStyle": "solid",
+          "cloudyIntensity": null,
+          "rectDifferences": null
+        },
+        {
+          "left": 0,
+          "bottom": 0,
+          "right": 600,
+          "top": 800
+        },
+        "baked"
+      ],
+      "outcome": {
+        "threw": {
+          "$error": {
+            "name": "TypeError",
+            "message": "Cannot read properties of null (reading 'kind')"
+          }
+        }
+      }
+    },
+    {
       "name": "toPatch/square",
       "fn": "toPatch",
       "args": [

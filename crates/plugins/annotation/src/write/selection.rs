@@ -140,10 +140,10 @@ impl AnnotationCapability {
 
     /// `rotateSelectionBy(delta)`: a quarter turn. `-90` rotates each member
     /// through `setRotation`.
-    pub fn rotate_selection_by(&self, delta: f64) -> Promise<()> {
+    pub fn rotate_selection_by(&self, turn: QuarterTurn) -> Promise<()> {
         let this = self.clone();
         promise::spawn(async move {
-            if delta == 90.0 {
+            if turn == QuarterTurn::Plus90 {
                 let (_, pending) = this.collect_writes(|| this.commit(Msg::Rotate90));
                 return this.await_all_writes(pending).await;
             }
@@ -169,7 +169,7 @@ impl AnnotationCapability {
         let this = self.clone();
         promise::spawn(async move {
             let key = format.key();
-            let current = this.get_selection_props().values.get(key.as_str()).cloned();
+            let current = this.get_selection_props()?.values.get(key.as_str()).cloned();
             let on = crate::value::truthy(current.as_ref());
             let patch: AnnotationPropsPatch =
                 serde_json::from_value(json!({ key.as_str(): !on })).unwrap_or_default();

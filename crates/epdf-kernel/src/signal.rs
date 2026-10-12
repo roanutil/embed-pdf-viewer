@@ -59,6 +59,12 @@ impl AbortSignal {
         }
     }
 
+    /// How many abort listeners are registered, for tests that check a
+    /// caller removes its listener.
+    pub fn listener_count(&self) -> usize {
+        self.0.borrow().listeners.len()
+    }
+
     /// `controller.abort(reason)`. A second abort does nothing. As the DOM
     /// dispatches: the listeners registered when the abort starts, less
     /// any an earlier one removed.

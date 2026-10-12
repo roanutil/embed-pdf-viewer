@@ -38,7 +38,7 @@ use crate::rich_text::TextFormat;
 use crate::write::measurement::PageMeasurementViewport;
 use crate::{
     ANNOTATION, AnnotationCapability, AnnotationConfig, AnnotationHost, Behavior, HitView, HoverAt,
-    StampPlacement, StampPreview, StampToolInput, annotation_plugin,
+    QuarterTurn, StampPlacement, StampPreview, StampToolInput, annotation_plugin,
 };
 
 /// The generator's `crypto.randomUUID` stand-in: the `n`th id of a run.
@@ -618,7 +618,7 @@ fn call_capability(
             let rect = crate::value::pdf_rect_of(present(args, 1));
             out_opt(cap.pdf_to_page_rect(page(args, 0)?, rect))
         }
-        "getSelectionProps" => out(&cap.get_selection_props()),
+        "getSelectionProps" => out(&cap.get_selection_props()?),
         "getSelectionFlags" => {
             Outcome::Returned(cap.get_selection_flags().map_or(Value::Null, Value::Object))
         }
@@ -671,7 +671,7 @@ fn call_capability(
         }
         "reloadPage" => unit(cap.reload_page(page(args, 0)?)),
         "deliverRemoteEvent" => {
-            cap.deliver_remote_event(present(args, 0).cloned().unwrap_or(Value::Null));
+            cap.deliver_remote_event(present(args, 0).cloned().unwrap_or(Value::Null))?;
             undef()
         }
         "setContents" => unit(cap.set_contents(r(0)?, text(args, 1))),
@@ -805,7 +805,7 @@ fn call_capability(
             untyped(cap.update_selection_flags(decode(args, 0)?), |b| b.to_json())
         }
         "deleteSelection" => untyped(cap.delete_selection(), |b| b.to_json()),
-        "rotateSelectionBy" => unit(cap.rotate_selection_by(num(args, 0))),
+        "rotateSelectionBy" => unit(cap.rotate_selection_by(QuarterTurn::from_delta(num(args, 0)))),
         "resetSelectionRotation" => unit(cap.reset_selection_rotation()),
         "toggleTextFormat" => {
             let format: TextFormat = decode(args, 0)?;

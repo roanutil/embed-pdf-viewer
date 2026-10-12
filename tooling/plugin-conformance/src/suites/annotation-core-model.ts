@@ -654,6 +654,9 @@ for (const subtype of ['highlight', 'underline', 'strikeout', 'squiggly', 'myste
 }
 sceneCases.push(c('scene', 'squiggly-long', item('squiggly', gQuads([tq(0.5, 0.25, 1000.123, 30)]))));
 sceneCases.push(c('scene', 'squiggly-short', item('squiggly', gQuads([tq(0, 0, 2, 10)]))));
+// Bounded output: a NaN or backwards run draws one hump and no more.
+sceneCases.push(c('scene', 'squiggly-nan-width', item('squiggly', gQuads([tq(0, 0, NaN, 10)]))));
+sceneCases.push(c('scene', 'squiggly-backwards', item('squiggly', gQuads([tq(100, 0, -80, 10)]))));
 sceneCases.push(c('scene', 'squiggly-rotated-tall', item('squiggly', gQuads([tqRot(50, 50, 120, 20, 25)]))));
 for (const e of ENDINGS) sceneCases.push(c('scene', `line-${e}`, item('line', gLine(v(0, 0), v(100, 50), ends(e, e)), { style: style({ interiorColor: '#ff0000' }) })));
 sceneCases.push(c('scene', 'link', item('link', geom('rect'))));

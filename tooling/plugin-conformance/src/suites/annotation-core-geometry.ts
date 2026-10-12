@@ -614,6 +614,20 @@ for (const [label, box, i, sw] of [
   if (sw > 0) cloudyCases.push(c('cloudyPath', `${label}-ellipse`, box, true, i, sw));
   cloudyCases.push(c('cloudyPath', `${label}-rect`, box, false, i, sw));
 }
+// Bounded output. A NaN box, intensity or stroke runs no loop and emits
+// little or nothing; a negative box draws its mirror; a 1000-unit box (well
+// under the Rust port's curl cap) still draws in full. The cap itself is
+// Rust-only (the TypeScript has none), so tests/hostile_geometry.rs holds it.
+for (const [label, box, i, sw] of [
+  ['bounded-nan-width', rc(0, 0, NaN, 40), 1, 1],
+  ['bounded-nan-intensity', rc(0, 0, 60, 40), NaN, 1],
+  ['bounded-nan-stroke', rc(0, 0, 60, 40), 1, NaN],
+  ['bounded-negative', rc(0, 0, -60, -40), 1, 1],
+  ['bounded-page-1000', rc(0, 0, 1000, 1000), 2, 1],
+] as const) {
+  cloudyCases.push(c('cloudyPath', `${label}-ellipse`, box, true, i, sw));
+  cloudyCases.push(c('cloudyPath', `${label}-rect`, box, false, i, sw));
+}
 const POLYS: [string, Vec[]][] = [
   ['triangle', [v(10, 10), v(90, 20), v(40, 80)]],
   ['square', [v(0, 0), v(100, 0), v(100, 100), v(0, 100)]],
@@ -629,6 +643,7 @@ const POLYS: [string, Vec[]][] = [
   ['two-same', [v(5, 5), v(5, 5)]],
   ['collinear', [v(0, 0), v(50, 0), v(100, 0)]],
   ['collinear-back', [v(100, 0), v(0, 0), v(50, 0)]],
+  ['bounded-nan-vertex', [v(0, 0), v(NaN, 10), v(20, 0)]],
 ];
 for (const [name, pts] of POLYS) {
   for (const i of INTENSITIES) {

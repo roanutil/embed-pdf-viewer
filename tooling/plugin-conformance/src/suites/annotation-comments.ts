@@ -76,6 +76,30 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'threads-nan-top',
+    covers:
+      "A root whose top is NaN makes the order comparator answer NaN, which the sort reads as a tie: the threads land where V8's sort leaves them, and the port neither panics nor reorders them its own way.",
+    plugins: WITH_LENS,
+    engine: {
+      documents: {
+        a: doc([
+          hydrate({
+            // The spec is plain JSON, so the NaN goes in tagged; the fake
+            // engine decodes it.
+            1: [10, 20, { $number: 'NaN' }, 30].map((top, i) =>
+              square(i + 1, {
+                contents: `top ${typeof top === 'number' ? top : 'NaN'}`,
+                rect: { left: 100, bottom: 0, right: 200, top: top as number },
+              }),
+            ),
+          }),
+        ]),
+      },
+    },
+    ...UNSNAPSHOTTED,
+    steps: [...boot, lens('threads')],
+  },
+  {
     name: 'threads-off-the-layout',
     covers: 'A thread on a page the layout does not list sorts last.',
     plugins: WITH_LENS,

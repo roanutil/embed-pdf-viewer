@@ -151,7 +151,7 @@ impl AnnotationCapability {
                         await_engine(call("update", vec![ref_json(&r), Value::Object(patch)]))
                             .await?;
                     let dto = get(&res, "updated").cloned().unwrap_or(Value::Null);
-                    let annot = this.ingest(&dto, crop, Source::Baked);
+                    let annot = this.ingest(&dto, crop, Source::Baked)?;
                     this.commit(Msg::Upsert { annots: vec![annot], bump_ap: None });
                 }
                 for rect in rects.iter().skip(current.len()) {
@@ -164,7 +164,7 @@ impl AnnotationCapability {
                     });
                     let res = await_engine(call("create", vec![draft])).await?;
                     let dto = get(&res, "created").cloned().unwrap_or(Value::Null);
-                    let annot = this.ingest(&dto, crop, Source::Baked);
+                    let annot = this.ingest(&dto, crop, Source::Baked)?;
                     this.commit(Msg::Upsert { annots: vec![annot], bump_ap: None });
                 }
                 for child in current.iter().skip(rects.len()) {
@@ -208,7 +208,7 @@ impl AnnotationCapability {
                 vec![ref_json(&r), Value::Object(patch)],
             );
             let res = await_engine(call).await?;
-            this.sync(get(&res, "updated").unwrap_or(&Value::Null), a.source, false);
+            this.sync(get(&res, "updated").unwrap_or(&Value::Null), a.source, false)?;
             Ok(())
         })
     }

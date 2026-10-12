@@ -1192,6 +1192,26 @@ impl Draft {
         }
     }
 
+    /// `draft.g.startsWith('create-')`: a creation draft, not an edit
+    /// gesture. No wildcard arm, so a new variant has to pick a side.
+    pub fn is_create(&self) -> bool {
+        match self {
+            Draft::CreateRect { .. }
+            | Draft::CreateDistance { .. }
+            | Draft::CreateLine { .. }
+            | Draft::CreatePoly { .. }
+            | Draft::CreateInk { .. }
+            | Draft::CreateCallout { .. } => true,
+            Draft::Move { .. }
+            | Draft::Handle { .. }
+            | Draft::Rotate { .. }
+            | Draft::Group { .. }
+            | Draft::Caption { .. }
+            | Draft::Leader { .. }
+            | Draft::Marquee { .. } => false,
+        }
+    }
+
     /// `'page' in draft`: the creation drafts and the marquee.
     pub fn page(&self) -> Option<PageRef> {
         match self {
@@ -1272,7 +1292,10 @@ pub struct Model {
     pub order: Rc<Vec<Id>>,
     pub selected: Vec<Id>,
     pub hovered: Option<Id>,
-    pub draft: Option<Draft>,
+    /// Shared, so a step that keeps the draft keeps the same one: a new
+    /// `Rc` is the TypeScript's new draft object, which is what
+    /// `draftChanged` announces.
+    pub draft: Option<Rc<Draft>>,
     pub preview: Option<MarkupPreview>,
     pub seq: f64,
     pub style: Style,

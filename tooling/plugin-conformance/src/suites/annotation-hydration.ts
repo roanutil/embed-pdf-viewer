@@ -41,6 +41,12 @@ const LOCAL = { kind: 'local', serverId: null };
 
 const seed = { 1: [square(1), square(2, { rect: { left: 300, bottom: 300, right: 400, top: 400 } })], 2: [circle(3, { pageObjectNumber: 2, rect: { left: 50, bottom: 100, right: 150, top: 200 } })] };
 
+/** A record the engine sent without its address. */
+const noRef = (n: number, over: Record<string, unknown> = {}) => {
+  const { ref: _ref, ...rest } = square(n, over);
+  return rest;
+};
+
 const cases: ScenarioCase[] = [
   {
     name: 'hydrates-every-page-at-open',
@@ -224,6 +230,35 @@ const cases: ScenarioCase[] = [
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.updated', pageObjectNumber: 1, origin: { kind: 'local', sessionId: 's2', sub: null }, updated: square(1, { contents: 'x' }), appearance: { changed: false } }]),
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.deleted', pageObjectNumber: 1, origin: { kind: 'remote', sessionId: 's3', sub: { $undefined: true } }, deleted: { kind: 'objectNumber', value: 2 } }]),
       call('deliverRemoteAnnotationEvent', [{ type: 'annotation.other', pageObjectNumber: 1 }]),
+      call('list', [1]),
+    ],
+  },
+  {
+    name: 'records-without-a-ref',
+    covers:
+      "A record with no ref cannot be keyed (annotationKey reads ref.kind), so ingesting it throws: a remote event carrying one applies nothing and announces nothing, a moved batch with one in it commits none of the batch, a hydration snapshot with one errors with the TypeError, and a page reload with one keeps only its removal of the stale page.",
+    plugins: PLUGINS,
+    engine: {
+      documents: {
+        a: doc([
+          { path: 'annotations.listRawAll', times: 1, value: snapshot(seed) },
+          { path: 'annotations.listRawAll', value: snapshot({ 1: [square(1), noRef(9)] }) },
+          { path: 'page.annotations.list', pon: 2, value: { annotations: [noRef(10, { pageObjectNumber: 2 })] } },
+        ]),
+      },
+    },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      call('onCreated', [{ $fn: 'created' }]),
+      call('onUpdated', [{ $fn: 'updated' }]),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.created', pageObjectNumber: 1, origin: remote(1), created: noRef(7) }]),
+      call('deliverRemoteAnnotationEvent', [{ type: 'annotation.moved', pageObjectNumber: 1, origin: remote(2), moved: [square(1, { contents: 'moved' }), noRef(8)] }]),
+      call('list', [1]),
+      call('reloadPage', [2]),
+      call('list', [2]),
+      call('rehydrate'),
+      call('hydration'),
       call('list', [1]),
     ],
   },

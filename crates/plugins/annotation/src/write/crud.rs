@@ -199,7 +199,7 @@ impl AnnotationCapability {
             let res = await_engine(call).await?;
             let updated = get(&res, "updated").cloned().unwrap_or(Value::Null);
             let changed = get(&res, "appearance").and_then(|a| get(a, "changed"));
-            this.sync(&updated, Source::Vector, truthy(changed));
+            this.sync(&updated, Source::Vector, truthy(changed))?;
             this.announce_updated(&updated, origin_api());
             Ok(())
         })
@@ -365,7 +365,7 @@ impl AnnotationCapability {
             } else {
                 Source::Vector
             };
-            this.sync(&created, source, false);
+            this.sync(&created, source, false)?;
             this.announce_created(&created, origin_api());
             get(&created, "ref").and_then(ref_from).ok_or_else(|| {
                 Error::named("TypeError", "Cannot read properties of undefined (reading 'ref')")
@@ -425,7 +425,10 @@ impl AnnotationCapability {
                     id: annotation_key(&r),
                     ref_: r.clone(),
                 });
-                this.sync(&created, Source::Vector, false);
+                if this.sync(&created, Source::Vector, false).is_err() {
+                    // The TypeScript's throw ends the callback here.
+                    return;
+                }
                 let origin =
                     if this.is_create_awaited(&id) { origin_api() } else { origin_unknown() };
                 this.announce_created(&created, origin);
@@ -487,7 +490,7 @@ impl AnnotationCapability {
                     id: annotation_key(&primary_ref),
                     ref_: primary_ref.clone(),
                 });
-                this.sync(&created, Source::Vector, false);
+                this.sync(&created, Source::Vector, false)?;
                 for (i, temp_id) in members.iter().enumerate() {
                     let mut draft = drafts[i + 1].clone();
                     draft.insert("inReplyTo".into(), ref_json(&primary_ref));
@@ -501,7 +504,7 @@ impl AnnotationCapability {
                         id: annotation_key(&r),
                         ref_: r,
                     });
-                    this.sync(&created, Source::Vector, false);
+                    this.sync(&created, Source::Vector, false)?;
                 }
                 this.confirm_create(&primary, primary_ref);
                 Ok::<(), Error>(())
@@ -557,7 +560,10 @@ impl AnnotationCapability {
         then(write, move |result| match result {
             Ok(res) => {
                 let updated = get(&res, "updated").cloned().unwrap_or(Value::Null);
-                this.sync(&updated, a.source, false);
+                if this.sync(&updated, a.source, false).is_err() {
+                    // The TypeScript's throw ends the callback here.
+                    return;
+                }
                 this.announce_updated(&updated, origin_unknown());
             }
             Err(err) => this.console_error("[annotation] flags write failed:", Some(&err)),
@@ -588,15 +594,20 @@ impl AnnotationCapability {
             Ok(res) => {
                 let updated = get(&res, "updated").cloned().unwrap_or(Value::Null);
                 let changed = get(&res, "appearance").and_then(|ap| get(ap, "changed"));
-                this.sync(&updated, a.source, truthy(changed));
+                if this.sync(&updated, a.source, truthy(changed)).is_err() {
+                    // The TypeScript's throw ends the callback here.
+                    return;
+                }
                 this.announce_updated(&updated, origin_unknown());
                 if !link_children_of(&this.model(), &id).is_empty() {
                     let _ = this.schedule_link_sync(&id, LinkIntent::Keep);
                 }
             }
             Err(_) => {
-                if let (Some(data), Some(crop)) = (&a.data, crop) {
-                    let annot = this.ingest(data, crop, a.source);
+                // An unreadable record throws before the rollback commits.
+                if let (Some(data), Some(crop)) = (&a.data, crop)
+                    && let Ok(annot) = this.ingest(data, crop, a.source)
+                {
                     this.commit(Msg::Upsert { annots: vec![annot], bump_ap: None });
                 }
             }

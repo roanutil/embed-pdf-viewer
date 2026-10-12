@@ -53,7 +53,7 @@ fn poly_preview_points(points: &[Point], cur: Point) -> Vec<Point> {
 fn eff_measure(m: &Model, id: &str) -> Option<MeasurementAppearance> {
     let a = &m.by_id[id];
     let measure = a.measure.as_ref()?;
-    let Some(d) = &m.draft else {
+    let Some(d) = m.draft.as_deref() else {
         return Some(measure.clone());
     };
     let has = |ids: &[Id]| ids.iter().any(|x| x == id);
@@ -93,7 +93,7 @@ fn eff_measure(m: &Model, id: &str) -> Option<MeasurementAppearance> {
 fn eff_geom(m: &Model, id: &str, view: Option<ViewEnv>) -> Geom {
     let a = &m.by_id[id];
     let g = anchored_geom(&a.geom, anchor_mode_of(a), view);
-    let Some(d) = &m.draft else {
+    let Some(d) = m.draft.as_deref() else {
         return g;
     };
     let has = |ids: &[Id]| ids.iter().any(|x| x == id);
@@ -140,7 +140,7 @@ fn eff_ap(m: &Model, id: &str, view: Option<ViewEnv>) -> (Option<Rect>, Option<f
     let projected = anchored_box(ap_box, anchor_of(&a.geom), anchor_mode_of(a), view);
     let mut bx = projected.map_or(ap_box, |p| p.box_);
     let rot = truthy(normalize_deg(a.ap_rot.unwrap_or(0.0) + projected.map_or(0.0, |p| p.rot)));
-    if let Some(Draft::Move { ids, delta, .. }) = &m.draft
+    if let Some(Draft::Move { ids, delta, .. }) = m.draft.as_deref()
         && ids.iter().any(|x| x == id)
     {
         bx = Rect { x: bx.x + delta.x, y: bx.y + delta.y, ..bx };
@@ -156,7 +156,7 @@ fn eff_source(m: &Model, id: &str) -> Source {
     if m.editing.as_deref() == Some(id) && matches!(a.geom, Geom::Text { .. }) {
         return Source::Vector;
     }
-    match &m.draft {
+    match m.draft.as_deref() {
         Some(
             Draft::Handle { id: hid, .. }
             | Draft::Caption { id: hid, .. }
@@ -235,7 +235,7 @@ pub fn page_items(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Vec<Render
             id,
         });
     }
-    match &m.draft {
+    match m.draft.as_deref() {
         Some(
             d @ (Draft::CreateRect { page: p, .. }
             | Draft::CreateLine { page: p, .. }
@@ -495,7 +495,7 @@ pub fn selection_knob(
     view: Option<ViewEnv>,
 ) -> Option<Knob> {
     let knob_offset = knob_offset.unwrap_or(ROTATE_KNOB_OFFSET);
-    if let Some(d @ Draft::Rotate { ids, pivot, .. }) = &m.draft
+    if let Some(d @ Draft::Rotate { ids, pivot, .. }) = m.draft.as_deref()
         && ids.first().and_then(|id| m.by_id.get(id)).is_some_and(|a| a.page.pon() == page.pon())
     {
         let committed = |id: &str| {
@@ -522,7 +522,7 @@ pub fn chrome(
 ) -> Vec<ChromeNode> {
     let pon = page.pon();
     let mut nodes = Vec::new();
-    if let Some(Draft::Marquee { page: p, from, to }) = &m.draft
+    if let Some(Draft::Marquee { page: p, from, to }) = m.draft.as_deref()
         && p.pon() == pon
     {
         nodes.push(ChromeNode::Marquee { rect: rect_from_points(*from, *to) });
@@ -530,7 +530,7 @@ pub fn chrome(
     let first_on_page = |ids: &[Id]| {
         ids.first().and_then(|id| m.by_id.get(id)).is_some_and(|a| a.page.pon() == pon)
     };
-    if let Some(Draft::Move { ids, guides, .. }) = &m.draft
+    if let Some(Draft::Move { ids, guides, .. }) = m.draft.as_deref()
         && !guides.is_empty()
         && first_on_page(ids)
     {
@@ -538,7 +538,7 @@ pub fn chrome(
             nodes.push(ChromeNode::Guide { axis: g.axis, at: g.at, lo: g.lo, hi: g.hi });
         }
     }
-    let rd = match &m.draft {
+    let rd = match m.draft.as_deref() {
         Some(d @ Draft::Rotate { ids, .. }) if first_on_page(ids) => d.as_rotate(),
         _ => None,
     };
@@ -637,7 +637,7 @@ pub fn selection_anchor(
     knob_offset_of: Option<&dyn Fn(PageRef) -> Option<f64>>,
     view_of: Option<&dyn Fn(PageRef) -> Option<ViewEnv>>,
 ) -> Option<SelectionAnchor> {
-    if matches!(m.draft, Some(Draft::Rotate { .. })) {
+    if matches!(m.draft.as_deref(), Some(Draft::Rotate { .. })) {
         return None;
     }
     let id = m.selected.iter().find(|x| is_selectable(m, x))?;
@@ -656,7 +656,7 @@ pub fn selection_anchor(
 
 /// Anchor for controls that finish or cancel a multi-click poly creation.
 pub fn creation_draft_anchor(m: &Model) -> Option<CreationDraftAnchor> {
-    let Some(Draft::CreatePoly { page, points, closed, measure, .. }) = &m.draft else {
+    let Some(Draft::CreatePoly { page, points, closed, measure, .. }) = m.draft.as_deref() else {
         return None;
     };
     if points.is_empty() {

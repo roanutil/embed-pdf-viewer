@@ -160,7 +160,10 @@ impl AnnotationCapability {
         then(call, move |result| match result {
             Ok(res) => {
                 let created = get(&res, "created").cloned().unwrap_or(Value::Null);
-                this.sync(&created, Source::Baked, false);
+                if let Err(error) = this.sync(&created, Source::Baked, false) {
+                    resolver.reject(error);
+                    return;
+                }
                 let key = get(&created, "ref").and_then(annotation_key_of);
                 if let Some(key) = key {
                     this.commit(Msg::Select { ids: vec![key], add: None });

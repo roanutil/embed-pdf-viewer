@@ -57,7 +57,7 @@ impl AnnotationCapability {
             let res =
                 await_engine(doc.call("page.annotations.create", Some(pon), vec![draft])).await?;
             let created = get(&res, "created").cloned().unwrap_or(Value::Null);
-            this.sync(&created, Source::Baked, false);
+            this.sync(&created, Source::Baked, false)?;
             Ok(created)
         })
     }

@@ -60,7 +60,14 @@ impl AnnotationCapability {
                 previous_refs: refs_of_in(prev, &prev.selected),
             });
         }
-        if prev.draft != next.draft {
+        // `prev.draft !== next.draft`: identity, so a step that builds a new
+        // draft announces it even when its value did not change.
+        let same_draft = match (&prev.draft, &next.draft) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+            _ => false,
+        };
+        if !same_draft {
             events
                 .draft_changed
                 .emit(&AnnotationDraftChangedEvent { draft: creation_draft_anchor(next) });

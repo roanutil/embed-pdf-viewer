@@ -42,7 +42,7 @@ fn source(a: &[Value], i: usize) -> Source {
 }
 
 fn from_dto(a: &[Value]) -> Out {
-    Ok(to_value(&repository::from_dto(&a[0], crop(a, 1), source(a, 2))))
+    Ok(to_value(&repository::from_dto(&a[0], crop(a, 1), source(a, 2))?))
 }
 
 fn to_patch(a: &[Value]) -> Out {
@@ -435,7 +435,7 @@ fn range_props(a: &[Value]) -> Out {
     let doc: RichTextDocument = arg(a, 0)?;
     let range: epdf_annotation_core::richtext::RichTextRange = arg(a, 1)?;
     let fonts = fonts_arg(a, 2)?;
-    let (values, mixed) = rich_text::range_props(&doc, range, fonts.as_deref());
+    let (values, mixed) = rich_text::range_props(&doc, range, fonts.as_deref())?;
     Ok(json!({ "values": values, "mixed": to_value(&mixed) }))
 }
 

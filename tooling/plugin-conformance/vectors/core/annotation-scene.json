@@ -18955,6 +18955,140 @@
       }
     },
     {
+      "name": "scene/squiggly-nan-width",
+      "fn": "scene",
+      "args": [
+        {
+          "id": "i",
+          "ref": null,
+          "subtype": "squiggly",
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 0,
+                  "y": 0
+                },
+                "upperEnd": {
+                  "x": {
+                    "$number": "NaN"
+                  },
+                  "y": 0
+                },
+                "lowerStart": {
+                  "x": 0,
+                  "y": 10
+                },
+                "lowerEnd": {
+                  "x": {
+                    "$number": "NaN"
+                  },
+                  "y": 10
+                }
+              }
+            ]
+          },
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "source": "vector",
+          "selected": false
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "path",
+            "d": "M NaN NaN Q NaN NaN NaN NaN",
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 0.75,
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "scene/squiggly-backwards",
+      "fn": "scene",
+      "args": [
+        {
+          "id": "i",
+          "ref": null,
+          "subtype": "squiggly",
+          "geom": {
+            "t": "quads",
+            "quads": [
+              {
+                "upperStart": {
+                  "x": 100,
+                  "y": 0
+                },
+                "upperEnd": {
+                  "x": 20,
+                  "y": 0
+                },
+                "lowerStart": {
+                  "x": 100,
+                  "y": 10
+                },
+                "lowerEnd": {
+                  "x": 20,
+                  "y": 10
+                }
+              }
+            ]
+          },
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0
+          },
+          "style": {
+            "color": "#e5484d",
+            "interiorColor": null,
+            "strokeWidth": 2,
+            "opacity": 1,
+            "blendMode": "normal",
+            "border": {
+              "kind": "solid"
+            }
+          },
+          "source": "vector",
+          "selected": false
+        }
+      ],
+      "outcome": {
+        "returned": [
+          {
+            "kind": "path",
+            "d": "M 100 9 Q 99 8 98 9 T 96 9 T 94 9 T 92 9 T 90 9 T 88 9 T 86 9 T 84 9 T 82 9 T 80 9 T 78 9 T 76 9 T 74 9 T 72 9 T 70 9 T 68 9 T 66 9 T 64 9 T 62 9 T 60 9 T 58 9 T 56 9 T 54 9 T 52 9 T 50 9 T 48 9 T 46 9 T 44 9 T 42 9 T 40 9 T 38 9 T 36 9 T 34 9 T 32 9 T 30 9 T 28 9 T 26 9 T 24 9 T 22 9 T 20 9",
+            "paint": {
+              "stroke": "#e5484d",
+              "width": 0.75,
+              "opacity": 1
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "scene/squiggly-rotated-tall",
       "fn": "scene",
       "args": [

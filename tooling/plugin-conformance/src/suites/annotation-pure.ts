@@ -267,6 +267,13 @@ cases.push(
   c('rangeProps', 'one-run', { body: body(400, false, []), paragraphs: PARAS }, { start: 0, end: 2 }),
   c('rangeProps', 'caret', { body: body(700, true, ['underline']), paragraphs: PARAS }, { start: 3, end: 3 }),
   c('rangeProps', 'registered', { body: body(700, false, [], { family: 'Inter' }), paragraphs: PARAS }, { start: 0, end: 1 }, FONTS),
+  // A body with no size or color (a foreign /RC): the size reads back
+  // undefined and drops out of `values`; the color throws.
+  c('rangeProps', 'no-size', { body: { ...body(400, false, []), size: undefined }, paragraphs: PARAS }, { start: 0, end: 2 }),
+  c('rangeProps', 'no-size-mixed', { body: { ...body(400, false, []), size: undefined }, paragraphs: PARAS }, { start: 0, end: 12 }),
+  c('rangeProps', 'no-color', { body: { ...body(400, false, []), color: undefined }, paragraphs: PARAS }, { start: 0, end: 2 }),
+  // The run that differs first stops the read before the one with no color.
+  c('rangeProps', 'no-color-after-a-difference', { body: { ...body(400, false, []), color: undefined }, paragraphs: [{ runs: [{ text: 'ab', style: { color: '#111111' } }, { text: 'cd', style: { color: '#222222' } }, { text: 'ef' }] }] }, { start: 0, end: 6 }),
 );
 
 // ── page-space create input ───────────────────────────────────────────────────

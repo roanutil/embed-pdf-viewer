@@ -128,17 +128,19 @@ fn compute_threads_index(m: &Model, pages: &[f64], user: Option<&str>) -> Thread
     };
     let top = |t: &CommentThread| get(&t.root, "rect").map_or(f64::NAN, |r| f64_of(r, "top"));
     let created = |t: &CommentThread| str_of(&t.root, "created").unwrap_or_default().to_string();
-    threads.sort_by(|a, b| {
+    // V8's sort, so a NaN `top` (which makes the comparator answer NaN, read
+    // as 0) leaves the threads where the TypeScript leaves them.
+    epdf_annotation_core::js::sort_by(&mut threads, |a, b| {
         let (pa, pb) = (index(a), index(b));
         if pa != pb {
-            return (pa - pb).partial_cmp(&0.0).unwrap_or(std::cmp::Ordering::Equal);
+            return pa - pb;
         }
         let (ta, tb) = (top(a), top(b));
         if ta != tb {
-            return (tb - ta).partial_cmp(&0.0).unwrap_or(std::cmp::Ordering::Equal);
+            return tb - ta;
         }
         let (ca, cb) = (created(a), created(b));
-        ca.encode_utf16().cmp(cb.encode_utf16())
+        ca.encode_utf16().cmp(cb.encode_utf16()) as i8 as f64
     });
     let mut by_member: HashMap<Id, usize> = HashMap::new();
     let mut set = |key: Option<String>, i: usize| {

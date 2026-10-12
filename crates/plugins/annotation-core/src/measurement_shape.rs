@@ -205,7 +205,8 @@ pub fn automatic_shape_caption_center(points: &[Point], closed: bool) -> Point {
             intersections.push(a.x + ((fallback.y - a.y) * (b.x - a.x)) / (b.y - a.y));
         }
     }
-    intersections.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    // V8's sort: a NaN crossing makes `a - b` NaN, which is no total order.
+    crate::js::sort_by(&mut intersections, |a, b| a - b);
     let mut widest = -1.0;
     let mut i = 1;
     while i < intersections.len() {

@@ -225,6 +225,9 @@ for (const [label, dto, crop] of DTOS) {
 }
 cases.push(c('fromDTO', 'vector-source', square(1), CROP, 'vector'));
 cases.push(c('fromDTO', 'default-source', square(1), CROP));
+// annotationKey(dto.ref) throws on a record without its address.
+cases.push(c('fromDTO', 'no-ref', (({ ref: _ref, ...rest }) => rest)(square(1)), CROP, 'baked'));
+cases.push(c('fromDTO', 'null-ref', { ...square(1), ref: null }, CROP, 'baked'));
 
 for (const [label] of DTOS) {
   const a = annotOf(label);

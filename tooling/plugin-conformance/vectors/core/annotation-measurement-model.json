@@ -9531,6 +9531,128 @@
             ]
           },
           {
+            "name": "leader-drag-removed",
+            "over": {
+              "selected": [
+                "dist"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 100,
+                    "y": 120
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "remove",
+                "ids": [
+                  "dist"
+                ]
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 110,
+                    "y": 150
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 110,
+                    "y": 150
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "caption-drag-removed",
+            "over": {
+              "selected": [
+                "perim"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "editPointer",
+                "phase": "down",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 450,
+                    "y": 380
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "remove",
+                "ids": [
+                  "perim"
+                ]
+              },
+              {
+                "t": "editPointer",
+                "phase": "move",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 430,
+                    "y": 385
+                  },
+                  "shift": false
+                }
+              },
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
             "name": "leader-drag-end",
             "over": {
               "selected": [
@@ -9767,151 +9889,6 @@
                     "y": 0
                   },
                   "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "draft-group-perimeter",
-            "over": {
-              "selected": [
-                "perim",
-                "area"
-              ],
-              "draft": {
-                "g": "group",
-                "op": "resize",
-                "ids": [
-                  "perim",
-                  "area"
-                ],
-                "handle": "se",
-                "anchor": {
-                  "x": 100,
-                  "y": 300
-                },
-                "base": {
-                  "x": 100,
-                  "y": 300,
-                  "width": 452,
-                  "height": 80
-                },
-                "cur": {
-                  "x": 100,
-                  "y": 300,
-                  "width": 500,
-                  "height": 100
-                }
-              }
-            },
-            "msgs": [
-              {
-                "t": "editPointer",
-                "phase": "up",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 0,
-                    "y": 0
-                  },
-                  "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "callout-page-no-slide",
-            "over": {},
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "down",
-                "subtype": "free-text-callout",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 200,
-                    "y": 200
-                  },
-                  "shift": false,
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  }
-                }
-              },
-              {
-                "t": "createPointer",
-                "phase": "down",
-                "subtype": "free-text-callout",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 250,
-                    "y": 250
-                  },
-                  "shift": false,
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  }
-                }
-              },
-              {
-                "t": "createPointer",
-                "phase": "down",
-                "subtype": "free-text-callout",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 260,
-                    "y": 260
-                  },
-                  "shift": false,
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  }
-                }
-              },
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "free-text-callout",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 260,
-                    "y": 260
-                  },
-                  "shift": false,
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  }
                 }
               }
             ]
@@ -10534,6 +10511,181 @@
               }
             },
             "removed": []
+          },
+          {
+            "name": "leader-drag-removed",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "leader",
+                  "id": "dist",
+                  "start": {
+                    "x": 100,
+                    "y": 120
+                  },
+                  "delta": 0
+                },
+                "selected": [
+                  "dist"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "dist-free",
+                "dist-close",
+                "area",
+                "perim",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare"
+              ],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": [
+              "dist"
+            ]
+          },
+          {
+            "name": "caption-drag-removed",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "caption",
+                  "id": "perim",
+                  "start": {
+                    "x": 450,
+                    "y": 380
+                  },
+                  "delta": {
+                    "x": 0,
+                    "y": 0
+                  }
+                },
+                "selected": [
+                  "perim"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              },
+              {
+                "same": true,
+                "effects": [],
+                "draft": null,
+                "selected": []
+              }
+            ],
+            "model": {
+              "order": [
+                "dist",
+                "dist-free",
+                "dist-close",
+                "area",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare"
+              ],
+              "selected": [],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {}
+            },
+            "removed": [
+              "perim"
+            ]
           },
           {
             "name": "leader-drag-end",
@@ -11492,512 +11644,12 @@
               }
             },
             "removed": []
-          },
-          {
-            "name": "draft-group-perimeter",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "patch",
-                    "id": "perim",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  },
-                  {
-                    "fx": "patch",
-                    "id": "area",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "perim",
-                  "area"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "dist",
-                "dist-free",
-                "dist-close",
-                "area",
-                "perim",
-                "ft",
-                "ft-plain-dto",
-                "callout",
-                "sq",
-                "bare"
-              ],
-              "selected": [
-                "perim",
-                "area"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 0,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "area": {
-                  "id": "area",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 67156
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "polygon",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 100,
-                        "y": 300
-                      },
-                      {
-                        "x": 259.29203539823004,
-                        "y": 300
-                      },
-                      {
-                        "x": 259.29203539823004,
-                        "y": 390
-                      },
-                      {
-                        "x": 100,
-                        "y": 390
-                      }
-                    ],
-                    "closed": true
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector",
-                  "measure": {
-                    "intent": "PolygonDimension",
-                    "measure": {
-                      "subtype": "RL",
-                      "ratio": "1 in = 1 m",
-                      "x": [
-                        {
-                          "unit": "m",
-                          "conversion": 0.013888888888888888
-                        }
-                      ],
-                      "distance": [
-                        {
-                          "unit": "m",
-                          "conversion": 1
-                        }
-                      ],
-                      "area": [
-                        {
-                          "unit": "m²",
-                          "conversion": 1
-                        }
-                      ]
-                    },
-                    "caption": {
-                      "enabled": true
-                    },
-                    "crop": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 612,
-                      "top": 792
-                    },
-                    "text": "stored"
-                  }
-                },
-                "perim": {
-                  "id": "perim",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 60218
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "polyline",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 376.5486725663717,
-                        "y": 300
-                      },
-                      {
-                        "x": 487.16814159292034,
-                        "y": 362.5
-                      },
-                      {
-                        "x": 597.787610619469,
-                        "y": 300
-                      }
-                    ],
-                    "closed": false
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector",
-                  "measure": {
-                    "intent": "PolyLineDimension",
-                    "measure": {
-                      "subtype": "RL",
-                      "ratio": "1 in = 1 m",
-                      "x": [
-                        {
-                          "unit": "m",
-                          "conversion": 0.013888888888888888
-                        }
-                      ],
-                      "distance": [
-                        {
-                          "unit": "m",
-                          "conversion": 1
-                        }
-                      ],
-                      "area": [
-                        {
-                          "unit": "m²",
-                          "conversion": 1
-                        }
-                      ]
-                    },
-                    "caption": {
-                      "enabled": true,
-                      "center": {
-                        "x": 487.16814159292034,
-                        "y": 392
-                      }
-                    },
-                    "crop": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 612,
-                      "top": 792
-                    },
-                    "text": "stored"
-                  }
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "callout-page-no-slide",
-            "steps": [
-              {
-                "same": false,
-                "effects": [],
-                "draft": {
-                  "g": "create-callout",
-                  "subtype": "free-text-callout",
-                  "preset": "free-text-callout",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "step": "knee",
-                  "tip": {
-                    "x": 200,
-                    "y": 200
-                  },
-                  "cur": {
-                    "x": 200,
-                    "y": 200
-                  },
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  }
-                },
-                "selected": []
-              },
-              {
-                "same": false,
-                "effects": [],
-                "draft": {
-                  "g": "create-callout",
-                  "subtype": "free-text-callout",
-                  "preset": "free-text-callout",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "step": "box",
-                  "tip": {
-                    "x": 200,
-                    "y": 200
-                  },
-                  "cur": {
-                    "x": 250,
-                    "y": 250
-                  },
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  },
-                  "knee": {
-                    "x": 250,
-                    "y": 250
-                  }
-                },
-                "selected": []
-              },
-              {
-                "same": false,
-                "effects": [],
-                "draft": {
-                  "g": "create-callout",
-                  "subtype": "free-text-callout",
-                  "preset": "free-text-callout",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "step": "box",
-                  "tip": {
-                    "x": 200,
-                    "y": 200
-                  },
-                  "cur": {
-                    "x": 250,
-                    "y": 250
-                  },
-                  "pageBox": {
-                    "x": 0,
-                    "y": 0,
-                    "width": 600,
-                    "height": 800
-                  },
-                  "knee": {
-                    "x": 250,
-                    "y": 250
-                  },
-                  "boxFrom": {
-                    "x": 260,
-                    "y": 260
-                  },
-                  "boxTo": {
-                    "x": 260,
-                    "y": 260
-                  }
-                },
-                "selected": []
-              },
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "create",
-                    "id": "tmp:1"
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "tmp:1"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "dist",
-                "dist-free",
-                "dist-close",
-                "area",
-                "perim",
-                "ft",
-                "ft-plain-dto",
-                "callout",
-                "sq",
-                "bare",
-                "tmp:1"
-              ],
-              "selected": [
-                "tmp:1"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 1,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": "tmp:1",
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "tmp:1": {
-                  "id": "tmp:1",
-                  "ref": null,
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "free-text",
-                  "geom": {
-                    "t": "text",
-                    "rect": {
-                      "x": 260,
-                      "y": 260,
-                      "width": 150,
-                      "height": 40
-                    },
-                    "callout": {
-                      "tip": {
-                        "x": 200,
-                        "y": 200
-                      },
-                      "knee": {
-                        "x": 250,
-                        "y": 250
-                      },
-                      "ending": "open-arrow"
-                    }
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "text": {
-                    "fontFamily": "helvetica",
-                    "fontSize": 14,
-                    "fontColor": "#000000",
-                    "textAlign": "left"
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector"
-                }
-              }
-            },
-            "removed": []
           }
         ]
       }
     },
     {
-      "name": "runs/3-draft-leader-not-distance",
+      "name": "runs/3-draft-group-perimeter",
       "fn": "runs",
       "args": [
         {
@@ -12774,6 +12426,151 @@
         },
         [
           {
+            "name": "draft-group-perimeter",
+            "over": {
+              "selected": [
+                "perim",
+                "area"
+              ],
+              "draft": {
+                "g": "group",
+                "op": "resize",
+                "ids": [
+                  "perim",
+                  "area"
+                ],
+                "handle": "se",
+                "anchor": {
+                  "x": 100,
+                  "y": 300
+                },
+                "base": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 452,
+                  "height": 80
+                },
+                "cur": {
+                  "x": 100,
+                  "y": 300,
+                  "width": 500,
+                  "height": 100
+                }
+              }
+            },
+            "msgs": [
+              {
+                "t": "editPointer",
+                "phase": "up",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "callout-page-no-slide",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 200,
+                    "y": 200
+                  },
+                  "shift": false,
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 250,
+                    "y": 250
+                  },
+                  "shift": false,
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "free-text-callout",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 260,
+                    "y": 260
+                  },
+                  "shift": false,
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "free-text-callout",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 260,
+                    "y": 260
+                  },
+                  "shift": false,
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              }
+            ]
+          },
+          {
             "name": "draft-leader-not-distance",
             "over": {
               "draft": {
@@ -13101,41 +12898,511 @@
                 }
               }
             ]
-          },
-          {
-            "name": "rotate-perimeter",
-            "over": {
-              "selected": [
-                "perim"
-              ]
-            },
-            "msgs": [
-              {
-                "t": "rotate90"
-              },
-              {
-                "t": "resetRotation"
-              }
-            ]
-          },
-          {
-            "name": "group-perimeter-area",
-            "over": {
-              "selected": [
-                "perim",
-                "area"
-              ]
-            },
-            "msgs": [
-              {
-                "t": "rotate90"
-              }
-            ]
           }
         ]
       ],
       "outcome": {
         "returned": [
+          {
+            "name": "draft-group-perimeter",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "perim",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  },
+                  {
+                    "fx": "patch",
+                    "id": "area",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "perim",
+                  "area"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "dist",
+                "dist-free",
+                "dist-close",
+                "area",
+                "perim",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare"
+              ],
+              "selected": [
+                "perim",
+                "area"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "area": {
+                  "id": "area",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 67156
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "polygon",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 100,
+                        "y": 300
+                      },
+                      {
+                        "x": 259.29203539823004,
+                        "y": 300
+                      },
+                      {
+                        "x": 259.29203539823004,
+                        "y": 390
+                      },
+                      {
+                        "x": 100,
+                        "y": 390
+                      }
+                    ],
+                    "closed": true
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "measure": {
+                    "intent": "PolygonDimension",
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1
+                        }
+                      ]
+                    },
+                    "caption": {
+                      "enabled": true
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    },
+                    "text": "stored"
+                  }
+                },
+                "perim": {
+                  "id": "perim",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 60218
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "polyline",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 376.5486725663717,
+                        "y": 300
+                      },
+                      {
+                        "x": 487.16814159292034,
+                        "y": 362.5
+                      },
+                      {
+                        "x": 597.787610619469,
+                        "y": 300
+                      }
+                    ],
+                    "closed": false
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "measure": {
+                    "intent": "PolyLineDimension",
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1
+                        }
+                      ]
+                    },
+                    "caption": {
+                      "enabled": true,
+                      "center": {
+                        "x": 487.16814159292034,
+                        "y": 392
+                      }
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    },
+                    "text": "stored"
+                  }
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "callout-page-no-slide",
+            "steps": [
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "step": "knee",
+                  "tip": {
+                    "x": 200,
+                    "y": 200
+                  },
+                  "cur": {
+                    "x": 200,
+                    "y": 200
+                  },
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "step": "box",
+                  "tip": {
+                    "x": 200,
+                    "y": 200
+                  },
+                  "cur": {
+                    "x": 250,
+                    "y": 250
+                  },
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "knee": {
+                    "x": 250,
+                    "y": 250
+                  }
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [],
+                "draft": {
+                  "g": "create-callout",
+                  "subtype": "free-text-callout",
+                  "preset": "free-text-callout",
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "step": "box",
+                  "tip": {
+                    "x": 200,
+                    "y": 200
+                  },
+                  "cur": {
+                    "x": 250,
+                    "y": 250
+                  },
+                  "pageBox": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "knee": {
+                    "x": 250,
+                    "y": 250
+                  },
+                  "boxFrom": {
+                    "x": 260,
+                    "y": 260
+                  },
+                  "boxTo": {
+                    "x": 260,
+                    "y": 260
+                  }
+                },
+                "selected": []
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "create",
+                    "id": "tmp:1"
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "tmp:1"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "dist",
+                "dist-free",
+                "dist-close",
+                "area",
+                "perim",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare",
+                "tmp:1"
+              ],
+              "selected": [
+                "tmp:1"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 1,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": "tmp:1",
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "tmp:1": {
+                  "id": "tmp:1",
+                  "ref": null,
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "free-text",
+                  "geom": {
+                    "t": "text",
+                    "rect": {
+                      "x": 260,
+                      "y": 260,
+                      "width": 150,
+                      "height": 40
+                    },
+                    "callout": {
+                      "tip": {
+                        "x": 200,
+                        "y": 200
+                      },
+                      "knee": {
+                        "x": 250,
+                        "y": 250
+                      },
+                      "ending": "open-arrow"
+                    }
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "text": {
+                    "fontFamily": "helvetica",
+                    "fontSize": 14,
+                    "fontColor": "#000000",
+                    "textAlign": "left"
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector"
+                }
+              }
+            },
+            "removed": []
+          },
           {
             "name": "draft-leader-not-distance",
             "steps": [
@@ -14199,468 +14466,12 @@
               }
             },
             "removed": []
-          },
-          {
-            "name": "rotate-perimeter",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "patch",
-                    "id": "perim",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "perim"
-                ]
-              },
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "patch",
-                    "id": "perim",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "perim"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "dist",
-                "dist-free",
-                "dist-close",
-                "area",
-                "perim",
-                "ft",
-                "ft-plain-dto",
-                "callout",
-                "sq",
-                "bare"
-              ],
-              "selected": [
-                "perim"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 0,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "perim": {
-                  "id": "perim",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 60218
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "polyline",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 350.0000000000001,
-                        "y": 300
-                      },
-                      {
-                        "x": 450.00000000000006,
-                        "y": 350
-                      },
-                      {
-                        "x": 550.0000000000001,
-                        "y": 299.99999999999994
-                      }
-                    ],
-                    "closed": false,
-                    "rot": 0
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector",
-                  "measure": {
-                    "intent": "PolyLineDimension",
-                    "measure": {
-                      "subtype": "RL",
-                      "ratio": "1 in = 1 m",
-                      "x": [
-                        {
-                          "unit": "m",
-                          "conversion": 0.013888888888888888
-                        }
-                      ],
-                      "distance": [
-                        {
-                          "unit": "m",
-                          "conversion": 1
-                        }
-                      ],
-                      "area": [
-                        {
-                          "unit": "m²",
-                          "conversion": 1
-                        }
-                      ]
-                    },
-                    "caption": {
-                      "enabled": true,
-                      "center": {
-                        "x": 450.00000000000006,
-                        "y": 412
-                      }
-                    },
-                    "crop": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 612,
-                      "top": 792
-                    },
-                    "text": "stored"
-                  }
-                }
-              }
-            },
-            "removed": []
-          },
-          {
-            "name": "group-perimeter-area",
-            "steps": [
-              {
-                "same": false,
-                "effects": [
-                  {
-                    "fx": "patch",
-                    "id": "perim",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  },
-                  {
-                    "fx": "patch",
-                    "id": "area",
-                    "scope": {
-                      "kind": "geometry"
-                    }
-                  }
-                ],
-                "draft": null,
-                "selected": [
-                  "perim",
-                  "area"
-                ]
-              }
-            ],
-            "model": {
-              "order": [
-                "dist",
-                "dist-free",
-                "dist-close",
-                "area",
-                "perim",
-                "ft",
-                "ft-plain-dto",
-                "callout",
-                "sq",
-                "bare"
-              ],
-              "selected": [
-                "perim",
-                "area"
-              ],
-              "hovered": null,
-              "draft": null,
-              "preview": null,
-              "seq": 0,
-              "style": {
-                "color": "#e5484d",
-                "interiorColor": null,
-                "strokeWidth": 2,
-                "opacity": 1,
-                "blendMode": "normal",
-                "border": {
-                  "kind": "solid"
-                }
-              },
-              "defaults": {},
-              "hitMargin": 6,
-              "editing": null,
-              "snap": {
-                "guides": true,
-                "guideThreshold": 5,
-                "rotation": true,
-                "rotationAngles": [
-                  0,
-                  90,
-                  180,
-                  270
-                ],
-                "rotationThreshold": 4
-              },
-              "byId": {
-                "area": {
-                  "id": "area",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 67156
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "polygon",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 366.47360679775,
-                        "y": 117.02639320225002
-                      },
-                      {
-                        "x": 366.47360679775,
-                        "y": 261.02639320225
-                      },
-                      {
-                        "x": 294.47360679775,
-                        "y": 261.02639320225
-                      },
-                      {
-                        "x": 294.47360679775,
-                        "y": 117.02639320225003
-                      }
-                    ],
-                    "closed": true,
-                    "rot": 90
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector",
-                  "measure": {
-                    "intent": "PolygonDimension",
-                    "measure": {
-                      "subtype": "RL",
-                      "ratio": "1 in = 1 m",
-                      "x": [
-                        {
-                          "unit": "m",
-                          "conversion": 0.013888888888888888
-                        }
-                      ],
-                      "distance": [
-                        {
-                          "unit": "m",
-                          "conversion": 1
-                        }
-                      ],
-                      "area": [
-                        {
-                          "unit": "m²",
-                          "conversion": 1
-                        }
-                      ]
-                    },
-                    "caption": {
-                      "enabled": true
-                    },
-                    "crop": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 612,
-                      "top": 792
-                    },
-                    "text": "stored"
-                  }
-                },
-                "perim": {
-                  "id": "perim",
-                  "ref": {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "annotObjectNumber": 60218
-                  },
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "subtype": "polyline",
-                  "geom": {
-                    "t": "poly",
-                    "points": [
-                      {
-                        "x": 366.47360679775,
-                        "y": 367.02639320225
-                      },
-                      {
-                        "x": 316.47360679775,
-                        "y": 467.02639320225
-                      },
-                      {
-                        "x": 366.47360679775005,
-                        "y": 567.02639320225
-                      }
-                    ],
-                    "closed": false,
-                    "rot": 90
-                  },
-                  "style": {
-                    "color": "#e5484d",
-                    "interiorColor": null,
-                    "strokeWidth": 2,
-                    "opacity": 1,
-                    "blendMode": "normal",
-                    "border": {
-                      "kind": "solid"
-                    }
-                  },
-                  "flags": {
-                    "invisible": false,
-                    "hidden": false,
-                    "print": true,
-                    "noZoom": false,
-                    "noRotate": false,
-                    "noView": false,
-                    "readOnly": false,
-                    "locked": false,
-                    "toggleNoView": false,
-                    "lockedContents": false
-                  },
-                  "source": "vector",
-                  "measure": {
-                    "intent": "PolyLineDimension",
-                    "measure": {
-                      "subtype": "RL",
-                      "ratio": "1 in = 1 m",
-                      "x": [
-                        {
-                          "unit": "m",
-                          "conversion": 0.013888888888888888
-                        }
-                      ],
-                      "distance": [
-                        {
-                          "unit": "m",
-                          "conversion": 1
-                        }
-                      ],
-                      "area": [
-                        {
-                          "unit": "m²",
-                          "conversion": 1
-                        }
-                      ]
-                    },
-                    "caption": {
-                      "enabled": true,
-                      "center": {
-                        "x": 286.47360679775,
-                        "y": 324.97360679775
-                      }
-                    },
-                    "crop": {
-                      "left": 0,
-                      "bottom": 0,
-                      "right": 612,
-                      "top": 792
-                    },
-                    "text": "stored"
-                  }
-                }
-              }
-            },
-            "removed": []
           }
         ]
       }
     },
     {
-      "name": "runs/4-hydrated-under-caption-drag",
+      "name": "runs/4-rotate-perimeter",
       "fn": "runs",
       "args": [
         {
@@ -15437,6 +15248,36 @@
         },
         [
           {
+            "name": "rotate-perimeter",
+            "over": {
+              "selected": [
+                "perim"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "rotate90"
+              },
+              {
+                "t": "resetRotation"
+              }
+            ]
+          },
+          {
+            "name": "group-perimeter-area",
+            "over": {
+              "selected": [
+                "perim",
+                "area"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "rotate90"
+              }
+            ]
+          },
+          {
             "name": "hydrated-under-caption-drag",
             "over": {
               "selected": [
@@ -16032,115 +15873,467 @@
                 }
               }
             ]
-          },
-          {
-            "name": "distance-create-at-min-drag",
-            "over": {},
-            "msgs": [
-              {
-                "t": "createPointer",
-                "phase": "down",
-                "subtype": "line",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 100,
-                    "y": 700
-                  },
-                  "shift": false
-                },
-                "measure": {
-                  "intent": "LineDimension",
-                  "measure": {
-                    "subtype": "RL",
-                    "ratio": "1 in = 1 m",
-                    "x": [
-                      {
-                        "unit": "m",
-                        "conversion": 0.013888888888888888
-                      }
-                    ],
-                    "distance": [
-                      {
-                        "unit": "m",
-                        "conversion": 1
-                      }
-                    ],
-                    "area": [
-                      {
-                        "unit": "m²",
-                        "conversion": 1
-                      }
-                    ]
-                  },
-                  "caption": {
-                    "enabled": true
-                  },
-                  "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 612,
-                    "top": 792
-                  },
-                  "text": "stored"
-                }
-              },
-              {
-                "t": "createPointer",
-                "phase": "up",
-                "subtype": "line",
-                "in": {
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "point": {
-                    "x": 103,
-                    "y": 700
-                  },
-                  "shift": false
-                }
-              }
-            ]
-          },
-          {
-            "name": "bold-props",
-            "over": {
-              "selected": [
-                "ft",
-                "ft-plain-dto",
-                "sq"
-              ]
-            },
-            "msgs": [
-              {
-                "t": "setProps",
-                "patch": {
-                  "bold": true
-                }
-              },
-              {
-                "t": "setProps",
-                "patch": {
-                  "italic": true,
-                  "underline": false
-                }
-              },
-              {
-                "t": "setProps",
-                "patch": {
-                  "underline": true
-                }
-              }
-            ]
           }
         ]
       ],
       "outcome": {
         "returned": [
+          {
+            "name": "rotate-perimeter",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "perim",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "perim"
+                ]
+              },
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "perim",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "perim"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "dist",
+                "dist-free",
+                "dist-close",
+                "area",
+                "perim",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare"
+              ],
+              "selected": [
+                "perim"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "perim": {
+                  "id": "perim",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 60218
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "polyline",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 350.0000000000001,
+                        "y": 300
+                      },
+                      {
+                        "x": 450.00000000000006,
+                        "y": 350
+                      },
+                      {
+                        "x": 550.0000000000001,
+                        "y": 299.99999999999994
+                      }
+                    ],
+                    "closed": false,
+                    "rot": 0
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "measure": {
+                    "intent": "PolyLineDimension",
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1
+                        }
+                      ]
+                    },
+                    "caption": {
+                      "enabled": true,
+                      "center": {
+                        "x": 450.00000000000006,
+                        "y": 412
+                      }
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    },
+                    "text": "stored"
+                  }
+                }
+              }
+            },
+            "removed": []
+          },
+          {
+            "name": "group-perimeter-area",
+            "steps": [
+              {
+                "same": false,
+                "effects": [
+                  {
+                    "fx": "patch",
+                    "id": "perim",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  },
+                  {
+                    "fx": "patch",
+                    "id": "area",
+                    "scope": {
+                      "kind": "geometry"
+                    }
+                  }
+                ],
+                "draft": null,
+                "selected": [
+                  "perim",
+                  "area"
+                ]
+              }
+            ],
+            "model": {
+              "order": [
+                "dist",
+                "dist-free",
+                "dist-close",
+                "area",
+                "perim",
+                "ft",
+                "ft-plain-dto",
+                "callout",
+                "sq",
+                "bare"
+              ],
+              "selected": [
+                "perim",
+                "area"
+              ],
+              "hovered": null,
+              "draft": null,
+              "preview": null,
+              "seq": 0,
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "defaults": {},
+              "hitMargin": 6,
+              "editing": null,
+              "snap": {
+                "guides": true,
+                "guideThreshold": 5,
+                "rotation": true,
+                "rotationAngles": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "rotationThreshold": 4
+              },
+              "byId": {
+                "area": {
+                  "id": "area",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 67156
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "polygon",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 366.47360679775,
+                        "y": 117.02639320225002
+                      },
+                      {
+                        "x": 366.47360679775,
+                        "y": 261.02639320225
+                      },
+                      {
+                        "x": 294.47360679775,
+                        "y": 261.02639320225
+                      },
+                      {
+                        "x": 294.47360679775,
+                        "y": 117.02639320225003
+                      }
+                    ],
+                    "closed": true,
+                    "rot": 90
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "measure": {
+                    "intent": "PolygonDimension",
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1
+                        }
+                      ]
+                    },
+                    "caption": {
+                      "enabled": true
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    },
+                    "text": "stored"
+                  }
+                },
+                "perim": {
+                  "id": "perim",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "annotObjectNumber": 60218
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "subtype": "polyline",
+                  "geom": {
+                    "t": "poly",
+                    "points": [
+                      {
+                        "x": 366.47360679775,
+                        "y": 367.02639320225
+                      },
+                      {
+                        "x": 316.47360679775,
+                        "y": 467.02639320225
+                      },
+                      {
+                        "x": 366.47360679775005,
+                        "y": 567.02639320225
+                      }
+                    ],
+                    "closed": false,
+                    "rot": 90
+                  },
+                  "style": {
+                    "color": "#e5484d",
+                    "interiorColor": null,
+                    "strokeWidth": 2,
+                    "opacity": 1,
+                    "blendMode": "normal",
+                    "border": {
+                      "kind": "solid"
+                    }
+                  },
+                  "flags": {
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false
+                  },
+                  "source": "vector",
+                  "measure": {
+                    "intent": "PolyLineDimension",
+                    "measure": {
+                      "subtype": "RL",
+                      "ratio": "1 in = 1 m",
+                      "x": [
+                        {
+                          "unit": "m",
+                          "conversion": 0.013888888888888888
+                        }
+                      ],
+                      "distance": [
+                        {
+                          "unit": "m",
+                          "conversion": 1
+                        }
+                      ],
+                      "area": [
+                        {
+                          "unit": "m²",
+                          "conversion": 1
+                        }
+                      ]
+                    },
+                    "caption": {
+                      "enabled": true,
+                      "center": {
+                        "x": 286.47360679775,
+                        "y": 324.97360679775
+                      }
+                    },
+                    "crop": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    },
+                    "text": "stored"
+                  }
+                }
+              }
+            },
+            "removed": []
+          },
           {
             "name": "hydrated-under-caption-drag",
             "steps": [
@@ -17660,7 +17853,895 @@
               "byId": {}
             },
             "removed": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "runs/5-distance-create-at-min-drag",
+      "fn": "runs",
+      "args": [
+        {
+          "byId": {
+            "dist": {
+              "id": "dist",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 48333
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "line",
+              "geom": {
+                "t": "line",
+                "a": {
+                  "x": 100,
+                  "y": 100
+                },
+                "b": {
+                  "x": 244,
+                  "y": 100
+                },
+                "ends": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "measure": {
+                "intent": "LineDimension",
+                "measure": {
+                  "subtype": "RL",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "caption": {
+                  "enabled": true
+                },
+                "crop": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 612,
+                  "top": 792
+                },
+                "text": "stored",
+                "leader": {
+                  "length": -20
+                }
+              }
+            },
+            "dist-free": {
+              "id": "dist-free",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 65196
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "line",
+              "geom": {
+                "t": "line",
+                "a": {
+                  "x": 300,
+                  "y": 700
+                },
+                "b": {
+                  "x": 444,
+                  "y": 700
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "measure": {
+                "intent": "LineDimension",
+                "measure": {
+                  "subtype": "RL",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "caption": {
+                  "enabled": true
+                },
+                "crop": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 612,
+                  "top": 792
+                },
+                "text": "stored"
+              }
+            },
+            "dist-close": {
+              "id": "dist-close",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 81912
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "line",
+              "geom": {
+                "t": "line",
+                "a": {
+                  "x": 100,
+                  "y": 600
+                },
+                "b": {
+                  "x": 244,
+                  "y": 600
+                },
+                "ends": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "measure": {
+                "intent": "LineDimension",
+                "measure": {
+                  "subtype": "RL",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "caption": {
+                  "enabled": true
+                },
+                "crop": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 612,
+                  "top": 792
+                },
+                "text": "stored",
+                "leader": {
+                  "length": -3
+                }
+              }
+            },
+            "area": {
+              "id": "area",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 67156
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "polygon",
+              "geom": {
+                "t": "poly",
+                "points": [
+                  {
+                    "x": 100,
+                    "y": 300
+                  },
+                  {
+                    "x": 244,
+                    "y": 300
+                  },
+                  {
+                    "x": 244,
+                    "y": 372
+                  },
+                  {
+                    "x": 100,
+                    "y": 372
+                  }
+                ],
+                "closed": true
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "measure": {
+                "intent": "PolygonDimension",
+                "measure": {
+                  "subtype": "RL",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "caption": {
+                  "enabled": true
+                },
+                "crop": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 612,
+                  "top": 792
+                },
+                "text": "stored"
+              }
+            },
+            "perim": {
+              "id": "perim",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 60218
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "polyline",
+              "geom": {
+                "t": "poly",
+                "points": [
+                  {
+                    "x": 350,
+                    "y": 300
+                  },
+                  {
+                    "x": 450,
+                    "y": 350
+                  },
+                  {
+                    "x": 550,
+                    "y": 300
+                  }
+                ],
+                "closed": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "measure": {
+                "intent": "PolyLineDimension",
+                "measure": {
+                  "subtype": "RL",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "caption": {
+                  "enabled": true,
+                  "center": {
+                    "x": 450,
+                    "y": 412
+                  }
+                },
+                "crop": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 612,
+                  "top": 792
+                },
+                "text": "stored"
+              }
+            },
+            "ft": {
+              "id": "ft",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 10005
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 400,
+                  "y": 500,
+                  "width": 120,
+                  "height": 40
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left",
+                "bold": true
+              },
+              "data": {
+                "subtype": "free-text",
+                "contents": "hi",
+                "richText": {
+                  "body": {
+                    "family": "Helvetica",
+                    "size": 12,
+                    "weight": 400
+                  },
+                  "paragraphs": [
+                    {
+                      "runs": [
+                        {
+                          "text": "hi"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            "ft-plain-dto": {
+              "id": "ft-plain-dto",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 7204
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 400,
+                  "y": 560,
+                  "width": 120,
+                  "height": 40
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left"
+              },
+              "data": {
+                "subtype": "free-text",
+                "contents": "x"
+              }
+            },
+            "callout": {
+              "id": "callout",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 58953
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "free-text",
+              "geom": {
+                "t": "text",
+                "rect": {
+                  "x": 480,
+                  "y": 700,
+                  "width": 100,
+                  "height": 40
+                },
+                "callout": {
+                  "tip": {
+                    "x": 590,
+                    "y": 790
+                  },
+                  "ending": "closed-arrow"
+                }
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "text": {
+                "fontFamily": "helvetica",
+                "fontSize": 12,
+                "fontColor": "#000000",
+                "textAlign": "left"
+              }
+            },
+            "sq": {
+              "id": "sq",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 10405
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 20,
+                  "y": 20,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector",
+              "data": {
+                "subtype": "square"
+              }
+            },
+            "bare": {
+              "id": "bare",
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 1
+                },
+                "annotObjectNumber": 81017
+              },
+              "page": {
+                "kind": "objectNumber",
+                "pageObjectNumber": 1
+              },
+              "subtype": "square",
+              "geom": {
+                "t": "rect",
+                "rect": {
+                  "x": 80,
+                  "y": 20,
+                  "width": 40,
+                  "height": 40
+                },
+                "ellipse": false
+              },
+              "style": {
+                "color": "#e5484d",
+                "interiorColor": null,
+                "strokeWidth": 2,
+                "opacity": 1,
+                "blendMode": "normal",
+                "border": {
+                  "kind": "solid"
+                }
+              },
+              "flags": {
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false
+              },
+              "source": "vector"
+            }
           },
+          "order": [
+            "dist",
+            "dist-free",
+            "dist-close",
+            "area",
+            "perim",
+            "ft",
+            "ft-plain-dto",
+            "callout",
+            "sq",
+            "bare"
+          ]
+        },
+        [
+          {
+            "name": "distance-create-at-min-drag",
+            "over": {},
+            "msgs": [
+              {
+                "t": "createPointer",
+                "phase": "down",
+                "subtype": "line",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 100,
+                    "y": 700
+                  },
+                  "shift": false
+                },
+                "measure": {
+                  "intent": "LineDimension",
+                  "measure": {
+                    "subtype": "RL",
+                    "ratio": "1 in = 1 m",
+                    "x": [
+                      {
+                        "unit": "m",
+                        "conversion": 0.013888888888888888
+                      }
+                    ],
+                    "distance": [
+                      {
+                        "unit": "m",
+                        "conversion": 1
+                      }
+                    ],
+                    "area": [
+                      {
+                        "unit": "m²",
+                        "conversion": 1
+                      }
+                    ]
+                  },
+                  "caption": {
+                    "enabled": true
+                  },
+                  "crop": {
+                    "left": 0,
+                    "bottom": 0,
+                    "right": 612,
+                    "top": 792
+                  },
+                  "text": "stored"
+                }
+              },
+              {
+                "t": "createPointer",
+                "phase": "up",
+                "subtype": "line",
+                "in": {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 1
+                  },
+                  "point": {
+                    "x": 103,
+                    "y": 700
+                  },
+                  "shift": false
+                }
+              }
+            ]
+          },
+          {
+            "name": "bold-props",
+            "over": {
+              "selected": [
+                "ft",
+                "ft-plain-dto",
+                "sq"
+              ]
+            },
+            "msgs": [
+              {
+                "t": "setProps",
+                "patch": {
+                  "bold": true
+                }
+              },
+              {
+                "t": "setProps",
+                "patch": {
+                  "italic": true,
+                  "underline": false
+                }
+              },
+              {
+                "t": "setProps",
+                "patch": {
+                  "underline": true
+                }
+              }
+            ]
+          }
+        ]
+      ],
+      "outcome": {
+        "returned": [
           {
             "name": "distance-create-at-min-drag",
             "steps": [
@@ -18172,7 +19253,7 @@
       }
     },
     {
-      "name": "runs/5-move-clamp-rotated-square",
+      "name": "runs/6-move-clamp-rotated-square",
       "fn": "runs",
       "args": [
         {
@@ -18470,7 +19551,7 @@
       }
     },
     {
-      "name": "runs/6-draft-leader-baked",
+      "name": "runs/7-draft-leader-baked",
       "fn": "runs",
       "args": [
         {

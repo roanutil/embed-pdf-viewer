@@ -5,7 +5,7 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
-use epdf_annotation_core::js::Record;
+use epdf_annotation_core::js::{Record, sort_by_ordering};
 use serde_json::{Map, Value, json};
 
 use crate::value::{get, str_of};
@@ -297,8 +297,8 @@ pub fn build_comment_threads(
             }
             stack.extend(children_of(&key));
         }
-        replies.sort_by(chronological);
-        states.sort_by(chronological);
+        sort_by_ordering(&mut replies, chronological);
+        sort_by_ordering(&mut states, chronological);
         threads.push(CommentThread {
             root: root.clone(),
             page: get(root, "page").cloned().unwrap_or(Value::Null),

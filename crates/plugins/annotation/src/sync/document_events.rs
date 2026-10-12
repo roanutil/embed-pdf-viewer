@@ -128,7 +128,9 @@ pub(crate) fn subscribe_document_events(
             kind,
             "annotation.created" | "annotation.updated" | "annotation.moved" | "annotation.deleted"
         ) {
-            host.deliver_remote_event(event.clone());
+            // A record with no ref throws out of the TypeScript listener;
+            // here the event is dropped with nothing applied.
+            let _ = host.deliver_remote_event(event.clone());
         }
     }));
     cx.listen(unsubscribe);

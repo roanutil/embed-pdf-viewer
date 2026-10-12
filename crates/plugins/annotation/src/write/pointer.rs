@@ -104,7 +104,7 @@ impl AnnotationCapability {
         let crop = self.crop_of(pon);
         let cache = self.0.viewports.of(pon);
         let preset = t.as_ref().map_or_else(|| tool.to_string(), |t| t.preset.clone());
-        let continuing = match &self.model().draft {
+        let continuing = match self.model().draft.as_deref() {
             Some(Draft::CreateDistance { page: p, preset: dp, .. }) => {
                 p.same_page(&page) && *dp == preset
             }
