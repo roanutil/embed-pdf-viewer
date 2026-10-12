@@ -46,6 +46,12 @@ impl AbortSignal {
         self.0.borrow_mut().listeners.retain(|(i, _)| *i != id);
     }
 
+    /// How many abort listeners are registered, for tests that check a
+    /// caller removes its listener.
+    pub fn listener_count(&self) -> usize {
+        self.0.borrow().listeners.len()
+    }
+
     /// `controller.abort(reason)`. A second abort does nothing.
     pub fn abort(&self, reason: Error) {
         let listeners = {

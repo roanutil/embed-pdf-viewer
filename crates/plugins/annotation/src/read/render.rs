@@ -160,20 +160,30 @@ impl AnnotationCapability {
             Some(pon),
             vec![json!({ "scale": num_json(scale) })],
         );
+        // The listener holds the task, and through it the image bytes, so
+        // it comes off a long-lived signal once the task settles.
+        let mut listener = None;
         if let Some(signal) = signal {
             if signal.aborted() {
                 task.abort(signal.reason().map(|r| r.to_canonical()));
             } else {
                 let t = task.clone();
-                signal
+                let id = signal
                     .on_abort(Rc::new(move |reason: &Error| t.abort(Some(reason.to_canonical()))));
+                listener = Some((signal, id));
             }
         }
         let (out, resolver) = Promise::pending();
-        then(task, move |result| match result {
-            Ok(r) => resolver
-                .resolve(get(&r, "appearances").cloned().unwrap_or_else(epdf_kernel::undefined)),
-            Err(_) => resolver.resolve(json!([])),
+        then(task, move |result| {
+            if let Some((signal, id)) = listener {
+                signal.remove(id);
+            }
+            match result {
+                Ok(r) => resolver.resolve(
+                    get(&r, "appearances").cloned().unwrap_or_else(epdf_kernel::undefined),
+                ),
+                Err(_) => resolver.resolve(json!([])),
+            }
         });
         Ok(out)
     }
