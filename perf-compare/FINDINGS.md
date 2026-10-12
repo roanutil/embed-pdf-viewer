@@ -387,7 +387,8 @@ section named, and says whether it was tried. Items 8, 9, 12 to 15 and the rest 
     branch still has `rustRouting` (`packages/engine/main/src/index.ts:359`). To find out for
     certain: lift the guard, add an arm with both, and time it. Expected small: geometry was about
     2% of the worker's time (`impl-ts` against `impl-rust`, above), and it runs in the worker, not
-    on the main thread where the plugins gap is. Added 2026-10-08.
+    on the main thread where the plugins gap is. Added 2026-10-08. Measured since, and left
+    off: see below.
 17. Each call's result written straight to JSON text, without a `serde_json::Value` (Where the
     plugins tip goes now). Up to about 40 ms of `scroll`. Added 2026-10-08. Tried since, and kept:
     the copy came from `json!`, not from the plugins, so no harness `call` had to change. See that
@@ -833,4 +834,22 @@ main-thread time and from 1.081x to 1.034x latency. It's merged into
 `research/multi-platform-rust-core-impl-plugins` (`910980671`). What is left of the round trip is
 the plugins building their answers as `Value`s (about 8 ms) and the shim parsing the text (15 ms)
 of `scroll`.
+
+### `rustReads` with the Rust kernel
+
+Item 16. The guard was a harness rule only: the plugins branch's engine reads `rustRouting`
+whichever kernel runs the plugins (`packages/engine/main/src/index.ts:167-219`), and the plugins
+arms' engine payload already carries the Rust core (`verify-rust-core` passes on it). `f0ca236d0`
+drops the guard from `lib/config.mjs`, adds `scripts/verify-core.mjs`, which records a verified
+core in a built worktree's stamp for the gate without rebuilding it, and adds the arm
+`plugins-rustreads`: the `plugins-resulttext` build (`34644a2b4`) with `rustReads: true`, so only
+the worker's geometry reads differ.
+
+On the remote (R=10, `results/2026-10-12T01-08-19-312Z-macmini2020-desktop`, A/A 58 of 63, no
+failed samples), against `plugins-resulttext`, 55 rows show no difference and 5 are unreliable.
+`coldScroll`, the one flow that reads geometry for pages not seen before, takes 5.9% less wall time
+(2,563.7 to 2,411.3 ms) and 3.5% less main-thread JavaScript (532.9 to 514.2 ms). `search` takes
+10.5% longer (71.3 to 78.8 ms, interval 1.002 to 1.187), which we haven't looked into. `select`,
+`selectLarge`, `jump` and `open(large)` don't move. As with `impl-ts` against `impl-rust`, geometry
+is too small a share of the worker's time to show, so the plugins arms stay on `rustReads: false`.
 
