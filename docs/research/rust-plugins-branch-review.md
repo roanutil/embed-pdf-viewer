@@ -10,6 +10,53 @@ Confidence key: "reproduced" means a reviewer ran it; "verified" means the code 
 
 Some findings are behavior the TypeScript reference shares ("shared with TS"). They are still listed because Rust fails differently: a TS TypeError can be caught, while a Rust panic aborts a native host (edition 2024 `extern "C"`, no catch_unwind on napi exports per Cargo.toml:53-58) or traps the whole wasm instance.
 
+## Status, 2026-10-11
+
+All four Highs and 29 of the 34 Mediums are fixed on `research/multi-platform-rust-core-impl-plugins` (tip `f4569afc1`), one commit per finding, each with a test. The Lows are not addressed yet. On that tip, `cargo test --workspace` passes 1,028 of 1,028, `core-wasm` 72 of 72 and its gc suite 13 of 13, and `vectors:check` and `coverage:check` are current.
+
+| Finding | Commit | Note |
+| --- | --- | --- |
+| H1 | `24e77c1a3` | BER depth capped at 64 |
+| H2 | `7d0c4aa1d` | RSA-PSS salt length range-checked |
+| H3 | `046d47578` | Also changes TS (`packages/core/annotation`), by choice |
+| H4 | `d365c22a7` | A real monotonic clock for the script budget |
+| M1 | `0f74cd1f5` | Open settled 3 turns early, not 4; unlock was already right. Adds an opt-in turn meter to both scenario runners and `kernel/turns.json` |
+| M2 | `101997143` | |
+| M3 | `545ef5184` | Changes await timing in the kernel and in five plugins' engine helpers |
+| M4 | `19a614a9a` | |
+| M5 | `8aad6ae39` | |
+| M6 | `d15ef217c` | |
+| M7 | skipped | The Swift package can't be built here: the `EmbedPDFFFI.xcframework` iOS builds are missing |
+| M8 | `f87b4ab00` | |
+| M9 | `4e36f5db1` | |
+| M10 | `5f4777ef7` | `scopeOf` still throws after destroy: the shim has no list of the plan's tokens |
+| M11 | `19835b20d` | |
+| M12 | `4572f45bc` | |
+| M13 | `22ca510e6`, in part | A realm built after dispose is released. Rebuilding a faulted realm inside one transaction matches TS (`host.ts`) and stays |
+| M14 | `0bef57fe5` | Also changes TS (`plugin-actions`), by choice |
+| M15 | `7d53dae0c` | Rust-only divergence: TS has the same gap |
+| M16 | skipped | Shared with TS (`hydration.ts:59-64`); fixing it changes observable behavior, so TS and the vectors go first |
+| M17 | `965d22aa0` | |
+| M18 | `99a15c59b` | 20,000 annotations hydrate and remove in 0.15 s, from 2.2 s |
+| M19 | `8e3cecfb1` | 10,000 annotations thread in 0.4 s, from 1.8 s |
+| M20 | `26e0aa3b0` | Cloudy and squiggly paths stop at 1,000,000 curls (`MAX_CLOUDY_CURLS`) |
+| M21 | `7ee92d1ed` | `get_snapshot` now returns `Option<Rc<Value>>` |
+| M22 | `5d05a8e45` | Also a second cubic path in `read_model` the review missed; select-all on 1,000 pages, 277 s to 2.3 s in debug |
+| M23 | `e8205de75` | Rust-only divergence: TS has the same race |
+| M24 | `81c9e0805` | |
+| M25 | `f0b535982` | Rust-only divergence: TS strands the slot too |
+| M26 | `fa2ba2f00` | `conform_viewport` answers a NaN width where TS has none |
+| M27 | `4965e0519` | Seven stage verbs now return `Result`. A NaN column count lays out an empty scene (Rust-only divergence), where TS throws on every scene build |
+| M28 | `5b52413b1` | |
+| M29 | `203a5f5e4`, `c47e310f2` | |
+| M30 | `43d450a2b` | `vectors:check` already runs in `plugin-rust.yml`, so CI enforces it with no workflow change |
+| M31 | not taken | CI work was out of scope |
+| M32 | `33ca050b8` | |
+| M33 | `e477f965c` | |
+| M34 | `d34708034` | `@embedpdf/engine-core` may need a changeset too; not checked |
+
+"Rust-only divergence" means Rust no longer has a bug TS still has, on a path no conformance vector covers.
+
 ## High
 
 ### H1. Nested CMS bytes overflow the stack and abort the process
