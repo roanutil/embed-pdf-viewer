@@ -174,6 +174,12 @@ pub fn create_stage_controller(
             e.motion_ended.dispose();
             e.settings_changed.dispose();
             e.viewport_changed.dispose();
+            // Rust only: an initial-view provider or a rule predicate can
+            // hold this capability, and so this `Inner`. Let go of them at
+            // close, as a garbage collector would reclaim the cycle (the
+            // interaction hub does the same with its handlers).
+            inner.providers.borrow_mut().clear();
+            *inner.rules.borrow_mut() = Rc::new(Vec::new());
         }
     });
     stage

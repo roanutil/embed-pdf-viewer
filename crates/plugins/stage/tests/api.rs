@@ -76,6 +76,34 @@ fn frames_after_close_run_out() {
 }
 
 #[test]
+fn closing_the_document_releases_providers_and_rule_predicates() {
+    let kernel = kernel(false);
+    let stage = kernel.capability(&STAGE, Some("a")).expect("stage");
+    // Each closure holds the capability (the cycle) and a marker to count.
+    let marker = Rc::new(());
+    let (held, lens) = (marker.clone(), stage.clone());
+    let _withdraw = stage.provide_initial_view(1.0, move || {
+        let _ = (&held, &lens);
+        None
+    });
+    let (held, lens) = (marker.clone(), stage.clone());
+    stage
+        .set_responsive_rules(vec![ResponsiveRule {
+            name: Some("held".into()),
+            when: RuleWhen::Predicate(Rc::new(move |_| {
+                let _ = (&held, &lens);
+                false
+            })),
+            settings: None,
+        }])
+        .expect("rules");
+    assert_eq!(Rc::strong_count(&marker), 3);
+    kernel.documents().close("a");
+    rt::run_until_stalled();
+    assert_eq!(Rc::strong_count(&marker), 1, "close let go of both closures");
+}
+
+#[test]
 fn rule_predicates_debug_print_without_the_closure() {
     let rule = RuleWhen::Predicate(Rc::new(|_| true));
     assert_eq!(format!("{rule:?}"), "Predicate(fn)");
