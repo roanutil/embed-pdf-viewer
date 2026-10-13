@@ -1,6 +1,6 @@
 # Web viewer end-to-end gate
 
-Phase 0 baseline for [the port gate](../../docs/research/multiplatform-port-order.md#7-web-viewer-end-to-end-gate): F1–F5 against the shipping TypeScript backend. The dedicated `examples/viewer-react/e2e.html` entry mounts the real React wrapper, built-in viewer, and PDFium worker. It does not mock the engine or invoke capabilities to perform user actions.
+Phase 0 baseline for [the port gate](../../multiplatform-port-order.md#7-web-viewer-end-to-end-gate): F1–F5 against the shipping TypeScript backend. The dedicated `examples/viewer-react/e2e.html` entry mounts the real React wrapper, built-in viewer, and PDFium worker. It does not mock the engine or invoke capabilities to perform user actions.
 
 ```sh
 pnpm install --frozen-lockfile
