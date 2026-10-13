@@ -3459,7 +3459,7 @@ git commit -m "Test the Swift stage capability and render's viewport members"
 - Consumes: `StageCapability`, `RenderCapability`, `PageImageView` (existing).
 - Produces: `@MainActor @Observable final class StageReaderModel` with `init(stage:render:)`, read-only `visiblePages: [StageVisiblePage]`, `camera: Camera?`, `currentPageIndex: UInt32`, `error: PDFError?`, and methods `task() async`, `sizeChanged(_ size: CGSize, displayScale: CGFloat) async`, `dragChanged(translation: CGSize) async`, `dragEnded(velocity: CGSize) async`, `magnifyChanged(_ magnification: CGFloat, at location: CGPoint)`, `magnifyEnded() async`, `doubleTapped(at location: CGPoint) async`; `struct StageReaderView: View` with `init(model:)`.
 
-- [ ] **Step 1: Write the failing model tests**
+- [x] **Step 1: Write the failing model tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFUITests/StageReaderModelTests.swift`:
 
@@ -3521,12 +3521,12 @@ struct StageReaderModelTests {
 
 `Bundle.module` here is the `EmbedPDFUITests` bundle, which `build-xcframework.sh` already fills with the fixtures.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFUITests/StageReaderModelTests)`
 Expected: FAIL to build, "cannot find 'StageReaderModel' in scope".
 
-- [ ] **Step 3: Write `StageReaderModel.swift`**
+- [x] **Step 3: Write `StageReaderModel.swift`**
 
 ```swift
 import CoreGraphics
@@ -3643,7 +3643,7 @@ public final class StageReaderModel {
 
 The stage's `pan_by` takes viewport deltas in the direction the camera moves. If the drag test shows the camera moving the wrong way for a finger moving up, drop the minus signs in `dragChanged` and `dragEnded`; check against `crates/plugins/stage/src/camera/gestures.rs` `pan_by` before deciding.
 
-- [ ] **Step 4: Write `StageReaderView.swift`**
+- [x] **Step 4: Write `StageReaderView.swift`**
 
 ```swift
 import EmbedPDF
@@ -3693,12 +3693,12 @@ public struct StageReaderView: View {
 
 `PageImageView` renders with `renderPage` at the stage's render scale. Moving it to `renderSource` and the tile plane is a separate change, so the reader works now on the full-page path the demo app already uses.
 
-- [ ] **Step 5: Run the model tests**
+- [x] **Step 5: Run the model tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFUITests)`
 Expected: TEST SUCCEEDED, the 3 `StageReaderModelTests` and the existing `SearchModelTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDFUI platforms/apple/EmbedPDF/Tests/EmbedPDFUITests
