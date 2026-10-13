@@ -58,6 +58,19 @@ Every arm runs one shared entry page (`entry/`), built with Vite from each workt
 selected text, annotation count or rendered page-1 bitmap differs from `main`'s. The report prints
 an excluded arm as `excluded: <reason>` rather than dropping it.
 
+## The standard run
+
+Since 2026-10-14 a run with no `--arms`, and `scripts/build-entry.mjs` with no arms, use
+`defaultArms` in `arms.json`: `main`, `main-aa`, `plugins-base` and `plugins-next`. The other arms
+stay in the file as the record of what each arm name in `FINDINGS.md` and the results meant; their
+checkouts aren't kept, and naming one rebuilds it (`materialize.mjs`, then `build-entry.mjs`).
+
+- `plugins-base` is the plugins branch before the change under test, and `plugins-next` the
+  change. To test a change, set `plugins-next`'s worktree `ref` to the candidate branch and run
+  `node scripts/pin.mjs plugins-next`; the report's `plugins-base` vs `plugins-next` pair is the
+  answer, and `main` vs either shows where the branch stands.
+- After the change merges, `node scripts/pin.mjs plugins-base` moves the base to the new tip.
+
 ## How long it takes
 
 Measured on an Apple M4 Max (16 cores, 64 GiB), on AC power, on 2026-09-29.

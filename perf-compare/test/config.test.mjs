@@ -56,3 +56,12 @@ test('accepts rustReads on the rust kernel', () => {
   both.arms.a = { worktree: 'w', kernel: 'rust', rustReads: true };
   assert.equal(loadConfig(write(both)).arms.a.rustReads, true);
 });
+
+test('defaultArms names the arms a run uses when it names none', () => {
+  const both = structuredClone(valid);
+  both.defaultArms = ['b'];
+  assert.deepEqual(loadConfig(write(both)).defaultArms, ['b']);
+  assert.deepEqual(loadConfig(write(valid)).defaultArms, ['a', 'b'], 'every arm when unset');
+  both.defaultArms = ['zzz'];
+  assert.throws(() => loadConfig(write(both)), /defaultArms: unknown arm zzz/);
+});

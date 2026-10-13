@@ -1,6 +1,12 @@
 {
   "baseline": "main",
   "noiseArm": "main-aa",
+  "defaultArms": [
+    "main",
+    "main-aa",
+    "plugins-base",
+    "plugins-next"
+  ],
   "worktrees": {
     "main": {
       "ref": "main",
@@ -245,6 +251,16 @@
     "plugins-tip7": {
       "ref": "research/multi-platform-rust-core-impl-plugins",
       "sha": "9d6c2eca100ab612faa1dcb87135c2527b81b450",
+      "recipe": "rust-kernel"
+    },
+    "plugins-base": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "b5e82a19036abb472ca34f8c627dbf809d912f36",
+      "recipe": "rust-kernel"
+    },
+    "plugins-next": {
+      "ref": "research/multi-platform-rust-core-impl-plugins",
+      "sha": "b5e82a19036abb472ca34f8c627dbf809d912f36",
       "recipe": "rust-kernel"
     }
   },
@@ -524,6 +540,16 @@
     },
     "plugins-tip7": {
       "worktree": "plugins-tip7",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-base": {
+      "worktree": "plugins-base",
+      "kernel": "rust",
+      "rustReads": false
+    },
+    "plugins-next": {
+      "worktree": "plugins-next",
       "kernel": "rust",
       "rustReads": false
     }
@@ -836,6 +862,18 @@
     [
       "main",
       "plugins-tip7"
+    ],
+    [
+      "main",
+      "plugins-base"
+    ],
+    [
+      "plugins-base",
+      "plugins-next"
+    ],
+    [
+      "main",
+      "plugins-next"
     ]
   ]
 }

@@ -39,7 +39,7 @@ const pick = (list, all, what) => {
   for (const n of names) if (!all.includes(n)) throw new Error(`unknown ${what} ${n}`);
   return all.filter((n) => names.includes(n));
 };
-const arms = pick(values.arms, config.armOrder, 'arm');
+const arms = values.arms ? pick(values.arms, config.armOrder, 'arm') : config.defaultArms;
 const flows = pick(values.flows, FLOW_ORDER, 'flow');
 
 const fixtures = verifyFixtures();

@@ -24,5 +24,12 @@ export function loadConfig(file = DEFAULT) {
   for (const key of ['baseline', 'noiseArm']) {
     if (!raw.arms[raw[key]]) throw new Error(`${key}: unknown arm ${raw[key]}`);
   }
-  return { ...raw, armOrder: Object.keys(raw.arms) };
+  // The arms a run or build uses when it names none. Every other arm stays
+  // in the file as the record of what a FINDINGS arm name meant.
+  const armOrder = Object.keys(raw.arms);
+  const defaultArms = raw.defaultArms ?? armOrder;
+  for (const id of defaultArms) {
+    if (!raw.arms[id]) throw new Error(`defaultArms: unknown arm ${id}`);
+  }
+  return { ...raw, armOrder, defaultArms };
 }
