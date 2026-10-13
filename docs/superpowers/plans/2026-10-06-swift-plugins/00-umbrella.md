@@ -1302,7 +1302,7 @@ Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one her
 - [x] 12 shell
 - [x] 13 i18n
 - [x] 14 commands
-- [ ] 15 actions
+- [x] 15 actions
 - [ ] 16 signature
 
 ### Task 17: Close out
