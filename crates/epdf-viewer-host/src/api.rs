@@ -27,6 +27,10 @@ pub struct ViewerConfig {
     /// Install `renderPlugin(config)`: page rasters as owned pixels.
     #[uniffi(default = None)]
     pub render: Option<RenderConfig>,
+    /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
+    /// pages, addressed by `PageRef`.
+    #[uniffi(default = false)]
+    pub page_edit: bool,
 }
 
 #[derive(Debug, uniffi::Record)]

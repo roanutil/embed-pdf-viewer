@@ -1221,7 +1221,7 @@ git commit -m "Map the six page-edit engine paths and keep the native page list 
 - Consumes: `PageEditHandle::new` (Task 2), `HostTable::install_bytes_resolver` (Task 3).
 - Produces: `ViewerConfig.page_edit: bool` (default `false`), `ViewerHost::page_edit(document_id: String) -> Result<Arc<PageEditHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, adding `use epdf_plugin_page_edit::ffi::{PageEditBlankOptions, PageEditPlacement, PageEditTurn};` and `use epdf_ffi::PageRef;` at the top:
 
@@ -1332,12 +1332,12 @@ fn without_its_flag_the_page_edit_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host page_edit`
 Expected: FAIL to compile, `no field page_edit on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -1383,12 +1383,12 @@ and in the plugin list, after the earlier plans' blocks:
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
