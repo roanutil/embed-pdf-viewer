@@ -24,13 +24,15 @@ public final class JavaScriptCoreEngineFactory: ScriptEngineFactory, Sendable {
 }
 
 final class JavaScriptCoreEngine: ScriptEngine, @unchecked Sendable {
-  private let queue = DispatchQueue(label: "com.embedpdf.acrojs")
+  private let queue: DispatchQueue
   private let lock = NSLock()
   private var abandoned = false
   /// Touched only on `queue`.
   private var context: JSContext?
 
-  init() {
+  /// `target` is for tests that need the realm's queue to start late.
+  init(target: DispatchQueue? = nil) {
+    queue = DispatchQueue(label: "com.embedpdf.acrojs", qos: .userInitiated, target: target)
     queue.sync { context = JSContext() }
   }
 
@@ -38,9 +40,11 @@ final class JavaScriptCoreEngine: ScriptEngine, @unchecked Sendable {
     if lock.withLock({ abandoned }) {
       return .threw(detail: "the realm was abandoned after a timeout")
     }
+    let started = DispatchSemaphore(value: 0)
     let done = DispatchSemaphore(value: 0)
     let answer = Answer()
     queue.async { [weak self] in
+      started.signal()
       defer { done.signal() }
       guard let context = self?.context else {
         answer.set(.threw(detail: "the realm is disposed"))
@@ -56,6 +60,10 @@ final class JavaScriptCoreEngine: ScriptEngine, @unchecked Sendable {
         answer.set(.threw(detail: "the program did not evaluate to a string"))
       }
     }
+    // The budget is the script's, not the queue's: the clock starts when
+    // the block does. The queue only ever runs this realm's work, and a
+    // realm that timed out is abandoned above, so the start always comes.
+    started.wait()
     if done.wait(timeout: .now() + .milliseconds(Int(timeLimitMs))) == .timedOut {
       lock.withLock { abandoned = true }
       return .timedOut

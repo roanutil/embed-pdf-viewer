@@ -1,5 +1,6 @@
 import CustomDump
-import EmbedPDF
+import Foundation
+@testable import EmbedPDF
 import Testing
 
 extension BaseSuite {
@@ -25,6 +26,14 @@ extension BaseSuite {
       expectNoDifference(check.disposed, true)
       // The default budget is 50 ms; allow scheduling slack, not a hang.
       #expect(clock.now - start < .seconds(2))
+    }
+
+    @Test func aLateStartingQueueDoesNotCountAgainstTheBudget() {
+      let busy = DispatchQueue(label: "busy")
+      let engine = JavaScriptCoreEngine(target: busy)
+      busy.async { Thread.sleep(forTimeInterval: 0.15) }
+      let answer = engine.evaluate(program: "JSON.stringify(1)", timeLimitMs: 50)
+      expectNoDifference(answer, .value(json: "1"))
     }
 
     @Test func aDeepRecursionIsABudgetFailure() async throws {
