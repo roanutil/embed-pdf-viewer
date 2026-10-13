@@ -1015,6 +1015,14 @@ fn fetch_tile(
         height: rect.height,
     });
     let mut options = Map::new();
+    // `pageRectToPdf`'s literal order (`packages/core/geometry/src/page-space.ts`),
+    // not `PdfEdges`'s declared one.
+    let target = json!({
+        "left": target.left,
+        "right": target.right,
+        "top": target.top,
+        "bottom": target.bottom,
+    });
     options.insert("target".into(), json!({ "kind": "rect", "rect": target }));
     options.insert("viewport".into(), json!({ "kind": "scale", "scale": scale }));
     options.insert("includeAnnotations".into(), json!(include_annotations));
