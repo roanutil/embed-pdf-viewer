@@ -76,12 +76,13 @@ pub struct ChromeGuides {
     pub enabled: bool,
     pub style: StrokeStyle,
     pub width: f64,
+    pub axis_opacity: f64,
+    pub indicator_opacity: f64,
+    // `DEFAULT_CHROME.guides` has no colours: a patch's spread appends them.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub axis_color: Option<String>,
-    pub axis_opacity: f64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub indicator_color: Option<String>,
-    pub indicator_opacity: f64,
 }
 
 /// `ChromeSettings`: every length is CSS px; every colour falls back to
@@ -367,9 +368,9 @@ pub struct RichTextParagraphs {
 #[serde(rename_all = "camelCase")]
 pub struct CommentPermissions {
     pub can_reply: bool,
+    pub can_set_status: bool,
     pub can_edit_text: bool,
     pub can_delete: bool,
-    pub can_set_status: bool,
     pub can_delete_thread: bool,
 }
 

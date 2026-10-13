@@ -18,6 +18,9 @@ harness = ["dep:plugin-conformance", "dep:epdf-kernel"]
 [dependencies]
 epdf-geometry = { path = "../geometry", default-features = false }
 serde = { version = "1", features = ["derive", "rc"] }
+# `Model.defaults` keeps the order tools were configured in, as the
+# TypeScript object does.
+indexmap = { version = "2", features = ["serde"] }
 # `Annot.data` carries the engine DTO verbatim, and a props patch keeps keys
 # it does not know; both are JSON values. `preserve_order` keeps a patch's
 # keys in the order they arrived, which the `props` patch effect reports.

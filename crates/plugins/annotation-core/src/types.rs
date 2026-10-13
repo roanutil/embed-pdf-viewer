@@ -7,9 +7,9 @@
 //! `Vec` would shadow Rust's), and `Rect` / `TextQuad` are the
 //! `epdf_geometry` types.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde::de::{self, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -466,6 +466,10 @@ pub struct TextStyle {
 /// The one flat vocabulary for editable appearance properties. `extra`
 /// holds members a patch brought that no key names: `{ ...base, ...patch }`
 /// keeps them, so a resolved defaults bag prints them too.
+///
+/// Member order is `defaultsFor`'s `{ ...m.style, ...initialTextStyle, ...d,
+/// lineEndings }`: the style and text keys, then what the tool's patch adds,
+/// then `lineEndings`, which goes last unless the patch itself set it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationProps {
@@ -485,13 +489,13 @@ pub struct AnnotationProps {
     pub italic: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub underline: Option<bool>,
-    pub line_endings: LineEndings,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
     pub link: Nullable<PdfLinkTarget>,
     #[serde(flatten)]
     pub extra: serde_json::Map<String, Value>,
+    pub line_endings: LineEndings,
 }
 
 /// `PropKey`: a key of [`AnnotationProps`].
@@ -810,7 +814,9 @@ pub struct Authority {
     pub delete: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// A stored annotation. It serializes through the impl below, which writes
+/// the members in the order the TypeScript object that built it has.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Annot {
     pub id: Id,
@@ -850,6 +856,134 @@ pub struct Annot {
     pub irt: Option<Id>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
+}
+
+/// A member of [`Annot`], for the member orders below.
+#[derive(Clone, Copy)]
+enum AnnotKey {
+    Id,
+    Ref,
+    Page,
+    Subtype,
+    Geom,
+    Style,
+    Text,
+    Label,
+    Measure,
+    Icon,
+    Flags,
+    Source,
+    ApBox,
+    ApRot,
+    ApVersion,
+    Authority,
+    Data,
+    Intent,
+    Link,
+    Irt,
+    Group,
+}
+
+/// `fromDTO` (`repository/index.ts`): identity, `flags`, `source` and the
+/// DTO, then `irt`/`group`, `style`, the kind's slice (a dimension's
+/// `measure` before its `geom`, the rest after), and `apBox`/`apRot`. The
+/// session's `authority` and `apVersion` are spread on later.
+const FROM_DTO_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Flags, Source, Data, Irt, Group, Style, Measure, Geom, Text, Label,
+        Icon, Link, Intent, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+/// The reducer's create literals (`update.ts`): `geom`, `style` and the
+/// kind's extras, then `flags` and `source`. A caret replacement writes
+/// `intent` ahead of `geom`; ink writes it after `style` (handled in
+/// [`Annot::member_order`]).
+const DRAWN_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Intent, Geom, Measure, Style, Text, Label, Icon, Link, Flags,
+        Source, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+/// A stored record that is neither: the base members, then what spreads
+/// appended after `source`.
+const STORED_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Intent, Geom, Style, Flags, Source, Text, Label, Measure, Icon,
+        Link, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+impl Annot {
+    /// The member order of the TypeScript object, read off what the record
+    /// carries since the Rust struct keeps no order of its own: `data` with
+    /// `apBox` is `fromDTO`'s, no `ref` yet is a reducer create, anything
+    /// else a stored record grown by spreads.
+    fn member_order(&self) -> impl Iterator<Item = AnnotKey> {
+        let (order, ink) = if self.data.is_some() && self.ap_box.is_some() {
+            (&FROM_DTO_ORDER, false)
+        } else if self.ref_.is_none() {
+            (&DRAWN_ORDER, self.subtype == "ink")
+        } else {
+            (&STORED_ORDER, false)
+        };
+        order
+            .iter()
+            .copied()
+            .flat_map(move |key| match (ink, key) {
+                (true, AnnotKey::Intent) => [None, None],
+                (true, AnnotKey::Style) => [Some(AnnotKey::Style), Some(AnnotKey::Intent)],
+                _ => [Some(key), None],
+            })
+            .flatten()
+    }
+}
+
+impl Serialize for Annot {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        fn put<M: SerializeMap, T: Serialize>(
+            map: &mut M,
+            key: &str,
+            value: Option<&T>,
+        ) -> Result<(), M::Error> {
+            match value {
+                Some(v) => map.serialize_entry(key, v),
+                None => Ok(()),
+            }
+        }
+        let mut map = serializer.serialize_map(None)?;
+        for key in self.member_order() {
+            let m = &mut map;
+            match key {
+                AnnotKey::Id => put(m, "id", Some(&self.id)),
+                AnnotKey::Ref => put(m, "ref", Some(&self.ref_)),
+                AnnotKey::Page => put(m, "page", Some(&self.page)),
+                AnnotKey::Subtype => put(m, "subtype", Some(&self.subtype)),
+                AnnotKey::Geom => put(m, "geom", Some(&self.geom)),
+                AnnotKey::Style => put(m, "style", Some(&self.style)),
+                AnnotKey::Text => put(m, "text", self.text.as_ref()),
+                AnnotKey::Label => put(m, "label", self.label.as_ref()),
+                AnnotKey::Measure => put(m, "measure", self.measure.as_ref()),
+                AnnotKey::Icon => put(m, "icon", self.icon.as_ref()),
+                AnnotKey::Flags => put(m, "flags", Some(&self.flags)),
+                AnnotKey::Source => put(m, "source", Some(&self.source)),
+                AnnotKey::ApBox => put(m, "apBox", self.ap_box.as_ref()),
+                AnnotKey::ApRot => put(m, "apRot", self.ap_rot.as_ref()),
+                AnnotKey::ApVersion => put(m, "apVersion", self.ap_version.as_ref()),
+                AnnotKey::Authority => put(m, "authority", self.authority.as_ref()),
+                AnnotKey::Data => put(m, "data", self.data.as_ref()),
+                AnnotKey::Intent => put(m, "intent", self.intent.as_ref()),
+                AnnotKey::Link => put(m, "link", (!self.link.is_undefined()).then_some(&self.link)),
+                AnnotKey::Irt => put(m, "irt", self.irt.as_ref()),
+                AnnotKey::Group => put(m, "group", self.group.as_ref()),
+            }?;
+        }
+        map.end()
+    }
 }
 
 /// A draggable handle.
@@ -1019,7 +1153,9 @@ pub enum GroupOp {
     Resize,
 }
 
-/// The in-progress gesture.
+/// The in-progress gesture. Each variant's members follow the order
+/// `update.ts` writes them: the object literal that starts the gesture, then
+/// the members later samples spread in.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "g", rename_all = "kebab-case", rename_all_fields = "camelCase")]
 pub enum Draft {
@@ -1068,8 +1204,6 @@ pub enum Draft {
         flags: Option<AnnotationFlagsPatch>,
     },
     CreatePoly {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        measure: Option<ShapeMeasurementAppearance>,
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
@@ -1077,6 +1211,8 @@ pub enum Draft {
         points: Vec<Point>,
         cur: Point,
         closed: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        measure: Option<ShapeMeasurementAppearance>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
     },
@@ -1098,21 +1234,22 @@ pub enum Draft {
         page: PageRef,
         step: CalloutStep,
         tip: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        knee: Option<Point>,
         cur: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_from: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_to: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        page_box: Option<Rect>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         display_rotation: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         upright: Option<bool>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_box: Option<Rect>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
+        // Set by later clicks, so they follow what the tip click wrote.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        knee: Option<Point>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        box_from: Option<Point>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        box_to: Option<Point>,
     },
     Move {
         ids: Vec<Id>,
@@ -1134,9 +1271,10 @@ pub enum Draft {
         start: Point,
         cur: Point,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        free: Option<bool>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         view: Option<ViewEnv>,
+        // Set by the first move sample, after the press wrote `view`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        free: Option<bool>,
     },
     Group {
         op: GroupOp,
@@ -1253,7 +1391,9 @@ impl Draft {
 pub struct MarkupPreview {
     pub subtype: String,
     pub preset: String,
-    pub by_page: BTreeMap<String, Vec<TextQuad>>,
+    /// `Record<number, TextQuad[]>`: integer pages first, then the rest in
+    /// insertion order.
+    pub by_page: Record<Vec<TextQuad>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1288,7 +1428,9 @@ pub struct Model {
     /// Shared so a step that leaves the annotations alone (every draft
     /// pointermove) clones a pointer rather than every annotation's JSON,
     /// as the TypeScript's spread shares the object.
-    pub by_id: Rc<BTreeMap<Id, Annot>>,
+    /// Insertion-ordered, as the TypeScript `byId` object is: a new record
+    /// goes last, a replaced one keeps its place.
+    pub by_id: Rc<ById>,
     pub order: Rc<Vec<Id>>,
     pub selected: Vec<Id>,
     pub hovered: Option<Id>,
@@ -1299,11 +1441,16 @@ pub struct Model {
     pub preview: Option<MarkupPreview>,
     pub seq: f64,
     pub style: Style,
-    pub defaults: BTreeMap<String, AnnotationPropsPatch>,
+    /// Insertion-ordered, as the TypeScript `{ ...m.defaults, [subtype]: next }`
+    /// keeps a configured tool where it was first set.
+    pub defaults: IndexMap<String, AnnotationPropsPatch>,
     pub hit_margin: f64,
     pub editing: Option<Id>,
     pub snap: SnapSettings,
 }
+
+/// `Model.byId`: the records by id, in insertion order.
+pub type ById = IndexMap<Id, Annot>;
 
 /// Selection-chrome geometry in content units.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -1568,21 +1715,21 @@ pub struct RenderItem {
     pub box_: Rect,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ap_box: Option<Rect>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_rot: Option<f64>,
     pub style: Style,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<TextStyle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<Label>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure: Option<MeasurementAppearance>,
     pub source: RenderSource,
     pub selected: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hovered: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub label: Option<Label>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub measure: Option<MeasurementAppearance>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rot: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ap_rot: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blend: Option<BlendMode>,
 }
