@@ -3267,7 +3267,7 @@ git commit -m "Add the Swift stage capability and render's viewport members"
 **Files:**
 - Create: `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/StageTests.swift`, `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RenderViewportTests.swift`
 
-- [ ] **Step 1: Write `StageTests.swift`**
+- [x] **Step 1: Write `StageTests.swift`**
 
 ```swift
 import CustomDump
@@ -3377,7 +3377,7 @@ extension BaseSuite {
 
 No stage member takes a `CancelToken`, so there's no cancellation test for it.
 
-- [ ] **Step 2: Write `RenderViewportTests.swift`**
+- [x] **Step 2: Write `RenderViewportTests.swift`**
 
 ```swift
 import CustomDump
@@ -3438,12 +3438,12 @@ extension BaseSuite {
 }
 ```
 
-- [ ] **Step 3: Run them**
+- [x] **Step 3: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 8 `StageTests` and 4 `RenderViewportTests`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests
