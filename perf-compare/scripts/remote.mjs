@@ -26,7 +26,7 @@ const remoteRoot = 'perf-remote/perf-compare';
 
 const config = loadConfig();
 const armsFlag = runArgs.indexOf('--arms');
-const arms = armsFlag === -1 ? config.armOrder : runArgs[armsFlag + 1].split(',');
+const arms = armsFlag === -1 ? config.defaultArms : runArgs[armsFlag + 1].split(',');
 for (const id of arms) {
   if (!existsSync(path.join(workDir(), 'dist', id, 'index.html'))) {
     throw new Error(`no entry build for arm ${id}; run scripts/build-entry.mjs first`);

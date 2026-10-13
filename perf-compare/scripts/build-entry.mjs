@@ -87,7 +87,7 @@ export function buildEntry(armId, config) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const only = process.argv.slice(2);
-  const arms = config.armOrder.filter((id) => !only.length || only.includes(id));
+  const arms = only.length ? config.armOrder.filter((id) => only.includes(id)) : config.defaultArms;
   const built = new Set();
   for (const id of arms) {
     const worktree = config.arms[id].worktree;
