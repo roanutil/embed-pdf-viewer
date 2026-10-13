@@ -6,12 +6,25 @@
 //! nested one did.
 
 use std::collections::HashMap;
+use std::fmt;
+use std::rc::Rc;
+use std::sync::Arc;
 
-use epdf_ffi::ViewerError;
+use epdf_ffi::{
+    ForeignSettle, KernelBound, KernelPost, PluginErrorInfo, RegistrationHandle, Subscription,
+    ViewerError,
+};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
+use epdf_kernel::rt::Promise;
+use epdf_kernel::store::Unsubscribe;
+use serde_json::Value;
 
-use crate::contract::{Dir, Locale, Param, Params, TranslationDictionary, TranslationNode};
+use crate::contract::{
+    Dir, Loader, Locale, LocaleChangedEvent, LocaleLoadFailedEvent, Param, Params,
+    TranslateOptions, TranslationDictionary, TranslationNode,
+};
+use crate::controller::I18nCapability;
 use crate::js::JsRecord;
 
 fn invalid(message: String) -> Error {
@@ -188,7 +201,6 @@ impl From<I18nParam> for Param {
     }
 }
 
-#[allow(dead_code)] // the handle's `t` reads it (next commit)
 fn params(map: HashMap<String, I18nParam>) -> Option<Params> {
     if map.is_empty() {
         return None;
@@ -200,4 +212,250 @@ fn params(map: HashMap<String, I18nParam>) -> Option<Params> {
         params.insert(key, value.into());
     }
     Some(params)
+}
+
+/// Serves lazy packs. Called on the kernel thread: return at once, do the
+/// work elsewhere, and answer through `completion` from any thread. A
+/// completion dropped unanswered fails the switch with `operation-failed`.
+#[uniffi::export(with_foreign)]
+pub trait LocaleLoader: Send + Sync {
+    fn load(&self, code: String, completion: Arc<LocaleLoadCompletion>);
+}
+
+/// The answer to one `LocaleLoader::load`. The first call wins.
+#[derive(uniffi::Object)]
+pub struct LocaleLoadCompletion {
+    settle: ForeignSettle<Locale>,
+}
+
+#[uniffi::export]
+impl LocaleLoadCompletion {
+    /// A pack whose keys don't form a tree (see `LocalePack`) fails the
+    /// switch with `invalid-input`.
+    pub fn finish(&self, pack: LocalePack) {
+        self.settle.settle(move || Locale::try_from(pack));
+    }
+
+    pub fn fail(&self, detail: String) {
+        self.settle.settle(move || Err(Error::new(detail).with("code", code::OPERATION_FAILED)));
+    }
+}
+
+/// `i18nPlugin(config)` as Swift configures it.
+#[derive(uniffi::Record)]
+pub struct I18nConfig {
+    /// Startup locale. May name a lazy pack. Defaults to `fallback_locale`.
+    #[uniffi(default = None)]
+    pub locale: Option<String>,
+    /// Tried when a key misses the current locale. Defaults to `en`.
+    #[uniffi(default = None)]
+    pub fallback_locale: Option<String>,
+    /// Packs available at once.
+    #[uniffi(default = [])]
+    pub locales: Vec<LocalePack>,
+    /// Codes `loader` serves on demand.
+    #[uniffi(default = [])]
+    pub lazy_locales: Vec<String>,
+    #[uniffi(default = None)]
+    pub loader: Option<Arc<dyn LocaleLoader>>,
+}
+
+impl fmt::Debug for I18nConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("I18nConfig")
+            .field("locale", &self.locale)
+            .field("fallback_locale", &self.fallback_locale)
+            .field("locales", &self.locales.iter().map(|l| &l.code).collect::<Vec<_>>())
+            .field("lazy_locales", &self.lazy_locales)
+            .field("loader", &self.loader.is_some())
+            .finish()
+    }
+}
+
+impl I18nConfig {
+    /// On the kernel thread: each lazy code becomes a `Loader` that asks the
+    /// foreign loader and settles through `post`.
+    pub fn into_plugin_config(self, post: KernelPost) -> Result<crate::I18nConfig, Error> {
+        let locales =
+            self.locales.into_iter().map(Locale::try_from).collect::<Result<Vec<_>, _>>()?;
+        let loaders = match (self.lazy_locales.is_empty(), self.loader) {
+            (true, _) => None,
+            (false, None) => {
+                return Err(invalid(format!("lazy locales {:?} need a loader", self.lazy_locales)));
+            }
+            (false, Some(foreign)) => {
+                let mut loaders: JsRecord<Loader> = JsRecord::new();
+                for code in self.lazy_locales {
+                    let (foreign, post, asked) = (foreign.clone(), post.clone(), code.clone());
+                    let loader: Loader = Rc::new(move || {
+                        let (promise, resolver) = Promise::pending();
+                        let completion = Arc::new(LocaleLoadCompletion {
+                            settle: ForeignSettle::new(
+                                resolver,
+                                post.clone(),
+                                "a LocaleLoader completion",
+                            ),
+                        });
+                        foreign.load(asked.clone(), completion);
+                        Ok(promise)
+                    });
+                    loaders.insert(code, loader);
+                }
+                Some(loaders)
+            }
+        };
+        Ok(crate::I18nConfig {
+            locale: self.locale,
+            fallback_locale: self.fallback_locale,
+            locales: Some(locales),
+            loaders,
+            warn: None,
+        })
+    }
+}
+
+/// `LocaleLoadFailedEvent`, with its error as the record every plugin uses.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct LocaleLoadFailure {
+    pub locale: String,
+    pub error: PluginErrorInfo,
+}
+
+impl TryFrom<&LocaleLoadFailedEvent> for LocaleLoadFailure {
+    type Error = Error;
+
+    fn try_from(event: &LocaleLoadFailedEvent) -> Result<Self, Error> {
+        let field = |key: &str| {
+            event.error.get(key).and_then(Value::as_str).map(str::to_string).ok_or_else(|| {
+                Error::named("InvalidState", format!("[i18n] load failure without \"{key}\""))
+                    .with("code", "invalid-state")
+            })
+        };
+        Ok(LocaleLoadFailure {
+            locale: event.locale.clone(),
+            error: PluginErrorInfo {
+                code: field("code")?,
+                message: field("message")?,
+                capability: field("capability")?,
+            },
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum I18nEvent {
+    LocaleChanged { event: LocaleChangedEvent },
+    LocaleLoadFailed { event: LocaleLoadFailure },
+}
+
+/// Workspace events have no document to end with: the stream lasts as long
+/// as the viewer.
+#[uniffi::export(with_foreign)]
+pub trait I18nEventListener: Send + Sync {
+    fn on_event(&self, event: I18nEvent);
+}
+
+#[derive(uniffi::Object)]
+pub struct I18nHandle {
+    cap: KernelBound<I18nCapability>,
+    post: KernelPost,
+}
+
+impl I18nHandle {
+    /// On the kernel thread.
+    pub fn new(cap: I18nCapability, post: KernelPost) -> Arc<Self> {
+        Arc::new(I18nHandle { cap: KernelBound::new(cap, post.clone()), post })
+    }
+}
+
+#[uniffi::export]
+impl I18nHandle {
+    /// Current locale, then the fallback, then `fallback`, then the key.
+    pub async fn t(
+        &self,
+        key: String,
+        params: HashMap<String, I18nParam>,
+        fallback: Option<String>,
+    ) -> Result<String, ViewerError> {
+        self.cap
+            .call(move |c| {
+                let options = TranslateOptions { params: self::params(params), fallback };
+                Ok(c.t(&key, Some(&options)))
+            })
+            .await
+    }
+
+    pub async fn has_key(&self, key: String) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(c.has_key(&key))).await
+    }
+
+    pub async fn locale(&self) -> Result<String, ViewerError> {
+        self.cap.call(|c| Ok(c.get_locale())).await
+    }
+
+    pub async fn direction(&self) -> Result<TextDirection, ViewerError> {
+        self.cap.call(|c| Ok(c.get_direction().into())).await
+    }
+
+    pub async fn locales(&self) -> Result<Vec<LocaleInfo>, ViewerError> {
+        self.cap.call(|c| Ok(c.list_locales().into_iter().map(LocaleInfo::from).collect())).await
+    }
+
+    pub async fn loading_locale(&self) -> Result<Option<String>, ViewerError> {
+        self.cap.call(|c| Ok(c.get_loading_locale())).await
+    }
+
+    /// Resolves once the locale is usable. Rejects `not-found` for an
+    /// unknown code, `operation-failed` when the pack fails to load, and
+    /// `operation-cancelled` when a newer call supersedes this one.
+    pub async fn set_locale(&self, code: String) -> Result<(), ViewerError> {
+        self.cap.call_promise(move |c| Ok(c.set_locale(&code)), |()| ()).await
+    }
+
+    pub async fn register_locale(
+        &self,
+        pack: LocalePack,
+    ) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.cap
+            .call(move |c| {
+                let remove = c.register_locale(Locale::try_from(pack)?);
+                Ok(RegistrationHandle::new(post, move || remove()))
+            })
+            .await
+    }
+
+    /// Merge flat keys into a registered pack; later keys win.
+    pub async fn add_translations(
+        &self,
+        code: String,
+        translations: HashMap<String, String>,
+    ) -> Result<(), ViewerError> {
+        self.cap.call(move |c| c.add_translations(&code, unflatten(translations)?)).await
+    }
+
+    /// The listener is registered on the kernel thread after this returns;
+    /// a cancel before then still takes effect.
+    pub fn subscribe(&self, listener: Arc<dyn I18nEventListener>) -> Arc<Subscription> {
+        let (subscription, slot) = Subscription::pending(self.post.clone());
+        self.cap.fire(move |c| {
+            let changed = {
+                let listener = listener.clone();
+                c.on_locale_changed(move |event| {
+                    listener.on_event(I18nEvent::LocaleChanged { event: event.clone() });
+                    Ok(())
+                })
+            };
+            let failed = c.on_locale_load_failed(move |event| {
+                let event = LocaleLoadFailure::try_from(event)?;
+                listener.on_event(I18nEvent::LocaleLoadFailed { event });
+                Ok(())
+            });
+            slot.fill(Unsubscribe::new(move || {
+                changed.call();
+                failed.call();
+            }));
+        });
+        subscription
+    }
 }
