@@ -829,6 +829,7 @@ dependencies = [
  "epdf-ffi",
  "epdf-kernel",
  "epdf-manual-bridge",
+ "epdf-plugin-commands",
  "epdf-plugin-i18n",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",

@@ -1072,7 +1072,7 @@ git commit -m "Export the commands plugin through uniffi"
 - Consumes: `epdf_plugin_commands::ffi::CommandsHandle`; plan 13's `ViewerConfig.i18n` and `epdf_plugin_i18n::ffi::{I18nConfig, LocalePack}`.
 - Produces: `ViewerConfig.commands: bool` and `ViewerHost::commands() -> Result<Arc<CommandsHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs` (the `I18nConfig` and `LocalePack` imports and `en_pack` may already exist from plan 13; reuse them):
 
@@ -1164,12 +1164,12 @@ fn a_panel_command_toggles_the_shell_surface() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host commands`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_commands`".
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetically:
 
@@ -1210,12 +1210,12 @@ epdf-plugin-commands = { path = "../plugins/commands", default-features = false,
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS, including the new tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::PageRef;
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
+use epdf_plugin_commands::ffi::{CommandDefinition, CommandExecuteResult, CommandPanel};
 use epdf_plugin_i18n::ffi::{I18nConfig, LocalePack};
 use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_plugin_page_edit::ffi::{PageEditBlankOptions, PageEditPlacement, PageEditTurn};
@@ -585,4 +586,84 @@ fn lazy_locales_without_a_loader_fail_to_build() {
         matches!(&error, ViewerError::Kernel { code: Some(code), .. } if code == "invalid-input"),
         "{error:?}"
     );
+}
+
+fn routing_command(id: &str, label_key: &str) -> CommandDefinition {
+    CommandDefinition {
+        id: id.into(),
+        label_key: label_key.into(),
+        icon: None,
+        shortcuts: vec![],
+        categories: vec![],
+        menu: None,
+        panel: None,
+        modal: None,
+        runner: None,
+        hooks: vec![],
+    }
+}
+
+#[test]
+fn the_commands_plugin_registers_and_resolves() {
+    let config = ViewerConfig { commands: true, ..ViewerConfig::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let commands = block_on(host.commands()).unwrap();
+    block_on(commands.register_command(routing_command("zoom:in", "commands.zoomIn"), false))
+        .unwrap();
+    let resolved = block_on(commands.resolve_command("zoom:in".into(), None)).unwrap().unwrap();
+    // No i18n: the label is the key.
+    assert_eq!(resolved.label, "commands.zoomIn");
+    let result = block_on(commands.execute("zoom:in".into(), None, None)).unwrap();
+    assert_eq!(result, CommandExecuteResult::Executed);
+}
+
+#[test]
+fn without_its_flag_the_commands_plugin_is_not_installed() {
+    let host = started();
+    assert!(block_on(host.commands()).is_err());
+}
+
+#[test]
+fn a_command_label_resolves_through_i18n() {
+    let pack = LocalePack {
+        code: "en".into(),
+        name: "English".into(),
+        dir: None,
+        translations: [("commands.zoomIn".to_string(), "Zoom in".to_string())].into(),
+    };
+    let config = ViewerConfig {
+        commands: true,
+        i18n: Some(I18nConfig {
+            locale: None,
+            fallback_locale: None,
+            locales: vec![pack],
+            lazy_locales: vec![],
+            loader: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let commands = block_on(host.commands()).unwrap();
+    block_on(commands.register_command(routing_command("zoom:in", "commands.zoomIn"), false))
+        .unwrap();
+    let resolved = block_on(commands.resolve_command("zoom:in".into(), None)).unwrap().unwrap();
+    assert_eq!(resolved.label, "Zoom in");
+}
+
+#[test]
+fn a_panel_command_toggles_the_shell_surface() {
+    let config = ViewerConfig { commands: true, shell: true, ..ViewerConfig::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let commands = block_on(host.commands()).unwrap();
+    let mut toggle = routing_command("panel:search", "commands.search");
+    toggle.panel = Some(CommandPanel { id: "search".into(), exclusive: None });
+    block_on(commands.register_command(toggle, false)).unwrap();
+    block_on(commands.execute("panel:search".into(), Some(doc.id.clone()), None)).unwrap();
+    let shell = block_on(host.shell(doc.id)).unwrap();
+    assert!(block_on(shell.is_open("search".into())).unwrap());
 }

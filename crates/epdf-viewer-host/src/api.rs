@@ -43,6 +43,10 @@ pub struct ViewerConfig {
     /// Install `i18nPlugin(config)`: workspace locale packs and `t()`.
     #[uniffi(default = None)]
     pub i18n: Option<I18nConfig>,
+    /// Install `commandsPlugin()`: the workspace command registry. Register
+    /// definitions through `ViewerHost::commands()`.
+    #[uniffi(default = false)]
+    pub commands: bool,
 }
 
 #[derive(Debug, uniffi::Record)]

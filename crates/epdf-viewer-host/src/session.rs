@@ -84,6 +84,11 @@ impl Session {
                 }
             }
         }
+        if config.commands {
+            plugins.push(epdf_plugin_commands::commands_plugin(
+                epdf_plugin_commands::CommandsConfig::default(),
+            ));
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {
