@@ -90,6 +90,11 @@ public struct InteractionCapability: Sendable {
   /// `handler` is called on the viewer's kernel thread, synchronously,
   /// for every sample. Return quickly, and don't block waiting on the
   /// viewer from inside it.
+  ///
+  /// The viewer keeps `handler` until you call `unregister()` or the
+  /// document closes. A handler that holds this capability or the
+  /// `PDFViewer` keeps the viewer alive until then, as a closure that
+  /// captures its owner does.
   public func registerHandler(
     _ handler: some InteractionHandler,
     id: String,

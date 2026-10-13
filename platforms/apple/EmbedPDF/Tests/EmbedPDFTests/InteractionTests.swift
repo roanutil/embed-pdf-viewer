@@ -142,6 +142,20 @@ extension BaseSuite {
       expectNoDifference(removed, false)
     }
 
+    @Test func unregisteringAHandlerThatHoldsTheCapabilityReleasesTheViewer() async throws {
+      weak var released: PDFViewer?
+      do {
+        let (viewer, _, interaction, _) = try await opened()
+        released = viewer
+        let handler = RecordingHandler { _ = interaction }
+        let registration = try await interaction.registerHandler(handler, id: "holds", priority: 1)
+        registration.unregister()
+        // A reply after the unregister means it has run.
+        _ = try await interaction.cursor()
+      }
+      #expect(released == nil)
+    }
+
     @Test func aClosedDocumentsCapabilityThrows() async throws {
       let (viewer, document, interaction, _) = try await opened()
       try await viewer.close(document)

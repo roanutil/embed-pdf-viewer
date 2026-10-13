@@ -44,8 +44,9 @@ only variables prefixed `TEST_RUNNER_`.
 | 2 | 54.5 µs | 126.3 µs | 0.93 ms |
 | 3 | 43.7 µs | 89.0 µs | 2.39 ms |
 
-p50 sits near the 11 µs to 12 µs kernel-thread hop that `swift-bridge-benchmarks.md` measured, plus
-the callback into Swift and the record lift on both sides. The max varies by 5x between runs and
+p50 is about four times the 11 µs to 12 µs kernel-thread hop that `swift-bridge-benchmarks.md`
+measured. The rest is the callback into Swift, the sample record crossing twice (Swift to Rust, then
+Rust back to Swift), and a Debug Swift build. We haven't split it further. The max varies by 5x between runs and
 lands on no particular sample, which reads as scheduler noise from the concurrent builds rather than
 anything in the path. We haven't profiled it.
 
