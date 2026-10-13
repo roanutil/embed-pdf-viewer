@@ -283,7 +283,7 @@ The slices under `packages/engine/runtime/build/libpdfium/` were built from fork
 **Files:**
 - Modify: `packages/engine/runtime/engine-runtime-build.local.json`
 
-- [ ] **Step 1: Confirm the headers are missing**
+- [x] **Step 1: Confirm the headers are missing**
 
 ```bash
 for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
@@ -295,7 +295,7 @@ done
 
 Expected: fifteen `MISSING` lines. None means a slice was already rebuilt; skip to Step 4.
 
-- [ ] **Step 2: Build and package each slice in the fork**
+- [x] **Step 2: Build and package each slice in the fork**
 
 ```bash
 cd packages/engine/runtime/runtime-src
@@ -311,7 +311,7 @@ cd -
 
 Expected: `has 6dc31d14e`, the five headers listed, and three archives named for the fork's short `HEAD`. A full slice build takes a while; run the three in one go.
 
-- [ ] **Step 3: Point the manifest at them and fetch**
+- [x] **Step 3: Point the manifest at them and fetch**
 
 ```bash
 sha=$(git -C packages/engine/runtime/runtime-src rev-parse --short HEAD)
@@ -322,7 +322,7 @@ for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
 done
 ```
 
-- [ ] **Step 4: Run Step 1 again, then the existing suites on the new slices**
+- [x] **Step 4: Run Step 1 again, then the existing suites on the new slices**
 
 Run Step 1's loop.
 Expected: no output.
@@ -330,7 +330,7 @@ Expected: no output.
 Run: `cargo test -p epdf-engine -p epdf-ffi -p epdf-viewer-host && bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS. A fork bump that changes behaviour shows up here, before any plugin plan builds on it.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/engine/runtime/engine-runtime-build.local.json
