@@ -497,10 +497,13 @@ name = "epdf-plugin-actions"
 version = "0.0.0"
 dependencies = [
  "epdf-acrojs",
+ "epdf-ffi",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

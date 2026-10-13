@@ -92,6 +92,7 @@ pub mod page_ref_json {
 
 /// Why a dispatch happened.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum ActionOrigin {
     User,
@@ -143,6 +144,7 @@ pub enum ActionSource {
 
 /// The document lifecycle vocabulary: `open` plus the five catalog /AA verbs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "kebab-case")]
 pub enum DocumentTriggerEvent {
     Open,
@@ -168,6 +170,7 @@ impl DocumentTriggerEvent {
 
 /// The six annotation /AA pointer and focus events.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum PdfAnnotationEventKind {
     CursorEnter,
@@ -194,6 +197,7 @@ impl PdfAnnotationEventKind {
 
 /// The page lifecycle events.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum PageEventKind {
     Open,
@@ -204,6 +208,7 @@ pub enum PageEventKind {
 
 /// The four field-level /AA scripts (ISO Table 198: K F V C).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum PdfFieldEventKind {
     Keystroke,
@@ -226,6 +231,7 @@ impl PdfFieldEventKind {
 
 /// Trigger provenance: which event fired.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(tag = "scope", rename_all = "camelCase")]
 pub enum ActionTriggerEvent {
     Activate,
@@ -373,6 +379,7 @@ pub fn trigger_origin_of(trigger: &ActionTrigger) -> ActionOrigin {
 // ── results ───────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "kebab-case")]
 pub enum ActionNodeStatus {
     Executed,
@@ -395,6 +402,7 @@ pub struct ActionNodeResult {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "kebab-case")]
 pub enum ActionDiagnosticCode {
     IncompleteTree,
@@ -419,6 +427,7 @@ pub enum ActionDiagnosticCode {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ActionDiagnostic {
     pub code: ActionDiagnosticCode,
     pub message: String,
@@ -431,6 +440,7 @@ impl ActionDiagnostic {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum ActionResultStatus {
     Executed,
@@ -475,6 +485,7 @@ pub struct ActionTriggerResult {
 // ── policy ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum ActionPolicyDecision {
     Allow,
@@ -495,6 +506,7 @@ impl ActionPolicyDecision {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ActionPolicyRow {
     pub user: ActionPolicyDecision,
     pub hover: ActionPolicyDecision,
@@ -522,16 +534,21 @@ impl ActionPolicyRow {
 
 /// `Partial<ActionPolicyRow>`: only the origins a patch changes.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PartialActionPolicyRow {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub user: Option<ActionPolicyDecision>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub hover: Option<ActionPolicyDecision>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub lifecycle: Option<ActionPolicyDecision>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ActionPolicy {
     pub goto: ActionPolicyRow,
     pub named: ActionPolicyRow,
@@ -566,38 +583,52 @@ impl ActionPolicy {
 /// `ActionPolicyPatch`: row-wise overrides. A row names only the origins it
 /// changes; an absent or `null` row is left alone.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ActionPolicyPatch {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub goto: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub named: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub hide: Option<PartialActionPolicyRow>,
     #[serde(rename = "reset-form", default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub reset_form: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub javascript: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub uri: Option<PartialActionPolicyRow>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub print: Option<PartialActionPolicyRow>,
     #[serde(rename = "submit-form", default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub submit_form: Option<PartialActionPolicyRow>,
 }
 
 /// Trigger-family gates, default all on. `activate` is never gated.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct TriggerGates {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub document: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub page: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub annotation: Option<bool>,
 }
 
 /// When the document-open sequence fires.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum OpenSequence {
     /// At the earliest of a UI adapter installing or the first user-origin
@@ -666,6 +697,7 @@ pub type ActionExecutor =
     Rc<dyn Fn(&PdfActionNode, &ActionContext) -> Result<Promise<ActionExecutorResult>, Error>>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum ScriptPhase {
     Boot,
@@ -674,6 +706,7 @@ pub enum ScriptPhase {
 
 /// Origin and phase context every script-produced UI request carries.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ActionUiContext {
     pub origin: ActionOrigin,
     pub phase: ScriptPhase,
@@ -771,6 +804,7 @@ pub type Disposer = Rc<dyn Fn()>;
 
 /// `runDocumentVerb`'s verbs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[serde(rename_all = "camelCase")]
 pub enum DocumentVerb {
     Save,

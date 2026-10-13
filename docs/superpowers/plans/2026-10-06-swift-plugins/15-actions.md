@@ -106,7 +106,7 @@ actions has no requirements and no optional dependencies; stage, link, annotatio
 
 Members, from `crates/plugins/actions/src/harness.rs` `MEMBERS` (27). Task 1: `getPolicy` (`policy`), `updatePolicy`, `isScriptingEnabled`, `execute`, `canExecute`, `executeNamed`, `getActionTree` (`action_tree`), `dispatch`, `canDispatch`, `prepareClose`, and `onExecuted`, `onDiagnostic`, `onScriptDiagnostic`, `onScriptError`, `onOpenSequenceCompleted` (all in `subscribe`). Task 2: `registerExecutor`, `setSubmitHandler`, `setUiAdapter`, `runDocumentVerb`. Not exported (Decisions): `registerAnnotCommitSink`, `registerFormCommitSink`, `registerSubmitResolver`, `scriptRealm`, `createDetachedScriptRealm`, `surfaceScriptResult`, `surfaceScriptCommit`, `reportPageState`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-actions -b research/swift-actions research/swift-plugins
@@ -117,7 +117,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Fetch PDFium first as `platforms/apple/README.md` describes. Keep the size for the final commit message.
 
-- [ ] **Step 2: Add the feature**
+- [x] **Step 2: Add the feature**
 
 `crates/plugins/actions/Cargo.toml`, under `[features]`:
 
@@ -164,7 +164,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Derive the compatible contract types in place**
+- [x] **Step 3: Derive the compatible contract types in place**
 
 In `crates/plugins/actions/src/contract.rs`, add `#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]` under the `#[derive(...)]` line of each of these enums, all of whose variants carry only other types in this list: `ActionOrigin`, `DocumentTriggerEvent`, `PdfAnnotationEventKind`, `PageEventKind`, `PdfFieldEventKind`, `ActionTriggerEvent`, `ActionNodeStatus`, `ActionDiagnosticCode`, `ActionResultStatus`, `ActionPolicyDecision`, `OpenSequence`, `ScriptPhase`, `DocumentVerb`.
 
@@ -200,7 +200,7 @@ done
 
 Expected: no `collision:` line. A collision means the other crate exports the same uniffi name (check that it has `uniffi::Record`/`uniffi::Enum` on it); mirror the actions type in `ffi.rs` under an `Action`-prefixed name instead of deriving it in place.
 
-- [ ] **Step 4: Write the failing handle tests**
+- [x] **Step 4: Write the failing handle tests**
 
 Create `crates/plugins/actions/tests/ffi.rs`:
 
@@ -416,12 +416,12 @@ fn closing_the_document_ends_its_subscriptions() {
 
 `spec`, `named` and `page` are `pub` so Tasks 2 and 5's test files can copy them; integration test files don't share modules, so each later file repeats them verbatim.
 
-- [ ] **Step 5: Run the tests to verify they fail**
+- [x] **Step 5: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_actions::ffi`".
 
-- [ ] **Step 6: Write the objects and mirrors in `crates/plugins/actions/src/ffi.rs`**
+- [x] **Step 6: Write the objects and mirrors in `crates/plugins/actions/src/ffi.rs`**
 
 ```rust
 //! The actions plugin through uniffi: the engine's action trees as opaque
@@ -1076,7 +1076,7 @@ Create `crates/plugins/actions/src/ffi/ports.rs` and `crates/plugins/actions/src
 
 `epdf_kernel::is_undefined` is the sentinel test `crates/epdf-kernel/src/lib.rs:55` exports. The kernel's `PageRef` is `Copy`, which the `(*page).into()` conversions rely on.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi`
 Expected: PASS, 8 tests.
@@ -1084,7 +1084,7 @@ Expected: PASS, 8 tests.
 Run: `cargo test -p epdf-plugin-actions`
 Expected: the conformance vectors and `external_uri` still pass without `uniffi`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/actions
