@@ -36,6 +36,7 @@ uniffi's own assessment and a fair reason not to review it in a diff.
 | search | `SearchCapability` | `search: SearchConfig()` | `2026-10-01-swift-package.md` Task 7 |
 | render | `RenderCapability` | `render: RenderConfig()` | `2026-10-01-swift-package.md` Task 8 |
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
+| view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
 
 ## What the script assembles
