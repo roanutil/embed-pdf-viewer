@@ -1440,17 +1440,17 @@ git commit -m "Test the Swift selection capability"
 
 Append `selection` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, keeping plan-number order (after `stage` if plan 02 has merged, after `interaction` otherwise).
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | selection | `SelectionCapability` | `interaction: true, selection: true` | `2026-10-06-swift-plugins/03-selection.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**selection** (D, requires `interaction`, optional `feedback`).` to `**selection** (D, requires `interaction`, optional `feedback`), delivered by 03-selection.md.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-selection --features uniffi
@@ -1465,7 +1465,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
