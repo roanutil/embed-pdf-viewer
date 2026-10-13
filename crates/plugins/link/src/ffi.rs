@@ -21,9 +21,7 @@ use epdf_ffi::{
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
 use epdf_plugin_annotation::ANNOTATION_EDIT_PRIORITY;
-use epdf_plugin_interaction::{
-    InteractionCapability, InteractionHandler, PointerSample, RegisterHandlerOptions, Tool,
-};
+use epdf_plugin_interaction::{InteractionHandler, PointerSample, RegisterHandlerOptions, Tool};
 use epdf_plugin_stage::ffi::StageRevealOptions;
 
 use crate::{LinkActivateContext, LinkCapability, LinkNavItem};
@@ -216,7 +214,6 @@ fn input_of(cap: &LinkCapability, input: LinkInput) -> Result<crate::LinkInput, 
 /// link still scrolls.
 struct TapHandler {
     link: LinkCapability,
-    hub: InteractionCapability,
     report: Rc<dyn Fn(&Error)>,
     pressed: RefCell<Option<(epdf_annotation_core::PageRef, String)>>,
 }
@@ -228,16 +225,16 @@ impl TapHandler {
     ) -> Option<(epdf_annotation_core::PageRef, LinkNavItem)> {
         let hit = sample.page.as_ref()?;
         let page = epdf_annotation_core::PageRef::new(hit.page.page_object_number);
-        let editing = self.hub.get_active_tool().enables("annotation-edit");
-        let b = |l: &LinkNavItem| l.bounds;
+        // Through the link rather than a held hub: the hub holds this
+        // handler, so holding the hub back would be a cycle.
+        let editing =
+            self.link.hub().is_ok_and(|hub| hub.get_active_tool().enables("annotation-edit"));
+        let (x, y) = (hit.point.x, hit.point.y);
         let inside = |l: &LinkNavItem| {
-            let r = b(l);
-            hit.point.x >= r.x
-                && hit.point.x <= r.x + r.width
-                && hit.point.y >= r.y
-                && hit.point.y <= r.y + r.height
+            let r = l.bounds;
+            x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height
         };
-        let area = |l: &LinkNavItem| b(l).width * b(l).height;
+        let area = |l: &LinkNavItem| l.bounds.width * l.bounds.height;
         let mut best: Option<LinkNavItem> = None;
         for link in self.link.list_links(&page) {
             if (editing && link.attached) || !inside(&link) {
@@ -437,7 +434,6 @@ impl LinkHandle {
                 let hub = link.hub()?;
                 let handler = Rc::new(TapHandler {
                     link,
-                    hub: hub.clone(),
                     report: b.report.clone(),
                     pressed: RefCell::new(None),
                 });
