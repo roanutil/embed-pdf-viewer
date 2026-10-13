@@ -11,8 +11,12 @@ public typealias ViewManagerEvent = EmbedPDFBindings.ViewManagerEvent
 /// `PDFViewer.viewManager()`; the viewer needs
 /// `ViewerConfig(viewManager: true)`. One capability for the whole viewer.
 /// It keeps the viewer alive, and after `destroy` every call throws
-/// `instance-closed`. An unknown pane or document id is ignored, not an
-/// error, as on the web.
+/// `instance-closed`. No member throws for an id it doesn't know, as on
+/// the web. An unknown pane is ignored. `setFocusedPane`, `createPane`,
+/// `splitPane` and `addDocument` don't check document or pane ids against
+/// what's open: pass ids from `PDFDocument.id` and `panes()`, or the
+/// unknown id lands as a tab (or the focus) until the open documents next
+/// change.
 public struct ViewManagerCapability: Sendable {
   let handle: ViewManagerHandle
   let viewer: PDFViewer

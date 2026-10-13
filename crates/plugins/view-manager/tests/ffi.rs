@@ -215,3 +215,15 @@ fn a_cancelled_subscription_hears_nothing_more() {
     block_on(vm.create_pane(vec![])).unwrap();
     assert!(events.0.lock().unwrap().is_empty());
 }
+
+/// As on the web, four members take an id the plugin doesn't know: focus
+/// moves to it, and a document id lands as a tab until the open documents
+/// next change. The facade passes them through and adds no check.
+#[test]
+fn some_members_take_ids_the_plugin_does_not_know() {
+    let (_thread, vm) = handle();
+    block_on(vm.set_focused_pane(Some("pane-9".into()))).unwrap();
+    assert_eq!(block_on(vm.focused_pane_id()).unwrap().as_deref(), Some("pane-9"));
+    block_on(vm.add_document("pane-1".into(), "nope".into(), None)).unwrap();
+    assert_eq!(block_on(vm.pane_of_document("nope".into())).unwrap().as_deref(), Some("pane-1"));
+}
