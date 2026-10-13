@@ -1432,12 +1432,12 @@ git commit -m "Test links through the native engine, the stage and a tap"
 - Consumes: generated `LinkHandle` and records.
 - Produces: `LinkCapability` and `PDFViewer.link(for:)`.
 
-- [ ] **Step 1: Confirm `features.pdf` reaches the test bundles**
+- [x] **Step 1: Confirm `features.pdf` reaches the test bundles**
 
 Run: `grep -n 'features.pdf' platforms/apple/build-xcframework.sh`
 Expected: one hit in `FIXTURES` (umbrella Task 0f put it there).
 
-- [ ] **Step 2: Write `Link.swift`**
+- [x] **Step 2: Write `Link.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1542,7 +1542,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 3: Write `LinkTests.swift`**
+- [x] **Step 3: Write `LinkTests.swift`**
 
 ```swift
 import CustomDump
@@ -1616,12 +1616,12 @@ extension BaseSuite {
 
 No link member takes a `CancelToken`, so there's no cancellation test.
 
-- [ ] **Step 4: Run them**
+- [x] **Step 4: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 5 `LinkTests`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Link.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/LinkTests.swift
@@ -1637,13 +1637,13 @@ git commit -m "Add the Swift link capability"
 
 Append `link` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | link | `LinkCapability` | `interaction: true, link: true` | `2026-10-06-swift-plugins/04-link.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entries delivered**
+- [x] **Step 3: Mark the spec entries delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`).` to `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`), delivered by 04-link.md.` In Appendix C, split the `page.annotations.list` row: `page.annotations.list` is mapped by 04-link.md; `create`, `update` and `delete` stay B2.
 
