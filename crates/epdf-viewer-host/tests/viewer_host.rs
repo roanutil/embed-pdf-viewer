@@ -474,7 +474,7 @@ fn the_first_open_creates_the_default_pane() {
     let panes = block_on(vm.panes()).unwrap();
     assert_eq!(panes.len(), 1);
     assert_eq!(panes[0].id, "pane-1");
-    assert_eq!(panes[0].document_ids, [doc.id.clone()]);
+    assert_eq!(panes[0].document_ids, [doc.id.as_str()]);
     assert_eq!(block_on(vm.focused_pane_id()).unwrap().as_deref(), Some("pane-1"));
 }
 

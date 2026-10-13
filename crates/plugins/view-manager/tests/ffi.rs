@@ -74,7 +74,7 @@ fn the_open_document_lands_in_the_default_pane() {
     let panes = block_on(vm.panes()).unwrap();
     assert_eq!(panes.len(), 1);
     assert_eq!(panes[0].id, "pane-1");
-    assert_eq!(panes[0].document_ids, [a.clone()]);
+    assert_eq!(panes[0].document_ids, [a.as_str()]);
     assert_eq!(panes[0].active_document_id.as_deref(), Some(a.as_str()));
     assert_eq!(block_on(vm.focused_pane_id()).unwrap().as_deref(), Some("pane-1"));
     assert_eq!(block_on(vm.pane_of_document(a)).unwrap().as_deref(), Some("pane-1"));
@@ -90,7 +90,7 @@ fn splitting_moves_the_document_and_says_so_in_order() {
     let pane = block_on(vm.split_pane(b.clone())).unwrap();
     assert_eq!(pane, "pane-2");
     assert_eq!(block_on(vm.pane_order()).unwrap(), ["pane-1", "pane-2"]);
-    assert_eq!(block_on(vm.pane(pane.clone())).unwrap().unwrap().document_ids, [b.clone()]);
+    assert_eq!(block_on(vm.pane(pane.clone())).unwrap().unwrap().document_ids, [b.as_str()]);
     assert_eq!(block_on(vm.pane("pane-1".into())).unwrap().unwrap().document_ids, [a]);
     let seen = events.0.lock().unwrap();
     assert!(
@@ -155,7 +155,7 @@ fn a_tab_dragged_between_panes_becomes_active_there() {
     block_on(vm.move_document_between("pane-1".into(), second.clone(), a.clone(), Some(0)))
         .unwrap();
     let pane = block_on(vm.pane(second.clone())).unwrap().unwrap();
-    assert_eq!(pane.document_ids, [a.clone()]);
+    assert_eq!(pane.document_ids, [a.as_str()]);
     assert_eq!(pane.active_document_id, Some(a));
     assert_eq!(block_on(vm.focused_pane_id()).unwrap(), Some(second));
 }
@@ -170,7 +170,7 @@ fn closing_a_document_takes_it_out_of_its_pane() {
     let _sub = vm.subscribe(events.clone());
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     let pane = block_on(vm.pane("pane-1".into())).unwrap().unwrap();
-    assert_eq!(pane.document_ids, [b.clone()]);
+    assert_eq!(pane.document_ids, [b.as_str()]);
     assert_eq!(pane.active_document_id, Some(b));
     let seen = events.0.lock().unwrap();
     assert!(

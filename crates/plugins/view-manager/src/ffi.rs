@@ -100,16 +100,31 @@ impl ViewManagerHandle {
         id: String,
         move_documents_to: Option<String>,
     ) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.remove_pane(&id, move_documents_to.as_deref()))).await
+        self.cap
+            .call(move |c| {
+                open(c)?.remove_pane(&id, move_documents_to.as_deref());
+                Ok(())
+            })
+            .await
     }
 
     /// Clamped into the order; an unknown id is ignored.
     pub async fn move_pane(&self, id: String, to_index: u32) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.move_pane(&id, f64::from(to_index)))).await
+        self.cap
+            .call(move |c| {
+                open(c)?.move_pane(&id, f64::from(to_index));
+                Ok(())
+            })
+            .await
     }
 
     pub async fn set_focused_pane(&self, id: Option<String>) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.set_focused_pane(id.as_deref()))).await
+        self.cap
+            .call(move |c| {
+                open(c)?.set_focused_pane(id.as_deref());
+                Ok(())
+            })
+            .await
     }
 
     /// A new pane showing the document. Answers the new pane's id.
@@ -124,7 +139,10 @@ impl ViewManagerHandle {
         document_id: Option<String>,
     ) -> Result<(), ViewerError> {
         self.cap
-            .call(move |c| Ok(open(c)?.set_active_document(&pane_id, document_id.as_deref())))
+            .call(move |c| {
+                open(c)?.set_active_document(&pane_id, document_id.as_deref());
+                Ok(())
+            })
             .await
     }
 
@@ -137,7 +155,10 @@ impl ViewManagerHandle {
         index: Option<u32>,
     ) -> Result<(), ViewerError> {
         self.cap
-            .call(move |c| Ok(open(c)?.add_document(&pane_id, &document_id, index.map(f64::from))))
+            .call(move |c| {
+                open(c)?.add_document(&pane_id, &document_id, index.map(f64::from));
+                Ok(())
+            })
             .await
     }
 
@@ -146,7 +167,12 @@ impl ViewManagerHandle {
         pane_id: String,
         document_id: String,
     ) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.remove_document(&pane_id, &document_id))).await
+        self.cap
+            .call(move |c| {
+                open(c)?.remove_document(&pane_id, &document_id);
+                Ok(())
+            })
+            .await
     }
 
     /// Reorder a tab inside its pane; `to_index` is clamped.
@@ -158,7 +184,8 @@ impl ViewManagerHandle {
     ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                Ok(open(c)?.move_document_within(&pane_id, &document_id, f64::from(to_index)))
+                open(c)?.move_document_within(&pane_id, &document_id, f64::from(to_index));
+                Ok(())
             })
             .await
     }
@@ -174,12 +201,13 @@ impl ViewManagerHandle {
     ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                Ok(open(c)?.move_document_between(
+                open(c)?.move_document_between(
                     &from_pane_id,
                     &to_pane_id,
                     &document_id,
                     to_index.map(f64::from),
-                ))
+                );
+                Ok(())
             })
             .await
     }
