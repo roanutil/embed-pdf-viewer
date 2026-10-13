@@ -529,6 +529,28 @@ fn a_pan_tool_drag_scrolls_the_stage() {
 }
 
 #[test]
+fn a_fling_in_flight_at_close_stops_without_a_report() {
+    let reports = Arc::new(Reports(Mutex::default()));
+    let host = ViewerHost::new(
+        ViewerConfig { stage: Some(StageConfig::default()), ..Default::default() },
+        reports.clone(),
+    )
+    .unwrap();
+    block_on(host.start()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(FfiSize { width: 390.0, height: 844.0 })).unwrap();
+    block_on(stage.fling(0.0, -4000.0)).unwrap();
+    assert!(block_on(stage.is_moving()).unwrap());
+    block_on(host.close_document(doc.id)).unwrap();
+    // A few frames' worth of the kernel's 16 ms timer.
+    std::thread::sleep(Duration::from_millis(200));
+    block_on(host.documents()).unwrap();
+    assert!(reports.0.lock().unwrap().is_empty(), "{:?}", reports.0.lock().unwrap());
+}
+
+#[test]
 fn a_scroll_handler_without_the_interaction_plugin_is_unsupported() {
     let host = with(ViewerConfig {
         stage: Some(StageConfig { frames: false, ..Default::default() }),
