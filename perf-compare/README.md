@@ -143,6 +143,37 @@ applies. A branch that needs a different build means a new recipe in
 `scripts/build-arm.mjs`, and that file's contents are the worktree cache key, so editing it
 rebuilds every worktree.
 
+## Reading a run
+
+`node scripts/summary.mjs results/<run-id> [arm ...]` prints the numbers worth quoting from a run's
+`report.md`: each pair's verdict counts, the rows that aren't "no detectable difference", and for
+pairs against `main` the median ratio over the latency rows and over the main-thread rows. Before
+calling a row a regression, check the same unchanged build in earlier runs: on the remote,
+`annotateLarge` settle for one build moved between 220 and 245 ms from run to run, and `main`
+against `main-aa` differed by about 20 ms on it within a run.
+
+An arm whose payload has the Rust engine core but whose recipe isn't `rust-core` can still run
+with `rustReads: true`: `node scripts/verify-core.mjs <worktree>` checks the payload and records
+it in the stamp, which the gate reads.
+
+## Profiling an arm
+
+The scripts in `scripts/prof/` profile the main thread inside the harness's own measured window,
+on this machine (not the remote):
+
+1. `node scripts/prof/build-prof.mjs <arm>` builds `.work/dist/<arm>-prof`: the arm with an
+   unminified bundle and a kernel that keeps its function names (`wasm-opt -O3 -g`). It stops if
+   the stripped rebuild isn't byte-identical to the arm's shipped kernel. Rust-kernel arms only.
+2. `node scripts/prof/flowprof.mjs <arm>-prof <flow> [reps]` writes one `.cpuprofile` per rep to
+   `.work/prof/out` (or `$PROF_OUT`), and prints each rep's metrics. Any arm works, without names.
+3. `node scripts/prof/profsum.mjs <flow>-<arm>-prof [top]` sums self and inclusive time per
+   function and per category (wasm, JS file, GC, idle), averaged over the reps.
+   `scripts/prof/proftree.mjs <prefix> [minMs] [maxDepth]` prints the merged call tree, and
+   `scripts/prof/callers.mjs <prefix> <regex> [depth]` totals what calls the frames that match.
+
+Profile a few reps of the baseline the same way and compare categories before reading the
+function lists: a gap shows up first as wasm time with no `main` counterpart.
+
 ## How the Rust-core payload is built
 
 No fork release publishes the `wasm32-eh` target the Rust engine core links against. The branch's
