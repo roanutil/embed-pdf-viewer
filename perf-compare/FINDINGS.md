@@ -853,3 +853,22 @@ failed samples), against `plugins-resulttext`, 55 rows show no difference and 5 
 `selectLarge`, `jump` and `open(large)` don't move. As with `impl-ts` against `impl-rust`, geometry
 is too small a share of the worker's time to show, so the plugins arms stay on `rustReads: false`.
 
+
+### After the review fixes
+
+The whole-branch review's fixes (`docs/research/rust-plugins-branch-review.md`, "Status") went into
+`research/multi-platform-rust-core-impl-plugins` as one batch: 4 Highs, 29 Mediums and 63 Lows,
+ending at `9d6c2eca1` (arm `plugins-tip7`). Several touch hot paths: promise turn counts (M1 to
+M3), copy-on-write annotation and form models (M17, M21), selection page lookups (M22), action
+listener types (L-K1), and the shim forgetting unused functions a task after a call (L-W2).
+
+On the remote (R=10, `results/2026-10-13T02-28-33-711Z-macmini2020-desktop`, A/A 63 of 63, no
+failed samples), against the tip before them (`34644a2b4`, arm `plugins-resulttext`), 61 rows show
+no difference. `selectLarge` main-thread JavaScript drops 12% (79.9 to 70.6 ms), which fits M22.
+`annotateLarge` reads 43.3 ms slower to settle [+5.0, +65.3], but that is noise: on this machine
+the two arms settle at 153.5 and 153.3 ms (8 runs each, interleaved), and `plugins-resulttext`'s own
+median on the remote was 245, 244 and 220 ms across three runs of the same build
+(`2026-10-09T21-14-02-964Z`, `2026-10-12T01-08-19-312Z`, this one), while `main` and `main-aa`
+differ by about 20 ms on the row here. Against `main`, main-thread time is 1.423x (1.433x before);
+latency reads 1.088x against 1.042x, from rows that each moved inside their noise. The kernel wasm
+grows 0.29 MiB (8.06 to 8.35), 0.04 MiB brotli.
