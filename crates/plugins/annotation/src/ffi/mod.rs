@@ -42,7 +42,10 @@ pub use drafts::{
 };
 pub use handle::AnnotationHandle;
 pub use picker::{AnnotationFilePicker, AnnotationFilePromptRequest, AnnotationPickedFile};
-pub use selection::{AnnotationSelectionHandle, AnnotationSelectionProps, AnnotationTextFormat};
+pub use selection::{
+    AnnotationQuarterTurn, AnnotationSelectionHandle, AnnotationSelectionProps,
+    AnnotationTextFormat,
+};
 pub use threads::{
     AnnotationComment, AnnotationCommentPermissions, AnnotationCommentThread,
     AnnotationThreadDeleteFailure, AnnotationThreadDeleteResult, AnnotationThreadStatus,

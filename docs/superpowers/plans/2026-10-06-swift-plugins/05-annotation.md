@@ -1948,7 +1948,7 @@ git commit -m "Export the annotation plugin's reads, writes and events through u
 
 Members: selection handle `select`, `select_all`, `select_in_rect`, `clear` (`clearSelection`), `refs` (`getSelection`), `props` (`getSelectionProps`), `update` (`updateSelection`), `update_flags` (`updateSelectionFlags`), `delete` (`deleteSelection`), `rotate_by` (`rotateSelectionBy`), `reset_rotation` (`resetSelectionRotation`), `toggle_text_format`, `group`, `ungroup`, `can_group`, `can_ungroup`. Tools handle `tools` (`listTools`), `tool` (`getTool`), `defaults` (`getToolDefaults`), `set_defaults` (`setToolDefaults`), `prop_specs` (`listPropSpecs`), `snap_settings` (`getSnapSettings`), `update_snap_settings`. `getSelectionFlags` returns a free-form `Map<String, Value>` and isn't exported; `update_flags` covers writing them.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -2006,12 +2006,12 @@ fn the_default_tools_are_listed_with_their_specs() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named selection found for struct Arc<AnnotationHandle>`.
 
-- [ ] **Step 3: Write `ffi/selection.rs`**
+- [x] **Step 3: Write `ffi/selection.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2171,7 +2171,7 @@ impl AnnotationSelectionHandle {
 
 Check two signatures before running: `rg -n 'pub fn update_selection|pub fn update_selection_flags' -A4 crates/plugins/annotation/src/write/selection.rs`. They take a patch and return `Promise<BatchResult<AnnotationRef>>`. If either returns `Promise<()>`, change that method's return type to `()` and its map to `|()| ()`. Same for `rg -n 'pub struct PropSpec' -A8 crates/plugins/annotation-core/src/kinds.rs`: the code assumes a `key: PropKey` field.
 
-- [ ] **Step 4: Write `ffi/tools.rs`**
+- [x] **Step 4: Write `ffi/tools.rs`**
 
 ```rust
 use epdf_ffi::{AnnotationFlagsPatch, AnnotationPropKey, AnnotationProps, AnnotationPropsPatch, KernelBound, ViewerError};
@@ -2261,7 +2261,7 @@ impl AnnotationToolsHandle {
 
 The fields of `PropSpec` (`crates/plugins/annotation-core/src/kinds.rs:16`) decide `AnnotationPropSpec`'s. Read the struct and mirror every field it has whose type UniFFI can carry, renaming nothing; drop only a `Value` field, and say so in the record's doc.
 
-- [ ] **Step 5: Add the accessors to `AnnotationHandle`**
+- [x] **Step 5: Add the accessors to `AnnotationHandle`**
 
 In `ffi/handle.rs`, inside `#[uniffi::export] impl AnnotationHandle`:
 
@@ -2277,12 +2277,12 @@ In `ffi/handle.rs`, inside `#[uniffi::export] impl AnnotationHandle`:
 
 `KernelBound` is `Clone` (umbrella Task 0c): clones share one slab entry, freed when the last one drops.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 12 passed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/annotation

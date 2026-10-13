@@ -259,3 +259,53 @@ fn cancelling_a_create_before_it_runs_creates_nothing() {
     assert_eq!(code(&error), Some("operation-cancelled"), "{error:?}");
     assert!(block_on(annotations.list(None)).unwrap().is_empty());
 }
+
+use epdf_plugin_annotation::ffi::AnnotationTextFormat;
+
+#[test]
+fn selecting_two_annotations_and_grouping_them() {
+    let (_thread, annotations) = handle_over(vec![square(5, json!({})), square(6, json!({}))]);
+    block_on(annotations.refresh(token())).unwrap();
+    let selection = annotations.selection();
+    block_on(selection.select(vec![obj(5), obj(6)], None)).unwrap();
+    assert_eq!(block_on(selection.refs()).unwrap(), vec![obj(5), obj(6)]);
+    assert!(block_on(selection.can_group()).unwrap());
+    block_on(selection.clear()).unwrap();
+    assert!(block_on(selection.refs()).unwrap().is_empty());
+}
+
+#[test]
+fn a_selection_props_read_names_what_is_mixed() {
+    let (_thread, annotations) =
+        handle_over(vec![square(5, json!({ "opacity": 1 })), square(6, json!({ "opacity": 0.5 }))]);
+    block_on(annotations.refresh(token())).unwrap();
+    let selection = annotations.selection();
+    block_on(selection.select(vec![obj(5), obj(6)], None)).unwrap();
+    let props = block_on(selection.props()).unwrap();
+    assert!(props.mixed.contains(&epdf_ffi::AnnotationPropKey::Opacity), "{props:?}");
+}
+
+#[test]
+fn toggling_bold_without_a_free_text_selection_is_a_no_op() {
+    let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
+    block_on(annotations.refresh(token())).unwrap();
+    let selection = annotations.selection();
+    block_on(selection.select(vec![obj(5)], None)).unwrap();
+    block_on(selection.toggle_text_format(AnnotationTextFormat::Bold, token())).unwrap();
+}
+
+#[test]
+fn the_default_tools_are_listed_with_their_specs() {
+    let (_thread, annotations) = handle_over(vec![]);
+    let tools = annotations.tools();
+    let all = block_on(tools.tools()).unwrap();
+    let ink = all.iter().find(|t| t.subtype == "ink").expect("an ink tool");
+    let specs = block_on(tools.prop_specs(ink.id.clone())).unwrap();
+    assert!(specs.iter().any(|s| s.key == epdf_ffi::AnnotationPropKey::StrokeWidth), "{specs:?}");
+    block_on(tools.set_defaults(
+        ink.id.clone(),
+        epdf_ffi::AnnotationPropsPatch { stroke_width: Some(4.0), ..Default::default() },
+    ))
+    .unwrap();
+    assert_eq!(block_on(tools.defaults(ink.id.clone())).unwrap().stroke_width, Some(4.0));
+}

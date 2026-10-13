@@ -29,6 +29,14 @@ impl AnnotationHandle {
 
 #[uniffi::export]
 impl AnnotationHandle {
+    pub fn selection(&self) -> Arc<super::AnnotationSelectionHandle> {
+        Arc::new(super::AnnotationSelectionHandle { cap: self.cap.clone() })
+    }
+
+    pub fn tools(&self) -> Arc<super::AnnotationToolsHandle> {
+        Arc::new(super::AnnotationToolsHandle { cap: self.cap.clone() })
+    }
+
     pub async fn get(
         &self,
         annotation_ref: AnnotationRef,
