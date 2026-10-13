@@ -1949,7 +1949,7 @@ git commit -m "Add Swift interaction and feedback capabilities"
 - Consumes: everything Task 5 produces.
 - Produces: nothing later tasks use.
 
-- [ ] **Step 1: Write `InteractionTests.swift`**
+- [x] **Step 1: Write `InteractionTests.swift`**
 
 ```swift
 import CustomDump
@@ -2118,7 +2118,7 @@ The generated memberwise initializers take every field without a `#[uniffi(defau
 
 No member of `InteractionCapability` takes a `CancelToken`, so there's no `CancelsWhenTheTaskIsCancelled` test.
 
-- [ ] **Step 2: Write `FeedbackTests.swift`**
+- [x] **Step 2: Write `FeedbackTests.swift`**
 
 ```swift
 import CustomDump
@@ -2161,12 +2161,12 @@ extension BaseSuite {
 
 If the `impact` description string differs on your toolchain, compare `weight == .heavy` in the provider instead of matching the string. Feedback is workspace-scoped, so it skips `aClosedDocumentsCapabilityThrows` and has no events.
 
-- [ ] **Step 3: Run the Swift tests**
+- [x] **Step 3: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 8 `InteractionTests` and 2 `FeedbackTests`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests
