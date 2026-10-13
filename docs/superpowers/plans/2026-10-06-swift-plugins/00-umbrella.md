@@ -1301,7 +1301,7 @@ Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one her
 - [x] 11 view-manager
 - [x] 12 shell
 - [x] 13 i18n
-- [ ] 14 commands
+- [x] 14 commands
 - [ ] 15 actions
 - [ ] 16 signature
 
