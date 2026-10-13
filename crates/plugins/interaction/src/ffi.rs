@@ -12,6 +12,7 @@
 //! `project` does not cross either; a sample from a native source carries
 //! only its page hit.
 
+use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -229,6 +230,19 @@ impl From<&crate::PointerSample> for PointerSample {
     }
 }
 
+/// A registration whose unregister runs once and then lets go of the
+/// remover. The remover holds what it registered (a foreign handler), and
+/// the `RegistrationHandle` lives as long as Swift keeps it, so holding on
+/// would keep a handler that keeps its own `Registration` alive for good.
+fn registration(post: KernelPost, off: crate::Unregister) -> Arc<RegistrationHandle> {
+    let off = RefCell::new(Some(off));
+    RegistrationHandle::new(post, move || {
+        if let Some(off) = off.borrow_mut().take() {
+            off.call();
+        }
+    })
+}
+
 fn gesture_event(event: &crate::GestureEvent) -> InteractionGestureEvent {
     InteractionGestureEvent {
         handler_id: event.handler_id.clone(),
@@ -424,7 +438,7 @@ impl InteractionHandle {
             .call(move |b| {
                 let off =
                     open(&b.cap)?.register_tool(tool.into(), RegisterToolOptions { replace })?;
-                Ok(RegistrationHandle::new(post, move || off.call()))
+                Ok(registration(post, off))
             })
             .await
     }
@@ -449,7 +463,7 @@ impl InteractionHandle {
                 });
                 let off =
                     open(&b.cap)?.register_handler(foreign, RegisterHandlerOptions { source });
-                Ok(RegistrationHandle::new(post, move || off.call()))
+                Ok(registration(post, off))
             })
             .await
     }

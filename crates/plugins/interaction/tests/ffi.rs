@@ -408,3 +408,19 @@ fn feedback_reaches_the_foreign_provider() {
         ["selection", "impact Some(Heavy)", "impact None", "notify Warning"]
     );
 }
+
+#[test]
+fn unregistering_a_handler_releases_it_while_the_registration_lives() {
+    let (thread, interaction, _) = handle();
+    let handler = Arc::new(Recording::default());
+    let registration =
+        block_on(interaction.register_handler("held".into(), 1.0, None, handler.clone())).unwrap();
+    drain(&thread);
+    assert!(Arc::strong_count(&handler) > 1);
+    registration.unregister();
+    drain(&thread);
+    // A Swift handler that keeps its own `Registration` would otherwise
+    // keep itself alive through the registration's closure.
+    assert_eq!(Arc::strong_count(&handler), 1);
+    drop(registration);
+}
