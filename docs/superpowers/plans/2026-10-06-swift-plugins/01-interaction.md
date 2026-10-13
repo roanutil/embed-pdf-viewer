@@ -1699,7 +1699,7 @@ object: ViewerConfig derives Debug and a foreign trait object is not."
 - Consumes also: umbrella Task 0f's Swift `Registration` (wraps `RegistrationHandle`, `unregister()`).
 - Produces: `InteractionCapability` and `PDFViewer.interaction(for:)`; `FeedbackCapability` and `PDFViewer.feedback()`; default implementations for the optional `InteractionHandler` members; `HapticFeedback` (EmbedPDFUI) conforming to `PlatformFeedback`.
 
-- [ ] **Step 1: Write `Plugins/Interaction.swift`**
+- [x] **Step 1: Write `Plugins/Interaction.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1851,7 +1851,7 @@ extension PDFViewer {
 
 The generated `registerHandler` takes `handler: InteractionHandler` (an existential). `some InteractionHandler` passes through as one. If the generated protocol isn't `Sendable`, add `& Sendable` to the parameter.
 
-- [ ] **Step 2: Write `Plugins/Feedback.swift`**
+- [x] **Step 2: Write `Plugins/Feedback.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1886,7 +1886,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 3: Write `EmbedPDFUI/HapticFeedback.swift`**
+- [x] **Step 3: Write `EmbedPDFUI/HapticFeedback.swift`**
 
 ```swift
 import EmbedPDF
@@ -1928,12 +1928,12 @@ public final class HapticFeedback: PlatformFeedback, Sendable {
 }
 ```
 
-- [ ] **Step 4: Build the package**
+- [x] **Step 4: Build the package**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED. A name collision with an existing generated type shows up here as a duplicate declaration.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources

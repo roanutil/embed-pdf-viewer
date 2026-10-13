@@ -5,6 +5,8 @@
 //! camelCase, lifecycle payloads as `crates/epdf-kernel/src/kernel.rs` emits
 //! them. A shape the kernel did not send is an error, never a guess.
 
+use std::sync::Arc;
+
 use epdf_ffi::{PluginErrorInfo, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::{DocInfo, DocStatus};
@@ -35,7 +37,7 @@ pub struct ViewerConfig {
     /// Install `feedbackPlugin({ provider })`: haptics for the plugins that
     /// use them. `None` leaves it out, and plugins skip feedback.
     #[uniffi(default = None)]
-    pub feedback: Option<FeedbackConfig>,
+    pub feedback: Option<Arc<FeedbackConfig>>,
 }
 
 #[derive(Debug, uniffi::Record)]

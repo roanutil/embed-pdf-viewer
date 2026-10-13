@@ -618,9 +618,16 @@ impl crate::PlatformFeedback for ForeignFeedback {
 }
 
 /// `feedbackPlugin({ provider })`'s options, as `ViewerConfig` carries them.
-#[derive(Clone, uniffi::Record)]
+///
+/// An object, not a record. UniFFI 0.32 takes a record holding a foreign
+/// trait object, but a record in another crate that nests it
+/// (`ViewerConfig`) can't see the trait object inside: bindgen runs one
+/// crate at a time, so it gives that record Swift's synthesized
+/// `Equatable` and `Hashable`, which don't compile. A field typed as an
+/// object is visible to it, and the outer record goes without them.
+#[derive(uniffi::Object)]
 pub struct FeedbackConfig {
-    pub provider: Arc<dyn PlatformFeedback>,
+    provider: Arc<dyn PlatformFeedback>,
 }
 
 impl std::fmt::Debug for FeedbackConfig {
@@ -629,10 +636,20 @@ impl std::fmt::Debug for FeedbackConfig {
     }
 }
 
+#[uniffi::export]
+impl FeedbackConfig {
+    #[uniffi::constructor]
+    pub fn new(provider: Arc<dyn PlatformFeedback>) -> Arc<Self> {
+        Arc::new(FeedbackConfig { provider })
+    }
+}
+
 impl FeedbackConfig {
     /// On the kernel thread: the options hold an `Rc`.
-    pub fn into_options(self) -> crate::FeedbackPluginOptions {
-        crate::FeedbackPluginOptions { provider: Some(Rc::new(ForeignFeedback(self.provider))) }
+    pub fn to_options(&self) -> crate::FeedbackPluginOptions {
+        crate::FeedbackPluginOptions {
+            provider: Some(Rc::new(ForeignFeedback(self.provider.clone()))),
+        }
     }
 }
 

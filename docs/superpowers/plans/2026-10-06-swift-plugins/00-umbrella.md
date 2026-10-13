@@ -101,7 +101,7 @@ A later plan consumes these by exact name. Rust paths are `epdf_plugin_<crate>::
 
 | Plan | Rust handle | `ViewerConfig` field | `ViewerHost` accessor | Swift capability | `PDFViewer` accessor |
 |---|---|---|---|---|---|
-| 01 | `InteractionHandle`, `FeedbackHandle` | `interaction: bool`, `feedback: Option<FeedbackConfig>` | `interaction(document_id)`, `feedback()` | `InteractionCapability`, `FeedbackCapability` | `interaction(for:)`, `feedback()` |
+| 01 | `InteractionHandle`, `FeedbackHandle` | `interaction: bool`, `feedback: Option<Arc<FeedbackConfig>>` (an object) | `interaction(document_id)`, `feedback()` | `InteractionCapability`, `FeedbackCapability` | `interaction(for:)`, `feedback()` |
 | 02 | `StageHandle` | `stage: Option<StageConfig>` | `stage(document_id)` | `StageCapability` | `stage(for:)` |
 | 03 | `SelectionHandle` | `selection: bool` | `selection(document_id)` | `SelectionCapability` | `selection(for:)` |
 | 04 | `LinkHandle` | `link: bool` | `link(document_id)` | `LinkCapability` | `link(for:)` |

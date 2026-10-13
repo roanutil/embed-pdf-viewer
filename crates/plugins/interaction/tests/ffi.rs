@@ -388,9 +388,9 @@ impl PlatformFeedback for Haptics {
 #[test]
 fn feedback_reaches_the_foreign_provider() {
     let haptics = Arc::new(Haptics::default());
-    let config = FeedbackConfig { provider: haptics.clone() };
+    let config = FeedbackConfig::new(haptics.clone());
     let thread = KernelThread::spawn(move |_| {
-        TestKernel::open(vec![feedback_plugin(config.into_options())], one_document())
+        TestKernel::open(vec![feedback_plugin(config.to_options())], one_document())
     })
     .unwrap();
     let post = thread.post();

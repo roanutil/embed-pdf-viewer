@@ -69,7 +69,7 @@ impl Session {
             plugins.push(epdf_plugin_interaction::interaction_plugin(Default::default()));
         }
         if let Some(feedback) = config.feedback {
-            plugins.push(epdf_plugin_interaction::feedback_plugin(feedback.into_options()));
+            plugins.push(epdf_plugin_interaction::feedback_plugin(feedback.to_options()));
         }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
