@@ -10,7 +10,7 @@ Confidence key: "reproduced" means a reviewer ran it; "verified" means the code 
 
 Some findings are behavior the TypeScript reference shares ("shared with TS"). They are still listed because Rust fails differently: a TS TypeError can be caught, while a Rust panic aborts a native host (edition 2024 `extern "C"`, no catch_unwind on napi exports per Cargo.toml:53-58) or traps the whole wasm instance.
 
-## Status, 2026-10-12
+## Status, 2026-10-13
 
 All four Highs and 29 of the 34 Mediums are fixed on `research/multi-platform-rust-core-impl-plugins` (tip `f4569afc1`), one commit per finding, each with a test. The Lows are not addressed yet. On that tip, `cargo test --workspace` passes 1,028 of 1,028, `core-wasm` 72 of 72 and its gc suite 13 of 13, and `vectors:check` and `coverage:check` are current.
 
@@ -73,7 +73,9 @@ Lows, as of 2026-10-12 (plugins tip `f2e9b555b`): 63 fixed (one in part), 26 not
 | Conformance | C1 `1d25e8e90`, C2 `b4997ffeb` (tooling check, no CI change), C3 `2a1639501`, C4 `4c116cd6a`, C5 `4b23b458b`, C6 `cf73829d9`, C7 `347b49e86`, C8 `e42653389`, C9 `5b713eb40` | |
 | Build, docs, perf | B1 `7c0446edf`, B2 `784da6599`, B3 hostnames `4c2c8527b`, B6 `61339677b` | B3 root docs: moved in `91344f785`, moved back in `f2e9b555b` by choice. B4 CI. B5 documented choice |
 
-New Rust-only divergences among the Lows: R5 (a scene with an unreadable page row lays out empty, where TS throws on every build, as M27), R7 (a zero tile span yields no tiles, where TS loops), and part of N6 (a ref of unknown kind fails, where TS keys it `"undefined"`). U4 is in part: a remover no longer holds its own definition, but a closure that captures the strong commands capability still leaks; `CommandsCapability::downgrade` gives closures a weak handle. C1's opt-in member-order comparison (`PLUGIN_CONFORMANCE_MEMBER_ORDER=1`) finds 896 cases in 59 vector files where Rust writes object members in another order than TS; that is open.
+New Rust-only divergences among the Lows: R5 (a scene with an unreadable page row lays out empty, where TS throws on every build, as M27), R7 (a zero tile span yields no tiles, where TS loops), and part of N6 (a ref of unknown kind fails, where TS keys it `"undefined"`). U4 is in part: a remover no longer holds its own definition, but a closure that captures the strong commands capability still leaks; `CommandsCapability::downgrade` gives closures a weak handle. C1's member-order comparison first found 896 cases in 59 vector files where Rust wrote object members in another order than TS.
+
+Member order, as of 2026-10-13 (plugins tip `8cf572cf5`): the comparison is on by default, and every vector passes it. Real maps now keep insertion order (annotation `defaults` and `byId`, form `byKey`, stamp libraries and assets, the kernel's slices and documents), struct fields follow the TS literals, and where TS gives one type several orders by producer the order is set where it is serialized (cameras, rects, link items, number formats). The commits are `b5942dfc5`, `596d75f8a`, `be3ea170b`, `bb4e00760`, `58c4e4603`, `8fa954608`, `31e7b926d`, `8c75213f4`, `8f1565ff4`, `15e576f2b`, `60ae3d6e6`, `e94ef6188`, `d41ef4ee1`, `9f5fd252f` and `8cf572cf5`. What a typed Rust value can't follow, an object TS passes through from its caller or a type whose order depends on which function built it, is listed in `crates/plugin-conformance/member-order-allow.json`: 375 paths in 186 cases of 25 files, about half of them stage cameras. Two commits that tracked input order in public structs (acrojs `ScriptEventInput`, actions `ActionSubmitRequest`) were dropped in `306a293cd` to keep those types plain; their two fixture cases are on the allow-list.
 
 Public signatures changed by the Low fixes: `deliver_remote_event` and `get_selection_props` return `Result`, `rotate_selection_by` takes `QuarterTurn`, and `commands::MenuTarget` is now ui-core's type.
 
