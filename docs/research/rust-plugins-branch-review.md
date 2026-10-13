@@ -10,7 +10,7 @@ Confidence key: "reproduced" means a reviewer ran it; "verified" means the code 
 
 Some findings are behavior the TypeScript reference shares ("shared with TS"). They are still listed because Rust fails differently: a TS TypeError can be caught, while a Rust panic aborts a native host (edition 2024 `extern "C"`, no catch_unwind on napi exports per Cargo.toml:53-58) or traps the whole wasm instance.
 
-## Status, 2026-10-11
+## Status, 2026-10-12
 
 All four Highs and 29 of the 34 Mediums are fixed on `research/multi-platform-rust-core-impl-plugins` (tip `f4569afc1`), one commit per finding, each with a test. The Lows are not addressed yet. On that tip, `cargo test --workspace` passes 1,028 of 1,028, `core-wasm` 72 of 72 and its gc suite 13 of 13, and `vectors:check` and `coverage:check` are current.
 
@@ -56,6 +56,26 @@ All four Highs and 29 of the 34 Mediums are fixed on `research/multi-platform-ru
 | M34 | `d34708034` | `@embedpdf/engine-core` may need a changeset too; not checked |
 
 "Rust-only divergence" means Rust no longer has a bug TS still has, on a path no conformance vector covers.
+
+Lows, as of 2026-10-12 (plugins tip `f2e9b555b`): 63 fixed (one in part), 26 not. On that tip, `cargo test --workspace` passes 1,077 (1 ignored: the opt-in no-harness build check), `core-wasm` 78 of 78 and its gc suite 13 of 13, the `epdf-web` wasm tests 38 of 38, and `vectors:check` and `coverage:check` are current.
+
+| Area | Fixed | Not fixed |
+| --- | --- | --- |
+| Kernel | K1 `b45d256f8`, K2 `6567eb1eb`, K3 `1d7d1d547`, K4 `0371bee7c`, K5 `884d18d16`, K6 `5a81da047` `b6cb471b5`, K7 `a58afe87d`, K8 `844251966`, K9 `e4e5148d1` | |
+| Wasm boundary | W1 `fa771b30d`, W2 `800a4cb77`, W4 `1ce6fabf1`, W5 `38934ad99`, W6 `269207f05`, W7 `fe68a8ca7` | W3 left: immutable snapshots would cost eager copies in every flow. W8 by design (evaluation crate) |
+| FFI, host, Swift | F4 `b6e69bfab`, F5 `9b1a52698`, F10 `375aa71f7` | F1, F2, F3, F6, F8, F9 blocked: Swift can't be built here. F7 needs a Swift change |
+| Actions, form, acrojs | A1 `656c481d5`, A4 `40e81c5a6` (README note), A5 `ec8ee2ba4`, A6 `c601d69ef` | A2, A3, A7 shared with TS |
+| Annotation | N1 `438dc9706`, N3 `4619c7df5`, N5 `357358e37` (a port of V8's sort), N6 `343fc063e`, N7 `aa913bc4e`, N10 `cc804f408`, N11 `eee8ee38a`, N12 `b85c0a9cd` | N2, N4, N9 shared with TS. N8 unreachable after N6 |
+| Selection, search, link | S1 `f02a66ee3`, S2 `3e08ee2d7`, S3 `d383ee3a7`, S5 `6a6332e26`, S7 `74045ce86`, S8 `c0ef4b3d7`, S9 `66719af32` | S4, S6 shared with TS |
+| Render and stage | R1 `4bb490cb5`, R2 `daa86f9a9`, R3 `4ed4566cd`, R4 `093e457e9`, R5 `1bd756fb3`, R7 `0695bc428` (Rust-only guard) | R6 no evidence of a difference |
+| Signature, stamp, redaction | G1 `873ae8fb1`, G4 `c45f3d808` | G2 shared with TS. G3 wrong: `bounds` was already optional (`44385e5fb`) |
+| Commands, i18n, shell, ui-core | U1 `61d325d25`, U2 `013f02bf9`, U4 `3045b8144` in part, U7 `0a45ee495`, U8 `89fc48978` | U3, U5 shared with TS. U6 refactor only |
+| Conformance | C1 `1d25e8e90`, C2 `b4997ffeb` (tooling check, no CI change), C3 `2a1639501`, C4 `4c116cd6a`, C5 `4b23b458b`, C6 `cf73829d9`, C7 `347b49e86`, C8 `e42653389`, C9 `5b713eb40` | |
+| Build, docs, perf | B1 `7c0446edf`, B2 `784da6599`, B3 hostnames `4c2c8527b`, B6 `61339677b` | B3 root docs: moved in `91344f785`, moved back in `f2e9b555b` by choice. B4 CI. B5 documented choice |
+
+New Rust-only divergences among the Lows: R5 (a scene with an unreadable page row lays out empty, where TS throws on every build, as M27), R7 (a zero tile span yields no tiles, where TS loops), and part of N6 (a ref of unknown kind fails, where TS keys it `"undefined"`). U4 is in part: a remover no longer holds its own definition, but a closure that captures the strong commands capability still leaks; `CommandsCapability::downgrade` gives closures a weak handle. C1's opt-in member-order comparison (`PLUGIN_CONFORMANCE_MEMBER_ORDER=1`) finds 896 cases in 59 vector files where Rust writes object members in another order than TS; that is open.
+
+Public signatures changed by the Low fixes: `deliver_remote_event` and `get_selection_props` return `Result`, `rotate_selection_by` takes `QuarterTurn`, and `commands::MenuTarget` is now ui-core's type.
 
 ## High
 
