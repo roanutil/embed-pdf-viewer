@@ -80,7 +80,9 @@ for (let run = 1; run <= MAX_RUNS; run++) {
       console.error('cargo test failed without a conformance difference; see its output');
       process.exit(1);
     }
-    const count = Object.values(list).flatMap((cases) => Object.values(cases)).flat().length;
+    const count = Object.values(list)
+      .flatMap((cases) => Object.values(cases))
+      .flat().length;
     console.log(`done: ${count} paths`);
     process.exit(0);
   }
