@@ -14,6 +14,7 @@ pub mod page;
 pub mod registration;
 pub mod status;
 pub mod subscription;
+pub mod view;
 
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
@@ -29,6 +30,11 @@ pub use page::PageInfo;
 pub use registration::RegistrationHandle;
 pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};
+pub use view::{
+    Camera, PageFrameInsets, StageAlign, StageAlignValue, StageAlignment, StageAlignmentValue,
+    StageDirection, StageScrollMetrics, StageSizingMode, StageSpreadMode, ViewAnchor, ZoomMode,
+    ZoomSpec,
+};
 
 /// Returns at once on the calling thread: the pure cost of entering Rust
 /// through uniffi, for the bridge benchmarks. Experimental, never shipped.

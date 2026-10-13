@@ -13,6 +13,7 @@ bench = []
 [dependencies]
 epdf-geometry = { path = "../plugins/geometry", default-features = false }
 epdf-kernel = { path = "../epdf-kernel" }
+epdf-stage-core = { path = "../plugins/stage-core", default-features = false }
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 serde_json = "1"
 thiserror = "2"

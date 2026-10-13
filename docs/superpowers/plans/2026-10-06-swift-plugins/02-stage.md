@@ -85,7 +85,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFUITests/StageReaderModelTests.swift
 - Consumes also: umbrella Task 0c's `epdf_ffi::mirror_enum!` (`mirror_enum!(Ffi <=> path::Rust { A, B, C })` writes `From` both ways for two fieldless enums with the same variant names) and `epdf_ffi::to_u32(n: usize, what: &str) -> Result<u32, epdf_kernel::Error>` (code `invalid-state` when it doesn't fit).
 - Produces: records `Camera { x, y, zoom }`, `ViewAnchor { page_index: u32, fx, fy }`, `PageFrameInsets { top, right, bottom, left }`, `StageScrollMetrics { scroll_left, scroll_top, scroll_width, scroll_height, client_width, client_height, scrollable_x, scrollable_y }`, `StageAlignment { x: StageAlign, y: StageAlign }`, `StageAlignmentValue { x: StageAlignValue, y: StageAlignValue }`; enums `ZoomMode { Automatic, FitPage, FitWidth, FitAll }`, `ZoomSpec { Level { level }, PageWidth { page_width }, PageHeight { page_height }, Mode { mode } }`, `StageAlign { Start, Center, End }`, `StageAlignValue { Named { align }, Fraction { value } }`, `StageDirection { Ltr, Rtl }`, `StageSpreadMode { None, Odd, Even }`, `StageSizingMode { Intrinsic, Uniform }`. Conversions both ways, except `StageScrollMetrics` (out only) and `ViewAnchor` (`TryFrom<sc::Anchor>`, `From<ViewAnchor> for sc::Anchor`).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-stage -b research/swift-stage research/swift-plugins
@@ -94,7 +94,7 @@ cd .claude/worktrees/swift-stage
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Every later command runs from this directory.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/view.rs`:
 
@@ -148,12 +148,12 @@ fn an_anchor_index_that_does_not_fit_is_invalid_state() {
 
 Add `epdf-stage-core = { path = "../plugins/stage-core", default-features = false }` and `epdf-geometry` (already present) to `[dependencies]` in `crates/epdf-ffi/Cargo.toml` before running.
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test view`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::Camera`, ...".
 
-- [ ] **Step 4: Write `view.rs`**
+- [x] **Step 4: Write `view.rs`**
 
 ```rust
 //! The view vocabulary from `epdf-stage-core` and `epdf-geometry` that more
@@ -393,7 +393,7 @@ impl From<sc::ScrollMetrics> for StageScrollMetrics {
 }
 ```
 
-- [ ] **Step 5: Export them from `lib.rs`**
+- [x] **Step 5: Export them from `lib.rs`**
 
 ```rust
 pub mod view;
@@ -405,12 +405,12 @@ pub use view::{
 };
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, the four `view` tests and every existing one.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-ffi

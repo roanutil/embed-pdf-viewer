@@ -443,6 +443,7 @@ version = "0.0.0"
 dependencies = [
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-stage-core",
  "futures",
  "serde_json",
  "thiserror",
