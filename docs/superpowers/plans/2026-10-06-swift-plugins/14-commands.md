@@ -1232,7 +1232,7 @@ git commit -m "Install the commands plugin from ViewerConfig and expose ViewerHo
 - Consumes: generated `CommandsHandle`, `CommandDefinition`, `CommandRunner`, `CommandCompletion`, `CommandHook`, `CommandsEvent` and the result records.
 - Produces: Swift `CommandsCapability` (one method per handle member, with `execute(_:document:args:)` taking `Data?`), `PDFViewer.commands()`, `CommandHandler` (a closure-backed `CommandRunner`), and `CommandDefinition.init(id:labelKey:icon:shortcuts:categories:menu:panel:modal:handler:)` (handler required).
 
-- [ ] **Step 1: Write the failing Swift tests**
+- [x] **Step 1: Write the failing Swift tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/CommandsTests.swift`:
 
@@ -1344,7 +1344,7 @@ final class LockIsolated<Value>: @unchecked Sendable {
 
 If another test file already defines `LockIsolated`, delete the copy here.
 
-- [ ] **Step 2: Rebuild and run the tests to verify they fail**
+- [x] **Step 2: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1353,7 +1353,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find type 'CommandsCapability' in scope".
 
-- [ ] **Step 3: Write `Plugins/Commands.swift`**
+- [x] **Step 3: Write `Plugins/Commands.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1575,7 +1575,7 @@ extension PDFViewer {
 
 The generated `CommandRunner` protocol's methods are `run(context:completion:)`, `derive(context:hook:) throws -> Bool` and `iconAccent(context:) throws -> IconAccent?`; if the generated spelling differs (check `Sources/EmbedPDFBindings/epdf_plugin_commands.swift` after the build), match it.
 
-- [ ] **Step 4: Rebuild and run the tests to verify they pass**
+- [x] **Step 4: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1584,7 +1584,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/CommandsTests.swift
