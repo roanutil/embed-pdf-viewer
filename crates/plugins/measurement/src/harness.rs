@@ -240,18 +240,73 @@ fn with_unit_fn(a: &[Value]) -> Result<Value, Error> {
     let m: PdfMeasurement = arg(a, 0)?;
     let unit: String = arg(a, 1)?;
     let area: Option<String> = present(a, 2).map(from_value).transpose()?;
-    ok(&scale::with_unit(&m, &unit, area.as_deref())?)
+    let mut out = ok(&scale::with_unit(&m, &unit, area.as_deref())?)?;
+    order_formats(&mut out, "distance", |_| NEW_FORMAT.to_vec());
+    order_formats(&mut out, "area", |_| NEW_FORMAT.to_vec());
+    Ok(out)
 }
 
 fn with_area_unit_fn(a: &[Value]) -> Result<Value, Error> {
     let m: PdfMeasurement = arg(a, 0)?;
     let unit: String = arg(a, 1)?;
-    ok(&scale::with_area_unit(&m, &unit)?)
+    let mut out = ok(&scale::with_area_unit(&m, &unit)?)?;
+    order_formats(&mut out, "area", |_| NEW_FORMAT.to_vec());
+    Ok(out)
 }
 
 fn with_precision_fn(a: &[Value]) -> Result<Value, Error> {
     let m: PdfMeasurement = arg(a, 0)?;
-    ok(&scale::with_precision(&m, arg(a, 1)?)?)
+    let mut out = ok(&scale::with_precision(&m, arg(a, 1)?)?)?;
+    // `{ ...f, precision, fraction }` on the last format: the input's order,
+    // with either key it lacked added at the end.
+    for key in ["distance", "area"] {
+        let input: Vec<Vec<String>> = a
+            .first()
+            .and_then(|m| m.get(key))
+            .and_then(Value::as_array)
+            .map(|formats| {
+                formats
+                    .iter()
+                    .map(|f| f.as_object().map(|o| o.keys().cloned().collect()).unwrap_or_default())
+                    .collect()
+            })
+            .unwrap_or_default();
+        order_formats(&mut out, key, |i| {
+            let mut keys: Vec<&str> =
+                input.get(i).map(|k| k.iter().map(String::as_str).collect()).unwrap_or_default();
+            if i + 1 == input.len() {
+                for added in ["precision", "fraction"] {
+                    if !keys.contains(&added) {
+                        keys.push(added);
+                    }
+                }
+            }
+            keys
+        });
+    }
+    Ok(out)
+}
+
+/// The member order of a number format `withUnit` and `withAreaUnit` build:
+/// `{ unit, conversion, precision, fraction }`. A calibrated or read
+/// `PdfNumberFormat` keeps the DTO's `fraction` before `precision`.
+const NEW_FORMAT: [&str; 4] = ["unit", "conversion", "precision", "fraction"];
+
+/// Reorder each format in `out[key]` to `order(index)`; members it doesn't
+/// name keep their place after the ones it does.
+fn order_formats<'a>(out: &mut Value, key: &str, order: impl Fn(usize) -> Vec<&'a str>) {
+    let Some(Value::Array(formats)) = out.get_mut(key) else { return };
+    for (i, format) in formats.iter_mut().enumerate() {
+        let Value::Object(members) = format else { continue };
+        let mut ordered = serde_json::Map::new();
+        for name in order(i) {
+            if let Some(value) = members.remove(name) {
+                ordered.insert(name.to_string(), value);
+            }
+        }
+        ordered.append(members);
+        *members = ordered;
+    }
 }
 
 /// The pure functions, by the names the vectors use.
