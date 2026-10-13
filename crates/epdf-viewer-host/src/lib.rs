@@ -341,12 +341,12 @@ impl ViewerHost {
     }
 
     /// The links of an open document. Needs `ViewerConfig.link` (and
-    /// `interaction`).
+    /// `interaction`). A tap's activation error goes to the delegate.
     pub async fn link(&self, document_id: String) -> Result<Arc<LinkHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_link::LINK, Some(&document_id))?;
-            Ok(LinkHandle::new(cap, post))
+            Ok(LinkHandle::with_report(cap, post, reporter(&s.kernel)))
         })
         .await
     }

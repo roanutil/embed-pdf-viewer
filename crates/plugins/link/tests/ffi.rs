@@ -255,3 +255,106 @@ fn closing_the_document_ends_link_subscriptions() {
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 1);
 }
+
+// ── the tap handler: a native reader's version of the web's link anchors ──
+
+fn pointer(
+    phase: epdf_plugin_interaction::Phase,
+    at: Point,
+) -> epdf_plugin_interaction::PointerSample {
+    let hit = epdf_plugin_interaction::PageHit {
+        page: epdf_kernel::geometry::PageRef::new(1),
+        point: epdf_geometry::Point { x: at.x, y: at.y },
+        scale: None,
+        rotation: None,
+        zoom: None,
+    };
+    epdf_plugin_interaction::PointerSample::new(
+        phase,
+        epdf_geometry::Point { x: at.x, y: at.y },
+        Some(hit),
+    )
+}
+
+/// A down at `down` and an up at `up`, through the document's pointer hub.
+fn tap(thread: &KernelThread<TestKernel>, down: Point, up: Point) {
+    use epdf_plugin_interaction::{INTERACTION, Phase};
+    block_on(thread.call(move |k| {
+        let hub = k.capability(&INTERACTION).unwrap();
+        hub.dispatch_pointer(&pointer(Phase::Down, down));
+        hub.dispatch_pointer(&pointer(Phase::Up, up));
+    }))
+    .unwrap();
+}
+
+fn activations(events: &Events) -> Vec<LinkActivation> {
+    events
+        .0
+        .lock()
+        .unwrap()
+        .iter()
+        .filter_map(|e| match e {
+            LinkEvent::Activated { event } => Some(event.activation.clone()),
+            LinkEvent::Loaded { .. } => None,
+        })
+        .collect()
+}
+
+const ON_URI: Point = Point { x: 100.0, y: 145.0 };
+
+#[test]
+fn a_tap_on_a_link_activates_it_once_the_tap_handler_is_registered() {
+    let (thread, link) = loaded();
+    let events = Arc::new(Events::default());
+    let _sub = link.subscribe(events.clone());
+    tap(&thread, ON_URI, ON_URI);
+    assert!(activations(&events).is_empty(), "nothing listens before the registration");
+    let registration = block_on(link.register_tap_handler()).unwrap();
+    tap(&thread, ON_URI, ON_URI);
+    assert_eq!(
+        activations(&events),
+        [LinkActivation::Uri { uri: "https://example.invalid/target".into() }]
+    );
+    registration.unregister();
+    tap(&thread, ON_URI, ON_URI);
+    assert_eq!(activations(&events).len(), 1, "a tap after unregister activated a link");
+}
+
+#[test]
+fn a_tap_that_lifts_off_the_link_activates_nothing() {
+    let (thread, link) = loaded();
+    let events = Arc::new(Events::default());
+    let _sub = link.subscribe(events.clone());
+    let _registration = block_on(link.register_tap_handler()).unwrap();
+    tap(&thread, ON_URI, Point { x: 500.0, y: 380.0 });
+    assert!(activations(&events).is_empty());
+}
+
+#[test]
+fn a_tool_without_link_nav_does_not_follow_links() {
+    let (thread, link) = loaded();
+    let events = Arc::new(Events::default());
+    let _sub = link.subscribe(events.clone());
+    let _registration = block_on(link.register_tap_handler()).unwrap();
+    block_on(thread.call(|k| {
+        use epdf_plugin_interaction::{INTERACTION, RegisterToolOptions, Tool};
+        let hub = k.capability(&INTERACTION).unwrap();
+        let _ = hub.register_tool(
+            Tool::new("ink", "crosshair", ["annotation-draw"]),
+            RegisterToolOptions::default(),
+        );
+        hub.activate_tool("ink", None).unwrap();
+    }))
+    .unwrap();
+    assert!(!block_on(link.is_navigation_engaged()).unwrap());
+    tap(&thread, ON_URI, ON_URI);
+    assert!(activations(&events).is_empty());
+}
+
+#[test]
+fn a_closed_documents_tap_handler_refuses_with_instance_closed() {
+    let (thread, link) = loaded();
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    let error = block_on(link.register_tap_handler()).map(|_| ()).unwrap_err();
+    assert_eq!(code(&error), Some("instance-closed"), "{error:?}");
+}

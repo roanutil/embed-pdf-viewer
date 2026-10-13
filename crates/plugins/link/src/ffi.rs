@@ -10,17 +10,23 @@
 //!
 //! Every method hops to the kernel thread through `KernelBound`.
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use epdf_ffi::{
     AnnotationRef, KernelBound, KernelPost, PageRef, PdfDestination, PdfLinkTarget, Point, Rect,
-    Subscription, ViewerError,
+    RegistrationHandle, Subscription, ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
+use epdf_plugin_annotation::ANNOTATION_EDIT_PRIORITY;
+use epdf_plugin_interaction::{
+    InteractionCapability, InteractionHandler, PointerSample, RegisterHandlerOptions, Tool,
+};
 use epdf_plugin_stage::ffi::StageRevealOptions;
 
-use crate::{LinkCapability, LinkNavItem};
+use crate::{LinkActivateContext, LinkCapability, LinkNavItem};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct LinkHoverFlags {
@@ -200,23 +206,129 @@ fn input_of(cap: &LinkCapability, input: LinkInput) -> Result<crate::LinkInput, 
     })
 }
 
+/// A link's tap on a native surface, as the web's link layer
+/// (`packages/framework/react/src/link.tsx`) takes a click on its anchors:
+/// only while the active tool enables `link-nav`, with an attached link
+/// standing down while the tool can edit annotations, and the smallest link
+/// winning. The down captures the gesture, as the anchor's `pointerdown`
+/// keeps it from the hub; the up activates when it lands on the same link,
+/// as a click does. A touch is never claimed, so a drag that starts on a
+/// link still scrolls.
+struct TapHandler {
+    link: LinkCapability,
+    hub: InteractionCapability,
+    report: Rc<dyn Fn(&Error)>,
+    pressed: RefCell<Option<(epdf_annotation_core::PageRef, String)>>,
+}
+
+impl TapHandler {
+    fn link_under(
+        &self,
+        sample: &PointerSample,
+    ) -> Option<(epdf_annotation_core::PageRef, LinkNavItem)> {
+        let hit = sample.page.as_ref()?;
+        let page = epdf_annotation_core::PageRef::new(hit.page.page_object_number);
+        let editing = self.hub.get_active_tool().enables("annotation-edit");
+        let b = |l: &LinkNavItem| l.bounds;
+        let inside = |l: &LinkNavItem| {
+            let r = b(l);
+            hit.point.x >= r.x
+                && hit.point.x <= r.x + r.width
+                && hit.point.y >= r.y
+                && hit.point.y <= r.y + r.height
+        };
+        let area = |l: &LinkNavItem| b(l).width * b(l).height;
+        let mut best: Option<LinkNavItem> = None;
+        for link in self.link.list_links(&page) {
+            if (editing && link.attached) || !inside(&link) {
+                continue;
+            }
+            if best.as_ref().is_none_or(|kept| area(&link) < area(kept)) {
+                best = Some(link);
+            }
+        }
+        best.map(|link| (page, link))
+    }
+}
+
+impl InteractionHandler for TapHandler {
+    fn id(&self) -> &str {
+        "link-tap"
+    }
+
+    /// Above the annotation plane: on the web the anchor sits over it and
+    /// stops the down before the hub sees it.
+    fn priority(&self) -> f64 {
+        ANNOTATION_EDIT_PRIORITY + 1.0
+    }
+
+    fn enabled_for(&self, tool: &Tool) -> bool {
+        tool.enables("link-nav")
+    }
+
+    fn on_down(&self, sample: &PointerSample) -> bool {
+        let pressed = self.link_under(sample).map(|(page, link)| (page, link.id));
+        let captured = pressed.is_some();
+        *self.pressed.borrow_mut() = pressed;
+        captured
+    }
+
+    fn on_up(&self, sample: &PointerSample) {
+        let Some((page, id)) = self.pressed.borrow_mut().take() else { return };
+        let Some((at, link)) = self.link_under(sample) else { return };
+        if at != page || link.id != id {
+            return;
+        }
+        let context = LinkActivateContext {
+            page: Some(epdf_kernel::js::to_value(&page)),
+            ..LinkActivateContext::default()
+        };
+        if let Err(error) =
+            self.link.activate(&crate::LinkInput::Link(Box::new(link)), Some(&context))
+        {
+            (self.report)(&error);
+        }
+    }
+
+    fn on_cancel(&self, _sample: &PointerSample) {
+        self.pressed.borrow_mut().take();
+    }
+}
+
+struct Bound {
+    cap: LinkCapability,
+    report: Rc<dyn Fn(&Error)>,
+}
+
 #[derive(uniffi::Object)]
 pub struct LinkHandle {
-    cap: KernelBound<LinkCapability>,
+    bound: KernelBound<Bound>,
     post: KernelPost,
 }
 
 impl LinkHandle {
-    /// On the kernel thread.
+    /// On the kernel thread. A tap's activation error is dropped; use
+    /// [`LinkHandle::with_report`] to keep it.
     pub fn new(cap: LinkCapability, post: KernelPost) -> Arc<Self> {
-        Arc::new(LinkHandle { cap: KernelBound::new(cap, post.clone()), post })
+        Self::with_report(cap, post, Rc::new(|_: &Error| {}))
+    }
+
+    /// `new`, with `report` receiving the error of an activation a tap
+    /// started ([`LinkHandle::register_tap_handler`]), which has no caller
+    /// to answer.
+    pub fn with_report(
+        cap: LinkCapability,
+        post: KernelPost,
+        report: Rc<dyn Fn(&Error)>,
+    ) -> Arc<Self> {
+        Arc::new(LinkHandle { bound: KernelBound::new(Bound { cap, report }, post.clone()), post })
     }
 
     async fn on<T: Send + 'static>(
         &self,
         f: impl FnOnce(&LinkCapability) -> Result<T, Error> + Send + 'static,
     ) -> Result<T, ViewerError> {
-        self.cap.call(move |c| f(open(c)?)).await
+        self.bound.call(move |b| f(open(&b.cap)?)).await
     }
 }
 
@@ -248,7 +360,7 @@ impl LinkHandle {
     /// items don't carry their page, so once every page has loaded this
     /// walks the pages itself.
     pub async fn all_links(&self) -> Result<Vec<LinkItem>, ViewerError> {
-        self.cap.call_promise(|c| Ok(open(c)?.list_all_links()), |_| ()).await?;
+        self.bound.call_promise(|b| Ok(open(&b.cap)?.list_all_links()), |_| ()).await?;
         self.on(|c| {
             let mut out = Vec::new();
             for page in c.page_refs() {
@@ -263,7 +375,9 @@ impl LinkHandle {
     }
 
     pub async fn ensure_loaded(&self, page: PageRef) -> Result<(), ViewerError> {
-        self.cap.call_promise(move |c| Ok(open(c)?.ensure_loaded(&page.into())), |()| ()).await
+        self.bound
+            .call_promise(move |b| Ok(open(&b.cap)?.ensure_loaded(&page.into())), |()| ())
+            .await
     }
 
     pub async fn is_loaded(&self, page: PageRef) -> Result<bool, ViewerError> {
@@ -309,11 +423,36 @@ impl LinkHandle {
         self.on(|c| Ok(c.is_navigation_engaged())).await
     }
 
+    /// Register the link tap handler with the document's pointer hub, the
+    /// native reader's version of the web's link anchors: a tap on a link
+    /// under a `link-nav` tool activates it, and the outcome arrives on
+    /// `subscribe` as `Activated` (a `uri` is the app's to open). Every lens
+    /// shares it. Unregister through the handle; dropping it keeps the
+    /// handler.
+    pub async fn register_tap_handler(&self) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.bound
+            .call(move |b| {
+                let link = open(&b.cap)?.clone();
+                let hub = link.hub()?;
+                let handler = Rc::new(TapHandler {
+                    link,
+                    hub: hub.clone(),
+                    report: b.report.clone(),
+                    pressed: RefCell::new(None),
+                });
+                let off = hub.register_handler(handler, RegisterHandlerOptions::default());
+                Ok(RegistrationHandle::new(post, move || off.call()))
+            })
+            .await
+    }
+
     /// The listener is registered on the kernel thread after this returns.
     /// It gets `on_end` when the document closes (at once if it already has).
     pub fn subscribe(&self, listener: Arc<dyn LinkEventListener>) -> Arc<Subscription> {
         let (subscription, slot) = Subscription::pending(self.post.clone());
-        self.cap.fire(move |c| {
+        self.bound.fire(move |b| {
+            let c = &b.cap;
             let ending = listener.clone();
             slot.fill_until_end(
                 c.lifetime(),

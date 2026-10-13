@@ -82,6 +82,12 @@ impl LinkCapability {
         self.0.cx.lifetime()
     }
 
+    /// The document's pointer hub, which `linkPlugin()` requires.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn hub(&self) -> Result<epdf_plugin_interaction::InteractionCapability, Error> {
+        self.0.cx.get(&INTERACTION)
+    }
+
     fn anno(&self) -> Option<AnnotationCapability> {
         self.0.cx.try_get(&ANNOTATION).ok().flatten()
     }
