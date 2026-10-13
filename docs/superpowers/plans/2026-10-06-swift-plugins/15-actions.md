@@ -1102,7 +1102,7 @@ git commit -m "Export the actions plugin's dispatcher through uniffi"
 - Consumes also: umbrella Task 0c's `epdf_ffi::{ForeignSettle, HostError, RegistrationHandle}`.
 - Produces: foreign traits `ActionExecutor` (`execute(node, context, completion)`), `ActionUiHandler` (`open_uri`, `print`, `alert`, `goto_page`, each `-> Result<(), HostError>`), `ActionSubmitHandler` (`submit(request) -> Result<(), HostError>`), `DocumentVerbOperation` (`run(completion)`). Objects `ActionExecutorCompletion` (`executed()`, `inert(reason)`, `failed(error)`), `DocumentVerbCompletion` (`finish()`, `fail(detail)`); registrations answer umbrella Task 0c's `RegistrationHandle`. Records `ActionUiSupport { alert, goto_page }`, `ActionUriOptions`, `ActionAlertOptions`, `ActionSubmitRequest`, `FormSubmissionEntry`, `FormSubmissionValue`. New `ActionsHandle` methods: `register_executor(action_type, executor) -> Arc<RegistrationHandle>`, `set_ui_adapter(handler: Option<Arc<dyn ActionUiHandler>>, support) -> Arc<RegistrationHandle>`, `set_submit_handler(handler: Option<Arc<dyn ActionSubmitHandler>>) -> Arc<RegistrationHandle>`, `run_document_verb(verb, operation) -> ()`.
 
-- [ ] **Step 1: Write the failing port tests**
+- [x] **Step 1: Write the failing port tests**
 
 Create `crates/plugins/actions/tests/ffi_ports.rs`. Copy `named`, `page`, `spec`, `quiet`, `handle`, `user` and `tree` from `tests/ffi.rs` verbatim (integration tests don't share modules), then:
 
@@ -1350,12 +1350,12 @@ fn a_document_verb_runs_its_operation_between_the_will_and_did_trees() {
 
 `epdf_plugin_actions::ActionSubmitRequest` and `FormSubmissionEntry` are the crate's types (re-exported by `pub use contract::*`); the test module imports the ffi mirror `ActionSubmitRequest` from `ffi::ports`, so the crate one is spelled with its full path.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_ports`
 Expected: FAIL to compile with "unresolved imports `epdf_plugin_actions::ffi::ports::ActionAlertOptions`" (and the other port names).
 
-- [ ] **Step 3: Write `crates/plugins/actions/src/ffi/ports.rs`**
+- [x] **Step 3: Write `crates/plugins/actions/src/ffi/ports.rs`**
 
 ```rust
 //! The application ports as foreign traits: node executors, the UI adapter,
@@ -1682,12 +1682,12 @@ impl ActionsHandle {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_ports`
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/actions
