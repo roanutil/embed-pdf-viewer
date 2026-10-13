@@ -41,6 +41,7 @@ uniffi's own assessment and a fair reason not to review it in a diff.
 | view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
 | i18n | `I18nCapability`, `BundleLocaleLoader` | `i18n: I18nConfig(locales: [...], lazyLocales: [...], loader: BundleLocaleLoader())` | `2026-10-06-swift-plugins/13-i18n.md` |
+| commands | `CommandsCapability`, `CommandHandler` | `commands: true` | `2026-10-06-swift-plugins/14-commands.md` |
 
 ## What the script assembles
 

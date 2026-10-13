@@ -28,6 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_plugin_commands::ffi::CommandsHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
 use epdf_plugin_metadata::ffi::MetadataHandle;
@@ -350,6 +351,16 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_i18n::I18N, None)?;
             Ok(I18nHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace command registry. Needs `ViewerConfig.commands`.
+    pub async fn commands(&self) -> Result<Arc<CommandsHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_commands::COMMANDS, None)?;
+            Ok(CommandsHandle::new(cap, post))
         })
         .await
     }

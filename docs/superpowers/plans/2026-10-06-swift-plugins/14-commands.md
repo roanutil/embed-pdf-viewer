@@ -83,7 +83,7 @@ commands has optional `i18n` and `shell` (`crates/plugins/commands/src/lib.rs`).
 - Consumes: `epdf_ffi::{ForeignSettle, HostError, KernelPost, PluginErrorInfo, RegistrationHandle, ViewerError}` (umbrella Task 0c adds `ForeignSettle`, `HostError` and `RegistrationHandle`).
 - Produces: `CommandDefinition` record, `CommandHook { Run, Enabled, Active, Visible, IconAccent }`, `CommandPanel { id, exclusive }`, `CommandContext { command_id, document_id, args_json }`, `CommandRunner` foreign trait (`run`, `derive`, `icon_accent`), `CommandCompletion` object (`finish()`, `fail(detail)`), and `fn into_def(self, post: KernelPost) -> Result<CommandDef, Error>` on `CommandDefinition`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-commands -b research/swift-commands research/swift-plugins
@@ -95,7 +95,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Fetch PDFium first as `platforms/apple/README.md` describes. Keep the size for the final commit message.
 
-- [ ] **Step 2: Add the feature**
+- [x] **Step 2: Add the feature**
 
 In `crates/plugins/commands/Cargo.toml`, under `[features]`:
 
@@ -132,7 +132,7 @@ uniffi::setup_scaffolding!();
 
 In `crates/plugins/commands/src/contract.rs`, add `#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]` under the `#[derive(...)]` line of `IconAccent` and of `ResolvedCommand`. Every field of both is a `String`, `bool`, `Vec<String>` or `Option` of those (or of `IconAccent`), so they derive in place.
 
-- [ ] **Step 3: Write the failing definition tests**
+- [x] **Step 3: Write the failing definition tests**
 
 Create `crates/plugins/commands/tests/ffi.rs`:
 
@@ -241,12 +241,12 @@ fn a_definition_with_neither_is_a_routing_command() {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they fail**
+- [x] **Step 4: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_commands::ffi`".
 
-- [ ] **Step 5: Write the definition records in `crates/plugins/commands/src/ffi.rs`**
+- [x] **Step 5: Write the definition records in `crates/plugins/commands/src/ffi.rs`**
 
 ```rust
 //! The commands plugin through uniffi: typed records, one workspace handle,
@@ -443,12 +443,12 @@ impl CommandDefinition {
 
 `CommandDef`'s fields are `pub` (`crates/plugins/commands/src/contract.rs`), so this builds it field by field from `CommandDef::new`.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: PASS, 3 tests.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/commands
@@ -467,7 +467,7 @@ git commit -m "Add the commands plugin's uniffi definitions and the CommandRunne
 
 Members, from `crates/plugins/commands/src/harness.rs` `MEMBERS` (20): `registerCommand`, `registerCommands`, `hasCommand`, `getCommand` (`command`), `listCommandIds` (`command_ids`), `resolveCommand`, `listCommands` (`commands`), `searchCommands`, `listShortcuts` (`shortcuts`), `execute`, `canExecute`, `getDisabledCategories` (`disabled_categories`), `isCategoryDisabled`, `disableCategory`, `enableCategory`, `setDisabledCategories`, `onExecuted` and `onExecutionFailed` (`subscribe`), `matchStroke`, `getMenuTarget` (`menu_target`).
 
-- [ ] **Step 1: Write the failing handle tests**
+- [x] **Step 1: Write the failing handle tests**
 
 Append to `crates/plugins/commands/tests/ffi.rs`:
 
@@ -656,12 +656,12 @@ fn unregistering_a_replaced_command_keeps_the_replacement() {
 
 Check `parse_shortcut` (`crates/plugins/ui-core/src/shortcuts.rs`) refuses `Mod+Hyper+` before relying on `an_unparsable_shortcut_is_refused`: an unknown modifier token is the case it errs on. If it accepts it, pick a string the parser's own tests show it rejecting and use that.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: FAIL to compile with "cannot find type `CommandsHandle` in module `epdf_plugin_commands::ffi`".
 
-- [ ] **Step 3: Write the result records, events and handle**
+- [x] **Step 3: Write the result records, events and handle**
 
 Append to `crates/plugins/commands/src/ffi.rs`:
 
@@ -1044,7 +1044,7 @@ impl CommandsHandle {
 
 `execute` returns a `Promise` whose rejection carries the plugin error the `executionFailed` event saw (`controller.rs` `execute`), so the Rust future answers `operation-failed` for a runner that called `fail`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: PASS, 13 tests.
@@ -1052,7 +1052,7 @@ Expected: PASS, 13 tests.
 Run: `cargo test -p epdf-plugin-commands`
 Expected: the conformance vectors still pass without `uniffi`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/commands
@@ -1072,7 +1072,7 @@ git commit -m "Export the commands plugin through uniffi"
 - Consumes: `epdf_plugin_commands::ffi::CommandsHandle`; plan 13's `ViewerConfig.i18n` and `epdf_plugin_i18n::ffi::{I18nConfig, LocalePack}`.
 - Produces: `ViewerConfig.commands: bool` and `ViewerHost::commands() -> Result<Arc<CommandsHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs` (the `I18nConfig` and `LocalePack` imports and `en_pack` may already exist from plan 13; reuse them):
 
@@ -1164,12 +1164,12 @@ fn a_panel_command_toggles_the_shell_surface() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host commands`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_commands`".
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetically:
 
@@ -1210,12 +1210,12 @@ epdf-plugin-commands = { path = "../plugins/commands", default-features = false,
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS, including the new tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1232,7 +1232,7 @@ git commit -m "Install the commands plugin from ViewerConfig and expose ViewerHo
 - Consumes: generated `CommandsHandle`, `CommandDefinition`, `CommandRunner`, `CommandCompletion`, `CommandHook`, `CommandsEvent` and the result records.
 - Produces: Swift `CommandsCapability` (one method per handle member, with `execute(_:document:args:)` taking `Data?`), `PDFViewer.commands()`, `CommandHandler` (a closure-backed `CommandRunner`), and `CommandDefinition.init(id:labelKey:icon:shortcuts:categories:menu:panel:modal:handler:)` (handler required).
 
-- [ ] **Step 1: Write the failing Swift tests**
+- [x] **Step 1: Write the failing Swift tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/CommandsTests.swift`:
 
@@ -1344,7 +1344,7 @@ final class LockIsolated<Value>: @unchecked Sendable {
 
 If another test file already defines `LockIsolated`, delete the copy here.
 
-- [ ] **Step 2: Rebuild and run the tests to verify they fail**
+- [x] **Step 2: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1353,7 +1353,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find type 'CommandsCapability' in scope".
 
-- [ ] **Step 3: Write `Plugins/Commands.swift`**
+- [x] **Step 3: Write `Plugins/Commands.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1575,7 +1575,7 @@ extension PDFViewer {
 
 The generated `CommandRunner` protocol's methods are `run(context:completion:)`, `derive(context:hook:) throws -> Bool` and `iconAccent(context:) throws -> IconAccent?`; if the generated spelling differs (check `Sources/EmbedPDFBindings/epdf_plugin_commands.swift` after the build), match it.
 
-- [ ] **Step 4: Rebuild and run the tests to verify they pass**
+- [x] **Step 4: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1584,7 +1584,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/CommandsTests.swift
@@ -1602,17 +1602,17 @@ git commit -m "Add EmbedPDF's CommandsCapability and a closure-backed CommandHan
 
 Append `commands` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | commands | `CommandsCapability`, `CommandHandler` | `commands: true` | `2026-10-06-swift-plugins/14-commands.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` Appendix A §A.4, change `**commands** (W, optional `i18n`, `shell`).` to `**commands** (W, optional `i18n`, `shell`), delivered by 2026-10-06-swift-plugins/14-commands.md.` and leave the rest of the entry alone.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-commands --features uniffi
@@ -1628,7 +1628,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive sizes**
+- [x] **Step 5: Commit, with the archive sizes**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

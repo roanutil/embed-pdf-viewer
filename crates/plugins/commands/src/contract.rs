@@ -71,6 +71,7 @@ impl CommandCtx {
 
 /// Up to two theme colors accompanying a command's icon.
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct IconAccent {
     /// The mark: stroke / markup / font color.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -155,6 +156,7 @@ impl fmt::Debug for CommandDef {
 
 /// A command as a renderer sees it: everything resolved for the target document.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedCommand {
     pub id: String,
