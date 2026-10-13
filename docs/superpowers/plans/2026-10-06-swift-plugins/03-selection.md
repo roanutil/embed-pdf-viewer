@@ -377,7 +377,7 @@ git commit -m "Mirror the selection plugin's records for uniffi"
 
 That's the 30 entries of `crates/plugins/selection/src/harness.rs` `MEMBERS`, with the three `on*` hooks folded into `subscribe`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/selection/tests/ffi.rs`. The fake engine needs text geometry for a page to select anything; build it from the vectors the conformance tests replay. `crates/plugins/selection/tests/conformance.rs` loads `tooling/engine-conformance/vectors/plugins/selection*.json`; open one, find the engine spec it starts from (its `engine` member), and copy that spec into `fixtures/selection-engine.json` under `crates/plugins/selection/tests/`. The spec has a document with at least two pages and `page.geometry.read` and `page.text.read` responses for both.
 
@@ -595,12 +595,12 @@ fn closing_the_document_ends_selection_subscriptions() {
 
 Add the extra `use` items (`SelectionInput`, `SelectionTextPosition`, `SelectionTextRange`) to the existing `use epdf_plugin_selection::ffi::{...}` line from Task 1. `interaction_plugin` needs `epdf-plugin-interaction` as a dev-dependency only if it isn't already a normal one; it is (`Cargo.toml` `[dependencies]`), so it's in scope. If the vector's engine spec gives a page no text, pick a vector that does; `select_page` followed by `rects` returning empty is the sign.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: FAIL to compile, "cannot find `SelectionHandle` in `ffi`".
 
-- [ ] **Step 3: Write the handle and events**
+- [x] **Step 3: Write the handle and events**
 
 Append to `ffi.rs`:
 
@@ -891,7 +891,7 @@ impl SelectionHandle {
 
 If `list_rects` returns `epdf_geometry::Rect` or `epdf_kernel::geometry::Rect`, `epdf-ffi` converts either. `read_text`'s promise is `Promise<String>`, and `call_promise_cancellable` needs `U: Clone`, which `String` is.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: PASS, 11 tests.
@@ -899,7 +899,7 @@ Expected: PASS, 11 tests.
 Run: `cargo test -p epdf-plugin-selection`
 Expected: PASS, conformance unchanged.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/selection
