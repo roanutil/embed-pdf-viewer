@@ -4,7 +4,7 @@
 //! store skips its notification for that. [`update`] returns `None` for that
 //! branch: `Some` is a new model even when its contents equal the old one's.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
@@ -73,7 +73,7 @@ pub fn initial_style() -> Style {
 
 pub fn initial_model() -> Model {
     Model {
-        by_id: Rc::new(BTreeMap::new()),
+        by_id: Rc::new(IndexMap::new()),
         order: Rc::new(Vec::new()),
         selected: Vec::new(),
         hovered: None,
@@ -450,7 +450,7 @@ pub fn update(m: &Model, msg: &Msg) -> (Option<Model>, Vec<Effect>) {
     }
 }
 
-fn with_annot(m: &Model, id: &str, a: Annot) -> Rc<BTreeMap<Id, Annot>> {
+fn with_annot(m: &Model, id: &str, a: Annot) -> Rc<IndexMap<Id, Annot>> {
     let mut by_id = m.by_id.clone();
     Rc::make_mut(&mut by_id).insert(id.to_string(), a);
     by_id
@@ -1726,7 +1726,7 @@ fn set_markup_preview(
     quads_by_page: &Record<Vec<TextQuad>>,
     preset: &str,
 ) -> Step {
-    let mut by_page: BTreeMap<String, Vec<TextQuad>> = BTreeMap::new();
+    let mut by_page: Record<Vec<TextQuad>> = Record::new();
     for (k, quads) in quads_by_page.iter() {
         let quads = usable_quads(quads);
         if !quads.is_empty() {
@@ -1786,7 +1786,7 @@ fn set_flags(m: &Model, patch: &AnnotationFlagsPatch, ids: Option<&[Id]>) -> Ste
         return same();
     }
     let mut fx = Vec::new();
-    let mut by_id: Option<BTreeMap<Id, Annot>> = None;
+    let mut by_id: Option<IndexMap<Id, Annot>> = None;
     for id in targets {
         let Some(a) = by_id.as_ref().unwrap_or(&m.by_id).get(id).cloned() else { continue };
         let flags = merge_flags(&a.flags, patch);
@@ -1964,9 +1964,7 @@ fn hydrate_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
         let reaped_set: HashSet<&Id> = reaped.iter().copied().collect();
         let gone = |id: &Id| reaped_set.contains(id);
         let mut by_id = m.by_id.clone();
-        for id in &reaped {
-            Rc::make_mut(&mut by_id).remove(*id);
-        }
+        Rc::make_mut(&mut by_id).retain(|id, _| !gone(id));
         let clear = |x: &Option<Id>| {
             x.as_ref().filter(|h| !h.is_empty() && gone(h)).map_or_else(|| x.clone(), |_| None)
         };
@@ -2002,7 +2000,7 @@ fn upsert_annots(m: &Model, annots: &[Annot], bump: bool) -> Model {
 }
 
 fn bump_ap(m: &Model, ids: &[Id]) -> Option<Model> {
-    let mut by_id: Option<BTreeMap<Id, Annot>> = None;
+    let mut by_id: Option<IndexMap<Id, Annot>> = None;
     for id in ids {
         let Some(a) = m.by_id.get(id) else { continue };
         let map = by_id.get_or_insert_with(|| (*m.by_id).clone());
@@ -2031,9 +2029,7 @@ fn draft_ids(draft: Option<&Draft>) -> Vec<Id> {
 fn remove_annots(m: &Model, ids: &[Id]) -> Model {
     let ids: HashSet<&Id> = ids.iter().collect();
     let mut by_id = m.by_id.clone();
-    for id in &ids {
-        Rc::make_mut(&mut by_id).remove(*id);
-    }
+    Rc::make_mut(&mut by_id).retain(|id, _| !ids.contains(id));
     let editing = match &m.editing {
         Some(e) if !e.is_empty() && ids.contains(e) => None,
         other => other.clone(),
@@ -2051,7 +2047,8 @@ fn remove_annots(m: &Model, ids: &[Id]) -> Model {
 fn reconcile(m: &Model, temp_id: &str, id: &str, ref_: &AnnotationRef) -> Option<Model> {
     let a = m.by_id.get(temp_id)?;
     let mut by_id = m.by_id.clone();
-    Rc::make_mut(&mut by_id).remove(temp_id);
+    // `const { [tempId]: _drop, ...rest }`: the rest keep their order.
+    Rc::make_mut(&mut by_id).shift_remove(temp_id);
     Rc::make_mut(&mut by_id).insert(
         id.to_string(),
         Annot { id: id.to_string(), ref_: Some(ref_.clone()), ..a.clone() },

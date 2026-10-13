@@ -2,10 +2,10 @@
 //! index over the substrate, display-ordered against the live layout.
 
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_annotation_core::{Annot, AnnotationRef, Id, Model};
+use epdf_annotation_core::{AnnotationRef, ById, Id, Model};
 use epdf_kernel::Error;
 use serde_json::Value;
 
@@ -33,7 +33,7 @@ impl ThreadsIndex {
 pub(crate) struct ThreadsMemo(RefCell<Option<MemoEntry>>);
 
 struct MemoEntry {
-    by_id: Rc<BTreeMap<Id, Annot>>,
+    by_id: Rc<ById>,
     order: Rc<Vec<Id>>,
     /// Each page's object number as bits, so a NaN still compares equal.
     layout: Vec<u64>,

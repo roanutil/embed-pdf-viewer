@@ -369,10 +369,12 @@ fn run_one(start: &Value, msgs: &[Msg]) -> Result<Value, Error> {
         step.insert("selected".into(), to_value(&m.selected));
         steps.push(Value::Object(step));
     }
-    let changed: BTreeMap<&Id, &Annot> = m
+    // `Object.entries(byId).filter(...)`: in the model's own order.
+    let changed: Map<String, Value> = m
         .by_id
         .iter()
         .filter(|(id, a)| first.by_id.get(*id).is_none_or(|b| to_value(*a) != to_value(b)))
+        .map(|(id, a)| (id.clone(), to_value(a)))
         .collect();
     let removed: Vec<String> = js_keys(start_json.get("byId"))
         .into_iter()

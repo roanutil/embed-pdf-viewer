@@ -7,7 +7,6 @@
 //! `Vec` would shadow Rust's), and `Rect` / `TextQuad` are the
 //! `epdf_geometry` types.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
@@ -1392,7 +1391,9 @@ impl Draft {
 pub struct MarkupPreview {
     pub subtype: String,
     pub preset: String,
-    pub by_page: BTreeMap<String, Vec<TextQuad>>,
+    /// `Record<number, TextQuad[]>`: integer pages first, then the rest in
+    /// insertion order.
+    pub by_page: Record<Vec<TextQuad>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1427,7 +1428,9 @@ pub struct Model {
     /// Shared so a step that leaves the annotations alone (every draft
     /// pointermove) clones a pointer rather than every annotation's JSON,
     /// as the TypeScript's spread shares the object.
-    pub by_id: Rc<BTreeMap<Id, Annot>>,
+    /// Insertion-ordered, as the TypeScript `byId` object is: a new record
+    /// goes last, a replaced one keeps its place.
+    pub by_id: Rc<ById>,
     pub order: Rc<Vec<Id>>,
     pub selected: Vec<Id>,
     pub hovered: Option<Id>,
@@ -1445,6 +1448,9 @@ pub struct Model {
     pub editing: Option<Id>,
     pub snap: SnapSettings,
 }
+
+/// `Model.byId`: the records by id, in insertion order.
+pub type ById = IndexMap<Id, Annot>;
 
 /// Selection-chrome geometry in content units.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
