@@ -882,10 +882,10 @@ struct Bound {
 impl Bound {
     /// For a fire method: run `f` if the document is open, report its error.
     fn fire(&self, f: impl FnOnce(&StageCapability) -> Result<(), Error>) {
-        if let Ok(cap) = open(&self.cap) {
-            if let Err(error) = f(cap) {
-                (self.report)(&error);
-            }
+        if let Ok(cap) = open(&self.cap)
+            && let Err(error) = f(cap)
+        {
+            (self.report)(&error);
         }
     }
 }
