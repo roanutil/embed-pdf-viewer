@@ -7,6 +7,7 @@
 use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -80,7 +81,7 @@ pub fn initial_model() -> Model {
         preview: None,
         seq: 0.0,
         style: initial_style(),
-        defaults: BTreeMap::new(),
+        defaults: IndexMap::new(),
         hit_margin: 6.0,
         editing: None,
         snap: SnapSettings {

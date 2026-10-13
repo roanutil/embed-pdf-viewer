@@ -379,6 +379,8 @@ fn run_one(start: &Value, msgs: &[Msg]) -> Result<Value, Error> {
         .filter(|id| !m.by_id.contains_key(id))
         .collect();
     let Value::Object(mut model) = to_value(&m) else { unreachable!("a model is an object") };
+    // `{ ...rest, byId: changed }`: the cut `byId` goes last.
+    model.shift_remove("byId");
     model.insert("byId".into(), to_value(&changed));
     let mut out = Map::new();
     out.insert("steps".into(), Value::Array(steps));

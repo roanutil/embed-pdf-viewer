@@ -10,6 +10,7 @@
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde::de::{self, MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -1299,7 +1300,9 @@ pub struct Model {
     pub preview: Option<MarkupPreview>,
     pub seq: f64,
     pub style: Style,
-    pub defaults: BTreeMap<String, AnnotationPropsPatch>,
+    /// Insertion-ordered, as the TypeScript `{ ...m.defaults, [subtype]: next }`
+    /// keeps a configured tool where it was first set.
+    pub defaults: IndexMap<String, AnnotationPropsPatch>,
     pub hit_margin: f64,
     pub editing: Option<Id>,
     pub snap: SnapSettings,
