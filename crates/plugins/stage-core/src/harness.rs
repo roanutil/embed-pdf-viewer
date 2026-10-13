@@ -21,6 +21,45 @@ fn thrown(e: StageError) -> Error {
     Error::named(e.name(), e.to_string())
 }
 
+/// A camera as `centerOnWorld`, `clampCamera`, `cameraFromScroll`,
+/// `placeCamera`, `revealCamera` and `cameraForAnchorAtScreen` build it: their
+/// TypeScript literals in `packages/core/stage/src/index.ts` put `zoom` first.
+/// [`Camera`] keeps the `Camera` interface order (`x, y, zoom`), which
+/// `zoomAround`, `panByScreen` and the stage plugin's initial state use.
+#[derive(Serialize)]
+struct ZoomXy {
+    zoom: f64,
+    x: f64,
+    y: f64,
+}
+
+impl From<Camera> for ZoomXy {
+    fn from(c: Camera) -> Self {
+        Self { zoom: c.zoom, x: c.x, y: c.y }
+    }
+}
+
+/// `clampCamera` returns its input camera object itself when unbounded, so the
+/// result keeps the member order the caller wrote.
+fn clamp_camera_probe(a: &[Value]) -> Out {
+    let k: CameraConstraint = arg(a, 3)?;
+    let out = to_value(&ZoomXy::from(clamp_camera(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, k)));
+    match (k.bounded, &out, a.first()) {
+        (false, Value::Object(got), Some(Value::Object(input))) => Ok(Value::Object(
+            input
+                .keys()
+                .filter_map(|key| got.get(key).map(|v| (key.clone(), v.clone())))
+                .chain(
+                    got.iter()
+                        .filter(|(key, _)| !input.contains_key(*key))
+                        .map(|(key, v)| (key.clone(), v.clone())),
+                )
+                .collect(),
+        )),
+        _ => Ok(out),
+    }
+}
+
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct Probe {
@@ -119,26 +158,36 @@ pub fn functions() -> FunctionTable {
         ("cameraWorldRect", |a| ok(camera_world_rect(arg(a, 0)?, arg(a, 1)?))),
         ("zoomAround", |a| ok(zoom_around(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
         ("panByScreen", |a| ok(pan_by_screen(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
-        ("centerOnWorld", |a| ok(center_on_world(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?))),
+        ("centerOnWorld", |a| {
+            ok(ZoomXy::from(center_on_world(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?)))
+        }),
         ("travelRange", |a| {
             ok(travel_range(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
         }),
-        ("clampCamera", |a| ok(clamp_camera(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?))),
+        ("clampCamera", clamp_camera_probe),
         ("scrollMetrics", |a| ok(scroll_metrics(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?))),
         ("cameraFromScroll", |a| {
-            ok(camera_from_scroll(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?))
+            ok(ZoomXy::from(camera_from_scroll(
+                arg(a, 0)?,
+                arg(a, 1)?,
+                arg(a, 2)?,
+                arg(a, 3)?,
+                arg(a, 4)?,
+            )))
         }),
         ("placeCamera", |a| {
-            ok(place_camera(
+            ok(ZoomXy::from(place_camera(
                 arg(a, 0)?,
                 arg(a, 1)?,
                 arg(a, 2)?,
                 padding(a, 3)?,
                 arg::<Option<AlignmentValue>>(a, 4)?.unwrap_or_default(),
                 arg::<Option<Direction>>(a, 5)?.unwrap_or_default(),
-            ))
+            )))
         }),
-        ("revealCamera", |a| ok(reveal_camera(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?))),
+        ("revealCamera", |a| {
+            ok(ZoomXy::from(reveal_camera(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?)))
+        }),
         ("resolveZoom", |a| ok(resolve_zoom(arg(a, 0)?, arg(a, 1)?, arg(a, 2)?, padding(a, 3)?))),
         ("groupPages", |a| {
             ok(group_pages(arg(a, 0)?, arg::<Option<SpreadMode>>(a, 1)?.unwrap_or_default()))
@@ -169,8 +218,10 @@ pub fn functions() -> FunctionTable {
         }),
         ("cameraForAnchorAtScreen", |a| {
             let scene = build(arg(a, 1)?)?;
-            ok(camera_for_anchor_at_screen(arg(a, 0)?, &scene, arg(a, 2)?, arg(a, 3)?)
-                .map_err(thrown)?)
+            ok(ZoomXy::from(
+                camera_for_anchor_at_screen(arg(a, 0)?, &scene, arg(a, 2)?, arg(a, 3)?)
+                    .map_err(thrown)?,
+            ))
         }),
         ("anchorFromCamera", |a| {
             let scene = build(arg(a, 1)?)?;
@@ -178,8 +229,10 @@ pub fn functions() -> FunctionTable {
         }),
         ("cameraFromAnchor", |a| {
             let scene = build(arg(a, 1)?)?;
-            ok(camera_from_anchor(arg(a, 0)?, &scene, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?)
-                .map_err(thrown)?)
+            ok(ZoomXy::from(
+                camera_from_anchor(arg(a, 0)?, &scene, arg(a, 2)?, arg(a, 3)?, arg(a, 4)?)
+                    .map_err(thrown)?,
+            ))
         }),
     ]
 }
