@@ -38,6 +38,7 @@ use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_selection::ffi::SelectionHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
+use epdf_plugin_stage::ffi::StageHandle;
 use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
 
@@ -308,6 +309,18 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_interaction::FEEDBACK, None)?;
             Ok(FeedbackHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The viewport lens of an open document. Needs `ViewerConfig.stage`.
+    pub async fn stage(&self, document_id: String) -> Result<Arc<StageHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_stage::STAGE, Some(&document_id))?;
+            let hub =
+                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id)).ok();
+            Ok(StageHandle::with_hub(cap, hub, post, reporter(&s.kernel)))
         })
         .await
     }

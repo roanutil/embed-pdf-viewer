@@ -85,7 +85,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFUITests/StageReaderModelTests.swift
 - Consumes also: umbrella Task 0c's `epdf_ffi::mirror_enum!` (`mirror_enum!(Ffi <=> path::Rust { A, B, C })` writes `From` both ways for two fieldless enums with the same variant names) and `epdf_ffi::to_u32(n: usize, what: &str) -> Result<u32, epdf_kernel::Error>` (code `invalid-state` when it doesn't fit).
 - Produces: records `Camera { x, y, zoom }`, `ViewAnchor { page_index: u32, fx, fy }`, `PageFrameInsets { top, right, bottom, left }`, `StageScrollMetrics { scroll_left, scroll_top, scroll_width, scroll_height, client_width, client_height, scrollable_x, scrollable_y }`, `StageAlignment { x: StageAlign, y: StageAlign }`, `StageAlignmentValue { x: StageAlignValue, y: StageAlignValue }`; enums `ZoomMode { Automatic, FitPage, FitWidth, FitAll }`, `ZoomSpec { Level { level }, PageWidth { page_width }, PageHeight { page_height }, Mode { mode } }`, `StageAlign { Start, Center, End }`, `StageAlignValue { Named { align }, Fraction { value } }`, `StageDirection { Ltr, Rtl }`, `StageSpreadMode { None, Odd, Even }`, `StageSizingMode { Intrinsic, Uniform }`. Conversions both ways, except `StageScrollMetrics` (out only) and `ViewAnchor` (`TryFrom<sc::Anchor>`, `From<ViewAnchor> for sc::Anchor`).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-stage -b research/swift-stage research/swift-plugins
@@ -94,7 +94,7 @@ cd .claude/worktrees/swift-stage
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Every later command runs from this directory.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/view.rs`:
 
@@ -148,12 +148,12 @@ fn an_anchor_index_that_does_not_fit_is_invalid_state() {
 
 Add `epdf-stage-core = { path = "../plugins/stage-core", default-features = false }` and `epdf-geometry` (already present) to `[dependencies]` in `crates/epdf-ffi/Cargo.toml` before running.
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test view`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::Camera`, ...".
 
-- [ ] **Step 4: Write `view.rs`**
+- [x] **Step 4: Write `view.rs`**
 
 ```rust
 //! The view vocabulary from `epdf-stage-core` and `epdf-geometry` that more
@@ -393,7 +393,7 @@ impl From<sc::ScrollMetrics> for StageScrollMetrics {
 }
 ```
 
-- [ ] **Step 5: Export them from `lib.rs`**
+- [x] **Step 5: Export them from `lib.rs`**
 
 ```rust
 pub mod view;
@@ -405,12 +405,12 @@ pub use view::{
 };
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, the four `view` tests and every existing one.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-ffi
@@ -427,7 +427,7 @@ git commit -m "Add the shared view records to epdf-ffi"
 - Consumes: Task 1's records and helpers; `epdf_plugin_stage::{StageSettings, PartialSettings, FlowMode, LayoutKind, ScrollBehaviorKind, GridColumns, ColumnsPolicy, Gap, ArrivalAlignValue, ArrivalAlignment, PartialArrivalAlignment, VisiblePage, Viewpoint, StageViewState, StageScrollToOptions, GoToOptions, RevealWord, RevealAnchorValue, RevealAnchor, RevealZoom, RevealZoomWord, RevealOptions, PageHit, StageZoomMode, ZoomTarget, ZoomToOptions, BoxQuery, Orientation, ResponsiveRule, RuleWhen}` and `settings::SettingKey` (`crates/plugins/stage/src/contract.rs`, `settings.rs`).
 - Produces (all in `epdf_plugin_stage::ffi`): enums `StageFlow`, `StageLayout`, `StageScrollBehavior`, `StageGridColumns { Square, Auto, Count { count: u32 } }`, `StageGap { World { units }, Px { px } }`, `StageArrivalAlignValue { Keep, Align { value: StageAlignValue } }`, `StageSettingKey`, `StageOrientation`, `StageRevealWord`, `StageRevealAnchorValue { Word { word }, Fraction { value } }`, `StageRevealZoom { Keep, Fit, FitWidth, FitHeight, Level { level } }`, `StageZoomMode { Mode { mode: ZoomMode }, Custom }`, `StageZoomTarget { Level { level }, Spec { spec: ZoomSpec } }`; records `StageArrivalAlignment`, `StagePartialArrivalAlignment`, `StageSettings`, `StageSettingsPatch`, `StageBoxQuery`, `StageResponsiveRule { name, when: StageBoxQuery, settings: Option<StageSettingsPatch> }`, `StagePageTransform`, `StageVisiblePage`, `StageViewpoint`, `StageViewState`, `StageScrollToOptions`, `StageGoToOptions`, `StageRevealAnchor`, `StageRevealOptions`, `StagePageHit`, `StageConfig { settings: Option<StageSettingsPatch>, responsive: Option<Vec<StageResponsiveRule>>, frames: bool }`. Link (plan 04) consumes `StageRevealOptions`.
 
-- [ ] **Step 1: Add the feature and `lifetime()`**
+- [x] **Step 1: Add the feature and `lifetime()`**
 
 In `crates/plugins/stage/Cargo.toml`:
 
@@ -470,7 +470,7 @@ In `crates/plugins/stage/src/controller.rs`, in `impl StageCapability` (after `s
     }
 ```
 
-- [ ] **Step 2: Write the failing conversion tests**
+- [x] **Step 2: Write the failing conversion tests**
 
 `crates/plugins/stage/tests/ffi.rs` (Task 3 adds the handle tests to this file):
 
@@ -540,12 +540,12 @@ fn reveal_options_and_zoom_targets_convert() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_stage::ffi`".
 
-- [ ] **Step 4: Write the records half of `ffi.rs`**
+- [x] **Step 4: Write the records half of `ffi.rs`**
 
 ```rust
 //! The stage plugin through uniffi: the viewport lens as one handle.
@@ -1358,12 +1358,12 @@ impl Default for StageConfig {
 
 `StageSettings`, `StageViewState`, `StageScrollToOptions` and `StageConfig` are both plugin types and FFI records here. The FFI records own the bare names in this module, so the plugin's are never imported and are always spelled `crate::StageSettings` and so on. Importing one of them as well is a name clash (E0255).
 
-- [ ] **Step 5: Run the conversion tests**
+- [x] **Step 5: Run the conversion tests**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stage
@@ -1387,7 +1387,7 @@ git commit -m "Mirror the stage plugin's records for uniffi"
 
 That's the 70 non-hook entries of `crates/plugins/stage/src/harness.rs` `MEMBERS`; Task 4 folds the six `on*` hooks into `subscribe`.
 
-- [ ] **Step 1: Write the failing handle tests**
+- [x] **Step 1: Write the failing handle tests**
 
 Append to `crates/plugins/stage/tests/ffi.rs`:
 
@@ -1635,12 +1635,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 
 `concurrent_pans_all_land` compares against the same pans from one thread rather than a computed distance, because the stage's bounding and padding decide how far 100 points of pan move the camera. If `rt` timers don't fire on a `KernelThread` without a runtime pump on this branch, `motion_in_flight_at_close_stops` hangs on `is_moving`; check how `KernelThread` drives `rt::tick` in `crates/epdf-ffi/src/kernel_thread.rs` before assuming the scheduler is wrong.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: FAIL to compile, "cannot find `StageHandle` in `ffi`".
 
-- [ ] **Step 3: Write the scheduler, config and port**
+- [x] **Step 3: Write the scheduler, config and port**
 
 Append to `ffi.rs`:
 
@@ -1694,7 +1694,7 @@ pub trait StageInitialViewProvider: Send + Sync {
 
 `KernelFrames.timers` keeps a handle until `caf`; a fired timer's entry stays until the stage cancels or the map drops with the stage, which is bounded by one entry per frame the stage requested and never cancelled. If `rt::TimerId` isn't `pub` from `epdf_kernel::rt`, export it there (`pub use` of the existing `pub struct TimerId`) in the same commit.
 
-- [ ] **Step 4: Write the handle**
+- [x] **Step 4: Write the handle**
 
 ```rust
 fn open(cap: &StageCapability) -> Result<&StageCapability, Error> {
@@ -2179,7 +2179,7 @@ impl StageHandle {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 16 tests.
@@ -2187,7 +2187,7 @@ Expected: PASS, 16 tests.
 Run: `cargo test -p epdf-plugin-stage`
 Expected: PASS, conformance and `api` unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stage crates/epdf-kernel
@@ -2203,7 +2203,7 @@ git commit -m "Export the stage plugin's handle with a kernel-timer frame schedu
 - Consumes: `StageCapability::{on_page_changed, on_zoom_changed, on_camera_changed, on_motion_ended, on_settings_changed, on_viewport_changed}` (`crates/plugins/stage/src/services/events.rs`).
 - Produces: records `StagePageChangedEvent { page: Option<PageInfo>, page_index: u32, previous_page_index: u32 }`, `StageZoomChangedEvent { level, previous_level, mode: StageZoomMode }`, `StageCameraChangedEvent { camera }`, `StageMotionEndedEvent { camera }`, `StageSettingsChangedEvent { settings, changed: Vec<StageSettingKey> }`, `StageViewportChangedEvent { size }`; enum `StageEvent` with one variant per record; trait `StageEventListener { on_event, on_end }`; `StageHandle::subscribe(listener) -> Arc<Subscription>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/stage/tests/ffi.rs`:
 
@@ -2257,12 +2257,12 @@ fn closing_the_document_ends_stage_subscriptions() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi observed`
 Expected: FAIL to compile, "cannot find `StageEvent`".
 
-- [ ] **Step 3: Write the events**
+- [x] **Step 3: Write the events**
 
 Append to `ffi.rs`:
 
@@ -2386,12 +2386,12 @@ impl StageHandle {
 
 If a hook's listener type isn't `Fn(&E) -> Result<(), Error>` (check `services/events.rs`), adapt the macro the way search's `subscribe` does.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 18 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/stage
@@ -2407,7 +2407,7 @@ git commit -m "Relay the stage plugin's events through uniffi"
 - Consumes: `RenderCapability::{get_render_policy, render_source, get_source_key, conform_viewport, get_paint_settings, create_view_demand}`, `ViewDemand::{set_demand, get_plan, mark_painted, mark_unpainted, release, dispose}` (`crates/plugins/render/src/controller.rs`); `EngineRenderPolicy`, `PageRenderViewport` (`policy.rs`); `PageViewDemand`, `Velocity`, `TilePaintPlan` (`paint_plan.rs`); the existing `Raster`, `rendered`, `abortable`, `open_cap` in `ffi.rs`.
 - Produces: on `RenderHandle`: `render_policy() -> RenderPolicy`, `render_source(page, scale, include_annotations, cancel) -> RenderedImage`, `source_key(page, scale, include_annotations) -> String`, `conform_viewport(page, scale) -> RenderViewport`, `paint_settings() -> RenderPaintSettings`, `create_view_demand(view_id) -> Arc<RenderViewDemandHandle>`. Records/enums: `RenderPolicy { Continuous, Lattice { lattice: RenderLatticePolicy } }`, `RenderLatticePolicy { full_page_widths, tile_sizes, tile_scales, appearance_scales, max_render_pixels, background, enforced }`, `RenderViewport { Scale { scale: Option<f64> }, Width { width } }`, `RenderPaintSettings { fade_ms, tiles }`, `RenderPageViewDemand { desired_device_width, visible_rect, velocity_x, velocity_y }`, `RenderTileSource { key, scale, rect, z }`, `RenderTilePlan { engaged, paint, fetching, stamp }`. `RenderViewDemandHandle` methods: `set_demand(page, demand, include_annotations)`, `plan(page)`, `tile_image(page, key) -> Option<RenderedImage>`, `mark_painted(page, key)`, `mark_unpainted(page, key)`, `release(page)`, `dispose()`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/render/tests/ffi.rs`:
 
@@ -2474,12 +2474,12 @@ fn a_closed_documents_view_demand_refuses() {
 
 `Rig` exposes the handle as `rig.render` (`crates/plugins/render/tests/support/mod.rs`). If the default config's `paint.tiles` is true, the plan engages and the first assertion still holds.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-render --features uniffi --test ffi`
 Expected: FAIL to compile, "no method named `render_policy`".
 
-- [ ] **Step 3: Write the records**
+- [x] **Step 3: Write the records**
 
 Add to `crates/plugins/render/src/ffi.rs`, beside the existing records:
 
@@ -2614,7 +2614,7 @@ impl From<&TilePaintPlan> for RenderTilePlan {
 
 Check `crate::paint_plan`'s `Rect` type: `Into<epdf_ffi::Rect>` exists for both `epdf_geometry::Rect` and `epdf_kernel::geometry::Rect`. If `RenderSourceOptions` and `ViewDemand` aren't re-exported at the crate root, import them from `crate::host_contract` and `crate::controller`.
 
-- [ ] **Step 4: Write the methods and the view-demand handle**
+- [x] **Step 4: Write the methods and the view-demand handle**
 
 Add to `#[uniffi::export] impl RenderHandle`:
 
@@ -2781,12 +2781,12 @@ impl RenderViewDemandHandle {
 
 `PixelSource` is the existing alias in `ffi.rs`; if it isn't `Clone`, it's an `Rc<dyn Fn>` and `.clone()` is fine. `RenderCapability` derives `Clone` (it's an `Rc` newtype).
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-render --features uniffi --test ffi`
 Expected: PASS, every existing render test plus the 5 new ones.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/render
@@ -2802,7 +2802,7 @@ git commit -m "Export render's viewport members and a view-demand handle"
 - Consumes: `StageHandle::new`, `StageConfig::into_config`; plan 01's `reporter(&Kernel)`.
 - Produces: `ViewerConfig.stage: Option<StageConfig>`; `ViewerHost::stage(document_id: String) -> Result<Arc<StageHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -2901,12 +2901,12 @@ fn without_its_config_the_stage_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host stage`
 Expected: FAIL to compile, "no field `stage` on type `ViewerConfig`".
 
-- [ ] **Step 3: Wire it**
+- [x] **Step 3: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -2961,12 +2961,12 @@ use epdf_plugin_stage::ffi::StageConfig;
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -2983,7 +2983,7 @@ git commit -m "Wire the stage plugin into the viewer host"
 - Consumes: generated `StageHandle`, `RenderViewDemandHandle`, Task 2 to 5 records.
 - Produces: `StageCapability` and `PDFViewer.stage(for:)`; `StageInitialViewProvider` typealias; on `RenderCapability`: `renderPolicy()`, `renderSource(_:scale:includeAnnotations:)`, `sourceKey(_:scale:includeAnnotations:)`, `conformViewport(_:scale:)`, `paintSettings()`, `viewDemand(_:)`; `RenderViewDemand` (wraps `RenderViewDemandHandle`).
 
-- [ ] **Step 1: Write `Stage.swift`**
+- [x] **Step 1: Write `Stage.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3169,7 +3169,7 @@ extension PDFViewer {
 
 The one-line method style here is a deliberate exception to `Search.swift`'s multi-line style: 70 members each a single `bridged` call read better aligned than spread over 280 lines. Run `swift-format` if the repo has a config that rejects it; it doesn't at the time of writing (`platforms/apple` has no `.swift-format`).
 
-- [ ] **Step 2: Add the viewport members to `Render.swift`**
+- [x] **Step 2: Add the viewport members to `Render.swift`**
 
 Add typealiases at the top:
 
@@ -3250,12 +3250,12 @@ public struct RenderViewDemand: Sendable {
 
 If the existing CGImage conversion in `Render.swift` is inline in `renderPage` rather than a helper, extract it into `func renderedPage(_ image: RenderedImage) throws(PDFError) -> RenderedPage` in the same commit and call it from `renderPage` too.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF
@@ -3267,7 +3267,7 @@ git commit -m "Add the Swift stage capability and render's viewport members"
 **Files:**
 - Create: `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/StageTests.swift`, `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RenderViewportTests.swift`
 
-- [ ] **Step 1: Write `StageTests.swift`**
+- [x] **Step 1: Write `StageTests.swift`**
 
 ```swift
 import CustomDump
@@ -3377,7 +3377,7 @@ extension BaseSuite {
 
 No stage member takes a `CancelToken`, so there's no cancellation test for it.
 
-- [ ] **Step 2: Write `RenderViewportTests.swift`**
+- [x] **Step 2: Write `RenderViewportTests.swift`**
 
 ```swift
 import CustomDump
@@ -3438,12 +3438,12 @@ extension BaseSuite {
 }
 ```
 
-- [ ] **Step 3: Run them**
+- [x] **Step 3: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 8 `StageTests` and 4 `RenderViewportTests`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests
@@ -3459,7 +3459,7 @@ git commit -m "Test the Swift stage capability and render's viewport members"
 - Consumes: `StageCapability`, `RenderCapability`, `PageImageView` (existing).
 - Produces: `@MainActor @Observable final class StageReaderModel` with `init(stage:render:)`, read-only `visiblePages: [StageVisiblePage]`, `camera: Camera?`, `currentPageIndex: UInt32`, `error: PDFError?`, and methods `task() async`, `sizeChanged(_ size: CGSize, displayScale: CGFloat) async`, `dragChanged(translation: CGSize) async`, `dragEnded(velocity: CGSize) async`, `magnifyChanged(_ magnification: CGFloat, at location: CGPoint)`, `magnifyEnded() async`, `doubleTapped(at location: CGPoint) async`; `struct StageReaderView: View` with `init(model:)`.
 
-- [ ] **Step 1: Write the failing model tests**
+- [x] **Step 1: Write the failing model tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFUITests/StageReaderModelTests.swift`:
 
@@ -3521,12 +3521,12 @@ struct StageReaderModelTests {
 
 `Bundle.module` here is the `EmbedPDFUITests` bundle, which `build-xcframework.sh` already fills with the fixtures.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFUITests/StageReaderModelTests)`
 Expected: FAIL to build, "cannot find 'StageReaderModel' in scope".
 
-- [ ] **Step 3: Write `StageReaderModel.swift`**
+- [x] **Step 3: Write `StageReaderModel.swift`**
 
 ```swift
 import CoreGraphics
@@ -3643,7 +3643,7 @@ public final class StageReaderModel {
 
 The stage's `pan_by` takes viewport deltas in the direction the camera moves. If the drag test shows the camera moving the wrong way for a finger moving up, drop the minus signs in `dragChanged` and `dragEnded`; check against `crates/plugins/stage/src/camera/gestures.rs` `pan_by` before deciding.
 
-- [ ] **Step 4: Write `StageReaderView.swift`**
+- [x] **Step 4: Write `StageReaderView.swift`**
 
 ```swift
 import EmbedPDF
@@ -3693,12 +3693,12 @@ public struct StageReaderView: View {
 
 `PageImageView` renders with `renderPage` at the stage's render scale. Moving it to `renderSource` and the tile plane is a separate change, so the reader works now on the full-page path the demo app already uses.
 
-- [ ] **Step 5: Run the model tests**
+- [x] **Step 5: Run the model tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFUITests)`
 Expected: TEST SUCCEEDED, the 3 `StageReaderModelTests` and the existing `SearchModelTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDFUI platforms/apple/EmbedPDF/Tests/EmbedPDFUITests
@@ -3710,21 +3710,21 @@ git commit -m "Add a SwiftUI scrolling reader over the stage to EmbedPDFUI"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `stage` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, after `interaction`.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | stage | `StageCapability`, `StageReaderView` (EmbedPDFUI) | `stage: StageConfig()` | `2026-10-06-swift-plugins/02-stage.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entries delivered**
+- [x] **Step 3: Mark the spec entries delivered**
 
 In `2026-10-01-swift-package.md` Appendix A, change `**stage** (D, optional `actions`).` to `**stage** (D, optional `actions`), delivered by 02-stage.md.`, and in §A.1's render entry change `In B1:` to `Delivered by 02-stage.md:`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-stage --features uniffi
@@ -3740,7 +3740,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before (from `research/swift-plugins`) and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

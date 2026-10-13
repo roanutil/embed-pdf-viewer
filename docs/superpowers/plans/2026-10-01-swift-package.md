@@ -3171,11 +3171,11 @@ The core libraries `epdf-geometry`, `epdf-stage-core`, `epdf-ui-core` and `epdf-
 
 **search** (D, optional `stage`), Task 7: `can_search`, `search`, `refresh`, `cancel`, `clear`, `next_hit`, `previous_hit`, `go_to_hit`, `reveal_active_hit`, `query` (`getQuery`), `status`, `hits` (`listHits`), `hit_count`, `pages_with_hits` (`listPagesWithHits`), `active_hit_index`, `active_hit`, `progress`, `error`, `find_all`, `subscribe` (7 events).
 
-**render** (D), Task 8: `can_render`, `render_page`, `render_thumbnail`, `render_pages`, `render_epoch`, `invalidate`, `subscribe` (`onInvalidated`, `onRenderCompleted`, `onRenderFailed`). In B1: `render_policy`, `render_source`, `source_key`, `conform_viewport`, `paint_settings`, `create_view_demand`. Ports: `request_frame` keeps the kernel timer, and `release_image` is wired to `HostTable`.
+**render** (D), Task 8: `can_render`, `render_page`, `render_thumbnail`, `render_pages`, `render_epoch`, `invalidate`, `subscribe` (`onInvalidated`, `onRenderCompleted`, `onRenderFailed`). Delivered by 02-stage.md: `render_policy`, `render_source`, `source_key`, `conform_viewport`, `paint_settings`, `create_view_demand`. Ports: `request_frame` keeps the kernel timer, and `release_image` is wired to `HostTable`.
 
 ### A.2 Navigation and input, follow-on plan B1
 
-**stage** (D, optional `actions`). Port: `Scheduler` keeps kernel timers. Members:
+**stage** (D, optional `actions`), delivered by 02-stage.md. Port: `Scheduler` keeps kernel timers. Members:
 - Read: `camera`, `viewport_size`, `scroll_metrics`, `visible_pages`, `is_page_visible`, `current_page_index`, `current_page`, `current_item_pages`, `page_frame`, `page_at`, `viewport_to_page`, `page_to_world`, `page_rect_to_viewport`, `world_to_viewport`, `viewport_to_world`, `page_to_viewport`, `view_rotation`, `zoom_level`, `zoom_mode`, `viewpoint`.
 - Motion: `fling`, `is_moving`, `stop_motion`, `set_camera`, `pan_by`, `scroll_to`, `scroll_by`, `zoom_around`, `begin_gesture`, `end_gesture`.
 - Navigation: `go_to_page_index`, `go_to_page`, `go_to_first_page`, `go_to_last_page`, `can_go_next`, `can_go_previous`, `next_page`, `previous_page`, `reset_view`, `reveal`, `reveal_rect`, `reveal_index`.

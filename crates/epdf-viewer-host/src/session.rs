@@ -72,6 +72,21 @@ impl Session {
         if let Some(feedback) = config.feedback {
             plugins.push(epdf_plugin_interaction::feedback_plugin(feedback.to_options()));
         }
+        if let Some(stage) = config.stage {
+            // A config that does not convert ends the build, and the worker
+            // goes with it, as a failed `Kernel::new` does below.
+            let config = match stage.into_config() {
+                Ok(config) => config,
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            };
+            plugins.push(epdf_plugin_stage::stage_plugin(epdf_plugin_stage::StagePluginOptions {
+                config,
+                ..Default::default()
+            }));
+        }
         if config.selection {
             plugins.push(epdf_plugin_selection::selection_plugin(Default::default()));
         }

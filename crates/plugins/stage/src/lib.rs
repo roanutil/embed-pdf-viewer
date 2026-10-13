@@ -64,6 +64,12 @@ pub mod view {
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 use epdf_kernel::rt::Promise;
 use epdf_kernel::{AnyPlugin, Controller, Error, Token, define};
 use epdf_plugin_actions::{ACTIONS, ActionExecutor, ActionExecutorResult};

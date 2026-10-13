@@ -443,6 +443,7 @@ version = "0.0.0"
 dependencies = [
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-stage-core",
  "futures",
  "serde_json",
  "thiserror",
@@ -734,14 +735,17 @@ dependencies = [
 name = "epdf-plugin-stage"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-interaction",
  "epdf-stage-core",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -848,6 +852,7 @@ dependencies = [
  "epdf-plugin-search",
  "epdf-plugin-selection",
  "epdf-plugin-shell",
+ "epdf-plugin-stage",
  "epdf-plugin-view-manager",
  "epdf-uniffi",
  "futures",
