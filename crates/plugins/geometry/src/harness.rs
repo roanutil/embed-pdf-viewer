@@ -81,9 +81,42 @@ struct PageSpaceProbe {
     pdf_to_page: Vec<Point>,
     page_to_pdf: Vec<Point>,
     pdf_rect_to_page: Vec<Rect>,
-    page_rect_to_pdf: Vec<PdfEdges>,
+    page_rect_to_pdf: Vec<PageRectToPdfOut>,
     pdf_quad_to_page: Vec<Quad>,
     page_quad_to_pdf: Vec<Quad>,
+}
+
+/// `pageRectToPdf`'s result as the TypeScript literal in `page-space.ts`
+/// orders it: left, right, top, bottom. [`PdfEdges`] itself keeps the engine
+/// `PdfRect` order, which `crop` echoes.
+#[derive(Serialize)]
+struct PageRectToPdfOut {
+    left: f64,
+    right: f64,
+    top: f64,
+    bottom: f64,
+}
+
+impl From<PdfEdges> for PageRectToPdfOut {
+    fn from(e: PdfEdges) -> Self {
+        Self { left: e.left, right: e.right, top: e.top, bottom: e.bottom }
+    }
+}
+
+/// `edgesOfQuad`'s result as the TypeScript literal in `page-space.ts` orders
+/// it: left, right, bottom, top.
+#[derive(Serialize)]
+struct EdgesOfQuadOut {
+    left: f64,
+    right: f64,
+    bottom: f64,
+    top: f64,
+}
+
+impl From<PdfEdges> for EdgesOfQuadOut {
+    fn from(e: PdfEdges) -> Self {
+        Self { left: e.left, right: e.right, bottom: e.bottom, top: e.top }
+    }
 }
 
 /// The suite's `pageSpace` wrapper: build the space, then call each method on
@@ -107,7 +140,7 @@ fn page_space_probe(a: &[Value]) -> Out {
             .rects
             .unwrap_or_default()
             .into_iter()
-            .map(|r| s.page_rect_to_pdf(r))
+            .map(|r| PageRectToPdfOut::from(s.page_rect_to_pdf(r)))
             .collect(),
         pdf_quad_to_page: quads.iter().map(|q| s.pdf_quad_to_page(*q)).collect(),
         page_quad_to_pdf: quads.iter().map(|q| s.page_quad_to_pdf(*q)).collect(),
@@ -158,7 +191,7 @@ pub fn functions() -> FunctionTable {
         ("pageTransform", page_transform_probe),
         ("pageSpace", page_space_probe),
         ("edgesOverlap", |a| ok(edges_overlap(arg(a, 0)?, arg(a, 1)?))),
-        ("edgesOfQuad", |a| ok(edges_of_quad(arg(a, 0)?))),
+        ("edgesOfQuad", |a| ok(EdgesOfQuadOut::from(edges_of_quad(arg(a, 0)?)))),
         ("textQuadFromRect", |a| ok(text_quad_from_rect(arg(a, 0)?))),
         ("textQuadPoints", |a| ok(text_quad_points(arg(a, 0)?))),
         ("textQuadRing", |a| ok(text_quad_ring(arg(a, 0)?))),
