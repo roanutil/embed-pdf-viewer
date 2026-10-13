@@ -368,9 +368,9 @@ pub struct RichTextParagraphs {
 #[serde(rename_all = "camelCase")]
 pub struct CommentPermissions {
     pub can_reply: bool,
+    pub can_set_status: bool,
     pub can_edit_text: bool,
     pub can_delete: bool,
-    pub can_set_status: bool,
     pub can_delete_thread: bool,
 }
 
