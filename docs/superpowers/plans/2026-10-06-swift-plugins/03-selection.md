@@ -915,7 +915,7 @@ git commit -m "Export the selection plugin through uniffi"
 - Consumes: `SelectionHandle::new`; plan 01's `ViewerConfig.interaction`, `ViewerConfig.feedback`, `InteractionHandle::dispatch_pointer`, `FeedbackConfig`, `PlatformFeedback`.
 - Produces: `ViewerConfig.selection: bool`; `ViewerHost::selection(document_id: String) -> Result<Arc<SelectionHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1051,12 +1051,12 @@ fn without_its_flag_the_selection_plugin_is_not_installed() {
 
 `with_interaction` is plan 01's helper in this file. `has_selection` after the fires is a reply, so the dispatches have run by then. The aliased imports keep these names from clashing with plan 01's and plan 02's imports in the same file; if they don't clash on your branch, drop the aliases.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host selection`
 Expected: FAIL to compile, "no field `selection` on type `ViewerConfig`".
 
-- [ ] **Step 3: Wire it**
+- [x] **Step 3: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -1097,12 +1097,12 @@ epdf-plugin-selection = { path = "../plugins/selection", default-features = fals
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the six new tests and every existing one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

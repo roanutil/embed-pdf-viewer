@@ -434,6 +434,151 @@ fn without_its_config_the_feedback_plugin_is_not_installed() {
     assert!(block_on(host.feedback()).is_err());
 }
 
+use epdf_ffi::{
+    Modifiers as SelModifiers, Point as SelPoint, PointerGesture, PointerKind as SelKind,
+    PointerPageHit as SelHit, PointerPhase as SelPhase, PointerSample as SelSample,
+    Rect as SelRect,
+};
+use epdf_plugin_interaction::ffi::{
+    FeedbackConfig, FeedbackImpactWeight, FeedbackNotifyKind, PlatformFeedback,
+};
+use epdf_plugin_selection::ffi::SelectionHandle;
+
+fn with_selection(feedback: Option<Arc<FeedbackConfig>>) -> Arc<ViewerHost> {
+    let config =
+        ViewerConfig { interaction: true, selection: true, feedback, ..Default::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+/// A text rect on page 0 of the report, found through selection itself.
+fn text_rect(selection: &SelectionHandle, page: epdf_ffi::PageRef) -> SelRect {
+    block_on(selection.ensure_loaded(page)).unwrap();
+    block_on(selection.select_page(page)).unwrap();
+    let rect = block_on(selection.rects(page)).unwrap()[0];
+    block_on(selection.clear()).unwrap();
+    rect
+}
+
+fn touch(phase: SelPhase, page: epdf_ffi::PageRef, point: SelPoint) -> SelSample {
+    SelSample {
+        phase,
+        // Viewport points equal page points: a 1:1 view, enough to clear the drag threshold.
+        viewport: point,
+        page: Some(SelHit { page, point, scale: None, rotation: None, zoom: None }),
+        modifiers: SelModifiers::default(),
+        click_count: None,
+        pointer_type: Some(SelKind::Touch),
+        gesture: None,
+        source: None,
+    }
+}
+
+#[test]
+fn a_plugin_without_its_requirement_fails_to_build() {
+    let config = ViewerConfig { selection: true, ..Default::default() };
+    let error = ViewerHost::new(config, Arc::new(Delegate)).err().unwrap();
+    let ViewerError::Kernel { detail, .. } = error else { panic!("{error:?}") };
+    assert!(detail.contains("requires capability \"interaction\""), "{detail}");
+}
+
+#[test]
+fn the_selection_plugin_selects_and_reads_through_the_host() {
+    let host = with_selection(None);
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let selection = block_on(host.selection(doc.id)).unwrap();
+    block_on(selection.select_page(pages[0].page)).unwrap();
+    let text = block_on(selection.read_text(CancelToken::new())).unwrap();
+    // report.pdf opens with the title "Trace-based Just-in-Time Type
+    // Specialization for Dynamic Languages".
+    assert!(text.contains("Dynamic"), "{text:?}");
+}
+
+#[test]
+fn a_pointer_drag_over_text_selects_it() {
+    let host = with_selection(None);
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let selection = block_on(host.selection(doc.id.clone())).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    let rect = text_rect(&selection, page);
+    let y = rect.y + rect.height / 2.0;
+    interaction.dispatch_pointer(touch(SelPhase::Down, page, SelPoint { x: rect.x + 1.0, y }));
+    interaction.dispatch_pointer(touch(
+        SelPhase::Move,
+        page,
+        SelPoint { x: rect.x + rect.width - 1.0, y },
+    ));
+    interaction.dispatch_pointer(touch(
+        SelPhase::Up,
+        page,
+        SelPoint { x: rect.x + rect.width - 1.0, y },
+    ));
+    assert!(block_on(selection.has_selection()).unwrap());
+    assert!(!block_on(selection.read_text(CancelToken::new())).unwrap().is_empty());
+}
+
+#[test]
+fn a_drag_that_starts_off_text_selects_nothing() {
+    let host = with_selection(None);
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let selection = block_on(host.selection(doc.id.clone())).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    block_on(selection.ensure_loaded(page)).unwrap();
+    // The page's top-left corner: inside the page, outside any text.
+    let corner = SelPoint { x: 1.0, y: 1.0 };
+    assert!(!block_on(selection.is_over_text(page, corner)).unwrap());
+    interaction.dispatch_pointer(touch(SelPhase::Down, page, corner));
+    interaction.dispatch_pointer(touch(SelPhase::Move, page, SelPoint { x: 300.0, y: 300.0 }));
+    interaction.dispatch_pointer(touch(SelPhase::Up, page, SelPoint { x: 300.0, y: 300.0 }));
+    assert!(!block_on(selection.has_selection()).unwrap());
+}
+
+#[derive(Default)]
+struct Ticks(Mutex<Vec<String>>);
+impl PlatformFeedback for Ticks {
+    fn selection(&self) {
+        self.0.lock().unwrap().push("selection".into());
+    }
+    fn impact(&self, _weight: Option<FeedbackImpactWeight>) {}
+    fn notify(&self, _kind: FeedbackNotifyKind) {}
+}
+
+#[test]
+fn a_long_press_on_a_word_ticks_the_feedback() {
+    let ticks = Arc::new(Ticks::default());
+    let host = with_selection(Some(FeedbackConfig::new(ticks.clone())));
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let selection = block_on(host.selection(doc.id.clone())).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    let rect = text_rect(&selection, page);
+    let mut press =
+        touch(SelPhase::Down, page, SelPoint { x: rect.x + 2.0, y: rect.y + rect.height / 2.0 });
+    press.click_count = Some(2);
+    press.gesture = Some(PointerGesture::LongPress);
+    interaction.dispatch_pointer(press.clone());
+    press.phase = SelPhase::Up;
+    interaction.dispatch_pointer(press);
+    assert!(block_on(selection.has_selection()).unwrap());
+    assert_eq!(*ticks.0.lock().unwrap(), ["selection"]);
+}
+
+#[test]
+fn without_its_flag_the_selection_plugin_is_not_installed() {
+    let host = with_interaction(Arc::new(Delegate));
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.selection(doc.id)).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

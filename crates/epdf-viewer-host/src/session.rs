@@ -72,6 +72,9 @@ impl Session {
         if let Some(feedback) = config.feedback {
             plugins.push(epdf_plugin_interaction::feedback_plugin(feedback.to_options()));
         }
+        if config.selection {
+            plugins.push(epdf_plugin_selection::selection_plugin(Default::default()));
+        }
         if config.page_edit {
             plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }

@@ -842,6 +842,7 @@ dependencies = [
  "epdf-plugin-page-edit",
  "epdf-plugin-render",
  "epdf-plugin-search",
+ "epdf-plugin-selection",
  "epdf-plugin-shell",
  "epdf-plugin-view-manager",
  "epdf-uniffi",

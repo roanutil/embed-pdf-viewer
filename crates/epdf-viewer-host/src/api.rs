@@ -39,6 +39,11 @@ pub struct ViewerConfig {
     /// use them. `None` leaves it out, and plugins skip feedback.
     #[uniffi(default = None)]
     pub feedback: Option<Arc<FeedbackConfig>>,
+    /// Install `selectionPlugin()`: text selection and extraction, one per
+    /// document. Requires `interaction`; without it the viewer fails to
+    /// build.
+    #[uniffi(default = false)]
+    pub selection: bool,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]
