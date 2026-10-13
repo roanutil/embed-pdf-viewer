@@ -732,6 +732,7 @@ dependencies = [
  "epdf-plugin-annotation",
  "epdf-plugin-form",
  "epdf-plugin-interaction",
+ "indexmap",
  "plugin-conformance",
  "serde",
  "serde_json",

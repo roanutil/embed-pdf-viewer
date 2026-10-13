@@ -143,9 +143,10 @@ impl StampCapability {
                     id: id.clone(),
                     name,
                     kind,
+                    asset_ids: Vec::new(),
                     locale: None,
                     categories: opts.categories,
-                    asset_ids: Vec::new(),
+                    member_order: StampLibraryMemberOrder::Created,
                 },
             });
             let events = &this.0.events;
@@ -422,6 +423,7 @@ impl StampCapability {
             locale: library_locale.filter(|l| !l.is_empty()),
             categories: library_categories,
             asset_ids: Vec::new(),
+            member_order: StampLibraryMemberOrder::Imported,
         };
         let canonical = await_engine(call(doc, "download", Vec::new())).await?;
         Ok(Imported { library, canonical: bytes_of(&canonical), assets })

@@ -65,20 +65,104 @@ pub struct StampAsset {
 }
 
 /// `StampLibrary`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+///
+/// The TypeScript builds a library with two object literals whose member
+/// order differs: `createLibrary` writes `{ id, name, kind, assetIds,
+/// categories? }` and `importLibrary` writes `{ id, name, kind, locale?,
+/// categories, assetIds }` (`write/libraries.ts`). Every later copy spreads
+/// the original, so a library keeps its literal's order for life;
+/// [`member_order`](Self::member_order) records which one, and the
+/// serialization follows it.
+#[derive(Clone, Debug, PartialEq)]
 pub struct StampLibrary {
     /// PieceInfo `Id`: stable while the title is editable.
     pub id: String,
     pub name: String,
     /// PieceInfo `Kind`: `stamps`, `signatures`, or an embedder's own.
     pub kind: StampLibraryKind,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub locale: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub categories: Option<Vec<String>>,
     /// Asset ids in display order.
     pub asset_ids: Vec<String>,
+    pub locale: Option<String>,
+    pub categories: Option<Vec<String>>,
+    /// The object literal that built the library, which fixes its member
+    /// order.
+    pub member_order: StampLibraryMemberOrder,
+}
+
+/// Which `write/libraries.ts` literal built a [`StampLibrary`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StampLibraryMemberOrder {
+    /// `createLibrary`: `assetIds` before `locale` and `categories`.
+    #[default]
+    Created,
+    /// `importLibrary`: `locale` and `categories` before `assetIds`.
+    Imported,
+}
+
+impl Serialize for StampLibrary {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let len = 4 + usize::from(self.locale.is_some()) + usize::from(self.categories.is_some());
+        let mut out = serializer.serialize_struct("StampLibrary", len)?;
+        out.serialize_field("id", &self.id)?;
+        out.serialize_field("name", &self.name)?;
+        out.serialize_field("kind", &self.kind)?;
+        let imported = self.member_order == StampLibraryMemberOrder::Imported;
+        if !imported {
+            out.serialize_field("assetIds", &self.asset_ids)?;
+        }
+        if let Some(locale) = &self.locale {
+            out.serialize_field("locale", locale)?;
+        }
+        if let Some(categories) = &self.categories {
+            out.serialize_field("categories", categories)?;
+        }
+        if imported {
+            out.serialize_field("assetIds", &self.asset_ids)?;
+        }
+        out.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for StampLibrary {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Fields {
+            id: String,
+            name: String,
+            kind: StampLibraryKind,
+            asset_ids: Vec<String>,
+            #[serde(default)]
+            locale: Option<String>,
+            #[serde(default)]
+            categories: Option<Vec<String>>,
+        }
+        // The members arrive in document order (`preserve_order`), which is
+        // the order the object that produced them had.
+        let members = serde_json::Map::<String, Value>::deserialize(deserializer)?;
+        let position = |key: &str| members.keys().position(|k| k == key);
+        let asset_ids_at = position("assetIds");
+        let imported = ["locale", "categories"]
+            .iter()
+            .filter_map(|key| position(key))
+            .any(|at| asset_ids_at.is_some_and(|a| at < a));
+        let f: Fields =
+            serde_json::from_value(Value::Object(members)).map_err(serde::de::Error::custom)?;
+        Ok(StampLibrary {
+            id: f.id,
+            name: f.name,
+            kind: f.kind,
+            asset_ids: f.asset_ids,
+            locale: f.locale,
+            categories: f.categories,
+            member_order: if imported {
+                StampLibraryMemberOrder::Imported
+            } else {
+                StampLibraryMemberOrder::Created
+            },
+        })
+    }
 }
 
 /// `StampLibraryChange['reason']`.
