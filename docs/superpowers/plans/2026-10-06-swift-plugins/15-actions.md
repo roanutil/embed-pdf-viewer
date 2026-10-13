@@ -2695,7 +2695,7 @@ git commit -m "Run PDF JavaScript through a foreign ScriptEngine behind a Rust s
 - Consumes: the generated handle, objects, records and port protocols.
 - Produces: Swift `ActionsCapability` (one method per handle member), `PDFViewer.actions(for:)`, `PdfActionTree.decode(json:)`, `ClosureDocumentVerb` (internal), `ActionsConfig.forCurrentTimeZone(...)`.
 
-- [ ] **Step 1: Add the fixture**
+- [x] **Step 1: Add the fixture**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), after the last plan's lines:
 
@@ -2703,7 +2703,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   tooling/engine-conformance/fixtures/document_actions.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ActionsTests.swift`:
 
@@ -2828,7 +2828,7 @@ final class RecordingExecutor: ActionExecutor, @unchecked Sendable {
 
 No member takes a `CancelToken` (Decisions), so there's no cancellation test.
 
-- [ ] **Step 3: Rebuild and run the tests to verify they fail**
+- [x] **Step 3: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -2837,7 +2837,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find type 'ActionsCapability' in scope".
 
-- [ ] **Step 4: Write `Plugins/Actions.swift`**
+- [x] **Step 4: Write `Plugins/Actions.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3048,7 +3048,7 @@ extension PDFViewer {
 
 If the generated protocol spellings differ (`openUri(uri:options:)`, `gotoPage(page:context:)`, `nodeType()`), match `Sources/EmbedPDFBindings/epdf_plugin_actions.swift`.
 
-- [ ] **Step 5: Rebuild and run the tests to verify they pass**
+- [x] **Step 5: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3057,7 +3057,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 7 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests

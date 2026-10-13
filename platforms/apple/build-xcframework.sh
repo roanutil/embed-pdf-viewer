@@ -142,6 +142,7 @@ FIXTURES=(
   pdfium-multiplatform-prototype/fixtures/colors.pdf
   pdfium-multiplatform-prototype/fixtures/encrypted-hello.pdf
   tooling/viewer-e2e/fixtures/features.pdf
+  tooling/engine-conformance/fixtures/document_actions.pdf
 )
 for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"
