@@ -21,6 +21,7 @@ epdf-engine = { path = "../epdf-engine" }
 epdf-ffi = { path = "../epdf-ffi" }
 epdf-kernel = { path = "../epdf-kernel" }
 epdf-manual-bridge = { path = "../epdf-manual-bridge", optional = true }
+epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }
 epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }

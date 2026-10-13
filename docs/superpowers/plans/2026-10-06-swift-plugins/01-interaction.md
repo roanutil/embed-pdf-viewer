@@ -1470,7 +1470,7 @@ git commit -m "Export the feedback plugin with a foreign PlatformFeedback provid
 - Consumes: `InteractionHandle::new`, `FeedbackHandle::new`, `FeedbackConfig::into_options`.
 - Produces: `ViewerConfig.interaction: bool`, `ViewerConfig.feedback: Option<FeedbackConfig>`; `ViewerHost::interaction(document_id: String) -> Result<Arc<InteractionHandle>, ViewerError>`; `ViewerHost::feedback() -> Result<Arc<FeedbackHandle>, ViewerError>`; a private `fn reporter(kernel: &Kernel) -> Rc<dyn Fn(&Error)>` in `lib.rs` that later plans reuse for their own foreign ports.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1571,12 +1571,12 @@ fn without_its_config_the_feedback_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host interaction`
 Expected: FAIL to compile, "no field `interaction` on type `ViewerConfig`".
 
-- [ ] **Step 3: Add the dependency**
+- [x] **Step 3: Add the dependency**
 
 In `crates/epdf-viewer-host/Cargo.toml`, in alphabetical order among the plugin lines:
 
@@ -1584,7 +1584,7 @@ In `crates/epdf-viewer-host/Cargo.toml`, in alphabetical order among the plugin 
 epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
 ```
 
-- [ ] **Step 4: Add the config fields**
+- [x] **Step 4: Add the config fields**
 
 In `crates/epdf-viewer-host/src/api.rs`, add the import and the two fields at the end of `ViewerConfig`:
 
@@ -1603,7 +1603,7 @@ use epdf_plugin_interaction::ffi::FeedbackConfig;
     pub feedback: Option<FeedbackConfig>,
 ```
 
-- [ ] **Step 5: Install the plugins**
+- [x] **Step 5: Install the plugins**
 
 In `crates/epdf-viewer-host/src/session.rs`, after the render block in `Session::build`:
 
@@ -1616,7 +1616,7 @@ In `crates/epdf-viewer-host/src/session.rs`, after the render block in `Session:
         }
 ```
 
-- [ ] **Step 6: Add the accessors**
+- [x] **Step 6: Add the accessors**
 
 In `crates/epdf-viewer-host/src/lib.rs`, add to the `use` lines:
 
@@ -1673,12 +1673,12 @@ Add to the `#[uniffi::export] impl ViewerHost` block, after `render`:
 
 If `Kernel::capability` with `None` refuses a workspace token on this branch, pass the active document's id instead (`s.kernel.documents().list().first()`), and say so in the commit message. The test in Step 1 that expects an error without the config still holds either way.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
