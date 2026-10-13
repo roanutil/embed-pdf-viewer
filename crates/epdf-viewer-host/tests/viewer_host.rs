@@ -747,6 +747,163 @@ fn without_its_flag_the_selection_plugin_is_not_installed() {
     assert!(block_on(host.selection(doc.id)).is_err());
 }
 
+use epdf_ffi::PdfLinkTarget as HostTarget;
+use epdf_plugin_link::ffi::{LinkActivation, LinkInput};
+
+fn with_links(stage: bool) -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        link: true,
+        stage: stage
+            .then(|| epdf_plugin_stage::ffi::StageConfig { frames: false, ..Default::default() }),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_link_plugin_lists_and_activates_links_through_the_host() {
+    let host = with_links(false);
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let link = block_on(host.link(doc.id)).unwrap();
+    block_on(link.ensure_loaded(pages[0].page)).unwrap();
+    let links = block_on(link.links(pages[0].page)).unwrap();
+    assert_eq!(links.len(), 2, "{links:?}");
+    let external = links.iter().find(|l| matches!(l.target, HostTarget::Uri { .. })).unwrap();
+    let activation =
+        block_on(link.activate(LinkInput::Link { page: pages[0].page, id: external.id.clone() }))
+            .unwrap();
+    assert_eq!(activation, LinkActivation::Uri { uri: "https://example.invalid/target".into() });
+}
+
+#[test]
+fn activating_a_goto_link_moves_the_stage() {
+    let host = with_links(true);
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(epdf_ffi::Size { width: 390.0, height: 300.0 })).unwrap();
+    let link = block_on(host.link(doc.id)).unwrap();
+    block_on(link.ensure_loaded(pages[0].page)).unwrap();
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 0);
+    // Inside the internal link: x 40..320, y 70..100 in page space.
+    let activation =
+        block_on(link.activate_at(pages[0].page, epdf_ffi::Point { x: 100.0, y: 85.0 })).unwrap();
+    assert_eq!(activation, Some(LinkActivation::Revealed));
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 2);
+}
+
+#[test]
+fn a_tap_on_a_link_activates_it() {
+    use epdf_ffi::{Modifiers, Point, PointerKind, PointerPageHit, PointerPhase, PointerSample};
+    use epdf_plugin_link::ffi::{LinkEvent, LinkEventListener};
+    #[derive(Default)]
+    struct Seen(Mutex<Vec<LinkEvent>>);
+    impl LinkEventListener for Seen {
+        fn on_event(&self, event: LinkEvent) {
+            self.0.lock().unwrap().push(event);
+        }
+        fn on_end(&self) {}
+    }
+    let host = with_links(false);
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let link = block_on(host.link(doc.id.clone())).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    block_on(link.ensure_loaded(page)).unwrap();
+    let seen = Arc::new(Seen::default());
+    let _sub = link.subscribe(seen.clone());
+    // The web's link layer takes the click on its anchors; a native reader
+    // asks for the handler that takes it from the hub.
+    let _tap = block_on(link.register_tap_handler()).unwrap();
+    // Inside the external link: x 40..360, y 130..160.
+    let at = |phase| PointerSample {
+        phase,
+        viewport: Point { x: 100.0, y: 145.0 },
+        page: Some(PointerPageHit {
+            page,
+            point: Point { x: 100.0, y: 145.0 },
+            scale: None,
+            rotation: None,
+            zoom: None,
+        }),
+        modifiers: Modifiers::default(),
+        click_count: Some(1),
+        pointer_type: Some(PointerKind::Touch),
+        gesture: None,
+        source: None,
+    };
+    interaction.dispatch_pointer(at(PointerPhase::Down));
+    interaction.dispatch_pointer(at(PointerPhase::Up));
+    block_on(link.is_loaded(page)).unwrap();
+    let seen = seen.0.lock().unwrap();
+    assert!(seen.iter().any(|e| matches!(e, LinkEvent::Activated { event }
+        if matches!(&event.activation, LinkActivation::Uri { uri } if uri == "https://example.invalid/target"))),
+        "{seen:?}");
+}
+
+/// `15-actions.md` (Cross-plugin tests) gives this one to plan 04. Both of
+/// `features.pdf`'s links carry an `/A` tree, so with actions installed an
+/// activation hands the tree to actions, and the internal link's `GoTo`
+/// still moves the stage, through the executor the stage registers.
+#[test]
+fn with_actions_a_link_dispatches_its_action_tree() {
+    let config = ViewerConfig {
+        interaction: true,
+        link: true,
+        stage: Some(epdf_plugin_stage::ffi::StageConfig { frames: false, ..Default::default() }),
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: None,
+            utc_offset_minutes: None,
+        }),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(epdf_ffi::Size { width: 390.0, height: 300.0 })).unwrap();
+    let link = block_on(host.link(doc.id)).unwrap();
+    block_on(link.ensure_loaded(pages[0].page)).unwrap();
+    let links = block_on(link.links(pages[0].page)).unwrap();
+    assert!(links.iter().all(|l| l.has_action), "{links:?}");
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 0);
+    let activation =
+        block_on(link.activate_at(pages[0].page, epdf_ffi::Point { x: 100.0, y: 85.0 })).unwrap();
+    assert_eq!(activation, Some(LinkActivation::Dispatched));
+    // The dispatch runs on the document's serial queue; a later call on the
+    // kernel thread lets it settle.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while block_on(stage.current_page_index()).unwrap() != 2 {
+        assert!(Instant::now() < deadline, "the GoTo never moved the stage");
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
+#[test]
+fn without_its_flag_the_link_plugin_is_not_installed() {
+    let host = with_interaction(Arc::new(Delegate));
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
+    assert!(block_on(host.link(doc.id)).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

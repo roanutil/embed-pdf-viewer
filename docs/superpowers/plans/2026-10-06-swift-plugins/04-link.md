@@ -1307,7 +1307,7 @@ git commit -m "Wire the link plugin into the viewer host"
 **Files:**
 - Modify: `crates/epdf-viewer-host/tests/viewer_host.rs`
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1411,12 +1411,12 @@ fn without_its_flag_the_link_plugin_is_not_installed() {
 
 `activating_a_goto_link_moves_the_stage` checks page 3 is visible after the reveal. The destination is `/XYZ 0 400 0` (top of page 3); a 300-point-tall viewport shows at most two 400-point pages at the fitted zoom, so page 3 being visible means the camera moved.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one. If `the_link_plugin_lists_and_activates_links_through_the_host` lists no links, the native engine's `listRawPage` snapshot shape differs from what `project_links` reads (`snap.annotations[*].subtype`, `.target`, `.flags`, `.ref`, `.rect`). Print the raw snapshot from a `translate` test against `features.pdf` before changing either side.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/tests/viewer_host.rs
