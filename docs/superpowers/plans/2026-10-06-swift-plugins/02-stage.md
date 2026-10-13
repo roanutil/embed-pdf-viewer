@@ -2802,7 +2802,7 @@ git commit -m "Export render's viewport members and a view-demand handle"
 - Consumes: `StageHandle::new`, `StageConfig::into_config`; plan 01's `reporter(&Kernel)`.
 - Produces: `ViewerConfig.stage: Option<StageConfig>`; `ViewerHost::stage(document_id: String) -> Result<Arc<StageHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -2901,12 +2901,12 @@ fn without_its_config_the_stage_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host stage`
 Expected: FAIL to compile, "no field `stage` on type `ViewerConfig`".
 
-- [ ] **Step 3: Wire it**
+- [x] **Step 3: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -2961,12 +2961,12 @@ use epdf_plugin_stage::ffi::StageConfig;
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

@@ -14,6 +14,7 @@ use epdf_plugin_i18n::ffi::I18nConfig;
 use epdf_plugin_interaction::ffi::FeedbackConfig;
 use epdf_plugin_render::ffi::RenderConfig;
 use epdf_plugin_search::ffi::SearchConfig;
+use epdf_plugin_stage::ffi::StageConfig;
 use serde_json::Value;
 
 pub use epdf_ffi::PageInfo;
@@ -39,6 +40,10 @@ pub struct ViewerConfig {
     /// use them. `None` leaves it out, and plugins skip feedback.
     #[uniffi(default = None)]
     pub feedback: Option<Arc<FeedbackConfig>>,
+    /// Install `stagePlugin({ config })`: the viewport lens, one per
+    /// document. Search reveals hits through it when both are installed.
+    #[uniffi(default = None)]
+    pub stage: Option<StageConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

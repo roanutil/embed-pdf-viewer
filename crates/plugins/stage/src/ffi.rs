@@ -26,6 +26,7 @@ use epdf_ffi::{
 use epdf_geometry::PageRotation;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe, rt};
+use epdf_plugin_interaction::{InteractionCapability, RegisterHandlerOptions};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -34,8 +35,9 @@ use crate::{
     ArrivalAlignValue, ArrivalAlignment, BoxQuery, ColumnsPolicy, FlowMode, Gap, GestureOptions,
     GoToOptions, GridColumns, Keep, LayoutKind, Orientation, PageHit, PartialArrivalAlignment,
     PartialSettings, ResponsiveRule, RevealAnchor, RevealAnchorValue, RevealOptions, RevealWord,
-    RevealZoom, RevealZoomWord, RuleWhen, Scheduler, ScrollBehaviorKind, StageCapability,
-    StageZoomMode as CoreZoomMode, Viewpoint, VisiblePage, ZoomTarget, ZoomToOptions,
+    RevealZoom, RevealZoomWord, RuleWhen, Scheduler, ScrollBehaviorKind, ScrollHandlerOptions,
+    StageCapability, StageZoomMode as CoreZoomMode, Viewpoint, VisiblePage, ZoomTarget,
+    ZoomToOptions, create_scroll_handler,
 };
 
 fn invalid(what: String) -> Error {
@@ -872,6 +874,8 @@ fn open(cap: &StageCapability) -> Result<&StageCapability, Error> {
 
 struct Bound {
     cap: StageCapability,
+    /// The document's pointer hub, when the interaction plugin is installed.
+    hub: Option<InteractionCapability>,
     report: Rc<dyn Fn(&Error)>,
 }
 
@@ -895,7 +899,21 @@ pub struct StageHandle {
 impl StageHandle {
     /// On the kernel thread. `report` receives a fire method's errors.
     pub fn new(cap: StageCapability, post: KernelPost, report: Rc<dyn Fn(&Error)>) -> Arc<Self> {
-        Arc::new(StageHandle { bound: KernelBound::new(Bound { cap, report }, post.clone()), post })
+        Self::with_hub(cap, None, post, report)
+    }
+
+    /// `new`, with the document's pointer hub for
+    /// [`StageHandle::register_scroll_handler`].
+    pub fn with_hub(
+        cap: StageCapability,
+        hub: Option<InteractionCapability>,
+        post: KernelPost,
+        report: Rc<dyn Fn(&Error)>,
+    ) -> Arc<Self> {
+        Arc::new(StageHandle {
+            bound: KernelBound::new(Bound { cap, hub, report }, post.clone()),
+            post,
+        })
     }
 
     async fn read<T: Send + 'static>(
@@ -1360,6 +1378,42 @@ impl StageHandle {
                         }
                     }
                 });
+                Ok(RegistrationHandle::new(post, move || off.call()))
+            })
+            .await
+    }
+
+    /// Register this lens's pan-scroll handler with the document's pointer
+    /// hub, scoped to this lens, as the web's `<Stage>` does when it forwards
+    /// its samples to the hub. A pan tool then drags the stage. `pan_fallback`
+    /// (`None` is true) lets any other tool pan over the gaps between pages.
+    /// `unsupported` without the interaction plugin.
+    pub async fn register_scroll_handler(
+        &self,
+        pan_fallback: Option<bool>,
+    ) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.bound
+            .call(move |b| {
+                let cap = open(&b.cap)?;
+                let Some(hub) = b.hub.as_ref() else {
+                    return Err(plugin_error(
+                        code::UNSUPPORTED,
+                        "stage",
+                        "the scroll handler needs the interaction plugin",
+                        None,
+                        None,
+                    ));
+                };
+                let handler = create_scroll_handler(
+                    cap.clone(),
+                    hub.clone(),
+                    ScrollHandlerOptions { pan_fallback },
+                );
+                let off = hub.register_handler(
+                    handler,
+                    RegisterHandlerOptions { source: Some(cap.get_lens_id()) },
+                );
                 Ok(RegistrationHandle::new(post, move || off.call()))
             })
             .await

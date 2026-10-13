@@ -433,6 +433,124 @@ fn without_its_config_the_feedback_plugin_is_not_installed() {
     assert!(block_on(host.feedback()).is_err());
 }
 
+use epdf_ffi::Size as FfiSize;
+use epdf_plugin_stage::ffi::{StageConfig, StageGoToOptions, StageScrollBehavior};
+
+fn with(config: ViewerConfig) -> Arc<ViewerHost> {
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_stage_plugin_lays_out_and_navigates_through_the_host() {
+    let host = with(ViewerConfig { stage: Some(StageConfig::default()), ..Default::default() });
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let stage = block_on(host.stage(doc.id)).unwrap();
+    block_on(stage.set_viewport_size(FfiSize { width: 390.0, height: 844.0 })).unwrap();
+    assert!(!block_on(stage.visible_pages()).unwrap().is_empty());
+    let instant =
+        StageGoToOptions { behavior: Some(StageScrollBehavior::Instant), ..Default::default() };
+    block_on(stage.go_to_page_index(5, Some(instant))).unwrap();
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 5);
+}
+
+#[test]
+fn revealing_the_active_hit_moves_the_stage() {
+    let host = with(ViewerConfig {
+        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        search: Some(SearchConfig::default()),
+        ..Default::default()
+    });
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(FfiSize { width: 390.0, height: 844.0 })).unwrap();
+    let search = block_on(host.search(doc.id)).unwrap();
+    let query = SearchQuery { text: "the".into(), ..Default::default() };
+    block_on(search.search(query, None, CancelToken::new())).unwrap();
+    let before = block_on(stage.camera()).unwrap();
+    let mut moved = false;
+    // Walk hits until one is off screen; revealing it must move the camera.
+    for _ in 0..50 {
+        let hit = block_on(search.next_hit(None)).unwrap().unwrap();
+        let after = block_on(stage.camera()).unwrap();
+        if after != before {
+            assert!(block_on(stage.is_page_visible(hit.page)).unwrap());
+            moved = true;
+            break;
+        }
+    }
+    assert!(moved, "no hit moved the stage");
+}
+
+#[test]
+fn a_pan_tool_drag_scrolls_the_stage() {
+    use epdf_ffi::{Modifiers, Point, PointerKind, PointerPageHit, PointerPhase, PointerSample};
+    let host = with(ViewerConfig {
+        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        interaction: true,
+        ..Default::default()
+    });
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(FfiSize { width: 390.0, height: 844.0 })).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    block_on(interaction.activate_tool("pan".into())).unwrap();
+    // The surface binding's job on the web (`<Stage>` registers it when it
+    // forwards samples to the hub); a native reader asks for it.
+    let _scroll = block_on(stage.register_scroll_handler(None)).unwrap();
+    let lens = block_on(stage.lens_id()).unwrap();
+    let at = |phase, y: f64| PointerSample {
+        phase,
+        viewport: Point { x: 200.0, y },
+        page: Some(PointerPageHit {
+            page: pages[0].page,
+            point: Point { x: 100.0, y },
+            scale: None,
+            rotation: None,
+            zoom: None,
+        }),
+        modifiers: Modifiers::default(),
+        click_count: None,
+        pointer_type: Some(PointerKind::Touch),
+        gesture: None,
+        source: Some(lens.clone()),
+    };
+    let before = block_on(stage.camera()).unwrap();
+    interaction.dispatch_pointer(at(PointerPhase::Down, 600.0));
+    interaction.dispatch_pointer(at(PointerPhase::Move, 400.0));
+    interaction.dispatch_pointer(at(PointerPhase::Up, 400.0));
+    let after = block_on(stage.camera()).unwrap();
+    assert!(after.y != before.y, "{before:?} -> {after:?}");
+}
+
+#[test]
+fn a_scroll_handler_without_the_interaction_plugin_is_unsupported() {
+    let host = with(ViewerConfig {
+        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        ..Default::default()
+    });
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let stage = block_on(host.stage(doc.id)).unwrap();
+    match block_on(stage.register_scroll_handler(None)).map(|_| ()).unwrap_err() {
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("unsupported")),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn without_its_config_the_stage_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.stage(doc.id)).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,
