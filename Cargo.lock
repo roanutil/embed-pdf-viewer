@@ -462,6 +462,7 @@ name = "epdf-kernel"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "indexmap",
  "serde",
  "serde_json",
 ]

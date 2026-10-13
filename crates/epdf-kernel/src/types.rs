@@ -5,9 +5,9 @@
 //! JSON here. The kernel never reads inside a page layout; the plugins that
 //! do deserialize it into their own types.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
@@ -78,11 +78,13 @@ fn canonical_error<S: Serializer>(error: &Option<Error>, s: S) -> Result<S::Ok, 
 }
 
 /// The document registry. `order` spans ready documents and pending slots.
+/// `documents` and `pending` keep insertion order, as `kernel.ts`'s spreads
+/// do: a new id goes last, an update keeps its place.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoreState {
-    pub documents: BTreeMap<String, DocumentMeta>,
-    pub pending: BTreeMap<String, PendingMeta>,
+    pub documents: IndexMap<String, DocumentMeta>,
+    pub pending: IndexMap<String, PendingMeta>,
     pub order: Vec<String>,
     pub active_id: Option<String>,
 }
@@ -186,13 +188,16 @@ pub enum PluginScope {
 pub fn origin_of(event: &Value) -> Value {
     let origin = event.get("origin").cloned().unwrap_or(Value::Null);
     let remote = origin.get("kind").and_then(Value::as_str) == Some("remote");
-    let mut out = serde_json::json!({
-        "locality": if remote { "remote" } else { "local" },
-        "trigger": "unknown",
-        "actorId": origin.get("sub").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
-    });
-    if let (Some(session), Some(map)) = (origin.get("sessionId"), out.as_object_mut()) {
-        map.insert("sessionId".into(), session.clone());
+    // Members in the order of `originOf`'s literal.
+    let mut out = serde_json::Map::new();
+    out.insert("locality".into(), (if remote { "remote" } else { "local" }).into());
+    out.insert("trigger".into(), "unknown".into());
+    if let Some(session) = origin.get("sessionId") {
+        out.insert("sessionId".into(), session.clone());
     }
-    out
+    out.insert(
+        "actorId".into(),
+        origin.get("sub").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
+    );
+    Value::Object(out)
 }
