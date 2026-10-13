@@ -77,7 +77,7 @@ The cost is the props field. `SurfaceProps` is an opaque JSON object in the Type
 
 If a native app never wants shell, `ViewerConfig.shell` stays `false` and none of this is linked into its behaviour, though the exports still add their scaffolding to the archive. Task 5 records that size.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -93,7 +93,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/shell-size-before"
 ```
 
-- [ ] **Step 2: Record the decision in the crate's README**
+- [x] **Step 2: Record the decision in the crate's README**
 
 Append to `crates/plugins/shell/README.md`:
 
@@ -110,7 +110,7 @@ Anything that isn't an object is refused with `invalid-input`. The Swift layer a
 helpers over the string and no schema of its own.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/plugins/shell/README.md
