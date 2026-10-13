@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
+use epdf_plugin_i18n::ffi::{I18nConfig, LocalePack};
 use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
@@ -366,4 +367,56 @@ fn without_its_flag_the_shell_plugin_is_not_installed() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     assert!(block_on(host.shell(doc.id)).is_err());
+}
+
+fn en_pack() -> LocalePack {
+    LocalePack {
+        code: "en".into(),
+        name: "English".into(),
+        dir: None,
+        translations: [("hello".to_string(), "Hello".to_string())].into(),
+    }
+}
+
+#[test]
+fn the_i18n_plugin_translates_before_any_document_opens() {
+    let config = ViewerConfig {
+        i18n: Some(I18nConfig {
+            locale: None,
+            fallback_locale: None,
+            locales: vec![en_pack()],
+            lazy_locales: vec![],
+            loader: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let i18n = block_on(host.i18n()).unwrap();
+    assert_eq!(block_on(i18n.t("hello".into(), Default::default(), None)).unwrap(), "Hello");
+}
+
+#[test]
+fn without_its_config_the_i18n_plugin_is_not_installed() {
+    let host = started();
+    assert!(block_on(host.i18n()).is_err());
+}
+
+#[test]
+fn lazy_locales_without_a_loader_fail_to_build() {
+    let config = ViewerConfig {
+        i18n: Some(I18nConfig {
+            locale: None,
+            fallback_locale: None,
+            locales: vec![en_pack()],
+            lazy_locales: vec!["es".into()],
+            loader: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let error = ViewerHost::new(config, Arc::new(Delegate)).err().unwrap();
+    assert!(
+        matches!(&error, ViewerError::Kernel { code: Some(code), .. } if code == "invalid-input"),
+        "{error:?}"
+    );
 }

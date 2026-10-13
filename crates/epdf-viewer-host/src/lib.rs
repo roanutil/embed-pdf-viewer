@@ -28,6 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
@@ -275,6 +276,17 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_shell::SHELL, Some(&document_id))?;
             Ok(ShellHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace i18n capability: there is one per viewer, and it works
+    /// before any document opens. Needs `ViewerConfig.i18n`.
+    pub async fn i18n(&self) -> Result<Arc<I18nHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_i18n::I18N, None)?;
+            Ok(I18nHandle::new(cap, post))
         })
         .await
     }
