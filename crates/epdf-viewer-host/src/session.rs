@@ -95,6 +95,16 @@ impl Session {
                 epdf_plugin_commands::CommandsConfig::default(),
             ));
         }
+        if let Some(actions) = config.actions {
+            // A throwing observer on one of the five hooks goes where the
+            // kernel's own reports go.
+            let observer = delegate.clone();
+            let config =
+                actions.into_plugin_config(Some(Rc::new(move |_hook: &str, error: &Error| {
+                    observer.report(ViewerError::from(error.clone()));
+                })));
+            plugins.push(epdf_plugin_actions::actions_plugin(config));
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {

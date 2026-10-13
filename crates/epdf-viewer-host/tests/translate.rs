@@ -534,3 +534,27 @@ fn a_raw_engine_opens_bytes_given_as_bytes_json() {
     });
     assert!(count > 0);
 }
+
+#[test]
+fn actions_read_becomes_its_wire_kind() {
+    let call = translate("d1", "actions.read", None, &[], 11).unwrap();
+    assert_eq!(call.request, json!({"kind": "actions.read", "jobId": 11, "docId": "d1"}));
+    assert!(matches!(call.decode, Decode::Result));
+}
+
+#[test]
+fn the_actions_namespace_is_present() {
+    assert!(maps("actions"));
+    assert!(maps("actions.read"));
+}
+
+#[test]
+fn forms_submit_stays_unmapped_so_submits_reach_the_handler() {
+    assert!(!maps("forms.submit"));
+}
+
+#[test]
+fn a_namespace_is_not_a_prefix_match() {
+    assert!(!maps("act"));
+    assert!(!maps("actions.write"));
+}

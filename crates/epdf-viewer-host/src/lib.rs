@@ -28,6 +28,7 @@ use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
@@ -361,6 +362,16 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_commands::COMMANDS, None)?;
             Ok(CommandsHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The action engine of an open document. Needs `ViewerConfig.actions`.
+    pub async fn actions(&self, document_id: String) -> Result<Arc<ActionsHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_actions::ACTIONS, Some(&document_id))?;
+            Ok(ActionsHandle::new(cap, post))
         })
         .await
     }

@@ -91,6 +91,7 @@ pub const PATHS: &[&str] = &[
     "pages.insert",
     "pages.insertBlank",
     "pages.extract",
+    "actions.read",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
@@ -125,6 +126,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insert" => ("pages.insert", Decode::PageMutation),
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
+        "actions.read" => ("actions.read", Decode::Result),
         _ => return None,
     })
 }

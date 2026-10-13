@@ -106,7 +106,7 @@ actions has no requirements and no optional dependencies; stage, link, annotatio
 
 Members, from `crates/plugins/actions/src/harness.rs` `MEMBERS` (27). Task 1: `getPolicy` (`policy`), `updatePolicy`, `isScriptingEnabled`, `execute`, `canExecute`, `executeNamed`, `getActionTree` (`action_tree`), `dispatch`, `canDispatch`, `prepareClose`, and `onExecuted`, `onDiagnostic`, `onScriptDiagnostic`, `onScriptError`, `onOpenSequenceCompleted` (all in `subscribe`). Task 2: `registerExecutor`, `setSubmitHandler`, `setUiAdapter`, `runDocumentVerb`. Not exported (Decisions): `registerAnnotCommitSink`, `registerFormCommitSink`, `registerSubmitResolver`, `scriptRealm`, `createDetachedScriptRealm`, `surfaceScriptResult`, `surfaceScriptCommit`, `reportPageState`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-actions -b research/swift-actions research/swift-plugins
@@ -117,7 +117,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Fetch PDFium first as `platforms/apple/README.md` describes. Keep the size for the final commit message.
 
-- [ ] **Step 2: Add the feature**
+- [x] **Step 2: Add the feature**
 
 `crates/plugins/actions/Cargo.toml`, under `[features]`:
 
@@ -164,7 +164,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Derive the compatible contract types in place**
+- [x] **Step 3: Derive the compatible contract types in place**
 
 In `crates/plugins/actions/src/contract.rs`, add `#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]` under the `#[derive(...)]` line of each of these enums, all of whose variants carry only other types in this list: `ActionOrigin`, `DocumentTriggerEvent`, `PdfAnnotationEventKind`, `PageEventKind`, `PdfFieldEventKind`, `ActionTriggerEvent`, `ActionNodeStatus`, `ActionDiagnosticCode`, `ActionResultStatus`, `ActionPolicyDecision`, `OpenSequence`, `ScriptPhase`, `DocumentVerb`.
 
@@ -200,7 +200,7 @@ done
 
 Expected: no `collision:` line. A collision means the other crate exports the same uniffi name (check that it has `uniffi::Record`/`uniffi::Enum` on it); mirror the actions type in `ffi.rs` under an `Action`-prefixed name instead of deriving it in place.
 
-- [ ] **Step 4: Write the failing handle tests**
+- [x] **Step 4: Write the failing handle tests**
 
 Create `crates/plugins/actions/tests/ffi.rs`:
 
@@ -416,12 +416,12 @@ fn closing_the_document_ends_its_subscriptions() {
 
 `spec`, `named` and `page` are `pub` so Tasks 2 and 5's test files can copy them; integration test files don't share modules, so each later file repeats them verbatim.
 
-- [ ] **Step 5: Run the tests to verify they fail**
+- [x] **Step 5: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_actions::ffi`".
 
-- [ ] **Step 6: Write the objects and mirrors in `crates/plugins/actions/src/ffi.rs`**
+- [x] **Step 6: Write the objects and mirrors in `crates/plugins/actions/src/ffi.rs`**
 
 ```rust
 //! The actions plugin through uniffi: the engine's action trees as opaque
@@ -1076,7 +1076,7 @@ Create `crates/plugins/actions/src/ffi/ports.rs` and `crates/plugins/actions/src
 
 `epdf_kernel::is_undefined` is the sentinel test `crates/epdf-kernel/src/lib.rs:55` exports. The kernel's `PageRef` is `Copy`, which the `(*page).into()` conversions rely on.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi`
 Expected: PASS, 8 tests.
@@ -1084,7 +1084,7 @@ Expected: PASS, 8 tests.
 Run: `cargo test -p epdf-plugin-actions`
 Expected: the conformance vectors and `external_uri` still pass without `uniffi`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/actions
@@ -1102,7 +1102,7 @@ git commit -m "Export the actions plugin's dispatcher through uniffi"
 - Consumes also: umbrella Task 0c's `epdf_ffi::{ForeignSettle, HostError, RegistrationHandle}`.
 - Produces: foreign traits `ActionExecutor` (`execute(node, context, completion)`), `ActionUiHandler` (`open_uri`, `print`, `alert`, `goto_page`, each `-> Result<(), HostError>`), `ActionSubmitHandler` (`submit(request) -> Result<(), HostError>`), `DocumentVerbOperation` (`run(completion)`). Objects `ActionExecutorCompletion` (`executed()`, `inert(reason)`, `failed(error)`), `DocumentVerbCompletion` (`finish()`, `fail(detail)`); registrations answer umbrella Task 0c's `RegistrationHandle`. Records `ActionUiSupport { alert, goto_page }`, `ActionUriOptions`, `ActionAlertOptions`, `ActionSubmitRequest`, `FormSubmissionEntry`, `FormSubmissionValue`. New `ActionsHandle` methods: `register_executor(action_type, executor) -> Arc<RegistrationHandle>`, `set_ui_adapter(handler: Option<Arc<dyn ActionUiHandler>>, support) -> Arc<RegistrationHandle>`, `set_submit_handler(handler: Option<Arc<dyn ActionSubmitHandler>>) -> Arc<RegistrationHandle>`, `run_document_verb(verb, operation) -> ()`.
 
-- [ ] **Step 1: Write the failing port tests**
+- [x] **Step 1: Write the failing port tests**
 
 Create `crates/plugins/actions/tests/ffi_ports.rs`. Copy `named`, `page`, `spec`, `quiet`, `handle`, `user` and `tree` from `tests/ffi.rs` verbatim (integration tests don't share modules), then:
 
@@ -1350,12 +1350,12 @@ fn a_document_verb_runs_its_operation_between_the_will_and_did_trees() {
 
 `epdf_plugin_actions::ActionSubmitRequest` and `FormSubmissionEntry` are the crate's types (re-exported by `pub use contract::*`); the test module imports the ffi mirror `ActionSubmitRequest` from `ffi::ports`, so the crate one is spelled with its full path.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_ports`
 Expected: FAIL to compile with "unresolved imports `epdf_plugin_actions::ffi::ports::ActionAlertOptions`" (and the other port names).
 
-- [ ] **Step 3: Write `crates/plugins/actions/src/ffi/ports.rs`**
+- [x] **Step 3: Write `crates/plugins/actions/src/ffi/ports.rs`**
 
 ```rust
 //! The application ports as foreign traits: node executors, the UI adapter,
@@ -1682,12 +1682,12 @@ impl ActionsHandle {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_ports`
 Expected: PASS, 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/actions
@@ -1706,7 +1706,7 @@ git commit -m "Add the actions plugin's executor, UI, submit and verb ports as f
 
 Appendix C's `forms.submit` row ("none on the wire, B3 (host submit handler)") is met by Task 2's `ActionSubmitHandler`, not by a route. `NativeEngine::has("forms.submit")` must stay false so `perform.rs` never prefers a document home that doesn't exist; a test pins it.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -1738,12 +1738,12 @@ fn a_namespace_is_not_a_prefix_match() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate actions`
 Expected: FAIL: `actions_read_becomes_its_wire_kind` panics on `unwrap()` of an `unsupported` error, and `the_actions_namespace_is_present` fails its first assertion.
 
-- [ ] **Step 3: Map the path and list it**
+- [x] **Step 3: Map the path and list it**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add to `route`'s match, after the `search.query` arm:
 
@@ -1759,12 +1759,12 @@ and to `PATHS` (umbrella Task 0e), one line in plan order:
 
 `maps` derives namespaces from `PATHS`: `maps("actions")` is true because `actions.read` is listed, and `maps("forms.submit")` stays false because no route or listed path is `forms.submit` or starts with `forms.submit.`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
@@ -1785,7 +1785,7 @@ git commit -m "Map actions.read in the native engine"
 - Consumes: `ActionsHandle`; Task 3's `actions.read`.
 - Produces: `epdf_plugin_actions::ffi::ActionsConfig { policy, triggers, open_sequence, utc_offset_minutes }` with `fn into_plugin_config(self, observer_error: Option<Rc<dyn Fn(&str, &Error)>>) -> crate::ActionsConfig`; `ViewerConfig.actions: Option<ActionsConfig>`; `ViewerHost::actions(document_id) -> Result<Arc<ActionsHandle>, ViewerError>`. Task 5 adds `javascript` to `ActionsConfig`.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1832,12 +1832,12 @@ fn without_its_config_the_actions_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host actions`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_actions`".
 
-- [ ] **Step 3: Write the config record**
+- [x] **Step 3: Write the config record**
 
 Append to `crates/plugins/actions/src/ffi.rs`:
 
@@ -1888,7 +1888,7 @@ impl ActionsConfig {
 
 Move the two new `use` lines to the top of the file with the others.
 
-- [ ] **Step 4: Wire the plugin in**
+- [x] **Step 4: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetically:
 
@@ -1935,12 +1935,12 @@ epdf-plugin-actions = { path = "../plugins/actions", default-features = false, f
     }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS, including the two new tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/actions/src/ffi.rs crates/epdf-viewer-host
@@ -1961,7 +1961,7 @@ git commit -m "Install the actions plugin from ViewerConfig and expose ViewerHos
 
 The program the sandbox hands the engine is the one `QuickJsSandbox.ts` `invoke` evaluates, wrapped in `JSON.stringify` so the engine only has to return a string: `JSON.stringify(globalThis.__acrojsRun(<source as JSON>,<input as JSON>,{"maxEffects":N}))`. The validation after it follows that file line by line: a thrown evaluation is `invalid-output` (or `budget` when it timed out), output that doesn't decode as `ScriptOutput` is `invalid-output`, a script error naming a resource limit is `budget`, and output past `maxOutputBytes` is `budget`. Each of those poisons the realm.
 
-- [ ] **Step 1: Write the failing sandbox tests**
+- [x] **Step 1: Write the failing sandbox tests**
 
 Create `crates/plugins/actions/tests/ffi_sandbox.rs`. Copy `named`, `page`, `spec` and `user` from `tests/ffi.rs`, then:
 
@@ -2220,12 +2220,12 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
 
 `JavaScriptConfig` and `ScriptSandbox`'s `peek` are public (`crates/plugins/actions/src/contract.rs`, `crates/epdf-kernel/src/rt.rs`). The `Promise` from `sandbox_factory` is created settled, so `peek` works without running the kernel runtime.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_sandbox`
 Expected: FAIL to compile with "unresolved imports `epdf_plugin_actions::ffi::sandbox::ScriptEngine`".
 
-- [ ] **Step 3: Write `crates/plugins/actions/src/ffi/sandbox.rs`**
+- [x] **Step 3: Write `crates/plugins/actions/src/ffi/sandbox.rs`**
 
 ```rust
 //! JavaScript through a foreign engine. `ForeignSandbox` implements
@@ -2605,7 +2605,7 @@ pub fn check_script_engine(
 
 `ScriptEventOutput`'s fields (`rc`, `value`, `change`, `sel_start`, `sel_end`) are the ones `ScriptOutput::empty` fills in `crates/plugins/acrojs/src/types.rs`; `ScriptEventInput`'s `target`, `value`, `change`, `sel_start` and `sel_end` are `Option`s there.
 
-- [ ] **Step 4: Add `javascript` to `ActionsConfig`**
+- [x] **Step 4: Add `javascript` to `ActionsConfig`**
 
 In `crates/plugins/actions/src/ffi.rs`, add the field to `ActionsConfig` after `open_sequence`:
 
@@ -2620,7 +2620,7 @@ In `crates/plugins/actions/src/ffi.rs`, add the field to `ActionsConfig` after `
 
 In `crates/epdf-viewer-host/tests/viewer_host.rs`, add `javascript: None,` to the `ActionsConfig` literal in `with_actions`.
 
-- [ ] **Step 5: Add a host test that scripting turns on**
+- [x] **Step 5: Add a host test that scripting turns on**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -2669,7 +2669,7 @@ fn an_engine_turns_scripting_on() {
 }
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_sandbox`
 Expected: PASS, 9 tests.
@@ -2677,7 +2677,7 @@ Expected: PASS, 9 tests.
 Run: `cargo test -p epdf-plugin-actions --features uniffi && cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/actions crates/epdf-viewer-host/tests/viewer_host.rs
@@ -2695,7 +2695,7 @@ git commit -m "Run PDF JavaScript through a foreign ScriptEngine behind a Rust s
 - Consumes: the generated handle, objects, records and port protocols.
 - Produces: Swift `ActionsCapability` (one method per handle member), `PDFViewer.actions(for:)`, `PdfActionTree.decode(json:)`, `ClosureDocumentVerb` (internal), `ActionsConfig.forCurrentTimeZone(...)`.
 
-- [ ] **Step 1: Add the fixture**
+- [x] **Step 1: Add the fixture**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), after the last plan's lines:
 
@@ -2703,7 +2703,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   tooling/engine-conformance/fixtures/document_actions.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ActionsTests.swift`:
 
@@ -2828,7 +2828,7 @@ final class RecordingExecutor: ActionExecutor, @unchecked Sendable {
 
 No member takes a `CancelToken` (Decisions), so there's no cancellation test.
 
-- [ ] **Step 3: Rebuild and run the tests to verify they fail**
+- [x] **Step 3: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -2837,7 +2837,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find type 'ActionsCapability' in scope".
 
-- [ ] **Step 4: Write `Plugins/Actions.swift`**
+- [x] **Step 4: Write `Plugins/Actions.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3048,7 +3048,7 @@ extension PDFViewer {
 
 If the generated protocol spellings differ (`openUri(uri:options:)`, `gotoPage(page:context:)`, `nodeType()`), match `Sources/EmbedPDFBindings/epdf_plugin_actions.swift`.
 
-- [ ] **Step 5: Rebuild and run the tests to verify they pass**
+- [x] **Step 5: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3057,7 +3057,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 7 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests
@@ -3074,7 +3074,7 @@ git commit -m "Add EmbedPDF's ActionsCapability"
 - Consumes: generated `ScriptEngine`, `ScriptEngineFactory`, `ScriptEvaluation`, `checkScriptEngine(factory:source:)`, `ScriptCheck`.
 - Produces: `JavaScriptCoreEngineFactory` (public, `ScriptEngineFactory`), `ScriptEngineCheck.run(_:source:)` (a `throws(PDFError)` wrapper over `checkScriptEngine`).
 
-- [ ] **Step 1: Write the failing engine tests**
+- [x] **Step 1: Write the failing engine tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/JavaScriptCoreEngineTests.swift`:
 
@@ -3120,7 +3120,7 @@ extension BaseSuite {
 
 `aDeepRecursionIsABudgetFailure` relies on JSC's "Maximum call stack size exceeded." reaching the prelude's catch and Task 5's `is_resource_error`. If JSC exhausts the 50 ms first on the simulator, it still lands on `.budget`, through the timeout instead.
 
-- [ ] **Step 2: Rebuild and run the tests to verify they fail**
+- [x] **Step 2: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3129,7 +3129,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find 'ScriptEngineCheck' in scope".
 
-- [ ] **Step 3: Write `Plugins/JavaScriptCoreEngine.swift`**
+- [x] **Step 3: Write `Plugins/JavaScriptCoreEngine.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3231,7 +3231,7 @@ public enum ScriptEngineCheck {
 
 `checkScriptEngine` is synchronous and blocks for up to the budget, so `run` moves it off the caller's executor. `dispose()` marks the engine abandoned before clearing the context, so a dispose that follows a timeout (Task 5's `poisoned`) returns at once even though the queue is still busy.
 
-- [ ] **Step 4: Rebuild and run the tests to verify they pass**
+- [x] **Step 4: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3240,7 +3240,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/JavaScriptCoreEngine.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/JavaScriptCoreEngineTests.swift
@@ -3254,11 +3254,11 @@ git commit -m "Add a JavaScriptCore ScriptEngine for PDF JavaScript"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `actions` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan order.
 
-- [ ] **Step 2: Add the README row and the caveat**
+- [x] **Step 2: Add the README row and the caveat**
 
 ```markdown
 | actions | `ActionsCapability`, `JavaScriptCoreEngineFactory` | `actions: .forCurrentTimeZone(javascript: ActionsJavaScriptConfig(enabled: true, engine: JavaScriptCoreEngineFactory()))` | `2026-10-06-swift-plugins/15-actions.md` |
@@ -3273,11 +3273,11 @@ Under the table:
 > the form and annotation plugins (plans 05 and 06), whose engine paths the script world reads.
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` Appendix A §A.4, change `**actions** (D).` to `**actions** (D), delivered by 2026-10-06-swift-plugins/15-actions.md (application members only; see its Decisions).` and leave the rest alone. In Appendix C, leave the rows as they are; plan 15's Task 3 is the receipt for `actions.read`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-actions --features uniffi
@@ -3293,7 +3293,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Expected: every command passes. Kotlin generation is where a field named like a Kotlin keyword fails; `ScriptExecutionError.message` is a record field, not an exception's, so it generates.
 
-- [ ] **Step 5: Commit, with the archive sizes**
+- [x] **Step 5: Commit, with the archive sizes**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

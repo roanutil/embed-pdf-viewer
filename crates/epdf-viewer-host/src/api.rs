@@ -10,6 +10,7 @@ use std::sync::Arc;
 use epdf_ffi::{PluginErrorInfo, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::{DocInfo, DocStatus};
+use epdf_plugin_actions::ffi::ActionsConfig;
 use epdf_plugin_i18n::ffi::I18nConfig;
 use epdf_plugin_interaction::ffi::FeedbackConfig;
 use epdf_plugin_render::ffi::RenderConfig;
@@ -58,6 +59,10 @@ pub struct ViewerConfig {
     /// definitions through `ViewerHost::commands()`.
     #[uniffi(default = false)]
     pub commands: bool,
+    /// Install `actionsPlugin(config)`: the PDF action engine, a dispatcher
+    /// per document.
+    #[uniffi(default = None)]
+    pub actions: Option<ActionsConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]

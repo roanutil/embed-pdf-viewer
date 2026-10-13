@@ -3,6 +3,11 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::PageRef;
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
+use epdf_plugin_actions::ffi::sandbox::{
+    ActionsJavaScriptConfig, ScriptEngine, ScriptEngineFactory, ScriptEvaluation,
+};
+use epdf_plugin_actions::ffi::{ActionTreeSource, ActionTrigger};
+use epdf_plugin_actions::{ActionNodeStatus, DocumentTriggerEvent, OpenSequence};
 use epdf_plugin_commands::ffi::{CommandDefinition, CommandExecuteResult, CommandPanel};
 use epdf_plugin_i18n::ffi::{I18nConfig, LocalePack};
 use epdf_plugin_metadata::ffi::MetadataPatch;
@@ -763,4 +768,88 @@ fn a_panel_command_toggles_the_shell_surface() {
     block_on(commands.execute("panel:search".into(), Some(doc.id.clone()), None)).unwrap();
     let shell = block_on(host.shell(doc.id)).unwrap();
     assert!(block_on(shell.is_open("search".into())).unwrap());
+}
+
+const DOCUMENT_ACTIONS: &str = "tooling/engine-conformance/fixtures/document_actions.pdf";
+
+fn with_actions() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: None,
+            utc_offset_minutes: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_actions_plugin_reads_the_catalog_through_the_native_engine() {
+    let host = with_actions();
+    let doc =
+        block_on(host.open_document(test_support::fixture(DOCUMENT_ACTIONS), options())).unwrap();
+    let actions = block_on(host.actions(doc.id)).unwrap();
+    let open = block_on(actions.action_tree(ActionTreeSource::Document { event: None })).unwrap();
+    assert_eq!(open.and_then(|t| t.root_type()).as_deref(), Some("javascript"));
+    assert!(!block_on(actions.is_scripting_enabled()).unwrap());
+    // Scripting is off, so the will-close script is recognized and inert.
+    let result = block_on(
+        actions.dispatch(ActionTrigger::Document { event: DocumentTriggerEvent::WillClose }),
+    )
+    .unwrap();
+    assert_eq!(result.steps.len(), 1);
+    assert_eq!(result.steps[0].result.nodes[0].status, ActionNodeStatus::Inert);
+}
+
+#[test]
+fn without_its_config_the_actions_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.actions(doc.id)).is_err());
+}
+
+struct ProbeOnly;
+
+impl ScriptEngine for ProbeOnly {
+    fn evaluate(&self, _program: String, _limit: u32) -> ScriptEvaluation {
+        ScriptEvaluation::Value { json: "\"function\"".into() }
+    }
+    fn dispose(&self) {}
+}
+
+impl ScriptEngineFactory for ProbeOnly {
+    fn create(&self) -> Result<Arc<dyn ScriptEngine>, epdf_ffi::HostError> {
+        Ok(Arc::new(ProbeOnly))
+    }
+}
+
+#[test]
+fn an_engine_turns_scripting_on() {
+    let config = ViewerConfig {
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: Some(ActionsJavaScriptConfig {
+                enabled: true,
+                engine: Some(Arc::new(ProbeOnly)),
+                budget: None,
+                max_script_nodes_per_dispatch: None,
+            }),
+            utc_offset_minutes: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let doc =
+        block_on(host.open_document(test_support::fixture(DOCUMENT_ACTIONS), options())).unwrap();
+    let actions = block_on(host.actions(doc.id)).unwrap();
+    assert!(block_on(actions.is_scripting_enabled()).unwrap());
 }
