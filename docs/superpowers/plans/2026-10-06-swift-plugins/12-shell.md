@@ -1165,7 +1165,7 @@ git commit -m "Add the Swift shell capability"
 
 Append `shell` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2: README row**
+- [x] **Step 2: README row**
 
 In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 
@@ -1173,11 +1173,11 @@ In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` §A.4, change `**shell** (D).` to `**shell** (D), delivered by 12-shell.md, which also records why it ships.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-shell --features uniffi
@@ -1192,7 +1192,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive size**
+- [x] **Step 5: Commit, with the archive size**
 
 ```bash
 before=$(cat "$TMPDIR/shell-size-before")
