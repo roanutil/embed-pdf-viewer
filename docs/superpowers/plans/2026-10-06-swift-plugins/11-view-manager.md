@@ -606,7 +606,7 @@ git commit -m "Export the view-manager plugin through uniffi"
 - Consumes: `ViewManagerHandle::new` (Task 1).
 - Produces: `ViewerConfig.view_manager: bool` (default `false`), `ViewerHost::view_manager() -> Result<Arc<ViewManagerHandle>, ViewerError>`, which takes no document id.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -652,12 +652,12 @@ fn without_its_flag_the_view_manager_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host view_manager`
 Expected: FAIL to compile, `no field view_manager on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -698,12 +698,12 @@ epdf-plugin-view-manager = { path = "../plugins/view-manager", default-features 
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

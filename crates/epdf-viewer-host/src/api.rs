@@ -31,6 +31,10 @@ pub struct ViewerConfig {
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]
     pub page_edit: bool,
+    /// Install `viewManagerPlugin()`: workspace panes that partition the
+    /// open documents (split views and tab strips).
+    #[uniffi(default = false)]
+    pub view_manager: bool,
     /// Install `shellPlugin()`: which named surfaces and menus are open, per
     /// document. The app still owns their UI.
     #[uniffi(default = false)]

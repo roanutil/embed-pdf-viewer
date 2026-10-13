@@ -457,6 +457,47 @@ fn a_duplicate_with_an_unknown_anchor_leaves_nothing_in_the_host_table() {
     assert_eq!(block_on(host.host_table_entries()).unwrap(), before);
 }
 
+fn with_view_manager() -> Arc<ViewerHost> {
+    let config = ViewerConfig { view_manager: true, ..Default::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_first_open_creates_the_default_pane() {
+    let host = with_view_manager();
+    let vm = block_on(host.view_manager()).unwrap();
+    assert!(block_on(vm.panes()).unwrap().is_empty(), "no pane before a document opens");
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let panes = block_on(vm.panes()).unwrap();
+    assert_eq!(panes.len(), 1);
+    assert_eq!(panes[0].id, "pane-1");
+    assert_eq!(panes[0].document_ids, [doc.id.clone()]);
+    assert_eq!(block_on(vm.focused_pane_id()).unwrap().as_deref(), Some("pane-1"));
+}
+
+#[test]
+fn a_second_document_splits_into_its_own_pane() {
+    let host = with_view_manager();
+    let vm = block_on(host.view_manager()).unwrap();
+    let report =
+        block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+            .unwrap();
+    let colors =
+        block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+            .unwrap();
+    let pane = block_on(vm.split_pane(colors.id.clone())).unwrap();
+    assert_eq!(block_on(vm.pane_of_document(colors.id)).unwrap(), Some(pane));
+    assert_eq!(block_on(vm.pane_of_document(report.id)).unwrap().as_deref(), Some("pane-1"));
+}
+
+#[test]
+fn without_its_flag_the_view_manager_is_not_installed() {
+    let host = started();
+    assert!(block_on(host.view_manager()).is_err());
+}
 
 fn with_shell() -> Arc<ViewerHost> {
     let config = ViewerConfig { shell: true, ..Default::default() };
