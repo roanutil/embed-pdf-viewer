@@ -12,5 +12,10 @@ crate-type = ["rlib"]
 serde = { version = "1", features = ["derive", "rc"] }
 # `float_roundtrip` because the vectors are compared value for value, and the
 # default parser is not correctly rounded (crates/test-support/src/lib.rs).
-serde_json = { version = "1", features = ["float_roundtrip"] }
+# `preserve_order` because a JS object keeps its members in insertion order,
+# and the state tree is printed that way.
+serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
+# The document registry and the slice map keep insertion order, as the
+# TypeScript's objects do.
+indexmap = { version = "2", features = ["serde"] }
 base64 = "0.22"

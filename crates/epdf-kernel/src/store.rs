@@ -9,9 +9,9 @@
 
 use std::any::Any;
 use std::cell::{Cell, RefCell};
-use std::collections::BTreeMap;
 use std::rc::{Rc, Weak};
 
+use indexmap::IndexMap;
 use serde_json::Value;
 
 use crate::action::Action;
@@ -183,7 +183,7 @@ impl SliceLease {
         let current =
             store.leases.borrow().get(&self.0.key).is_some_and(|l| Rc::ptr_eq(&l.0, &self.0));
         if current {
-            store.leases.borrow_mut().remove(&self.0.key);
+            store.leases.borrow_mut().shift_remove(&self.0.key);
             store.bump();
             store.emit_change();
         }
@@ -214,7 +214,9 @@ impl SliceLease {
 pub struct Store {
     this: Weak<Store>,
     core: RefCell<Rc<CoreState>>,
-    leases: RefCell<BTreeMap<String, SliceLease>>,
+    /// In lease order, as `store.ts`'s `leases` map and `states` object
+    /// keep it: a revoke removes the key, a new lease goes last.
+    leases: RefCell<IndexMap<String, SliceLease>>,
     lease_counter: Cell<u64>,
     change: Listeners<ChangeListener>,
     action: Listeners<ActionEntry>,
@@ -240,7 +242,7 @@ impl Store {
         Rc::new_cyclic(|this| Store {
             this: this.clone(),
             core: RefCell::new(Rc::new(CoreState::default())),
-            leases: RefCell::new(BTreeMap::new()),
+            leases: RefCell::new(IndexMap::new()),
             lease_counter: Cell::new(0),
             change: Listeners::default(),
             action: Listeners::default(),

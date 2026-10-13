@@ -497,7 +497,7 @@ impl Inner {
             let next = next_id.to_string();
             self.set_core(
                 |core| {
-                    core.pending.remove(&previous_id);
+                    core.pending.shift_remove(&previous_id);
                     core.pending.insert(next.clone(), PendingMeta { id: next.clone(), ..slot });
                     for id in core.order.iter_mut() {
                         if *id == previous_id {
@@ -676,8 +676,8 @@ impl Inner {
         let next_active = Self::next_active_document(&core, id);
         self.set_core(
             |core| {
-                core.pending.remove(id);
-                core.documents.remove(id);
+                core.pending.shift_remove(id);
+                core.documents.shift_remove(id);
                 core.order.retain(|other| other != id);
                 core.active_id = next_active;
             },
@@ -699,7 +699,7 @@ impl Inner {
         self.set_core(
             |core| {
                 core.documents.insert(id.clone(), meta);
-                core.pending.remove(&id);
+                core.pending.shift_remove(&id);
             },
             &core_action(CORE_DOCUMENT_ADDED),
         );

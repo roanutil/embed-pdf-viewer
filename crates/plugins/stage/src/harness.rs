@@ -241,6 +241,11 @@ fn visible_page_json(h: &Harness, page: &VisiblePage) -> Value {
         for (name, value) in members {
             t.insert(name.into(), value);
         }
+        // `cssMatrix` follows the six methods in `createPageTransform`'s
+        // literal (`packages/core/geometry/src/index.ts`).
+        if let Some(css) = t.shift_remove("cssMatrix") {
+            t.insert("cssMatrix".into(), css);
+        }
     }
     out
 }
@@ -702,9 +707,19 @@ pub fn functions() -> FunctionTable {
             let dest: PdfDestination = arg(a, 0)?;
             let layout: PageLayout = arg(a, 1)?;
             let bbox: Option<Rect> = opt(a, 2)?;
-            destination_to_reveal(&dest, &layout, bbox)
+            let mut out = destination_to_reveal(&dest, &layout, bbox)
                 .map(|r| to_value(&r))
-                .map_err(|e| Error::new(e.to_string()))
+                .map_err(|e| Error::new(e.to_string()))?;
+            // `destination.ts` builds the /XYZ options as `{ rect, anchor,
+            // zoom }` and the other kinds as `{ rect, zoom, anchor }`, the
+            // struct's order.
+            if matches!(dest, PdfDestination::Xyz { .. })
+                && let Some(options) = out.get_mut("options").and_then(Value::as_object_mut)
+                && let Some(zoom) = options.shift_remove("zoom")
+            {
+                options.insert("zoom".into(), zoom);
+            }
+            Ok(out)
         }),
         ("settingsEqual", |a| {
             let x: StageSettings = arg(a, 0)?;
