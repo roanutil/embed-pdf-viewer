@@ -1706,7 +1706,7 @@ git commit -m "Add the actions plugin's executor, UI, submit and verb ports as f
 
 Appendix C's `forms.submit` row ("none on the wire, B3 (host submit handler)") is met by Task 2's `ActionSubmitHandler`, not by a route. `NativeEngine::has("forms.submit")` must stay false so `perform.rs` never prefers a document home that doesn't exist; a test pins it.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -1738,12 +1738,12 @@ fn a_namespace_is_not_a_prefix_match() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate actions`
 Expected: FAIL: `actions_read_becomes_its_wire_kind` panics on `unwrap()` of an `unsupported` error, and `the_actions_namespace_is_present` fails its first assertion.
 
-- [ ] **Step 3: Map the path and list it**
+- [x] **Step 3: Map the path and list it**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add to `route`'s match, after the `search.query` arm:
 
@@ -1759,12 +1759,12 @@ and to `PATHS` (umbrella Task 0e), one line in plan order:
 
 `maps` derives namespaces from `PATHS`: `maps("actions")` is true because `actions.read` is listed, and `maps("forms.submit")` stays false because no route or listed path is `forms.submit` or starts with `forms.submit.`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
