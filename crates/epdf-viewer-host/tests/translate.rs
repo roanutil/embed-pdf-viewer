@@ -558,3 +558,37 @@ fn a_namespace_is_not_a_prefix_match() {
     assert!(!maps("act"));
     assert!(!maps("actions.write"));
 }
+
+#[test]
+fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
+    let call = translate("d1", "page.annotations.list", Some(5), &[], 11).unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "annotations.listRawPage", "jobId": 11, "docId": "d1", "pageObjectNumber": 5 })
+    );
+    assert!(matches!(call.decode, Decode::Annotations));
+    let error = translate("d1", "page.annotations.list", None, &[], 12).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
+fn a_listed_annotations_ref_and_page_arrive_nested() {
+    let json = r#"{"result":{"annotations":[{"ref":{"kind":"objectNumber","pageObjectNumber":3,"annotObjectNumber":17},"page":3}]}}"#;
+    let call = translate("d1", "page.annotations.list", Some(3), &[], 13).unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap().value;
+    let page3 = json!({ "kind": "objectNumber", "pageObjectNumber": 3 });
+    assert_eq!(
+        decoded["annotations"][0]["ref"],
+        json!({ "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 17 })
+    );
+    assert_eq!(decoded["annotations"][0]["page"], page3);
+}
+
+#[test]
+fn a_form_field_ref_is_not_mistaken_for_an_annotation_ref() {
+    let mut value = json!({ "ref": { "kind": "objectNumber", "fieldObjectNumber": 9 } });
+    let before = value.clone();
+    epdf_viewer_host::translate::nest_refs(&mut value);
+    epdf_viewer_host::translate::flatten_refs(&mut value);
+    assert_eq!(value, before);
+}

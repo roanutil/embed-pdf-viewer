@@ -454,7 +454,7 @@ git commit -m "Add the shared annotation-core link records to epdf-ffi"
 
 The kernel spells an annotation ref `{kind, page: {kind: "objectNumber", pageObjectNumber}, annotObjectNumber}` (the vectors, `annotation-crud.json`). The host spells it `{kind, pageObjectNumber, annotObjectNumber}`. Link reads refs the kernel's way, so the list's answer is nested here. The rewrite recognizes a ref by `kind` in `objectNumber | nm | index` beside one of `annotObjectNumber | nm | index`, so a `FormFieldRef` (`kind: objectNumber` beside `fieldObjectNumber`) is left alone.
 
-- [ ] **Step 1: Write the failing translation test**
+- [x] **Step 1: Write the failing translation test**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -496,17 +496,17 @@ fn a_form_field_ref_is_not_mistaken_for_an_annotation_ref() {
 
 `answer` is the existing helper in `tests/translate.rs` that wraps JSON in a `HostResponse`.
 
-- [ ] **Step 2: Confirm the fixture constant**
+- [x] **Step 2: Confirm the fixture constant**
 
 Run: `grep -n 'pub const FEATURES' crates/test-support/src/lib.rs`
 Expected: one hit (umbrella Task 0f).
 
-- [ ] **Step 3: Run them to verify the translation test fails**
+- [x] **Step 3: Run them to verify the translation test fails**
 
 Run: `cargo test -p epdf-viewer-host --test translate annotation`
 Expected: FAIL, `unwrap()` on an `unsupported` error.
 
-- [ ] **Step 4: Map the path**
+- [x] **Step 4: Map the path**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add a `Decode` variant:
 
@@ -590,12 +590,12 @@ pub fn nest_refs(value: &mut Value) {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
