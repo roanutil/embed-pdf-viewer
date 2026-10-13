@@ -441,6 +441,7 @@ dependencies = [
 name = "epdf-ffi"
 version = "0.0.0"
 dependencies = [
+ "epdf-annotation-core",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-stage-core",
@@ -589,15 +590,18 @@ name = "epdf-plugin-link"
 version = "0.0.0"
 dependencies = [
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
  "epdf-plugin-stage",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -846,6 +850,7 @@ dependencies = [
  "epdf-plugin-commands",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
+ "epdf-plugin-link",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
  "epdf-plugin-render",

@@ -77,7 +77,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/LinkTests.swift
 - Consumes: `epdf_annotation_core::{PageRef, PdfDestination, PdfLinkTarget, AnnotationRef, RevisionToken, Nullable}` (`crates/plugins/annotation-core/src/types.rs`, `js.rs`).
 - Produces: `epdf_ffi::{PdfLinkTarget, PdfDestination, AnnotationRef, AnnotationRevisionToken}` with `From<epdf_ffi::PdfLinkTarget> for epdf_annotation_core::PdfLinkTarget`, `From<&epdf_annotation_core::PdfLinkTarget> for epdf_ffi::PdfLinkTarget`, the same pair for `PdfDestination`, `TryFrom<&epdf_annotation_core::AnnotationRef> for epdf_ffi::AnnotationRef` (an object number or index that isn't a whole `u32` is `invalid-state`), `From<epdf_ffi::AnnotationRef> for epdf_annotation_core::AnnotationRef`, and `From` both ways between `epdf_ffi::PageRef` and `epdf_annotation_core::PageRef`. Plan 05 extends this file, and converts owned values, so each conversion also has a by-value form, plus `From` both ways between `AnnotationRevisionToken` and the core's `RevisionToken`. These four names are final: plans 05 to 16 use them as written here.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-link -b research/swift-link research/swift-plugins
@@ -86,12 +86,12 @@ cd .claude/worktrees/swift-link
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes.
 
-- [ ] **Step 2: Confirm nothing has written these records yet**
+- [x] **Step 2: Confirm nothing has written these records yet**
 
 Run: `grep -n 'pub enum PdfLinkTarget\|pub enum AnnotationRef' crates/epdf-ffi/src/*.rs`
 Expected: no output. This plan owns them (umbrella Shared records); plan 05 waits for it.
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 Add `epdf-annotation-core = { path = "../plugins/annotation-core", default-features = false }` to `[dependencies]` in `crates/epdf-ffi/Cargo.toml`. Then `crates/epdf-ffi/tests/annotation.rs`:
 
@@ -168,12 +168,12 @@ fn an_annotation_ref_with_a_fractional_number_is_invalid_state() {
 
 `epdf-ffi`'s dev-dependencies need `serde_json`; add `serde_json = "1"` under `[dev-dependencies]` if it isn't there.
 
-- [ ] **Step 4: Run it to verify it fails**
+- [x] **Step 4: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test annotation`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::AnnotationRef`, ...".
 
-- [ ] **Step 5: Write `annotation.rs`**
+- [x] **Step 5: Write `annotation.rs`**
 
 ```rust
 //! Records from `epdf-annotation-core` that several plugins' exports
@@ -421,7 +421,7 @@ impl From<AnnotationRevisionToken> for ac::RevisionToken {
 
 If `Nullable` isn't reachable as `epdf_annotation_core::js::Nullable`, find its re-export (`grep -n 'pub use.*Nullable' crates/plugins/annotation-core/src/lib.rs`) and import from there.
 
-- [ ] **Step 6: Export them**
+- [x] **Step 6: Export them**
 
 In `crates/epdf-ffi/src/lib.rs`:
 
@@ -431,12 +431,12 @@ pub mod annotation;
 pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, PdfLinkTarget};
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, the five `annotation` tests and every existing one.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/epdf-ffi
@@ -454,7 +454,7 @@ git commit -m "Add the shared annotation-core link records to epdf-ffi"
 
 The kernel spells an annotation ref `{kind, page: {kind: "objectNumber", pageObjectNumber}, annotObjectNumber}` (the vectors, `annotation-crud.json`). The host spells it `{kind, pageObjectNumber, annotObjectNumber}`. Link reads refs the kernel's way, so the list's answer is nested here. The rewrite recognizes a ref by `kind` in `objectNumber | nm | index` beside one of `annotObjectNumber | nm | index`, so a `FormFieldRef` (`kind: objectNumber` beside `fieldObjectNumber`) is left alone.
 
-- [ ] **Step 1: Write the failing translation test**
+- [x] **Step 1: Write the failing translation test**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -496,17 +496,17 @@ fn a_form_field_ref_is_not_mistaken_for_an_annotation_ref() {
 
 `answer` is the existing helper in `tests/translate.rs` that wraps JSON in a `HostResponse`.
 
-- [ ] **Step 2: Confirm the fixture constant**
+- [x] **Step 2: Confirm the fixture constant**
 
 Run: `grep -n 'pub const FEATURES' crates/test-support/src/lib.rs`
 Expected: one hit (umbrella Task 0f).
 
-- [ ] **Step 3: Run them to verify the translation test fails**
+- [x] **Step 3: Run them to verify the translation test fails**
 
 Run: `cargo test -p epdf-viewer-host --test translate annotation`
 Expected: FAIL, `unwrap()` on an `unsupported` error.
 
-- [ ] **Step 4: Map the path**
+- [x] **Step 4: Map the path**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add a `Decode` variant:
 
@@ -590,12 +590,12 @@ pub fn nest_refs(value: &mut Value) {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -614,7 +614,7 @@ git commit -m "Map page.annotations.list to the native engine's listRawPage, ref
 
 That's the 13 entries of `crates/plugins/link/src/harness.rs` `MEMBERS`, with `onActivated` and `onLoaded` folded into `subscribe`.
 
-- [ ] **Step 1: Add the feature and `lifetime()`**
+- [x] **Step 1: Add the feature and `lifetime()`**
 
 In `crates/plugins/link/Cargo.toml`:
 
@@ -657,7 +657,7 @@ In `crates/plugins/link/src/controller.rs`, in `impl LinkCapability`:
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/link/tests/ffi.rs`:
 
@@ -894,12 +894,12 @@ fn closing_the_document_ends_link_subscriptions() {
 
 `project_links` computes bounds from the DTO's `rect` and the page's crop box (`crates/plugins/link/src/source.rs`), so the expected `(40, 70, 280, 30)` follows from a 600 by 400 crop. If `pdf_to_content_rect` rounds or offsets differently, read its result once and fix the expectation to it, not the other way round.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-link --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_link::ffi`".
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 ```rust
 //! The link plugin through uniffi: a page's links, what each targets, and
@@ -1226,7 +1226,7 @@ impl LinkHandle {
 
 `page_refs` is private in `controller.rs`; make it `pub(crate)` so `ffi.rs` can call it. `epdf_annotation_core::PageRef` converts into `epdf_ffi::PageRef` through Task 1's impls.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-link --features uniffi --test ffi`
 Expected: PASS, 13 tests.
@@ -1234,7 +1234,7 @@ Expected: PASS, 13 tests.
 Run: `cargo test -p epdf-plugin-link`
 Expected: PASS, conformance unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/link
@@ -1250,7 +1250,7 @@ git commit -m "Export the link plugin through uniffi"
 - Consumes: `LinkHandle::new`.
 - Produces: `ViewerConfig.link: bool`; `ViewerHost::link(document_id: String) -> Result<Arc<LinkHandle>, ViewerError>`.
 
-- [ ] **Step 1: Wire it**
+- [x] **Step 1: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -1290,12 +1290,12 @@ epdf-plugin-link = { path = "../plugins/link", default-features = false, feature
     }
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `cargo build -p epdf-viewer-host`
 Expected: builds. Task 5 tests it.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1307,7 +1307,7 @@ git commit -m "Wire the link plugin into the viewer host"
 **Files:**
 - Modify: `crates/epdf-viewer-host/tests/viewer_host.rs`
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1411,12 +1411,12 @@ fn without_its_flag_the_link_plugin_is_not_installed() {
 
 `activating_a_goto_link_moves_the_stage` checks page 3 is visible after the reveal. The destination is `/XYZ 0 400 0` (top of page 3); a 300-point-tall viewport shows at most two 400-point pages at the fitted zoom, so page 3 being visible means the camera moved.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one. If `the_link_plugin_lists_and_activates_links_through_the_host` lists no links, the native engine's `listRawPage` snapshot shape differs from what `project_links` reads (`snap.annotations[*].subtype`, `.target`, `.flags`, `.ref`, `.rect`). Print the raw snapshot from a `translate` test against `features.pdf` before changing either side.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/tests/viewer_host.rs
@@ -1432,12 +1432,12 @@ git commit -m "Test links through the native engine, the stage and a tap"
 - Consumes: generated `LinkHandle` and records.
 - Produces: `LinkCapability` and `PDFViewer.link(for:)`.
 
-- [ ] **Step 1: Confirm `features.pdf` reaches the test bundles**
+- [x] **Step 1: Confirm `features.pdf` reaches the test bundles**
 
 Run: `grep -n 'features.pdf' platforms/apple/build-xcframework.sh`
 Expected: one hit in `FIXTURES` (umbrella Task 0f put it there).
 
-- [ ] **Step 2: Write `Link.swift`**
+- [x] **Step 2: Write `Link.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1542,7 +1542,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 3: Write `LinkTests.swift`**
+- [x] **Step 3: Write `LinkTests.swift`**
 
 ```swift
 import CustomDump
@@ -1616,12 +1616,12 @@ extension BaseSuite {
 
 No link member takes a `CancelToken`, so there's no cancellation test.
 
-- [ ] **Step 4: Run them**
+- [x] **Step 4: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 5 `LinkTests`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Link.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/LinkTests.swift
@@ -1633,21 +1633,21 @@ git commit -m "Add the Swift link capability"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `link` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | link | `LinkCapability` | `interaction: true, link: true` | `2026-10-06-swift-plugins/04-link.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entries delivered**
+- [x] **Step 3: Mark the spec entries delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`).` to `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`), delivered by 04-link.md.` In Appendix C, split the `page.annotations.list` row: `page.annotations.list` is mapped by 04-link.md; `create`, `update` and `delete` stay B2.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-link --features uniffi
@@ -1662,7 +1662,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
@@ -1671,7 +1671,7 @@ git commit -m "List link in CI and the Swift README
 libepdf_viewer_host.a (simulator, release): <before> -> <after> bytes."
 ```
 
-- [ ] **Step 6: Merge into the integration branch**
+- [ ] **Step 6: Merge into the integration branch** (left to the orchestrator)
 
 In `.claude/worktrees/swift-plugins-integration`:
 
@@ -1681,7 +1681,7 @@ git merge --no-ff research/swift-link
 
 Resolve shared-file conflicts by keeping both blocks in plan-number order.
 
-- [ ] **Step 7: Rerun on the integration branch**
+- [ ] **Step 7: Rerun on the integration branch** (left to the orchestrator)
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1692,7 +1692,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass.
 
-- [ ] **Step 8: Remove the worktree and branch**
+- [ ] **Step 8: Remove the worktree and branch** (left to the orchestrator)
 
 ```bash
 git worktree remove .claude/worktrees/swift-link

@@ -73,6 +73,21 @@ pub fn create_link_controller(
 }
 
 impl LinkCapability {
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    #[doc(hidden)]
+    pub fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
+    /// The document's pointer hub, which `linkPlugin()` requires.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn hub(&self) -> Result<epdf_plugin_interaction::InteractionCapability, Error> {
+        self.0.cx.get(&INTERACTION)
+    }
+
     fn anno(&self) -> Option<AnnotationCapability> {
         self.0.cx.try_get(&ANNOTATION).ok().flatten()
     }
@@ -86,7 +101,7 @@ impl LinkCapability {
         self.0.cx.document().and_then(|d| d.pages.as_array().cloned()).unwrap_or_default()
     }
 
-    fn page_refs(&self) -> Vec<PageRef> {
+    pub(crate) fn page_refs(&self) -> Vec<PageRef> {
         self.layouts()
             .iter()
             .filter_map(|l| serde_json::from_value(l.get("ref")?.clone()).ok())

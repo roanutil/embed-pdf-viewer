@@ -558,3 +558,74 @@ fn a_namespace_is_not_a_prefix_match() {
     assert!(!maps("act"));
     assert!(!maps("actions.write"));
 }
+
+#[test]
+fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
+    let call = translate("d1", "page.annotations.list", Some(5), &[], 11).unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "annotations.listRawPage", "jobId": 11, "docId": "d1", "pageObjectNumber": 5 })
+    );
+    assert!(matches!(call.decode, Decode::Annotations));
+    let error = translate("d1", "page.annotations.list", None, &[], 12).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
+fn a_listed_annotations_ref_and_page_arrive_nested() {
+    let json = r#"{"result":{"annotations":[{"ref":{"kind":"objectNumber","pageObjectNumber":3,"annotObjectNumber":17},"page":3}]}}"#;
+    let call = translate("d1", "page.annotations.list", Some(3), &[], 13).unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap().value;
+    let page3 = json!({ "kind": "objectNumber", "pageObjectNumber": 3 });
+    assert_eq!(
+        decoded["annotations"][0]["ref"],
+        json!({ "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 17 })
+    );
+    assert_eq!(decoded["annotations"][0]["page"], page3);
+}
+
+#[test]
+fn a_form_field_ref_is_not_mistaken_for_an_annotation_ref() {
+    let mut value = json!({ "ref": { "kind": "objectNumber", "fieldObjectNumber": 9 } });
+    let before = value.clone();
+    epdf_viewer_host::translate::nest_refs(&mut value);
+    epdf_viewer_host::translate::flatten_refs(&mut value);
+    assert_eq!(value, before);
+}
+
+/// Page 1 of `features.pdf` as the native engine lists it, trimmed: every
+/// page the host spells as `pageObjectNumber` (the DTO's own, its ref's, a
+/// destination's, the page state's and its revision's) arrives as the
+/// `page: PageRef` the kernel's vectors spell.
+#[test]
+fn every_page_a_listed_snapshot_names_arrives_as_a_page_ref() {
+    let json = r#"{"result":{"annotations":[{"pageObjectNumber":5,"subtype":"link",
+        "ref":{"annotObjectNumber":8,"kind":"objectNumber","pageObjectNumber":5},
+        "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"pageObjectNumber":7,"top":400.0,"zoom":null}},
+        "actions":{"activate":{"root":{"type":"goto","subtype":"GoTo","next":[],
+            "destination":{"kind":"fitR","pageObjectNumber":7,"left":1.0,"bottom":2.0,"right":3.0,"top":4.0}}}}}],
+        "pageState":{"pageObjectNumber":5,"revision":{"docSessionId":"s","generation":0,"pageObjectNumber":5}}}}"#;
+    let call = translate("d1", "page.annotations.list", Some(5), &[], 14).unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap().value;
+    let page = |n: u32| json!({ "kind": "objectNumber", "pageObjectNumber": n });
+    let dto = &decoded["annotations"][0];
+    assert_eq!(dto["page"], page(5));
+    assert!(dto.get("pageObjectNumber").is_none(), "{dto}");
+    assert_eq!(
+        dto["ref"],
+        json!({ "kind": "objectNumber", "page": page(5), "annotObjectNumber": 8 })
+    );
+    assert_eq!(
+        dto["target"]["destination"],
+        json!({ "kind": "xyz", "page": page(7), "left": 0.0, "top": 400.0, "zoom": null })
+    );
+    assert_eq!(dto["actions"]["activate"]["root"]["destination"]["page"], page(7));
+    assert_eq!(decoded["pageState"]["page"], page(5));
+    assert_eq!(decoded["pageState"]["revision"]["page"], page(5));
+    // A page ref itself keeps its spelling, and flattening undoes nesting.
+    let mut back = decoded.clone();
+    epdf_viewer_host::translate::flatten_refs(&mut back);
+    assert_eq!(back["annotations"][0]["target"]["destination"]["pageObjectNumber"], 7);
+    assert_eq!(back["annotations"][0]["ref"]["pageObjectNumber"], 5);
+    assert_eq!(back["pageState"]["revision"]["pageObjectNumber"], 5);
+}

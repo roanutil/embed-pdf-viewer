@@ -3190,7 +3190,7 @@ The core libraries `epdf-geometry`, `epdf-stage-core`, `epdf-ui-core` and `epdf-
 
 **selection** (D, requires `interaction`, optional `feedback`), delivered by 03-selection.md. Members: `can_select`, `can_copy`, `select`, `select_all`, `select_page`, `select_word_at`, `select_line_at`, `extend_to`, `clear`, `has_selection`, `snapshot`, `range`, `selected_pages`, `segments`, `rects`, `anchor`, `read_text`, `read_text_in_range`, `ensure_loaded`, `is_loaded`, `is_over_text`, `begin_gesture`, `begin_gesture_at`, `end_gesture`, `is_gesture_active`, `set_highlight_visible`, `is_highlight_visible`, `subscribe` (changed, committed, cleared).
 
-**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`). Members: `links` (`listLinks`), `link`, `link_at`, `all_links`, `ensure_loaded`, `is_loaded`, `resolve`, `activate`, `activate_at`, `label`, `is_navigation_engaged`, `subscribe` (activated, loaded).
+**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`), delivered by 04-link.md. Members: `links` (`listLinks`), `link`, `link_at`, `all_links`, `ensure_loaded`, `is_loaded`, `resolve`, `activate`, `activate_at`, `label`, `is_navigation_engaged`, `subscribe` (activated, loaded), plus `register_tap_handler`, which lets the pointer hub's taps reach links as the web's link anchors do.
 
 ### A.3 Content editing, follow-on plan B2
 
@@ -3255,7 +3255,8 @@ Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with 
 | `page.render.image` | `pages.render` | mapped (Task 2) |
 | `search.query` | `search.query` | mapped (Task 2) |
 | `pages.move`, `pages.rotate`, `pages.delete`, `pages.insert`, `pages.insertBlank`, `pages.extract` | same | mapped (10-page-edit.md) |
-| `page.annotations.list` / `create` / `update` / `delete` | `annotations.listRawPage` / `create` / `update` / `delete` | B2 |
+| `page.annotations.list` | `annotations.listRawPage` | mapped (04-link.md) |
+| `page.annotations.create` / `update` / `delete` | `annotations.create` / `update` / `delete` | B2 |
 | `annotations.listRawAll` | same | B2 |
 | `forms.list`, `forms.setValue`, `forms.createField`, `forms.updateField`, `forms.deleteField`, `forms.repair`, `forms.applyEffects` | same | B2 |
 | `forms.exportData`, `forms.importData` | `forms.export`, `forms.import` | B2 |

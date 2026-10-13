@@ -2,6 +2,7 @@
 //! shares: the kernel's owner thread, the handle that reaches it, the error
 //! every export returns, and the records more than one plugin uses.
 
+pub mod annotation;
 pub mod bound;
 pub mod cancel;
 pub mod error;
@@ -16,6 +17,7 @@ pub mod status;
 pub mod subscription;
 pub mod view;
 
+pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, PdfLinkTarget};
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};

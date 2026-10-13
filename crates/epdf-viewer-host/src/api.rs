@@ -50,6 +50,10 @@ pub struct ViewerConfig {
     /// build.
     #[uniffi(default = false)]
     pub selection: bool,
+    /// Install `linkPlugin()`: link areas and activation, one per document.
+    /// Requires `interaction`. With `stage`, a `goto` link reveals its page.
+    #[uniffi(default = false)]
+    pub link: bool,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

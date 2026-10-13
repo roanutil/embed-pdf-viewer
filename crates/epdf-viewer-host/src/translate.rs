@@ -51,6 +51,9 @@ pub enum Decode {
     /// carrying the byte count.
     Raster,
     Unit,
+    /// A read whose answer carries annotation refs: the result, with every
+    /// ref nested the kernel's way.
+    Annotations,
     /// A page mutation: `Mutation`, with `ref` added to every layout page of
     /// the result and the event (the kernel's page registry and the
     /// page-edit plugin read `ref`), and the host's
@@ -85,6 +88,7 @@ pub const PATHS: &[&str] = &[
     "page.geometry.read",
     "page.render.image",
     "search.query",
+    "page.annotations.list",
     "pages.move",
     "pages.rotate",
     "pages.delete",
@@ -120,6 +124,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
+        "page.annotations.list" => ("annotations.listRawPage", Decode::Annotations),
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -153,6 +158,7 @@ pub fn translate(
         "pages.text" | "pages.geometry" => vec![("pageObjectNumber", page()?)],
         "pages.render" => vec![("pageObjectNumber", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
+        "annotations.listRawPage" => vec![("pageObjectNumber", page()?)],
         "pages.move" => vec![
             ("pageObjectNumbers", object_numbers(path, &arg(0))?),
             ("destIndex", whole(path, "destIndex", &arg(1))?),
@@ -288,6 +294,69 @@ fn add_page_ref(object: &mut Value, key: &str, what: &str) -> Result<(), Error> 
     }
 }
 
+/// A `PageRef` itself, `{kind: "objectNumber", pageObjectNumber}`, which
+/// both spellings share.
+fn is_page_ref(map: &Map<String, Value>) -> bool {
+    map.len() == 2
+        && map.get("kind").and_then(Value::as_str) == Some("objectNumber")
+        && map.get("pageObjectNumber").is_some_and(Value::is_u64)
+}
+
+fn page_number(value: Option<&Value>) -> Option<u32> {
+    value.and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok())
+}
+
+/// Every page `value` names, kernel spelling to host spelling: a
+/// `page: PageRef` member (an annotation ref's, a destination's, a revision
+/// token's, a DTO's) becomes `pageObjectNumber`. A `PageRef` itself keeps
+/// its spelling.
+pub fn flatten_refs(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            let nested = match map.get("page") {
+                Some(Value::Object(page)) if is_page_ref(page) => {
+                    page_number(page.get("pageObjectNumber"))
+                }
+                _ => None,
+            };
+            if let Some(pon) = nested
+                && !is_page_ref(map)
+            {
+                map.remove("page");
+                map.insert("pageObjectNumber".into(), pon.into());
+            }
+            map.values_mut().for_each(flatten_refs);
+        }
+        Value::Array(items) => items.iter_mut().for_each(flatten_refs),
+        _ => {}
+    }
+}
+
+/// Every page `value` names, host spelling to kernel spelling. The host
+/// spells a page as `pageObjectNumber` wherever the kernel's vectors spell
+/// `page: PageRef`: an annotation ref, a destination (in a link's target and
+/// in its action tree), a DTO, a page state and its revision token. A bare
+/// numeric `page` becomes a `PageRef` too. A `PageRef` itself keeps its
+/// spelling.
+pub fn nest_refs(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if !is_page_ref(map)
+                && let Some(pon) = page_number(map.get("pageObjectNumber"))
+            {
+                map.remove("pageObjectNumber");
+                map.insert("page".into(), PageRef::new(pon).to_json());
+            }
+            if let Some(pon) = page_number(map.get("page")) {
+                map.insert("page".into(), PageRef::new(pon).to_json());
+            }
+            map.values_mut().for_each(nest_refs);
+        }
+        Value::Array(items) => items.iter_mut().for_each(nest_refs),
+        _ => {}
+    }
+}
+
 /// `ref` on every page of `object.layout.pages`, which must be there.
 fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     let Some(Value::Array(pages)) = object.get_mut("layout").and_then(|l| l.get_mut("pages"))
@@ -341,6 +410,11 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 add_page_ref(hit, "page", "a search match")?;
             }
             Value::Object(result)
+        }
+        Decode::Annotations => {
+            let mut value = Value::Object(result);
+            nest_refs(&mut value);
+            value
         }
         Decode::Mutation => {
             let value = take(&mut result, "result")?;
