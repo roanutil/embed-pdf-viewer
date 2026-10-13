@@ -33,6 +33,7 @@ use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
+use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
@@ -276,6 +277,18 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_page_edit::PAGE_EDIT, Some(&document_id))?;
             Ok(PageEditHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace's panes. Needs `ViewerConfig.view_manager`; without it
+    /// the kernel refuses the token. One capability for the whole viewer:
+    /// it takes no document id and lives until `destroy`.
+    pub async fn view_manager(&self) -> Result<Arc<ViewManagerHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_view_manager::VIEW_MANAGER, None)?;
+            Ok(ViewManagerHandle::new(cap, post))
         })
         .await
     }

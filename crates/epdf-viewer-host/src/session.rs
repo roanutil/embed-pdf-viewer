@@ -69,6 +69,9 @@ impl Session {
         if config.page_edit {
             plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }
+        if config.view_manager {
+            plugins.push(epdf_plugin_view_manager::view_manager_plugin());
+        }
         if config.shell {
             plugins.push(epdf_plugin_shell::shell_plugin());
         }

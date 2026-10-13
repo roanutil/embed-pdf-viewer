@@ -51,6 +51,13 @@ impl ViewManagerCapability {
         self.0.cx.state()
     }
 
+    /// Aborted when the kernel is destroyed: a workspace plugin outlives
+    /// every document. The foreign handle checks it before every call.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// `emitDiffs(before, after)`: panes created (in the new order), panes
     /// removed (in the old order), the focus, then each document whose pane
     /// changed, documents enumerated from the old panes then the new ones.

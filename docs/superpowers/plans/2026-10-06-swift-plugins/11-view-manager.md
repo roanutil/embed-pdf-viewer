@@ -72,7 +72,7 @@ docs/superpowers/plans/2026-10-01-swift-package.md   A.4 view-manager marked del
 
 The member list is `crates/plugins/view-manager/src/harness.rs` `MEMBERS`, checked against `impl ViewManagerCapability`: `listPanes`, `getPane`, `getPaneOrder`, `getFocusedPaneId`, `getPaneOfDocument`, `createPane`, `removePane`, `movePane`, `setFocusedPane`, `splitPane`, `setActiveDocument`, `addDocument`, `removeDocument`, `moveDocumentWithin`, `moveDocumentBetween`, and the four `on*` hooks, which become `subscribe`. FFI names drop `get_` and `list_` per §A.0.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -88,7 +88,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/view-manager-size-before"
 ```
 
-- [ ] **Step 2: Turn on the feature**
+- [x] **Step 2: Turn on the feature**
 
 `crates/plugins/view-manager/Cargo.toml`:
 
@@ -134,7 +134,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 Create `crates/plugins/view-manager/tests/ffi.rs`:
 
@@ -346,12 +346,12 @@ fn a_cancelled_subscription_hears_nothing_more() {
 }
 ```
 
-- [ ] **Step 4: Run them to see them fail**
+- [x] **Step 4: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-view-manager --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_view_manager`.
 
-- [ ] **Step 5: Write `ffi.rs`**
+- [x] **Step 5: Write `ffi.rs`**
 
 Create `crates/plugins/view-manager/src/ffi.rs`:
 
@@ -581,7 +581,7 @@ impl ViewManagerHandle {
 }
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-view-manager --features uniffi --test ffi`
 Expected: PASS, 9 tests.
@@ -589,7 +589,7 @@ Expected: PASS, 9 tests.
 Run: `cargo test -p epdf-plugin-view-manager`
 Expected: PASS. The vectors and `tests/record.rs` don't see the feature.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/view-manager
@@ -606,7 +606,7 @@ git commit -m "Export the view-manager plugin through uniffi"
 - Consumes: `ViewManagerHandle::new` (Task 1).
 - Produces: `ViewerConfig.view_manager: bool` (default `false`), `ViewerHost::view_manager() -> Result<Arc<ViewManagerHandle>, ViewerError>`, which takes no document id.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -652,12 +652,12 @@ fn without_its_flag_the_view_manager_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host view_manager`
 Expected: FAIL to compile, `no field view_manager on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -698,12 +698,12 @@ epdf-plugin-view-manager = { path = "../plugins/view-manager", default-features 
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -720,7 +720,7 @@ git commit -m "Wire the view-manager plugin into the viewer host"
 - Consumes: the generated `ViewManagerHandle`, `ViewerHost.viewManager()`, `PaneInfo` and the event records.
 - Produces: `ViewManagerCapability` and `PDFViewer.viewManager()`. Methods: `panes()`, `pane(_:)`, `paneOrder()`, `focusedPaneId()`, `pane(holding:)`, `createPane(documentIds:)`, `removePane(_:movingDocumentsTo:)`, `movePane(_:to:)`, `setFocusedPane(_:)`, `splitPane(showing:)`, `setActiveDocument(_:in:)`, `addDocument(_:to:at:)`, `removeDocument(_:from:)`, `moveDocument(_:within:to:)`, `moveDocument(_:from:to:at:)`, and `events`. Document arguments are ids (`PDFDocument.id`), because `PaneInfo.documentIds` is.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ViewManagerTests.swift`:
 
@@ -815,7 +815,7 @@ extension BaseSuite {
 
 There's no `aClosedDocumentsCapabilityThrows` (the capability belongs to no document) and no cancellation test (no member takes a token), as the umbrella allows for a workspace plugin. `aDestroyedViewersCapabilityThrows` stands in for the first.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -824,7 +824,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'viewManager'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/ViewManager.swift`:
 
@@ -953,7 +953,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -962,7 +962,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `ViewManagerTests` with 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/ViewManager.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ViewManagerTests.swift
@@ -978,7 +978,7 @@ git commit -m "Add the Swift view-manager capability"
 
 Append `view-manager` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2: README row**
+- [x] **Step 2: README row**
 
 In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 
@@ -986,11 +986,11 @@ In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 | view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` §A.4, change `**view-manager** (W, requires documents).` to `**view-manager** (W, requires documents), delivered by 11-view-manager.md.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-view-manager --features uniffi
@@ -1005,7 +1005,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive size**
+- [x] **Step 5: Commit, with the archive size**
 
 ```bash
 before=$(cat "$TMPDIR/view-manager-size-before")
