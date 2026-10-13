@@ -68,4 +68,14 @@ struct StageReaderModelTests {
     let camera = try await model.stage.camera()
     expectNoDifference(camera, resting)
   }
+
+  /// Until the reader draws tiles, a deep zoom would render each page whole
+  /// at the zoomed scale: 7200 by 9600 pixels for a 600-point page at zoom 4
+  /// on a 3x screen. The scale it renders at is capped by pixel count.
+  @Test func aDeepZoomRendersAtACappedScale() {
+    let capped = StageReaderModel.renderScale(12, contentWidth: 600, contentHeight: 800)
+    #expect(capped < 12)
+    #expect(600 * capped * 800 * capped <= StageReaderModel.maxPagePixels * 1.000001)
+    expectNoDifference(StageReaderModel.renderScale(2, contentWidth: 600, contentHeight: 800), 2)
+  }
 }

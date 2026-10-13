@@ -15,7 +15,11 @@ public struct StageReaderView: View {
     GeometryReader { geometry in
       ZStack(alignment: .topLeading) {
         ForEach(model.visiblePages, id: \.page.pageObjectNumber) { page in
-          PageImageView(render: model.render, page: page.page, scale: page.transform.renderScale)
+          PageImageView(
+            render: model.render, page: page.page,
+            scale: StageReaderModel.renderScale(
+              page.transform.renderScale, contentWidth: page.transform.contentWidth,
+              contentHeight: page.transform.contentHeight))
             .frame(width: page.transform.viewWidth, height: page.transform.viewHeight)
             .offset(x: page.screenX, y: page.screenY)
         }
@@ -33,9 +37,12 @@ public struct StageReaderView: View {
           .onChanged { value in model.magnifyChanged(value.magnification, at: value.startLocation) }
           .onEnded { _ in Task { await model.magnifyEnded() } }
       )
-      .onTapGesture(count: 2, coordinateSpace: .local) { location in
-        Task { await model.doubleTapped(at: location) }
-      }
+      // Simultaneous: the zero-distance drag above recognizes on touch-down
+      // and would otherwise win every tap.
+      .simultaneousGesture(
+        SpatialTapGesture(count: 2, coordinateSpace: .local)
+          .onEnded { value in Task { await model.doubleTapped(at: value.location) } }
+      )
       .task { await model.task() }
       .task(id: geometry.size) { await model.sizeChanged(geometry.size, displayScale: displayScale) }
     }

@@ -23,6 +23,21 @@ public final class StageReaderModel {
   /// reach the stage before the begin it closes.
   @ObservationIgnored private var lastDragCall: Task<Void, Never>?
 
+  /// The most pixels one page renders at: 4096 by 4096, 64 MB of RGBA.
+  public nonisolated static let maxPagePixels: Double = 4096 * 4096
+
+  /// The scale to render a page at: the stage's `renderScale`, capped so the
+  /// whole page stays within `maxPagePixels`. The reader renders pages whole
+  /// until it draws the tile plane, so past the cap a deep zoom is soft
+  /// rather than hundreds of megabytes a page. Sizes in page points.
+  public nonisolated static func renderScale(
+    _ scale: Double, contentWidth: Double, contentHeight: Double
+  ) -> Double {
+    let area = contentWidth * contentHeight
+    guard area > 0 else { return scale }
+    return min(scale, (maxPagePixels / area).squareRoot())
+  }
+
   public init(stage: StageCapability, render: RenderCapability) {
     self.stage = stage
     self.render = render
