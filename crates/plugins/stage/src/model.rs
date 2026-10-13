@@ -21,13 +21,9 @@ pub enum MotionCause {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StageState {
-    #[serde(flatten)]
-    pub settings: StageSettings,
     pub camera: Camera,
     /// The one-way render-commit latch.
     pub placed: bool,
-    /// Names of the matching responsive rules, in source order.
-    pub active_rules: Vec<String>,
     /// False while the zoom is in motion.
     pub camera_resting: bool,
     pub vp: Size,
@@ -36,6 +32,10 @@ pub struct StageState {
     /// The current page, valid in both flows.
     pub cursor: usize,
     pub motion_cause: MotionCause,
+    /// Names of the matching responsive rules, in source order.
+    pub active_rules: Vec<String>,
+    #[serde(flatten)]
+    pub settings: StageSettings,
 }
 
 // A PATCH carries a whole settings bag; actions are short-lived values, so
