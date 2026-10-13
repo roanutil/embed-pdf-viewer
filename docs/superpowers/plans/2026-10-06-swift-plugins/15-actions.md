@@ -3074,7 +3074,7 @@ git commit -m "Add EmbedPDF's ActionsCapability"
 - Consumes: generated `ScriptEngine`, `ScriptEngineFactory`, `ScriptEvaluation`, `checkScriptEngine(factory:source:)`, `ScriptCheck`.
 - Produces: `JavaScriptCoreEngineFactory` (public, `ScriptEngineFactory`), `ScriptEngineCheck.run(_:source:)` (a `throws(PDFError)` wrapper over `checkScriptEngine`).
 
-- [ ] **Step 1: Write the failing engine tests**
+- [x] **Step 1: Write the failing engine tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/JavaScriptCoreEngineTests.swift`:
 
@@ -3120,7 +3120,7 @@ extension BaseSuite {
 
 `aDeepRecursionIsABudgetFailure` relies on JSC's "Maximum call stack size exceeded." reaching the prelude's catch and Task 5's `is_resource_error`. If JSC exhausts the 50 ms first on the simulator, it still lands on `.budget`, through the timeout instead.
 
-- [ ] **Step 2: Rebuild and run the tests to verify they fail**
+- [x] **Step 2: Rebuild and run the tests to verify they fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3129,7 +3129,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: FAIL to compile with "cannot find 'ScriptEngineCheck' in scope".
 
-- [ ] **Step 3: Write `Plugins/JavaScriptCoreEngine.swift`**
+- [x] **Step 3: Write `Plugins/JavaScriptCoreEngine.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3231,7 +3231,7 @@ public enum ScriptEngineCheck {
 
 `checkScriptEngine` is synchronous and blocks for up to the budget, so `run` moves it off the caller's executor. `dispose()` marks the engine abandoned before clearing the context, so a dispose that follows a timeout (Task 5's `poisoned`) returns at once even though the queue is still busy.
 
-- [ ] **Step 4: Rebuild and run the tests to verify they pass**
+- [x] **Step 4: Rebuild and run the tests to verify they pass**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -3240,7 +3240,7 @@ cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destina
 
 Expected: PASS, 4 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/JavaScriptCoreEngine.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/JavaScriptCoreEngineTests.swift
