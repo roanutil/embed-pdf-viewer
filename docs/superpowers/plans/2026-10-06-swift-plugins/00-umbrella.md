@@ -1297,7 +1297,7 @@ Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one her
 - [ ] 07 redaction
 - [ ] 08 measurement
 - [ ] 09 stamp
-- [ ] 10 page-edit
+- [x] 10 page-edit
 - [ ] 11 view-manager
 - [x] 12 shell
 - [ ] 13 i18n
