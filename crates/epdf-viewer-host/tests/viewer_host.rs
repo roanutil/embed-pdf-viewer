@@ -442,3 +442,16 @@ fn without_its_flag_the_page_edit_plugin_is_not_installed() {
         .unwrap();
     assert!(block_on(host.page_edit(doc.id)).is_err());
 }
+
+#[test]
+fn a_duplicate_with_an_unknown_anchor_leaves_nothing_in_the_host_table() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let before = block_on(host.host_table_entries()).unwrap();
+    let first = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let unknown = PageEditPlacement::After { page: PageRef { page_object_number: 9999 } };
+    assert!(block_on(edit.duplicate(vec![first], Some(unknown), CancelToken::new())).is_err());
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), before);
+}
