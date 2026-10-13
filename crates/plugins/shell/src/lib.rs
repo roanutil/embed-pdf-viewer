@@ -16,6 +16,12 @@ pub mod record;
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 pub use contract::{
     MenuEvent, OpenSurfaceOptions, SHELL, ShellSnapshot, SurfaceEvent, SurfaceProps, SurfaceState,
 };

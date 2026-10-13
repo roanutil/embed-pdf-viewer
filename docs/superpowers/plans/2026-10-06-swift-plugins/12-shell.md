@@ -136,7 +136,7 @@ git commit -m "Record why the shell plugin ships to Swift"
 
 The member list is `crates/plugins/shell/src/harness.rs` `MEMBERS`, checked against `impl ShellCapability`: `isOpen`, `getSurface`, `listOpenSurfaces`, `open`, `close`, `toggle`, `updateSurfaceProps`, `closeAll`, `isMenuOpen`, `listOpenMenus`, `openMenu`, `closeMenu`, `toggleMenu`, `closeAllMenus`, `getSnapshot`, `applySnapshot`, and four `on*` hooks that become `subscribe`.
 
-- [ ] **Step 1: Turn on the feature**
+- [x] **Step 1: Turn on the feature**
 
 `crates/plugins/shell/Cargo.toml`:
 
@@ -179,7 +179,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `crates/plugins/shell/tests/ffi.rs`:
 
@@ -367,12 +367,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 
 `ShellEvent` and the records need `Clone` and `PartialEq` for these assertions; `ffi.rs` derives both.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-shell --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_shell`.
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 Create `crates/plugins/shell/src/ffi.rs`:
 
@@ -729,7 +729,7 @@ impl ShellHandle {
 
 `crate::record::JsRecord` is `pub` and re-exported from `lib.rs`, and implements `FromIterator<(String, V)>` (`crates/plugins/shell/src/record.rs:102`), so collecting a `Result` of pairs builds it in the record's own property order. `crate::model::SurfaceRecord` is `pub` and re-exported too.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-shell --features uniffi --test ffi`
 Expected: PASS, 8 tests.
@@ -737,7 +737,7 @@ Expected: PASS, 8 tests.
 Run: `cargo test -p epdf-plugin-shell`
 Expected: PASS. The 38 vector cases don't see the feature.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/shell

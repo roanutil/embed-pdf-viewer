@@ -79,6 +79,14 @@ impl ShellCapability {
         }
     }
 
+    /// Aborted when the document closes. The foreign handle, which can
+    /// outlive the close, checks it before every call and ends its event
+    /// streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     // ── surfaces ──
 
     pub fn is_open(&self, id: &str) -> bool {
