@@ -31,6 +31,7 @@ use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
+use epdf_plugin_shell::ffi::ShellHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
@@ -263,6 +264,17 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_render::RENDER, Some(&document_id))?;
             Ok(RenderHandle::new(cap, post, Rc::new(HostTable::get)))
+        })
+        .await
+    }
+
+    /// The shell of an open document: its open surfaces and menus. Needs
+    /// `ViewerConfig.shell`; without it the kernel refuses the token.
+    pub async fn shell(&self, document_id: String) -> Result<Arc<ShellHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_shell::SHELL, Some(&document_id))?;
+            Ok(ShellHandle::new(cap, post))
         })
         .await
     }

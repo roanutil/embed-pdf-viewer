@@ -754,7 +754,7 @@ git commit -m "Export the shell plugin through uniffi, with props as JSON text"
 - Consumes: `ShellHandle::new` (Task 2).
 - Produces: `ViewerConfig.shell: bool` (default `false`), `ViewerHost::shell(document_id: String) -> Result<Arc<ShellHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, with `use epdf_plugin_shell::ffi::ShellOpenOptions;` at the top:
 
@@ -792,12 +792,12 @@ fn without_its_flag_the_shell_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host shell`
 Expected: FAIL to compile, `no field shell on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -837,12 +837,12 @@ epdf-plugin-shell = { path = "../plugins/shell", default-features = false, featu
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

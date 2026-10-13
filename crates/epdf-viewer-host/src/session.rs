@@ -65,6 +65,9 @@ impl Session {
             };
             plugins.push(epdf_plugin_render::render_plugin_with_host(render.into(), host));
         }
+        if config.shell {
+            plugins.push(epdf_plugin_shell::shell_plugin());
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {
