@@ -36,6 +36,7 @@ use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
+use epdf_plugin_selection::ffi::SelectionHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
 use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
@@ -307,6 +308,20 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_interaction::FEEDBACK, None)?;
             Ok(FeedbackHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The text selection of an open document. Needs
+    /// `ViewerConfig.selection` (and `interaction`).
+    pub async fn selection(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<SelectionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_selection::SELECTION, Some(&document_id))?;
+            Ok(SelectionHandle::new(cap, post))
         })
         .await
     }

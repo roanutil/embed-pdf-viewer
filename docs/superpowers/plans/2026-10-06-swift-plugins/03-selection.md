@@ -61,7 +61,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift
 - Consumes: `epdf_plugin_selection::{TextPosition, TextRange, SelectionRangeInput, SelectionSegment, SelectionEndpoint, SelectionAnchor, SelectionDirection, SnapshotPage, SelectionSnapshot, ChangeTrigger, ChangeOrigin, SelectionChangedEvent, SelectionCommittedEvent, SelectionClearedEvent}` (`crates/plugins/selection/src/contract.rs`, `geometry.rs`).
 - Produces (in `epdf_plugin_selection::ffi`): records `SelectionTextPosition { page: PageRef, index: i64 }`, `SelectionTextRange { start, end }`, `SelectionSegment { quad: TextQuad, rect: Rect, advance: i32 }`, `SelectionEndpoint { page, glyph_quad, advance: i32, rect }`, `SelectionAnchor { page, bounds }`, `SelectionSnapshotPage { page, segments }`, `SelectionSnapshot { pages, start, end, direction, range }`; enums `SelectionInput { Range { range }, Span { page, start: i64, count: i64 } }`, `SelectionDirection { Forward, Backward }`, `SelectionChangeTrigger { User, Api, Script, System, Unknown }`; conversions both ways for positions, ranges and the input, out only for the rest.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-selection -b research/swift-selection research/swift-plugins
@@ -70,7 +70,7 @@ cd .claude/worktrees/swift-selection
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes.
 
-- [ ] **Step 2: Add the feature and `lifetime()`**
+- [x] **Step 2: Add the feature and `lifetime()`**
 
 In `crates/plugins/selection/Cargo.toml`:
 
@@ -113,7 +113,7 @@ In `crates/plugins/selection/src/controller.rs`, inside `impl SelectionCapabilit
 
 `AbortSignal` is already imported in `controller.rs`.
 
-- [ ] **Step 3: Write the failing conversion test**
+- [x] **Step 3: Write the failing conversion test**
 
 `crates/plugins/selection/tests/ffi.rs`:
 
@@ -141,12 +141,12 @@ fn a_range_and_a_span_round_trip() {
 }
 ```
 
-- [ ] **Step 4: Run it to verify it fails**
+- [x] **Step 4: Run it to verify it fails**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_selection::ffi`".
 
-- [ ] **Step 5: Write the records half of `ffi.rs`**
+- [x] **Step 5: Write the records half of `ffi.rs`**
 
 ```rust
 //! The selection plugin through uniffi: one handle over the selection, its
@@ -354,12 +354,12 @@ impl From<crate::ChangeTrigger> for SelectionChangeTrigger {
 
 `crate::SelectionSegment` and the FFI `SelectionSegment` share a Rust name; inside `ffi.rs` the plugin's is always spelled `crate::SelectionSegment`, as written. `TextPosition.page` is the kernel `PageRef` (`contract.rs` imports `epdf_kernel::geometry::PageRef`), so `.into()` uses `epdf-ffi`'s existing impls.
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: PASS, 1 test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/selection
@@ -377,7 +377,7 @@ git commit -m "Mirror the selection plugin's records for uniffi"
 
 That's the 30 entries of `crates/plugins/selection/src/harness.rs` `MEMBERS`, with the three `on*` hooks folded into `subscribe`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/selection/tests/ffi.rs`. The fake engine needs text geometry for a page to select anything; build it from the vectors the conformance tests replay. `crates/plugins/selection/tests/conformance.rs` loads `tooling/engine-conformance/vectors/plugins/selection*.json`; open one, find the engine spec it starts from (its `engine` member), and copy that spec into `fixtures/selection-engine.json` under `crates/plugins/selection/tests/`. The spec has a document with at least two pages and `page.geometry.read` and `page.text.read` responses for both.
 
@@ -595,12 +595,12 @@ fn closing_the_document_ends_selection_subscriptions() {
 
 Add the extra `use` items (`SelectionInput`, `SelectionTextPosition`, `SelectionTextRange`) to the existing `use epdf_plugin_selection::ffi::{...}` line from Task 1. `interaction_plugin` needs `epdf-plugin-interaction` as a dev-dependency only if it isn't already a normal one; it is (`Cargo.toml` `[dependencies]`), so it's in scope. If the vector's engine spec gives a page no text, pick a vector that does; `select_page` followed by `rects` returning empty is the sign.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: FAIL to compile, "cannot find `SelectionHandle` in `ffi`".
 
-- [ ] **Step 3: Write the handle and events**
+- [x] **Step 3: Write the handle and events**
 
 Append to `ffi.rs`:
 
@@ -891,7 +891,7 @@ impl SelectionHandle {
 
 If `list_rects` returns `epdf_geometry::Rect` or `epdf_kernel::geometry::Rect`, `epdf-ffi` converts either. `read_text`'s promise is `Promise<String>`, and `call_promise_cancellable` needs `U: Clone`, which `String` is.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: PASS, 11 tests.
@@ -899,7 +899,7 @@ Expected: PASS, 11 tests.
 Run: `cargo test -p epdf-plugin-selection`
 Expected: PASS, conformance unchanged.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/selection
@@ -915,7 +915,7 @@ git commit -m "Export the selection plugin through uniffi"
 - Consumes: `SelectionHandle::new`; plan 01's `ViewerConfig.interaction`, `ViewerConfig.feedback`, `InteractionHandle::dispatch_pointer`, `FeedbackConfig`, `PlatformFeedback`.
 - Produces: `ViewerConfig.selection: bool`; `ViewerHost::selection(document_id: String) -> Result<Arc<SelectionHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1051,12 +1051,12 @@ fn without_its_flag_the_selection_plugin_is_not_installed() {
 
 `with_interaction` is plan 01's helper in this file. `has_selection` after the fires is a reply, so the dispatches have run by then. The aliased imports keep these names from clashing with plan 01's and plan 02's imports in the same file; if they don't clash on your branch, drop the aliases.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host selection`
 Expected: FAIL to compile, "no field `selection` on type `ViewerConfig`".
 
-- [ ] **Step 3: Wire it**
+- [x] **Step 3: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -1097,12 +1097,12 @@ epdf-plugin-selection = { path = "../plugins/selection", default-features = fals
     }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the six new tests and every existing one.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1118,7 +1118,7 @@ git commit -m "Wire the selection plugin into the viewer host"
 - Consumes: generated `SelectionHandle` and records.
 - Produces: `SelectionCapability` and `PDFViewer.selection(for:)`.
 
-- [ ] **Step 1: Write `Selection.swift`**
+- [x] **Step 1: Write `Selection.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1298,12 +1298,12 @@ extension PDFViewer {
 
 `SearchHit.charStart` and `charCount` are `Double` (`crates/plugins/search/src/ffi.rs`); a hit's values are whole numbers, so `Int64(_)` doesn't lose anything.
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift
@@ -1315,7 +1315,7 @@ git commit -m "Add the Swift selection capability"
 **Files:**
 - Create: `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift`
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 ```swift
 import CustomDump
@@ -1419,12 +1419,12 @@ extension BaseSuite {
 
 The first page of `report.pdf` contains "Report" (the search tests in `crates/epdf-viewer-host/tests/viewer_host.rs` find it). If the 20-character range on page 0 includes a character PDFium reports as two UTF-16 units, compare with `>= 20` instead; the point of the test is that cancellation doesn't wedge the next read.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 7 `SelectionTests`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift
@@ -1440,17 +1440,17 @@ git commit -m "Test the Swift selection capability"
 
 Append `selection` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, keeping plan-number order (after `stage` if plan 02 has merged, after `interaction` otherwise).
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | selection | `SelectionCapability` | `interaction: true, selection: true` | `2026-10-06-swift-plugins/03-selection.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**selection** (D, requires `interaction`, optional `feedback`).` to `**selection** (D, requires `interaction`, optional `feedback`), delivered by 03-selection.md.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-selection --features uniffi
@@ -1465,7 +1465,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
