@@ -1128,7 +1128,7 @@ git commit -m "Share the native translator's path list, number helpers and Bytes
 - Consumes: Task 0c's `RegistrationHandle` and `HostError`.
 - Produces: `PDFViewer.reportedErrors: AsyncStream<PDFError>` (errors the kernel reports rather than throws; keeps the newest 16; single consumer; finishes on `destroy()`); Swift `Registration` (wraps `RegistrationHandle`; `unregister()`); `public typealias HostError`; `FIXTURES` in `build-xcframework.sh`; `test_support::FEATURES`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `ViewerTests` in `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ViewerTests.swift`:
 
@@ -1163,12 +1163,12 @@ fn the_features_fixture_opens() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host features_fixture`
 Expected: FAIL to compile, "cannot find value `FEATURES` in crate `test_support`".
 
-- [ ] **Step 3: Add the fixture constant**
+- [x] **Step 3: Add the fixture constant**
 
 In `crates/test-support/src/lib.rs`, beside the other constants:
 
@@ -1179,7 +1179,7 @@ In `crates/test-support/src/lib.rs`, beside the other constants:
 pub const FEATURES: &str = "tooling/viewer-e2e/fixtures/features.pdf";
 ```
 
-- [ ] **Step 4: Copy fixtures from one list**
+- [x] **Step 4: Copy fixtures from one list**
 
 In `platforms/apple/build-xcframework.sh`, replace the `for tests in "${TEST_TARGETS[@]}"; do ... done` loop with:
 
@@ -1202,7 +1202,7 @@ for tests in "${TEST_TARGETS[@]}"; do
 done
 ```
 
-- [ ] **Step 5: Forward reported errors**
+- [x] **Step 5: Forward reported errors**
 
 In `EventRelay.swift`, replace `StateRelay` with:
 
@@ -1245,7 +1245,7 @@ In `init`, before building the host:
 
 pass `StateRelay(continuation, errors: errorContinuation)` as the delegate, and after the `do`/`catch` assign `reportedErrors = errors` and `self.errorContinuation = errorContinuation`. In `finishStreams()`, add `errorContinuation.finish()`.
 
-- [ ] **Step 6: Add `Registration` and the `HostError` alias**
+- [x] **Step 6: Add `Registration` and the `HostError` alias**
 
 `platforms/apple/EmbedPDF/Sources/EmbedPDF/Registration.swift`:
 
@@ -1270,12 +1270,12 @@ In `Exports.swift`, after `PluginErrorInfo`:
 public typealias HostError = EmbedPDFBindings.HostError
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host && bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS, including `the_features_fixture_opens`, `reportedErrorsFinishWhenTheViewerIsDestroyed` and `theFeaturesFixtureIsBundled`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/test-support crates/epdf-viewer-host/tests platforms/apple

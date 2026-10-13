@@ -323,3 +323,11 @@ fn without_its_config_the_render_plugin_is_not_installed() {
         .unwrap();
     assert!(block_on(host.render(doc.id)).is_err());
 }
+
+#[test]
+fn the_features_fixture_opens() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+        .unwrap();
+    assert_eq!(doc.page_count, 3);
+}

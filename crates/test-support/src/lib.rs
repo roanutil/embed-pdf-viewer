@@ -41,6 +41,10 @@ pub const ENCRYPTED: &str = "pdfium-multiplatform-prototype/fixtures/encrypted-h
 /// Carries text runs that are not upright, which is the only way to reach the
 /// rotated arm of the geometry reader.
 pub const ROTATED_TEXT: &str = "examples/viewer-react/public/rotated_text.pdf";
+/// Three 600 by 400 pages. Page 1 has an internal `GoTo` link to page 3
+/// (`/Rect [40 300 320 330]`) and a `URI` link to
+/// `https://example.invalid/target` (`/Rect [40 240 360 270]`).
+pub const FEATURES: &str = "tooling/viewer-e2e/fixtures/features.pdf";
 
 /// Put a JSON tree into the one spelling both engines agree on.
 ///

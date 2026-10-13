@@ -134,11 +134,20 @@ TEST_TARGETS=(EmbedPDFBindingsSmokeTests EmbedPDFTests EmbedPDFUITests)
 if [[ $EXPERIMENTAL == 1 ]]; then
   TEST_TARGETS+=(EmbedPDFBridgeBenchmarks)
 fi
+# Repo-relative files every test bundle gets, one per line. Each plugin plan
+# appends its own after the last plan's lines. Entries are expanded
+# unquoted, so a glob copies every match.
+FIXTURES=(
+  pdfium-multiplatform-prototype/fixtures/report.pdf
+  pdfium-multiplatform-prototype/fixtures/colors.pdf
+  pdfium-multiplatform-prototype/fixtures/encrypted-hello.pdf
+  tooling/viewer-e2e/fixtures/features.pdf
+)
 for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"
-  for fixture in report colors encrypted-hello; do
-    cp "$ROOT/pdfium-multiplatform-prototype/fixtures/$fixture.pdf" \
-      "$OUT/Tests/$tests/Fixtures/"
+  for fixture in "${FIXTURES[@]}"; do
+    # shellcheck disable=SC2086
+    cp "$ROOT"/$fixture "$OUT/Tests/$tests/Fixtures/"
   done
 done
 

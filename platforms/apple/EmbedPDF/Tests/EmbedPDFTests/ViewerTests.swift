@@ -87,5 +87,23 @@ extension BaseSuite {
         (error as? PDFError)?.code == "instance-closed"
       }
     }
+
+    @Test func reportedErrorsFinishWhenTheViewerIsDestroyed() async throws {
+      let viewer = try await started()
+      let drained = Task {
+        var count = 0
+        for await _ in viewer.reportedErrors { count += 1 }
+        return count
+      }
+      try await viewer.destroy()
+      let count = await drained.value
+      expectNoDifference(count, 0)
+    }
+
+    @Test func theFeaturesFixtureIsBundled() async throws {
+      let viewer = try await started()
+      let document = try await viewer.open(Fixture.data("features"))
+      expectNoDifference(document.pageCount, 3)
+    }
   }
 }

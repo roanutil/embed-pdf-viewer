@@ -5,19 +5,28 @@ public final class PDFViewer: Sendable {
   let host: ViewerHost
   let registry = StreamRegistry()
   private let stateContinuation: AsyncStream<UInt64>.Continuation
+  private let errorContinuation: AsyncStream<PDFError>.Continuation
+
+  /// Errors the kernel reports rather than throws: a listener that failed,
+  /// a foreign handler that threw (`HostError`). Keeps the newest 16. The
+  /// stream supports a single consumer.
+  public let reportedErrors: AsyncStream<PDFError>
 
   /// Revisions of the viewer's state. The stream supports a single consumer.
   public let stateRevisions: AsyncStream<UInt64>
 
   public init(_ config: ViewerConfig) throws(PDFError) {
     let (stream, continuation) = AsyncStream<UInt64>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    let (errors, errorContinuation) = AsyncStream<PDFError>.makeStream(bufferingPolicy: .bufferingNewest(16))
     do {
-      host = try ViewerHost(config: config, delegate: StateRelay(continuation))
+      host = try ViewerHost(config: config, delegate: StateRelay(continuation, errors: errorContinuation))
     } catch {
       throw PDFError(error)
     }
     stateRevisions = stream
     stateContinuation = continuation
+    reportedErrors = errors
+    self.errorContinuation = errorContinuation
   }
 
   public func start() async throws(PDFError) {
@@ -67,6 +76,7 @@ public final class PDFViewer: Sendable {
   func finishStreams() {
     registry.finishAll()
     stateContinuation.finish()
+    errorContinuation.finish()
   }
 
   deinit {
