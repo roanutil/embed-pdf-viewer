@@ -72,7 +72,7 @@ docs/superpowers/plans/2026-10-01-swift-package.md   A.4 view-manager marked del
 
 The member list is `crates/plugins/view-manager/src/harness.rs` `MEMBERS`, checked against `impl ViewManagerCapability`: `listPanes`, `getPane`, `getPaneOrder`, `getFocusedPaneId`, `getPaneOfDocument`, `createPane`, `removePane`, `movePane`, `setFocusedPane`, `splitPane`, `setActiveDocument`, `addDocument`, `removeDocument`, `moveDocumentWithin`, `moveDocumentBetween`, and the four `on*` hooks, which become `subscribe`. FFI names drop `get_` and `list_` per §A.0.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -88,7 +88,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/view-manager-size-before"
 ```
 
-- [ ] **Step 2: Turn on the feature**
+- [x] **Step 2: Turn on the feature**
 
 `crates/plugins/view-manager/Cargo.toml`:
 
@@ -134,7 +134,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 Create `crates/plugins/view-manager/tests/ffi.rs`:
 
@@ -346,12 +346,12 @@ fn a_cancelled_subscription_hears_nothing_more() {
 }
 ```
 
-- [ ] **Step 4: Run them to see them fail**
+- [x] **Step 4: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-view-manager --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_view_manager`.
 
-- [ ] **Step 5: Write `ffi.rs`**
+- [x] **Step 5: Write `ffi.rs`**
 
 Create `crates/plugins/view-manager/src/ffi.rs`:
 
@@ -581,7 +581,7 @@ impl ViewManagerHandle {
 }
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-view-manager --features uniffi --test ffi`
 Expected: PASS, 9 tests.
@@ -589,7 +589,7 @@ Expected: PASS, 9 tests.
 Run: `cargo test -p epdf-plugin-view-manager`
 Expected: PASS. The vectors and `tests/record.rs` don't see the feature.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/view-manager
