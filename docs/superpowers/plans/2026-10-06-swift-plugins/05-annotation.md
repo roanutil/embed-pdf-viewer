@@ -97,7 +97,7 @@ platforms/apple/build-xcframework.sh   + annotation_kinds.pdf, tiny.png in FIXTU
 - Consumes: `epdf_annotation_core::{AnnotationRef, RevisionToken, AnnotationFlags, AnnotationFlagsPatch, AnnotationProps, AnnotationPropsPatch, PropKey, LineEnding, LineEndings, LineEndingsPatch, BlendMode, TextAlign, Border, PdfLinkTarget, PdfDestination, Callout, CreationDraftAnchor, PageRef}` and `epdf_annotation_core::js::Nullable`.
 - Produces, all in `epdf_ffi`, beside plan 04's `AnnotationRef`, `AnnotationRevisionToken`, `PdfDestination` and `PdfLinkTarget`: `AnnotationFlags`, `AnnotationFlagsPatch`, `AnnotationPropKey`, `AnnotationProps`, `AnnotationPropsPatch`, `AnnotationLineEnding`, `AnnotationLineEndings`, `AnnotationLineEndingsPatch`, `AnnotationBlendMode`, `AnnotationTextAlign`, `AnnotationBorder`, `AnnotationCallout`, `CreationDraftAnchor`, each with `From` to and from its core type (`TryFrom` where the core is wider). Plans 06, 07, 08, 09 and 16 use these by name.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-annotation -b research/swift-annotation research/swift-plugins
@@ -106,11 +106,11 @@ cd .claude/worktrees/swift-annotation
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 04 have merged: `grep -n 'interaction' crates/epdf-viewer-host/src/api.rs` prints the `interaction: bool` field, and `grep -n 'page.annotations.list' crates/epdf-viewer-host/src/translate.rs` prints plan 04's route.
 
-- [ ] **Step 2: Check the dependencies**
+- [x] **Step 2: Check the dependencies**
 
 `crates/epdf-ffi/Cargo.toml` already has `epdf-annotation-core` (plan 04) and `serde_json` (umbrella Task 0d). Run `grep -n 'epdf-annotation-core\|serde_json' crates/epdf-ffi/Cargo.toml` and expect both.
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 `crates/epdf-ffi/tests/annotation_props.rs` (plan 04 owns `tests/annotation.rs`):
 
@@ -211,17 +211,17 @@ fn a_goto_link_keeps_its_page_and_drops_undefined_coordinates() {
 }
 ```
 
-- [ ] **Step 4: Run it to see it fail**
+- [x] **Step 4: Run it to see it fail**
 
 Run: `cargo test -p epdf-ffi --test annotation_props`
 Expected: compile errors, `cannot find type AnnotationRef in crate epdf_ffi` and the rest.
 
-- [ ] **Step 5: Confirm plan 04's records are there**
+- [x] **Step 5: Confirm plan 04's records are there**
 
 Run: `grep -n 'pub enum AnnotationRef\|pub struct AnnotationRevisionToken\|impl From<ac::PageRef> for PageRef' crates/epdf-ffi/src/*.rs`
 Expected: three hits, all from plan 04. If plan 04 hasn't merged, stop: this plan waits for it (umbrella Waves).
 
-- [ ] **Step 6: Extend `annotation.rs`**
+- [x] **Step 6: Extend `annotation.rs`**
 
 Plan 04 created `crates/epdf-ffi/src/annotation.rs` with `AnnotationRef`, `AnnotationRevisionToken`, `PdfDestination`, `PdfLinkTarget` and the core `PageRef` conversions. Append the block below to it. Of the `use` lines, add only those the file doesn't have yet (plan 04 imports the core as `ac` and `Nullable` already; keep both aliases, `core` is what the code below uses).
 
@@ -617,7 +617,7 @@ impl From<core::CreationDraftAnchor> for CreationDraftAnchor {
 
 `CreationDraftKind` has one variant (`Poly`), so the record drops it.
 
-- [ ] **Step 7: Export the module**
+- [x] **Step 7: Export the module**
 
 In `crates/epdf-ffi/src/lib.rs`, plan 04 already declared `pub mod annotation;` and re-exported its four records. Add a second re-export:
 
@@ -630,7 +630,7 @@ pub use annotation::{
 };
 ```
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `cargo test -p epdf-ffi --test annotation_props`
 Expected: 7 passed.
@@ -638,7 +638,7 @@ Expected: 7 passed.
 Run: `cargo test -p epdf-ffi`
 Expected: every existing `epdf-ffi` test still passes.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-ffi
