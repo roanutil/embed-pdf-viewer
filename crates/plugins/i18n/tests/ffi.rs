@@ -299,9 +299,12 @@ fn a_call_after_the_kernel_thread_stops_is_closed() {
 }
 
 #[test]
-fn configs_compare_their_loader_by_identity() {
-    let loader = Loader::new(Answer::Pack);
-    assert_eq!(config(Some(loader.clone())), config(Some(loader)));
-    assert_ne!(config(Some(Loader::new(Answer::Pack))), config(Some(Loader::new(Answer::Pack))));
+fn configs_compare_their_loader_by_presence() {
+    // A foreign loader arrives in a fresh `Arc` each time the config
+    // crosses, so identity can't be what equality checks.
+    assert_eq!(config(Some(Loader::new(Answer::Pack))), config(Some(Loader::new(Answer::Fail))));
     assert_eq!(config(None), config(None));
+    let mut lazy = config(None);
+    lazy.loader = Some(Loader::new(Answer::Pack));
+    assert_ne!(lazy, config(None));
 }

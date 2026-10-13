@@ -82,6 +82,14 @@ extension BaseSuite {
       await #expect(throws: PDFError.self) { try await i18n.setLocale("de") }
     }
 
+    @Test func aConfigWithALoaderEqualsItself() {
+      let config = ViewerConfig(
+        i18n: I18nConfig(lazyLocales: ["es"], loader: BundleLocaleLoader(bundle: .module))
+      )
+      #expect(config == config)
+      expectNoDifference(config.hashValue, config.hashValue)
+    }
+
     @Test func aLocaleFileDecodes() throws {
       let url = try #require(Bundle.module.url(forResource: "es", withExtension: "json", subdirectory: "Locales"))
       let pack = try LocalePack.decode(json: String(contentsOf: url, encoding: .utf8))

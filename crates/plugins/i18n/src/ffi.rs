@@ -279,16 +279,13 @@ impl fmt::Debug for I18nConfig {
     }
 }
 
-/// The loader compares by identity: two configs are equal when they hold
-/// the same loader object, or neither has one.
+/// The loader compares by presence only: any two loaders are equal. It
+/// can't compare by identity, because uniffi wraps a foreign loader in a new
+/// `Arc` each time the record crosses, and Swift's `==` and `hash(into:)`
+/// cross it on every call. Identity would make a config unequal to itself.
 impl PartialEq for I18nConfig {
     fn eq(&self, other: &Self) -> bool {
-        let same_loader = match (&self.loader, &other.loader) {
-            (None, None) => true,
-            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
-            _ => false,
-        };
-        same_loader
+        self.loader.is_some() == other.loader.is_some()
             && self.locale == other.locale
             && self.fallback_locale == other.fallback_locale
             && self.locales == other.locales
@@ -304,7 +301,7 @@ impl Hash for I18nConfig {
         self.locale.hash(state);
         self.fallback_locale.hash(state);
         self.lazy_locales.hash(state);
-        self.loader.as_ref().map(|l| Arc::as_ptr(l) as *const () as usize).hash(state);
+        self.loader.is_some().hash(state);
     }
 }
 
