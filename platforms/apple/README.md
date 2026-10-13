@@ -38,6 +38,12 @@ uniffi's own assessment and a fair reason not to review it in a diff.
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
 | view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
+| actions | `ActionsCapability`, `JavaScriptCoreEngineFactory` | `actions: .forCurrentTimeZone(javascript: ActionsJavaScriptConfig(enabled: true, engine: JavaScriptCoreEngineFactory()))` | `2026-10-06-swift-plugins/15-actions.md` |
+
+> Note: `JavaScriptCoreEngine` enforces a script's time budget by abandoning the realm, because
+> JavaScriptCore has no public execution limit. A runaway script keeps one thread busy until the
+> app exits. Memory and stack budgets aren't enforced. JavaScript on a real document also needs
+> the form and annotation plugins (plans 05 and 06), whose engine paths the script world reads.
 
 ## What the script assembles
 

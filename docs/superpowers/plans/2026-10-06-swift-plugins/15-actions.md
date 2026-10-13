@@ -3254,11 +3254,11 @@ git commit -m "Add a JavaScriptCore ScriptEngine for PDF JavaScript"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `actions` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan order.
 
-- [ ] **Step 2: Add the README row and the caveat**
+- [x] **Step 2: Add the README row and the caveat**
 
 ```markdown
 | actions | `ActionsCapability`, `JavaScriptCoreEngineFactory` | `actions: .forCurrentTimeZone(javascript: ActionsJavaScriptConfig(enabled: true, engine: JavaScriptCoreEngineFactory()))` | `2026-10-06-swift-plugins/15-actions.md` |
@@ -3273,11 +3273,11 @@ Under the table:
 > the form and annotation plugins (plans 05 and 06), whose engine paths the script world reads.
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` Appendix A §A.4, change `**actions** (D).` to `**actions** (D), delivered by 2026-10-06-swift-plugins/15-actions.md (application members only; see its Decisions).` and leave the rest alone. In Appendix C, leave the rows as they are; plan 15's Task 3 is the receipt for `actions.read`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-actions --features uniffi
@@ -3293,7 +3293,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Expected: every command passes. Kotlin generation is where a field named like a Kotlin keyword fails; `ScriptExecutionError.message` is a record field, not an exception's, so it generates.
 
-- [ ] **Step 5: Commit, with the archive sizes**
+- [x] **Step 5: Commit, with the archive sizes**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
