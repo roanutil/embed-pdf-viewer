@@ -100,8 +100,8 @@ pub enum ReadoutKind {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MeasurementReadout {
     pub kind: ReadoutKind,
-    pub label: String,
     pub value: f64,
+    pub label: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub perimeter: Option<String>,
 }

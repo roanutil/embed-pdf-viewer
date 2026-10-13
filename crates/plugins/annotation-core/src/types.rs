@@ -467,6 +467,10 @@ pub struct TextStyle {
 /// The one flat vocabulary for editable appearance properties. `extra`
 /// holds members a patch brought that no key names: `{ ...base, ...patch }`
 /// keeps them, so a resolved defaults bag prints them too.
+///
+/// Member order is `defaultsFor`'s `{ ...m.style, ...initialTextStyle, ...d,
+/// lineEndings }`: the style and text keys, then what the tool's patch adds,
+/// then `lineEndings`, which goes last unless the patch itself set it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationProps {
@@ -486,13 +490,13 @@ pub struct AnnotationProps {
     pub italic: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub underline: Option<bool>,
-    pub line_endings: LineEndings,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
     #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
     pub link: Nullable<PdfLinkTarget>,
     #[serde(flatten)]
     pub extra: serde_json::Map<String, Value>,
+    pub line_endings: LineEndings,
 }
 
 /// `PropKey`: a key of [`AnnotationProps`].
@@ -1150,7 +1154,9 @@ pub enum GroupOp {
     Resize,
 }
 
-/// The in-progress gesture.
+/// The in-progress gesture. Each variant's members follow the order
+/// `update.ts` writes them: the object literal that starts the gesture, then
+/// the members later samples spread in.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "g", rename_all = "kebab-case", rename_all_fields = "camelCase")]
 pub enum Draft {
@@ -1199,8 +1205,6 @@ pub enum Draft {
         flags: Option<AnnotationFlagsPatch>,
     },
     CreatePoly {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        measure: Option<ShapeMeasurementAppearance>,
         subtype: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
@@ -1208,6 +1212,8 @@ pub enum Draft {
         points: Vec<Point>,
         cur: Point,
         closed: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        measure: Option<ShapeMeasurementAppearance>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
     },
@@ -1229,21 +1235,22 @@ pub enum Draft {
         page: PageRef,
         step: CalloutStep,
         tip: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        knee: Option<Point>,
         cur: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_from: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_to: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        page_box: Option<Rect>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         display_rotation: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         upright: Option<bool>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
+        page_box: Option<Rect>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         flags: Option<AnnotationFlagsPatch>,
+        // Set by later clicks, so they follow what the tip click wrote.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        knee: Option<Point>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        box_from: Option<Point>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        box_to: Option<Point>,
     },
     Move {
         ids: Vec<Id>,
@@ -1265,9 +1272,10 @@ pub enum Draft {
         start: Point,
         cur: Point,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        free: Option<bool>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         view: Option<ViewEnv>,
+        // Set by the first move sample, after the press wrote `view`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        free: Option<bool>,
     },
     Group {
         op: GroupOp,
@@ -1701,21 +1709,21 @@ pub struct RenderItem {
     pub box_: Rect,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ap_box: Option<Rect>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_rot: Option<f64>,
     pub style: Style,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<TextStyle>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<Label>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub measure: Option<MeasurementAppearance>,
     pub source: RenderSource,
     pub selected: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hovered: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub label: Option<Label>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub measure: Option<MeasurementAppearance>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rot: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ap_rot: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub blend: Option<BlendMode>,
 }

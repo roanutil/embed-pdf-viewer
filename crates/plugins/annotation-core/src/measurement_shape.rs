@@ -47,8 +47,8 @@ impl ShapeMeasurementAppearance {
 #[serde(rename_all = "camelCase")]
 pub struct ShapeMeasurementLayout {
     pub caption: Option<DistanceCaptionLayout>,
-    pub visual_bounds: Rect,
     pub selection_points: Vec<Point>,
+    pub visual_bounds: Rect,
 }
 
 /// `DistanceLayout | ShapeMeasurementLayout`.
