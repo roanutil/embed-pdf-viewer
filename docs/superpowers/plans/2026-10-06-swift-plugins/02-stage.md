@@ -2407,7 +2407,7 @@ git commit -m "Relay the stage plugin's events through uniffi"
 - Consumes: `RenderCapability::{get_render_policy, render_source, get_source_key, conform_viewport, get_paint_settings, create_view_demand}`, `ViewDemand::{set_demand, get_plan, mark_painted, mark_unpainted, release, dispose}` (`crates/plugins/render/src/controller.rs`); `EngineRenderPolicy`, `PageRenderViewport` (`policy.rs`); `PageViewDemand`, `Velocity`, `TilePaintPlan` (`paint_plan.rs`); the existing `Raster`, `rendered`, `abortable`, `open_cap` in `ffi.rs`.
 - Produces: on `RenderHandle`: `render_policy() -> RenderPolicy`, `render_source(page, scale, include_annotations, cancel) -> RenderedImage`, `source_key(page, scale, include_annotations) -> String`, `conform_viewport(page, scale) -> RenderViewport`, `paint_settings() -> RenderPaintSettings`, `create_view_demand(view_id) -> Arc<RenderViewDemandHandle>`. Records/enums: `RenderPolicy { Continuous, Lattice { lattice: RenderLatticePolicy } }`, `RenderLatticePolicy { full_page_widths, tile_sizes, tile_scales, appearance_scales, max_render_pixels, background, enforced }`, `RenderViewport { Scale { scale: Option<f64> }, Width { width } }`, `RenderPaintSettings { fade_ms, tiles }`, `RenderPageViewDemand { desired_device_width, visible_rect, velocity_x, velocity_y }`, `RenderTileSource { key, scale, rect, z }`, `RenderTilePlan { engaged, paint, fetching, stamp }`. `RenderViewDemandHandle` methods: `set_demand(page, demand, include_annotations)`, `plan(page)`, `tile_image(page, key) -> Option<RenderedImage>`, `mark_painted(page, key)`, `mark_unpainted(page, key)`, `release(page)`, `dispose()`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/render/tests/ffi.rs`:
 
@@ -2474,12 +2474,12 @@ fn a_closed_documents_view_demand_refuses() {
 
 `Rig` exposes the handle as `rig.render` (`crates/plugins/render/tests/support/mod.rs`). If the default config's `paint.tiles` is true, the plan engages and the first assertion still holds.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-render --features uniffi --test ffi`
 Expected: FAIL to compile, "no method named `render_policy`".
 
-- [ ] **Step 3: Write the records**
+- [x] **Step 3: Write the records**
 
 Add to `crates/plugins/render/src/ffi.rs`, beside the existing records:
 
@@ -2614,7 +2614,7 @@ impl From<&TilePaintPlan> for RenderTilePlan {
 
 Check `crate::paint_plan`'s `Rect` type: `Into<epdf_ffi::Rect>` exists for both `epdf_geometry::Rect` and `epdf_kernel::geometry::Rect`. If `RenderSourceOptions` and `ViewDemand` aren't re-exported at the crate root, import them from `crate::host_contract` and `crate::controller`.
 
-- [ ] **Step 4: Write the methods and the view-demand handle**
+- [x] **Step 4: Write the methods and the view-demand handle**
 
 Add to `#[uniffi::export] impl RenderHandle`:
 
@@ -2781,12 +2781,12 @@ impl RenderViewDemandHandle {
 
 `PixelSource` is the existing alias in `ffi.rs`; if it isn't `Clone`, it's an `Rc<dyn Fn>` and `.clone()` is fine. `RenderCapability` derives `Clone` (it's an `Rc` newtype).
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-render --features uniffi --test ffi`
 Expected: PASS, every existing render test plus the 5 new ones.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/render

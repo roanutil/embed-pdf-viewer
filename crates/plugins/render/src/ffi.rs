@@ -2,10 +2,11 @@
 //! handle, one event enum. Every method hops to the kernel thread through
 //! `KernelBound`.
 //!
-//! The public lens only: `render_page`, `render_thumbnail`, `render_pages`,
-//! the epoch ledger and `invalidate`. The host lens (`render_source`, source
-//! keys, view demands and tile plans) drives a tiled viewport the stage
-//! plugin owns, and lands with it.
+//! The public lens (`render_page`, `render_thumbnail`, `render_pages`, the
+//! epoch ledger and `invalidate`) and the host lens a viewport drives
+//! (`render_source`, source keys, the policy, and view demands with their
+//! tile plans). A tile plan crosses without its image handles: a tile's
+//! pixels are fetched by key with `RenderViewDemandHandle::tile_image`.
 //!
 //! A raster resolves to the engine's JSON, which on `epdf-viewer-host` is
 //! the native host's raw pixels: `width`, `height`, `stride`, the pixel
@@ -24,7 +25,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use epdf_ffi::{
-    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Subscription, ViewerError,
+    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Rect, Subscription, ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::signal::AbortSignal;
@@ -36,7 +37,10 @@ use crate::contract::{
     InvalidateOptions, InvalidateScope, RenderPagesOptions, RenderThumbnailOptions,
 };
 use crate::paint_plan::{FullPageOptions, Quantize};
+use crate::paint_plan::{PageViewDemand, TilePaintPlan, Velocity};
+use crate::policy::{EngineRenderPolicy, PageRenderViewport};
 use crate::raster_store::PageImageHandle;
+use crate::{RenderSourceOptions, ViewDemand};
 
 /// The bytes behind a raster's `$host` id, on the kernel thread.
 pub type PixelSource = Rc<dyn Fn(u64) -> Option<Arc<Vec<u8>>>>;
@@ -196,6 +200,134 @@ pub trait RenderEventListener: Send + Sync {
 }
 
 // ── conversion ────────────────────────────────────────────────────────────────
+
+/// The deployment's render policy: render at any size, or snap to ladders.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum RenderPolicy {
+    Continuous,
+    Lattice { lattice: RenderLatticePolicy },
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct RenderLatticePolicy {
+    pub full_page_widths: Vec<f64>,
+    pub tile_sizes: Vec<f64>,
+    pub tile_scales: Vec<f64>,
+    pub appearance_scales: Vec<f64>,
+    pub max_render_pixels: Option<f64>,
+    pub background: Option<String>,
+    pub enforced: Option<bool>,
+}
+
+impl From<EngineRenderPolicy> for RenderPolicy {
+    fn from(policy: EngineRenderPolicy) -> Self {
+        match policy {
+            EngineRenderPolicy::Continuous => RenderPolicy::Continuous,
+            EngineRenderPolicy::Lattice(l) => RenderPolicy::Lattice {
+                lattice: RenderLatticePolicy {
+                    full_page_widths: l.full_page.widths,
+                    tile_sizes: l.tiles.as_ref().map(|t| t.tile_sizes.clone()).unwrap_or_default(),
+                    tile_scales: l.tiles.map(|t| t.scales).unwrap_or_default(),
+                    appearance_scales: l.appearances.map(|a| a.scales).unwrap_or_default(),
+                    max_render_pixels: l.max_render_pixels,
+                    background: l.background,
+                    enforced: l.enforced,
+                },
+            },
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Enum)]
+pub enum RenderViewport {
+    /// `scale` device pixels a point; `None` is 1.
+    Scale { scale: Option<f64> },
+    /// Exact output width in device pixels.
+    Width { width: f64 },
+}
+
+impl From<PageRenderViewport> for RenderViewport {
+    fn from(v: PageRenderViewport) -> Self {
+        match v {
+            PageRenderViewport::Scale { scale } => RenderViewport::Scale { scale },
+            PageRenderViewport::Width { width } => RenderViewport::Width { width },
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct RenderPaintSettings {
+    /// Tile arrival cross-fade in ms; 0 is a hard pop.
+    pub fade_ms: f64,
+    /// Whether the tile plane is on.
+    pub tiles: bool,
+}
+
+/// What a view wants of a page: device pixels across its unrotated width,
+/// the visible region (page points; `None` is the whole page), and scroll
+/// velocity for prefetch direction.
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct RenderPageViewDemand {
+    pub desired_device_width: f64,
+    #[uniffi(default = None)]
+    pub visible_rect: Option<Rect>,
+    #[uniffi(default = None)]
+    pub velocity_x: Option<f64>,
+    #[uniffi(default = None)]
+    pub velocity_y: Option<f64>,
+}
+
+impl From<RenderPageViewDemand> for PageViewDemand {
+    fn from(d: RenderPageViewDemand) -> Self {
+        PageViewDemand {
+            desired_device_width: d.desired_device_width,
+            visible_rect: d.visible_rect.map(Into::into),
+            velocity: match (d.velocity_x, d.velocity_y) {
+                (None, None) => None,
+                (dx, dy) => Some(Velocity { dx: dx.unwrap_or(0.0), dy: dy.unwrap_or(0.0) }),
+            },
+        }
+    }
+}
+
+/// One tile to keep on screen. Fetch its pixels with `tile_image`.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct RenderTileSource {
+    pub key: String,
+    pub scale: f64,
+    /// Placement, y-down page points.
+    pub rect: Rect,
+    /// Stacking: coarse under fine.
+    pub z: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct RenderTilePlan {
+    pub engaged: bool,
+    pub paint: Vec<RenderTileSource>,
+    pub fetching: Vec<String>,
+    pub stamp: String,
+}
+
+impl From<&TilePaintPlan> for RenderTilePlan {
+    fn from(p: &TilePaintPlan) -> Self {
+        RenderTilePlan {
+            engaged: p.engaged,
+            paint: p
+                .paint
+                .iter()
+                .map(|s| RenderTileSource {
+                    key: s.key.clone(),
+                    scale: s.scale,
+                    rect: s.rect.into(),
+                    z: s.z,
+                })
+                .collect(),
+            fetching: p.fetching.clone(),
+            stamp: p.stamp.clone(),
+        }
+    }
+}
 
 fn invalid_state(message: String) -> Error {
     Error::named("InvalidState", format!("[render] {message}")).with("code", "invalid-state")
@@ -545,6 +677,85 @@ impl RenderHandle {
             .await
     }
 
+    pub async fn render_policy(&self) -> Result<RenderPolicy, ViewerError> {
+        self.bound.call(|b| Ok(open(b)?.get_render_policy().into())).await
+    }
+
+    /// The viewer door: render at the scale a view shows the page,
+    /// conformed through the policy's render points.
+    pub async fn render_source(
+        &self,
+        page: PageRef,
+        scale: f64,
+        include_annotations: Option<bool>,
+        cancel: Arc<CancelToken>,
+    ) -> Result<RenderedImage, ViewerError> {
+        self.bound
+            .call_promise_cancellable(
+                cancel,
+                move |b| {
+                    let cap = open(b)?;
+                    let (signal, abort) = abortable();
+                    let image = cap.render_source(
+                        page.into(),
+                        RenderSourceOptions { scale, include_annotations, signal: Some(signal) },
+                    );
+                    Ok(rendered(cap, &b.pixels, page, image)?.with_abort(abort))
+                },
+                Raster::owned,
+            )
+            .await
+    }
+
+    /// The identity of the raster `render_source` would produce.
+    pub async fn source_key(
+        &self,
+        page: PageRef,
+        scale: f64,
+        include_annotations: Option<bool>,
+    ) -> Result<String, ViewerError> {
+        self.bound
+            .call(move |b| open(b)?.get_source_key(page.into(), scale, include_annotations))
+            .await
+    }
+
+    pub async fn conform_viewport(
+        &self,
+        page: PageRef,
+        scale: f64,
+    ) -> Result<RenderViewport, ViewerError> {
+        self.bound.call(move |b| Ok(open(b)?.conform_viewport(page.into(), scale)?.into())).await
+    }
+
+    pub async fn paint_settings(&self) -> Result<RenderPaintSettings, ViewerError> {
+        self.bound
+            .call(|b| {
+                let p = open(b)?.get_paint_settings();
+                Ok(RenderPaintSettings { fade_ms: p.fade_ms, tiles: p.tiles })
+            })
+            .await
+    }
+
+    /// This view's tile surface. The same id answers the same surface;
+    /// pair each with `dispose`.
+    pub async fn create_view_demand(
+        &self,
+        view_id: String,
+    ) -> Result<Arc<RenderViewDemandHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.bound
+            .call(move |b| {
+                let view = open(b)?.create_view_demand(&view_id);
+                Ok(Arc::new(RenderViewDemandHandle {
+                    bound: KernelBound::new(
+                        ViewBound { cap: b.cap.clone(), pixels: b.pixels.clone(), view },
+                        post,
+                    ),
+                }))
+            })
+            .await
+    }
+
     /// The listener is registered on the kernel thread after this returns;
     /// a cancel before then still takes effect. It gets `on_end` when the
     /// document closes (at once if it already has).
@@ -595,5 +806,98 @@ impl RenderHandle {
             );
         });
         subscription
+    }
+}
+
+struct ViewBound {
+    cap: RenderCapability,
+    pixels: PixelSource,
+    view: ViewDemand,
+}
+
+impl ViewBound {
+    fn open(&self) -> Result<&ViewDemand, Error> {
+        open_cap(&self.cap)?;
+        Ok(&self.view)
+    }
+}
+
+#[derive(uniffi::Object)]
+pub struct RenderViewDemandHandle {
+    bound: KernelBound<ViewBound>,
+}
+
+#[uniffi::export]
+impl RenderViewDemandHandle {
+    pub async fn set_demand(
+        &self,
+        page: PageRef,
+        demand: RenderPageViewDemand,
+        include_annotations: Option<bool>,
+    ) -> Result<(), ViewerError> {
+        self.bound
+            .call(move |b| b.open()?.set_demand(page.into(), demand.into(), include_annotations))
+            .await
+    }
+
+    pub async fn plan(&self, page: PageRef) -> Result<RenderTilePlan, ViewerError> {
+        self.bound.call(move |b| Ok(RenderTilePlan::from(&*b.open()?.get_plan(page.into())))).await
+    }
+
+    /// A planned tile's pixels, copied out; `None` for a key the current
+    /// plan does not paint.
+    pub async fn tile_image(
+        &self,
+        page: PageRef,
+        key: String,
+    ) -> Result<Option<RenderedImage>, ViewerError> {
+        self.bound
+            .call(move |b| {
+                let plan = b.open()?.get_plan(page.into());
+                let Some(source) = plan.paint.iter().find(|s| s.key == key) else {
+                    return Ok(None);
+                };
+                let page_width = b.cap.page_width(page.into())?;
+                let mut raster = Raster::read(&source.handle, page_width, &b.pixels)?;
+                raster.scale = source.scale;
+                Ok(Some(raster.owned()))
+            })
+            .await
+    }
+
+    pub async fn mark_painted(&self, page: PageRef, key: String) -> Result<(), ViewerError> {
+        self.bound
+            .call(move |b| {
+                b.open()?.mark_painted(page.into(), &key);
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn mark_unpainted(&self, page: PageRef, key: String) -> Result<(), ViewerError> {
+        self.bound
+            .call(move |b| {
+                b.open()?.mark_unpainted(page.into(), &key);
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn release(&self, page: PageRef) -> Result<(), ViewerError> {
+        self.bound
+            .call(move |b| {
+                b.open()?.release(page.into());
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn dispose(&self) -> Result<(), ViewerError> {
+        self.bound
+            .call(|b| {
+                b.open()?.dispose();
+                Ok(())
+            })
+            .await
     }
 }
