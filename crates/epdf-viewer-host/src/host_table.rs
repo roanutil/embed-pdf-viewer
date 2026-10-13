@@ -42,6 +42,16 @@ impl HostTable {
         let _ = TABLE.try_with(|t| t.borrow_mut().1.remove(&id));
     }
 
+    /// Make `Bytes::from_json` resolve `{"$hostBytes": id}` by taking that
+    /// entry out of this thread's table, so an extracted PDF reaches its
+    /// one reader without a base64 round trip. On the kernel thread, once
+    /// per thread.
+    pub fn install_bytes_resolver() {
+        epdf_kernel::bytes::set_host_bytes_resolver(Some(std::rc::Rc::new(|id: u32| {
+            HostTable::take(u64::from(id))
+        })));
+    }
+
     /// Entries held.
     pub fn len() -> usize {
         TABLE.with(|t| t.borrow().1.len())

@@ -413,6 +413,7 @@ impl DocumentSession {
     /// survive a reorder, so they are deliberately left alone.
     pub fn refresh_page_registry(&mut self) -> Result<(), EngineError> {
         let state = self.state_mut()?;
+        state.document.reindex()?;
         state.records.clear();
         state.fully_enumerated = false;
         self.ensure_full_page_registry()

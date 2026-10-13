@@ -797,7 +797,7 @@ The host reads `pageObjectNumbers: [u32]` (not refs), `destIndex: u32`, `rotatio
 
 `$hostBytes` exists so an extracted PDF doesn't cross base64 twice. `extract` and `duplicate` hand the extract's value straight to `pages.insert` or `Bytes::from_json`, which takes it out of the table. The price: a `$hostBytes` entry whose promise is aborted between the extract and the insert stays in the table until the session drops. `insert_from_bytes` still pays one base64 round trip, because the plugin calls `Bytes::to_json` on the caller's bytes (`crates/plugins/page-edit/src/controller.rs`, `insert_at`). Removing it means changing the plugin, which this plan doesn't do; B5's size and speed work can.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -962,12 +962,12 @@ fn a_raw_engine_opens_bytes_given_as_bytes_json() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL to compile on `Decode::PageMutation`, `Decode::HostBytes` and `HostTable::install_bytes_resolver`.
 
-- [ ] **Step 3: Route and translate**
+- [x] **Step 3: Route and translate**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add two variants to `Decode`:
 
@@ -1109,7 +1109,7 @@ fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
 }
 ```
 
-- [ ] **Step 4: Resolve `$hostBytes` from the table**
+- [x] **Step 4: Resolve `$hostBytes` from the table**
 
 In `crates/epdf-viewer-host/src/host_table.rs`:
 
@@ -1127,7 +1127,7 @@ In `crates/epdf-viewer-host/src/host_table.rs`:
 
 `Bytes::from_json` reads the id as `u32` (`crates/epdf-kernel/src/bytes.rs:68`). The table counts from 1 and a session doesn't reach four billion entries; past that the cast truncates and the resolve misses, which surfaces as `invalid-input` from `pdf_bytes`, not as wrong bytes.
 
-- [ ] **Step 5: Keep the live layout**
+- [x] **Step 5: Keep the live layout**
 
 In `crates/epdf-viewer-host/src/native_engine.rs`, add a thread-local beside `LISTENERS`:
 
@@ -1199,12 +1199,12 @@ In `NativeDocument::page_index`, read the live layout:
 
 Update the module doc comment's last paragraph: the `pages.list` snapshot is no longer frozen.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS, including the three native-engine tests against real PDFium.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src crates/epdf-viewer-host/tests/translate.rs

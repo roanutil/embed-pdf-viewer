@@ -51,6 +51,14 @@ pub enum Decode {
     /// carrying the byte count.
     Raster,
     Unit,
+    /// A page mutation: `Mutation`, with `ref` added to every layout page of
+    /// the result and the event (the kernel's page registry and the
+    /// page-edit plugin read `ref`), and the host's
+    /// `insertedPageObjectNumbers` given as `insertedPages` refs.
+    PageMutation,
+    /// A byte payload (an extracted PDF), parked in the `HostTable` and
+    /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
+    HostBytes,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -77,6 +85,12 @@ pub const PATHS: &[&str] = &[
     "page.geometry.read",
     "page.render.image",
     "search.query",
+    "pages.move",
+    "pages.rotate",
+    "pages.delete",
+    "pages.insert",
+    "pages.insertBlank",
+    "pages.extract",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
@@ -105,6 +119,12 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
+        "pages.move" => ("pages.move", Decode::PageMutation),
+        "pages.rotate" => ("pages.rotate", Decode::PageMutation),
+        "pages.delete" => ("pages.delete", Decode::PageMutation),
+        "pages.insert" => ("pages.insert", Decode::PageMutation),
+        "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
+        "pages.extract" => ("pages.extract", Decode::HostBytes),
         _ => return None,
     })
 }
@@ -125,11 +145,35 @@ pub fn translate(
         })
     };
     let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
+    let mut payloads = Vec::new();
     let extra: Vec<(&str, Value)> = match kind {
         "metadata.update" => vec![("patch", arg(0))],
         "pages.text" | "pages.geometry" => vec![("pageObjectNumber", page()?)],
         "pages.render" => vec![("pageObjectNumber", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
+        "pages.move" => vec![
+            ("pageObjectNumbers", object_numbers(path, &arg(0))?),
+            ("destIndex", whole(path, "destIndex", &arg(1))?),
+        ],
+        "pages.rotate" => vec![
+            ("pageObjectNumbers", object_numbers(path, &arg(0))?),
+            ("rotation", whole(path, "rotation", &arg(1))?),
+        ],
+        "pages.delete" | "pages.extract" => {
+            vec![("pageObjectNumbers", object_numbers(path, &arg(0))?)]
+        }
+        "pages.insertBlank" => {
+            let spec = arg(0);
+            vec![
+                ("size", spec.get("size").cloned().unwrap_or(Value::Null)),
+                ("count", optional_whole(path, "count", spec.get("count"))?),
+                ("destIndex", optional_whole(path, "destIndex", args.get(1))?),
+            ]
+        }
+        "pages.insert" => {
+            payloads.push(pdf_bytes(path, &arg(0))?);
+            vec![("destIndex", optional_whole(path, "destIndex", args.get(1))?)]
+        }
         _ => vec![],
     };
     let mut request = Map::new();
@@ -141,7 +185,7 @@ pub fn translate(
             request.insert(key.into(), value);
         }
     }
-    Ok(WireCall { request: Value::Object(request), payloads: Vec::new(), decode })
+    Ok(WireCall { request: Value::Object(request), payloads, decode })
 }
 
 /// A JavaScript number as the whole, non-negative integer the host parses.
@@ -168,6 +212,29 @@ pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<
         Some(v) if epdf_kernel::is_undefined(v) => Ok(Value::Null),
         Some(v) => whole(path, field, v),
     }
+}
+
+/// `[PageRef]` as the host's `[pageObjectNumber]`.
+fn object_numbers(path: &str, refs: &Value) -> Result<Value, Error> {
+    let refs = refs.as_array().ok_or_else(|| {
+        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a list of pages: {refs}"))
+    })?;
+    refs.iter()
+        .map(|r| {
+            PageRef::from_json(r).map(|p| Value::from(p.page_object_number)).ok_or_else(|| {
+                coded("invalid-input", format!("[epdf-viewer-host] {path}: not a PageRef: {r}"))
+            })
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map(Value::Array)
+}
+
+/// A PDF given as `Bytes` JSON: `{"$bytes": base64}` from the caller, or
+/// `{"$hostBytes": id}` from an extract, which this takes out of the table.
+fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
+    epdf_kernel::bytes::Bytes::from_json(value).map(|b| b.0).ok_or_else(|| {
+        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a PDF's bytes: {value}"))
+    })
 }
 
 /// A `SearchRequest` the host reads: `startPage` is a `PageObjectNumber`
@@ -219,6 +286,18 @@ fn add_page_ref(object: &mut Value, key: &str, what: &str) -> Result<(), Error> 
     }
 }
 
+/// `ref` on every page of `object.layout.pages`, which must be there.
+fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
+    let Some(Value::Array(pages)) = object.get_mut("layout").and_then(|l| l.get_mut("pages"))
+    else {
+        return Err(malformed(format!("{what} without a layout")));
+    };
+    for page in pages {
+        add_page_ref(page, "ref", "a layout page")?;
+    }
+    Ok(())
+}
+
 /// Read a host response into what the call's caller expects.
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
@@ -264,6 +343,37 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         Decode::Mutation => {
             let value = take(&mut result, "result")?;
             return Ok(Decoded { value, event: result.remove("event") });
+        }
+        Decode::PageMutation => {
+            let mut value = take(&mut result, "result")?;
+            add_layout_refs(&mut value, "a page mutation's result")?;
+            if let Some(pons) = value.get("insertedPageObjectNumbers").and_then(Value::as_array) {
+                let refs = pons
+                    .iter()
+                    .map(|n| {
+                        n.as_u64()
+                            .and_then(|n| u32::try_from(n).ok())
+                            .map(|n| PageRef::new(n).to_json())
+                            .ok_or_else(|| {
+                                malformed(format!("an inserted page that is not a number: {n}"))
+                            })
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                value["insertedPages"] = Value::Array(refs);
+            }
+            let mut event = result.remove("event");
+            if let Some(event) = event.as_mut() {
+                add_layout_refs(event, "a page event")?;
+            }
+            return Ok(Decoded { value, event });
+        }
+        Decode::HostBytes => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("bytes without their payload".into()))?;
+            serde_json::json!({ "$hostBytes": HostTable::put(bytes) })
         }
         Decode::Raster => {
             let bytes = response
