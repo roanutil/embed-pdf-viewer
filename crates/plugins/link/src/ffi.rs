@@ -209,14 +209,21 @@ fn input_of(cap: &LinkCapability, input: LinkInput) -> Result<crate::LinkInput, 
 /// only while the active tool enables `link-nav`, with an attached link
 /// standing down while the tool can edit annotations, and the smallest link
 /// winning. The down captures the gesture, as the anchor's `pointerdown`
-/// keeps it from the hub; the up activates when it lands on the same link,
-/// as a click does. A touch is never claimed, so a drag that starts on a
-/// link still scrolls.
+/// keeps it from the hub; the up activates when it lands on the same link
+/// within [`TAP_SLOP`] of the down, as a click does (a browser drops the
+/// click after a scroll). A touch is never claimed, so a drag that starts
+/// on a link still scrolls. The annotation `/AA` events the web's anchors
+/// also dispatch (`mouseDown`, `mouseUp`, hover) are not sent from here.
 struct TapHandler {
     link: LinkCapability,
     report: Rc<dyn Fn(&Error)>,
-    pressed: RefCell<Option<(epdf_annotation_core::PageRef, String)>>,
+    /// The pressed link's page and id, and where the down was.
+    pressed: RefCell<Option<(epdf_annotation_core::PageRef, String, epdf_geometry::Point)>>,
 }
+
+/// How far, in viewport units, an up may land from its down and still be a
+/// tap rather than a drag.
+const TAP_SLOP: f64 = 10.0;
 
 impl TapHandler {
     fn link_under(
@@ -264,16 +271,17 @@ impl InteractionHandler for TapHandler {
     }
 
     fn on_down(&self, sample: &PointerSample) -> bool {
-        let pressed = self.link_under(sample).map(|(page, link)| (page, link.id));
+        let pressed = self.link_under(sample).map(|(page, link)| (page, link.id, sample.viewport));
         let captured = pressed.is_some();
         *self.pressed.borrow_mut() = pressed;
         captured
     }
 
     fn on_up(&self, sample: &PointerSample) {
-        let Some((page, id)) = self.pressed.borrow_mut().take() else { return };
+        let Some((page, id, down)) = self.pressed.borrow_mut().take() else { return };
+        let moved = (sample.viewport.x - down.x).hypot(sample.viewport.y - down.y);
         let Some((at, link)) = self.link_under(sample) else { return };
-        if at != page || link.id != id {
+        if at != page || link.id != id || moved > TAP_SLOP {
             return;
         }
         let context = LinkActivateContext {

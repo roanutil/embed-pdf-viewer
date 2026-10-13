@@ -407,3 +407,17 @@ fn a_link_activated_by_id_dispatches_with_its_page() {
     let seen = block_on(thread.call(|_| SEEN.with(|s| s.borrow().clone()))).unwrap();
     assert_eq!(seen, [Some(1)]);
 }
+
+#[test]
+fn a_drag_that_ends_on_the_same_link_is_not_a_tap() {
+    let (thread, link) = loaded();
+    let events = Arc::new(Events::default());
+    let _sub = link.subscribe(events.clone());
+    let _registration = block_on(link.register_tap_handler()).unwrap();
+    // Both points are inside the external link (x 40..360), 100 apart.
+    tap(&thread, ON_URI, Point { x: 200.0, y: 145.0 });
+    assert!(activations(&events).is_empty());
+    // A few points of jitter is still a tap.
+    tap(&thread, ON_URI, Point { x: 103.0, y: 147.0 });
+    assert_eq!(activations(&events).len(), 1);
+}
