@@ -296,3 +296,72 @@ fn a_locked_open_rejects_and_leaves_no_session_on_the_host() {
     let answer: Value = serde_json::from_str(&futures::executor::block_on(rx).unwrap()).unwrap();
     assert_eq!(answer, json!({ "result": { "closedSessions": 0 } }));
 }
+
+use epdf_viewer_host::translate::{PATHS, maps, optional_whole, whole};
+
+#[test]
+fn every_routed_path_is_listed() {
+    for path in PATHS {
+        assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
+    }
+}
+
+#[test]
+fn a_namespace_answers_when_a_listed_path_is_under_it() {
+    assert!(maps("metadata"));
+    assert!(maps("metadata.read"));
+    assert!(maps("page.text"));
+    assert!(!maps("meta"));
+    assert!(!maps("metadata.write"));
+    assert!(!maps("signatures"));
+}
+
+#[test]
+fn a_whole_javascript_number_goes_out_as_an_integer() {
+    let value = whole("pages.rotate", "rotation", &json!(90.0)).unwrap();
+    assert_eq!(value, json!(90));
+    assert!(value.is_u64());
+    for bad in [json!(1.5), json!(-1.0), json!({ "$number": "NaN" }), json!("3")] {
+        assert_eq!(whole("p", "f", &bad).unwrap_err().code(), Some("invalid-input"), "{bad}");
+    }
+}
+
+#[test]
+fn an_absent_or_undefined_whole_is_left_out() {
+    assert_eq!(optional_whole("p", "f", None).unwrap(), Value::Null);
+    assert_eq!(optional_whole("p", "f", Some(&Value::Null)).unwrap(), Value::Null);
+    assert_eq!(optional_whole("p", "f", Some(&epdf_kernel::undefined())).unwrap(), Value::Null);
+    assert_eq!(optional_whole("p", "f", Some(&json!(2.0))).unwrap(), json!(2));
+}
+
+#[test]
+fn an_undefined_argument_is_left_out_of_the_request() {
+    let call = translate("d1", "metadata.update", None, &[epdf_kernel::undefined()], 9).unwrap();
+    assert_eq!(call.request, json!({ "kind": "metadata.update", "jobId": 9, "docId": "d1" }));
+}
+
+#[test]
+fn the_native_engine_opens_bytes_sent_as_json() {
+    let pages = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        let bytes =
+            epdf_kernel::bytes::Bytes(test_support::fixture(test_support::REPORT)).to_json();
+        engine.open(json!({ "kind": "bytes", "bytes": bytes }), None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().unwrap();
+            doc.call("pages.list", None, vec![]).on_settle(move |list| {
+                let _ =
+                    tx.send(list.as_ref().ok().map(|l| l["pages"].as_array().map_or(0, Vec::len)));
+            });
+        });
+    });
+    assert_eq!(pages, Some(14));
+}
+
+#[test]
+fn an_open_without_bytes_is_invalid_input() {
+    let code = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        engine.open(json!({ "kind": "bytes" }), None).on_settle(move |doc| {
+            let _ = tx.send(doc.as_ref().err().and_then(|e| e.code().map(str::to_owned)));
+        });
+    });
+    assert_eq!(code.as_deref(), Some("invalid-input"));
+}

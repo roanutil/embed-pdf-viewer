@@ -65,9 +65,33 @@ fn coded(code: &str, message: String) -> Error {
     Error::new(message).with("code", code)
 }
 
-/// Whether `translate` maps `path`: what `DocumentHandle::has` answers.
+/// Every kernel path `route` maps, for `maps`' namespace check. A path added
+/// to `route` goes here too, one per line, in plan order;
+/// `every_routed_path_is_listed` checks the two agree.
+pub const PATHS: &[&str] = &[
+    "close",
+    "pages.list",
+    "metadata.read",
+    "metadata.update",
+    "page.text.read",
+    "page.geometry.read",
+    "page.render.image",
+    "search.query",
+];
+
+/// Feature names a plugin checks with `doc.has` that are neither a path nor
+/// a namespace of one (`document.versioned`). One per line, in plan order.
+pub const FLAGS: &[&str] = &[];
+
+/// Whether `translate` maps `path`; or, for a bare namespace such as
+/// `redaction`, any listed path under it; or a listed flag. This is what
+/// `DocumentHandle::has` answers, and the plugins ask all three ways
+/// (`doc.has("forms.applyEffects")`, `doc.has("redaction")`,
+/// `doc.has("document.versioned")`).
 pub fn maps(path: &str) -> bool {
     route(path).is_some()
+        || FLAGS.contains(&path)
+        || PATHS.iter().any(|p| p.strip_prefix(path).is_some_and(|rest| rest.starts_with('.')))
 }
 
 /// The wire kind and result decoding for a kernel path.
@@ -113,11 +137,37 @@ pub fn translate(
     request.insert("jobId".into(), job.into());
     request.insert("docId".into(), doc.into());
     for (key, value) in extra {
-        if !value.is_null() {
+        if !value.is_null() && !epdf_kernel::is_undefined(&value) {
             request.insert(key.into(), value);
         }
     }
     Ok(WireCall { request: Value::Object(request), payloads: Vec::new(), decode })
+}
+
+/// A JavaScript number as the whole, non-negative integer the host parses.
+/// Plugins send `90.0` where the host's serde wants `90`; anything else (a
+/// fraction, a negative, `{"$number": "NaN"}`) is refused with a message
+/// that names the field.
+pub fn whole(path: &str, field: &str, value: &Value) -> Result<Value, Error> {
+    value
+        .as_f64()
+        .filter(|n| n.is_finite() && *n >= 0.0 && n.fract() == 0.0 && *n <= f64::from(u32::MAX))
+        .map(|n| Value::from(n as u64))
+        .ok_or_else(|| {
+            coded(
+                "invalid-input",
+                format!("[epdf-viewer-host] {path}'s {field} is not a whole number: {value}"),
+            )
+        })
+}
+
+/// `whole`, with an absent, `null` or `undefined` value left out.
+pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<Value, Error> {
+    match value {
+        None | Some(Value::Null) => Ok(Value::Null),
+        Some(v) if epdf_kernel::is_undefined(v) => Ok(Value::Null),
+        Some(v) => whole(path, field, v),
+    }
 }
 
 /// A `SearchRequest` the host reads: `startPage` is a `PageObjectNumber`

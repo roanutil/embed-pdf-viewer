@@ -927,7 +927,7 @@ git commit -m "Move PageInfo into epdf-ffi so plugins can return it"
 **Interfaces:**
 - Produces: `pub const PATHS: &[&str]` and `pub const FLAGS: &[&str]` in `translate`; `maps(path)` answering a routed path, a namespace with a listed path under it (`maps("metadata")`), or a listed flag; `pub fn whole(path: &str, field: &str, value: &Value) -> Result<Value, Error>` (a whole, non-negative JavaScript number as an integer, else `invalid-input`) and `pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<Value, Error>` (absent, `null` and `$undefined` answer `Value::Null`); `translate` leaving out any request field whose value is `null` or `$undefined`; `NativeEngine::open` taking `{"bytes": <Bytes JSON>}` (any `kind`) beside `{"$host": id}`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -1002,12 +1002,12 @@ fn an_open_without_bytes_is_invalid_input() {
 
 `on_kernel` is the file's existing helper. If a path in `PATHS` fails on `every_routed_path_is_listed`'s dummy args (a later plan's path that needs a page list or bytes), the plan that lists it skips it there with a comment naming the test that covers it.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL to compile on the `PATHS`, `whole` and `optional_whole` imports.
 
-- [ ] **Step 3: List the paths and derive namespaces**
+- [x] **Step 3: List the paths and derive namespaces**
 
 In `crates/epdf-viewer-host/src/translate.rs`, replace `maps`:
 
@@ -1042,7 +1042,7 @@ pub fn maps(path: &str) -> bool {
 }
 ```
 
-- [ ] **Step 4: Add the number helpers and drop `$undefined` fields**
+- [x] **Step 4: Add the number helpers and drop `$undefined` fields**
 
 Below `translate`:
 
@@ -1080,7 +1080,7 @@ In `translate`, change the request loop's filter from `if !value.is_null()` to:
         if !value.is_null() && !epdf_kernel::is_undefined(&value) {
 ```
 
-- [ ] **Step 5: Open from `Bytes` JSON**
+- [x] **Step 5: Open from `Bytes` JSON**
 
 In `crates/epdf-viewer-host/src/native_engine.rs`, in `Engine::open`, replace the `let Some(bytes) = ... else { ... };` block with:
 
@@ -1103,12 +1103,12 @@ In `crates/epdf-viewer-host/src/native_engine.rs`, in `Engine::open`, replace th
         };
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host && cargo clippy -p epdf-viewer-host --all-targets -- -D warnings`
 Expected: PASS, the seven new tests and every existing one.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

@@ -131,11 +131,20 @@ impl Engine for NativeEngine {
     /// that then fails (a locked document's `pages.list`) or is aborted
     /// closes it rather than leaving the bytes parked on the host.
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
-        let Some(bytes) = input.get("$host").and_then(Value::as_u64).and_then(HostTable::take)
-        else {
+        // The host's own opens name their bytes in the `HostTable`. A plugin
+        // opening a document of its own (page edit's subset insert, the
+        // stamp plugin's asset libraries) sends them as `Bytes` JSON under
+        // `bytes`.
+        let bytes = match input.get("$host").and_then(Value::as_u64) {
+            Some(id) => HostTable::take(id),
+            None => input.get("bytes").and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0),
+        };
+        let Some(bytes) = bytes else {
             return Promise::rejected(
-                Error::new("[epdf-viewer-host] open needs {\"$host\": id} naming the bytes")
-                    .with("code", "invalid-input"),
+                Error::new(
+                    "[epdf-viewer-host] open needs {\"$host\": id} or {\"bytes\": ...} naming the bytes",
+                )
+                .with("code", "invalid-input"),
             );
         };
         let password = options.as_ref().and_then(|o| o.get("password")).cloned();
