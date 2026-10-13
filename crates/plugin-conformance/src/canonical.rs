@@ -1,8 +1,8 @@
 //! Comparing canonical JSON (`tooling/plugin-conformance/src/canonical.ts`).
 //!
-//! Array order is compared. Object member order is compared only when
-//! `PLUGIN_CONFORMANCE_MEMBER_ORDER` is set (see [`member_order_checked`]):
-//! the Rust plugins do not match it yet. Numbers compare as
+//! Array order is compared. Object member order is compared too, except at
+//! the paths `member-order-allow.json` names (see [`member_order_checked`]).
+//! Numbers compare as
 //! `f64`. Two integers below 2^53 in magnitude compare exactly. Anything else
 //! compares with a relative tolerance of one part in 10^12. The tolerance is
 //! there for transcendental functions: V8's `Math.sin` and the platform libm
@@ -37,13 +37,73 @@ pub fn numbers_equal(a: f64, b: f64) -> bool {
     (a - b).abs() <= RELATIVE_TOLERANCE * scale
 }
 
-/// Whether object member order is compared: `PLUGIN_CONFORMANCE_MEMBER_ORDER`
-/// set to anything. Order is behaviour (a caller walking `Object.keys` sees
-/// it), but the Rust plugins write many objects in another order (sorted
-/// maps, struct field order), so the check is opt-in until they match.
+/// Whether object member order is compared: on unless
+/// `PLUGIN_CONFORMANCE_MEMBER_ORDER=0`. Order is behaviour (a caller walking
+/// `Object.keys` sees it). Where the TypeScript passes a caller's object
+/// through, or one type gets its order from whichever function built it, a
+/// typed Rust value can't follow; `member-order-allow.json` names those paths
+/// (see [`allow_member_order`]).
 pub fn member_order_checked() -> bool {
     static CHECKED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *CHECKED.get_or_init(|| std::env::var_os("PLUGIN_CONFORMANCE_MEMBER_ORDER").is_some())
+    *CHECKED.get_or_init(|| {
+        std::env::var_os("PLUGIN_CONFORMANCE_MEMBER_ORDER").is_none_or(|v| v != "0")
+    })
+}
+
+thread_local! {
+    /// The paths whose member order the current case doesn't compare.
+    static ALLOWED: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The allow-list entries for one case of `file`, from
+/// `member-order-allow.json`: `{ file: { case: [path, ...] } }`, each path
+/// with its array indexes written `[]`.
+pub fn allowed_member_order(file: &str, case: &str) -> Vec<String> {
+    static LIST: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
+    let list = LIST.get_or_init(|| {
+        serde_json::from_str(include_str!("../member-order-allow.json"))
+            .expect("member-order-allow.json parses")
+    });
+    list.get(file)
+        .and_then(|cases| cases.get(case))
+        .and_then(Value::as_array)
+        .map(|paths| paths.iter().filter_map(|p| p.as_str().map(str::to_string)).collect())
+        .unwrap_or_default()
+}
+
+/// Skip the member-order comparison at `paths` until the returned guard
+/// drops.
+pub fn allow_member_order(paths: Vec<String>) -> impl Drop {
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            ALLOWED.with(|allowed| allowed.borrow_mut().clear());
+        }
+    }
+    ALLOWED.with(|allowed| *allowed.borrow_mut() = paths);
+    Reset
+}
+
+/// `path` with every array index written `[]`, as the allow-list names it.
+pub fn path_pattern(path: &str) -> String {
+    let mut out = String::with_capacity(path.len());
+    let mut chars = path.chars().peekable();
+    while let Some(c) = chars.next() {
+        out.push(c);
+        if c == '[' && chars.peek().is_some_and(char::is_ascii_digit) {
+            while chars.peek().is_some_and(char::is_ascii_digit) {
+                chars.next();
+            }
+        }
+    }
+    out
+}
+
+fn order_allowed(path: &str) -> bool {
+    ALLOWED.with(|allowed| {
+        let allowed = allowed.borrow();
+        !allowed.is_empty() && allowed.contains(&path_pattern(path))
+    })
 }
 
 /// `None` when equal, else the path to the first difference and both sides.
@@ -124,7 +184,7 @@ fn diff_members(
             }
             // Same members, same values: the order is still behaviour, since
             // a caller that walks `Object.keys` sees it.
-            if ordered && !a.keys().eq(b.keys()) {
+            if ordered && !a.keys().eq(b.keys()) && !order_allowed(path) {
                 let order = |m: &serde_json::Map<String, Value>| {
                     m.keys().cloned().collect::<Vec<_>>().join(", ")
                 };

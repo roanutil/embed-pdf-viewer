@@ -129,11 +129,15 @@ that puts one in an answer.
   it never compares equal to an `Error` with the same message.
 - A function in an outcome is `{"$ref": n}`, numbered in the order the runner first sees it; one
   in state or in callback arguments is `{"$function": true}`. A promise is `{"$promise": n}`.
-- Array order is compared. Object member order is compared only with
-  `PLUGIN_CONFORMANCE_MEMBER_ORDER=1` set, and never for a trace entry's own members (the
-  runner's envelope). It is opt-in because the Rust plugins do not match it yet: on the vectors
-  of 2026-10-12, 896 cases in 59 vector files differ in member order alone, mostly sorted maps
-  (state keyed by id, `model.defaults`) and struct field order.
+- Array order is compared, and so is object member order, except for a trace entry's own members
+  (the runner's envelope) and the paths `crates/plugin-conformance/member-order-allow.json` names.
+  `PLUGIN_CONFORMANCE_MEMBER_ORDER=0` turns the order check off. The allow-list holds the places a
+  typed Rust value can't follow the TypeScript: where it passes a caller's object through (stage
+  cameras, pointer samples, rich text and patch inputs), or where one type takes its order from
+  whichever function built it (a page scale, a number format, an annotation's paint). Each entry
+  is a vector file, a case and a path with its array indexes written `[]`; on 2026-10-13 it holds
+  375 paths in 186 cases of 25 files. A new mismatch fails the run: fix the order, or, only if it
+  is one of those two kinds, add the path.
 - Numbers compare as `f64`. Two integers below 2^53 in magnitude compare exactly, so an epoch in
   milliseconds off by one fails. Any other pair compares within one part in 10^12, which absorbs a
   last-bit difference in a transcendental and nothing a coordinate could carry.

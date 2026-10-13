@@ -100,6 +100,7 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
             continue;
         }
         ran += 1;
+        let _allowed = canonical::allow_member_order(canonical::allowed_member_order(file, name));
         match suite["kind"].as_str() {
             Some("scenario") => {
                 let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
