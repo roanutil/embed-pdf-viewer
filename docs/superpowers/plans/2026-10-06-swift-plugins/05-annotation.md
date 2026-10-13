@@ -663,7 +663,7 @@ git commit -m "Add the shared annotation records to epdf-ffi"
 
 Members exported here, under their FFI names (TypeScript name in parentheses where it differs): `get`, `list`, `selected` (`listSelected`), `hit_test_at` (`hitTestAt`), `status` (`getStatus`), `hydration` (`getHydration`), `ensure_hydrated`, `refresh`, `reload_page`, `create`, `create_many`, `update`, `update_many`, `set_rotation`, `rotate_by`, `delete`, `delete_many`, `can_read`, `can_create`, `can_edit`, `can_delete`, `subscribe` (`onResynced`, `onCreated`, `onUpdated`, `onDeleted`, `onSelectionChanged`, `onDraftChanged`, `onEditingChanged`, and the comments lens's `onThreadChanged`).
 
-- [ ] **Step 1: Add the feature**
+- [x] **Step 1: Add the feature**
 
 In `crates/plugins/annotation/Cargo.toml`:
 
@@ -721,7 +721,7 @@ In `src/controller.rs`, inside `impl AnnotationCapability`:
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/annotation/tests/ffi.rs`:
 
@@ -986,12 +986,12 @@ fn cancelling_a_create_before_it_runs_creates_nothing() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `could not find ffi in epdf_plugin_annotation`.
 
-- [ ] **Step 4: Write `ffi/mod.rs`**
+- [x] **Step 4: Write `ffi/mod.rs`**
 
 ```rust
 //! The annotation plugin through uniffi: five handles over the one
@@ -1541,7 +1541,7 @@ pub trait AnnotationEventListener: Send + Sync {
 
 `Error::plugin_error_info` is the kernel's existing canonical face (`crates/epdf-kernel/src/error.rs`), which `BatchResult::to_json` already uses.
 
-- [ ] **Step 5: Write `ffi/handle.rs`**
+- [x] **Step 5: Write `ffi/handle.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -1915,7 +1915,7 @@ pub enum AnnotationTextFormat { Bold, Italic, Underline }
 
 Do the same for the others with the names `ffi/mod.rs` re-exports. Tasks 3 to 5 replace each file whole.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 8 passed.
@@ -1925,7 +1925,7 @@ If `unknown_prop_keys_are_dropped_not_fatal` fails with `invalid-state`, `core::
 Run: `cargo test -p epdf-plugin-annotation`
 Expected: the conformance vectors still pass with the feature off.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/annotation

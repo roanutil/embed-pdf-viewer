@@ -559,24 +559,27 @@ enum_both_ways!(
     Link
 );
 
-/// Editable appearance. Keys the core keeps in `extra` (vendor keys no
-/// `PropKey` names) are dropped: there is no typed home for them.
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+/// Editable appearance, as a read returns it: `Partial<AnnotationProps>`,
+/// the keys the annotation's subtype has (a square has no font, a note no
+/// stroke). A key the subtype lacks is `None`, and so is a cleared
+/// `interior_color` or `link`. Keys the core keeps in `extra` (vendor keys
+/// no `PropKey` names) are dropped: there is no typed home for them.
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct AnnotationProps {
-    pub color: String,
+    pub color: Option<String>,
     pub interior_color: Option<String>,
-    pub stroke_width: f64,
-    pub opacity: f64,
-    pub blend_mode: AnnotationBlendMode,
-    pub border: AnnotationBorder,
-    pub font_family: String,
-    pub font_size: f64,
-    pub font_color: String,
-    pub text_align: AnnotationTextAlign,
+    pub stroke_width: Option<f64>,
+    pub opacity: Option<f64>,
+    pub blend_mode: Option<AnnotationBlendMode>,
+    pub border: Option<AnnotationBorder>,
+    pub font_family: Option<String>,
+    pub font_size: Option<f64>,
+    pub font_color: Option<String>,
+    pub text_align: Option<AnnotationTextAlign>,
     pub bold: Option<bool>,
     pub italic: Option<bool>,
     pub underline: Option<bool>,
-    pub line_endings: AnnotationLineEndings,
+    pub line_endings: Option<AnnotationLineEndings>,
     pub icon: Option<String>,
     pub link: Option<PdfLinkTarget>,
 }
@@ -584,20 +587,59 @@ pub struct AnnotationProps {
 impl From<core::AnnotationProps> for AnnotationProps {
     fn from(p: core::AnnotationProps) -> Self {
         AnnotationProps {
-            color: p.color,
+            color: Some(p.color),
             interior_color: p.interior_color,
-            stroke_width: p.stroke_width,
-            opacity: p.opacity,
-            blend_mode: p.blend_mode.into(),
-            border: p.border.into(),
-            font_family: p.font_family,
-            font_size: p.font_size,
-            font_color: p.font_color,
-            text_align: p.text_align.into(),
+            stroke_width: Some(p.stroke_width),
+            opacity: Some(p.opacity),
+            blend_mode: Some(p.blend_mode.into()),
+            border: Some(p.border.into()),
+            font_family: Some(p.font_family),
+            font_size: Some(p.font_size),
+            font_color: Some(p.font_color),
+            text_align: Some(p.text_align.into()),
             bold: p.bold,
             italic: p.italic,
             underline: p.underline,
-            line_endings: p.line_endings.into(),
+            line_endings: Some(p.line_endings.into()),
+            icon: p.icon,
+            link: match p.link {
+                Nullable::Value(link) => Some(link.into()),
+                Nullable::Null | Nullable::Undefined => None,
+            },
+        }
+    }
+}
+
+/// A partial props bag (what a read carries) read through the core's patch
+/// type, which already parses every key and keeps the rest in `extra`. Line
+/// endings come back only when both sides are present, as a read writes
+/// them.
+impl From<core::AnnotationPropsPatch> for AnnotationProps {
+    fn from(p: core::AnnotationPropsPatch) -> Self {
+        let line_endings = p.line_endings.and_then(|e| match (e.start, e.end) {
+            (Some(start), Some(end)) => {
+                Some(AnnotationLineEndings { start: start.into(), end: end.into() })
+            }
+            _ => None,
+        });
+        AnnotationProps {
+            color: p.color,
+            interior_color: match p.interior_color {
+                Nullable::Value(c) => Some(c),
+                Nullable::Null | Nullable::Undefined => None,
+            },
+            stroke_width: p.stroke_width,
+            opacity: p.opacity,
+            blend_mode: p.blend_mode.map(Into::into),
+            border: p.border.map(Into::into),
+            font_family: p.font_family,
+            font_size: p.font_size,
+            font_color: p.font_color,
+            text_align: p.text_align.map(Into::into),
+            bold: p.bold,
+            italic: p.italic,
+            underline: p.underline,
+            line_endings,
             icon: p.icon,
             link: match p.link {
                 Nullable::Value(link) => Some(link.into()),
