@@ -22,6 +22,11 @@ public typealias CommandExecutionFailure = EmbedPDFBindings.CommandExecutionFail
 /// A `CommandRunner` from closures. `enabled`, `active`, `visible` and
 /// `iconAccent` run on the viewer's kernel thread on every resolve: answer
 /// from state you already have, and never wait on the main actor there.
+///
+/// The viewer keeps a registered handler until you call `unregister()` or
+/// destroy the viewer; closing a document doesn't release it. A handler
+/// whose closures hold a capability or the `PDFViewer` keeps the viewer
+/// alive until then, as a closure that captures its owner does.
 public final class CommandHandler: CommandRunner, Sendable {
   let runBody: (@Sendable (CommandContext) async throws -> Void)?
   let enabled: (@Sendable (CommandContext) -> Bool)?
@@ -112,7 +117,8 @@ public struct CommandsCapability: Sendable {
   let viewer: PDFViewer
 
   /// Throws `conflict` for a duplicate id unless `replace`. Dropping the
-  /// registration keeps the command; `unregister()` removes it.
+  /// registration keeps the command; `unregister()` removes it. The viewer
+  /// holds the definition's handler until then (see `CommandHandler`).
   public func register(_ definition: CommandDefinition, replace: Bool = false)
     async throws(PDFError) -> Registration
   {

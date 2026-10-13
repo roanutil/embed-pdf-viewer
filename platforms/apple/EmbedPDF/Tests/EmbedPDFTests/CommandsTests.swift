@@ -69,6 +69,22 @@ extension BaseSuite {
       expectNoDifference(has, false)
     }
 
+    @Test func unregisteringAHandlerThatHoldsTheCapabilityReleasesTheViewer() async throws {
+      weak var released: PDFViewer?
+      do {
+        let (viewer, commands) = try await started()
+        released = viewer
+        let handler = CommandHandler(run: { _ in _ = try await commands.commandIds() })
+        let registration = try await commands.register(
+          CommandDefinition(id: "doc:list", labelKey: "List", handler: handler)
+        )
+        registration.unregister()
+        // A reply after the unregister means it has run.
+        _ = try await commands.commandIds()
+      }
+      #expect(released == nil)
+    }
+
     @Test func droppingTheStreamUnsubscribes() async throws {
       let (_, commands) = try await started()
       _ = try await commands.register(CommandDefinition(id: "zoom:in", labelKey: "Zoom in"))
