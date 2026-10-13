@@ -112,53 +112,35 @@ pub enum ScriptEventKind {
     FieldFormat,
 }
 
-/// `ScriptEventInput`.
-///
-/// The TypeScript hands the caller's event object to the sandbox by
-/// reference, so its member order is whatever literal built it. The plugins'
-/// literals follow the interface order below; an event that arrives as JSON
-/// keeps the order it came in ([`member_order`](Self::member_order)), and the
-/// serialization follows it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ScriptEventInput {
     pub kind: ScriptEventKind,
     /// Acrobat `event.type` for action-driven runs (`Field`, `Page`, `Doc`,
     /// `Link`, and the EmbedPDF extension `Annot`).
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
     pub event_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    /// `null` is a value; `None` only when the member is missing.
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
     pub target: Option<FormFieldRef>,
-    /// `null` is a value; `None` only when the member is missing.
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
     pub source: Option<FormFieldRef>,
-    /// `null` is a value; `None` only when the member is missing.
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
     pub value: Option<ScriptValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub change: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sel_start: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sel_end: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub will_commit: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub modifier: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shift: Option<bool>,
-    /// The JSON member names in the order the event arrived with, when it
-    /// arrived as JSON; empty for the interface order. Names not listed
-    /// follow in the interface order.
-    pub member_order: Vec<&'static str>,
 }
-
-/// `ScriptEventInput`'s members in the interface's order.
-const SCRIPT_EVENT_MEMBERS: [&str; 12] = [
-    "kind",
-    "type",
-    "name",
-    "target",
-    "source",
-    "value",
-    "change",
-    "selStart",
-    "selEnd",
-    "willCommit",
-    "modifier",
-    "shift",
-];
 
 impl ScriptEventInput {
     /// An event with only its kind.
@@ -176,121 +158,7 @@ impl ScriptEventInput {
             will_commit: None,
             modifier: None,
             shift: None,
-            member_order: Vec::new(),
         }
-    }
-}
-
-impl Serialize for ScriptEventInput {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeMap;
-        let order = self
-            .member_order
-            .iter()
-            .copied()
-            .chain(SCRIPT_EVENT_MEMBERS.into_iter().filter(|m| !self.member_order.contains(m)));
-        let mut out = serializer.serialize_map(None)?;
-        for member in order {
-            match member {
-                "kind" => out.serialize_entry(member, &self.kind)?,
-                "type" => entry(&mut out, member, &self.event_type)?,
-                "name" => entry(&mut out, member, &self.name)?,
-                "target" => entry(&mut out, member, &self.target)?,
-                "source" => entry(&mut out, member, &self.source)?,
-                "value" => entry(&mut out, member, &self.value)?,
-                "change" => entry(&mut out, member, &self.change)?,
-                "selStart" => entry(&mut out, member, &self.sel_start)?,
-                "selEnd" => entry(&mut out, member, &self.sel_end)?,
-                "willCommit" => entry(&mut out, member, &self.will_commit)?,
-                "modifier" => entry(&mut out, member, &self.modifier)?,
-                "shift" => entry(&mut out, member, &self.shift)?,
-                _ => {}
-            }
-        }
-        return out.end();
-
-        fn entry<M: SerializeMap, T: Serialize>(
-            out: &mut M,
-            member: &str,
-            value: &Option<T>,
-        ) -> Result<(), M::Error> {
-            match value {
-                Some(value) => out.serialize_entry(member, value),
-                None => Ok(()),
-            }
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ScriptEventInput {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Fields {
-            kind: ScriptEventKind,
-            #[serde(rename = "type", default)]
-            event_type: Option<String>,
-            #[serde(default)]
-            name: Option<String>,
-            #[serde(default, deserialize_with = "present")]
-            target: Option<FormFieldRef>,
-            #[serde(default, deserialize_with = "present")]
-            source: Option<FormFieldRef>,
-            #[serde(default, deserialize_with = "present")]
-            value: Option<ScriptValue>,
-            #[serde(default)]
-            change: Option<String>,
-            #[serde(default)]
-            sel_start: Option<f64>,
-            #[serde(default)]
-            sel_end: Option<f64>,
-            #[serde(default)]
-            will_commit: Option<bool>,
-            #[serde(default)]
-            modifier: Option<bool>,
-            #[serde(default)]
-            shift: Option<bool>,
-        }
-
-        struct Members;
-        impl<'de> Visitor<'de> for Members {
-            type Value = Vec<(String, Value)>;
-            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                f.write_str("a script event object")
-            }
-            fn visit_map<A: de::MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                let mut members = Vec::new();
-                while let Some((key, value)) = map.next_entry::<String, Value>()? {
-                    members.push((key, value));
-                }
-                Ok(members)
-            }
-        }
-
-        // The members in document order, which does not rely on the map
-        // type's `preserve_order`.
-        let members = deserializer.deserialize_map(Members)?;
-        let member_order = members
-            .iter()
-            .filter_map(|(key, _)| SCRIPT_EVENT_MEMBERS.into_iter().find(|m| m == key))
-            .collect();
-        let f: Fields = serde_json::from_value(Value::Object(members.into_iter().collect()))
-            .map_err(de::Error::custom)?;
-        Ok(ScriptEventInput {
-            kind: f.kind,
-            event_type: f.event_type,
-            name: f.name,
-            target: f.target,
-            source: f.source,
-            value: f.value,
-            change: f.change,
-            sel_start: f.sel_start,
-            sel_end: f.sel_end,
-            will_commit: f.will_commit,
-            modifier: f.modifier,
-            shift: f.shift,
-            member_order,
-        })
     }
 }
 

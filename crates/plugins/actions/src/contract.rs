@@ -738,115 +738,18 @@ pub struct FormSubmissionEntry {
 }
 
 /// The resolved dataset a sink receives.
-///
-/// The TypeScript hands the resolver's object to the handler by reference,
-/// so its member order is whatever literal built it. The form plugin's
-/// `resolveSubmitDataset` (`write/script-effects.ts`) builds the order
-/// below; a request that arrives as JSON keeps the order it came in
-/// ([`member_order`](Self::member_order)), and the serialization follows it.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ActionSubmitRequest {
     pub url: Option<String>,
     pub method: String,
     pub format: String,
     pub flags_raw: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub char_set: Option<String>,
     pub entries: Vec<FormSubmissionEntry>,
     pub origin: ActionOrigin,
     pub event: ActionTriggerEvent,
-    /// The JSON member names in the order the request arrived with, when it
-    /// arrived as JSON; empty for the order above. Names not listed follow
-    /// in the order above.
-    pub member_order: Vec<&'static str>,
-}
-
-/// `ActionSubmitRequest`'s members in `resolveSubmitDataset`'s order.
-const SUBMIT_REQUEST_MEMBERS: [&str; 8] =
-    ["url", "method", "format", "flagsRaw", "charSet", "entries", "origin", "event"];
-
-impl Serialize for ActionSubmitRequest {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeMap;
-        let order =
-            self.member_order.iter().copied().chain(
-                SUBMIT_REQUEST_MEMBERS.into_iter().filter(|m| !self.member_order.contains(m)),
-            );
-        let mut out = serializer.serialize_map(None)?;
-        for member in order {
-            match member {
-                "url" => out.serialize_entry(member, &self.url)?,
-                "method" => out.serialize_entry(member, &self.method)?,
-                "format" => out.serialize_entry(member, &self.format)?,
-                "flagsRaw" => out.serialize_entry(member, &self.flags_raw)?,
-                "charSet" => {
-                    if let Some(char_set) = &self.char_set {
-                        out.serialize_entry(member, char_set)?;
-                    }
-                }
-                "entries" => out.serialize_entry(member, &self.entries)?,
-                "origin" => out.serialize_entry(member, &self.origin)?,
-                "event" => out.serialize_entry(member, &self.event)?,
-                _ => {}
-            }
-        }
-        out.end()
-    }
-}
-
-impl<'de> Deserialize<'de> for ActionSubmitRequest {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
-
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Fields {
-            url: Option<String>,
-            method: String,
-            format: String,
-            flags_raw: f64,
-            #[serde(default)]
-            char_set: Option<String>,
-            entries: Vec<FormSubmissionEntry>,
-            origin: ActionOrigin,
-            event: ActionTriggerEvent,
-        }
-
-        struct Members;
-        impl<'de> Visitor<'de> for Members {
-            type Value = Vec<(String, Value)>;
-            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                f.write_str("a submit request object")
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                let mut members = Vec::new();
-                while let Some((key, value)) = map.next_entry::<String, Value>()? {
-                    members.push((key, value));
-                }
-                Ok(members)
-            }
-        }
-
-        // The members in document order, which does not rely on the map
-        // type's `preserve_order`.
-        let members = deserializer.deserialize_map(Members)?;
-        let member_order = members
-            .iter()
-            .filter_map(|(key, _)| SUBMIT_REQUEST_MEMBERS.into_iter().find(|m| m == key))
-            .collect();
-        let f: Fields = serde_json::from_value(Value::Object(members.into_iter().collect()))
-            .map_err(de::Error::custom)?;
-        Ok(ActionSubmitRequest {
-            url: f.url,
-            method: f.method,
-            format: f.format,
-            flags_raw: f.flags_raw,
-            char_set: f.char_set,
-            entries: f.entries,
-            origin: f.origin,
-            event: f.event,
-            member_order,
-        })
-    }
 }
 
 /// `() => Promise<FormSubmissionReceipt>`: the document home, for a handler
