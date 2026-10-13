@@ -1288,7 +1288,7 @@ Task 0 is done when 0a to 0f are committed on `research/swift-plugins`. No plugi
 
 Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one here after it merges, its post-merge rerun passes and its worktree and branch are removed.
 
-- [ ] 01 interaction
+- [x] 01 interaction
 - [ ] 02 stage
 - [ ] 03 selection
 - [ ] 04 link
