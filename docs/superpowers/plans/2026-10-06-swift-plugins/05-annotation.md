@@ -2305,7 +2305,7 @@ git commit -m "Export the annotation selection and tools handles"
 
 Members: drafts handle `creation_draft` (`getCreationDraft`), `has_creation_draft`, `finish_creation_draft`, `finish_ink_draft`, `cancel_creation_draft`, `cancel`, `set_contents`, `begin_text_edit`, `begin_text_edit_at`, `end_text_edit`, `editing_ref` (`getEditingRef`), `editing_id` (`getEditingId`), `draft_contents`, `set_text_selection`, `create_markup`, `create_caret`, `create_replace_text`, `preview_markup`, `clear_markup_preview`, `create_from_selection`, `arm_stamp`, `disarm_stamp`, `place_stamp`, `has_armed_stamp`, `place_armed_stamp`, `request_stamp_at`, `hover_ghost_at`, `clear_ghost`, `set_placement_preview`, `clear_placement_preview`, `place_at`, `create_attachment`, `read_attachment`. Threads handle `threads` (`listThreads`), `thread` (`getThread`), `reply`, `set_text`, `set_status`, `set_marked`, `delete`, `delete_thread`, `permissions` (`getPermissions`), `link` (`links.get`), `set_link` (`links.set`), `clear_link` (`links.clear`). `setRichText` and `draftRichText` take a rich-text paragraph tree; they're left for the native editing follow-on with the other text-overlay members.
 
-- [ ] **Step 1: Read the signatures this task wraps**
+- [x] **Step 1: Read the signatures this task wraps**
 
 Run each and keep the output open while writing Step 3:
 
@@ -2318,7 +2318,7 @@ rg -n 'pub fn (create_attachment|read_attachment)' -A10 crates/plugins/annotatio
 
 The code below assumes what those signatures were on 2026-10-06. Where one differs, change only that method's argument conversion.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -2369,12 +2369,12 @@ fn an_ink_draft_has_nothing_to_finish_before_drawing() {
 
 `tooling/engine-conformance/fixtures/tiny.png` must exist. Run `ls tooling/engine-conformance/fixtures/*.png`; if there is no PNG, add a 1x1 PNG there in this step (`printf '\x89PNG\r\n\x1a\n...'` is fragile, so generate it with `python3 -c 'import zlib,struct;...'` or copy any PNG from `packages/engine/main/test/fixtures/`), and commit it with this task. `FakeEngine::calls(path)` must also exist: `rg -n 'pub fn calls' crates/plugin-conformance/src/fake_engine.rs`. If it doesn't, assert through a `respond_page` closure that pushes `args[0]` into an `Rc<RefCell<Vec<Value>>>` instead.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named drafts`.
 
-- [ ] **Step 4: Write `ffi/drafts.rs`**
+- [x] **Step 4: Write `ffi/drafts.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2700,7 +2700,7 @@ impl AnnotationDraftsHandle {
 }
 ```
 
-- [ ] **Step 5: Write `ffi/threads.rs`**
+- [x] **Step 5: Write `ffi/threads.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2927,7 +2927,7 @@ impl AnnotationThreadsHandle {
 
 `CommentThread.review.last_change` is `Option<ReviewStatus>`, and `ReviewStatus.state` is a `String` (`crates/plugins/annotation/src/comments/build.rs`). Check with `rg -n 'pub struct ReviewStatus' -A8 crates/plugins/annotation/src/comments/build.rs` before compiling.
 
-- [ ] **Step 6: Add the accessors**
+- [x] **Step 6: Add the accessors**
 
 In `ffi/handle.rs`:
 
@@ -2941,12 +2941,12 @@ In `ffi/handle.rs`:
     }
 ```
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 15 passed.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/annotation tooling/engine-conformance/fixtures

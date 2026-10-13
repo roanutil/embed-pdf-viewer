@@ -37,8 +37,8 @@ use serde_json::Value;
 use crate::AnnotationCapability;
 
 pub use drafts::{
-    AnnotationAttachmentFile, AnnotationDraftsHandle, AnnotationStampPlacement,
-    AnnotationStampSource,
+    AnnotationAttachmentFile, AnnotationDraftsHandle, AnnotationPageQuads,
+    AnnotationStampPlacement, AnnotationStampSource, AnnotationTextEndAnchor,
 };
 pub use handle::AnnotationHandle;
 pub use picker::{AnnotationFilePicker, AnnotationFilePromptRequest, AnnotationPickedFile};

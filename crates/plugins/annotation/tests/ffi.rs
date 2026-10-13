@@ -45,6 +45,12 @@ fn square(annot: u32, extra_props: Value) -> Value {
     dto
 }
 
+thread_local! {
+    /// Every draft `page.annotations.create` was sent, on the kernel thread
+    /// (a responder answers before the fake engine logs a call).
+    static CREATES: std::cell::RefCell<Vec<Value>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 fn spec(annotations: Vec<Value>) -> TestSpec {
     let bx = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
     let pages = json!([{ "index": 0, "ref": page_json(1), "label": null,
@@ -56,6 +62,7 @@ fn spec(annotations: Vec<Value>) -> TestSpec {
         "id": "a", "security": { "allows": "*" }, "pages": pages } } }))
     .respond("annotations.listRawAll", move |_| Ok(Reply::value(snapshot.clone())))
     .respond_page("page.annotations.create", |_, args| {
+        CREATES.with(|c| c.borrow_mut().push(args[0].clone()));
         let mut created = square(10, json!({}));
         created["subtype"] = args[0]["subtype"].clone();
         Ok(Reply::value(json!({ "created": created })))
@@ -308,4 +315,55 @@ fn the_default_tools_are_listed_with_their_specs() {
     ))
     .unwrap();
     assert_eq!(block_on(tools.defaults(ink.id.clone())).unwrap().stroke_width, Some(4.0));
+}
+
+use epdf_plugin_annotation::ffi::{
+    AnnotationStampPlacement, AnnotationStampSource, AnnotationThreadStatus,
+};
+
+#[test]
+fn a_stamp_placed_from_png_bytes_sends_its_bytes() {
+    let png = include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png").to_vec();
+    let (thread, annotations) = handle_over(vec![]);
+    block_on(annotations.refresh(token())).unwrap();
+    let placed = block_on(annotations.drafts().place_stamp(
+        AnnotationStampSource {
+            bytes: png,
+            mime_type: Some("image/png".into()),
+            name: None,
+            subject: None,
+        },
+        AnnotationStampPlacement {
+            page: PageRef { page_object_number: 1 },
+            at: epdf_ffi::Point { x: 300.0, y: 400.0 },
+            target_width: Some(120.0),
+            rotation: None,
+        },
+        token(),
+    ))
+    .unwrap();
+    assert_eq!(placed, obj(10));
+    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().clone()))).unwrap();
+    let draft = sent.last().expect("a create call");
+    assert!(draft.to_string().contains("$bytes"), "{draft}");
+}
+
+#[test]
+fn a_reply_lands_in_its_thread() {
+    let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
+    block_on(annotations.refresh(token())).unwrap();
+    let threads = annotations.threads();
+    let reply = block_on(threads.reply(obj(5), "Agreed".into(), token())).unwrap();
+    assert_eq!(reply, obj(10));
+    let permissions = block_on(threads.permissions(obj(5))).unwrap();
+    assert!(permissions.can_reply);
+    block_on(threads.set_status(obj(5), AnnotationThreadStatus::Accepted, token())).unwrap();
+}
+
+#[test]
+fn an_ink_draft_has_nothing_to_finish_before_drawing() {
+    let (_thread, annotations) = handle_over(vec![]);
+    let drafts = annotations.drafts();
+    assert!(!block_on(drafts.has_creation_draft()).unwrap());
+    assert_eq!(block_on(drafts.finish_creation_draft(token())).unwrap(), None);
 }

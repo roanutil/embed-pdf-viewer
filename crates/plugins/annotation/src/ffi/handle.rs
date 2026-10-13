@@ -29,6 +29,14 @@ impl AnnotationHandle {
 
 #[uniffi::export]
 impl AnnotationHandle {
+    pub fn drafts(&self) -> Arc<super::AnnotationDraftsHandle> {
+        Arc::new(super::AnnotationDraftsHandle { cap: self.cap.clone() })
+    }
+
+    pub fn threads(&self) -> Arc<super::AnnotationThreadsHandle> {
+        Arc::new(super::AnnotationThreadsHandle { cap: self.cap.clone() })
+    }
+
     pub fn selection(&self) -> Arc<super::AnnotationSelectionHandle> {
         Arc::new(super::AnnotationSelectionHandle { cap: self.cap.clone() })
     }
