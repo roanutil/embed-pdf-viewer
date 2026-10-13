@@ -2,7 +2,6 @@
 //! (one annotations read per page, lazily), the fused fill projection
 //! (memoized per model change) and the hit test.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use epdf_geometry::Rect;
@@ -50,7 +49,7 @@ impl FormCapability {
         let this = self.clone();
         let loaded: Promise<()> = Promise::spawn(async move {
             let list = call.await?;
-            let mut boxes = BTreeMap::new();
+            let mut boxes = indexmap::IndexMap::new();
             for dto in get(&list, "annotations").and_then(Value::as_array).into_iter().flatten() {
                 if str_of(dto, "subtype") != Some("widget") {
                     continue;
