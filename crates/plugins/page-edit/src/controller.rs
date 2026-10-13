@@ -105,6 +105,13 @@ struct Inner {
 pub struct PageEditCapability(Rc<Inner>);
 
 impl PageEditCapability {
+    /// Aborted when the document closes. The foreign handle, which can
+    /// outlive the close, checks it before every call.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// `ctx.doc`: the guarded handle. Errs where the TypeScript getter throws.
     fn require_doc(&self) -> Result<Rc<dyn DocumentHandle>, Error> {
         self.0.cx.doc()

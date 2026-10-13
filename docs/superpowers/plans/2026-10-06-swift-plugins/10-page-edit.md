@@ -71,7 +71,7 @@ docs/superpowers/plans/2026-10-01-swift-package.md   A.4 page-edit marked delive
 **Interfaces:**
 - Consumes: umbrella Task 0d's `epdf_ffi::PageInfo { page: PageRef, index: u32, width: f64, height: f64, rotation: u32 }` and `epdf_ffi::page::{decode_page, decode_pages}`; Task 0e's `translate::{whole, optional_whole}`, the `$undefined` filter in `translate`, `PATHS`, and `NativeEngine::open` taking `{"bytes": <Bytes JSON>}`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -87,7 +87,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/page-edit-size-before"
 ```
 
-- [ ] **Step 2: Confirm umbrella Task 0 landed**
+- [x] **Step 2: Confirm umbrella Task 0 landed**
 
 Run: `grep -n 'pub use page::PageInfo' crates/epdf-ffi/src/lib.rs && grep -n 'pub fn optional_whole' crates/epdf-viewer-host/src/translate.rs`
 Expected: one hit each.
@@ -115,7 +115,7 @@ The member list comes from `crates/plugins/page-edit/src/harness.rs` `MEMBERS`: 
 
 Cancelling follows `MetadataHandle::refresh`: the plugin's promises take no abort, so a token cancelled before the job runs answers `operation-cancelled` and skips the edit, and a token cancelled later is ignored and the edit lands. Each method's doc comment says so.
 
-- [ ] **Step 1: Turn on the feature**
+- [x] **Step 1: Turn on the feature**
 
 In `crates/plugins/page-edit/Cargo.toml`:
 
@@ -157,7 +157,7 @@ In `crates/plugins/page-edit/src/controller.rs`, inside `impl PageEditCapability
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `crates/plugins/page-edit/tests/ffi.rs`:
 
@@ -397,12 +397,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-page-edit --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_page_edit`.
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 Create `crates/plugins/page-edit/src/ffi.rs`:
 
@@ -763,7 +763,7 @@ impl PageEditHandle {
 
 `call_promise_cancellable`'s `map` returns `T`; the five methods whose map can fail return `Result<_, ViewerError>` from it and flatten with the trailing `?`, as `MetadataHandle::update` does.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-page-edit --features uniffi --test ffi`
 Expected: PASS, 11 tests.
@@ -771,7 +771,7 @@ Expected: PASS, 11 tests.
 Run: `cargo test -p epdf-plugin-page-edit`
 Expected: PASS. The conformance vectors don't see the feature.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/page-edit
