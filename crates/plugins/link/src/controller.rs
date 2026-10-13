@@ -93,6 +93,12 @@ impl LinkCapability {
             .collect()
     }
 
+    /// Whether the annotation plugin supplies the links (its `read/render.ts`
+    /// builds them), rather than this plugin's own `source.ts`.
+    pub fn uses_annotation_links(&self) -> bool {
+        self.anno().is_some()
+    }
+
     /// Clickable areas on a page, page space.
     pub fn list_links(&self, page: &PageRef) -> Vec<Link> {
         if let Some(host) = self.anno() {

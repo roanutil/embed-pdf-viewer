@@ -4,14 +4,63 @@
 use std::collections::BTreeMap;
 
 use epdf_annotation_core::{PageObjectNumber, PageRef};
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::contract::Link;
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct LinkState {
-    #[serde(deserialize_with = "pages_by_key")]
+    #[serde(deserialize_with = "pages_by_key", serialize_with = "pages_in_source_order")]
     pub pages: BTreeMap<PageObjectNumber, Vec<Link>>,
+}
+
+/// A link as `source.ts` writes it: `{id, bounds, target, activate?,
+/// hoverEvents?, ref, attached}`. `Link` is the annotation plugin's
+/// `LinkNavItem`, whose own producer (`read/render.ts`) writes `attached`
+/// third, so the link slice orders its items here rather than in the type.
+pub struct InSourceOrder<'a>(pub &'a Link);
+
+impl Serialize for InSourceOrder<'_> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let link = self.0;
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &link.id)?;
+        map.serialize_entry("bounds", &link.bounds)?;
+        map.serialize_entry("target", &link.target)?;
+        if let Some(activate) = &link.activate {
+            map.serialize_entry("activate", activate)?;
+        }
+        if let Some(hover) = &link.hover_events {
+            map.serialize_entry("hoverEvents", hover)?;
+        }
+        if let Some(ref_) = &link.ref_ {
+            map.serialize_entry("ref", ref_)?;
+        }
+        map.serialize_entry("attached", &link.attached)?;
+        map.end()
+    }
+}
+
+/// `items` in [`InSourceOrder`].
+pub fn items_in_source_order<S: Serializer>(
+    items: &[Link],
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serializer.collect_seq(items.iter().map(InSourceOrder))
+}
+
+fn pages_in_source_order<S: Serializer>(
+    pages: &BTreeMap<PageObjectNumber, Vec<Link>>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    struct Items<'a>(&'a [Link]);
+    impl Serialize for Items<'_> {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            items_in_source_order(self.0, serializer)
+        }
+    }
+    serializer.collect_map(pages.iter().map(|(pon, items)| (pon, Items(items))))
 }
 
 /// Object keys are strings on the wire; the cache only ever holds page
@@ -33,7 +82,11 @@ fn pages_by_key<'de, D: serde::Deserializer<'de>>(
 #[serde(tag = "type")]
 pub enum LinkAction {
     #[serde(rename = "setPage")]
-    SetPage { page: PageRef, items: Vec<Link> },
+    SetPage {
+        page: PageRef,
+        #[serde(serialize_with = "items_in_source_order")]
+        items: Vec<Link>,
+    },
     #[serde(rename = "dropPage")]
     DropPage { page: PageRef },
 }

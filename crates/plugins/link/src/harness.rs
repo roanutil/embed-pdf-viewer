@@ -21,6 +21,7 @@ use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome}
 use serde_json::{Value, json};
 
 use crate::controller::is_link;
+use crate::model::items_in_source_order;
 use crate::*;
 
 /// The adapter.
@@ -103,17 +104,22 @@ fn call_capability(
     h: &Harness,
 ) -> Result<Outcome, Error> {
     Ok(match method {
-        "listLinks" => Outcome::Returned(to_value(&cap.list_links(&arg::<PageRef>(args, 0)?))),
+        "listLinks" => {
+            Outcome::Returned(items_json(cap, &cap.list_links(&arg::<PageRef>(args, 0)?)))
+        }
         "getLink" => {
             let id: String = arg(args, 1)?;
             let link = cap.get_link(&arg(args, 0)?, &id);
-            Outcome::Returned(link.map_or(Value::Null, |l| to_value(&l)))
+            Outcome::Returned(link.map_or(Value::Null, |l| link_json(cap, l)))
         }
         "getLinkAt" => {
             let link = cap.get_link_at(&arg(args, 0)?, arg::<Point>(args, 1)?);
-            Outcome::Returned(link.map_or(Value::Null, |l| to_value(&l)))
+            Outcome::Returned(link.map_or(Value::Null, |l| link_json(cap, l)))
         }
-        "listAllLinks" => Outcome::promise(cap.list_all_links()),
+        "listAllLinks" => {
+            let owner = cap.clone();
+            Outcome::Promise(cap.list_all_links().map(move |items| Ok(items_json(&owner, &items))))
+        }
         "ensureLoaded" => Outcome::promise_unit(cap.ensure_loaded(&arg(args, 0)?)),
         "isLoaded" => Outcome::Returned(json!(cap.is_loaded(&arg(args, 0)?))),
         "resolve" => Outcome::Returned(cap.resolve(&arg(args, 0)?)?.to_json()),
@@ -208,4 +214,21 @@ fn link_reducer_fn(a: &[Value]) -> Result<Value, Error> {
 /// The pure functions, by the names the vectors use.
 pub fn functions() -> FunctionTable {
     vec![("initialLinkState", initial_link_state_fn), ("linkReducer", link_reducer_fn)]
+}
+
+/// Links in the member order of whichever TypeScript built them: the
+/// annotation plugin's `LinkNavItem` order, or `source.ts`'s (see
+/// [`InSourceOrder`]).
+fn link_json(cap: &LinkCapability, link: Link) -> Value {
+    match items_json(cap, &[link]) {
+        Value::Array(mut one) => one.pop().unwrap_or(Value::Null),
+        other => other,
+    }
+}
+
+fn items_json(cap: &LinkCapability, items: &[Link]) -> Value {
+    if cap.uses_annotation_links() {
+        return to_value(&items);
+    }
+    items_in_source_order(items, serde_json::value::Serializer).unwrap_or(Value::Null)
 }
