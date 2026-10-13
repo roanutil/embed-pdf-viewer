@@ -5,16 +5,22 @@
 pub mod bound;
 pub mod cancel;
 pub mod error;
+pub mod foreign;
 pub mod geometry;
 pub mod kernel_thread;
+pub mod mirror;
+pub mod registration;
 pub mod status;
 pub mod subscription;
 
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
+pub use foreign::{ForeignSettle, HostError};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
+pub use mirror::to_u32;
+pub use registration::RegistrationHandle;
 pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};
 

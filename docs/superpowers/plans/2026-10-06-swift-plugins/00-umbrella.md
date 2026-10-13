@@ -349,7 +349,7 @@ The `file://` URLs in the manifest point into this machine's fork checkout, per 
 **Interfaces:**
 - Produces: `epdf_ffi::ForeignSettle<T: Clone + 'static>` with `new(resolver: Resolver<T>, post: KernelPost, what: &'static str) -> Self` (kernel thread only) and `settle(&self, make: impl FnOnce() -> Result<T, Error> + Send + 'static)` (any thread, first call wins, a drop without an answer rejects with `operation-failed`); `epdf_ffi::HostError::Failed { detail: String }` with `From<uniffi::UnexpectedUniFFICallbackError>` and `From<HostError> for epdf_kernel::Error` (name `HostError`, code `operation-failed`); `From<uniffi::UnexpectedUniFFICallbackError> for ViewerError` (the same name and code); `epdf_ffi::RegistrationHandle` with `RegistrationHandle::new(post: KernelPost, unregister: impl Fn() + 'static) -> Arc<RegistrationHandle>` (kernel thread) and the export `unregister(&self)` (idempotent; dropping the handle does not unregister); `#[macro_export] mirror_enum!(Ffi <=> path::Rust { A, B, C })`; `epdf_ffi::to_u32(n: usize, what: &str) -> Result<u32, epdf_kernel::Error>` (code `invalid-state`); `impl<C> Clone for KernelBound<C>` (clones share one slab entry, freed when the last drops).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `crates/epdf-ffi/tests/foreign.rs`:
 
@@ -537,12 +537,12 @@ fn a_clone_shares_the_value_and_the_last_drop_frees_it() {
 
 If `UnexpectedUniFFICallbackError`'s field isn't named `reason` in `uniffi` 0.32.0 (`rg -n 'pub struct UnexpectedUniFFICallbackError' -A3 ~/.cargo/registry/src/*/uniffi_core-0.32.0/src`), use its constructor or field name here and in `foreign.rs`.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-ffi`
 Expected: FAIL to compile: unresolved imports `epdf_ffi::ForeignSettle`, `HostError`, `RegistrationHandle`, `mirror_enum`, `to_u32`, and "no method named `clone`" on `KernelBound`.
 
-- [ ] **Step 3: Write `foreign.rs`**
+- [x] **Step 3: Write `foreign.rs`**
 
 ```rust
 //! Answers a foreign implementation sends back later, from any thread, and
@@ -630,7 +630,7 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for ViewerError {
 }
 ```
 
-- [ ] **Step 4: Write `registration.rs`**
+- [x] **Step 4: Write `registration.rs`**
 
 ```rust
 //! What a plugin hands back for a registration (a tool, a handler, a
@@ -673,7 +673,7 @@ impl RegistrationHandle {
 }
 ```
 
-- [ ] **Step 5: Write `mirror.rs`**
+- [x] **Step 5: Write `mirror.rs`**
 
 ```rust
 //! Helpers every plugin's `ffi` module uses for its mirrors.
@@ -710,7 +710,7 @@ pub fn to_u32(n: usize, what: &str) -> Result<u32, epdf_kernel::Error> {
 
 `mirror_enum!` uses `<$rust>::$variant` so that a path like `core_side::Side` parses as a type in pattern position. If rustc rejects that form in a pattern on this toolchain, change the macro's patterns to `$rust::$variant`.
 
-- [ ] **Step 6: Make `KernelBound` cloneable**
+- [x] **Step 6: Make `KernelBound` cloneable**
 
 In `crates/epdf-ffi/src/bound.rs`, replace `pub struct KernelBound<C: 'static> { id: u64, post: KernelPost, _value: PhantomData<fn() -> C> }` and its `impl Drop` with a shared slot:
 
@@ -745,7 +745,7 @@ impl<C: 'static> Clone for KernelBound<C> {
 
 In `KernelBound::new`, build it as `KernelBound { slot: Arc::new(Slot { id, post }), _value: PhantomData }`. In `call`, `call_promise`, `call_promise_cancellable` and `fire`, read `self.slot.id` for `self.id` and `self.slot.post` for `self.post`. Delete `impl<C: 'static> Drop for KernelBound<C>`: `Slot`'s drop replaces it.
 
-- [ ] **Step 7: Export them from `lib.rs`**
+- [x] **Step 7: Export them from `lib.rs`**
 
 In `crates/epdf-ffi/src/lib.rs`, beside the existing modules and re-exports:
 
@@ -759,12 +759,12 @@ pub use mirror::to_u32;
 pub use registration::RegistrationHandle;
 ```
 
-- [ ] **Step 8: Run the tests to verify they pass**
+- [x] **Step 8: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi && cargo clippy -p epdf-ffi --all-targets -- -D warnings`
 Expected: PASS: the four `foreign` tests, two `registration`, two `mirror`, the new `bound` test, and every existing one. `tests/bound.rs`'s drop-on-the-kernel-thread tests pin that the shared slot still frees on the kernel thread.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-ffi

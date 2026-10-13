@@ -49,10 +49,31 @@ static NEXT: AtomicU64 = AtomicU64::new(1);
 /// Stored in a `call_promise` slot by a dropped future that had no promise yet.
 const CANCELLED: u64 = u64::MAX;
 
-pub struct KernelBound<C: 'static> {
+/// A slab entry's id and the post that frees it, shared by every clone of
+/// a `KernelBound`. The last clone to drop frees the entry.
+struct Slot {
     id: u64,
     post: KernelPost,
+}
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        let id = self.id;
+        (self.post)(Box::new(move || {
+            SLAB.with(|s| s.borrow_mut().remove(&id));
+        }));
+    }
+}
+
+pub struct KernelBound<C: 'static> {
+    slot: Arc<Slot>,
     _value: PhantomData<fn() -> C>,
+}
+
+impl<C: 'static> Clone for KernelBound<C> {
+    fn clone(&self) -> Self {
+        KernelBound { slot: self.slot.clone(), _value: PhantomData }
+    }
 }
 
 impl<C: 'static> KernelBound<C> {
@@ -60,7 +81,7 @@ impl<C: 'static> KernelBound<C> {
     pub fn new(value: C, post: KernelPost) -> Self {
         let id = NEXT.fetch_add(1, Ordering::Relaxed);
         SLAB.with(|s| s.borrow_mut().insert(id, Box::new(value)));
-        KernelBound { id, post, _value: PhantomData }
+        KernelBound { slot: Arc::new(Slot { id, post }), _value: PhantomData }
     }
 
     pub fn call<T: Send + 'static>(
@@ -68,8 +89,8 @@ impl<C: 'static> KernelBound<C> {
         f: impl FnOnce(&C) -> Result<T, Error> + Send + 'static,
     ) -> impl Future<Output = Result<T, ViewerError>> + Send {
         let (tx, rx) = oneshot::channel();
-        let id = self.id;
-        (self.post)(Box::new(move || {
+        let id = self.slot.id;
+        (self.slot.post)(Box::new(move || {
             let _ = tx.send(with(id, |c: &C| f(c).map_err(ViewerError::from)));
         }));
         async move { rx.await.unwrap_or(Err(ViewerError::Closed)) }
@@ -81,9 +102,9 @@ impl<C: 'static> KernelBound<C> {
         f: impl FnOnce(&C) -> Result<Promise<U>, Error> + Send + 'static,
         map: impl FnOnce(U) -> T + Send + 'static,
     ) -> impl Future<Output = Result<T, ViewerError>> + Send {
-        let (slot, reply) = PromiseSlot::pending(self.post.clone(), map);
-        let id = self.id;
-        (self.post)(Box::new(move || {
+        let (slot, reply) = PromiseSlot::pending(self.slot.post.clone(), map);
+        let id = self.slot.id;
+        (self.slot.post)(Box::new(move || {
             slot.start(with(id, |c: &C| f(c).map_err(ViewerError::from)));
         }));
         reply
@@ -100,10 +121,10 @@ impl<C: 'static> KernelBound<C> {
         f: impl FnOnce(&C) -> Result<Promise<U>, Error> + Send + 'static,
         map: impl FnOnce(U) -> T + Send + 'static,
     ) -> impl Future<Output = Result<T, ViewerError>> + Send {
-        let (slot, reply) = PromiseSlot::pending(self.post.clone(), map);
+        let (slot, reply) = PromiseSlot::pending(self.slot.post.clone(), map);
         slot.abort_on(&token);
-        let id = self.id;
-        (self.post)(Box::new(move || {
+        let id = self.slot.id;
+        (self.slot.post)(Box::new(move || {
             if token.is_cancelled() {
                 slot.start(Err(ViewerError::cancelled()));
             } else {
@@ -115,21 +136,12 @@ impl<C: 'static> KernelBound<C> {
 
     /// No reply: for hot paths where the caller never waits.
     pub fn fire(&self, f: impl FnOnce(&C) + Send + 'static) {
-        let id = self.id;
-        (self.post)(Box::new(move || {
+        let id = self.slot.id;
+        (self.slot.post)(Box::new(move || {
             let _ = with(id, |c: &C| {
                 f(c);
                 Ok(())
             });
-        }));
-    }
-}
-
-impl<C: 'static> Drop for KernelBound<C> {
-    fn drop(&mut self) {
-        let id = self.id;
-        (self.post)(Box::new(move || {
-            SLAB.with(|s| s.borrow_mut().remove(&id));
         }));
     }
 }
