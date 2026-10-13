@@ -137,7 +137,8 @@ that puts one in an answer.
   whichever function built it (a page scale, a number format, an annotation's paint). Each entry
   is a vector file, a case and a path with its array indexes written `[]`; on 2026-10-13 it holds
   375 paths in 186 cases of 25 files. A new mismatch fails the run: fix the order, or, only if it
-  is one of those two kinds, add the path.
+  is one of those two kinds, add the path. `pnpm run member-order:allow` adds every path the tree
+  currently fails on, rerunning until none is left (`--fresh` rebuilds the list from empty).
 - Numbers compare as `f64`. Two integers below 2^53 in magnitude compare exactly, so an epoch in
   milliseconds off by one fails. Any other pair compares within one part in 10^12, which absorbs a
   last-bit difference in a transcendental and nothing a coordinate could carry.

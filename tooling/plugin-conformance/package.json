@@ -8,7 +8,8 @@
     "vectors:check": "tsx --conditions=development src/generate.ts --check",
     "coverage": "tsx --conditions=development src/coverage.ts",
     "coverage:check": "tsx --conditions=development src/coverage.ts --check",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "member-order:allow": "tsx src/member-order-allow.ts"
   },
   "devDependencies": {
     "@embedpdf/core": "workspace:*",
