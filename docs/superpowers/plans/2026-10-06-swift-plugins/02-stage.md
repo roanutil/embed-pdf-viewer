@@ -2983,7 +2983,7 @@ git commit -m "Wire the stage plugin into the viewer host"
 - Consumes: generated `StageHandle`, `RenderViewDemandHandle`, Task 2 to 5 records.
 - Produces: `StageCapability` and `PDFViewer.stage(for:)`; `StageInitialViewProvider` typealias; on `RenderCapability`: `renderPolicy()`, `renderSource(_:scale:includeAnnotations:)`, `sourceKey(_:scale:includeAnnotations:)`, `conformViewport(_:scale:)`, `paintSettings()`, `viewDemand(_:)`; `RenderViewDemand` (wraps `RenderViewDemandHandle`).
 
-- [ ] **Step 1: Write `Stage.swift`**
+- [x] **Step 1: Write `Stage.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -3169,7 +3169,7 @@ extension PDFViewer {
 
 The one-line method style here is a deliberate exception to `Search.swift`'s multi-line style: 70 members each a single `bridged` call read better aligned than spread over 280 lines. Run `swift-format` if the repo has a config that rejects it; it doesn't at the time of writing (`platforms/apple` has no `.swift-format`).
 
-- [ ] **Step 2: Add the viewport members to `Render.swift`**
+- [x] **Step 2: Add the viewport members to `Render.swift`**
 
 Add typealiases at the top:
 
@@ -3250,12 +3250,12 @@ public struct RenderViewDemand: Sendable {
 
 If the existing CGImage conversion in `Render.swift` is inline in `renderPage` rather than a helper, extract it into `func renderedPage(_ image: RenderedImage) throws(PDFError) -> RenderedPage` in the same commit and call it from `renderPage` too.
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF

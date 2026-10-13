@@ -9,6 +9,13 @@ public typealias RenderPageOptions = EmbedPDFBindings.RenderPageOptions
 public typealias RenderInvalidateScope = EmbedPDFBindings.RenderInvalidateScope
 public typealias RenderBatchFailure = EmbedPDFBindings.RenderBatchFailure
 public typealias RenderEvent = EmbedPDFBindings.RenderEvent
+public typealias RenderPolicy = EmbedPDFBindings.RenderPolicy
+public typealias RenderLatticePolicy = EmbedPDFBindings.RenderLatticePolicy
+public typealias RenderViewport = EmbedPDFBindings.RenderViewport
+public typealias RenderPaintSettings = EmbedPDFBindings.RenderPaintSettings
+public typealias RenderPageViewDemand = EmbedPDFBindings.RenderPageViewDemand
+public typealias RenderTileSource = EmbedPDFBindings.RenderTileSource
+public typealias RenderTilePlan = EmbedPDFBindings.RenderTilePlan
 
 /// A rendered page. `image` owns its pixels: it outlives the document and
 /// the viewer.
@@ -110,11 +117,68 @@ public struct RenderCapability: Sendable {
     try await bridged { try await handle.invalidate(pages: pages, scope: scope) }
   }
 
+  public func renderPolicy() async throws(PDFError) -> RenderPolicy {
+    try await bridged { try await handle.renderPolicy() }
+  }
+
+  /// Render at the scale a view shows the page (a `StagePageTransform`'s
+  /// `renderScale`), conformed through the policy's render points.
+  public func renderSource(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil)
+    async throws(PDFError) -> RenderedPage
+  {
+    let image = try await bridgedCancellable { token in
+      try await handle.renderSource(page: page, scale: scale, includeAnnotations: includeAnnotations, cancel: token)
+    }
+    return try RenderedPage(image)
+  }
+
+  public func sourceKey(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil) async throws(PDFError) -> String {
+    try await bridged { try await handle.sourceKey(page: page, scale: scale, includeAnnotations: includeAnnotations) }
+  }
+
+  public func conformViewport(_ page: PageRef, scale: Double) async throws(PDFError) -> RenderViewport {
+    try await bridged { try await handle.conformViewport(page: page, scale: scale) }
+  }
+
+  public func paintSettings() async throws(PDFError) -> RenderPaintSettings {
+    try await bridged { try await handle.paintSettings() }
+  }
+
+  /// A view's tile surface. Pair with `dispose()`.
+  public func viewDemand(_ viewId: String) async throws(PDFError) -> RenderViewDemand {
+    RenderViewDemand(handle: try await bridged { try await handle.createViewDemand(viewId: viewId) }, render: self)
+  }
+
   /// Invalidations, and rasters resolving or failing. Finishes when the
   /// document closes (at once if it already has) or the viewer is destroyed.
   public var events: AsyncStream<RenderEvent> {
     viewer.registry.stream { handle.subscribe(listener: $0) }
   }
+}
+
+/// One view's tile plane over a document's pages.
+public struct RenderViewDemand: Sendable {
+  let handle: RenderViewDemandHandle
+  let render: RenderCapability
+
+  public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil) async throws(PDFError) {
+    try await bridged { try await handle.setDemand(page: page, demand: demand, includeAnnotations: includeAnnotations) }
+  }
+
+  public func plan(_ page: PageRef) async throws(PDFError) -> RenderTilePlan {
+    try await bridged { try await handle.plan(page: page) }
+  }
+
+  /// `nil` for a key the current plan doesn't paint.
+  public func tileImage(_ page: PageRef, key: String) async throws(PDFError) -> RenderedPage? {
+    guard let image = try await bridged({ try await handle.tileImage(page: page, key: key) }) else { return nil }
+    return try RenderedPage(image)
+  }
+
+  public func markPainted(_ page: PageRef, key: String) async throws(PDFError) { try await bridged { try await handle.markPainted(page: page, key: key) } }
+  public func markUnpainted(_ page: PageRef, key: String) async throws(PDFError) { try await bridged { try await handle.markUnpainted(page: page, key: key) } }
+  public func release(_ page: PageRef) async throws(PDFError) { try await bridged { try await handle.release(page: page) } }
+  public func dispose() async throws(PDFError) { try await bridged { try await handle.dispose() } }
 }
 
 extension RenderedPage {
