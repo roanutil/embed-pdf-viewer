@@ -17,6 +17,11 @@ public final class StageReaderModel {
   @ObservationIgnored private var lastTranslation = CGSize.zero
   @ObservationIgnored private var lastMagnification: CGFloat = 1
   @ObservationIgnored private var gestureOpen = false
+  /// The last drag call, which the next one waits for. SwiftUI hands a
+  /// gesture's change and end to separate tasks, and each call leaves the
+  /// main actor while it reaches the stage, so without this an end could
+  /// reach the stage before the begin it closes.
+  @ObservationIgnored private var lastDragCall: Task<Void, Never>?
 
   public init(stage: StageCapability, render: RenderCapability) {
     self.stage = stage
@@ -46,7 +51,30 @@ public final class StageReaderModel {
     await refresh()
   }
 
+  /// Runs after every earlier drag call has finished.
   public func dragChanged(translation: CGSize) async {
+    await afterEarlierDragCalls { await $0.applyDragChange(translation) }
+  }
+
+  /// `velocity` in points per second, as `DragGesture.Value.velocity`
+  /// reports. Runs after every earlier drag call has finished.
+  public func dragEnded(velocity: CGSize) async {
+    await afterEarlierDragCalls { await $0.applyDragEnd(velocity) }
+  }
+
+  private func afterEarlierDragCalls(
+    _ work: @escaping @MainActor @Sendable (StageReaderModel) async -> Void
+  ) async {
+    let previous = lastDragCall
+    let call = Task { @MainActor in
+      await previous?.value
+      await work(self)
+    }
+    lastDragCall = call
+    await call.value
+  }
+
+  private func applyDragChange(_ translation: CGSize) async {
     do {
       if !gestureOpen {
         gestureOpen = true
@@ -64,8 +92,7 @@ public final class StageReaderModel {
     await refresh()
   }
 
-  /// `velocity` in points per second, as `DragGesture.Value.velocity` reports.
-  public func dragEnded(velocity: CGSize) async {
+  private func applyDragEnd(_ velocity: CGSize) async {
     do {
       if gestureOpen {
         gestureOpen = false

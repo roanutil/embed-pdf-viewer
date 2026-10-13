@@ -50,4 +50,22 @@ struct StageReaderModelTests {
     expectNoDifference(model.currentPageIndex, page)
     #expect(!model.visiblePages.isEmpty)
   }
+
+  /// SwiftUI delivers a tap's change and end back to back, each in its own
+  /// task. The gesture bracket must still open before it closes, or the
+  /// stage keeps an elastic overscroll it never springs back from.
+  @Test func backToBackGestureCallsKeepTheBracketOrdered() async throws {
+    let (model, task) = try await model()
+    defer { task.cancel() }
+    await model.sizeChanged(CGSize(width: 390, height: 844), displayScale: 3)
+    let resting = try await model.stage.camera()
+    for _ in 0..<20 {
+      let change = Task { await model.dragChanged(translation: CGSize(width: 0, height: 300)) }
+      let end = Task { await model.dragEnded(velocity: .zero) }
+      await change.value
+      await end.value
+    }
+    let camera = try await model.stage.camera()
+    expectNoDifference(camera, resting)
+  }
 }
