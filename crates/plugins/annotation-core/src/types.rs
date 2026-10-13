@@ -811,7 +811,9 @@ pub struct Authority {
     pub delete: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// A stored annotation. It serializes through the impl below, which writes
+/// the members in the order the TypeScript object that built it has.
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Annot {
     pub id: Id,
@@ -851,6 +853,134 @@ pub struct Annot {
     pub irt: Option<Id>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
+}
+
+/// A member of [`Annot`], for the member orders below.
+#[derive(Clone, Copy)]
+enum AnnotKey {
+    Id,
+    Ref,
+    Page,
+    Subtype,
+    Geom,
+    Style,
+    Text,
+    Label,
+    Measure,
+    Icon,
+    Flags,
+    Source,
+    ApBox,
+    ApRot,
+    ApVersion,
+    Authority,
+    Data,
+    Intent,
+    Link,
+    Irt,
+    Group,
+}
+
+/// `fromDTO` (`repository/index.ts`): identity, `flags`, `source` and the
+/// DTO, then `irt`/`group`, `style`, the kind's slice (a dimension's
+/// `measure` before its `geom`, the rest after), and `apBox`/`apRot`. The
+/// session's `authority` and `apVersion` are spread on later.
+const FROM_DTO_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Flags, Source, Data, Irt, Group, Style, Measure, Geom, Text, Label,
+        Icon, Link, Intent, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+/// The reducer's create literals (`update.ts`): `geom`, `style` and the
+/// kind's extras, then `flags` and `source`. A caret replacement writes
+/// `intent` ahead of `geom`; ink writes it after `style` (handled in
+/// [`Annot::member_order`]).
+const DRAWN_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Intent, Geom, Measure, Style, Text, Label, Icon, Link, Flags,
+        Source, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+/// A stored record that is neither: the base members, then what spreads
+/// appended after `source`.
+const STORED_ORDER: [AnnotKey; 21] = {
+    use AnnotKey::*;
+    [
+        Id, Ref, Page, Subtype, Intent, Geom, Style, Flags, Source, Text, Label, Measure, Icon,
+        Link, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
+    ]
+};
+
+impl Annot {
+    /// The member order of the TypeScript object, read off what the record
+    /// carries since the Rust struct keeps no order of its own: `data` with
+    /// `apBox` is `fromDTO`'s, no `ref` yet is a reducer create, anything
+    /// else a stored record grown by spreads.
+    fn member_order(&self) -> impl Iterator<Item = AnnotKey> {
+        let (order, ink) = if self.data.is_some() && self.ap_box.is_some() {
+            (&FROM_DTO_ORDER, false)
+        } else if self.ref_.is_none() {
+            (&DRAWN_ORDER, self.subtype == "ink")
+        } else {
+            (&STORED_ORDER, false)
+        };
+        order
+            .iter()
+            .copied()
+            .flat_map(move |key| match (ink, key) {
+                (true, AnnotKey::Intent) => [None, None],
+                (true, AnnotKey::Style) => [Some(AnnotKey::Style), Some(AnnotKey::Intent)],
+                _ => [Some(key), None],
+            })
+            .flatten()
+    }
+}
+
+impl Serialize for Annot {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        fn put<M: SerializeMap, T: Serialize>(
+            map: &mut M,
+            key: &str,
+            value: Option<&T>,
+        ) -> Result<(), M::Error> {
+            match value {
+                Some(v) => map.serialize_entry(key, v),
+                None => Ok(()),
+            }
+        }
+        let mut map = serializer.serialize_map(None)?;
+        for key in self.member_order() {
+            let m = &mut map;
+            match key {
+                AnnotKey::Id => put(m, "id", Some(&self.id)),
+                AnnotKey::Ref => put(m, "ref", Some(&self.ref_)),
+                AnnotKey::Page => put(m, "page", Some(&self.page)),
+                AnnotKey::Subtype => put(m, "subtype", Some(&self.subtype)),
+                AnnotKey::Geom => put(m, "geom", Some(&self.geom)),
+                AnnotKey::Style => put(m, "style", Some(&self.style)),
+                AnnotKey::Text => put(m, "text", self.text.as_ref()),
+                AnnotKey::Label => put(m, "label", self.label.as_ref()),
+                AnnotKey::Measure => put(m, "measure", self.measure.as_ref()),
+                AnnotKey::Icon => put(m, "icon", self.icon.as_ref()),
+                AnnotKey::Flags => put(m, "flags", Some(&self.flags)),
+                AnnotKey::Source => put(m, "source", Some(&self.source)),
+                AnnotKey::ApBox => put(m, "apBox", self.ap_box.as_ref()),
+                AnnotKey::ApRot => put(m, "apRot", self.ap_rot.as_ref()),
+                AnnotKey::ApVersion => put(m, "apVersion", self.ap_version.as_ref()),
+                AnnotKey::Authority => put(m, "authority", self.authority.as_ref()),
+                AnnotKey::Data => put(m, "data", self.data.as_ref()),
+                AnnotKey::Intent => put(m, "intent", self.intent.as_ref()),
+                AnnotKey::Link => put(m, "link", (!self.link.is_undefined()).then_some(&self.link)),
+                AnnotKey::Irt => put(m, "irt", self.irt.as_ref()),
+                AnnotKey::Group => put(m, "group", self.group.as_ref()),
+            }?;
+        }
+        map.end()
+    }
 }
 
 /// A draggable handle.
