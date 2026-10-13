@@ -83,9 +83,9 @@ extension BaseSuite {
     }
 
     @Test func aConfigWithALoaderEqualsItself() {
-      let config = ViewerConfig(
-        i18n: I18nConfig(lazyLocales: ["es"], loader: BundleLocaleLoader(bundle: .module))
-      )
+      // ViewerConfig isn't Equatable since FeedbackConfig became an object
+      // (plan 01), so this checks the I18nConfig the export covers.
+      let config = I18nConfig(lazyLocales: ["es"], loader: BundleLocaleLoader(bundle: .module))
       #expect(config == config)
       expectNoDifference(config.hashValue, config.hashValue)
     }
