@@ -25,7 +25,7 @@ Every constraint in the umbrella's Global Constraints applies. The ones this pla
 ## Review Focus
 
 1. `props_json` that isn't a JSON object (an array, a number, malformed text). People expect `invalid-input` and the surface untouched, not a silently dropped prop set. Pinned in Task 2 (`props_that_are_not_an_object_are_invalid_input`).
-2. Opening a surface with an exclusivity tag. People expect every other open surface with that tag to close, and a `surfaceClosed` event for each, before the `surfaceOpened`. Pinned in Task 2 (`an_exclusive_open_closes_its_siblings_and_says_so`).
+2. Opening a surface with an exclusivity tag. People expect every other open surface with that tag to close, and a `surfaceClosed` event for each. The events come in JavaScript property order over the before-then-new ids, as the TypeScript's `emitDiffs` sends them, so the closes precede the `surfaceOpened` only when the opened id sorts after them; reopening an earlier id reports its open first. Pinned in Task 2 (`an_exclusive_open_closes_its_siblings_and_says_so`, `exclusive_events_follow_property_order_not_close_first`).
 3. A snapshot saved and restored. People expect surfaces back in the same order, which is JavaScript property order (integer-like ids first), with their tags and props. Pinned in Task 2 (`a_snapshot_round_trips_in_property_order`).
 4. A surface id that names an `Object.prototype` member, like `toString`. The plugin finds it as a JavaScript lookup does and reports no open flag (`SurfaceState::open` is `None`). People expect a closed surface, not a crash or a missing record. Pinned in Task 2 (`an_inherited_name_reads_as_closed`).
 5. Two documents open at once. People expect each to keep its own panels and menus, and a document's close to end only its own event stream. Pinned in Task 4 (`eachDocumentKeepsItsOwnSurfaces`, `closingTheDocumentFinishesTheEvents`).
@@ -77,7 +77,7 @@ The cost is the props field. `SurfaceProps` is an opaque JSON object in the Type
 
 If a native app never wants shell, `ViewerConfig.shell` stays `false` and none of this is linked into its behaviour, though the exports still add their scaffolding to the archive. Task 5 records that size.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -93,7 +93,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/shell-size-before"
 ```
 
-- [ ] **Step 2: Record the decision in the crate's README**
+- [x] **Step 2: Record the decision in the crate's README**
 
 Append to `crates/plugins/shell/README.md`:
 
@@ -110,7 +110,7 @@ Anything that isn't an object is refused with `invalid-input`. The Swift layer a
 helpers over the string and no schema of its own.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/plugins/shell/README.md
@@ -136,7 +136,7 @@ git commit -m "Record why the shell plugin ships to Swift"
 
 The member list is `crates/plugins/shell/src/harness.rs` `MEMBERS`, checked against `impl ShellCapability`: `isOpen`, `getSurface`, `listOpenSurfaces`, `open`, `close`, `toggle`, `updateSurfaceProps`, `closeAll`, `isMenuOpen`, `listOpenMenus`, `openMenu`, `closeMenu`, `toggleMenu`, `closeAllMenus`, `getSnapshot`, `applySnapshot`, and four `on*` hooks that become `subscribe`.
 
-- [ ] **Step 1: Turn on the feature**
+- [x] **Step 1: Turn on the feature**
 
 `crates/plugins/shell/Cargo.toml`:
 
@@ -179,7 +179,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `crates/plugins/shell/tests/ffi.rs`:
 
@@ -367,12 +367,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 
 `ShellEvent` and the records need `Clone` and `PartialEq` for these assertions; `ffi.rs` derives both.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-shell --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_shell`.
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 Create `crates/plugins/shell/src/ffi.rs`:
 
@@ -729,7 +729,7 @@ impl ShellHandle {
 
 `crate::record::JsRecord` is `pub` and re-exported from `lib.rs`, and implements `FromIterator<(String, V)>` (`crates/plugins/shell/src/record.rs:102`), so collecting a `Result` of pairs builds it in the record's own property order. `crate::model::SurfaceRecord` is `pub` and re-exported too.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-shell --features uniffi --test ffi`
 Expected: PASS, 8 tests.
@@ -737,7 +737,7 @@ Expected: PASS, 8 tests.
 Run: `cargo test -p epdf-plugin-shell`
 Expected: PASS. The 38 vector cases don't see the feature.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/shell
@@ -754,7 +754,7 @@ git commit -m "Export the shell plugin through uniffi, with props as JSON text"
 - Consumes: `ShellHandle::new` (Task 2).
 - Produces: `ViewerConfig.shell: bool` (default `false`), `ViewerHost::shell(document_id: String) -> Result<Arc<ShellHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, with `use epdf_plugin_shell::ffi::ShellOpenOptions;` at the top:
 
@@ -792,12 +792,12 @@ fn without_its_flag_the_shell_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host shell`
 Expected: FAIL to compile, `no field shell on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -837,12 +837,12 @@ epdf-plugin-shell = { path = "../plugins/shell", default-features = false, featu
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -861,7 +861,7 @@ git commit -m "Wire the shell plugin into the viewer host"
 
 The `Encodable` overloads encode with `JSONEncoder` and throw `PDFError` with code `invalid-input` if encoding fails. They decide nothing about the props: Rust still checks that the result is an object.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ShellTests.swift`:
 
@@ -977,7 +977,7 @@ extension BaseSuite {
 
 No member takes a `CancelToken`, so there's no cancellation test.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -986,7 +986,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'shell'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift`:
 
@@ -1140,7 +1140,7 @@ extension PDFViewer {
 
 `PDFError.init(name:code:detail:)` is internal to `EmbedPDF`, which is where this file lives.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1149,7 +1149,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `ShellTests` with 8 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ShellTests.swift
@@ -1165,7 +1165,7 @@ git commit -m "Add the Swift shell capability"
 
 Append `shell` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2: README row**
+- [x] **Step 2: README row**
 
 In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 
@@ -1173,11 +1173,11 @@ In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` §A.4, change `**shell** (D).` to `**shell** (D), delivered by 12-shell.md, which also records why it ships.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-shell --features uniffi
@@ -1192,7 +1192,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive size**
+- [x] **Step 5: Commit, with the archive size**
 
 ```bash
 before=$(cat "$TMPDIR/shell-size-before")

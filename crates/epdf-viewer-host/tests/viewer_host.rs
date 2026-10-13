@@ -5,6 +5,7 @@ use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
+use epdf_plugin_shell::ffi::ShellOpenOptions;
 use epdf_viewer_host::{
     DocumentEvent, DocumentEventListener, DocumentStatus, OpenDocumentOptions, ViewerConfig,
     ViewerDelegate, ViewerHost,
@@ -330,4 +331,39 @@ fn the_features_fixture_opens() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
         .unwrap();
     assert_eq!(doc.page_count, 3);
+}
+
+fn with_shell() -> Arc<ViewerHost> {
+    let config = ViewerConfig { shell: true, ..Default::default() };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn each_document_keeps_its_own_shell() {
+    let host = with_shell();
+    let report =
+        block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+            .unwrap();
+    let colors =
+        block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+            .unwrap();
+    let first = block_on(host.shell(report.id.clone())).unwrap();
+    let second = block_on(host.shell(colors.id)).unwrap();
+    let options =
+        ShellOpenOptions { exclusive: None, props_json: Some(r#"{"tab":"outline"}"#.into()) };
+    block_on(first.open_surface("sidebar".into(), Some(options))).unwrap();
+    assert!(block_on(first.is_open("sidebar".into())).unwrap());
+    assert!(!block_on(second.is_open("sidebar".into())).unwrap());
+    block_on(host.close_document(report.id)).unwrap();
+    assert!(block_on(second.open_surfaces()).unwrap().is_empty());
+}
+
+#[test]
+fn without_its_flag_the_shell_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.shell(doc.id)).is_err());
 }

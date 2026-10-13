@@ -48,3 +48,14 @@ unviable). No new cases were needed. Both survivors are equivalent:
 - `src/record.rs`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
   words a serde error for a non-object, and the public API takes typed values, so that text only
   ever reaches a `[shell harness]` error that no TypeScript outcome is compared with.
+
+## Native exposure
+
+Shell ships to Swift (`ShellCapability`, `2026-10-06-swift-plugins/12-shell.md`). It stores which
+named surfaces and menus are open per document; the app still owns their UI. The commands plugin
+toggles panel, modal and menu targets through it, and per-document panel state and snapshots come
+with it, so a native reader wants it for the same reasons the web viewer does.
+
+`props` is opaque by contract, so it crosses UniFFI as `props_json`, a JSON object in a string.
+Anything that isn't an object is refused with `invalid-input`. The Swift layer adds `Codable`
+helpers over the string and no schema of its own.
