@@ -311,3 +311,63 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
     stage.pan_by(1.0, 1.0);
     drain(&thread);
 }
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use epdf_plugin_stage::ffi::{StageEvent, StageEventListener, StageSettingKey};
+
+#[derive(Default)]
+struct Events(Mutex<Vec<StageEvent>>, AtomicUsize);
+
+impl StageEventListener for Events {
+    fn on_event(&self, event: StageEvent) {
+        self.0.lock().unwrap().push(event);
+    }
+    fn on_end(&self) {
+        self.1.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+#[test]
+fn navigation_zoom_and_settings_are_observed() {
+    let (thread, stage, _) = frameless();
+    let events = Arc::new(Events::default());
+    let _sub = stage.subscribe(events.clone());
+    sized(&stage);
+    block_on(stage.go_to_page_index(1, instant())).unwrap();
+    block_on(stage.zoom_in()).unwrap();
+    block_on(stage.set_layout(StageLayout::Horizontal)).unwrap();
+    drain(&thread);
+    let seen = events.0.lock().unwrap();
+    assert!(
+        seen.iter().any(|e| matches!(e, StageEvent::ViewportChanged { event }
+        if event.size.width == 400.0)),
+        "{seen:?}"
+    );
+    assert!(
+        seen.iter().any(|e| matches!(e, StageEvent::PageChanged { event }
+        if event.page_index == 1 && event.page.as_ref().map(|p| p.page) == Some(PAGE_2))),
+        "{seen:?}"
+    );
+    assert!(
+        seen.iter().any(|e| matches!(e, StageEvent::ZoomChanged { event }
+        if event.level > event.previous_level)),
+        "{seen:?}"
+    );
+    assert!(
+        seen.iter().any(|e| matches!(e, StageEvent::SettingsChanged { event }
+        if event.changed.contains(&StageSettingKey::Layout))),
+        "{seen:?}"
+    );
+    assert!(seen.iter().any(|e| matches!(e, StageEvent::CameraChanged { .. })), "{seen:?}");
+}
+
+#[test]
+fn closing_the_document_ends_stage_subscriptions() {
+    let (thread, stage, _) = frameless();
+    let events = Arc::new(Events::default());
+    let _sub = stage.subscribe(events.clone());
+    drain(&thread);
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    assert_eq!(events.1.load(Ordering::SeqCst), 1);
+}

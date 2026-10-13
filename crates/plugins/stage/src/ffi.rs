@@ -1373,3 +1373,119 @@ impl StageHandle {
         .await
     }
 }
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct StagePageChangedEvent {
+    pub page: Option<PageInfo>,
+    pub page_index: u32,
+    pub previous_page_index: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct StageZoomChangedEvent {
+    pub level: f64,
+    pub previous_level: f64,
+    pub mode: StageZoomMode,
+}
+
+/// Coalesced per camera write, not per frame.
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct StageCameraChangedEvent {
+    pub camera: Camera,
+}
+
+/// A tween or fling settled, or was stopped.
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct StageMotionEndedEvent {
+    pub camera: Camera,
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct StageSettingsChangedEvent {
+    pub settings: StageSettings,
+    pub changed: Vec<StageSettingKey>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, uniffi::Record)]
+pub struct StageViewportChangedEvent {
+    pub size: Size,
+}
+
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum StageEvent {
+    PageChanged { event: StagePageChangedEvent },
+    ZoomChanged { event: StageZoomChangedEvent },
+    CameraChanged { event: StageCameraChangedEvent },
+    MotionEnded { event: StageMotionEndedEvent },
+    SettingsChanged { event: StageSettingsChangedEvent },
+    ViewportChanged { event: StageViewportChangedEvent },
+}
+
+#[uniffi::export(with_foreign)]
+pub trait StageEventListener: Send + Sync {
+    fn on_event(&self, event: StageEvent);
+    /// The document closed: no event follows.
+    fn on_end(&self);
+}
+
+#[uniffi::export]
+impl StageHandle {
+    /// The listener is registered on the kernel thread after this returns.
+    /// It gets `on_end` when the document closes (at once if it already
+    /// has). An event that does not convert is reported, not delivered.
+    pub fn subscribe(&self, listener: Arc<dyn StageEventListener>) -> Arc<Subscription> {
+        let (subscription, slot) = Subscription::pending(self.post.clone());
+        self.bound.fire(move |b| {
+            let c = &b.cap;
+            let ending = listener.clone();
+            slot.fill_until_end(
+                c.lifetime(),
+                || {
+                    macro_rules! relay {
+                        ($hook:ident, |$e:ident| $event:expr) => {{
+                            let listener = listener.clone();
+                            c.$hook(move |$e| {
+                                listener.on_event($event);
+                                Ok(())
+                            })
+                        }};
+                    }
+                    let offs: Vec<Unsubscribe> = vec![
+                        relay!(on_page_changed, |e| StageEvent::PageChanged {
+                            event: StagePageChangedEvent {
+                                page: e.page.as_ref().map(page_info).transpose()?,
+                                page_index: to_u32(e.page_index, "a page index")?,
+                                previous_page_index: to_u32(e.previous_page_index, "a page index")?,
+                            },
+                        }),
+                        relay!(on_zoom_changed, |e| StageEvent::ZoomChanged {
+                            event: StageZoomChangedEvent {
+                                level: e.level,
+                                previous_level: e.previous_level,
+                                mode: e.mode.into(),
+                            },
+                        }),
+                        relay!(on_camera_changed, |e| StageEvent::CameraChanged {
+                            event: StageCameraChangedEvent { camera: e.camera.into() },
+                        }),
+                        relay!(on_motion_ended, |e| StageEvent::MotionEnded {
+                            event: StageMotionEndedEvent { camera: e.camera.into() },
+                        }),
+                        relay!(on_settings_changed, |e| StageEvent::SettingsChanged {
+                            event: StageSettingsChangedEvent {
+                                settings: e.settings.clone().try_into()?,
+                                changed: e.changed.iter().map(|k| (*k).into()).collect(),
+                            },
+                        }),
+                        relay!(on_viewport_changed, |e| StageEvent::ViewportChanged {
+                            event: StageViewportChangedEvent { size: e.size.into() },
+                        }),
+                    ];
+                    Unsubscribe::new(move || offs.iter().for_each(Unsubscribe::call))
+                },
+                move || ending.on_end(),
+            );
+        });
+        subscription
+    }
+}

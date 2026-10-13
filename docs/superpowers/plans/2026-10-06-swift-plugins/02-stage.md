@@ -2203,7 +2203,7 @@ git commit -m "Export the stage plugin's handle with a kernel-timer frame schedu
 - Consumes: `StageCapability::{on_page_changed, on_zoom_changed, on_camera_changed, on_motion_ended, on_settings_changed, on_viewport_changed}` (`crates/plugins/stage/src/services/events.rs`).
 - Produces: records `StagePageChangedEvent { page: Option<PageInfo>, page_index: u32, previous_page_index: u32 }`, `StageZoomChangedEvent { level, previous_level, mode: StageZoomMode }`, `StageCameraChangedEvent { camera }`, `StageMotionEndedEvent { camera }`, `StageSettingsChangedEvent { settings, changed: Vec<StageSettingKey> }`, `StageViewportChangedEvent { size }`; enum `StageEvent` with one variant per record; trait `StageEventListener { on_event, on_end }`; `StageHandle::subscribe(listener) -> Arc<Subscription>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/stage/tests/ffi.rs`:
 
@@ -2257,12 +2257,12 @@ fn closing_the_document_ends_stage_subscriptions() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi observed`
 Expected: FAIL to compile, "cannot find `StageEvent`".
 
-- [ ] **Step 3: Write the events**
+- [x] **Step 3: Write the events**
 
 Append to `ffi.rs`:
 
@@ -2386,12 +2386,12 @@ impl StageHandle {
 
 If a hook's listener type isn't `Fn(&E) -> Result<(), Error>` (check `services/events.rs`), adapt the macro the way search's `subscribe` does.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 18 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/stage
