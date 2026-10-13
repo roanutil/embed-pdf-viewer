@@ -301,7 +301,19 @@ use epdf_viewer_host::translate::{PATHS, maps, optional_whole, whole};
 
 #[test]
 fn every_routed_path_is_listed() {
-    for path in PATHS {
+    // Paths whose dummy args can't be valid (a page list, a PDF's bytes):
+    // page edit's six, covered by `a_rotation_travels_as_a_whole_number`,
+    // `a_move_carries_its_destination`, `an_absent_destination_is_left_out`
+    // and `an_insert_moves_its_pdf_into_the_payload`.
+    const NEEDS_REAL_ARGS: &[&str] = &[
+        "pages.move",
+        "pages.rotate",
+        "pages.delete",
+        "pages.insert",
+        "pages.insertBlank",
+        "pages.extract",
+    ];
+    for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
     }
 }
@@ -364,4 +376,161 @@ fn an_open_without_bytes_is_invalid_input() {
         });
     });
     assert_eq!(code.as_deref(), Some("invalid-input"));
+}
+
+// ── page edits ─────────────────────────────────────────────────────────────
+
+fn page_ref(pon: u32) -> Value {
+    json!({ "kind": "objectNumber", "pageObjectNumber": pon })
+}
+
+#[test]
+fn a_rotation_travels_as_a_whole_number() {
+    let args = [json!([page_ref(3), page_ref(4)]), json!(90.0)];
+    let call = translate("d1", "pages.rotate", None, &args, 11).unwrap();
+    assert_eq!(
+        call.request,
+        json!({
+            "kind": "pages.rotate", "jobId": 11, "docId": "d1",
+            "pageObjectNumbers": [3, 4], "rotation": 90
+        })
+    );
+    assert!(call.request["rotation"].is_u64());
+    assert!(matches!(call.decode, Decode::PageMutation));
+}
+
+#[test]
+fn a_move_carries_its_destination() {
+    let args = [json!([page_ref(3)]), json!(0.0)];
+    let call = translate("d1", "pages.move", None, &args, 12).unwrap();
+    assert_eq!(call.request["pageObjectNumbers"], json!([3]));
+    assert_eq!(call.request["destIndex"], json!(0));
+}
+
+#[test]
+fn a_fractional_index_is_invalid_input() {
+    for bad in [json!(1.5), json!(-1.0), json!({ "$number": "NaN" })] {
+        let args = [json!([page_ref(3)]), bad.clone()];
+        let error = translate("d1", "pages.move", None, &args, 13).err().unwrap();
+        assert_eq!(error.code(), Some("invalid-input"), "{bad}");
+    }
+}
+
+#[test]
+fn an_absent_destination_is_left_out() {
+    let spec = json!({ "size": { "width": 612.0, "height": 792.0 }, "count": 2.0 });
+    let call =
+        translate("d1", "pages.insertBlank", None, &[spec, epdf_kernel::undefined()], 14).unwrap();
+    assert_eq!(
+        call.request,
+        json!({
+            "kind": "pages.insertBlank", "jobId": 14, "docId": "d1",
+            "size": { "width": 612.0, "height": 792.0 }, "count": 2
+        })
+    );
+}
+
+#[test]
+fn an_insert_moves_its_pdf_into_the_payload() {
+    let bytes = epdf_kernel::bytes::Bytes(b"%PDF-1.7".to_vec()).to_json();
+    let call = translate("d1", "pages.insert", None, &[bytes, json!(1.0)], 15).unwrap();
+    assert_eq!(call.payloads, vec![b"%PDF-1.7".to_vec()]);
+    assert_eq!(call.request["destIndex"], json!(1));
+    assert!(call.request.get("bytes").is_none());
+}
+
+#[test]
+fn an_insert_without_bytes_is_invalid_input() {
+    let error = translate("d1", "pages.insert", None, &[json!({})], 16).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
+fn an_extract_decodes_to_host_bytes() {
+    let response =
+        HostResponse { json: r#"{"result":{"size":3}}"#.into(), payloads: vec![vec![1, 2, 3]] };
+    let value = decode(&Decode::HostBytes, response).unwrap().value;
+    let id = value["$hostBytes"].as_u64().unwrap();
+    assert_eq!(HostTable::take(id), Some(vec![1, 2, 3]));
+}
+
+const PAGE: &str = r#"{"boxes":{},"index":0,"label":null,"pageObjectNumber":2,"rotation":90,"size":{"height":792.0,"width":612.0},"userUnit":1.0}"#;
+
+#[test]
+fn a_page_mutation_gives_every_layout_page_its_ref() {
+    let json = format!(
+        r#"{{"result":{{"event":{{"layout":{{"pageCount":1,"pages":[{PAGE}]}},"type":"pages.rotated"}},"mutationSequence":2,"result":{{"layout":{{"pageCount":1,"pages":[{PAGE}]}}}}}}}}"#
+    );
+    let decoded = decode(&Decode::PageMutation, answer(&json)).unwrap();
+    assert_eq!(decoded.value["layout"]["pages"][0]["ref"], page_ref(2));
+    let event = decoded.event.unwrap();
+    assert_eq!(event["type"], "pages.rotated");
+    assert_eq!(event["layout"]["pages"][0]["ref"], page_ref(2));
+}
+
+#[test]
+fn an_insert_result_names_its_pages_as_refs() {
+    let json = format!(
+        r#"{{"result":{{"event":{{"insertedPageObjectNumbers":[2],"layout":{{"pageCount":1,"pages":[{PAGE}]}},"type":"pages.inserted"}},"mutationSequence":3,"result":{{"insertedPageObjectNumbers":[2],"layout":{{"pageCount":1,"pages":[{PAGE}]}}}}}}}}"#
+    );
+    let decoded = decode(&Decode::PageMutation, answer(&json)).unwrap();
+    assert_eq!(decoded.value["insertedPages"], json!([page_ref(2)]));
+}
+
+#[test]
+fn an_inserted_page_is_known_to_the_engine_handle() {
+    let (inserted, index, text) = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        engine.open(open_input(test_support::REPORT), None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().unwrap();
+            let spec = json!({ "size": { "width": 612.0, "height": 792.0 } });
+            doc.clone()
+                .call("pages.insertBlank", None, vec![spec, epdf_kernel::undefined()])
+                .on_settle(move |result| {
+                    let result = result.as_ref().unwrap().clone();
+                    let pon =
+                        result["insertedPages"][0]["pageObjectNumber"].as_u64().unwrap() as u32;
+                    let index = doc.page_index(pon);
+                    doc.call("page.text.read", Some(pon), vec![]).on_settle(move |text| {
+                        let _ = tx.send((result, index, text.is_ok()));
+                    });
+                });
+        });
+    });
+    assert_eq!(inserted["layout"]["pages"].as_array().map_or(0, Vec::len), 15);
+    assert_eq!(index.ok(), Some(14), "the new last page");
+    assert!(text, "a page call reaches the inserted page");
+}
+
+#[test]
+fn an_extract_round_trips_through_the_host_table() {
+    let (bytes, left) = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        HostTable::install_bytes_resolver();
+        engine.open(open_input(test_support::REPORT), None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().unwrap();
+            doc.clone().call("pages.list", None, vec![]).on_settle(move |list| {
+                let first = list.as_ref().unwrap()["pages"][0]["ref"].clone();
+                doc.call("pages.extract", None, vec![json!([first])]).on_settle(move |value| {
+                    let bytes = epdf_kernel::bytes::Bytes::from_json(value.as_ref().unwrap());
+                    let _ = tx.send((bytes, HostTable::len()));
+                });
+            });
+        });
+    });
+    assert!(bytes.unwrap().0.starts_with(b"%PDF"));
+    assert_eq!(left, 0, "resolving took the bytes out of the table");
+}
+
+#[test]
+fn a_raw_engine_opens_bytes_given_as_bytes_json() {
+    let count = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        let bytes = epdf_kernel::bytes::Bytes(test_support::fixture(test_support::COLORS));
+        let input = json!({ "kind": "bytes", "id": "source", "bytes": bytes.to_json() });
+        engine.open(input, None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().unwrap();
+            doc.call("pages.list", None, vec![]).on_settle(move |list| {
+                let _ = tx.send(list.as_ref().unwrap()["pages"].as_array().map_or(0, Vec::len));
+            });
+        });
+    });
+    assert!(count > 0);
 }

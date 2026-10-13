@@ -30,6 +30,7 @@ impl Session {
         post: KernelPost,
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
+        HostTable::install_bytes_resolver();
         let engine = Rc::new(NativeEngine::new(worker.clone(), post));
         let reporter = delegate.clone();
         let options = KernelOptions {
@@ -64,6 +65,9 @@ impl Session {
                 ..epdf_plugin_render::RenderHost::default()
             };
             plugins.push(epdf_plugin_render::render_plugin_with_host(render.into(), host));
+        }
+        if config.page_edit {
+            plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }
         if config.shell {
             plugins.push(epdf_plugin_shell::shell_plugin());

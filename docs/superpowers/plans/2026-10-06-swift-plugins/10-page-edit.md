@@ -71,7 +71,7 @@ docs/superpowers/plans/2026-10-01-swift-package.md   A.4 page-edit marked delive
 **Interfaces:**
 - Consumes: umbrella Task 0d's `epdf_ffi::PageInfo { page: PageRef, index: u32, width: f64, height: f64, rotation: u32 }` and `epdf_ffi::page::{decode_page, decode_pages}`; Task 0e's `translate::{whole, optional_whole}`, the `$undefined` filter in `translate`, `PATHS`, and `NativeEngine::open` taking `{"bytes": <Bytes JSON>}`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 From the repository root, once `research/swift-plugins` exists (umbrella Task 0):
 
@@ -87,7 +87,7 @@ bash platforms/apple/build-xcframework.sh
 stat -f %z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a > "$TMPDIR/page-edit-size-before"
 ```
 
-- [ ] **Step 2: Confirm umbrella Task 0 landed**
+- [x] **Step 2: Confirm umbrella Task 0 landed**
 
 Run: `grep -n 'pub use page::PageInfo' crates/epdf-ffi/src/lib.rs && grep -n 'pub fn optional_whole' crates/epdf-viewer-host/src/translate.rs`
 Expected: one hit each.
@@ -115,7 +115,7 @@ The member list comes from `crates/plugins/page-edit/src/harness.rs` `MEMBERS`: 
 
 Cancelling follows `MetadataHandle::refresh`: the plugin's promises take no abort, so a token cancelled before the job runs answers `operation-cancelled` and skips the edit, and a token cancelled later is ignored and the edit lands. Each method's doc comment says so.
 
-- [ ] **Step 1: Turn on the feature**
+- [x] **Step 1: Turn on the feature**
 
 In `crates/plugins/page-edit/Cargo.toml`:
 
@@ -157,7 +157,7 @@ In `crates/plugins/page-edit/src/controller.rs`, inside `impl PageEditCapability
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `crates/plugins/page-edit/tests/ffi.rs`:
 
@@ -397,12 +397,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-page-edit --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_page_edit`.
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 Create `crates/plugins/page-edit/src/ffi.rs`:
 
@@ -763,7 +763,7 @@ impl PageEditHandle {
 
 `call_promise_cancellable`'s `map` returns `T`; the five methods whose map can fail return `Result<_, ViewerError>` from it and flatten with the trailing `?`, as `MetadataHandle::update` does.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-page-edit --features uniffi --test ffi`
 Expected: PASS, 11 tests.
@@ -771,7 +771,7 @@ Expected: PASS, 11 tests.
 Run: `cargo test -p epdf-plugin-page-edit`
 Expected: PASS. The conformance vectors don't see the feature.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/page-edit
@@ -797,7 +797,7 @@ The host reads `pageObjectNumbers: [u32]` (not refs), `destIndex: u32`, `rotatio
 
 `$hostBytes` exists so an extracted PDF doesn't cross base64 twice. `extract` and `duplicate` hand the extract's value straight to `pages.insert` or `Bytes::from_json`, which takes it out of the table. The price: a `$hostBytes` entry whose promise is aborted between the extract and the insert stays in the table until the session drops. `insert_from_bytes` still pays one base64 round trip, because the plugin calls `Bytes::to_json` on the caller's bytes (`crates/plugins/page-edit/src/controller.rs`, `insert_at`). Removing it means changing the plugin, which this plan doesn't do; B5's size and speed work can.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -962,12 +962,12 @@ fn a_raw_engine_opens_bytes_given_as_bytes_json() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL to compile on `Decode::PageMutation`, `Decode::HostBytes` and `HostTable::install_bytes_resolver`.
 
-- [ ] **Step 3: Route and translate**
+- [x] **Step 3: Route and translate**
 
 In `crates/epdf-viewer-host/src/translate.rs`, add two variants to `Decode`:
 
@@ -1109,7 +1109,7 @@ fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
 }
 ```
 
-- [ ] **Step 4: Resolve `$hostBytes` from the table**
+- [x] **Step 4: Resolve `$hostBytes` from the table**
 
 In `crates/epdf-viewer-host/src/host_table.rs`:
 
@@ -1127,7 +1127,7 @@ In `crates/epdf-viewer-host/src/host_table.rs`:
 
 `Bytes::from_json` reads the id as `u32` (`crates/epdf-kernel/src/bytes.rs:68`). The table counts from 1 and a session doesn't reach four billion entries; past that the cast truncates and the resolve misses, which surfaces as `invalid-input` from `pdf_bytes`, not as wrong bytes.
 
-- [ ] **Step 5: Keep the live layout**
+- [x] **Step 5: Keep the live layout**
 
 In `crates/epdf-viewer-host/src/native_engine.rs`, add a thread-local beside `LISTENERS`:
 
@@ -1199,12 +1199,12 @@ In `NativeDocument::page_index`, read the live layout:
 
 Update the module doc comment's last paragraph: the `pages.list` snapshot is no longer frozen.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS, including the three native-engine tests against real PDFium.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src crates/epdf-viewer-host/tests/translate.rs
@@ -1221,7 +1221,7 @@ git commit -m "Map the six page-edit engine paths and keep the native page list 
 - Consumes: `PageEditHandle::new` (Task 2), `HostTable::install_bytes_resolver` (Task 3).
 - Produces: `ViewerConfig.page_edit: bool` (default `false`), `ViewerHost::page_edit(document_id: String) -> Result<Arc<PageEditHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, adding `use epdf_plugin_page_edit::ffi::{PageEditBlankOptions, PageEditPlacement, PageEditTurn};` and `use epdf_ffi::PageRef;` at the top:
 
@@ -1332,12 +1332,12 @@ fn without_its_flag_the_page_edit_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host page_edit`
 Expected: FAIL to compile, `no field page_edit on ViewerConfig`.
 
-- [ ] **Step 3: Wire the plugin in**
+- [x] **Step 3: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugins:
 
@@ -1383,12 +1383,12 @@ and in the plugin list, after the earlier plans' blocks:
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1405,7 +1405,7 @@ git commit -m "Wire the page-edit plugin into the viewer host"
 - Consumes: the generated `PageEditHandle`, `ViewerHost.pageEdit(documentId:)`, and the records from Task 2.
 - Produces: `PageEditCapability` and `PDFViewer.pageEdit(for:)`. Methods: `canEdit()`, `rotate(_:by:)`, `setRotation(_:of:)`, `movePages(_:to:)`, `deletePages(_:)`, `insertBlank(_:)`, `insert(contentsOf:options:)`, `insert(_:from:at:)`, `duplicate(_:at:)`, `extract(_:)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PageEditTests.swift`:
 
@@ -1523,7 +1523,7 @@ extension BaseSuite {
 
 There's no `droppingTheStreamUnsubscribes`: page edit has no event stream of its own. `anEditIsObservedAsPagesChanged` covers the events an edit does cause.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1532,7 +1532,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'pageEdit'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/PageEdit.swift`:
 
@@ -1641,7 +1641,7 @@ extension PDFViewer {
 
 `ViewerConfig(pageEdit: true)` compiles because the field has `#[uniffi(default = false)]`, so every other argument defaults.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1650,7 +1650,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `PageEditTests` with 9 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/PageEdit.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PageEditTests.swift
@@ -1662,11 +1662,11 @@ git commit -m "Add the Swift page-edit capability"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: CI**
+- [ ] **Step 1: CI** (skipped: no CI edits on this branch)
 
 Append `page-edit` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml` (umbrella Task 0 made it a list), keeping plan-number order with whatever earlier plans added.
 
-- [ ] **Step 2: README row**
+- [x] **Step 2: README row**
 
 In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 
@@ -1674,11 +1674,11 @@ In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` §A.4, change the start of the page-edit entry from `**page-edit** (D).` to `**page-edit** (D), delivered by 10-page-edit.md.`, and in Appendix C change the `pages.move` row's status from `B3` to `mapped (10-page-edit.md)`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-page-edit --features uniffi
@@ -1693,7 +1693,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive size**
+- [x] **Step 5: Commit, with the archive size**
 
 ```bash
 before=$(cat "$TMPDIR/page-edit-size-before")
@@ -1702,7 +1702,7 @@ git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpo
 git commit -m "List page-edit in CI and the Apple README" -m "libepdf_viewer_host.a (ios-sim, release): $before -> $after bytes"
 ```
 
-- [ ] **Step 6: Merge into the integration branch**
+- [ ] **Step 6: Merge into the integration branch** (left to the orchestrator)
 
 In the integration worktree umbrella Task 0 created, which has `research/swift-plugins` checked out:
 
@@ -1713,7 +1713,7 @@ git merge --no-ff research/swift-page-edit -m "Merge the page-edit Swift wrapper
 
 Resolve a conflict in a shared file by keeping both blocks in plan-number order (umbrella "Shared files").
 
-- [ ] **Step 7: Rerun after the merge**
+- [ ] **Step 7: Rerun after the merge** (left to the orchestrator)
 
 In the integration worktree:
 
@@ -1726,7 +1726,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: PASS.
 
-- [ ] **Step 8: Remove the worktree and branch**
+- [ ] **Step 8: Remove the worktree and branch** (left to the orchestrator)
 
 From the repository root. Neither command gets `--force`; if one refuses, find out what was left behind first.
 

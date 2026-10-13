@@ -105,6 +105,13 @@ struct Inner {
 pub struct PageEditCapability(Rc<Inner>);
 
 impl PageEditCapability {
+    /// Aborted when the document closes. The foreign handle, which can
+    /// outlive the close, checks it before every call.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// `ctx.doc`: the guarded handle. Errs where the TypeScript getter throws.
     fn require_doc(&self) -> Result<Rc<dyn DocumentHandle>, Error> {
         self.0.cx.doc()
@@ -195,7 +202,19 @@ impl PageEditCapability {
         let this = self.clone();
         Self::engine(
             move || {
-                let (dest, _) = this.resolve_placement(placement)?;
+                let (dest, _) = match this.resolve_placement(placement) {
+                    Ok(resolved) => resolved,
+                    Err(error) => {
+                        // An extract's `{"$hostBytes": id}` is parked in the
+                        // host until something reads it; nothing will now,
+                        // so read it here to let it go. Rust-only: the
+                        // TypeScript holds the bytes in memory, not a table.
+                        if bytes.get("$hostBytes").is_some() {
+                            let _ = Bytes::from_json(&bytes);
+                        }
+                        return Err(error);
+                    }
+                };
                 let dest = dest.map_or_else(undefined, js_number);
                 Ok(doc.call("pages.insert", None, vec![bytes, dest]))
             },

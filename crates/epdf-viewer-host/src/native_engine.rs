@@ -37,6 +37,9 @@ thread_local! {
     static LISTENERS: RefCell<Listeners> = RefCell::new((0, HashMap::new()));
     /// `destroy` calls waiting for the worker to drain, by id.
     static DRAINED: RefCell<(u64, HashMap<u64, Resolver<()>>)> = RefCell::new((0, HashMap::new()));
+    /// Each open document's current `PageListSnapshot`: the one its open
+    /// loaded, then the `layout` of every page mutation's event.
+    static LAYOUTS: RefCell<HashMap<String, Value>> = RefCell::new(HashMap::new());
 }
 
 pub struct NativeEngine {
@@ -112,9 +115,20 @@ fn settle(id: u64, response: HostResponse) {
     }
 }
 
+/// The layout a page mutation's event carries, as `kernel.rs` reads it.
+fn page_layout(event: &Value) -> Option<&Value> {
+    match event.get("type").and_then(Value::as_str)? {
+        "pages.moved" | "pages.rotated" | "pages.deleted" | "pages.inserted" => event.get("layout"),
+        _ => None,
+    }
+}
+
 /// Hand `event` to `doc`'s listeners. A listener added or removed by one of
 /// them takes effect from the next event.
 fn publish(doc: &str, event: &Value) {
+    if let Some(layout) = page_layout(event) {
+        LAYOUTS.with(|l| l.borrow_mut().insert(doc.to_owned(), layout.clone()));
+    }
     let listeners: Vec<Listener> = LISTENERS.with(|l| {
         l.borrow().1.get(doc).map_or_else(Vec::new, |v| v.iter().map(|(_, f)| f.clone()).collect())
     });
@@ -185,6 +199,7 @@ impl Engine for NativeEngine {
                 }
                 Ok(_) if stopped.get() => inner.close(&doc),
                 Ok(pages) => {
+                    LAYOUTS.with(|l| l.borrow_mut().insert(doc.clone(), pages.clone()));
                     settled.resolve(Rc::new(NativeDocument { id: doc, inner, pages, security }))
                 }
             }
@@ -218,8 +233,9 @@ impl Engine for NativeEngine {
     }
 }
 
-/// One opened document. The `pages.list` snapshot is the one the open
-/// loaded; nothing mapped yet changes the page list.
+/// One opened document. `pages` is the `pages.list` snapshot the open
+/// loaded; `page_index` reads the live one in `LAYOUTS`, which every page
+/// mutation's event replaces.
 struct NativeDocument {
     id: String,
     inner: Rc<Inner>,
@@ -246,12 +262,18 @@ impl DocumentHandle for NativeDocument {
     }
 
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
+        if path == "close" {
+            LAYOUTS.with(|l| l.borrow_mut().remove(&self.id));
+        }
         self.inner.send(&self.id, |job| translate::translate(&self.id, path, pon, &args, job))
     }
 
     fn page_index(&self, pon: u32) -> Result<u32, Error> {
         let page = PageRef::new(pon);
-        self.pages
+        let layout = LAYOUTS.with(|l| l.borrow().get(&self.id).cloned());
+        layout
+            .as_ref()
+            .unwrap_or(&self.pages)
             .get("pages")
             .and_then(Value::as_array)
             .and_then(|pages| pages.iter().find(|p| page.names(p)))

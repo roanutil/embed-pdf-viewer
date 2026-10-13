@@ -29,6 +29,7 @@ use std::sync::{Arc, Mutex};
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_metadata::ffi::MetadataHandle;
+use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
@@ -264,6 +265,17 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_render::RENDER, Some(&document_id))?;
             Ok(RenderHandle::new(cap, post, Rc::new(HostTable::get)))
+        })
+        .await
+    }
+
+    /// The page-edit capability of an open document. Needs
+    /// `ViewerConfig.page_edit`; without it the kernel refuses the token.
+    pub async fn page_edit(&self, document_id: String) -> Result<Arc<PageEditHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_page_edit::PAGE_EDIT, Some(&document_id))?;
+            Ok(PageEditHandle::new(cap, post))
         })
         .await
     }

@@ -27,6 +27,10 @@ pub struct ViewerConfig {
     /// Install `renderPlugin(config)`: page rasters as owned pixels.
     #[uniffi(default = None)]
     pub render: Option<RenderConfig>,
+    /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
+    /// pages, addressed by `PageRef`.
+    #[uniffi(default = false)]
+    pub page_edit: bool,
     /// Install `shellPlugin()`: which named surfaces and menus are open, per
     /// document. The app still owns their UI.
     #[uniffi(default = false)]

@@ -1,8 +1,10 @@
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
+use epdf_ffi::PageRef;
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
 use epdf_plugin_metadata::ffi::MetadataPatch;
+use epdf_plugin_page_edit::ffi::{PageEditBlankOptions, PageEditPlacement, PageEditTurn};
 use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
 use epdf_plugin_shell::ffi::ShellOpenOptions;
@@ -332,6 +334,129 @@ fn the_features_fixture_opens() {
         .unwrap();
     assert_eq!(doc.page_count, 3);
 }
+
+fn with_page_edit() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        page_edit: true,
+        render: Some(RenderConfig::default()),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn rotating_twice_reads_the_rotation_the_first_edit_left() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let first = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    block_on(edit.rotate_by(vec![first], PageEditTurn::Clockwise, CancelToken::new())).unwrap();
+    let layout =
+        block_on(edit.rotate_by(vec![first], PageEditTurn::Clockwise, CancelToken::new())).unwrap();
+    assert_eq!(layout.pages[0].rotation, 180);
+    assert_eq!(block_on(host.pages(doc.id)).unwrap()[0].rotation, 180);
+}
+
+#[test]
+fn an_inserted_blank_page_renders() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let first = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let options = PageEditBlankOptions {
+        placement: Some(PageEditPlacement::After { page: first }),
+        ..Default::default()
+    };
+    let insertion = block_on(edit.insert_blank(options, CancelToken::new())).unwrap();
+    assert_eq!(insertion.pages.len(), 15);
+    assert_eq!(insertion.pages[1].page, insertion.inserted[0]);
+    let render = block_on(host.render(doc.id)).unwrap();
+    let image = block_on(render.render_page(
+        insertion.inserted[0],
+        RenderPageOptions::default(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert!(image.width > 0 && image.height > 0);
+}
+
+#[test]
+fn extracting_and_duplicating_leave_nothing_in_the_host_table() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let before = block_on(host.host_table_entries()).unwrap();
+    let pages: Vec<PageRef> =
+        block_on(host.pages(doc.id.clone())).unwrap().iter().take(2).map(|p| p.page).collect();
+    let pdf = block_on(edit.extract(pages.clone(), CancelToken::new())).unwrap();
+    assert!(pdf.starts_with(b"%PDF"));
+    let insertion = block_on(edit.duplicate(pages, None, CancelToken::new())).unwrap();
+    assert_eq!(insertion.inserted.len(), 2);
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), before);
+}
+
+#[test]
+fn a_subset_of_another_pdf_inserts_through_a_second_open() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let options = epdf_plugin_page_edit::ffi::PageEditBytesOptions {
+        page_indexes: Some(vec![0]),
+        placement: Some(PageEditPlacement::Index { index: 0 }),
+    };
+    let insertion = block_on(edit.insert_from_bytes(
+        test_support::fixture(test_support::REPORT),
+        options,
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(insertion.inserted.len(), 1);
+    assert_eq!(insertion.pages[0].page, insertion.inserted[0]);
+}
+
+#[test]
+fn bytes_that_are_not_a_pdf_are_refused() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let error = block_on(edit.insert_from_bytes(
+        b"not a pdf".to_vec(),
+        Default::default(),
+        CancelToken::new(),
+    ))
+    .unwrap_err();
+    assert!(format!("{error:?}").contains("DocOpenFailed"), "{error:?}");
+    assert_eq!(block_on(host.pages(doc.id)).unwrap().len(), 14);
+}
+
+#[test]
+fn without_its_flag_the_page_edit_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.page_edit(doc.id)).is_err());
+}
+
+#[test]
+fn a_duplicate_with_an_unknown_anchor_leaves_nothing_in_the_host_table() {
+    let host = with_page_edit();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let edit = block_on(host.page_edit(doc.id.clone())).unwrap();
+    let before = block_on(host.host_table_entries()).unwrap();
+    let first = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let unknown = PageEditPlacement::After { page: PageRef { page_object_number: 9999 } };
+    assert!(block_on(edit.duplicate(vec![first], Some(unknown), CancelToken::new())).is_err());
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), before);
+}
+
 
 fn with_shell() -> Arc<ViewerHost> {
     let config = ViewerConfig { shell: true, ..Default::default() };
