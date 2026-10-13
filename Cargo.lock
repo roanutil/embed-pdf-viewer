@@ -688,12 +688,15 @@ dependencies = [
 name = "epdf-plugin-selection"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-interaction",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

@@ -295,6 +295,15 @@ impl SelectionCapability {
         &self.0.cx
     }
 
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    #[doc(hidden)]
+    pub fn lifetime(&self) -> &AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     fn state(&self) -> Rc<SelectionState> {
         self.0.cx.state()
     }

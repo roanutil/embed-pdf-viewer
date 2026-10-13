@@ -61,7 +61,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift
 - Consumes: `epdf_plugin_selection::{TextPosition, TextRange, SelectionRangeInput, SelectionSegment, SelectionEndpoint, SelectionAnchor, SelectionDirection, SnapshotPage, SelectionSnapshot, ChangeTrigger, ChangeOrigin, SelectionChangedEvent, SelectionCommittedEvent, SelectionClearedEvent}` (`crates/plugins/selection/src/contract.rs`, `geometry.rs`).
 - Produces (in `epdf_plugin_selection::ffi`): records `SelectionTextPosition { page: PageRef, index: i64 }`, `SelectionTextRange { start, end }`, `SelectionSegment { quad: TextQuad, rect: Rect, advance: i32 }`, `SelectionEndpoint { page, glyph_quad, advance: i32, rect }`, `SelectionAnchor { page, bounds }`, `SelectionSnapshotPage { page, segments }`, `SelectionSnapshot { pages, start, end, direction, range }`; enums `SelectionInput { Range { range }, Span { page, start: i64, count: i64 } }`, `SelectionDirection { Forward, Backward }`, `SelectionChangeTrigger { User, Api, Script, System, Unknown }`; conversions both ways for positions, ranges and the input, out only for the rest.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-selection -b research/swift-selection research/swift-plugins
@@ -70,7 +70,7 @@ cd .claude/worktrees/swift-selection
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes.
 
-- [ ] **Step 2: Add the feature and `lifetime()`**
+- [x] **Step 2: Add the feature and `lifetime()`**
 
 In `crates/plugins/selection/Cargo.toml`:
 
@@ -113,7 +113,7 @@ In `crates/plugins/selection/src/controller.rs`, inside `impl SelectionCapabilit
 
 `AbortSignal` is already imported in `controller.rs`.
 
-- [ ] **Step 3: Write the failing conversion test**
+- [x] **Step 3: Write the failing conversion test**
 
 `crates/plugins/selection/tests/ffi.rs`:
 
@@ -141,12 +141,12 @@ fn a_range_and_a_span_round_trip() {
 }
 ```
 
-- [ ] **Step 4: Run it to verify it fails**
+- [x] **Step 4: Run it to verify it fails**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_selection::ffi`".
 
-- [ ] **Step 5: Write the records half of `ffi.rs`**
+- [x] **Step 5: Write the records half of `ffi.rs`**
 
 ```rust
 //! The selection plugin through uniffi: one handle over the selection, its
@@ -354,12 +354,12 @@ impl From<crate::ChangeTrigger> for SelectionChangeTrigger {
 
 `crate::SelectionSegment` and the FFI `SelectionSegment` share a Rust name; inside `ffi.rs` the plugin's is always spelled `crate::SelectionSegment`, as written. `TextPosition.page` is the kernel `PageRef` (`contract.rs` imports `epdf_kernel::geometry::PageRef`), so `.into()` uses `epdf-ffi`'s existing impls.
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 Run: `cargo test -p epdf-plugin-selection --features uniffi --test ffi`
 Expected: PASS, 1 test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/selection
