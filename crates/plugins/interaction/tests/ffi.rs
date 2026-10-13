@@ -364,3 +364,47 @@ fn closing_the_document_ends_its_subscriptions() {
     drain(&thread);
     assert_eq!(late.1.load(Ordering::SeqCst), 1);
 }
+
+use epdf_plugin_interaction::ffi::{
+    FeedbackConfig, FeedbackHandle, FeedbackImpactWeight, FeedbackNotifyKind, PlatformFeedback,
+};
+use epdf_plugin_interaction::{FEEDBACK, feedback_plugin};
+
+#[derive(Default)]
+struct Haptics(Mutex<Vec<String>>);
+
+impl PlatformFeedback for Haptics {
+    fn selection(&self) {
+        self.0.lock().unwrap().push("selection".into());
+    }
+    fn impact(&self, weight: Option<FeedbackImpactWeight>) {
+        self.0.lock().unwrap().push(format!("impact {weight:?}"));
+    }
+    fn notify(&self, kind: FeedbackNotifyKind) {
+        self.0.lock().unwrap().push(format!("notify {kind:?}"));
+    }
+}
+
+#[test]
+fn feedback_reaches_the_foreign_provider() {
+    let haptics = Arc::new(Haptics::default());
+    let config = FeedbackConfig { provider: haptics.clone() };
+    let thread = KernelThread::spawn(move |_| {
+        TestKernel::open(vec![feedback_plugin(config.into_options())], one_document())
+    })
+    .unwrap();
+    let post = thread.post();
+    let feedback =
+        block_on(thread.call(move |k| {
+            FeedbackHandle::new(k.kernel.capability(&FEEDBACK, None).unwrap(), post)
+        }))
+        .unwrap();
+    block_on(feedback.selection()).unwrap();
+    block_on(feedback.impact(Some(FeedbackImpactWeight::Heavy))).unwrap();
+    block_on(feedback.impact(None)).unwrap();
+    block_on(feedback.notify(FeedbackNotifyKind::Warning)).unwrap();
+    assert_eq!(
+        *haptics.0.lock().unwrap(),
+        ["selection", "impact Some(Heavy)", "impact None", "notify Warning"]
+    );
+}

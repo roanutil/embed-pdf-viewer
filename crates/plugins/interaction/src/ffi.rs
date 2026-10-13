@@ -24,7 +24,10 @@ use epdf_geometry::PageRotation;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
 
-use crate::{InteractionCapability, RegisterHandlerOptions, RegisterToolOptions, Tool};
+use crate::{
+    Feedback, ImpactWeight, InteractionCapability, NotifyKind, RegisterHandlerOptions,
+    RegisterToolOptions, Tool,
+};
 
 /// Where a foreign callback's failure goes: the kernel's report sink.
 pub type Report = Rc<dyn Fn(&Error)>;
@@ -533,5 +536,146 @@ impl InteractionHandle {
             );
         });
         subscription
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum FeedbackImpactWeight {
+    Light,
+    Medium,
+    Heavy,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum FeedbackNotifyKind {
+    Success,
+    Warning,
+    Error,
+}
+
+impl From<ImpactWeight> for FeedbackImpactWeight {
+    fn from(weight: ImpactWeight) -> Self {
+        match weight {
+            ImpactWeight::Light => FeedbackImpactWeight::Light,
+            ImpactWeight::Medium => FeedbackImpactWeight::Medium,
+            ImpactWeight::Heavy => FeedbackImpactWeight::Heavy,
+        }
+    }
+}
+
+impl From<FeedbackImpactWeight> for ImpactWeight {
+    fn from(weight: FeedbackImpactWeight) -> Self {
+        match weight {
+            FeedbackImpactWeight::Light => ImpactWeight::Light,
+            FeedbackImpactWeight::Medium => ImpactWeight::Medium,
+            FeedbackImpactWeight::Heavy => ImpactWeight::Heavy,
+        }
+    }
+}
+
+impl From<NotifyKind> for FeedbackNotifyKind {
+    fn from(kind: NotifyKind) -> Self {
+        match kind {
+            NotifyKind::Success => FeedbackNotifyKind::Success,
+            NotifyKind::Warning => FeedbackNotifyKind::Warning,
+            NotifyKind::Error => FeedbackNotifyKind::Error,
+        }
+    }
+}
+
+impl From<FeedbackNotifyKind> for NotifyKind {
+    fn from(kind: FeedbackNotifyKind) -> Self {
+        match kind {
+            FeedbackNotifyKind::Success => NotifyKind::Success,
+            FeedbackNotifyKind::Warning => NotifyKind::Warning,
+            FeedbackNotifyKind::Error => NotifyKind::Error,
+        }
+    }
+}
+
+/// Haptics, as the platform provides them. Called on the kernel thread:
+/// an implementation that needs the main thread (UIKit's feedback
+/// generators do) hops there itself.
+#[uniffi::export(with_foreign)]
+pub trait PlatformFeedback: Send + Sync {
+    fn selection(&self);
+    fn impact(&self, weight: Option<FeedbackImpactWeight>);
+    fn notify(&self, kind: FeedbackNotifyKind);
+}
+
+struct ForeignFeedback(Arc<dyn PlatformFeedback>);
+
+impl crate::PlatformFeedback for ForeignFeedback {
+    fn selection(&self) {
+        self.0.selection();
+    }
+    fn impact(&self, weight: Option<ImpactWeight>) {
+        self.0.impact(weight.map(Into::into));
+    }
+    fn notify(&self, kind: NotifyKind) {
+        self.0.notify(kind.into());
+    }
+}
+
+/// `feedbackPlugin({ provider })`'s options, as `ViewerConfig` carries them.
+#[derive(Clone, uniffi::Record)]
+pub struct FeedbackConfig {
+    pub provider: Arc<dyn PlatformFeedback>,
+}
+
+impl std::fmt::Debug for FeedbackConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FeedbackConfig").field("provider", &"foreign").finish()
+    }
+}
+
+impl FeedbackConfig {
+    /// On the kernel thread: the options hold an `Rc`.
+    pub fn into_options(self) -> crate::FeedbackPluginOptions {
+        crate::FeedbackPluginOptions { provider: Some(Rc::new(ForeignFeedback(self.provider))) }
+    }
+}
+
+/// The workspace's feedback capability: what plugins call, callable from
+/// Swift too (a custom gesture that wants the same haptic vocabulary).
+#[derive(uniffi::Object)]
+pub struct FeedbackHandle {
+    cap: KernelBound<Feedback>,
+}
+
+impl FeedbackHandle {
+    /// On the kernel thread.
+    pub fn new(cap: Feedback, post: KernelPost) -> Arc<Self> {
+        Arc::new(FeedbackHandle { cap: KernelBound::new(cap, post) })
+    }
+}
+
+#[uniffi::export]
+impl FeedbackHandle {
+    pub async fn selection(&self) -> Result<(), ViewerError> {
+        self.cap
+            .call(|c| {
+                c.selection();
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn impact(&self, weight: Option<FeedbackImpactWeight>) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                c.impact(weight.map(Into::into));
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn notify(&self, kind: FeedbackNotifyKind) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                c.notify(kind.into());
+                Ok(())
+            })
+            .await
     }
 }

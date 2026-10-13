@@ -1245,7 +1245,7 @@ git commit -m "Export the interaction plugin through uniffi with a foreign handl
 - Consumes: `crate::{Feedback, FeedbackPluginOptions, ImpactWeight, NotifyKind, PlatformFeedback, FEEDBACK, feedback_plugin}` (`crates/plugins/interaction/src/feedback.rs`).
 - Produces: foreign trait `epdf_plugin_interaction::ffi::PlatformFeedback { selection(), impact(weight: Option<FeedbackImpactWeight>), notify(kind: FeedbackNotifyKind) }`; enums `FeedbackImpactWeight`, `FeedbackNotifyKind`; record `FeedbackConfig { provider: Arc<dyn PlatformFeedback> }` with `FeedbackConfig::into_options(self) -> crate::FeedbackPluginOptions`; object `FeedbackHandle` with `FeedbackHandle::new(cap: Feedback, post: KernelPost) -> Arc<Self>` and async `selection()`, `impact(weight)`, `notify(kind)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `crates/plugins/interaction/tests/ffi.rs`:
 
@@ -1296,12 +1296,12 @@ fn feedback_reaches_the_foreign_provider() {
 
 `KernelThread::spawn` needs its closure to be `Send`; `FeedbackConfig` holds an `Arc<dyn PlatformFeedback>`, and the trait is `Send + Sync`, so the move compiles. `into_options` runs on the kernel thread, where the `Rc` it builds stays.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi feedback`
 Expected: FAIL to compile, "cannot find `FeedbackConfig` in `ffi`".
 
-- [ ] **Step 3: Write the feedback half of `ffi.rs`**
+- [x] **Step 3: Write the feedback half of `ffi.rs`**
 
 Change the `use crate::{...}` line to `use crate::{Feedback, ImpactWeight, InteractionCapability, NotifyKind, RegisterHandlerOptions, RegisterToolOptions, Tool};`, then append:
 
@@ -1449,12 +1449,12 @@ impl FeedbackHandle {
 
 UniFFI 0.32 carries a foreign trait object inside a record. If the generator rejects `Arc<dyn PlatformFeedback>` as a record field on your machine, make `FeedbackConfig` an object (`#[derive(uniffi::Object)]` with a `#[uniffi::constructor] fn new(provider: Arc<dyn PlatformFeedback>) -> Arc<Self>`), make the `ViewerConfig` field `Option<Arc<FeedbackConfig>>`, and have `into_options` take `&self`. The Swift call site in Task 5 then reads `FeedbackConfig(provider: haptics)` either way.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: PASS, 16 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/interaction
