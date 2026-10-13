@@ -467,7 +467,7 @@ git commit -m "Add the commands plugin's uniffi definitions and the CommandRunne
 
 Members, from `crates/plugins/commands/src/harness.rs` `MEMBERS` (20): `registerCommand`, `registerCommands`, `hasCommand`, `getCommand` (`command`), `listCommandIds` (`command_ids`), `resolveCommand`, `listCommands` (`commands`), `searchCommands`, `listShortcuts` (`shortcuts`), `execute`, `canExecute`, `getDisabledCategories` (`disabled_categories`), `isCategoryDisabled`, `disableCategory`, `enableCategory`, `setDisabledCategories`, `onExecuted` and `onExecutionFailed` (`subscribe`), `matchStroke`, `getMenuTarget` (`menu_target`).
 
-- [ ] **Step 1: Write the failing handle tests**
+- [x] **Step 1: Write the failing handle tests**
 
 Append to `crates/plugins/commands/tests/ffi.rs`:
 
@@ -656,12 +656,12 @@ fn unregistering_a_replaced_command_keeps_the_replacement() {
 
 Check `parse_shortcut` (`crates/plugins/ui-core/src/shortcuts.rs`) refuses `Mod+Hyper+` before relying on `an_unparsable_shortcut_is_refused`: an unknown modifier token is the case it errs on. If it accepts it, pick a string the parser's own tests show it rejecting and use that.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: FAIL to compile with "cannot find type `CommandsHandle` in module `epdf_plugin_commands::ffi`".
 
-- [ ] **Step 3: Write the result records, events and handle**
+- [x] **Step 3: Write the result records, events and handle**
 
 Append to `crates/plugins/commands/src/ffi.rs`:
 
@@ -1044,7 +1044,7 @@ impl CommandsHandle {
 
 `execute` returns a `Promise` whose rejection carries the plugin error the `executionFailed` event saw (`controller.rs` `execute`), so the Rust future answers `operation-failed` for a runner that called `fail`.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: PASS, 13 tests.
@@ -1052,7 +1052,7 @@ Expected: PASS, 13 tests.
 Run: `cargo test -p epdf-plugin-commands`
 Expected: the conformance vectors still pass without `uniffi`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/commands
