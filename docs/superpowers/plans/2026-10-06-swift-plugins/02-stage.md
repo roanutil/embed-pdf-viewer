@@ -1387,7 +1387,7 @@ git commit -m "Mirror the stage plugin's records for uniffi"
 
 That's the 70 non-hook entries of `crates/plugins/stage/src/harness.rs` `MEMBERS`; Task 4 folds the six `on*` hooks into `subscribe`.
 
-- [ ] **Step 1: Write the failing handle tests**
+- [x] **Step 1: Write the failing handle tests**
 
 Append to `crates/plugins/stage/tests/ffi.rs`:
 
@@ -1635,12 +1635,12 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 
 `concurrent_pans_all_land` compares against the same pans from one thread rather than a computed distance, because the stage's bounding and padding decide how far 100 points of pan move the camera. If `rt` timers don't fire on a `KernelThread` without a runtime pump on this branch, `motion_in_flight_at_close_stops` hangs on `is_moving`; check how `KernelThread` drives `rt::tick` in `crates/epdf-ffi/src/kernel_thread.rs` before assuming the scheduler is wrong.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: FAIL to compile, "cannot find `StageHandle` in `ffi`".
 
-- [ ] **Step 3: Write the scheduler, config and port**
+- [x] **Step 3: Write the scheduler, config and port**
 
 Append to `ffi.rs`:
 
@@ -1694,7 +1694,7 @@ pub trait StageInitialViewProvider: Send + Sync {
 
 `KernelFrames.timers` keeps a handle until `caf`; a fired timer's entry stays until the stage cancels or the map drops with the stage, which is bounded by one entry per frame the stage requested and never cancelled. If `rt::TimerId` isn't `pub` from `epdf_kernel::rt`, export it there (`pub use` of the existing `pub struct TimerId`) in the same commit.
 
-- [ ] **Step 4: Write the handle**
+- [x] **Step 4: Write the handle**
 
 ```rust
 fn open(cap: &StageCapability) -> Result<&StageCapability, Error> {
@@ -2179,7 +2179,7 @@ impl StageHandle {
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 16 tests.
@@ -2187,7 +2187,7 @@ Expected: PASS, 16 tests.
 Run: `cargo test -p epdf-plugin-stage`
 Expected: PASS, conformance and `api` unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stage crates/epdf-kernel

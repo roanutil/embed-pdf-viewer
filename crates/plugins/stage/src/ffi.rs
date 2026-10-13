@@ -810,3 +810,566 @@ impl Default for StageConfig {
         StageConfig { settings: None, responsive: None, frames: true }
     }
 }
+
+/// The host frame seam on the kernel's clock: each frame is a 16 ms timer,
+/// as render's `request_frame` falls back to. Lives on the kernel thread.
+#[derive(Default)]
+pub struct KernelFrames {
+    next: std::cell::Cell<u64>,
+    timers: RefCell<HashMap<u64, rt::TimerId>>,
+}
+
+impl Scheduler for KernelFrames {
+    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64 {
+        let handle = self.next.get() + 1;
+        self.next.set(handle);
+        let timer = rt::set_timeout(16.0, move || callback(rt::now()));
+        self.timers.borrow_mut().insert(handle, timer);
+        handle
+    }
+
+    fn caf(&self, handle: u64) {
+        if let Some(timer) = self.timers.borrow_mut().remove(&handle) {
+            rt::clear_timer(timer);
+        }
+    }
+}
+
+impl StageConfig {
+    /// On the kernel thread: the scheduler is an `Rc`.
+    pub fn into_config(self) -> Result<crate::StageConfig, Error> {
+        Ok(crate::StageConfig {
+            settings: self.settings.map(PartialSettings::try_from).transpose()?.unwrap_or_default(),
+            scheduler: self.frames.then(|| Rc::new(KernelFrames::default()) as Rc<dyn Scheduler>),
+            responsive: self
+                .responsive
+                .map(|rules| rules.into_iter().map(ResponsiveRule::try_from).collect())
+                .transpose()?,
+        })
+    }
+}
+
+/// Supplies the first view of a document (a saved position, say). Called
+/// on the kernel thread when the stage first places, highest priority
+/// first; `None` passes to the next provider.
+#[uniffi::export(with_foreign)]
+pub trait StageInitialViewProvider: Send + Sync {
+    fn initial_view(&self) -> Result<Option<StageViewState>, HostError>;
+}
+
+fn open(cap: &StageCapability) -> Result<&StageCapability, Error> {
+    if cap.lifetime().aborted() {
+        return Err(plugin_error(
+            code::INSTANCE_CLOSED,
+            "stage",
+            "the document this capability belongs to is closed",
+            None,
+            None,
+        ));
+    }
+    Ok(cap)
+}
+
+struct Bound {
+    cap: StageCapability,
+    report: Rc<dyn Fn(&Error)>,
+}
+
+impl Bound {
+    /// For a fire method: run `f` if the document is open, report its error.
+    fn fire(&self, f: impl FnOnce(&StageCapability) -> Result<(), Error>) {
+        if let Ok(cap) = open(&self.cap) {
+            if let Err(error) = f(cap) {
+                (self.report)(&error);
+            }
+        }
+    }
+}
+
+#[derive(uniffi::Object)]
+pub struct StageHandle {
+    bound: KernelBound<Bound>,
+    post: KernelPost,
+}
+
+impl StageHandle {
+    /// On the kernel thread. `report` receives a fire method's errors.
+    pub fn new(cap: StageCapability, post: KernelPost, report: Rc<dyn Fn(&Error)>) -> Arc<Self> {
+        Arc::new(StageHandle { bound: KernelBound::new(Bound { cap, report }, post.clone()), post })
+    }
+
+    async fn read<T: Send + 'static>(
+        &self,
+        f: impl FnOnce(&StageCapability) -> Result<T, Error> + Send + 'static,
+    ) -> Result<T, ViewerError> {
+        self.bound.call(move |b| f(open(&b.cap)?)).await
+    }
+}
+
+#[uniffi::export]
+impl StageHandle {
+    // ── read ──
+
+    pub async fn camera(&self) -> Result<Camera, ViewerError> {
+        self.read(|c| Ok(c.get_camera().into())).await
+    }
+
+    pub async fn viewport_size(&self) -> Result<Size, ViewerError> {
+        self.read(|c| Ok(c.get_viewport_size().into())).await
+    }
+
+    pub async fn scroll_metrics(&self) -> Result<StageScrollMetrics, ViewerError> {
+        self.read(|c| Ok(c.get_scroll_metrics().into())).await
+    }
+
+    pub async fn visible_pages(&self) -> Result<Vec<StageVisiblePage>, ViewerError> {
+        self.read(|c| c.list_visible_pages().iter().map(StageVisiblePage::try_from).collect()).await
+    }
+
+    pub async fn is_page_visible(&self, page: PageRef) -> Result<bool, ViewerError> {
+        self.read(move |c| Ok(c.is_page_visible(page.into()))).await
+    }
+
+    pub async fn current_page_index(&self) -> Result<u32, ViewerError> {
+        self.read(|c| to_u32(c.get_current_page_index(), "the current page index")).await
+    }
+
+    pub async fn current_page(&self) -> Result<Option<PageInfo>, ViewerError> {
+        self.read(|c| c.get_current_page().as_ref().map(page_info).transpose()).await
+    }
+
+    /// The pages of the current item (two in a spread).
+    pub async fn current_item_pages(&self) -> Result<Vec<PageInfo>, ViewerError> {
+        self.read(|c| c.list_current_item_pages().iter().map(page_info).collect()).await
+    }
+
+    pub async fn page_frame(&self, page: PageRef) -> Result<Option<StageVisiblePage>, ViewerError> {
+        self.read(move |c| {
+            c.get_page_frame(page.into()).as_ref().map(StageVisiblePage::try_from).transpose()
+        })
+        .await
+    }
+
+    pub async fn page_at(&self, point: Point) -> Result<Option<StagePageHit>, ViewerError> {
+        self.read(move |c| Ok(c.get_page_at(point.into()).map(Into::into))).await
+    }
+
+    pub async fn viewport_to_page(
+        &self,
+        page: PageRef,
+        point: Point,
+    ) -> Result<Option<Point>, ViewerError> {
+        self.read(move |c| Ok(c.viewport_to_page(page.into(), point.into()).map(Into::into))).await
+    }
+
+    pub async fn page_to_world(
+        &self,
+        page: PageRef,
+        point: Point,
+    ) -> Result<Option<Point>, ViewerError> {
+        self.read(move |c| Ok(c.page_to_world(page.into(), point.into()).map(Into::into))).await
+    }
+
+    pub async fn page_rect_to_viewport(
+        &self,
+        page: PageRef,
+        rect: Rect,
+    ) -> Result<Option<Rect>, ViewerError> {
+        self.read(move |c| Ok(c.page_rect_to_viewport(page.into(), rect.into()).map(Into::into)))
+            .await
+    }
+
+    pub async fn world_to_viewport(&self, point: Point) -> Result<Point, ViewerError> {
+        self.read(move |c| Ok(c.world_to_viewport(point.into()).into())).await
+    }
+
+    pub async fn viewport_to_world(&self, point: Point) -> Result<Point, ViewerError> {
+        self.read(move |c| Ok(c.viewport_to_world(point.into()).into())).await
+    }
+
+    pub async fn page_to_viewport(
+        &self,
+        page: PageRef,
+        point: Point,
+    ) -> Result<Option<Point>, ViewerError> {
+        self.read(move |c| Ok(c.page_to_viewport(page.into(), point.into()).map(Into::into))).await
+    }
+
+    /// Degrees clockwise.
+    pub async fn view_rotation(&self) -> Result<f64, ViewerError> {
+        self.read(|c| Ok(c.get_view_rotation().0)).await
+    }
+
+    pub async fn zoom_level(&self) -> Result<f64, ViewerError> {
+        self.read(|c| Ok(c.get_zoom_level())).await
+    }
+
+    pub async fn zoom_mode(&self) -> Result<StageZoomMode, ViewerError> {
+        self.read(|c| Ok(c.get_zoom_mode().into())).await
+    }
+
+    pub async fn viewpoint(&self) -> Result<StageViewpoint, ViewerError> {
+        self.read(|c| c.get_viewpoint()?.try_into()).await
+    }
+
+    // ── motion ──
+
+    /// Momentum from a release velocity in viewport points per second.
+    pub async fn fling(&self, velocity_x: f64, velocity_y: f64) -> Result<(), ViewerError> {
+        self.read(move |c| c.fling(velocity_x, velocity_y)).await
+    }
+
+    pub async fn is_moving(&self) -> Result<bool, ViewerError> {
+        self.read(|c| Ok(c.is_moving())).await
+    }
+
+    pub async fn stop_motion(&self) -> Result<(), ViewerError> {
+        self.read(|c| {
+            c.stop_motion();
+            Ok(())
+        })
+        .await
+    }
+
+    /// Fire: no reply; an error goes to the report sink.
+    pub fn set_camera(&self, camera: Camera) {
+        self.bound.fire(move |b| b.fire(|c| c.set_camera(camera.into())));
+    }
+
+    /// Fire, in viewport points.
+    pub fn pan_by(&self, dx: f64, dy: f64) {
+        self.bound.fire(move |b| b.fire(|c| c.pan_by(dx, dy)));
+    }
+
+    pub async fn scroll_to(&self, options: StageScrollToOptions) -> Result<(), ViewerError> {
+        self.read(move |c| c.scroll_to(options.into())).await
+    }
+
+    /// Fire: relative offsets.
+    pub fn scroll_by(&self, options: StageScrollToOptions) {
+        self.bound.fire(move |b| b.fire(|c| c.scroll_by(options.into())));
+    }
+
+    /// Fire: hold `point` (viewport) fixed while zooming by `factor`.
+    pub fn zoom_around(&self, point: Point, factor: f64) {
+        self.bound.fire(move |b| b.fire(|c| c.zoom_around(point.into(), factor)));
+    }
+
+    /// Open a direct-manipulation bracket. `elastic` turns on rubber-band
+    /// overscroll for it.
+    pub async fn begin_gesture(&self, elastic: Option<bool>) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.begin_gesture(Some(GestureOptions { elastic }));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn end_gesture(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.end_gesture()).await
+    }
+
+    // ── navigation ──
+
+    /// A past-the-end index lands on the last page.
+    pub async fn go_to_page_index(
+        &self,
+        index: u32,
+        options: Option<StageGoToOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.go_to_page_index(index as isize, options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn go_to_page(
+        &self,
+        page: PageRef,
+        options: Option<StageGoToOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.go_to_page(page.into(), options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn go_to_first_page(
+        &self,
+        options: Option<StageGoToOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.go_to_first_page(options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn go_to_last_page(
+        &self,
+        options: Option<StageGoToOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.go_to_last_page(options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn can_go_next(&self) -> Result<bool, ViewerError> {
+        self.read(|c| Ok(c.can_go_next())).await
+    }
+
+    pub async fn can_go_previous(&self) -> Result<bool, ViewerError> {
+        self.read(|c| Ok(c.can_go_previous())).await
+    }
+
+    pub async fn next_page(&self, options: Option<StageGoToOptions>) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.next_page(options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn previous_page(
+        &self,
+        options: Option<StageGoToOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.previous_page(options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn reset_view(&self) -> Result<(), ViewerError> {
+        self.read(|c| {
+            c.reset_view();
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn reveal(
+        &self,
+        page: PageRef,
+        options: Option<StageRevealOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.reveal(page.into(), options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn reveal_rect(
+        &self,
+        page: PageRef,
+        rect: Rect,
+        options: Option<StageRevealOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.reveal_rect(page.into(), rect.into(), options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn reveal_index(
+        &self,
+        index: u32,
+        options: Option<StageRevealOptions>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.reveal_index(index as isize, options.map(Into::into));
+            Ok(())
+        })
+        .await
+    }
+
+    // ── settings ──
+
+    pub async fn settings(&self) -> Result<StageSettings, ViewerError> {
+        self.read(|c| c.get_settings().try_into()).await
+    }
+
+    pub async fn reset_settings(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.reset_settings()).await
+    }
+
+    pub async fn update_settings(&self, patch: StageSettingsPatch) -> Result<(), ViewerError> {
+        self.read(move |c| c.update_settings(patch.try_into()?)).await
+    }
+
+    pub async fn set_responsive_rules(
+        &self,
+        rules: Vec<StageResponsiveRule>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            let rules =
+                rules.into_iter().map(ResponsiveRule::try_from).collect::<Result<_, _>>()?;
+            c.set_responsive_rules(rules)
+        })
+        .await
+    }
+
+    pub async fn matches_rule(&self, name: String) -> Result<bool, ViewerError> {
+        self.read(move |c| Ok(c.matches_rule(&name))).await
+    }
+
+    pub async fn active_rules(&self) -> Result<Vec<String>, ViewerError> {
+        self.read(|c| Ok(c.list_active_rules())).await
+    }
+
+    pub async fn set_flow(&self, flow: StageFlow) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_flow(flow.into())).await
+    }
+
+    pub async fn set_layout(&self, layout: StageLayout) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_layout(layout.into())).await
+    }
+
+    pub async fn set_spread(&self, spread: StageSpreadMode) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_spread(spread.into())).await
+    }
+
+    pub async fn set_sizing(&self, sizing: StageSizingMode) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_sizing(sizing.into())).await
+    }
+
+    pub async fn apply_view_state(&self, view: StageViewState) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.apply_view_state(view.try_into()?);
+            Ok(())
+        })
+        .await
+    }
+
+    // ── zoom ──
+
+    pub async fn double_tap_zoom(&self, point: Point) -> Result<(), ViewerError> {
+        self.read(move |c| c.double_tap_zoom(point.into())).await
+    }
+
+    pub async fn zoom_in(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.zoom_in()).await
+    }
+
+    pub async fn zoom_out(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.zoom_out()).await
+    }
+
+    /// `around` (viewport) stays fixed; `None` is the zoom-align point.
+    pub async fn zoom_to(
+        &self,
+        target: StageZoomTarget,
+        around: Option<Point>,
+    ) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.zoom_to(target.into(), Some(ZoomToOptions { around: around.map(Into::into) }))
+        })
+        .await
+    }
+
+    pub async fn zoom_by(&self, factor: f64, around: Option<Point>) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.zoom_by(factor, Some(ZoomToOptions { around: around.map(Into::into) }))
+        })
+        .await
+    }
+
+    pub async fn fit_width(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.fit_width()).await
+    }
+
+    pub async fn fit_page(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.fit_page()).await
+    }
+
+    pub async fn fit_all(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.fit_all()).await
+    }
+
+    pub async fn fit_automatic(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.fit_automatic()).await
+    }
+
+    /// Degrees clockwise: 0, 90, 180 or 270.
+    pub async fn set_view_rotation(&self, degrees: f64) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_view_rotation(PageRotation(degrees))).await
+    }
+
+    pub async fn rotate_view_by(&self, delta: f64) -> Result<(), ViewerError> {
+        self.read(move |c| c.rotate_view_by(delta)).await
+    }
+
+    // ── lifecycle ──
+
+    /// Report the viewport in points. The first non-zero size places the
+    /// document.
+    pub async fn set_viewport_size(&self, size: Size) -> Result<(), ViewerError> {
+        self.read(move |c| c.set_viewport_size(size.into())).await
+    }
+
+    pub async fn set_device_pixel_ratio(&self, ratio: f64) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.set_device_pixel_ratio(ratio);
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn refit(&self) -> Result<(), ViewerError> {
+        self.read(|c| c.refit()).await
+    }
+
+    pub async fn view_state(&self) -> Result<StageViewState, ViewerError> {
+        self.read(|c| c.get_view_state()?.try_into()).await
+    }
+
+    pub async fn lens_id(&self) -> Result<String, ViewerError> {
+        self.read(|c| Ok(c.get_lens_id())).await
+    }
+
+    /// The provider is asked on the kernel thread when the stage first
+    /// places. A thrown error is reported and counts as `None`.
+    pub async fn provide_initial_view(
+        &self,
+        priority: f64,
+        provider: Arc<dyn StageInitialViewProvider>,
+    ) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.bound
+            .call(move |b| {
+                let report = b.report.clone();
+                let off = open(&b.cap)?.provide_initial_view(priority, move || {
+                    match provider.initial_view() {
+                        Ok(view) => view.and_then(|v| match crate::StageViewState::try_from(v) {
+                            Ok(v) => Some(v),
+                            Err(error) => {
+                                report(&error);
+                                None
+                            }
+                        }),
+                        Err(error) => {
+                            report(&error.into());
+                            None
+                        }
+                    }
+                });
+                Ok(RegistrationHandle::new(post, move || off.call()))
+            })
+            .await
+    }
+
+    pub async fn place_initial(&self) -> Result<(), ViewerError> {
+        self.read(|c| {
+            c.place_initial();
+            Ok(())
+        })
+        .await
+    }
+}
