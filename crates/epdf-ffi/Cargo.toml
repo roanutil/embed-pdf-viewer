@@ -11,6 +11,7 @@ publish.workspace = true
 bench = []
 
 [dependencies]
+epdf-annotation-core = { path = "../plugins/annotation-core", default-features = false }
 epdf-geometry = { path = "../plugins/geometry", default-features = false }
 epdf-kernel = { path = "../epdf-kernel" }
 epdf-stage-core = { path = "../plugins/stage-core", default-features = false }

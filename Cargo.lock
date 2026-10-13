@@ -441,6 +441,7 @@ dependencies = [
 name = "epdf-ffi"
 version = "0.0.0"
 dependencies = [
+ "epdf-annotation-core",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-stage-core",

@@ -77,7 +77,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/LinkTests.swift
 - Consumes: `epdf_annotation_core::{PageRef, PdfDestination, PdfLinkTarget, AnnotationRef, RevisionToken, Nullable}` (`crates/plugins/annotation-core/src/types.rs`, `js.rs`).
 - Produces: `epdf_ffi::{PdfLinkTarget, PdfDestination, AnnotationRef, AnnotationRevisionToken}` with `From<epdf_ffi::PdfLinkTarget> for epdf_annotation_core::PdfLinkTarget`, `From<&epdf_annotation_core::PdfLinkTarget> for epdf_ffi::PdfLinkTarget`, the same pair for `PdfDestination`, `TryFrom<&epdf_annotation_core::AnnotationRef> for epdf_ffi::AnnotationRef` (an object number or index that isn't a whole `u32` is `invalid-state`), `From<epdf_ffi::AnnotationRef> for epdf_annotation_core::AnnotationRef`, and `From` both ways between `epdf_ffi::PageRef` and `epdf_annotation_core::PageRef`. Plan 05 extends this file, and converts owned values, so each conversion also has a by-value form, plus `From` both ways between `AnnotationRevisionToken` and the core's `RevisionToken`. These four names are final: plans 05 to 16 use them as written here.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-link -b research/swift-link research/swift-plugins
@@ -86,12 +86,12 @@ cd .claude/worktrees/swift-link
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes.
 
-- [ ] **Step 2: Confirm nothing has written these records yet**
+- [x] **Step 2: Confirm nothing has written these records yet**
 
 Run: `grep -n 'pub enum PdfLinkTarget\|pub enum AnnotationRef' crates/epdf-ffi/src/*.rs`
 Expected: no output. This plan owns them (umbrella Shared records); plan 05 waits for it.
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 Add `epdf-annotation-core = { path = "../plugins/annotation-core", default-features = false }` to `[dependencies]` in `crates/epdf-ffi/Cargo.toml`. Then `crates/epdf-ffi/tests/annotation.rs`:
 
@@ -168,12 +168,12 @@ fn an_annotation_ref_with_a_fractional_number_is_invalid_state() {
 
 `epdf-ffi`'s dev-dependencies need `serde_json`; add `serde_json = "1"` under `[dev-dependencies]` if it isn't there.
 
-- [ ] **Step 4: Run it to verify it fails**
+- [x] **Step 4: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test annotation`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::AnnotationRef`, ...".
 
-- [ ] **Step 5: Write `annotation.rs`**
+- [x] **Step 5: Write `annotation.rs`**
 
 ```rust
 //! Records from `epdf-annotation-core` that several plugins' exports
@@ -421,7 +421,7 @@ impl From<AnnotationRevisionToken> for ac::RevisionToken {
 
 If `Nullable` isn't reachable as `epdf_annotation_core::js::Nullable`, find its re-export (`grep -n 'pub use.*Nullable' crates/plugins/annotation-core/src/lib.rs`) and import from there.
 
-- [ ] **Step 6: Export them**
+- [x] **Step 6: Export them**
 
 In `crates/epdf-ffi/src/lib.rs`:
 
@@ -431,12 +431,12 @@ pub mod annotation;
 pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, PdfLinkTarget};
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, the five `annotation` tests and every existing one.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/epdf-ffi
