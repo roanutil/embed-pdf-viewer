@@ -1662,11 +1662,11 @@ git commit -m "Add the Swift page-edit capability"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: CI**
+- [ ] **Step 1: CI** (skipped: no CI edits on this branch)
 
 Append `page-edit` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml` (umbrella Task 0 made it a list), keeping plan-number order with whatever earlier plans added.
 
-- [ ] **Step 2: README row**
+- [x] **Step 2: README row**
 
 In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 
@@ -1674,11 +1674,11 @@ In `platforms/apple/README.md`'s `## Plugins` table, in plan-number order:
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` §A.4, change the start of the page-edit entry from `**page-edit** (D).` to `**page-edit** (D), delivered by 10-page-edit.md.`, and in Appendix C change the `pages.move` row's status from `B3` to `mapped (10-page-edit.md)`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-page-edit --features uniffi
@@ -1693,7 +1693,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive size**
+- [x] **Step 5: Commit, with the archive size**
 
 ```bash
 before=$(cat "$TMPDIR/page-edit-size-before")
@@ -1702,7 +1702,7 @@ git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpo
 git commit -m "List page-edit in CI and the Apple README" -m "libepdf_viewer_host.a (ios-sim, release): $before -> $after bytes"
 ```
 
-- [ ] **Step 6: Merge into the integration branch**
+- [ ] **Step 6: Merge into the integration branch** (left to the orchestrator)
 
 In the integration worktree umbrella Task 0 created, which has `research/swift-plugins` checked out:
 
@@ -1713,7 +1713,7 @@ git merge --no-ff research/swift-page-edit -m "Merge the page-edit Swift wrapper
 
 Resolve a conflict in a shared file by keeping both blocks in plan-number order (umbrella "Shared files").
 
-- [ ] **Step 7: Rerun after the merge**
+- [ ] **Step 7: Rerun after the merge** (left to the orchestrator)
 
 In the integration worktree:
 
@@ -1726,7 +1726,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: PASS.
 
-- [ ] **Step 8: Remove the worktree and branch**
+- [ ] **Step 8: Remove the worktree and branch** (left to the orchestrator)
 
 From the repository root. Neither command gets `--force`; if one refuses, find out what was left behind first.
 

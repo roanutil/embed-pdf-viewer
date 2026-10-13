@@ -3215,7 +3215,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 
 ### A.4 Document and workspace, follow-on plan B3
 
-**page-edit** (D). Engine paths: `pages.move`, `pages.rotate`, `pages.delete`, `pages.insert`, `pages.insertBlank`, `pages.extract`. Its state and actions are `Value` in Rust, so every record is new and modelled on `packages/plugin/page-edit`'s TypeScript types. Members: `can_edit`, `rotate_by`, `set_rotation`, `move_pages` (`move`, which is a keyword in Swift), `delete_pages` (`delete`), `insert_blank`, `insert_from_bytes` (takes `Vec<u8>`), `insert_from_document`, `duplicate`, `extract` (returns `Vec<u8>`).
+**page-edit** (D), delivered by 10-page-edit.md. Engine paths: `pages.move`, `pages.rotate`, `pages.delete`, `pages.insert`, `pages.insertBlank`, `pages.extract`. Its state and actions are `Value` in Rust, so every record is new and modelled on `packages/plugin/page-edit`'s TypeScript types. Members: `can_edit`, `rotate_by`, `set_rotation`, `move_pages` (`move`, which is a keyword in Swift), `delete_pages` (`delete`), `insert_blank`, `insert_from_bytes` (takes `Vec<u8>`), `insert_from_document`, `duplicate`, `extract` (returns `Vec<u8>`).
 
 **view-manager** (W, requires documents). Members: `panes`, `pane`, `pane_order`, `focused_pane_id`, `pane_of_document`, `create_pane`, `remove_pane`, `move_pane`, `set_focused_pane`, `split_pane`, `set_active_document`, `add_document`, `remove_document`, `move_document_within`, `move_document_between`, `subscribe` (pane created/removed, focus changed, document moved).
 
@@ -3254,7 +3254,7 @@ Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with 
 | `page.geometry.read` | `pages.geometry` | mapped (Task 2) |
 | `page.render.image` | `pages.render` | mapped (Task 2) |
 | `search.query` | `search.query` | mapped (Task 2) |
-| `pages.move`, `pages.rotate`, `pages.delete`, `pages.insert`, `pages.insertBlank`, `pages.extract` | same | B3 |
+| `pages.move`, `pages.rotate`, `pages.delete`, `pages.insert`, `pages.insertBlank`, `pages.extract` | same | mapped (10-page-edit.md) |
 | `page.annotations.list` / `create` / `update` / `delete` | `annotations.listRawPage` / `create` / `update` / `delete` | B2 |
 | `annotations.listRawAll` | same | B2 |
 | `forms.list`, `forms.setValue`, `forms.createField`, `forms.updateField`, `forms.deleteField`, `forms.repair`, `forms.applyEffects` | same | B2 |
