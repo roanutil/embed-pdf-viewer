@@ -60,6 +60,7 @@ impl FormCapability {
                 entries,
                 origin: action_ctx.origin,
                 event: action_ctx.event,
+                member_order: Vec::new(),
             })
         })
     }
