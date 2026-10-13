@@ -861,7 +861,7 @@ git commit -m "Wire the shell plugin into the viewer host"
 
 The `Encodable` overloads encode with `JSONEncoder` and throw `PDFError` with code `invalid-input` if encoding fails. They decide nothing about the props: Rust still checks that the result is an object.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ShellTests.swift`:
 
@@ -977,7 +977,7 @@ extension BaseSuite {
 
 No member takes a `CancelToken`, so there's no cancellation test.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -986,7 +986,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'shell'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift`:
 
@@ -1140,7 +1140,7 @@ extension PDFViewer {
 
 `PDFError.init(name:code:detail:)` is internal to `EmbedPDF`, which is where this file lives.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1149,7 +1149,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `ShellTests` with 8 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Shell.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ShellTests.swift
