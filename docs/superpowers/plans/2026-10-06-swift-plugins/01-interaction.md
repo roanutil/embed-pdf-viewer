@@ -2275,7 +2275,7 @@ git commit -m "Measure dispatchPointer's round trip at 120 Hz"
 
 In `.github/workflows/plugin-rust.yml`, append `interaction` to the `crates=( ... )` list Task 0 of the umbrella created, after `render`.
 
-- [ ] **Step 2: Add the README rows**
+- [x] **Step 2: Add the README rows**
 
 In `platforms/apple/README.md`'s plugin table:
 
@@ -2284,11 +2284,11 @@ In `platforms/apple/README.md`'s plugin table:
 | feedback | `FeedbackCapability` | `feedback: FeedbackConfig(provider: HapticFeedback())` | `2026-10-06-swift-plugins/01-interaction.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**interaction** (D) plus **feedback** (W).` to `**interaction** (D) plus **feedback** (W), delivered by 01-interaction.md.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-interaction --features uniffi
@@ -2303,7 +2303,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes. Record `ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a` before this plan's first commit (from `research/swift-plugins`) and now, for the commit message.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
