@@ -7,6 +7,7 @@ pub mod cancel;
 pub mod error;
 pub mod foreign;
 pub mod geometry;
+pub mod input;
 pub mod kernel_thread;
 pub mod mirror;
 pub mod page;
@@ -19,6 +20,9 @@ pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
 pub use foreign::{ForeignSettle, HostError};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
+pub use input::{
+    Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample,
+};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
 pub use mirror::to_u32;
 pub use page::PageInfo;

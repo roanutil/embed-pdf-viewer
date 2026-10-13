@@ -27,8 +27,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
-use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_i18n::ffi::I18nHandle;
+use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_render::ffi::RenderHandle;
@@ -44,6 +45,18 @@ pub use api::{
 use api::{Lifecycle, decode_pages};
 use host_table::HostTable;
 use session::Session;
+
+/// The kernel's report sink, for an adapter that calls a foreign port and
+/// has nowhere else to send its failure. It reaches `ViewerDelegate.report`.
+/// Weak: the session owns the store.
+fn reporter(kernel: &Kernel) -> Rc<dyn Fn(&Error)> {
+    let store = Rc::downgrade(&kernel.store());
+    Rc::new(move |error: &Error| {
+        if let Some(store) = store.upgrade() {
+            store.report(error);
+        }
+    })
+}
 
 #[derive(uniffi::Object)]
 pub struct ViewerHost {
@@ -267,6 +280,31 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_render::RENDER, Some(&document_id))?;
             Ok(RenderHandle::new(cap, post, Rc::new(HostTable::get)))
+        })
+        .await
+    }
+
+    /// The pointer hub of an open document. Needs `ViewerConfig.interaction`;
+    /// without it the kernel refuses the token.
+    pub async fn interaction(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<InteractionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id))?;
+            Ok(InteractionHandle::new(cap, post, reporter(&s.kernel)))
+        })
+        .await
+    }
+
+    /// The workspace's haptics. Needs `ViewerConfig.feedback`.
+    pub async fn feedback(&self) -> Result<Arc<FeedbackHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_interaction::FEEDBACK, None)?;
+            Ok(FeedbackHandle::new(cap, post))
         })
         .await
     }

@@ -21,6 +21,12 @@ pub mod model;
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 use epdf_kernel::{AnyPlugin, define};
 
 pub use callbacks::Unregister;

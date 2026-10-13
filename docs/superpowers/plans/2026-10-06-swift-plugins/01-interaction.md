@@ -83,7 +83,7 @@ docs/research/swift-pointer-latency.md
 - Consumes: `Point`, `PageRef` (`geometry.rs`); umbrella Task 0c's `epdf_ffi::RegistrationHandle` (`RegistrationHandle::new(post: KernelPost, unregister: impl Fn() + 'static) -> Arc<RegistrationHandle>`, export `unregister(&self)`) and `epdf_ffi::HostError` (`Failed { detail }`, with `From<uniffi::UnexpectedUniFFICallbackError>` and `From<HostError> for epdf_kernel::Error`, name `HostError`, code `operation-failed`).
 - Produces: `epdf_ffi::{PointerSample, PointerPhase, PointerKind, PointerGesture, Modifiers, PointerPageHit}` (records).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-interaction -b research/swift-interaction research/swift-plugins
@@ -92,7 +92,7 @@ cd .claude/worktrees/swift-interaction
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Every later command in this plan runs from this directory. Confirm umbrella Task 0 has landed: `grep -n 'pub use registration::RegistrationHandle\|pub use foreign' crates/epdf-ffi/src/lib.rs` prints both lines.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/input.rs`:
 
@@ -127,12 +127,12 @@ fn a_sample_over_a_page_keeps_its_page_point() {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test input`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::Modifiers`, ...".
 
-- [ ] **Step 4: Write `input.rs`**
+- [x] **Step 4: Write `input.rs`**
 
 ```rust
 //! A normalized pointer event, as a native source reports it to the
@@ -215,7 +215,7 @@ pub struct PointerSample {
 }
 ```
 
-- [ ] **Step 5: Export them from `lib.rs`**
+- [x] **Step 5: Export them from `lib.rs`**
 
 In `crates/epdf-ffi/src/lib.rs`, add the module beside the existing ones and extend the re-exports:
 
@@ -225,12 +225,12 @@ pub mod input;
 pub use input::{Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample};
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, including the two `input` tests and every existing `epdf-ffi` test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-ffi
@@ -249,7 +249,7 @@ git commit -m "Add the pointer records to epdf-ffi"
 
 The member list matches `crates/plugins/interaction/src/harness.rs` `MEMBERS` (23 entries): the five `on*` hooks fold into `subscribe`.
 
-- [ ] **Step 1: Add the feature**
+- [x] **Step 1: Add the feature**
 
 In `crates/plugins/interaction/Cargo.toml`, under `[features]`:
 
@@ -299,7 +299,7 @@ In `crates/plugins/interaction/src/controller.rs`, at the end of the `impl Inter
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/interaction/tests/ffi.rs`:
 
@@ -668,12 +668,12 @@ fn closing_the_document_ends_its_subscriptions() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_interaction::ffi`".
 
-- [ ] **Step 4: Write `ffi.rs`, the records and conversions**
+- [x] **Step 4: Write `ffi.rs`, the records and conversions**
 
 ```rust
 //! The interaction plugin through uniffi: the pointer hub as one handle,
@@ -915,7 +915,7 @@ fn gesture_event(event: &crate::GestureEvent) -> InteractionGestureEvent {
 
 `epdf_ffi::Point` converts from `epdf_geometry::Point` and `epdf_kernel::geometry::PageRef` already (`crates/epdf-ffi/src/geometry.rs`). If `crate::PageHit.page` is the kernel `PageRef` (it is: `contract.rs` imports `epdf_kernel::geometry::PageRef`), the `.into()` calls above resolve to those impls.
 
-- [ ] **Step 5: Write `ffi.rs`, the foreign handler and its adapter**
+- [x] **Step 5: Write `ffi.rs`, the foreign handler and its adapter**
 
 ```rust
 /// A pointer handler a foreign gesture source implements. The hub routes
@@ -988,7 +988,7 @@ impl crate::InteractionHandler for ForeignHandler {
 }
 ```
 
-- [ ] **Step 6: Write `ffi.rs`, the handle**
+- [x] **Step 6: Write `ffi.rs`, the handle**
 
 ```rust
 /// The capability, if its document is still open.
@@ -1221,7 +1221,7 @@ impl InteractionHandle {
 }
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: PASS, 15 tests.
@@ -1229,7 +1229,7 @@ Expected: PASS, 15 tests.
 Run: `cargo test -p epdf-plugin-interaction`
 Expected: PASS, the conformance vectors and `tests/api.rs` unchanged.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/interaction
@@ -1245,7 +1245,7 @@ git commit -m "Export the interaction plugin through uniffi with a foreign handl
 - Consumes: `crate::{Feedback, FeedbackPluginOptions, ImpactWeight, NotifyKind, PlatformFeedback, FEEDBACK, feedback_plugin}` (`crates/plugins/interaction/src/feedback.rs`).
 - Produces: foreign trait `epdf_plugin_interaction::ffi::PlatformFeedback { selection(), impact(weight: Option<FeedbackImpactWeight>), notify(kind: FeedbackNotifyKind) }`; enums `FeedbackImpactWeight`, `FeedbackNotifyKind`; record `FeedbackConfig { provider: Arc<dyn PlatformFeedback> }` with `FeedbackConfig::into_options(self) -> crate::FeedbackPluginOptions`; object `FeedbackHandle` with `FeedbackHandle::new(cap: Feedback, post: KernelPost) -> Arc<Self>` and async `selection()`, `impact(weight)`, `notify(kind)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `crates/plugins/interaction/tests/ffi.rs`:
 
@@ -1296,12 +1296,12 @@ fn feedback_reaches_the_foreign_provider() {
 
 `KernelThread::spawn` needs its closure to be `Send`; `FeedbackConfig` holds an `Arc<dyn PlatformFeedback>`, and the trait is `Send + Sync`, so the move compiles. `into_options` runs on the kernel thread, where the `Rc` it builds stays.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi feedback`
 Expected: FAIL to compile, "cannot find `FeedbackConfig` in `ffi`".
 
-- [ ] **Step 3: Write the feedback half of `ffi.rs`**
+- [x] **Step 3: Write the feedback half of `ffi.rs`**
 
 Change the `use crate::{...}` line to `use crate::{Feedback, ImpactWeight, InteractionCapability, NotifyKind, RegisterHandlerOptions, RegisterToolOptions, Tool};`, then append:
 
@@ -1449,12 +1449,12 @@ impl FeedbackHandle {
 
 UniFFI 0.32 carries a foreign trait object inside a record. If the generator rejects `Arc<dyn PlatformFeedback>` as a record field on your machine, make `FeedbackConfig` an object (`#[derive(uniffi::Object)]` with a `#[uniffi::constructor] fn new(provider: Arc<dyn PlatformFeedback>) -> Arc<Self>`), make the `ViewerConfig` field `Option<Arc<FeedbackConfig>>`, and have `into_options` take `&self`. The Swift call site in Task 5 then reads `FeedbackConfig(provider: haptics)` either way.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: PASS, 16 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/plugins/interaction
@@ -1470,7 +1470,7 @@ git commit -m "Export the feedback plugin with a foreign PlatformFeedback provid
 - Consumes: `InteractionHandle::new`, `FeedbackHandle::new`, `FeedbackConfig::into_options`.
 - Produces: `ViewerConfig.interaction: bool`, `ViewerConfig.feedback: Option<FeedbackConfig>`; `ViewerHost::interaction(document_id: String) -> Result<Arc<InteractionHandle>, ViewerError>`; `ViewerHost::feedback() -> Result<Arc<FeedbackHandle>, ViewerError>`; a private `fn reporter(kernel: &Kernel) -> Rc<dyn Fn(&Error)>` in `lib.rs` that later plans reuse for their own foreign ports.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1571,12 +1571,12 @@ fn without_its_config_the_feedback_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host interaction`
 Expected: FAIL to compile, "no field `interaction` on type `ViewerConfig`".
 
-- [ ] **Step 3: Add the dependency**
+- [x] **Step 3: Add the dependency**
 
 In `crates/epdf-viewer-host/Cargo.toml`, in alphabetical order among the plugin lines:
 
@@ -1584,7 +1584,7 @@ In `crates/epdf-viewer-host/Cargo.toml`, in alphabetical order among the plugin 
 epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
 ```
 
-- [ ] **Step 4: Add the config fields**
+- [x] **Step 4: Add the config fields**
 
 In `crates/epdf-viewer-host/src/api.rs`, add the import and the two fields at the end of `ViewerConfig`:
 
@@ -1603,7 +1603,7 @@ use epdf_plugin_interaction::ffi::FeedbackConfig;
     pub feedback: Option<FeedbackConfig>,
 ```
 
-- [ ] **Step 5: Install the plugins**
+- [x] **Step 5: Install the plugins**
 
 In `crates/epdf-viewer-host/src/session.rs`, after the render block in `Session::build`:
 
@@ -1616,7 +1616,7 @@ In `crates/epdf-viewer-host/src/session.rs`, after the render block in `Session:
         }
 ```
 
-- [ ] **Step 6: Add the accessors**
+- [x] **Step 6: Add the accessors**
 
 In `crates/epdf-viewer-host/src/lib.rs`, add to the `use` lines:
 
@@ -1673,12 +1673,12 @@ Add to the `#[uniffi::export] impl ViewerHost` block, after `render`:
 
 If `Kernel::capability` with `None` refuses a workspace token on this branch, pass the active document's id instead (`s.kernel.documents().list().first()`), and say so in the commit message. The test in Step 1 that expects an error without the config still holds either way.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, the four new tests and every existing one.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1699,7 +1699,7 @@ object: ViewerConfig derives Debug and a foreign trait object is not."
 - Consumes also: umbrella Task 0f's Swift `Registration` (wraps `RegistrationHandle`, `unregister()`).
 - Produces: `InteractionCapability` and `PDFViewer.interaction(for:)`; `FeedbackCapability` and `PDFViewer.feedback()`; default implementations for the optional `InteractionHandler` members; `HapticFeedback` (EmbedPDFUI) conforming to `PlatformFeedback`.
 
-- [ ] **Step 1: Write `Plugins/Interaction.swift`**
+- [x] **Step 1: Write `Plugins/Interaction.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1851,7 +1851,7 @@ extension PDFViewer {
 
 The generated `registerHandler` takes `handler: InteractionHandler` (an existential). `some InteractionHandler` passes through as one. If the generated protocol isn't `Sendable`, add `& Sendable` to the parameter.
 
-- [ ] **Step 2: Write `Plugins/Feedback.swift`**
+- [x] **Step 2: Write `Plugins/Feedback.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1886,7 +1886,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 3: Write `EmbedPDFUI/HapticFeedback.swift`**
+- [x] **Step 3: Write `EmbedPDFUI/HapticFeedback.swift`**
 
 ```swift
 import EmbedPDF
@@ -1928,12 +1928,12 @@ public final class HapticFeedback: PlatformFeedback, Sendable {
 }
 ```
 
-- [ ] **Step 4: Build the package**
+- [x] **Step 4: Build the package**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED. A name collision with an existing generated type shows up here as a duplicate declaration.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources
@@ -1949,7 +1949,7 @@ git commit -m "Add Swift interaction and feedback capabilities"
 - Consumes: everything Task 5 produces.
 - Produces: nothing later tasks use.
 
-- [ ] **Step 1: Write `InteractionTests.swift`**
+- [x] **Step 1: Write `InteractionTests.swift`**
 
 ```swift
 import CustomDump
@@ -2118,7 +2118,7 @@ The generated memberwise initializers take every field without a `#[uniffi(defau
 
 No member of `InteractionCapability` takes a `CancelToken`, so there's no `CancelsWhenTheTaskIsCancelled` test.
 
-- [ ] **Step 2: Write `FeedbackTests.swift`**
+- [x] **Step 2: Write `FeedbackTests.swift`**
 
 ```swift
 import CustomDump
@@ -2161,12 +2161,12 @@ extension BaseSuite {
 
 If the `impact` description string differs on your toolchain, compare `weight == .heavy` in the provider instead of matching the string. Feedback is workspace-scoped, so it skips `aClosedDocumentsCapabilityThrows` and has no events.
 
-- [ ] **Step 3: Run the Swift tests**
+- [x] **Step 3: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 8 `InteractionTests` and 2 `FeedbackTests`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests
@@ -2184,7 +2184,7 @@ git commit -m "Test the Swift interaction and feedback capabilities"
 
 `2026-10-01-swift-package.md` Appendix A §A.2 asks for this before gestures are built on `dispatch_pointer`. At 120 Hz a frame is 8.33 ms. A sample that takes longer than one frame to reach its handler makes a drag lag visibly, so p95 under 8.33 ms is the bar.
 
-- [ ] **Step 1: Write the test**
+- [x] **Step 1: Write the test**
 
 ```swift
 import EmbedPDF
@@ -2247,7 +2247,7 @@ extension BaseSuite {
 
 `sample(_:page:x:)` is the helper in `InteractionTests.swift`; both files are in the same test target.
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `(cd platforms/apple/EmbedPDF && EMBEDPDF_LATENCY=1 xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/PointerLatencyTests)`
 
@@ -2255,11 +2255,11 @@ Run: `(cd platforms/apple/EmbedPDF && EMBEDPDF_LATENCY=1 xcodebuild test -scheme
 
 Expected: TEST SUCCEEDED, with one `pointer latency p50=... p95=... max=...` line in the log. If p95 is over 8.33 ms, the test fails. Don't loosen the bar. Record the numbers, then profile the hop (Instruments' Time Profiler on the kernel thread), and stop the plan to raise it with the user: plan 02's gestures assume this budget holds.
 
-- [ ] **Step 3: Write `docs/research/swift-pointer-latency.md`**
+- [x] **Step 3: Write `docs/research/swift-pointer-latency.md`**
 
 Record the machine, macOS, Xcode, simulator, git SHA, and the three numbers from the log, in a table with one row per run (three runs). Add one paragraph saying whether p95 is under one 120 Hz frame and what that means for plan 02's gestures. The simulator is a proxy for a device, as `docs/research/swift-bridge-benchmarks.md` says for the bridge numbers; B5's signed device run adds a device row.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PointerLatencyTests.swift docs/research/swift-pointer-latency.md
@@ -2275,7 +2275,7 @@ git commit -m "Measure dispatchPointer's round trip at 120 Hz"
 
 In `.github/workflows/plugin-rust.yml`, append `interaction` to the `crates=( ... )` list Task 0 of the umbrella created, after `render`.
 
-- [ ] **Step 2: Add the README rows**
+- [x] **Step 2: Add the README rows**
 
 In `platforms/apple/README.md`'s plugin table:
 
@@ -2284,11 +2284,11 @@ In `platforms/apple/README.md`'s plugin table:
 | feedback | `FeedbackCapability` | `feedback: FeedbackConfig(provider: HapticFeedback())` | `2026-10-06-swift-plugins/01-interaction.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**interaction** (D) plus **feedback** (W).` to `**interaction** (D) plus **feedback** (W), delivered by 01-interaction.md.`
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-interaction --features uniffi
@@ -2303,7 +2303,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command passes. Record `ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a` before this plan's first commit (from `research/swift-plugins`) and now, for the commit message.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

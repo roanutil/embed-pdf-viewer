@@ -567,11 +567,14 @@ dependencies = [
 name = "epdf-plugin-interaction"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -827,6 +830,7 @@ dependencies = [
  "epdf-kernel",
  "epdf-manual-bridge",
  "epdf-plugin-i18n",
+ "epdf-plugin-interaction",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
  "epdf-plugin-render",

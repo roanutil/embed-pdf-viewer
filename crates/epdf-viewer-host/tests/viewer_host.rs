@@ -336,6 +336,103 @@ fn the_features_fixture_opens() {
     assert_eq!(doc.page_count, 3);
 }
 
+use epdf_ffi::{HostError, Modifiers, Point, PointerPageHit, PointerPhase, PointerSample};
+use epdf_plugin_interaction::ffi::{InteractionHandler, InteractionTool};
+
+#[derive(Default)]
+struct Reports(Mutex<Vec<String>>);
+impl ViewerDelegate for Reports {
+    fn state_changed(&self, _revision: u64) {}
+    fn report(&self, error: ViewerError) {
+        self.0.lock().unwrap().push(format!("{error}"));
+    }
+}
+
+struct Throws;
+impl InteractionHandler for Throws {
+    fn enabled_for(&self, _tool: InteractionTool) -> bool {
+        true
+    }
+    fn on_down(&self, _sample: PointerSample) -> Result<bool, HostError> {
+        Err(HostError::Failed { detail: "swift threw".into() })
+    }
+    fn on_move(&self, _sample: PointerSample) {}
+    fn on_up(&self, _sample: PointerSample) {}
+    fn on_cancel(&self, _sample: PointerSample) {}
+    fn on_hover(&self, _sample: PointerSample) {}
+    fn claims_touch(&self, _sample: PointerSample) -> bool {
+        false
+    }
+}
+
+fn with_interaction(delegate: Arc<dyn ViewerDelegate>) -> Arc<ViewerHost> {
+    let config = ViewerConfig { interaction: true, ..Default::default() };
+    let host = ViewerHost::new(config, delegate).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_interaction_plugin_switches_tools_through_the_host() {
+    let host = with_interaction(Arc::new(Delegate));
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    assert_eq!(block_on(interaction.active_tool_id()).unwrap(), "pointer");
+    block_on(interaction.activate_tool("pan".into())).unwrap();
+    assert_eq!(block_on(interaction.active_tool_id()).unwrap(), "pan");
+}
+
+#[test]
+fn a_foreign_handlers_error_reaches_the_delegate() {
+    let reports = Arc::new(Reports::default());
+    let host = with_interaction(reports.clone());
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let interaction = block_on(host.interaction(doc.id)).unwrap();
+    let _registration =
+        block_on(interaction.register_handler("throws".into(), 1.0, None, Arc::new(Throws)))
+            .unwrap();
+    interaction.dispatch_pointer(PointerSample {
+        phase: PointerPhase::Down,
+        viewport: Point { x: 10.0, y: 10.0 },
+        page: Some(PointerPageHit {
+            page: pages[0].page,
+            point: Point { x: 10.0, y: 10.0 },
+            scale: None,
+            rotation: None,
+            zoom: None,
+        }),
+        modifiers: Modifiers::default(),
+        click_count: None,
+        pointer_type: None,
+        gesture: None,
+        source: None,
+    });
+    // Any reply after the fire means the dispatch has run.
+    block_on(interaction.cursor()).unwrap();
+    let reports = reports.0.lock().unwrap();
+    assert!(
+        reports.iter().any(|r| r.contains("HostError") && r.contains("swift threw")),
+        "{reports:?}"
+    );
+}
+
+#[test]
+fn without_its_flag_the_interaction_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.interaction(doc.id)).is_err());
+}
+
+#[test]
+fn without_its_config_the_feedback_plugin_is_not_installed() {
+    let host = started();
+    assert!(block_on(host.feedback()).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,
