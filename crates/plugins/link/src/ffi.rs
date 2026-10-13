@@ -387,8 +387,23 @@ impl LinkHandle {
 
     /// Activate a link or a bare target. A `uri` or `named` outcome is the
     /// app's to carry out.
+    /// A link named by its page activates with that page in its context,
+    /// as the web's link layer passes it, so its action tree runs against
+    /// the link's own page.
     pub async fn activate(&self, input: LinkInput) -> Result<LinkActivation, ViewerError> {
-        self.on(move |c| Ok((&c.activate(&input_of(c, input)?, None)?).into())).await
+        self.on(move |c| {
+            let context = match &input {
+                LinkInput::Link { page, .. } => Some(LinkActivateContext {
+                    page: Some(epdf_kernel::js::to_value(&epdf_annotation_core::PageRef::from(
+                        *page,
+                    ))),
+                    ..LinkActivateContext::default()
+                }),
+                LinkInput::Target { .. } => None,
+            };
+            Ok((&c.activate(&input_of(c, input)?, context.as_ref())?).into())
+        })
+        .await
     }
 
     /// Activate the link under a page point; `None` when there is none.

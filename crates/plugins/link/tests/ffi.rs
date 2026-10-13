@@ -358,3 +358,52 @@ fn a_closed_documents_tap_handler_refuses_with_instance_closed() {
     let error = block_on(link.register_tap_handler()).map(|_| ()).unwrap_err();
     assert_eq!(code(&error), Some("instance-closed"), "{error:?}");
 }
+
+/// A link activated by page and id carries its page into the action
+/// context, as the web's link layer does (`link.tsx` passes `page.ref`).
+#[test]
+fn a_link_activated_by_id_dispatches_with_its_page() {
+    use epdf_plugin_actions::{
+        ACTIONS, ActionExecutorResult, ActionSource, ActionsConfig, OpenSequence, actions_plugin,
+    };
+    let mut scripted =
+        link(12, [400.0, 10.0, 420.0, 20.0], json!({ "kind": "named", "name": "Mark" }));
+    scripted["actions"] = json!({ "activate": { "root": { "type": "named", "subtype": "Named",
+        "name": "Mark", "next": [] }, "incomplete": false, "warningFlags": 0, "warnings": [] } });
+    let thread = KernelThread::spawn(move |_| {
+        let actions =
+            ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() };
+        let plugins = vec![
+            interaction_plugin(InteractionConfig::default()),
+            link_plugin(LinkConfig::default()),
+            actions_plugin(actions),
+        ];
+        TestKernel::open(plugins, spec(vec![scripted]))
+    })
+    .unwrap();
+    let post = thread.post();
+    let link = block_on(thread.call(move |k| LinkHandle::new(k.capability(&LINK).unwrap(), post)))
+        .unwrap();
+    block_on(link.ensure_loaded(PAGE_1)).unwrap();
+    thread_local! {
+        static SEEN: std::cell::RefCell<Vec<Option<u32>>> = const { std::cell::RefCell::new(Vec::new()) };
+    }
+    block_on(thread.call(|k| {
+        let actions = k.capability(&ACTIONS).unwrap();
+        let _ = actions.register_executor(
+            "named",
+            std::rc::Rc::new(|_, cx| {
+                if let ActionSource::Link { page, .. } = &cx.source {
+                    SEEN.with(|s| s.borrow_mut().push(page.map(|p| p.page_object_number)));
+                }
+                Ok(epdf_kernel::rt::Promise::resolved(ActionExecutorResult::Executed))
+            }),
+        );
+    }))
+    .unwrap();
+    let activation =
+        block_on(link.activate(LinkInput::Link { page: PAGE_1, id: "obj:12".into() })).unwrap();
+    assert_eq!(activation, LinkActivation::Dispatched);
+    let seen = block_on(thread.call(|_| SEEN.with(|s| s.borrow().clone()))).unwrap();
+    assert_eq!(seen, [Some(1)]);
+}
