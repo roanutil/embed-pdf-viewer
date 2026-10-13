@@ -294,23 +294,36 @@ fn add_page_ref(object: &mut Value, key: &str, what: &str) -> Result<(), Error> 
     }
 }
 
-fn is_annotation_ref(map: &Map<String, Value>) -> bool {
-    matches!(map.get("kind").and_then(Value::as_str), Some("objectNumber" | "nm" | "index"))
-        && (map.contains_key("annotObjectNumber")
-            || map.contains_key("nm")
-            || map.contains_key("index"))
+/// A `PageRef` itself, `{kind: "objectNumber", pageObjectNumber}`, which
+/// both spellings share.
+fn is_page_ref(map: &Map<String, Value>) -> bool {
+    map.len() == 2
+        && map.get("kind").and_then(Value::as_str) == Some("objectNumber")
+        && map.get("pageObjectNumber").is_some_and(Value::is_u64)
 }
 
-/// Every annotation ref in `value`, kernel spelling to host spelling:
-/// `page: PageRef` becomes `pageObjectNumber`.
+fn page_number(value: Option<&Value>) -> Option<u32> {
+    value.and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok())
+}
+
+/// Every page `value` names, kernel spelling to host spelling: a
+/// `page: PageRef` member (an annotation ref's, a destination's, a revision
+/// token's, a DTO's) becomes `pageObjectNumber`. A `PageRef` itself keeps
+/// its spelling.
 pub fn flatten_refs(value: &mut Value) {
     match value {
         Value::Object(map) => {
-            if is_annotation_ref(map)
-                && let Some(pon) =
-                    map.remove("page").as_ref().and_then(|p| p.get("pageObjectNumber")).cloned()
+            let nested = match map.get("page") {
+                Some(Value::Object(page)) if is_page_ref(page) => {
+                    page_number(page.get("pageObjectNumber"))
+                }
+                _ => None,
+            };
+            if let Some(pon) = nested
+                && !is_page_ref(map)
             {
-                map.insert("pageObjectNumber".into(), pon);
+                map.remove("page");
+                map.insert("pageObjectNumber".into(), pon.into());
             }
             map.values_mut().for_each(flatten_refs);
         }
@@ -319,22 +332,22 @@ pub fn flatten_refs(value: &mut Value) {
     }
 }
 
-/// Every annotation ref in `value`, host spelling to kernel spelling, and
-/// every bare numeric `page` (a DTO's, a page state's) as a `PageRef`.
+/// Every page `value` names, host spelling to kernel spelling. The host
+/// spells a page as `pageObjectNumber` wherever the kernel's vectors spell
+/// `page: PageRef`: an annotation ref, a destination (in a link's target and
+/// in its action tree), a DTO, a page state and its revision token. A bare
+/// numeric `page` becomes a `PageRef` too. A `PageRef` itself keeps its
+/// spelling.
 pub fn nest_refs(value: &mut Value) {
     match value {
         Value::Object(map) => {
-            if is_annotation_ref(map)
-                && let Some(pon) = map
-                    .remove("pageObjectNumber")
-                    .and_then(|p| p.as_u64())
-                    .and_then(|n| u32::try_from(n).ok())
+            if !is_page_ref(map)
+                && let Some(pon) = page_number(map.get("pageObjectNumber"))
             {
+                map.remove("pageObjectNumber");
                 map.insert("page".into(), PageRef::new(pon).to_json());
             }
-            if let Some(pon) =
-                map.get("page").and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok())
-            {
+            if let Some(pon) = page_number(map.get("page")) {
                 map.insert("page".into(), PageRef::new(pon).to_json());
             }
             map.values_mut().for_each(nest_refs);

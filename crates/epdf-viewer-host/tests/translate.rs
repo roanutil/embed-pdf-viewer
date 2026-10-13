@@ -592,3 +592,40 @@ fn a_form_field_ref_is_not_mistaken_for_an_annotation_ref() {
     epdf_viewer_host::translate::flatten_refs(&mut value);
     assert_eq!(value, before);
 }
+
+/// Page 1 of `features.pdf` as the native engine lists it, trimmed: every
+/// page the host spells as `pageObjectNumber` (the DTO's own, its ref's, a
+/// destination's, the page state's and its revision's) arrives as the
+/// `page: PageRef` the kernel's vectors spell.
+#[test]
+fn every_page_a_listed_snapshot_names_arrives_as_a_page_ref() {
+    let json = r#"{"result":{"annotations":[{"pageObjectNumber":5,"subtype":"link",
+        "ref":{"annotObjectNumber":8,"kind":"objectNumber","pageObjectNumber":5},
+        "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"pageObjectNumber":7,"top":400.0,"zoom":null}},
+        "actions":{"activate":{"root":{"type":"goto","subtype":"GoTo","next":[],
+            "destination":{"kind":"fitR","pageObjectNumber":7,"left":1.0,"bottom":2.0,"right":3.0,"top":4.0}}}}}],
+        "pageState":{"pageObjectNumber":5,"revision":{"docSessionId":"s","generation":0,"pageObjectNumber":5}}}}"#;
+    let call = translate("d1", "page.annotations.list", Some(5), &[], 14).unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap().value;
+    let page = |n: u32| json!({ "kind": "objectNumber", "pageObjectNumber": n });
+    let dto = &decoded["annotations"][0];
+    assert_eq!(dto["page"], page(5));
+    assert!(dto.get("pageObjectNumber").is_none(), "{dto}");
+    assert_eq!(
+        dto["ref"],
+        json!({ "kind": "objectNumber", "page": page(5), "annotObjectNumber": 8 })
+    );
+    assert_eq!(
+        dto["target"]["destination"],
+        json!({ "kind": "xyz", "page": page(7), "left": 0.0, "top": 400.0, "zoom": null })
+    );
+    assert_eq!(dto["actions"]["activate"]["root"]["destination"]["page"], page(7));
+    assert_eq!(decoded["pageState"]["page"], page(5));
+    assert_eq!(decoded["pageState"]["revision"]["page"], page(5));
+    // A page ref itself keeps its spelling, and flattening undoes nesting.
+    let mut back = decoded.clone();
+    epdf_viewer_host::translate::flatten_refs(&mut back);
+    assert_eq!(back["annotations"][0]["target"]["destination"]["pageObjectNumber"], 7);
+    assert_eq!(back["annotations"][0]["ref"]["pageObjectNumber"], 5);
+    assert_eq!(back["pageState"]["revision"]["pageObjectNumber"], 5);
+}
