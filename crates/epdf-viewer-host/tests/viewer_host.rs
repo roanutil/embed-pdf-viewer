@@ -1318,3 +1318,31 @@ fn an_engine_turns_scripting_on() {
     let actions = block_on(host.actions(doc.id)).unwrap();
     assert!(block_on(actions.is_scripting_enabled()).unwrap());
 }
+
+/// Plan 15's cross-plugin test with the stage, which merged after it: the
+/// stage registers the `NextPage` verb with actions.
+#[test]
+fn executing_a_named_next_page_action_moves_the_stage() {
+    let config = ViewerConfig {
+        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: None,
+            utc_offset_minutes: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let stage = block_on(host.stage(doc.id.clone())).unwrap();
+    block_on(stage.set_viewport_size(FfiSize { width: 390.0, height: 844.0 })).unwrap();
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 0);
+    let actions = block_on(host.actions(doc.id)).unwrap();
+    let result = block_on(actions.execute_named("NextPage".into(), None)).unwrap();
+    assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed, "{result:?}");
+    assert_eq!(block_on(stage.current_page_index()).unwrap(), 1);
+}
