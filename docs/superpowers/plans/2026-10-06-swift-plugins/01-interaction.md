@@ -83,7 +83,7 @@ docs/research/swift-pointer-latency.md
 - Consumes: `Point`, `PageRef` (`geometry.rs`); umbrella Task 0c's `epdf_ffi::RegistrationHandle` (`RegistrationHandle::new(post: KernelPost, unregister: impl Fn() + 'static) -> Arc<RegistrationHandle>`, export `unregister(&self)`) and `epdf_ffi::HostError` (`Failed { detail }`, with `From<uniffi::UnexpectedUniFFICallbackError>` and `From<HostError> for epdf_kernel::Error`, name `HostError`, code `operation-failed`).
 - Produces: `epdf_ffi::{PointerSample, PointerPhase, PointerKind, PointerGesture, Modifiers, PointerPageHit}` (records).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-interaction -b research/swift-interaction research/swift-plugins
@@ -92,7 +92,7 @@ cd .claude/worktrees/swift-interaction
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Every later command in this plan runs from this directory. Confirm umbrella Task 0 has landed: `grep -n 'pub use registration::RegistrationHandle\|pub use foreign' crates/epdf-ffi/src/lib.rs` prints both lines.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/input.rs`:
 
@@ -127,12 +127,12 @@ fn a_sample_over_a_page_keeps_its_page_point() {
 }
 ```
 
-- [ ] **Step 3: Run it to verify it fails**
+- [x] **Step 3: Run it to verify it fails**
 
 Run: `cargo test -p epdf-ffi --test input`
 Expected: FAIL to compile, "unresolved imports `epdf_ffi::Modifiers`, ...".
 
-- [ ] **Step 4: Write `input.rs`**
+- [x] **Step 4: Write `input.rs`**
 
 ```rust
 //! A normalized pointer event, as a native source reports it to the
@@ -215,7 +215,7 @@ pub struct PointerSample {
 }
 ```
 
-- [ ] **Step 5: Export them from `lib.rs`**
+- [x] **Step 5: Export them from `lib.rs`**
 
 In `crates/epdf-ffi/src/lib.rs`, add the module beside the existing ones and extend the re-exports:
 
@@ -225,12 +225,12 @@ pub mod input;
 pub use input::{Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample};
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi`
 Expected: PASS, including the two `input` tests and every existing `epdf-ffi` test.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/epdf-ffi
