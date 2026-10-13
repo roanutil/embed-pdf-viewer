@@ -230,7 +230,7 @@ impl ShellHandle {
 
     /// `close`.
     pub async fn close_surface(&self, id: String) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.close(&id))).await
+        self.cap.call(move |c| open(c).map(|c| c.close(&id))).await
     }
 
     /// `toggle`.
@@ -266,7 +266,7 @@ impl ShellHandle {
 
     /// `closeAll`.
     pub async fn close_all_surfaces(&self) -> Result<(), ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.close_all())).await
+        self.cap.call(|c| open(c).map(|c| c.close_all())).await
     }
 
     pub async fn is_menu_open(&self, id: String) -> Result<bool, ViewerError> {
@@ -279,19 +279,19 @@ impl ShellHandle {
     }
 
     pub async fn open_menu(&self, id: String) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.open_menu(&id))).await
+        self.cap.call(move |c| open(c).map(|c| c.open_menu(&id))).await
     }
 
     pub async fn close_menu(&self, id: String) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.close_menu(&id))).await
+        self.cap.call(move |c| open(c).map(|c| c.close_menu(&id))).await
     }
 
     pub async fn toggle_menu(&self, id: String) -> Result<(), ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.toggle_menu(&id))).await
+        self.cap.call(move |c| open(c).map(|c| c.toggle_menu(&id))).await
     }
 
     pub async fn close_all_menus(&self) -> Result<(), ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.close_all_menus())).await
+        self.cap.call(|c| open(c).map(|c| c.close_all_menus())).await
     }
 
     /// `getSnapshot`.
