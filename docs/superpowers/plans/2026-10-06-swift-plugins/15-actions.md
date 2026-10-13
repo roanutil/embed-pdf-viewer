@@ -1961,7 +1961,7 @@ git commit -m "Install the actions plugin from ViewerConfig and expose ViewerHos
 
 The program the sandbox hands the engine is the one `QuickJsSandbox.ts` `invoke` evaluates, wrapped in `JSON.stringify` so the engine only has to return a string: `JSON.stringify(globalThis.__acrojsRun(<source as JSON>,<input as JSON>,{"maxEffects":N}))`. The validation after it follows that file line by line: a thrown evaluation is `invalid-output` (or `budget` when it timed out), output that doesn't decode as `ScriptOutput` is `invalid-output`, a script error naming a resource limit is `budget`, and output past `maxOutputBytes` is `budget`. Each of those poisons the realm.
 
-- [ ] **Step 1: Write the failing sandbox tests**
+- [x] **Step 1: Write the failing sandbox tests**
 
 Create `crates/plugins/actions/tests/ffi_sandbox.rs`. Copy `named`, `page`, `spec` and `user` from `tests/ffi.rs`, then:
 
@@ -2220,12 +2220,12 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
 
 `JavaScriptConfig` and `ScriptSandbox`'s `peek` are public (`crates/plugins/actions/src/contract.rs`, `crates/epdf-kernel/src/rt.rs`). The `Promise` from `sandbox_factory` is created settled, so `peek` works without running the kernel runtime.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_sandbox`
 Expected: FAIL to compile with "unresolved imports `epdf_plugin_actions::ffi::sandbox::ScriptEngine`".
 
-- [ ] **Step 3: Write `crates/plugins/actions/src/ffi/sandbox.rs`**
+- [x] **Step 3: Write `crates/plugins/actions/src/ffi/sandbox.rs`**
 
 ```rust
 //! JavaScript through a foreign engine. `ForeignSandbox` implements
@@ -2605,7 +2605,7 @@ pub fn check_script_engine(
 
 `ScriptEventOutput`'s fields (`rc`, `value`, `change`, `sel_start`, `sel_end`) are the ones `ScriptOutput::empty` fills in `crates/plugins/acrojs/src/types.rs`; `ScriptEventInput`'s `target`, `value`, `change`, `sel_start` and `sel_end` are `Option`s there.
 
-- [ ] **Step 4: Add `javascript` to `ActionsConfig`**
+- [x] **Step 4: Add `javascript` to `ActionsConfig`**
 
 In `crates/plugins/actions/src/ffi.rs`, add the field to `ActionsConfig` after `open_sequence`:
 
@@ -2620,7 +2620,7 @@ In `crates/plugins/actions/src/ffi.rs`, add the field to `ActionsConfig` after `
 
 In `crates/epdf-viewer-host/tests/viewer_host.rs`, add `javascript: None,` to the `ActionsConfig` literal in `with_actions`.
 
-- [ ] **Step 5: Add a host test that scripting turns on**
+- [x] **Step 5: Add a host test that scripting turns on**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -2669,7 +2669,7 @@ fn an_engine_turns_scripting_on() {
 }
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-actions --features uniffi --test ffi_sandbox`
 Expected: PASS, 9 tests.
@@ -2677,7 +2677,7 @@ Expected: PASS, 9 tests.
 Run: `cargo test -p epdf-plugin-actions --features uniffi && cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/actions crates/epdf-viewer-host/tests/viewer_host.rs

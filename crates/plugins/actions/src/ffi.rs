@@ -10,6 +10,7 @@
 pub mod ports;
 pub mod sandbox;
 
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -679,8 +680,12 @@ impl ActionsHandle {
     }
 }
 
-/// `actionsPlugin(config)` as Swift configures it. Task 5 adds JavaScript.
+/// `actionsPlugin(config)` as Swift configures it.
+///
+/// `Eq` and `Hash` are exported for the reason `ActionsJavaScriptConfig`
+/// gives: `ViewerConfig` holds this record and needs Swift `Equatable`.
 #[derive(Clone, Debug, Default, uniffi::Record)]
+#[uniffi::export(Eq, Hash)]
 pub struct ActionsConfig {
     /// Row-wise overrides of the default policy.
     #[uniffi(default = None)]
@@ -692,10 +697,36 @@ pub struct ActionsConfig {
     /// adapter installs or on the first user dispatch.
     #[uniffi(default = None)]
     pub open_sequence: Option<OpenSequence>,
+    /// PDF JavaScript. `None`, or `enabled` without an engine, leaves
+    /// scripting off.
+    #[uniffi(default = None)]
+    pub javascript: Option<sandbox::ActionsJavaScriptConfig>,
     /// Local minus UTC, in minutes, for script dates. Fixed for the
     /// viewer's lifetime. Default zero.
     #[uniffi(default = None)]
     pub utc_offset_minutes: Option<i32>,
+}
+
+impl PartialEq for ActionsConfig {
+    fn eq(&self, other: &Self) -> bool {
+        self.policy == other.policy
+            && self.triggers == other.triggers
+            && self.open_sequence == other.open_sequence
+            && self.javascript == other.javascript
+            && self.utc_offset_minutes == other.utc_offset_minutes
+    }
+}
+
+impl Eq for ActionsConfig {}
+
+/// Hashes a subset of what `eq` compares, which keeps equal configs equal
+/// in hash without `Hash` on the policy records.
+impl Hash for ActionsConfig {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.open_sequence.as_ref().map(std::mem::discriminant).hash(state);
+        self.javascript.hash(state);
+        self.utc_offset_minutes.hash(state);
+    }
 }
 
 impl ActionsConfig {
@@ -709,7 +740,7 @@ impl ActionsConfig {
             policy: self.policy,
             triggers: self.triggers,
             open_sequence: self.open_sequence,
-            javascript: None,
+            javascript: self.javascript.map(Into::into),
             observer_error,
             host_utc_offset_minutes: self.utc_offset_minutes.map(|minutes| {
                 Rc::new(move |_now: f64| f64::from(minutes)) as Rc<dyn Fn(f64) -> f64>

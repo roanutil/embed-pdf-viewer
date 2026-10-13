@@ -3,6 +3,9 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::PageRef;
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
+use epdf_plugin_actions::ffi::sandbox::{
+    ActionsJavaScriptConfig, ScriptEngine, ScriptEngineFactory, ScriptEvaluation,
+};
 use epdf_plugin_actions::ffi::{ActionTreeSource, ActionTrigger};
 use epdf_plugin_actions::{ActionNodeStatus, DocumentTriggerEvent, OpenSequence};
 use epdf_plugin_metadata::ffi::MetadataPatch;
@@ -544,6 +547,7 @@ fn with_actions() -> Arc<ViewerHost> {
             policy: None,
             triggers: None,
             open_sequence: Some(OpenSequence::Off),
+            javascript: None,
             utc_offset_minutes: None,
         }),
         ..ViewerConfig::default()
@@ -577,4 +581,44 @@ fn without_its_config_the_actions_plugin_is_not_installed() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     assert!(block_on(host.actions(doc.id)).is_err());
+}
+
+struct ProbeOnly;
+
+impl ScriptEngine for ProbeOnly {
+    fn evaluate(&self, _program: String, _limit: u32) -> ScriptEvaluation {
+        ScriptEvaluation::Value { json: "\"function\"".into() }
+    }
+    fn dispose(&self) {}
+}
+
+impl ScriptEngineFactory for ProbeOnly {
+    fn create(&self) -> Result<Arc<dyn ScriptEngine>, epdf_ffi::HostError> {
+        Ok(Arc::new(ProbeOnly))
+    }
+}
+
+#[test]
+fn an_engine_turns_scripting_on() {
+    let config = ViewerConfig {
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: Some(ActionsJavaScriptConfig {
+                enabled: true,
+                engine: Some(Arc::new(ProbeOnly)),
+                budget: None,
+                max_script_nodes_per_dispatch: None,
+            }),
+            utc_offset_minutes: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let doc =
+        block_on(host.open_document(test_support::fixture(DOCUMENT_ACTIONS), options())).unwrap();
+    let actions = block_on(host.actions(doc.id)).unwrap();
+    assert!(block_on(actions.is_scripting_enabled()).unwrap());
 }
