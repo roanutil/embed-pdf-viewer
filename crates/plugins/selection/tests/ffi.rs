@@ -1,5 +1,6 @@
 #![cfg(feature = "uniffi")]
 
+use std::future::Future;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -240,4 +241,42 @@ fn closing_the_document_ends_selection_subscriptions() {
     block_on(thread.call(|_| ())).unwrap();
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 1);
+}
+
+#[test]
+fn a_read_cancelled_while_the_engine_reads_rejects_operation_cancelled() {
+    // Page 1's text read parks until the test settles it, so the cancel
+    // lands while the plugin's read is in flight, not before it starts.
+    let (thread, selection, pages) = handle_with(|| {
+        let mut spec = spec();
+        let doc = spec["documents"].as_object_mut().unwrap().values_mut().next().unwrap();
+        doc["security"] = serde_json::json!({ "allows": "*" });
+        doc["responses"].as_array_mut().unwrap().insert(
+            0,
+            serde_json::json!({ "path": "page.text.read", "pon": 1, "defer": "text-1", "times": 1 }),
+        );
+        TestSpec::new(spec)
+    });
+    block_on(selection.ensure_loaded(pages[0])).unwrap();
+    block_on(selection.select_page(pages[0])).unwrap();
+    let cancel = CancelToken::new();
+    let mut read = Box::pin(selection.read_text(cancel.clone()));
+    let waker = futures::task::noop_waker();
+    let mut cx = std::task::Context::from_waker(&waker);
+    assert!(read.as_mut().poll(&mut cx).is_pending());
+    // The read's job runs before this reply, and parks on the engine.
+    block_on(thread.call(|_| ())).unwrap();
+    cancel.cancel();
+    let settled = block_on(thread.call(|k| {
+        k.engine.settle(
+            "text-1",
+            Ok(serde_json::json!({ "text": "Hello world\r\nSecond line", "charCount": 24 })),
+        )
+    }))
+    .unwrap();
+    assert!(settled, "the read never reached the engine");
+    let error = block_on(read).unwrap_err();
+    assert_eq!(code(&error), Some("operation-cancelled"), "{error:?}");
+    // A later read still works.
+    assert!(!block_on(selection.read_text(CancelToken::new())).unwrap().is_empty());
 }

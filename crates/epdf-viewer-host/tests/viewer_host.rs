@@ -440,7 +440,8 @@ use epdf_ffi::{
     Rect as SelRect,
 };
 use epdf_plugin_interaction::ffi::{
-    FeedbackConfig, FeedbackImpactWeight, FeedbackNotifyKind, PlatformFeedback,
+    FeedbackConfig, FeedbackImpactWeight, FeedbackNotifyKind, InteractionEvent,
+    InteractionEventListener, PlatformFeedback,
 };
 use epdf_plugin_selection::ffi::SelectionHandle;
 
@@ -534,10 +535,32 @@ fn a_drag_that_starts_off_text_selects_nothing() {
     // The page's top-left corner: inside the page, outside any text.
     let corner = SelPoint { x: 1.0, y: 1.0 };
     assert!(!block_on(selection.is_over_text(page, corner)).unwrap());
+    let gestures = Arc::new(Gestures::default());
+    let _sub = interaction.subscribe(gestures.clone());
     interaction.dispatch_pointer(touch(SelPhase::Down, page, corner));
     interaction.dispatch_pointer(touch(SelPhase::Move, page, SelPoint { x: 300.0, y: 300.0 }));
     interaction.dispatch_pointer(touch(SelPhase::Up, page, SelPoint { x: 300.0, y: 300.0 }));
     assert!(!block_on(selection.has_selection()).unwrap());
+    // No handler captured the drag, so a lower one (stage's pan) would get
+    // it. A press on text, as a control, is captured.
+    assert!(gestures.0.lock().unwrap().is_empty(), "{:?}", gestures.0.lock().unwrap());
+    let rect = text_rect(&selection, page);
+    let on_text = SelPoint { x: rect.x + 1.0, y: rect.y + rect.height / 2.0 };
+    interaction.dispatch_pointer(touch(SelPhase::Down, page, on_text));
+    block_on(selection.has_selection()).unwrap();
+    assert_eq!(gestures.0.lock().unwrap().len(), 1);
+}
+
+/// The handlers that captured a gesture, in order.
+#[derive(Default)]
+struct Gestures(Mutex<Vec<String>>);
+impl InteractionEventListener for Gestures {
+    fn on_event(&self, event: InteractionEvent) {
+        if let InteractionEvent::GestureStarted { event } = event {
+            self.0.lock().unwrap().push(event.handler_id);
+        }
+    }
+    fn on_end(&self) {}
 }
 
 #[derive(Default)]
