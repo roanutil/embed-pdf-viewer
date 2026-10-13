@@ -297,3 +297,11 @@ fn a_call_after_the_kernel_thread_stops_is_closed() {
     let error = block_on(i18n.locale()).unwrap_err();
     assert!(matches!(error, ViewerError::Closed), "{error:?}");
 }
+
+#[test]
+fn configs_compare_their_loader_by_identity() {
+    let loader = Loader::new(Answer::Pack);
+    assert_eq!(config(Some(loader.clone())), config(Some(loader)));
+    assert_ne!(config(Some(Loader::new(Answer::Pack))), config(Some(Loader::new(Answer::Pack))));
+    assert_eq!(config(None), config(None));
+}

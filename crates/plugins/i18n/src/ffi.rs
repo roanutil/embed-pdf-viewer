@@ -7,6 +7,7 @@
 
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -242,7 +243,13 @@ impl LocaleLoadCompletion {
 }
 
 /// `i18nPlugin(config)` as Swift configures it.
+///
+/// Exports `Eq` and `Hash` because `ViewerConfig` holds it: uniffi 0.32's
+/// Swift generator gives a record `Equatable` and `Hashable` unless it sees
+/// an object inside, and it doesn't look inside a record from another crate.
+/// Without these, `ViewerConfig` wouldn't compile in Swift.
 #[derive(uniffi::Record)]
+#[uniffi::export(Eq, Hash)]
 pub struct I18nConfig {
     /// Startup locale. May name a lazy pack. Defaults to `fallback_locale`.
     #[uniffi(default = None)]
@@ -269,6 +276,35 @@ impl fmt::Debug for I18nConfig {
             .field("lazy_locales", &self.lazy_locales)
             .field("loader", &self.loader.is_some())
             .finish()
+    }
+}
+
+/// The loader compares by identity: two configs are equal when they hold
+/// the same loader object, or neither has one.
+impl PartialEq for I18nConfig {
+    fn eq(&self, other: &Self) -> bool {
+        let same_loader = match (&self.loader, &other.loader) {
+            (None, None) => true,
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            _ => false,
+        };
+        same_loader
+            && self.locale == other.locale
+            && self.fallback_locale == other.fallback_locale
+            && self.locales == other.locales
+            && self.lazy_locales == other.lazy_locales
+    }
+}
+
+impl Eq for I18nConfig {}
+
+/// Hashes the fields that hash cheaply; equal configs still hash equal.
+impl Hash for I18nConfig {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.locale.hash(state);
+        self.fallback_locale.hash(state);
+        self.lazy_locales.hash(state);
+        self.loader.as_ref().map(|l| Arc::as_ptr(l) as *const () as usize).hash(state);
     }
 }
 
