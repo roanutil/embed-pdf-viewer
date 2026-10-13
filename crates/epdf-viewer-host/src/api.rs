@@ -5,12 +5,15 @@
 //! camelCase, lifecycle payloads as `crates/epdf-kernel/src/kernel.rs` emits
 //! them. A shape the kernel did not send is an error, never a guess.
 
-use epdf_ffi::{PageRef, PluginErrorInfo, ViewerError};
+use epdf_ffi::{PluginErrorInfo, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::{DocInfo, DocStatus};
 use epdf_plugin_render::ffi::RenderConfig;
 use epdf_plugin_search::ffi::SearchConfig;
 use serde_json::Value;
+
+pub use epdf_ffi::PageInfo;
+pub(crate) use epdf_ffi::page::decode_pages;
 
 /// One field per plugin as each plugin lands.
 #[derive(Debug, Default, uniffi::Record)]
@@ -70,16 +73,6 @@ impl From<DocStatus> for DocumentStatus {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct PageInfo {
-    pub page: PageRef,
-    pub index: u32,
-    pub width: f64,
-    pub height: f64,
-    /// Degrees clockwise: 0, 90, 180 or 270.
-    pub rotation: u32,
-}
-
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum DocumentEvent {
     Opened { document: DocumentInfo },
@@ -127,38 +120,6 @@ fn string(value: &Value, field: &str, what: &str) -> Result<String, Error> {
         .and_then(Value::as_str)
         .map(str::to_owned)
         .ok_or_else(|| malformed(format!("{what} without \"{field}\": {value}")))
-}
-
-fn number(value: &Value, field: &str, what: &str) -> Result<f64, Error> {
-    value
-        .get(field)
-        .and_then(Value::as_f64)
-        .ok_or_else(|| malformed(format!("{what} without \"{field}\": {value}")))
-}
-
-fn whole(value: &Value, field: &str, what: &str) -> Result<u32, Error> {
-    value
-        .get(field)
-        .and_then(Value::as_u64)
-        .and_then(|n| u32::try_from(n).ok())
-        .ok_or_else(|| malformed(format!("{what} without \"{field}\": {value}")))
-}
-
-/// A `PageLayout`: `pageObjectNumber`, `index`, `size` and `rotation`.
-pub(crate) fn decode_page(page: &Value) -> Result<PageInfo, Error> {
-    let size =
-        page.get("size").ok_or_else(|| malformed(format!("a page without \"size\": {page}")))?;
-    Ok(PageInfo {
-        page: PageRef { page_object_number: whole(page, "pageObjectNumber", "a page")? },
-        index: whole(page, "index", "a page")?,
-        width: number(size, "width", "a page size")?,
-        height: number(size, "height", "a page size")?,
-        rotation: whole(page, "rotation", "a page")?,
-    })
-}
-
-pub(crate) fn decode_pages(pages: &[Value]) -> Result<Vec<PageInfo>, Error> {
-    pages.iter().map(decode_page).collect()
 }
 
 /// The six lifecycle hooks, as `Documents::events` names them.

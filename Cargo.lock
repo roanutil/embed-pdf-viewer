@@ -444,6 +444,7 @@ dependencies = [
  "epdf-geometry",
  "epdf-kernel",
  "futures",
+ "serde_json",
  "thiserror",
  "uniffi",
 ]

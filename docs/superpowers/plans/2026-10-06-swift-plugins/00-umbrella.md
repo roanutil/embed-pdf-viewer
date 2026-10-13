@@ -783,7 +783,7 @@ Page edit returns pages, stage returns pages, and `ViewerHost::pages` already do
 **Interfaces:**
 - Produces: `epdf_ffi::PageInfo { page: PageRef, index: u32, width: f64, height: f64, rotation: u32 }`, `epdf_ffi::page::decode_page(&Value) -> Result<PageInfo, epdf_kernel::Error>`, `epdf_ffi::page::decode_pages(&[Value]) -> Result<Vec<PageInfo>, Error>`. A malformed page errs with code `invalid-state`. The generated Swift name stays `PageInfo`, so `Exports.swift` doesn't change.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `crates/epdf-ffi/src/page.rs` with only the tests:
 
@@ -823,12 +823,12 @@ mod tests {
 
 Add `pub mod page;` to `crates/epdf-ffi/src/lib.rs`.
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `cargo test -p epdf-ffi page::`
 Expected: FAIL to compile, `cannot find function decode_page` and `cannot find type PageInfo`.
 
-- [ ] **Step 3: Move the record and its decoding**
+- [x] **Step 3: Move the record and its decoding**
 
 Add to `crates/epdf-ffi/Cargo.toml` `[dependencies]`:
 
@@ -906,12 +906,12 @@ pub(crate) use epdf_ffi::page::decode_pages;
 
 `crates/epdf-viewer-host/src/lib.rs` keeps `use api::{Lifecycle, decode_pages};` and `pub use api::{..., PageInfo, ...}` unchanged.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS, including `a_document_opens_and_lists_its_pages`, which now decodes through `epdf_ffi::page`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-ffi crates/epdf-viewer-host/src/api.rs
