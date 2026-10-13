@@ -101,6 +101,33 @@ fn an_exclusive_open_closes_its_siblings_and_says_so() {
 }
 
 #[test]
+fn exclusive_events_follow_property_order_not_close_first() {
+    // The TypeScript diffs surfaces in property order over before-then-new
+    // ids, so reopening an id that sorts before its open sibling reports
+    // the open first.
+    let (_thread, shell) = handle();
+    block_on(shell.open_surface("a".into(), tagged("left"))).unwrap();
+    block_on(shell.close_surface("a".into())).unwrap();
+    block_on(shell.open_surface("b".into(), tagged("left"))).unwrap();
+    let events = Arc::new(Events::default());
+    let _sub = shell.subscribe(events.clone());
+    block_on(shell.open_surface("a".into(), tagged("left"))).unwrap();
+    assert!(!block_on(shell.is_open("b".into())).unwrap());
+    let seen = events.0.lock().unwrap().clone();
+    assert_eq!(
+        seen,
+        [
+            ShellEvent::SurfaceOpened {
+                event: ShellSurfaceEvent { id: "a".into(), props_json: None }
+            },
+            ShellEvent::SurfaceClosed {
+                event: ShellSurfaceEvent { id: "b".into(), props_json: None }
+            },
+        ]
+    );
+}
+
+#[test]
 fn menus_stack_in_opening_order() {
     let (_thread, shell) = handle();
     let events = Arc::new(Events::default());
