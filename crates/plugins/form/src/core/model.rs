@@ -4,17 +4,19 @@
 //!
 //! The TypeScript model is keyed JavaScript objects. A numeric key is the
 //! number's string form, so the Rust maps key on
-//! [`epdf_geometry::js::number_to_string`] of the object number.
+//! [`epdf_geometry::js::number_to_string`] of the object number. The maps
+//! keep the objects' key order too: string keys in insertion order, integer
+//! keys first in numeric order ([`sort_js_keys`]).
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use epdf_geometry::Rect;
 use epdf_geometry::js::number_to_string;
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::value::{get, string_of};
+use crate::value::{get, sort_js_keys, string_of};
 
 /// A content-space box (top-left origin, y-down, PDF points): the
 /// TypeScript `Box`.
@@ -45,13 +47,13 @@ pub struct Model {
     /// reference: an update that leaves it alone does not copy it.
     pub snapshot: Option<Rc<Value>>,
     /// fieldKey to index into `snapshot.fields`.
-    pub by_key: Rc<BTreeMap<FieldKey, f64>>,
+    pub by_key: Rc<IndexMap<FieldKey, f64>>,
     /// annotObjectNumber (as a property key) to index into `snapshot.fields`.
-    pub by_widget: Rc<BTreeMap<String, f64>>,
+    pub by_widget: Rc<IndexMap<String, f64>>,
     /// Fields with an in-flight engine write.
-    pub writing: BTreeMap<FieldKey, bool>,
+    pub writing: IndexMap<FieldKey, bool>,
     /// Widget geometry per page: pon, then annotObjectNumber, to a box.
-    pub geom: BTreeMap<String, BTreeMap<String, Box>>,
+    pub geom: IndexMap<String, IndexMap<String, Box>>,
     /// Bumped on every change.
     pub seq: f64,
 }
@@ -80,7 +82,7 @@ pub enum Msg {
     },
     PageGeom {
         page_object_number: f64,
-        boxes: BTreeMap<String, Box>,
+        boxes: IndexMap<String, Box>,
     },
     ClearGeom {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -92,11 +94,11 @@ fn fields_of(snapshot: &Value) -> &[Value] {
     get(snapshot, "fields").and_then(Value::as_array).map_or(&[], Vec::as_slice)
 }
 
-type Index = (Rc<BTreeMap<FieldKey, f64>>, Rc<BTreeMap<String, f64>>);
+type Index = (Rc<IndexMap<FieldKey, f64>>, Rc<IndexMap<String, f64>>);
 
 fn index(snapshot: &Value) -> Index {
-    let mut by_key = BTreeMap::new();
-    let mut by_widget = BTreeMap::new();
+    let mut by_key = IndexMap::new();
+    let mut by_widget = IndexMap::new();
     // `forEach` skips the holes a past-the-end write leaves, which the
     // Rust model holds as nulls.
     for (i, field) in fields_of(snapshot).iter().enumerate().filter(|(_, f)| !f.is_null()) {
@@ -109,6 +111,7 @@ fn index(snapshot: &Value) -> Index {
             }
         }
     }
+    sort_js_keys(&mut by_widget);
     (Rc::new(by_key), Rc::new(by_widget))
 }
 
@@ -123,7 +126,7 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
                 snapshot: Some(snapshot.clone()),
                 by_key,
                 by_widget,
-                writing: BTreeMap::new(),
+                writing: IndexMap::new(),
                 geom: model.geom.clone(),
                 seq,
             })
@@ -156,7 +159,7 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
                 other => other.clone(),
             };
             let mut writing = model.writing.clone();
-            writing.remove(key);
+            writing.shift_remove(key);
             let (by_key, by_widget) = index(&snapshot);
             Rc::new(Model {
                 snapshot: Some(Rc::new(snapshot)),
@@ -169,20 +172,23 @@ pub fn update(model: &Rc<Model>, msg: &Msg) -> Rc<Model> {
         }
         Msg::WriteFailed { key } => {
             let mut writing = model.writing.clone();
-            writing.remove(key);
+            writing.shift_remove(key);
             Rc::new(Model { writing, seq, ..(**model).clone() })
         }
         Msg::PageGeom { page_object_number, boxes } => {
             let mut geom = model.geom.clone();
-            geom.insert(number_key(*page_object_number), boxes.clone());
+            let mut boxes = boxes.clone();
+            sort_js_keys(&mut boxes);
+            geom.insert(number_key(*page_object_number), boxes);
+            sort_js_keys(&mut geom);
             Rc::new(Model { geom, seq, ..(**model).clone() })
         }
         Msg::ClearGeom { page_object_number } => {
             let geom = match page_object_number {
-                None => BTreeMap::new(),
+                None => IndexMap::new(),
                 Some(pon) => {
                     let mut geom = model.geom.clone();
-                    geom.remove(&number_key(*pon));
+                    geom.shift_remove(&number_key(*pon));
                     geom
                 }
             };

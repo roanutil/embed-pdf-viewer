@@ -204,8 +204,18 @@ fn array_index(key: &str) -> Option<u32> {
 /// insertion order.
 pub fn js_key_order(object: serde_json::Map<String, Value>) -> Vec<(String, Value)> {
     let mut entries: Vec<(String, Value)> = object.into_iter().collect();
-    entries.sort_by_key(|(key, _)| array_index(key).map_or((1, 0), |index| (0, index)));
+    entries.sort_by_key(|(key, _)| js_key_rank(key));
     entries
+}
+
+/// Puts an insertion-ordered map's keys in the order `Object.keys` gives
+/// them, the way a plain object holds them after every assignment.
+pub fn sort_js_keys<V>(object: &mut indexmap::IndexMap<String, V>) {
+    object.sort_by(|a, _, b, _| js_key_rank(a).cmp(&js_key_rank(b)));
+}
+
+fn js_key_rank(key: &str) -> (u8, u32) {
+    array_index(key).map_or((1, 0), |index| (0, index))
 }
 
 #[cfg(test)]

@@ -29,6 +29,7 @@ epdf-acrojs = { path = "../acrojs", default-features = false }
 epdf-plugin-interaction = { path = "../interaction", default-features = false }
 epdf-plugin-actions = { path = "../actions", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
+indexmap = { version = "2", features = ["serde"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }

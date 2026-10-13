@@ -2,7 +2,6 @@
 //! alone, the way the TypeScript shares them by reference, so a large form
 //! does not pay a full copy per keystroke.
 
-use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::time::Instant;
 
@@ -34,7 +33,7 @@ fn updates_that_leave_the_snapshot_alone_share_it() {
     let steps = [
         Msg::WriteStart { key: key.clone() },
         Msg::WriteFailed { key: key.clone() },
-        Msg::PageGeom { page_object_number: 1.0, boxes: BTreeMap::new() },
+        Msg::PageGeom { page_object_number: 1.0, boxes: Default::default() },
         Msg::ClearGeom { page_object_number: Some(1.0) },
         Msg::ClearGeom { page_object_number: None },
     ];
