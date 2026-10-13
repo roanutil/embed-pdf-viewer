@@ -38,6 +38,7 @@ uniffi's own assessment and a fair reason not to review it in a diff.
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
 | view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |
+| i18n | `I18nCapability`, `BundleLocaleLoader` | `i18n: I18nConfig(locales: [...], lazyLocales: [...], loader: BundleLocaleLoader())` | `2026-10-06-swift-plugins/13-i18n.md` |
 
 ## What the script assembles
 

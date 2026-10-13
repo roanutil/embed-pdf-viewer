@@ -31,7 +31,7 @@ impl Session {
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
         HostTable::install_bytes_resolver();
-        let engine = Rc::new(NativeEngine::new(worker.clone(), post));
+        let engine = Rc::new(NativeEngine::new(worker.clone(), post.clone()));
         let reporter = delegate.clone();
         let options = KernelOptions {
             report: Some(Rc::new(move |error: &Error| {
@@ -74,6 +74,15 @@ impl Session {
         }
         if config.shell {
             plugins.push(epdf_plugin_shell::shell_plugin());
+        }
+        if let Some(i18n) = config.i18n {
+            match i18n.into_plugin_config(post.clone()) {
+                Ok(i18n) => plugins.push(epdf_plugin_i18n::i18n_plugin(i18n)),
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            }
         }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
