@@ -720,7 +720,7 @@ git commit -m "Wire the view-manager plugin into the viewer host"
 - Consumes: the generated `ViewManagerHandle`, `ViewerHost.viewManager()`, `PaneInfo` and the event records.
 - Produces: `ViewManagerCapability` and `PDFViewer.viewManager()`. Methods: `panes()`, `pane(_:)`, `paneOrder()`, `focusedPaneId()`, `pane(holding:)`, `createPane(documentIds:)`, `removePane(_:movingDocumentsTo:)`, `movePane(_:to:)`, `setFocusedPane(_:)`, `splitPane(showing:)`, `setActiveDocument(_:in:)`, `addDocument(_:to:at:)`, `removeDocument(_:from:)`, `moveDocument(_:within:to:)`, `moveDocument(_:from:to:at:)`, and `events`. Document arguments are ids (`PDFDocument.id`), because `PaneInfo.documentIds` is.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ViewManagerTests.swift`:
 
@@ -815,7 +815,7 @@ extension BaseSuite {
 
 There's no `aClosedDocumentsCapabilityThrows` (the capability belongs to no document) and no cancellation test (no member takes a token), as the umbrella allows for a workspace plugin. `aDestroyedViewersCapabilityThrows` stands in for the first.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -824,7 +824,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'viewManager'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/ViewManager.swift`:
 
@@ -953,7 +953,7 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -962,7 +962,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `ViewManagerTests` with 7 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/ViewManager.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/ViewManagerTests.swift
