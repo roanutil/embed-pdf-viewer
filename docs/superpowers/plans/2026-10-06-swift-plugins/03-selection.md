@@ -1315,7 +1315,7 @@ git commit -m "Add the Swift selection capability"
 **Files:**
 - Create: `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift`
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 ```swift
 import CustomDump
@@ -1419,12 +1419,12 @@ extension BaseSuite {
 
 The first page of `report.pdf` contains "Report" (the search tests in `crates/epdf-viewer-host/tests/viewer_host.rs` find it). If the 20-character range on page 0 includes a character PDFium reports as two UTF-16 units, compare with `>= 20` instead; the point of the test is that cancellation doesn't wedge the next read.
 
-- [ ] **Step 2: Run them**
+- [x] **Step 2: Run them**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests)`
 Expected: TEST SUCCEEDED, including 7 `SelectionTests`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests/SelectionTests.swift
