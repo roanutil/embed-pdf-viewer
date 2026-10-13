@@ -32,6 +32,7 @@ use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
+use epdf_plugin_link::ffi::LinkHandle;
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_render::ffi::RenderHandle;
@@ -335,6 +336,17 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_selection::SELECTION, Some(&document_id))?;
             Ok(SelectionHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The links of an open document. Needs `ViewerConfig.link` (and
+    /// `interaction`).
+    pub async fn link(&self, document_id: String) -> Result<Arc<LinkHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_link::LINK, Some(&document_id))?;
+            Ok(LinkHandle::new(cap, post))
         })
         .await
     }

@@ -850,6 +850,7 @@ dependencies = [
  "epdf-plugin-commands",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
+ "epdf-plugin-link",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
  "epdf-plugin-render",

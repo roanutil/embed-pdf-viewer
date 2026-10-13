@@ -1250,7 +1250,7 @@ git commit -m "Export the link plugin through uniffi"
 - Consumes: `LinkHandle::new`.
 - Produces: `ViewerConfig.link: bool`; `ViewerHost::link(document_id: String) -> Result<Arc<LinkHandle>, ViewerError>`.
 
-- [ ] **Step 1: Wire it**
+- [x] **Step 1: Wire it**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical:
 
@@ -1290,12 +1290,12 @@ epdf-plugin-link = { path = "../plugins/link", default-features = false, feature
     }
 ```
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `cargo build -p epdf-viewer-host`
 Expected: builds. Task 5 tests it.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
