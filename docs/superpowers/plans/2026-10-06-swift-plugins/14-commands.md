@@ -83,7 +83,7 @@ commands has optional `i18n` and `shell` (`crates/plugins/commands/src/lib.rs`).
 - Consumes: `epdf_ffi::{ForeignSettle, HostError, KernelPost, PluginErrorInfo, RegistrationHandle, ViewerError}` (umbrella Task 0c adds `ForeignSettle`, `HostError` and `RegistrationHandle`).
 - Produces: `CommandDefinition` record, `CommandHook { Run, Enabled, Active, Visible, IconAccent }`, `CommandPanel { id, exclusive }`, `CommandContext { command_id, document_id, args_json }`, `CommandRunner` foreign trait (`run`, `derive`, `icon_accent`), `CommandCompletion` object (`finish()`, `fail(detail)`), and `fn into_def(self, post: KernelPost) -> Result<CommandDef, Error>` on `CommandDefinition`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-commands -b research/swift-commands research/swift-plugins
@@ -95,7 +95,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Fetch PDFium first as `platforms/apple/README.md` describes. Keep the size for the final commit message.
 
-- [ ] **Step 2: Add the feature**
+- [x] **Step 2: Add the feature**
 
 In `crates/plugins/commands/Cargo.toml`, under `[features]`:
 
@@ -132,7 +132,7 @@ uniffi::setup_scaffolding!();
 
 In `crates/plugins/commands/src/contract.rs`, add `#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]` under the `#[derive(...)]` line of `IconAccent` and of `ResolvedCommand`. Every field of both is a `String`, `bool`, `Vec<String>` or `Option` of those (or of `IconAccent`), so they derive in place.
 
-- [ ] **Step 3: Write the failing definition tests**
+- [x] **Step 3: Write the failing definition tests**
 
 Create `crates/plugins/commands/tests/ffi.rs`:
 
@@ -241,12 +241,12 @@ fn a_definition_with_neither_is_a_routing_command() {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they fail**
+- [x] **Step 4: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_commands::ffi`".
 
-- [ ] **Step 5: Write the definition records in `crates/plugins/commands/src/ffi.rs`**
+- [x] **Step 5: Write the definition records in `crates/plugins/commands/src/ffi.rs`**
 
 ```rust
 //! The commands plugin through uniffi: typed records, one workspace handle,
@@ -443,12 +443,12 @@ impl CommandDefinition {
 
 `CommandDef`'s fields are `pub` (`crates/plugins/commands/src/contract.rs`), so this builds it field by field from `CommandDef::new`.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-commands --features uniffi --test ffi`
 Expected: PASS, 3 tests.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/commands

@@ -17,6 +17,12 @@ pub mod controller;
 pub mod model;
 pub mod registry;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 #[cfg(feature = "harness")]
 pub mod harness;
 
