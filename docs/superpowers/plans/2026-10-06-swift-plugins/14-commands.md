@@ -1602,17 +1602,17 @@ git commit -m "Add EmbedPDF's CommandsCapability and a closure-backed CommandHan
 
 Append `commands` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | commands | `CommandsCapability`, `CommandHandler` | `commands: true` | `2026-10-06-swift-plugins/14-commands.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entry delivered**
+- [x] **Step 3: Mark the spec entry delivered**
 
 In `docs/superpowers/plans/2026-10-01-swift-package.md` Appendix A §A.4, change `**commands** (W, optional `i18n`, `shell`).` to `**commands** (W, optional `i18n`, `shell`), delivered by 2026-10-06-swift-plugins/14-commands.md.` and leave the rest of the entry alone.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-commands --features uniffi
@@ -1628,7 +1628,7 @@ stat -f%z target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 
 Expected: every command passes.
 
-- [ ] **Step 5: Commit, with the archive sizes**
+- [x] **Step 5: Commit, with the archive sizes**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
