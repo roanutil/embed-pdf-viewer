@@ -249,7 +249,7 @@ git commit -m "Add the pointer records to epdf-ffi"
 
 The member list matches `crates/plugins/interaction/src/harness.rs` `MEMBERS` (23 entries): the five `on*` hooks fold into `subscribe`.
 
-- [ ] **Step 1: Add the feature**
+- [x] **Step 1: Add the feature**
 
 In `crates/plugins/interaction/Cargo.toml`, under `[features]`:
 
@@ -299,7 +299,7 @@ In `crates/plugins/interaction/src/controller.rs`, at the end of the `impl Inter
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/interaction/tests/ffi.rs`:
 
@@ -668,12 +668,12 @@ fn closing_the_document_ends_its_subscriptions() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_interaction::ffi`".
 
-- [ ] **Step 4: Write `ffi.rs`, the records and conversions**
+- [x] **Step 4: Write `ffi.rs`, the records and conversions**
 
 ```rust
 //! The interaction plugin through uniffi: the pointer hub as one handle,
@@ -915,7 +915,7 @@ fn gesture_event(event: &crate::GestureEvent) -> InteractionGestureEvent {
 
 `epdf_ffi::Point` converts from `epdf_geometry::Point` and `epdf_kernel::geometry::PageRef` already (`crates/epdf-ffi/src/geometry.rs`). If `crate::PageHit.page` is the kernel `PageRef` (it is: `contract.rs` imports `epdf_kernel::geometry::PageRef`), the `.into()` calls above resolve to those impls.
 
-- [ ] **Step 5: Write `ffi.rs`, the foreign handler and its adapter**
+- [x] **Step 5: Write `ffi.rs`, the foreign handler and its adapter**
 
 ```rust
 /// A pointer handler a foreign gesture source implements. The hub routes
@@ -988,7 +988,7 @@ impl crate::InteractionHandler for ForeignHandler {
 }
 ```
 
-- [ ] **Step 6: Write `ffi.rs`, the handle**
+- [x] **Step 6: Write `ffi.rs`, the handle**
 
 ```rust
 /// The capability, if its document is still open.
@@ -1221,7 +1221,7 @@ impl InteractionHandle {
 }
 ```
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-interaction --features uniffi --test ffi`
 Expected: PASS, 15 tests.
@@ -1229,7 +1229,7 @@ Expected: PASS, 15 tests.
 Run: `cargo test -p epdf-plugin-interaction`
 Expected: PASS, the conformance vectors and `tests/api.rs` unchanged.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/interaction
