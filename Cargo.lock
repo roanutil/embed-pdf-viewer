@@ -590,15 +590,18 @@ name = "epdf-plugin-link"
 version = "0.0.0"
 dependencies = [
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
  "epdf-plugin-stage",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

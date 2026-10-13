@@ -614,7 +614,7 @@ git commit -m "Map page.annotations.list to the native engine's listRawPage, ref
 
 That's the 13 entries of `crates/plugins/link/src/harness.rs` `MEMBERS`, with `onActivated` and `onLoaded` folded into `subscribe`.
 
-- [ ] **Step 1: Add the feature and `lifetime()`**
+- [x] **Step 1: Add the feature and `lifetime()`**
 
 In `crates/plugins/link/Cargo.toml`:
 
@@ -657,7 +657,7 @@ In `crates/plugins/link/src/controller.rs`, in `impl LinkCapability`:
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/link/tests/ffi.rs`:
 
@@ -894,12 +894,12 @@ fn closing_the_document_ends_link_subscriptions() {
 
 `project_links` computes bounds from the DTO's `rect` and the page's crop box (`crates/plugins/link/src/source.rs`), so the expected `(40, 70, 280, 30)` follows from a 600 by 400 crop. If `pdf_to_content_rect` rounds or offsets differently, read its result once and fix the expectation to it, not the other way round.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-link --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_link::ffi`".
 
-- [ ] **Step 4: Write `ffi.rs`**
+- [x] **Step 4: Write `ffi.rs`**
 
 ```rust
 //! The link plugin through uniffi: a page's links, what each targets, and
@@ -1226,7 +1226,7 @@ impl LinkHandle {
 
 `page_refs` is private in `controller.rs`; make it `pub(crate)` so `ffi.rs` can call it. `epdf_annotation_core::PageRef` converts into `epdf_ffi::PageRef` through Task 1's impls.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-plugin-link --features uniffi --test ffi`
 Expected: PASS, 13 tests.
@@ -1234,7 +1234,7 @@ Expected: PASS, 13 tests.
 Run: `cargo test -p epdf-plugin-link`
 Expected: PASS, conformance unchanged.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/link
