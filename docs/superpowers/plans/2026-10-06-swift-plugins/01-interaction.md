@@ -2184,7 +2184,7 @@ git commit -m "Test the Swift interaction and feedback capabilities"
 
 `2026-10-01-swift-package.md` Appendix A §A.2 asks for this before gestures are built on `dispatch_pointer`. At 120 Hz a frame is 8.33 ms. A sample that takes longer than one frame to reach its handler makes a drag lag visibly, so p95 under 8.33 ms is the bar.
 
-- [ ] **Step 1: Write the test**
+- [x] **Step 1: Write the test**
 
 ```swift
 import EmbedPDF
@@ -2247,7 +2247,7 @@ extension BaseSuite {
 
 `sample(_:page:x:)` is the helper in `InteractionTests.swift`; both files are in the same test target.
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `(cd platforms/apple/EmbedPDF && EMBEDPDF_LATENCY=1 xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/PointerLatencyTests)`
 
@@ -2255,11 +2255,11 @@ Run: `(cd platforms/apple/EmbedPDF && EMBEDPDF_LATENCY=1 xcodebuild test -scheme
 
 Expected: TEST SUCCEEDED, with one `pointer latency p50=... p95=... max=...` line in the log. If p95 is over 8.33 ms, the test fails. Don't loosen the bar. Record the numbers, then profile the hop (Instruments' Time Profiler on the kernel thread), and stop the plan to raise it with the user: plan 02's gestures assume this budget holds.
 
-- [ ] **Step 3: Write `docs/research/swift-pointer-latency.md`**
+- [x] **Step 3: Write `docs/research/swift-pointer-latency.md`**
 
 Record the machine, macOS, Xcode, simulator, git SHA, and the three numbers from the log, in a table with one row per run (three runs). Add one paragraph saying whether p95 is under one 120 Hz frame and what that means for plan 02's gestures. The simulator is a proxy for a device, as `docs/research/swift-bridge-benchmarks.md` says for the bridge numbers; B5's signed device run adds a device row.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PointerLatencyTests.swift docs/research/swift-pointer-latency.md
