@@ -1405,7 +1405,7 @@ git commit -m "Wire the page-edit plugin into the viewer host"
 - Consumes: the generated `PageEditHandle`, `ViewerHost.pageEdit(documentId:)`, and the records from Task 2.
 - Produces: `PageEditCapability` and `PDFViewer.pageEdit(for:)`. Methods: `canEdit()`, `rotate(_:by:)`, `setRotation(_:of:)`, `movePages(_:to:)`, `deletePages(_:)`, `insertBlank(_:)`, `insert(contentsOf:options:)`, `insert(_:from:at:)`, `duplicate(_:at:)`, `extract(_:)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PageEditTests.swift`:
 
@@ -1523,7 +1523,7 @@ extension BaseSuite {
 
 There's no `droppingTheStreamUnsubscribes`: page edit has no event stream of its own. `anEditIsObservedAsPagesChanged` covers the events an edit does cause.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1532,7 +1532,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: FAIL to compile, `value of type 'PDFViewer' has no member 'pageEdit'`.
 
-- [ ] **Step 3: Write the capability**
+- [x] **Step 3: Write the capability**
 
 Create `platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/PageEdit.swift`:
 
@@ -1641,7 +1641,7 @@ extension PDFViewer {
 
 `ViewerConfig(pageEdit: true)` compiles because the field has `#[uniffi(default = false)]`, so every other argument defaults.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1650,7 +1650,7 @@ bash platforms/apple/build-xcframework.sh
 
 Expected: PASS, every suite, `PageEditTests` with 9 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/PageEdit.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/PageEditTests.swift
