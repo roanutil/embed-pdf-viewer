@@ -10,6 +10,7 @@
 pub mod ports;
 pub mod sandbox;
 
+use std::rc::Rc;
 use std::sync::Arc;
 
 use epdf_acrojs as acrojs;
@@ -22,8 +23,8 @@ use serde_json::Value;
 use crate::ActionsCapability;
 use crate::contract::{
     self as plugin, ActionDiagnostic, ActionNodeStatus, ActionOrigin, ActionPolicy,
-    ActionPolicyPatch, ActionResultStatus, ActionTriggerEvent, DocumentTriggerEvent, PageEventKind,
-    PdfAnnotationEventKind, PdfFieldEventKind,
+    ActionPolicyPatch, ActionResultStatus, ActionTriggerEvent, DocumentTriggerEvent, OpenSequence,
+    PageEventKind, PdfAnnotationEventKind, PdfFieldEventKind, TriggerGates,
 };
 
 fn invalid(message: String) -> Error {
@@ -675,5 +676,44 @@ impl ActionsHandle {
             );
         });
         subscription
+    }
+}
+
+/// `actionsPlugin(config)` as Swift configures it. Task 5 adds JavaScript.
+#[derive(Clone, Debug, Default, uniffi::Record)]
+pub struct ActionsConfig {
+    /// Row-wise overrides of the default policy.
+    #[uniffi(default = None)]
+    pub policy: Option<ActionPolicyPatch>,
+    /// Trigger-family gates, default all on.
+    #[uniffi(default = None)]
+    pub triggers: Option<TriggerGates>,
+    /// When the document-open sequence fires. Default `auto`: when a UI
+    /// adapter installs or on the first user dispatch.
+    #[uniffi(default = None)]
+    pub open_sequence: Option<OpenSequence>,
+    /// Local minus UTC, in minutes, for script dates. Fixed for the
+    /// viewer's lifetime. Default zero.
+    #[uniffi(default = None)]
+    pub utc_offset_minutes: Option<i32>,
+}
+
+impl ActionsConfig {
+    /// `observer_error` is where a throwing observer on one of the five hooks
+    /// goes.
+    pub fn into_plugin_config(
+        self,
+        observer_error: Option<Rc<dyn Fn(&str, &Error)>>,
+    ) -> crate::ActionsConfig {
+        crate::ActionsConfig {
+            policy: self.policy,
+            triggers: self.triggers,
+            open_sequence: self.open_sequence,
+            javascript: None,
+            observer_error,
+            host_utc_offset_minutes: self.utc_offset_minutes.map(|minutes| {
+                Rc::new(move |_now: f64| f64::from(minutes)) as Rc<dyn Fn(f64) -> f64>
+            }),
+        }
     }
 }

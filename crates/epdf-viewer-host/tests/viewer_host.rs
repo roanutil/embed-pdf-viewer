@@ -3,6 +3,8 @@ use std::time::{Duration, Instant};
 
 use epdf_ffi::PageRef;
 use epdf_ffi::{CancelToken, ResourceStatus, ViewerError};
+use epdf_plugin_actions::ffi::{ActionTreeSource, ActionTrigger};
+use epdf_plugin_actions::{ActionNodeStatus, DocumentTriggerEvent, OpenSequence};
 use epdf_plugin_metadata::ffi::MetadataPatch;
 use epdf_plugin_page_edit::ffi::{PageEditBlankOptions, PageEditPlacement, PageEditTurn};
 use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat};
@@ -532,4 +534,47 @@ fn without_its_flag_the_shell_plugin_is_not_installed() {
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
         .unwrap();
     assert!(block_on(host.shell(doc.id)).is_err());
+}
+
+const DOCUMENT_ACTIONS: &str = "tooling/engine-conformance/fixtures/document_actions.pdf";
+
+fn with_actions() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            utc_offset_minutes: None,
+        }),
+        ..ViewerConfig::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_actions_plugin_reads_the_catalog_through_the_native_engine() {
+    let host = with_actions();
+    let doc =
+        block_on(host.open_document(test_support::fixture(DOCUMENT_ACTIONS), options())).unwrap();
+    let actions = block_on(host.actions(doc.id)).unwrap();
+    let open = block_on(actions.action_tree(ActionTreeSource::Document { event: None })).unwrap();
+    assert_eq!(open.and_then(|t| t.root_type()).as_deref(), Some("javascript"));
+    assert!(!block_on(actions.is_scripting_enabled()).unwrap());
+    // Scripting is off, so the will-close script is recognized and inert.
+    let result = block_on(
+        actions.dispatch(ActionTrigger::Document { event: DocumentTriggerEvent::WillClose }),
+    )
+    .unwrap();
+    assert_eq!(result.steps.len(), 1);
+    assert_eq!(result.steps[0].result.nodes[0].status, ActionNodeStatus::Inert);
+}
+
+#[test]
+fn without_its_config_the_actions_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.actions(doc.id)).is_err());
 }

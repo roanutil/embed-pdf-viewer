@@ -8,6 +8,7 @@
 use epdf_ffi::{PluginErrorInfo, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::types::{DocInfo, DocStatus};
+use epdf_plugin_actions::ffi::ActionsConfig;
 use epdf_plugin_render::ffi::RenderConfig;
 use epdf_plugin_search::ffi::SearchConfig;
 use serde_json::Value;
@@ -39,6 +40,10 @@ pub struct ViewerConfig {
     /// document. The app still owns their UI.
     #[uniffi(default = false)]
     pub shell: bool,
+    /// Install `actionsPlugin(config)`: the PDF action engine, a dispatcher
+    /// per document.
+    #[uniffi(default = None)]
+    pub actions: Option<ActionsConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]

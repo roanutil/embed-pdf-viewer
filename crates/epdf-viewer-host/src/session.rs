@@ -75,6 +75,15 @@ impl Session {
         if config.shell {
             plugins.push(epdf_plugin_shell::shell_plugin());
         }
+        if let Some(actions) = config.actions {
+            let observer = delegate.clone();
+            let observer_error: Rc<dyn Fn(&str, &Error)> = Rc::new(move |_hook, error| {
+                observer.report(ViewerError::from(error.clone()));
+            });
+            plugins.push(epdf_plugin_actions::actions_plugin(
+                actions.into_plugin_config(Some(observer_error)),
+            ));
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {

@@ -1785,7 +1785,7 @@ git commit -m "Map actions.read in the native engine"
 - Consumes: `ActionsHandle`; Task 3's `actions.read`.
 - Produces: `epdf_plugin_actions::ffi::ActionsConfig { policy, triggers, open_sequence, utc_offset_minutes }` with `fn into_plugin_config(self, observer_error: Option<Rc<dyn Fn(&str, &Error)>>) -> crate::ActionsConfig`; `ViewerConfig.actions: Option<ActionsConfig>`; `ViewerHost::actions(document_id) -> Result<Arc<ActionsHandle>, ViewerError>`. Task 5 adds `javascript` to `ActionsConfig`.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`:
 
@@ -1832,12 +1832,12 @@ fn without_its_config_the_actions_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host actions`
 Expected: FAIL to compile with "unresolved import `epdf_plugin_actions`".
 
-- [ ] **Step 3: Write the config record**
+- [x] **Step 3: Write the config record**
 
 Append to `crates/plugins/actions/src/ffi.rs`:
 
@@ -1888,7 +1888,7 @@ impl ActionsConfig {
 
 Move the two new `use` lines to the top of the file with the others.
 
-- [ ] **Step 4: Wire the plugin in**
+- [x] **Step 4: Wire the plugin in**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetically:
 
@@ -1935,12 +1935,12 @@ epdf-plugin-actions = { path = "../plugins/actions", default-features = false, f
     }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS, including the two new tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/actions/src/ffi.rs crates/epdf-viewer-host
