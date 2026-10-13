@@ -1118,7 +1118,7 @@ git commit -m "Wire the selection plugin into the viewer host"
 - Consumes: generated `SelectionHandle` and records.
 - Produces: `SelectionCapability` and `PDFViewer.selection(for:)`.
 
-- [ ] **Step 1: Write `Selection.swift`**
+- [x] **Step 1: Write `Selection.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1298,12 +1298,12 @@ extension PDFViewer {
 
 `SearchHit.charStart` and `charCount` are `Double` (`crates/plugins/search/src/ffi.rs`); a hit's values are whole numbers, so `Int64(_)` doesn't lose anything.
 
-- [ ] **Step 2: Build**
+- [x] **Step 2: Build**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild build -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: BUILD SUCCEEDED.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift
