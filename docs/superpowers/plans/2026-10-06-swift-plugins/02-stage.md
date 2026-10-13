@@ -3710,21 +3710,21 @@ git commit -m "Add a SwiftUI scrolling reader over the stage to EmbedPDFUI"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `stage` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, after `interaction`.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | stage | `StageCapability`, `StageReaderView` (EmbedPDFUI) | `stage: StageConfig()` | `2026-10-06-swift-plugins/02-stage.md` |
 ```
 
-- [ ] **Step 3: Mark the spec entries delivered**
+- [x] **Step 3: Mark the spec entries delivered**
 
 In `2026-10-01-swift-package.md` Appendix A, change `**stage** (D, optional `actions`).` to `**stage** (D, optional `actions`), delivered by 02-stage.md.`, and in §A.1's render entry change `In B1:` to `Delivered by 02-stage.md:`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-stage --features uniffi
@@ -3740,7 +3740,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before (from `research/swift-plugins`) and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
