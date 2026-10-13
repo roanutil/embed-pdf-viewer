@@ -726,14 +726,17 @@ dependencies = [
 name = "epdf-plugin-stage"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-interaction",
  "epdf-stage-core",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

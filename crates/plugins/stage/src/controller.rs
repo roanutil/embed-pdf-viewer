@@ -201,4 +201,13 @@ impl StageCapability {
     pub fn same(&self, other: &StageCapability) -> bool {
         Rc::ptr_eq(&self.inner, &other.inner)
     }
+
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    #[doc(hidden)]
+    pub fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.ctx.lifetime()
+    }
 }

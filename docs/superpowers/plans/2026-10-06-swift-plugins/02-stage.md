@@ -427,7 +427,7 @@ git commit -m "Add the shared view records to epdf-ffi"
 - Consumes: Task 1's records and helpers; `epdf_plugin_stage::{StageSettings, PartialSettings, FlowMode, LayoutKind, ScrollBehaviorKind, GridColumns, ColumnsPolicy, Gap, ArrivalAlignValue, ArrivalAlignment, PartialArrivalAlignment, VisiblePage, Viewpoint, StageViewState, StageScrollToOptions, GoToOptions, RevealWord, RevealAnchorValue, RevealAnchor, RevealZoom, RevealZoomWord, RevealOptions, PageHit, StageZoomMode, ZoomTarget, ZoomToOptions, BoxQuery, Orientation, ResponsiveRule, RuleWhen}` and `settings::SettingKey` (`crates/plugins/stage/src/contract.rs`, `settings.rs`).
 - Produces (all in `epdf_plugin_stage::ffi`): enums `StageFlow`, `StageLayout`, `StageScrollBehavior`, `StageGridColumns { Square, Auto, Count { count: u32 } }`, `StageGap { World { units }, Px { px } }`, `StageArrivalAlignValue { Keep, Align { value: StageAlignValue } }`, `StageSettingKey`, `StageOrientation`, `StageRevealWord`, `StageRevealAnchorValue { Word { word }, Fraction { value } }`, `StageRevealZoom { Keep, Fit, FitWidth, FitHeight, Level { level } }`, `StageZoomMode { Mode { mode: ZoomMode }, Custom }`, `StageZoomTarget { Level { level }, Spec { spec: ZoomSpec } }`; records `StageArrivalAlignment`, `StagePartialArrivalAlignment`, `StageSettings`, `StageSettingsPatch`, `StageBoxQuery`, `StageResponsiveRule { name, when: StageBoxQuery, settings: Option<StageSettingsPatch> }`, `StagePageTransform`, `StageVisiblePage`, `StageViewpoint`, `StageViewState`, `StageScrollToOptions`, `StageGoToOptions`, `StageRevealAnchor`, `StageRevealOptions`, `StagePageHit`, `StageConfig { settings: Option<StageSettingsPatch>, responsive: Option<Vec<StageResponsiveRule>>, frames: bool }`. Link (plan 04) consumes `StageRevealOptions`.
 
-- [ ] **Step 1: Add the feature and `lifetime()`**
+- [x] **Step 1: Add the feature and `lifetime()`**
 
 In `crates/plugins/stage/Cargo.toml`:
 
@@ -470,7 +470,7 @@ In `crates/plugins/stage/src/controller.rs`, in `impl StageCapability` (after `s
     }
 ```
 
-- [ ] **Step 2: Write the failing conversion tests**
+- [x] **Step 2: Write the failing conversion tests**
 
 `crates/plugins/stage/tests/ffi.rs` (Task 3 adds the handle tests to this file):
 
@@ -540,12 +540,12 @@ fn reveal_options_and_zoom_targets_convert() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: FAIL to compile, "unresolved import `epdf_plugin_stage::ffi`".
 
-- [ ] **Step 4: Write the records half of `ffi.rs`**
+- [x] **Step 4: Write the records half of `ffi.rs`**
 
 ```rust
 //! The stage plugin through uniffi: the viewport lens as one handle.
@@ -1358,12 +1358,12 @@ impl Default for StageConfig {
 
 `StageSettings`, `StageViewState`, `StageScrollToOptions` and `StageConfig` are both plugin types and FFI records here. The FFI records own the bare names in this module, so the plugin's are never imported and are always spelled `crate::StageSettings` and so on. Importing one of them as well is a name clash (E0255).
 
-- [ ] **Step 5: Run the conversion tests**
+- [x] **Step 5: Run the conversion tests**
 
 Run: `cargo test -p epdf-plugin-stage --features uniffi --test ffi`
 Expected: PASS, 5 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stage
