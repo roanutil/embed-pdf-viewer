@@ -219,7 +219,7 @@ Run once, before any other task. Every Task 0 step runs in the integration workt
 - Modify: `.github/workflows/plugin-rust.yml`
 - Modify: `platforms/apple/README.md`
 
-- [ ] **Step 1: Create the integration branch and its worktree**
+- [x] **Step 1: Create the integration branch and its worktree**
 
 ```bash
 git branch research/swift-plugins research/multi-platform-rust-core-impl-plugins
@@ -227,7 +227,7 @@ git worktree add .claude/worktrees/swift-plugins-integration research/swift-plug
 cd .claude/worktrees/swift-plugins-integration
 ```
 
-- [ ] **Step 2: Turn the uniffi test step into a list**
+- [ ] **Step 2: Turn the uniffi test step into a list** (skipped: no CI edits on this branch)
 
 The step `2026-10-01-swift-package.md` Task 10 added is one long line, so every plan would conflict on it. Replace it with:
 
@@ -250,12 +250,12 @@ The step `2026-10-01-swift-package.md` Task 10 added is one long line, so every 
 
 Each plan appends its crate name to `crates=( ... )`.
 
-- [ ] **Step 3: Run the step locally**
+- [ ] **Step 3: Run the step locally** (skipped with Step 2)
 
 Run the `run:` body in bash from the repository root.
 Expected: the metadata, search and render `ffi` tests pass, as they did before the edit.
 
-- [ ] **Step 4: Add the plugin table to the README**
+- [x] **Step 4: Add the plugin table to the README**
 
 Under a new `## Plugins` heading in `platforms/apple/README.md`:
 
@@ -269,7 +269,7 @@ Under a new `## Plugins` heading in `platforms/apple/README.md`:
 | render | `RenderCapability` | `render: RenderConfig()` | `2026-10-01-swift-package.md` Task 8 |
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md
