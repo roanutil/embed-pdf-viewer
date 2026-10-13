@@ -554,10 +554,13 @@ dependencies = [
 name = "epdf-plugin-i18n"
 version = "0.0.0"
 dependencies = [
+ "epdf-ffi",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
