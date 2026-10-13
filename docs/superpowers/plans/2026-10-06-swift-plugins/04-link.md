@@ -1633,7 +1633,7 @@ git commit -m "Add the Swift link capability"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 Append `link` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml`, in plan-number order.
 
@@ -1647,7 +1647,7 @@ Append `link` to the `crates=( ... )` list in `.github/workflows/plugin-rust.yml
 
 In `2026-10-01-swift-package.md` Appendix A §A.2, change `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`).` to `**link** (D, requires `interaction`, optional `stage`, `annotation`, `actions`), delivered by 04-link.md.` In Appendix C, split the `page.annotations.list` row: `page.annotations.list` is mapped by 04-link.md; `create`, `update` and `delete` stay B2.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-link --features uniffi
@@ -1662,7 +1662,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass. Note the simulator `libepdf_viewer_host.a` size before and after.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
@@ -1671,7 +1671,7 @@ git commit -m "List link in CI and the Swift README
 libepdf_viewer_host.a (simulator, release): <before> -> <after> bytes."
 ```
 
-- [ ] **Step 6: Merge into the integration branch**
+- [ ] **Step 6: Merge into the integration branch** (left to the orchestrator)
 
 In `.claude/worktrees/swift-plugins-integration`:
 
@@ -1681,7 +1681,7 @@ git merge --no-ff research/swift-link
 
 Resolve shared-file conflicts by keeping both blocks in plan-number order.
 
-- [ ] **Step 7: Rerun on the integration branch**
+- [ ] **Step 7: Rerun on the integration branch** (left to the orchestrator)
 
 ```bash
 bash platforms/apple/build-xcframework.sh
@@ -1692,7 +1692,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: all pass.
 
-- [ ] **Step 8: Remove the worktree and branch**
+- [ ] **Step 8: Remove the worktree and branch** (left to the orchestrator)
 
 ```bash
 git worktree remove .claude/worktrees/swift-link
