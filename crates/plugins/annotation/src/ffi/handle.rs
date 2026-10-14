@@ -29,6 +29,24 @@ impl AnnotationHandle {
 
 #[uniffi::export]
 impl AnnotationHandle {
+    /// Install the host's file picker, or `None` to remove it. Without one,
+    /// a tool that prompts for a file declines the click.
+    pub async fn set_file_picker(
+        &self,
+        picker: Option<Arc<dyn super::AnnotationFilePicker>>,
+    ) -> Result<(), ViewerError> {
+        let post = self.post.clone();
+        self.cap
+            .call(move |c| {
+                let provider = picker.map(|p| super::picker::provider(p, post));
+                // The remover is dropped: the slot is last-write-wins, and
+                // `None` clears it.
+                let _ = open(c)?.set_file_picker_provider(provider);
+                Ok(())
+            })
+            .await
+    }
+
     pub fn drafts(&self) -> Arc<super::AnnotationDraftsHandle> {
         Arc::new(super::AnnotationDraftsHandle { cap: self.cap.clone() })
     }

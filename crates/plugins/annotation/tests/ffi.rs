@@ -367,3 +367,129 @@ fn an_ink_draft_has_nothing_to_finish_before_drawing() {
     assert!(!block_on(drafts.has_creation_draft()).unwrap());
     assert_eq!(block_on(drafts.finish_creation_draft(token())).unwrap(), None);
 }
+
+use epdf_plugin_annotation::ffi::{
+    AnnotationFilePicker, AnnotationFilePromptRequest, AnnotationPickedFile,
+};
+
+/// Make `id` the hub's active tool, as a toolbar tap would.
+fn activate(thread: &KernelThread<TestKernel>, id: &'static str) {
+    block_on(thread.call(move |k| {
+        k.capability(&epdf_plugin_interaction::INTERACTION).unwrap().activate_tool(id, None)
+    }))
+    .unwrap()
+    .unwrap();
+}
+
+struct OnePng(Mutex<Vec<AnnotationFilePromptRequest>>);
+
+#[async_trait::async_trait]
+impl AnnotationFilePicker for OnePng {
+    async fn pick(&self, request: AnnotationFilePromptRequest) -> Option<AnnotationPickedFile> {
+        self.0.lock().unwrap().push(request);
+        Some(AnnotationPickedFile {
+            bytes: include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png")
+                .to_vec(),
+            name: Some("tiny.png".into()),
+            mime_type: Some("image/png".into()),
+        })
+    }
+}
+
+struct Cancels;
+
+#[async_trait::async_trait]
+impl AnnotationFilePicker for Cancels {
+    async fn pick(&self, _request: AnnotationFilePromptRequest) -> Option<AnnotationPickedFile> {
+        None
+    }
+}
+
+#[test]
+fn a_requested_stamp_asks_the_picker_and_places_what_it_returns() {
+    let (thread, annotations) = handle_over(vec![]);
+    block_on(annotations.refresh(token())).unwrap();
+    activate(&thread, "stamp");
+    let picker = Arc::new(OnePng(Mutex::new(Vec::new())));
+    block_on(annotations.set_file_picker(Some(picker.clone()))).unwrap();
+    assert!(
+        block_on(annotations.drafts().request_stamp_at(
+            PageRef { page_object_number: 1 },
+            epdf_ffi::Point { x: 100.0, y: 100.0 },
+            None,
+        ))
+        .unwrap()
+    );
+    // The pick runs off-thread, then posts back; wait for the engine create.
+    // (The fake engine answers with a square-shaped DTO, which the plugin
+    // can't sync as a stamp, so no `Created` event follows; the create call
+    // is what this pins.)
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let draft = loop {
+        let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().clone()))).unwrap();
+        if let Some(draft) = sent.last() {
+            break draft.clone();
+        }
+        assert!(std::time::Instant::now() < deadline, "no stamp was created");
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    };
+    assert_eq!(draft["subtype"], "stamp", "{draft}");
+    assert!(draft.to_string().contains("$bytes"), "{draft}");
+    assert_eq!(picker.0.lock().unwrap().len(), 1);
+}
+
+#[test]
+fn a_cancelled_pick_places_nothing() {
+    let (thread, annotations) = handle_over(vec![]);
+    block_on(annotations.refresh(token())).unwrap();
+    activate(&thread, "stamp");
+    block_on(annotations.set_file_picker(Some(Arc::new(Cancels)))).unwrap();
+    assert!(
+        block_on(annotations.drafts().request_stamp_at(
+            PageRef { page_object_number: 1 },
+            epdf_ffi::Point { x: 100.0, y: 100.0 },
+            None,
+        ))
+        .unwrap()
+    );
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    block_on(thread.call(|_| ())).unwrap();
+    assert!(block_on(annotations.list(None)).unwrap().is_empty());
+    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().len()))).unwrap();
+    assert_eq!(sent, 0);
+}
+
+#[test]
+fn a_pick_that_lands_after_a_tool_change_places_nothing() {
+    struct Slow;
+    #[async_trait::async_trait]
+    impl AnnotationFilePicker for Slow {
+        async fn pick(&self, _r: AnnotationFilePromptRequest) -> Option<AnnotationPickedFile> {
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            Some(AnnotationPickedFile {
+                bytes: include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png")
+                    .to_vec(),
+                name: None,
+                mime_type: None,
+            })
+        }
+    }
+    let (thread, annotations) = handle_over(vec![]);
+    block_on(annotations.refresh(token())).unwrap();
+    activate(&thread, "stamp");
+    block_on(annotations.set_file_picker(Some(Arc::new(Slow)))).unwrap();
+    assert!(
+        block_on(annotations.drafts().request_stamp_at(
+            PageRef { page_object_number: 1 },
+            epdf_ffi::Point { x: 100.0, y: 100.0 },
+            None,
+        ))
+        .unwrap()
+    );
+    // The user switches tools while the picker is still open.
+    activate(&thread, "note");
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert!(block_on(annotations.list(None)).unwrap().is_empty());
+    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().len()))).unwrap();
+    assert_eq!(sent, 0);
+}

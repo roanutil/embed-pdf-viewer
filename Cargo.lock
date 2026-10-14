@@ -512,6 +512,7 @@ dependencies = [
 name = "epdf-plugin-annotation"
 version = "0.0.0"
 dependencies = [
+ "async-trait",
  "epdf-acrojs",
  "epdf-annotation-core",
  "epdf-ffi",

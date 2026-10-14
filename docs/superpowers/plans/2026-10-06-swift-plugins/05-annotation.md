@@ -2968,7 +2968,7 @@ git commit -m "Export the annotation drafts and threads handles"
 
 The provider is called on the kernel thread and returns a kernel `Promise`. The foreign `pick` is an async Swift call that completes on Swift's executor, which the kernel's single-threaded runtime can't poll. The adapter runs it on a short-lived thread with `futures::executor::block_on` and posts the answer back with `KernelPost`. One thread per prompt is fine: a prompt is a user tapping "choose image".
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -3061,12 +3061,12 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
 
 Add `async-trait = "0.1"` to `[dev-dependencies]`. UniFFI's async foreign traits are implemented in Rust tests through `#[async_trait]` (the uniffi 0.32 docs, "Async foreign traits"); check `rg -n 'async_trait' ~/.cargo/registry/src/*/uniffi_macros-0.32.0/src` shows the macro accepts it before relying on it, and if it doesn't, declare the trait method `async fn` and implement it with a plain `async fn` in the test.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named set_file_picker`.
 
-- [ ] **Step 3: Write `ffi/picker.rs`**
+- [x] **Step 3: Write `ffi/picker.rs`**
 
 ```rust
 use std::rc::Rc;
@@ -3151,7 +3151,7 @@ pub(crate) fn provider(picker: Arc<dyn AnnotationFilePicker>, post: KernelPost) 
 
 Add `async-trait = "0.1"` to the annotation crate's `[dependencies]` under the `uniffi` feature (`async-trait = { version = "0.1", optional = true }`, and `"dep:async-trait"` in the feature list).
 
-- [ ] **Step 4: Add `set_file_picker`**
+- [x] **Step 4: Add `set_file_picker`**
 
 In `ffi/handle.rs`, inside the export block:
 
@@ -3172,12 +3172,12 @@ In `ffi/handle.rs`, inside the export block:
     }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: all pass, including the 3 picker tests (18 in `ffi`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/annotation
