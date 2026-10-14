@@ -106,6 +106,14 @@ impl FormCapability {
 
     // ── plumbing over `ctx` ───────────────────────────────────────────────────
 
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     pub(crate) fn cx(&self) -> &Controller<FormState, FormAction> {
         &self.0.cx
     }
