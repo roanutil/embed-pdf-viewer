@@ -654,15 +654,18 @@ name = "epdf-plugin-redaction"
 version = "0.0.0"
 dependencies = [
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
  "epdf-plugin-search",
  "epdf-plugin-selection",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -858,6 +861,7 @@ dependencies = [
  "epdf-plugin-link",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
+ "epdf-plugin-redaction",
  "epdf-plugin-render",
  "epdf-plugin-search",
  "epdf-plugin-selection",

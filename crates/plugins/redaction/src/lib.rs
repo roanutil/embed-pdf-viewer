@@ -25,6 +25,12 @@ pub mod sync;
 pub mod token;
 pub mod write;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 #[cfg(feature = "harness")]
 pub mod harness;
 

@@ -36,6 +36,7 @@ use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
 use epdf_plugin_link::ffi::LinkHandle;
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_page_edit::ffi::PageEditHandle;
+use epdf_plugin_redaction::ffi::RedactionHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_selection::ffi::SelectionHandle;
@@ -364,6 +365,21 @@ impl ViewerHost {
             let cap =
                 s.kernel.capability(&epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
             Ok(AnnotationHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The redaction capability of an open document. Needs
+    /// `ViewerConfig.redaction` and `ViewerConfig.annotation`; without them
+    /// the kernel refuses the token.
+    pub async fn redaction(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<RedactionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_redaction::REDACTION, Some(&document_id))?;
+            Ok(RedactionHandle::new(cap, post))
         })
         .await
     }

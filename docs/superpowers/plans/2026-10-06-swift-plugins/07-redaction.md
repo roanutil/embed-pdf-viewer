@@ -73,7 +73,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift
 
 Members, under their FFI names (TypeScript name in parentheses where it differs): `pending` (`listPending`), `pending_item` (`getPending`), `pending_count` (`getPendingCount`), `estimate_collateral`, `mark_selection`, `mark_area`, `mark_page`, `mark_matches`, `unmark`, `clear_pending`, `update_label`, `apply`, `apply_pages`, `apply_all`, `can_mark`, `can_apply`, `is_applying`, `last_result` (`getLastResult`), `subscribe` (`onApplied`, `onPendingChanged`).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-redaction -b research/swift-redaction research/swift-plugins
@@ -82,7 +82,7 @@ cd .claude/worktrees/swift-redaction
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plan 05 has merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` prints a line.
 
-- [ ] **Step 2: Add the feature and the lifetime**
+- [x] **Step 2: Add the feature and the lifetime**
 
 `crates/plugins/redaction/Cargo.toml`, in `[features]`:
 
@@ -129,7 +129,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 `crates/plugins/redaction/tests/ffi.rs`:
 
@@ -394,12 +394,12 @@ fn cancelling_an_apply_before_it_runs_applies_nothing() {
 
 `pending_marks_project_from_the_annotation_plane` asserts `kind: Area` for a DTO with empty `quadPoints`. Read `crates/plugins/redaction/src/read/pending.rs` `regions_of` and the code that picks the kind before running: if the kind comes from another member, set that member in `mark_dto` instead of changing the assertion.
 
-- [ ] **Step 4: Run them to see them fail**
+- [x] **Step 4: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-redaction --features uniffi --test ffi`
 Expected: compile errors, `could not find ffi in epdf_plugin_redaction`.
 
-- [ ] **Step 5: Write `ffi.rs`**
+- [x] **Step 5: Write `ffi.rs`**
 
 ```rust
 //! The redaction plugin through uniffi: one handle over the two-stage
@@ -943,7 +943,7 @@ impl RedactionHandle {
 
 Add `epdf-annotation-core = { path = "../annotation-core", default-features = false }` is already in the crate's `[dependencies]`; nothing to add there.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-redaction --features uniffi --test ffi`
 Expected: 10 passed.
@@ -953,7 +953,7 @@ If `a_label_edit_goes_through_the_plugins_update_label` fails on the styling ass
 Run: `cargo test -p epdf-plugin-redaction`
 Expected: the conformance vectors still pass with the feature off.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/redaction
@@ -975,7 +975,7 @@ git commit -m "Export the redaction plugin through uniffi"
 
 The kernel sends `{kind: "pages", pages: [PageRef]}` or `{kind: "annotations", refs: [<nested ref>]}` (`crates/plugins/redaction/src/write/apply.rs:65-96`). The host reads `{kind: "pages", pageObjectNumbers: [n]}` or `{kind: "annotations", refs: [<flat ref>]}`. Its answer (`RedactionApplyResult`, `redaction.rs:75`) has the scope in the host's spelling and `results[].pageObjectNumber`; the kernel's spelling, which the vectors pin (`tooling/plugin-conformance/vectors/plugins/redaction.json`), is the scope as sent and `results[].page: PageRef`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -1027,12 +1027,12 @@ fn an_apply_result_answers_pages_and_nested_refs() {
 
 Check the event's shape against the host before trusting the last assertion: `crate::session::save::DocumentEventInit::RedactionApplied(value(&result)?)` builds it, and `rg -n 'RedactionApplied' -A8 crates/epdf-engine/src/session/save.rs` shows whether the result sits under `result` or is spread into the event. Match the test JSON to that.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail, `maps("redaction")` answering `false` and `redaction.apply` answering `unsupported`.
 
-- [ ] **Step 3: List the path**
+- [x] **Step 3: List the path**
 
 Add to `PATHS` in `translate.rs` (umbrella Task 0e), one line in plan order:
 
@@ -1042,7 +1042,7 @@ Add to `PATHS` in `translate.rs` (umbrella Task 0e), one line in plan order:
 
 `maps` derives namespaces from `PATHS`, so `maps("redaction")` answers `true` once this line and Step 4's route are in, and `every_routed_path_is_listed` checks the two agree.
 
-- [ ] **Step 4: Add the route and decoder**
+- [x] **Step 4: Add the route and decoder**
 
 `Decode`:
 
@@ -1130,12 +1130,12 @@ fn redaction_result_in(result: &mut Value) {
         }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
@@ -1159,7 +1159,7 @@ git commit -m "Map redaction.apply onto the native host"
 
 The umbrella's cross-plan table lists `redaction: bool`. This plan uses `Option<RedactionConfig>` because the overlay fill colour and label font are the only things a native app sets, and a `bool` can't carry them. Change the umbrella's row in this task's commit, as the umbrella allows.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -1220,12 +1220,12 @@ fn without_its_config_the_redaction_plugin_is_not_installed() {
 
 `SearchHit.page` and `find_all`'s signature come from `crates/plugins/search/src/ffi.rs`; check with `rg -n 'pub async fn find_all' -A6 crates/plugins/search/src/ffi.rs` and adjust the argument list to it.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field redaction on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`:
 
@@ -1268,7 +1268,7 @@ epdf-plugin-redaction = { path = "../plugins/redaction", default-features = fals
 
 In `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`, change row 07's `ViewerConfig` field from `redaction: bool` to `redaction: Option<RedactionConfig>`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. If `applying_a_page_removes_its_marked_text` still finds the text, the engine applied nothing: check `result.results[0].status` first (an `Unchanged` means the marks never reached the page, so look at the `page.annotations.create` translation), then check that `find_all` doesn't serve a cached text layer (the search plugin re-reads on the `redaction.applied` event; if it doesn't, `search.refresh` before the second `find_all` and say so in the test).
@@ -1276,7 +1276,7 @@ Expected: all pass. If `applying_a_page_removes_its_marked_text` still finds the
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md
@@ -1299,12 +1299,12 @@ field is Option<RedactionConfig>."
 - Consumes: the generated `RedactionHandle`, records and `RedactionEventListener`; `SearchQuery` (already re-exported by `Search.swift`); `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`.
 - Produces: `RedactionCapability`, `PDFViewer.redaction(for:)`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: `rg -n 'class RedactionHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds it.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift`:
 
@@ -1422,12 +1422,12 @@ If plan 03 (selection) has merged into `research/swift-plugins`, add:
 
 using plan 03's real select-a-page method name.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/RedactionTests)`
 Expected: build failure, `value of type PDFViewer has no member redaction`.
 
-- [ ] **Step 4: Write `Redaction.swift`**
+- [x] **Step 4: Write `Redaction.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1562,7 +1562,7 @@ extension PDFViewer {
 
 The `ViewerConfig` memberwise initializer UniFFI generates orders arguments as the Rust struct declares its fields. The test passes `interaction:`, `search:`, `annotation:`, `redaction:` in the order the fields sit in `api.rs` after plans 01 to 07; if the compiler asks for another order, follow it.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/RedactionTests)`
 Expected: 6 tests pass (7 with the selection test).
@@ -1570,7 +1570,7 @@ Expected: 6 tests pass (7 with the selection test).
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift
@@ -1586,7 +1586,7 @@ git commit -m "Add EmbedPDF's RedactionCapability"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md` (Appendix A §A.3, the redaction entry)
 
-- [ ] **Step 1: CI and README**
+- [x] **Step 1: CI and README** (README and spec only; the `plugin-rust.yml` line is skipped: no CI edits on this branch)
 
 Append `redaction` to `plugin-rust.yml`'s `crates=( … )`, after `form`. Add the README row:
 
@@ -1596,14 +1596,14 @@ Append `redaction` to `plugin-rust.yml`'s `crates=( … )`, after `form`. Add th
 
 In the spec's §A.3, change `**redaction** (D, requires …)` to begin `**redaction** (D), delivered by 07-redaction.md, requires …`.
 
-- [ ] **Step 2: Record the binary size**
+- [x] **Step 2: Record the binary size**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ls -l ../swift-plugins-integration/target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ```
 
-- [ ] **Step 3: Run the definition of done**
+- [x] **Step 3: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-redaction --features uniffi
@@ -1618,7 +1618,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

@@ -21,6 +21,9 @@ harness = [
   "epdf-plugin-search/harness",
   "epdf-plugin-selection/harness",
 ]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`. `mark_matches`
+# takes search's `SearchQuery` record, so search's exports come along.
+uniffi = ["dep:uniffi", "dep:epdf-ffi", "epdf-plugin-search/uniffi"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
@@ -34,7 +37,18 @@ epdf-plugin-interaction = { path = "../interaction", default-features = false, o
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+epdf-ffi = { path = "../../epdf-ffi", optional = true }
+uniffi = { version = "=0.32.0", optional = true }
+
+[dev-dependencies]
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+plugin-conformance = { path = "../../plugin-conformance" }
+epdf-plugin-interaction = { path = "../interaction" }
 
 [[test]]
 name = "conformance"
 required-features = ["harness"]
+
+[[test]]
+name = "ffi"
+required-features = ["uniffi"]

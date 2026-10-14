@@ -60,6 +60,11 @@ pub struct ViewerConfig {
     /// hover feed when they are installed.
     #[uniffi(default = None)]
     pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
+    /// Install `redactionPlugin(config)`: mark regions, then apply them.
+    /// Needs `annotation` (and so `interaction`); marks from search hits
+    /// need `search`, marks from the text selection need `selection`.
+    #[uniffi(default = None)]
+    pub redaction: Option<epdf_plugin_redaction::ffi::RedactionConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]
