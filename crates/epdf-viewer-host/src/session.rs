@@ -2,6 +2,7 @@
 //! `NativeEngine`, the engine's worker, and the store subscription that
 //! tells the delegate the state moved.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -17,6 +18,8 @@ use crate::native_engine::NativeEngine;
 pub struct Session {
     pub kernel: Kernel,
     worker: EngineWorker,
+    /// The stamp plugin's asset engine thread, once its factory has run.
+    asset_worker: Rc<RefCell<Option<EngineWorker>>>,
     on_change: Unsubscribe,
 }
 
@@ -99,6 +102,22 @@ impl Session {
         if let Some(redaction) = config.redaction {
             plugins.push(epdf_plugin_redaction::redaction_plugin(redaction.into()));
         }
+        let asset_worker: Rc<RefCell<Option<EngineWorker>>> = Rc::default();
+        if let Some(stamp) = config.stamp {
+            // The asset engine starts on the plugin's first open, on its own
+            // engine thread, and is joined with the session.
+            let (slot, assets_post) = (asset_worker.clone(), post.clone());
+            let factory: Rc<dyn Fn() -> Result<epdf_plugin_stamp::AssetEngineRef, Error>> =
+                Rc::new(move || {
+                    let (engine, worker) = NativeEngine::assets(assets_post.clone());
+                    if let Some(old) = slot.borrow_mut().replace(worker) {
+                        old.join();
+                    }
+                    Ok(epdf_plugin_stamp::AssetEngineRef::Ready(Rc::new(engine)))
+                });
+            let asset_engine = epdf_plugin_stamp::AssetEngine::Factory(factory);
+            plugins.push(epdf_plugin_stamp::stamp_plugin(stamp.into_core(Some(asset_engine))));
+        }
         if config.page_edit {
             plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }
@@ -150,12 +169,17 @@ impl Session {
             }
             Ok(())
         }));
-        Ok(Session { kernel, worker, on_change })
+        Ok(Session { kernel, worker, asset_worker, on_change })
     }
 
     /// Dropped once the engine's client thread has closed PDFium.
     pub fn engine_alive(&self) -> Weak<()> {
         self.worker.alive()
+    }
+
+    /// The asset engine's, once the stamp plugin has started it.
+    pub fn asset_engine_alive(&self) -> Option<Weak<()>> {
+        self.asset_worker.borrow().as_ref().map(EngineWorker::alive)
     }
 }
 
@@ -166,5 +190,9 @@ impl Drop for Session {
         // replies post here and fail without blocking, so this join cannot
         // wait on itself. PDFium is closed when it returns.
         self.worker.join();
+        let assets = self.asset_worker.borrow_mut().take();
+        if let Some(worker) = assets {
+            worker.join();
+        }
     }
 }

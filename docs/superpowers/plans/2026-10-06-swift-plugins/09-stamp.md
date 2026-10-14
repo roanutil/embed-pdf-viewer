@@ -1779,7 +1779,7 @@ git commit -m "Export the stamp plugin through uniffi"
 - Consumes: Task 3's `NativeEngine::assets`, Task 4's `StampHandle`, `ffi::StampConfig::into_core`.
 - Produces: `ViewerConfig.stamp: Option<StampConfig>`; `ViewerHost::stamp() -> Result<Arc<StampHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing host test**
+- [x] **Step 1: Write the failing host test**
 
 ```rust
 #[test]
@@ -1821,12 +1821,12 @@ fn a_plain_pdf_imports_one_asset_per_page() {
 
 `read_repo_file` reads a path relative to the workspace root; add it next to `fixture` if the file has none. Check `report.pdf`'s page count with `host.pages` once and put the number in the test.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host stamp`
 Expected: FAIL to compile, no `stamp` on `ViewerConfig`.
 
-- [ ] **Step 3: Wire the host**
+- [x] **Step 3: Wire the host**
 
 `Cargo.toml`:
 
@@ -1894,12 +1894,12 @@ and in `Drop for Session`, after `self.worker.join()`:
     }
 ```
 
-- [ ] **Step 4: Run the host tests**
+- [x] **Step 4: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS. The existing `dropping_the_host_joins_both_threads` still passes; with stamp on and an import done, there are three threads to join, and Task 3's test covers the third.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

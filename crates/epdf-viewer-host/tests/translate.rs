@@ -899,6 +899,15 @@ fn piece_info_paths_carry_their_holder() {
 }
 
 #[test]
+fn an_application_without_piece_info_reads_as_null() {
+    let call = translate("doc-1", "page.pieceInfo.read", Some(4), &[json!("EmbedPDF")], 1).unwrap();
+    let decoded = decode(&call.decode, answer(r#"{"result":null}"#)).unwrap();
+    assert_eq!(decoded.value, Value::Null);
+    let found = decode(&call.decode, answer(r#"{"result":{"entries":{}}}"#)).unwrap();
+    assert_eq!(found.value, json!({ "entries": {} }));
+}
+
+#[test]
 fn named_page_paths_go_out_as_the_host_reads_them() {
     assert!(maps("pages.setName") && maps("pages.removeName"));
     let set = translate(

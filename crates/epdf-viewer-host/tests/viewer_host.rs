@@ -1072,6 +1072,173 @@ fn without_its_config_the_redaction_plugin_is_not_installed() {
     assert!(block_on(host.redaction(doc.id)).is_err());
 }
 
+use epdf_plugin_stamp::ffi::{StampAddAssetInput, StampAssetFilter, StampConfig};
+
+fn with_stamp() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        annotation: Some(AnnotationConfig::default()),
+        stamp: Some(StampConfig::default()),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+fn stamps_pdf() -> Vec<u8> {
+    std::fs::read(test_support::workspace_root().join("packages/default-stamps/en/stamps.pdf"))
+        .unwrap()
+}
+
+#[test]
+fn a_stamp_library_imports_and_places_over_pdfium() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let library =
+        block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new()))
+            .unwrap();
+    let filter = StampAssetFilter { library_id: Some(library.clone()), ..Default::default() };
+    let assets = block_on(stamp.assets(Some(filter))).unwrap();
+    assert!(!assets.is_empty());
+    assert_eq!(block_on(stamp.library(library)).unwrap().unwrap().asset_ids.len(), assets.len());
+    let preview = block_on(stamp.asset_preview(assets[0].id.clone())).unwrap().unwrap();
+    assert_eq!(preview.mime_type.as_deref(), Some("image/png"));
+    assert!(preview.bytes.unwrap().starts_with(b"\x89PNG"));
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let at = epdf_ffi::Point { x: 100.0, y: 100.0 };
+    let placed = block_on(stamp.place_asset(
+        doc.id.clone(),
+        assets[0].id.clone(),
+        page,
+        at,
+        None,
+        None,
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    assert!(block_on(annotations.get(placed)).unwrap().is_some());
+}
+
+#[test]
+fn a_plain_pdf_imports_one_asset_per_page() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let report = test_support::fixture(test_support::REPORT);
+    let library =
+        block_on(stamp.import_library(report, Default::default(), CancelToken::new())).unwrap();
+    let filter = StampAssetFilter { library_id: Some(library), ..Default::default() };
+    let assets = block_on(stamp.assets(Some(filter))).unwrap();
+    // report.pdf has 14 pages (`a_document_opens_and_lists_its_pages`).
+    assert_eq!(assets.len(), 14);
+    assert_eq!((assets[0].name.as_str(), assets[0].label.as_str()), ("Stamp1", "Stamp1"));
+}
+
+#[test]
+fn importing_bytes_that_are_not_a_pdf_is_invalid_arg() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
+    let error =
+        block_on(stamp.import_library(png, Default::default(), CancelToken::new())).unwrap_err();
+    match error {
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("InvalidArg")),
+        other => panic!("{other:?}"),
+    }
+    assert!(block_on(stamp.libraries(None)).unwrap().is_empty());
+}
+
+#[test]
+fn a_library_created_natively_takes_a_pdf_asset() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let library =
+        block_on(stamp.create_library("Mine".into(), Default::default(), CancelToken::new()))
+            .unwrap();
+    let input = StampAddAssetInput {
+        library_id: Some(library.clone()),
+        label: Some("Colors".into()),
+        source: Some(test_support::fixture(test_support::COLORS)),
+        ..Default::default()
+    };
+    let asset = block_on(stamp.create_asset(input, CancelToken::new())).unwrap();
+    assert!(block_on(stamp.read_asset_bytes(asset)).unwrap().unwrap().starts_with(b"%PDF"));
+    let exported = block_on(stamp.export_library(library, CancelToken::new())).unwrap();
+    assert!(exported.starts_with(b"%PDF"));
+}
+
+#[test]
+fn an_authored_mark_needs_an_appearance_export_the_native_engine_lacks() {
+    // Ink and text marks are drawn as annotations and exported through
+    // `page.annotations.exportAppearance`, which `epdf-engine` doesn't have.
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let library =
+        block_on(stamp.create_library("Mine".into(), Default::default(), CancelToken::new()))
+            .unwrap();
+    let stroke = vec![epdf_ffi::Point { x: 0.0, y: 0.0 }, epdf_ffi::Point { x: 40.0, y: 20.0 }];
+    let input = StampAddAssetInput {
+        library_id: Some(library),
+        mark: Some(epdf_plugin_stamp::ffi::StampMark::Ink {
+            strokes: vec![stroke],
+            color: None,
+            stroke_width: None,
+        }),
+        ..Default::default()
+    };
+    match block_on(stamp.create_asset(input, CancelToken::new())).unwrap_err() {
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("NotImplemented")),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn create_asset_from_annotations_is_unsupported_natively() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let error = block_on(stamp.create_asset_from_annotations(
+        doc.id,
+        page,
+        Vec::new(),
+        StampAddAssetInput::default(),
+        CancelToken::new(),
+    ))
+    .unwrap_err();
+    match error {
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("unsupported")),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn dropping_the_host_mid_import_joins_the_asset_engine_thread() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    // The asset engine starts on the first open.
+    block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new())).unwrap();
+    let assets = block_on(host.asset_engine_thread_witness()).unwrap().unwrap();
+    assert!(assets.upgrade().is_some());
+    // Started (the job is posted on the first poll) and never finished.
+    let mut importing =
+        Box::pin(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new()));
+    assert!((&mut importing).now_or_never().is_none());
+    drop(host);
+    assert!(assets.upgrade().is_none(), "the asset engine thread outlived its host");
+    drop(importing);
+}
+
+#[test]
+fn without_its_config_the_stamp_plugin_is_not_installed() {
+    let host = started();
+    assert!(block_on(host.stamp()).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

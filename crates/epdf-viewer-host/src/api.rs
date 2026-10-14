@@ -65,6 +65,10 @@ pub struct ViewerConfig {
     /// need `search`, marks from the text selection need `selection`.
     #[uniffi(default = None)]
     pub redaction: Option<epdf_plugin_redaction::ffi::RedactionConfig>,
+    /// Install `stampPlugin(config)`: workspace stamp libraries, opened on
+    /// their own asset engine thread. Placing needs `annotation`.
+    #[uniffi(default = None)]
+    pub stamp: Option<epdf_plugin_stamp::ffi::StampConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

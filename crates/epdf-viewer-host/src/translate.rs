@@ -75,6 +75,9 @@ pub enum Decode {
     /// encoded bytes as the payload, answered as the `PageImage` a local
     /// engine gives the stamp plugin (`source.kind == "bytes"`).
     Encoded,
+    /// A read that answers `null` for nothing there (`pieceInfo.read` for
+    /// an application with no entry), else the result as the host sent it.
+    OptionalResult,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -165,7 +168,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
-        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::Result),
+        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
         "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
         "pages.setName" => ("pages.setName", Decode::PageMutation),
         "pages.removeName" => ("pages.removeName", Decode::PageMutation),
@@ -687,6 +690,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     }
     let mut result = match envelope.get_mut("result").map(Value::take) {
         Some(Value::Object(result)) => result,
+        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
+            return Ok(Decoded { value: Value::Null, event: None });
+        }
         Some(other) => return Err(malformed(format!("a result that is not an object: {other}"))),
         None => return Err(malformed("neither a result nor an error".into())),
     };
@@ -695,7 +701,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     };
     let value = match decode {
         Decode::Unit => unreachable!("answered above"),
-        Decode::Result => Value::Object(result),
+        Decode::Result | Decode::OptionalResult => Value::Object(result),
         Decode::Field(name) => take(&mut result, name)?,
         Decode::PageList => {
             let Some(Value::Array(pages)) = result.get_mut("pages") else {
