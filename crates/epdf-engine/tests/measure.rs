@@ -113,9 +113,22 @@ fn set_scale_keeps_a_foreign_viewport() {
         "the reset measure holds one x format"
     );
 
-    // `null` (and an absent `measure`, which is how a host that drops nulls
-    // sends it) removes the owned viewport only.
-    call(&mut host, json!({ "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon }));
+    // An absent `measure` is a malformed request, as in the TypeScript
+    // (`assertWritableMeasure(undefined)` throws): it must not clear.
+    let error = call_err(
+        &mut host,
+        json!({ "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon }),
+    );
+    assert_eq!(error["code"], json!("InvalidArg"), "{error}");
+    assert_eq!(viewports(&mut host, &doc, pon).len(), 2);
+
+    // An explicit `null` removes the owned viewport only.
+    call(
+        &mut host,
+        json!({
+            "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": null
+        }),
+    );
     let cleared = viewports(&mut host, &doc, pon);
     assert_eq!(cleared.len(), 1);
     assert_eq!(cleared[0]["name"], json!("Acrobat"));

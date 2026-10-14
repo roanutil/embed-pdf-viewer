@@ -975,10 +975,16 @@ impl Host {
             "measure.setScale" => {
                 use crate::access::{DocumentAccess, PageAccess};
                 let pon = page_field(body)?;
-                // `PdfMeasure | null`. A host that drops `null` members (the
-                // viewer host's translation does) sends no `measure` at all,
-                // which reads as the same `null`.
-                let measure = body.get("measure").filter(|m| !m.is_null());
+                // `PdfMeasure | null`: `null` clears. An absent `measure` is
+                // refused, as `assertWritableMeasure(undefined)` refuses it in
+                // the TypeScript, rather than read as a clear.
+                let measure = body.get("measure").ok_or_else(|| {
+                    EngineError::with_message(
+                        EngineErrorCode::InvalidArg,
+                        "a scale write names no measure (null clears)",
+                    )
+                })?;
+                let measure = Some(measure).filter(|m| !m.is_null());
                 {
                     let owned = self.sessions.session(&key)?.document()?;
                     let index = owned.page_index(pon)?;
