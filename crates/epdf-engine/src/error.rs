@@ -55,11 +55,25 @@ pub enum EngineErrorCode {
     /// engine-produced state. Distinct from `DocOpenFailed` (PDFium refused
     /// the bytes) and `NotFound` (a well-formed thing that does not exist).
     MalformedPdf,
+    /// A signing candidate is parked on the session: every mutation is
+    /// refused until it completes or is aborted.
+    SigningPending,
+    /// The signing candidate expired before it completed.
+    SigningExpired,
+    /// `complete` named a version the candidate was not built on.
+    SigningVersionMismatch,
+    /// The engine refused to author the signature (a signed field, a seed
+    /// value it cannot satisfy, a second certification).
+    SignatureRefused,
+    /// A document's signatures forbid the change.
+    ProtectedDocument,
+    /// The base the caller named is not the one the session is on.
+    StaleBase,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 19] = [
+    pub const ALL: [EngineErrorCode; 25] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
@@ -79,6 +93,12 @@ impl EngineErrorCode {
         Self::LayerVersionConflict,
         Self::NotImplemented,
         Self::MalformedPdf,
+        Self::SigningPending,
+        Self::SigningExpired,
+        Self::SigningVersionMismatch,
+        Self::SignatureRefused,
+        Self::ProtectedDocument,
+        Self::StaleBase,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -102,6 +122,12 @@ impl EngineErrorCode {
             Self::LayerVersionConflict => "LayerVersionConflict",
             Self::NotImplemented => "NotImplemented",
             Self::MalformedPdf => "MalformedPdf",
+            Self::SigningPending => "SigningPending",
+            Self::SigningExpired => "SigningExpired",
+            Self::SigningVersionMismatch => "SigningVersionMismatch",
+            Self::SignatureRefused => "SignatureRefused",
+            Self::ProtectedDocument => "ProtectedDocument",
+            Self::StaleBase => "StaleBase",
         }
     }
 }
@@ -178,7 +204,7 @@ mod tests {
     /// A value that changes on either side has to change in both, and this is
     /// where the two are compared until the generated-DTO parity harness
     /// covers it.
-    const TYPESCRIPT_CODES: [&str; 19] = [
+    const TYPESCRIPT_CODES: [&str; 25] = [
         "Unknown",
         "InvalidArg",
         "DocNotOpen",
@@ -198,6 +224,12 @@ mod tests {
         "LayerVersionConflict",
         "NotImplemented",
         "MalformedPdf",
+        "SigningPending",
+        "SigningExpired",
+        "SigningVersionMismatch",
+        "SignatureRefused",
+        "ProtectedDocument",
+        "StaleBase",
     ];
 
     #[test]

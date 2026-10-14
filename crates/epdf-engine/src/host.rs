@@ -405,6 +405,32 @@ impl Host {
                 Ok(ok(value(&snapshot)?))
             }
 
+            // ── Signatures (reads) ───────────────────────────────────
+            "signatures.list" => {
+                let d = self.document(&key)?;
+                Ok(ok(value(&f::signature::reader::read_snapshot(d)?)?))
+            }
+            "signatures.contents" => {
+                let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::read_contents(d, &target)?))
+            }
+            "signatures.digest" => {
+                let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let algorithm: f::signature::types::DigestAlgorithm = field(body, "algorithm")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::digest(d, &target, algorithm)?))
+            }
+            "signatures.revisionBytes" => {
+                let index: u32 = field(body, "revisionIndex")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::revision_bytes(d, index)?))
+            }
+            "document.version" => {
+                let session = self.sessions.session(&key)?;
+                Ok(ok(value(&f::signature::reader::version(session)?)?))
+            }
+
             // ── Per-page reads ────────────────────────────────────────
             "pages.text" => self
                 .on_page(&key, body, |page| value(&f::text::reader::read_page_text(page, cancel)?)),

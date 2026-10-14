@@ -23,5 +23,6 @@ pub mod save;
 pub mod search;
 pub mod security;
 pub mod server;
+pub mod signature;
 pub mod structure;
 pub mod text;

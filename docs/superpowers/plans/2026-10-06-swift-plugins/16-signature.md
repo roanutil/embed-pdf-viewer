@@ -436,7 +436,7 @@ The TypeScript to port, function for function:
 
 `protection.rs` is pure and is pinned by a vector: generate `tooling/engine-conformance/vectors/signature/protection.json` from the TypeScript with a generator script beside the existing ones (copy `tooling/engine-conformance/scripts/` `security` generator's shape), add its `:check` script to `package.json` and `.github/workflows/engine-rust.yml`, and replay it in `crates/epdf-engine/tests/signature_protection.rs`. Every other function here touches PDFium and is pinned by the fixture tests below.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 // crates/epdf-engine/tests/signature_read.rs
@@ -504,12 +504,12 @@ fn contents_and_revision_bytes_are_payloads() {
 
 `call_bytes` is `call` that returns the first payload; add it to `tests/common/mod.rs`. If the fixture facts differ (three revisions, `judged == "fill"`), take the true values from `packages/engine/main/test/signatures*.test.ts`, which runs the same fixtures through the TypeScript, and use those: the TypeScript is the reference, and this test pins the port to it.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_read`
 Expected: FAIL, unknown request kind `signatures.list`.
 
-- [ ] **Step 3: Write the `pdfium` layer**
+- [x] **Step 3: Write the `pdfium` layer**
 
 `crates/pdfium/src/signature.rs` opens with the model handle and the per-signature facts the reader needs:
 
@@ -591,7 +591,7 @@ impl Drop for SignatureModel<'_> {
 
 Then `SignatureModel::count`, `facts(index) -> SignatureFacts`, `contents(index) -> Vec<u8>`, `field_mdp(index)`, `lock(index)` and `seed_value(index)`, each the transcription of the matching block of `readSignatureModel.ts` and calling the `EPDFSig_Get*` function that block calls (the list is in the Task 1 grep, and every one of them is in `epdf_signature.h`). Check each function's exact signature in the generated `bindings.rs` as you write its call; the names above (`EPDF_SIGMODEL`, `EPDFSig_LoadModel`) are the header's, but the TypeScript's `EPDFForm_LoadModel` / `EPDFSig_CloseModel` pairing says the model may be opened through the form model, in which case `signature_model` takes the `FormModel` the crate already has (`crates/pdfium/src/form.rs`).
 
-- [ ] **Step 4: Write the engine reader**
+- [x] **Step 4: Write the engine reader**
 
 `crates/epdf-engine/src/features/signature/reader.rs`:
 
@@ -657,12 +657,12 @@ pub fn version(session: &DocumentSession, cancel: &CancelToken) -> Result<Value,
 
 with `read_revisions`, `signature_json` and `resolve_field` transcribed from `SignatureReader.ts:101-145` and `readSignatureModel.ts`. If `features::binary` has no `sha256_hex`, use the SHA-256 `epdf-signature-core` already depends on through its `crypto.rs`, or add `sha2` to `epdf-engine` if that's the only way, and say so in the commit. Route the four kinds in `host.rs` with the document reads; `signatures.contents` and `signatures.revisionBytes` answer through `bytes_response` (the helper `pages.extract` uses, `host.rs:542`). `workingCopy: true` on `signatures.list` goes to Task 4's `read_working_copy_snapshot`; until then, answer it from the loaded bytes, which the TypeScript does too when there are no unsaved edits.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine`
 Expected: PASS, including `signature_read` and `signature_protection`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine tooling package.json .github/workflows/engine-rust.yml
