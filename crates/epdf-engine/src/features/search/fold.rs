@@ -35,6 +35,9 @@ pub struct FoldOptions {
     pub keep_case: bool,
     /// Preserve combining marks. The `matchDiacritics` query flag.
     pub keep_marks: bool,
+    /// Drop whitespace instead of collapsing it to one space. The
+    /// `ignoreWhitespace` query flag.
+    pub drop_whitespace: bool,
 }
 
 /// Folded text, and the way back to the original.
@@ -166,10 +169,11 @@ pub fn fold_text(original: &str, options: FoldOptions) -> FoldedText {
         };
 
         // A decomposition can contain whitespace of its own, so runs collapse
-        // at the produced-unit level rather than only at the source one.
+        // (or drop) at the produced-unit level rather than only at the source
+        // one.
         for unit in piece.chars() {
             if is_search_whitespace(unit) {
-                if last_was_space {
+                if options.drop_whitespace || last_was_space {
                     continue;
                 }
                 folded.push(' ');

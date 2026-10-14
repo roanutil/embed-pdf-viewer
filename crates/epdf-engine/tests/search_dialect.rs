@@ -377,7 +377,11 @@ fn the_fold_agrees_with_typescript() {
     let mut failures: Vec<String> = Vec::new();
 
     for case in &file.cases {
-        let options = FoldOptions { keep_case: case.keep_case, keep_marks: case.keep_marks };
+        let options = FoldOptions {
+            keep_case: case.keep_case,
+            keep_marks: case.keep_marks,
+            ..Default::default()
+        };
         let actual = fold_text(&case.text, options);
         if actual.folded != case.folded {
             failures.push(format!(
@@ -412,7 +416,11 @@ fn folded_ranges_translate_back_the_same_way() {
     let mut probes = 0usize;
 
     for case in &file.cases {
-        let options = FoldOptions { keep_case: case.keep_case, keep_marks: case.keep_marks };
+        let options = FoldOptions {
+            keep_case: case.keep_case,
+            keep_marks: case.keep_marks,
+            ..Default::default()
+        };
         let folded = fold_text(&case.text, options);
         for probe in &case.ranges {
             let Some(actual) = to_original_range(&folded, probe.start, probe.length) else {
@@ -489,6 +497,7 @@ fn literal_search_agrees_with_typescript() {
             match_case: case.match_case,
             match_diacritics: case.match_diacritics,
             whole_word: case.whole_word,
+            ..Default::default()
         };
         let haystack = fold_text(&case.haystack, query.fold_options());
         let actual: Vec<Range> = match_literal(&haystack, &query)

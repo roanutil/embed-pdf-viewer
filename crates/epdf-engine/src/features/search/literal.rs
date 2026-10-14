@@ -17,6 +17,7 @@ pub struct LiteralQuery {
     pub match_case: bool,
     pub match_diacritics: bool,
     pub whole_word: bool,
+    pub ignore_whitespace: bool,
 }
 
 impl LiteralQuery {
@@ -26,7 +27,11 @@ impl LiteralQuery {
     /// keys its pre-folded text on them, and the default fold is the
     /// persistable one; a query with other flags folds the page at query time.
     pub fn fold_options(&self) -> FoldOptions {
-        FoldOptions { keep_case: self.match_case, keep_marks: self.match_diacritics }
+        FoldOptions {
+            keep_case: self.match_case,
+            keep_marks: self.match_diacritics,
+            drop_whitespace: self.ignore_whitespace,
+        }
     }
 }
 
@@ -91,6 +96,29 @@ fn is_mark(c: char) -> bool {
     super::fold::is_combining_mark(c)
 }
 
+/// Whether the folded hit at `at` sits on word boundaries.
+///
+/// Checked on the folded plane, except under `ignore_whitespace`: dropping
+/// whitespace glues neighbouring words together ("i n v o i c e 42" folds to
+/// "invoice42"), so there the boundaries are read off the ORIGINAL text
+/// around the mapped range.
+fn is_whole_word_hit(
+    haystack: &FoldedText,
+    at: usize,
+    needle_length: usize,
+    query: &LiteralQuery,
+) -> bool {
+    if !query.ignore_whitespace {
+        return !word_before(&haystack.folded, at)
+            && !word_at(&haystack.folded, at + needle_length);
+    }
+    let Some(range) = to_original_range(haystack, at, needle_length) else {
+        return false;
+    };
+    let (start, end) = (range.start as usize, (range.start + range.length) as usize);
+    !word_before(&haystack.original, start) && !word_at(&haystack.original, end)
+}
+
 /// Every non-overlapping literal match, in the original text's UTF-16 space.
 ///
 /// `haystack` must have been folded with [`LiteralQuery::fold_options`] for
@@ -120,9 +148,7 @@ pub fn match_literal(haystack: &FoldedText, query: &LiteralQuery) -> Vec<Origina
         };
         let at = from + offset;
 
-        if query.whole_word
-            && (word_before(&haystack.folded, at) || word_at(&haystack.folded, at + pin.len()))
-        {
+        if query.whole_word && !is_whole_word_hit(haystack, at, pin.len(), query) {
             from = at + 1;
             continue;
         }

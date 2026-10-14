@@ -49,6 +49,7 @@ pub fn search_query_key(query: &SearchQuery, mode: &str) -> String {
         u8::from(query.match_case),
         u8::from(query.match_diacritics),
         u8::from(query.whole_word),
+        u8::from(query.ignore_whitespace),
         mode,
     ])
     .to_string()

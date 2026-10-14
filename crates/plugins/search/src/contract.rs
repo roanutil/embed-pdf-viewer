@@ -35,6 +35,9 @@ pub struct SearchQuery {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     pub match_diacritics: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
+    pub ignore_whitespace: Option<bool>,
 }
 
 /// `SearchMode`: how much of a match leaves the engine. `Rects` needs

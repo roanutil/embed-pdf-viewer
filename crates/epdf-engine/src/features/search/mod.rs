@@ -365,6 +365,7 @@ mod tests {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SearchQueryIssue {
     DiacriticsWithRegex,
+    IgnoreWhitespaceWithRegex,
     Regex(SearchRegexIssue),
 }
 
@@ -372,6 +373,7 @@ impl SearchQueryIssue {
     pub fn as_wire(self) -> &'static str {
         match self {
             Self::DiacriticsWithRegex => "diacritics-with-regex",
+            Self::IgnoreWhitespaceWithRegex => "ignore-whitespace-with-regex",
             Self::Regex(issue) => issue.as_wire(),
         }
     }
@@ -382,6 +384,10 @@ impl SearchQueryIssue {
             Self::DiacriticsWithRegex => {
                 "Diacritic-sensitive matching is not available for regex patterns (regex runs on \
                  the raw text plane)."
+            }
+            Self::IgnoreWhitespaceWithRegex => {
+                "Whitespace-insensitive matching is not available for regex patterns (regex runs \
+                 on the raw text plane; use \\s* in the pattern)."
             }
             Self::Regex(_) => "the pattern is not in the portable search dialect",
         }
@@ -402,6 +408,9 @@ pub fn validate_search_query(
     }
     if query.match_diacritics {
         return Err(SearchQueryIssue::DiacriticsWithRegex);
+    }
+    if query.ignore_whitespace {
+        return Err(SearchQueryIssue::IgnoreWhitespaceWithRegex);
     }
     validate_search_regex(&query.text).map_err(SearchQueryIssue::Regex)
 }

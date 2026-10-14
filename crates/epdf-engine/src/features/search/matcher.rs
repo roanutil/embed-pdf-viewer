@@ -27,6 +27,8 @@ pub struct SearchQuery {
     pub match_diacritics: bool,
     #[serde(default)]
     pub whole_word: bool,
+    #[serde(default)]
+    pub ignore_whitespace: bool,
 }
 
 impl SearchQuery {
@@ -36,6 +38,7 @@ impl SearchQuery {
             match_case: self.match_case,
             match_diacritics: self.match_diacritics,
             whole_word: self.whole_word,
+            ignore_whitespace: self.ignore_whitespace,
         }
     }
 }

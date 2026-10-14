@@ -61,6 +61,7 @@ fn query_of(case: &serde_json::Value) -> SearchQuery {
         match_case: q["matchCase"].as_bool().unwrap_or(false),
         match_diacritics: q["matchDiacritics"].as_bool().unwrap_or(false),
         whole_word: q["wholeWord"].as_bool().unwrap_or(false),
+        ignore_whitespace: q["ignoreWhitespace"].as_bool().unwrap_or(false),
     }
 }
 
