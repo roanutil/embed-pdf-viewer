@@ -782,8 +782,14 @@ export const SLICE_CASES: readonly SliceCase[] = [
   {
     name: 'regex-with-diacritics-is-refused',
     covers:
-      'The one rejected flag combination. Diacritic folding is a property of the folded text plane and a regex runs on the raw one, so this asks for something that does not exist.',
+      'A rejected flag combination. Diacritic folding is a property of the folded text plane and a regex runs on the raw one, so this asks for something that does not exist.',
     request: { query: { text: 'caf.', regex: true, matchDiacritics: true } },
+  },
+  {
+    name: 'regex-with-ignore-whitespace-is-refused',
+    covers:
+      'The other rejected combination, for the same reason: dropping whitespace is a property of the folded plane, and a pattern spells its own \\s*.',
+    request: { query: { text: 'in.oice', regex: true, ignoreWhitespace: true } },
   },
   {
     name: 'diacritics-is-reported-before-a-bad-pattern',
@@ -826,6 +832,11 @@ export const SLICE_CASES: readonly SliceCase[] = [
     },
   },
   {
+    name: 'key-separates-ignore-whitespace',
+    covers: 'ignoreWhitespace has its own slot, after wholeWord, as searchQueryKey spells it.',
+    request: { query: { text: 'the', ignoreWhitespace: true } },
+  },
+  {
     name: 'key-separates-regex-from-literal',
     covers: 'Same text, different plane, different identity.',
     request: { query: { text: 'the', regex: true } },
@@ -835,7 +846,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'The accepting case, so the refusals below are not vacuous.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
     },
     seq: 7,
   },
@@ -844,7 +855,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'The key pins the query. Resuming under a different one would scan the wrong needle.',
     request: {
       query: { text: 'other' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
     },
     seq: 7,
   },
@@ -854,7 +865,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
       'The sequence pins the content. Resuming over mutated pages could serve text a redaction just removed.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":6,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: '{"v":1,"seq":6,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
     },
     seq: 7,
   },
@@ -864,7 +875,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
       'The cursor owns the position. Letting it quietly win would hand back matches from a part of the document the caller did not ask about.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
       startPage: 4,
     },
     seq: 7,
@@ -874,7 +885,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'A startPage that agrees with the cursor is redundant rather than wrong.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":4,"scanned":5}',
+      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":4,"scanned":5}',
       startPage: 4,
     },
     seq: 7,
@@ -890,7 +901,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'A future format is refused rather than reinterpreted through this one.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":2,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: '{"v":2,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
     },
     seq: 7,
   },
