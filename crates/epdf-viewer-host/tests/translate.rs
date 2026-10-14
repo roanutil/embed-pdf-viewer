@@ -933,3 +933,28 @@ fn a_form_mutation_nests_the_widgets_of_its_result_and_event() {
     assert_eq!(decoded.value["field"]["widgets"][0]["ref"], nested);
     assert_eq!(decoded.event.unwrap()["field"]["widgets"][0]["ref"], nested);
 }
+
+#[test]
+fn a_field_edit_answers_its_field_under_field_as_the_kernel_reads_it() {
+    // The host answers createField, updateField and the widget links with
+    // the bare field, and spreads it into the event beside `type`; the
+    // plugin reads `field` from both, as the TypeScript engine sends them.
+    for path in
+        ["forms.createField", "forms.updateField", "forms.attachWidget", "forms.detachWidget"]
+    {
+        let call = translate("d1", path, None, &[json!({}), json!({ "annotObjectNumber": 9 })], 30)
+            .unwrap();
+        let field = r#""ref":{"kind":"objectNumber","fieldObjectNumber":4},"name":"a","widgets":[{"annotObjectNumber":9,"pageObjectNumber":2}]"#;
+        let json = format!(
+            r#"{{"result":{{"result":{{{field}}},"mutationSequence":3,"event":{{"type":"form.fieldCreated","origin":{{"kind":"local"}},{field}}}}}}}"#
+        );
+        let decoded = decode(&call.decode, answer(&json)).unwrap();
+        assert_eq!(decoded.value["field"]["name"], "a", "{path}");
+        assert_eq!(decoded.value["field"]["widgets"][0]["ref"]["annotObjectNumber"], 9, "{path}");
+        let event = decoded.event.unwrap();
+        assert_eq!(event["type"], "form.fieldCreated");
+        assert_eq!(event["origin"], json!({ "kind": "local" }));
+        assert_eq!(event["field"]["name"], "a", "{path}");
+        assert!(event.get("name").is_none(), "{path}");
+    }
+}

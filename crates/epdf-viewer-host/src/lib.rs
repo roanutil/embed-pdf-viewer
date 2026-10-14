@@ -31,6 +31,7 @@ use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_annotation::ffi::AnnotationHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
+use epdf_plugin_form::ffi::FormHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
 use epdf_plugin_link::ffi::LinkHandle;
@@ -364,6 +365,18 @@ impl ViewerHost {
             let cap =
                 s.kernel.capability(&epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
             Ok(AnnotationHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The form capability of an open document. Needs `ViewerConfig.form`
+    /// and `ViewerConfig.interaction`; without them the kernel refuses the
+    /// token.
+    pub async fn form(&self, document_id: String) -> Result<Arc<FormHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_form::FORM, Some(&document_id))?;
+            Ok(FormHandle::new(cap, post))
         })
         .await
     }

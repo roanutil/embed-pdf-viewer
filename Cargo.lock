@@ -856,6 +856,7 @@ dependencies = [
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-commands",
+ "epdf-plugin-form",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
  "epdf-plugin-link",

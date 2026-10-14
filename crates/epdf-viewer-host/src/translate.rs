@@ -75,6 +75,12 @@ pub enum Decode {
     /// `forms.applyEffects` batch that wrote nothing answers a bare result
     /// with no `mutationSequence`; that answers itself with no event.
     FormMutation,
+    /// A field edit (`createField`, `updateField`, a widget link):
+    /// `FormMutation`, with the bare field the host answers put under
+    /// `field` in the result and in the event, where the host spreads it
+    /// beside `type`. The TypeScript engine sends `{field, meta}`, and the
+    /// plugin reads `field` from both.
+    FormFieldMutation,
     /// Bytes in the first payload, put back into the result as `bytes`
     /// (`{"$bytes": base64}`), as the form plugin reads an export.
     ExportBytes,
@@ -177,11 +183,11 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::FormMutation),
         "forms.repair" => ("forms.repair", Decode::FormMutation),
-        "forms.createField" => ("forms.createField", Decode::FormMutation),
-        "forms.updateField" => ("forms.updateField", Decode::FormMutation),
+        "forms.createField" => ("forms.createField", Decode::FormFieldMutation),
+        "forms.updateField" => ("forms.updateField", Decode::FormFieldMutation),
         "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
-        "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
-        "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
+        "forms.attachWidget" => ("forms.attachWidget", Decode::FormFieldMutation),
+        "forms.detachWidget" => ("forms.detachWidget", Decode::FormFieldMutation),
         _ => return None,
     })
 }
@@ -768,6 +774,28 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 nest_refs(event);
             }
             return Ok(Decoded { value, event });
+        }
+        Decode::FormFieldMutation => {
+            let mut field = take(&mut result, "result")?;
+            nest_widgets(&mut field);
+            nest_refs(&mut field);
+            let event = match result.remove("event") {
+                Some(Value::Object(mut spread)) => {
+                    let mut event = Map::new();
+                    for key in ["type", "origin"] {
+                        if let Some(value) = spread.remove(key) {
+                            event.insert(key.into(), value);
+                        }
+                    }
+                    let mut field = Value::Object(spread);
+                    nest_widgets(&mut field);
+                    nest_refs(&mut field);
+                    event.insert("field".into(), field);
+                    Some(Value::Object(event))
+                }
+                other => other,
+            };
+            return Ok(Decoded { value: serde_json::json!({ "field": field }), event });
         }
         Decode::ExportBytes => {
             let bytes = response

@@ -2072,7 +2072,7 @@ git commit -m "Map the form engine paths onto the native host"
 - Consumes: `epdf_plugin_form::ffi::{FormHandle, FormConfig}`.
 - Produces: `ViewerConfig.form: Option<FormConfig>`; `ViewerHost::form(document_id: String) -> Result<Arc<FormHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -2181,12 +2181,12 @@ fn without_its_config_the_form_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field form on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`:
 
@@ -2226,7 +2226,7 @@ epdf-plugin-form = { path = "../plugins/form", default-features = false, feature
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. A failure in `the_fixtures_fields_list_with_widget_refs` means the dump in Task 3 Step 1 showed a widget spelling `nest_widgets` doesn't handle; fix it there.
@@ -2234,7 +2234,7 @@ Expected: all pass. A failure in `the_fixtures_fields_list_with_widget_refs` mea
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

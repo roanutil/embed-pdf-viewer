@@ -60,6 +60,10 @@ pub struct ViewerConfig {
     /// hover feed when they are installed.
     #[uniffi(default = None)]
     pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
+    /// Install `formPlugin(config)`: read, fill and design AcroForm fields.
+    /// Needs `interaction`.
+    #[uniffi(default = None)]
+    pub form: Option<epdf_plugin_form::ffi::FormConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]
