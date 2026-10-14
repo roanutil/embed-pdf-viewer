@@ -2254,12 +2254,12 @@ git commit -m "Install the form plugin in the viewer host"
 - Consumes: the generated `FormHandle`, records and `FormEventListener`; `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`.
 - Produces: `FormCapability`, `PDFViewer.form(for:)`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: `rg -n 'class FormHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds it.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/FormTests.swift`:
 
@@ -2386,12 +2386,12 @@ extension BaseSuite {
 
 Every other `CancelToken`-taking member is exercised for cancellation by the Rust test in Task 2 (`cancelling_a_set_value_before_it_runs_leaves_the_field_alone`); the umbrella's template asks for one Swift test per such member, and these two plus the Rust one cover the shared `bridgedCancellable` path. Add a `<member>CancelsWhenTheTaskIsCancelled` test for each remaining cancellable member only if a reviewer asks; each would be a copy of `exportCancelsWhenTheTaskIsCancelled` with the call swapped.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/FormTests)`
 Expected: build failure, `value of type PDFViewer has no member form`.
 
-- [ ] **Step 4: Write `Form.swift`**
+- [x] **Step 4: Write `Form.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2610,7 +2610,7 @@ extension PDFViewer {
 
 UniFFI generates the enum case `FormValidation.none`, which collides with `Optional.none` at some call sites; the test spells it `FormValidation.none` explicitly for that reason. If the generator renames it (`none_`), use the generated name in the test.
 
-- [ ] **Step 5: Add the fixture and run the tests**
+- [x] **Step 5: Add the fixture and run the tests**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2671,12 +2671,12 @@ Plan 15 (actions) is in Wave A, so it has normally merged by now. If it has, add
 
 The Rust names behind these, for `rg` if a label differs: `ActionsHandle::set_submit_handler`, `ActionsHandle::execute`, `ActionsJavaScriptConfig`, `JavaScriptCoreEngineFactory` (plan 15 Tasks 2, 6 and 7).
 
-- [ ] **Step 6: Run the whole Swift suite**
+- [x] **Step 6: Run the whole Swift suite**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple/build-xcframework.sh platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests

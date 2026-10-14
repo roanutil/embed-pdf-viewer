@@ -1060,6 +1060,31 @@ fn a_text_field_fills_through_the_native_engine() {
 }
 
 #[test]
+fn a_checkbox_is_checked_by_its_on_state() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let field = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Checkbox { .. }) && !f.flags.read_only)
+        .expect("form_fields.pdf has a writable checkbox");
+    let on_state = field.widgets[0].toggle.as_ref().unwrap().on_state.clone();
+    // The fixture's box starts checked; clear it so checking it is a change.
+    let cleared =
+        block_on(form.set_checked(field.field_ref.clone(), None, CancelToken::new())).unwrap();
+    assert_eq!(cleared.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
+    let checked =
+        block_on(form.set_checked(field.field_ref.clone(), Some(on_state), CancelToken::new()))
+            .unwrap();
+    assert_eq!(checked.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
+    let read = block_on(form.field(field.field_ref)).unwrap().unwrap();
+    assert!(matches!(read.detail, FormFieldDetail::Checkbox { checked: true, .. }), "{read:?}");
+    assert_eq!(read.widgets[0].toggle.as_ref().map(|t| t.checked), Some(true));
+}
+
+#[test]
 fn an_fdf_export_imports_back() {
     let host = with_form();
     let bytes = test_support::fixture(FORM);
@@ -1572,3 +1597,4 @@ fn executing_a_named_next_page_action_moves_the_stage() {
     assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed, "{result:?}");
     assert_eq!(block_on(stage.current_page_index()).unwrap(), 1);
 }
+
