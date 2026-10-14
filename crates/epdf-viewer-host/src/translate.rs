@@ -54,6 +54,12 @@ pub enum Decode {
     /// A read whose answer carries annotation refs: the result, with every
     /// ref nested the kernel's way.
     Annotations,
+    /// An annotation mutation: `Mutation`, with every ref in the result and
+    /// the event nested the kernel's way.
+    AnnotationMutation,
+    /// An annotation's embedded file: the result (`name`, `mimeType`,
+    /// `size`), with the payload parked in the `HostTable` as `data`.
+    AttachmentContent,
     /// A page mutation: `Mutation`, with `ref` added to every layout page of
     /// the result and the event (the kernel's page registry and the
     /// page-edit plugin read `ref`), and the host's
@@ -89,6 +95,11 @@ pub const PATHS: &[&str] = &[
     "page.render.image",
     "search.query",
     "page.annotations.list",
+    "annotations.listRawAll",
+    "page.annotations.create",
+    "page.annotations.update",
+    "page.annotations.delete",
+    "page.annotations.downloadFile",
     "pages.move",
     "pages.rotate",
     "pages.delete",
@@ -125,6 +136,11 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
         "page.annotations.list" => ("annotations.listRawPage", Decode::Annotations),
+        "annotations.listRawAll" => ("annotations.listRawAll", Decode::Annotations),
+        "page.annotations.create" => ("annotations.create", Decode::AnnotationMutation),
+        "page.annotations.update" => ("annotations.update", Decode::AnnotationMutation),
+        "page.annotations.delete" => ("annotations.delete", Decode::AnnotationMutation),
+        "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -159,6 +175,18 @@ pub fn translate(
         "pages.render" => vec![("pageObjectNumber", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
         "annotations.listRawPage" => vec![("pageObjectNumber", page()?)],
+        "annotations.create" => {
+            let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
+            vec![("pageObjectNumber", page()?), ("draft", draft), ("resources", resources)]
+        }
+        "annotations.update" => {
+            let (patch, resources) = normalize_binary(arg(1), &mut payloads)?;
+            vec![("ref", wire_ref(path, arg(0))?), ("patch", patch), ("resources", resources)]
+        }
+        "annotations.delete" => vec![("ref", wire_ref(path, arg(0))?)],
+        "annotations.readFile" => {
+            vec![("pageObjectNumber", page()?), ("ref", wire_ref(path, arg(0))?)]
+        }
         "pages.move" => vec![
             ("pageObjectNumbers", object_numbers(path, &arg(0))?),
             ("destIndex", whole(path, "destIndex", &arg(1))?),
@@ -357,6 +385,100 @@ pub fn nest_refs(value: &mut Value) {
     }
 }
 
+/// An annotation ref the host's way: flat, and with its JavaScript numbers
+/// (`annotObjectNumber`, `index`, a revision's `generation`, each sent as
+/// `17.0`) as the whole integers the host's serde parses.
+fn wire_ref(path: &str, mut target: Value) -> Result<Value, Error> {
+    fn whole_members(path: &str, value: &mut Value) -> Result<(), Error> {
+        if let Value::Object(map) = value {
+            for key in ["annotObjectNumber", "index", "generation", "pageObjectNumber"] {
+                if let Some(n) = map.get(key).filter(|n| n.is_f64()) {
+                    let n = whole(path, key, n)?;
+                    map.insert(key.into(), n);
+                }
+            }
+            for member in map.values_mut() {
+                whole_members(path, member)?;
+            }
+        }
+        Ok(())
+    }
+    flatten_refs(&mut target);
+    whole_members(path, &mut target)?;
+    Ok(target)
+}
+
+/// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
+/// normalize.ts`): a stamp's `source` and an attachment's `file`, each a
+/// `BinarySource` the kernel spells `{data: {"$bytes": …}, mimeType?,
+/// name?}` or bare `{"$bytes": …}`, become `{resource: "rN"}` with the
+/// bytes moved into a payload. Every other draft goes as it is. The
+/// resources answer `Null` when nothing moved, so the request leaves them
+/// out.
+fn normalize_binary(
+    mut draft: Value,
+    payloads: &mut Vec<Vec<u8>>,
+) -> Result<(Value, Value), Error> {
+    let mut resources = Map::new();
+    match draft.get("subtype").and_then(Value::as_str) {
+        Some("stamp") => {
+            if let Some(source) = draft.get("source").cloned() {
+                let (key, _, _) = take_binary(&source, &mut resources, payloads)?;
+                draft["source"] = serde_json::json!({ "resource": key });
+            }
+        }
+        Some("file-attachment") => {
+            if let Some(file) = draft.get("file").cloned() {
+                let (key, mime, name) = take_binary(&file, &mut resources, payloads)?;
+                let name = name.ok_or_else(|| {
+                    coded(
+                        "invalid-input",
+                        "[epdf-viewer-host] an attachment file needs a name".into(),
+                    )
+                })?;
+                let mut wire = serde_json::json!({ "resource": key, "name": name });
+                if let Some(mime) = mime {
+                    wire["mimeType"] = mime.into();
+                }
+                if let Some(description) = file.get("description") {
+                    wire["description"] = description.clone();
+                }
+                draft["file"] = wire;
+            }
+        }
+        _ => {}
+    }
+    let resources = if resources.is_empty() { Value::Null } else { Value::Object(resources) };
+    Ok((draft, resources))
+}
+
+/// Move one `BinarySource`'s bytes into a payload and declare it as the
+/// next resource. Answers the resource key, the MIME type and the name.
+fn take_binary(
+    source: &Value,
+    resources: &mut Map<String, Value>,
+    payloads: &mut Vec<Vec<u8>>,
+) -> Result<(String, Option<String>, Option<String>), Error> {
+    let data = source.get("data").unwrap_or(source);
+    let bytes = epdf_kernel::bytes::Bytes::from_json(data).ok_or_else(|| {
+        coded(
+            "invalid-input",
+            format!("[epdf-viewer-host] a binary source without bytes: {source}"),
+        )
+    })?;
+    let key = format!("r{}", resources.len());
+    let mime = source.get("mimeType").and_then(Value::as_str).map(str::to_string);
+    let name = source.get("name").and_then(Value::as_str).map(str::to_string);
+    let mut resource = Map::new();
+    resource.insert("payload".into(), payloads.len().into());
+    if let Some(mime) = &mime {
+        resource.insert("mimeType".into(), mime.clone().into());
+    }
+    resources.insert(key.clone(), Value::Object(resource));
+    payloads.push(bytes.0);
+    Ok((key, mime, name))
+}
+
 /// `ref` on every page of `object.layout.pages`, which must be there.
 fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     let Some(Value::Array(pages)) = object.get_mut("layout").and_then(|l| l.get_mut("pages"))
@@ -415,6 +537,25 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             let mut value = Value::Object(result);
             nest_refs(&mut value);
             value
+        }
+        Decode::AnnotationMutation => {
+            let mut value = take(&mut result, "result")?;
+            nest_refs(&mut value);
+            let mut event = result.remove("event");
+            if let Some(event) = event.as_mut() {
+                nest_refs(event);
+            }
+            return Ok(Decoded { value, event });
+        }
+        Decode::AttachmentContent => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("a file without its payload".into()))?;
+            result
+                .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
+            Value::Object(result)
         }
         Decode::Mutation => {
             let value = take(&mut result, "result")?;

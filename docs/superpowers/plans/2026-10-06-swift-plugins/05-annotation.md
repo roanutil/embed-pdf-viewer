@@ -3200,7 +3200,7 @@ git commit -m "Add the annotation file-picker port"
 
 The kernel spells an annotation ref `{kind, page: {kind: "objectNumber", pageObjectNumber}, annotObjectNumber}`; the host spells it `{kind, pageObjectNumber, annotObjectNumber}`. Plan 04 wrote the rewrite both ways (`flatten_refs`, `nest_refs`). Outgoing args here get every ref flattened; incoming results get every ref nested.
 
-- [ ] **Step 1: Capture the host's real shapes**
+- [x] **Step 1: Capture the host's real shapes**
 
 Add an ignored test to `crates/epdf-viewer-host/tests/translate.rs` that prints what the host sends for the fixture, then run it once:
 
@@ -3227,7 +3227,7 @@ cargo test -p epdf-viewer-host --test translate dump_annotation_shapes -- --igno
 
 Read the output and confirm three things before writing the rewrite: each annotation's `ref` is flat, each annotation has `page` as a number or lacks it, and `pages[].pageState.page` is a number or a `PageRef`. The rewrite below assumes flat refs and numeric pages. Write down any other difference from the vectors' DTO (`square()` in Task 2's test) as a comment at the top of the rewrite, and handle it there.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -3290,12 +3290,12 @@ fn list_raw_all_answers_nested_refs() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail with code `unsupported` from `translate`.
 
-- [ ] **Step 4: Add the routes and decoders**
+- [x] **Step 4: Add the routes and decoders**
 
 In `translate.rs`, extend `Decode` beside plan 04's `Annotations`:
 
@@ -3421,12 +3421,12 @@ and add `Decode::AnnotationMutation` to the `Decode::Unit => unreachable!` neigh
 
 The event a mutation publishes goes to the plugin's document-event subscription (`sync/document_events.rs`), which reads `ref` and `page` the kernel's way too, so it is nested here as well.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: every test passes, the 5 new ones included.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs

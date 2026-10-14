@@ -629,3 +629,134 @@ fn every_page_a_listed_snapshot_names_arrives_as_a_page_ref() {
     assert_eq!(back["annotations"][0]["ref"]["pageObjectNumber"], 5);
     assert_eq!(back["pageState"]["revision"]["pageObjectNumber"], 5);
 }
+
+#[test]
+#[ignore = "prints the host's annotation JSON; run by hand when the wire changes"]
+fn dump_annotation_shapes() {
+    let listing = on_kernel(EngineWorker::spawn(), |engine, tx| {
+        let input = open_input("tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+        engine.open(input, None).on_settle(move |doc| {
+            let doc = doc.as_ref().ok().cloned().unwrap();
+            doc.call("annotations.listRawAll", None, vec![]).on_settle(move |listing| {
+                let _ = tx.send(listing.clone());
+            });
+        });
+    });
+    println!("{}", serde_json::to_string_pretty(&listing.unwrap()).unwrap());
+}
+#[test]
+fn refs_are_nested_on_the_way_in_and_flattened_on_the_way_out() {
+    let nested = json!({ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17 });
+    let call = translate("d1", "page.annotations.delete", Some(3), &[nested.clone()], 12).unwrap();
+    assert_eq!(
+        call.request["ref"],
+        json!({ "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 })
+    );
+    let mut back = json!({ "created": {
+        "ref": { "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 },
+        "page": 3 } });
+    epdf_viewer_host::translate::nest_refs(&mut back);
+    assert_eq!(back["created"]["ref"], nested);
+    assert_eq!(back["created"]["page"], json!({ "kind": "objectNumber", "pageObjectNumber": 3 }));
+}
+
+#[test]
+fn a_stamp_drafts_bytes_travel_as_a_resource_payload() {
+    let draft = json!({ "subtype": "stamp", "source": { "data": { "$bytes": "iVBORw==" }, "mimeType": "image/png" } });
+    let call = translate("d1", "page.annotations.create", Some(3), &[draft], 13).unwrap();
+    assert_eq!(call.request["kind"], "annotations.create");
+    assert_eq!(call.request["pageObjectNumber"], 3);
+    assert_eq!(call.request["draft"]["source"], json!({ "resource": "r0" }));
+    assert_eq!(
+        call.request["resources"],
+        json!({ "r0": { "payload": 0, "mimeType": "image/png" } })
+    );
+    assert_eq!(call.payloads, vec![vec![0x89, b'P', b'N', b'G']]);
+}
+
+#[test]
+fn an_attachment_drafts_file_travels_as_a_resource_with_its_name() {
+    let draft = json!({ "subtype": "file-attachment",
+        "file": { "data": { "$bytes": "aGk=" }, "name": "notes.txt" } });
+    let call = translate("d1", "page.annotations.create", Some(3), &[draft], 14).unwrap();
+    assert_eq!(call.request["draft"]["file"], json!({ "resource": "r0", "name": "notes.txt" }));
+    assert_eq!(call.request["resources"]["r0"]["payload"], 0);
+    assert_eq!(call.payloads, vec![b"hi".to_vec()]);
+}
+
+#[test]
+fn an_update_carries_its_ref_and_patch() {
+    let nested = json!({ "kind": "nm",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "nm": "abc" });
+    let call = translate(
+        "d1",
+        "page.annotations.update",
+        Some(3),
+        &[nested, json!({ "contents": "x" })],
+        15,
+    )
+    .unwrap();
+    assert_eq!(call.request["ref"], json!({ "kind": "nm", "pageObjectNumber": 3, "nm": "abc" }));
+    assert_eq!(call.request["patch"], json!({ "contents": "x" }));
+    assert!(matches!(call.decode, Decode::AnnotationMutation));
+}
+
+#[test]
+fn list_raw_all_answers_nested_refs() {
+    let json = r#"{"result":{"pages":[{"pageState":{"page":3},"annotations":[{"ref":{"kind":"objectNumber","pageObjectNumber":3,"annotObjectNumber":17},"page":3}]}]}}"#;
+    let call = translate("d1", "annotations.listRawAll", None, &[], 16).unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap().value;
+    assert_eq!(
+        decoded["pages"][0]["pageState"]["page"],
+        json!({ "kind": "objectNumber", "pageObjectNumber": 3 })
+    );
+    assert_eq!(decoded["pages"][0]["annotations"][0]["ref"]["page"]["pageObjectNumber"], 3);
+}
+
+/// The kernel's annotation numbers are JavaScript numbers (`17.0`); the
+/// host's `AnnotationRef` and `RevisionToken` parse whole integers.
+#[test]
+fn a_refs_javascript_numbers_go_out_whole() {
+    let index = json!({ "kind": "index",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "index": 2.0,
+        "revision": { "docSessionId": "s",
+            "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "generation": 4.0 } });
+    let call = translate("d1", "page.annotations.delete", Some(3), &[index], 17).unwrap();
+    assert_eq!(
+        call.request["ref"],
+        json!({ "kind": "index", "pageObjectNumber": 3, "index": 2,
+            "revision": { "docSessionId": "s", "pageObjectNumber": 3, "generation": 4 } })
+    );
+    let object = json!({ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17.0 });
+    let call =
+        translate("d1", "page.annotations.update", Some(3), &[object, json!({})], 18).unwrap();
+    assert_eq!(call.request["ref"]["annotObjectNumber"], json!(17));
+    let fractional = json!({ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 1.5 });
+    let error =
+        translate("d1", "page.annotations.delete", Some(3), &[fractional], 19).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
+fn an_attachment_read_carries_its_page_and_ref_and_answers_its_bytes() {
+    let nested = json!({ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17.0 });
+    let call = translate("d1", "page.annotations.downloadFile", Some(3), &[nested], 20).unwrap();
+    assert_eq!(call.request["kind"], "annotations.readFile");
+    assert_eq!(call.request["pageObjectNumber"], 3);
+    assert_eq!(
+        call.request["ref"],
+        json!({ "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 })
+    );
+    let response = HostResponse {
+        json: r#"{"result":{"name":"notes.txt","mimeType":"text/plain","size":2}}"#.into(),
+        payloads: vec![b"hi".to_vec()],
+    };
+    let decoded = decode(&call.decode, response).unwrap().value;
+    assert_eq!(decoded["name"], "notes.txt");
+    let id = decoded["data"]["$hostBytes"].as_u64().unwrap();
+    assert_eq!(HostTable::take(id), Some(b"hi".to_vec()));
+}
