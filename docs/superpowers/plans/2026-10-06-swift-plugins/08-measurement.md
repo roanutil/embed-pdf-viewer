@@ -71,14 +71,14 @@ platforms/apple/build-xcframework.sh              + measure-acrobat-metric fixtu
 - Consumes: branch `research/swift-plugins` with plans 01 (interaction) and 05 (annotation) merged.
 - Produces: `pdfium_sys::EPDFPage_CountViewports` and the rest of `epdf_measure.h`, for Task 2.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-measurement -b research/swift-measurement research/swift-plugins
 cd .claude/worktrees/swift-measurement
 ```
 
-- [ ] **Step 2: Check the PDFium slices ship `epdf_measure.h`**
+- [x] **Step 2: Check the PDFium slices ship `epdf_measure.h`**
 
 ```bash
 for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
@@ -88,7 +88,7 @@ done
 
 Expected: three paths, no `MISSING`. If any slice is missing it, this worktree fetched the old slices: rerun `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>`, and if it's still missing, stop and finish umbrella Task 0b. Don't continue on an old slice: `bindgen` would silently generate no viewport functions and Task 2 fails to compile with a misleading error.
 
-- [ ] **Step 3: Include the header**
+- [x] **Step 3: Include the header**
 
 In `crates/pdfium-sys/wrapper.h`, after `#include "epdf_form.h"`:
 
@@ -96,12 +96,12 @@ In `crates/pdfium-sys/wrapper.h`, after `#include "epdf_form.h"`:
 #include "epdf_measure.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFPage_CountViewports\|pub fn EPDFViewport_GetMeasure\|pub fn EPDFMeasure_GetRatio' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `3`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h
