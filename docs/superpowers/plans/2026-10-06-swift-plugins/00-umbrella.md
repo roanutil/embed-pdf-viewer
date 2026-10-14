@@ -1292,7 +1292,7 @@ Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one her
 - [x] 02 stage
 - [x] 03 selection
 - [x] 04 link
-- [ ] 05 annotation
+- [x] 05 annotation
 - [ ] 06 form
 - [ ] 07 redaction
 - [ ] 08 measurement
