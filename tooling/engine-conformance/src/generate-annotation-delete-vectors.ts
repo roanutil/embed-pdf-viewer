@@ -22,6 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -103,13 +104,13 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const pon = first.pageObjectNumber;
-      const before = await doc.annotations.listRaw(pon);
+      const pon = first.ref.pageObjectNumber;
+      const before = await doc.annotations.listRaw(first.ref);
 
       // Resolve the case's description of its target into a real ref.
       let ref;
       if (entry.target.kind === 'index') {
-        ref = { kind: 'index' as const, pageObjectNumber: pon, index: entry.target.index,
+        ref = { kind: 'index' as const, page: first.ref, index: entry.target.index,
           revision: before.pageState.revision };
       } else {
         const found = before.annotations.find((a) => a.nm === (entry.target as { nm: string }).nm);
@@ -122,14 +123,14 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
         }
       }
 
-      const page = doc.page(pon);
+      const page = doc.page(first.ref);
       const result = await page.annotations.delete(ref as never);
-      const after = await doc.annotations.listRaw(pon);
+      const after = await doc.annotations.listRaw(first.ref);
 
       return {
         ...entry,
         pageObjectNumber: pon,
-        ref,
+        ref: flattenPageRefs(ref),
         deleted: result.deleted,
         meta: {
           changed: result.meta.changed,

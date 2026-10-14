@@ -85,3 +85,35 @@ export function flattenFormWidgets(value: unknown): unknown {
   }
   return out;
 }
+
+// ── annotation ──
+
+/**
+ * The inverse of `flattenPageRefs` for the one place a draft names a page:
+ * every `destination` holding a wire `pageObjectNumber` gets `page: PageRef`
+ * in the same position, which is what `PdfDestination` takes. Everything
+ * else passes through untouched, so a recorded draft stays wire-shaped.
+ */
+export function destinationPageRefs(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(destinationPageRefs);
+  if (value === null || typeof value !== 'object' || value instanceof Uint8Array) return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(value)) {
+    if (
+      key === 'destination' &&
+      field !== null &&
+      typeof field === 'object' &&
+      typeof (field as { pageObjectNumber?: unknown }).pageObjectNumber === 'number'
+    ) {
+      const destination: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(field)) {
+        if (k === 'pageObjectNumber') destination.page = pageRef(v as number);
+        else destination[k] = v;
+      }
+      out[key] = destination;
+    } else {
+      out[key] = destinationPageRefs(field);
+    }
+  }
+  return out;
+}

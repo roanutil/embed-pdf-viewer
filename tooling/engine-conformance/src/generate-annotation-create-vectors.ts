@@ -25,6 +25,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { destinationPageRefs, flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -861,8 +862,10 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
-      const draft = materialize(entry.draft, { ...(entry.resources ?? {}) }) as never;
+      const page = doc.page(first.ref);
+      const draft = destinationPageRefs(
+        materialize(entry.draft, { ...(entry.resources ?? {}) }),
+      ) as never;
       const result = await page.annotations.create(draft);
 
       // The whole created DTO minus the timestamp, plus the envelope's own
@@ -870,8 +873,8 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       const { modified, ...created } = result.created as Record<string, unknown>;
       return {
         ...entry,
-        pageObjectNumber: first.pageObjectNumber,
-        created,
+        pageObjectNumber: first.ref.pageObjectNumber,
+        created: flattenPageRefs(created),
         hasModified: typeof modified === 'string' && modified.length > 0,
         meta: {
           changed: result.meta.changed,
