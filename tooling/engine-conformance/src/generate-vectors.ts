@@ -22,6 +22,7 @@ import { createLocalEngine } from '../../../packages/engine/main/src/index';
 
 import { CORPUS, type CorpusCase, type CorpusOperation } from './corpus';
 import { quantizeDeep } from './quantize';
+import { pageRef } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -119,8 +120,8 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
         for (const page of wanted) {
           emitted.push({
             index: page.index,
-            pageObjectNumber: page.pageObjectNumber,
-            snapshot: quantizeDeep(await readOperation(doc, operation, page.pageObjectNumber)),
+            pageObjectNumber: page.ref.pageObjectNumber,
+            snapshot: quantizeDeep(await readOperation(doc, operation, page.ref.pageObjectNumber)),
           });
         }
         files.set(operation, {
@@ -148,9 +149,9 @@ async function readOperation(
 ): Promise<unknown> {
   switch (operation) {
     case 'pages.geometry':
-      return await doc.page(pageObjectNumber).geometry.read();
+      return await doc.page(pageRef(pageObjectNumber)).geometry.read();
     case 'pages.text':
-      return await doc.page(pageObjectNumber).text.read();
+      return await doc.page(pageRef(pageObjectNumber)).text.read();
     default: {
       // Exhaustiveness: adding an operation to CorpusOperation must not
       // silently emit nothing.
