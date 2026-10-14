@@ -13,6 +13,7 @@ pub mod files;
 pub mod fonts;
 pub mod forms;
 pub mod geometry;
+pub mod measure;
 pub mod metadata;
 pub mod metadata_write;
 pub mod pages;

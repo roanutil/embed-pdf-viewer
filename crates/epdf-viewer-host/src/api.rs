@@ -69,6 +69,10 @@ pub struct ViewerConfig {
     /// need `search`, marks from the text selection need `selection`.
     #[uniffi(default = None)]
     pub redaction: Option<epdf_plugin_redaction::ffi::RedactionConfig>,
+    /// Install `measurementPlugin(config)`: page scale, calibration and
+    /// readouts. Needs `interaction` and `annotation`.
+    #[uniffi(default = None)]
+    pub measurement: Option<epdf_plugin_measurement::ffi::MeasurementConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

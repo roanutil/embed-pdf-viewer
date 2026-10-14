@@ -35,6 +35,7 @@ use epdf_plugin_form::ffi::FormHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
 use epdf_plugin_link::ffi::LinkHandle;
+use epdf_plugin_measurement::ffi::MeasurementHandle;
 use epdf_plugin_metadata::ffi::MetadataHandle;
 use epdf_plugin_page_edit::ffi::PageEditHandle;
 use epdf_plugin_redaction::ffi::RedactionHandle;
@@ -393,6 +394,22 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_redaction::REDACTION, Some(&document_id))?;
             Ok(RedactionHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The measurement capability of an open document. Needs
+    /// `ViewerConfig.measurement`, `ViewerConfig.annotation` and
+    /// `ViewerConfig.interaction`; without them the kernel refuses the token.
+    pub async fn measurement(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<MeasurementHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_measurement::MEASUREMENT, Some(&document_id))?;
+            Ok(MeasurementHandle::new(cap, post))
         })
         .await
     }

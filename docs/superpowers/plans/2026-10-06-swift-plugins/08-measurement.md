@@ -71,14 +71,14 @@ platforms/apple/build-xcframework.sh              + measure-acrobat-metric fixtu
 - Consumes: branch `research/swift-plugins` with plans 01 (interaction) and 05 (annotation) merged.
 - Produces: `pdfium_sys::EPDFPage_CountViewports` and the rest of `epdf_measure.h`, for Task 2.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-measurement -b research/swift-measurement research/swift-plugins
 cd .claude/worktrees/swift-measurement
 ```
 
-- [ ] **Step 2: Check the PDFium slices ship `epdf_measure.h`**
+- [x] **Step 2: Check the PDFium slices ship `epdf_measure.h`**
 
 ```bash
 for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
@@ -88,7 +88,7 @@ done
 
 Expected: three paths, no `MISSING`. If any slice is missing it, this worktree fetched the old slices: rerun `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>`, and if it's still missing, stop and finish umbrella Task 0b. Don't continue on an old slice: `bindgen` would silently generate no viewport functions and Task 2 fails to compile with a misleading error.
 
-- [ ] **Step 3: Include the header**
+- [x] **Step 3: Include the header**
 
 In `crates/pdfium-sys/wrapper.h`, after `#include "epdf_form.h"`:
 
@@ -96,12 +96,12 @@ In `crates/pdfium-sys/wrapper.h`, after `#include "epdf_form.h"`:
 #include "epdf_measure.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFPage_CountViewports\|pub fn EPDFViewport_GetMeasure\|pub fn EPDFMeasure_GetRatio' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `3`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h
@@ -122,7 +122,7 @@ git commit -m "Bind the fork's measurement viewports in pdfium-sys"
 
 The TypeScript is three files: `MeasureReader.ts` (22 lines), `MeasureMutator.ts` (85 lines) and `internal/measureCodec.ts` (163 lines), with `internal/readViewports.ts` (32 lines). The Rust follows them function for function. `CALIBRATION_NAME` is `"EmbedPDF"`. A viewport is EmbedPDF's own (`owned`) when its name is `"EmbedPDF"` and it has no measure or an `RL` one. A write never rewrites `/VP`: it updates EmbedPDF's last owned viewport, or adds one over the crop box (falling back to the media box), or, for `null`, removes every owned viewport from the highest index down.
 
-- [ ] **Step 1: Write the failing `pdfium` test**
+- [x] **Step 1: Write the failing `pdfium` test**
 
 `packages/engine/main/test/fixtures/measure-acrobat-metric.pdf` is Acrobat's own metric calibration: one page, one viewport with an `RL` measure that isn't named `EmbedPDF`.
 
@@ -175,12 +175,12 @@ fn a_written_viewport_reads_back_and_removes() {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p pdfium --test measure`
 Expected: FAIL, `could not find measure in pdfium`.
 
-- [ ] **Step 3: Write `crates/pdfium/src/measure.rs`**
+- [x] **Step 3: Write `crates/pdfium/src/measure.rs`**
 
 ```rust
 //! Measurement viewports (`/VP`) and their `/Measure` dictionaries.
@@ -423,12 +423,12 @@ impl Measure {
 
 Add `pub mod measure;` to `crates/pdfium/src/lib.rs`, and `read_utf16_opt` / `with_utf16` to `crates/pdfium/src/text.rs` if they aren't there under those names (`action.rs:379` has a private `read_utf16` of the same shape: move it to `text.rs` as `pub(crate) fn read_utf16_opt` and call it from both). Add `PdfiumError::WriteFailed(&'static str)` if `error.rs` has no variant for a refused write.
 
-- [ ] **Step 4: Run the `pdfium` test**
+- [x] **Step 4: Run the `pdfium` test**
 
 Run: `cargo test -p pdfium --test measure`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 5: Write the failing engine test**
+- [x] **Step 5: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/measure.rs
@@ -500,12 +500,12 @@ fn set_scale_refuses_an_unwritable_measure() {
 
 If `crates/epdf-engine/tests/common/mod.rs` has no `open_fixture` and `call`, add them there: `open_fixture` reads the file relative to the workspace root, sends `open.fatMem` with the bytes as the payload, then `pages.list`, and returns the doc id and the first page's `pageObjectNumber`; `call` adds a `jobId`, sends, panics on an `error` envelope, and returns `result`.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test measure`
 Expected: FAIL, the envelope's error is `unknown request kind "measure.viewports"`.
 
-- [ ] **Step 7: Write `crates/epdf-engine/src/features/measure.rs`**
+- [x] **Step 7: Write `crates/epdf-engine/src/features/measure.rs`**
 
 ```rust
 //! `measure.viewports` and `measure.setScale`: a page's measurement
@@ -681,12 +681,12 @@ Route both kinds in `crates/epdf-engine/src/host.rs`. `measure.viewports` goes w
 
 If `host.rs` has no `mutate_page` helper, follow the shape of the `"pages.rotate"` arm (`host.rs:821`) exactly and name the event the same way. Add `pub mod measure;` to `features/mod.rs`. Add both kinds to the wire-contract list `crates/epdf-engine/tests/wire_contract.rs` checks, if it enumerates kinds.
 
-- [ ] **Step 8: Run the engine tests**
+- [x] **Step 8: Run the engine tests**
 
 Run: `cargo test -p epdf-engine --test measure && cargo test -p epdf-engine`
 Expected: PASS, 3 new tests, nothing else broken.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine
@@ -705,7 +705,7 @@ git commit -m "Read and write measurement viewports in the Rust engine"
 
 Before writing a record, run `grep -rn 'pub struct PdfMeasurement\|pub struct PdfNumberFormat\|pub enum MeasureFraction' crates/epdf-ffi/src crates/plugins/*/src/ffi.rs`. If plan 05 already exported any of them, import that one and leave its mirror out of this file.
 
-- [ ] **Step 1: Add the feature and scaffolding**
+- [x] **Step 1: Add the feature and scaffolding**
 
 `crates/plugins/measurement/Cargo.toml`:
 
@@ -770,7 +770,7 @@ pub struct ScaleChangeOptions {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```rust
 // crates/plugins/measurement/tests/ffi.rs
@@ -1113,12 +1113,12 @@ fn closing_the_document_ends_its_subscriptions() {
 
 Add `epdf-annotation-core`, `epdf-plugin-annotation` and `epdf-plugin-interaction` to `[dev-dependencies]` with `default-features = false` if the test can't see them through the normal dependencies. Add `epdf-kernel` too, for `Error::engine`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-measurement --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_measurement`.
 
-- [ ] **Step 4: Write `crates/plugins/measurement/src/ffi.rs`**
+- [x] **Step 4: Write `crates/plugins/measurement/src/ffi.rs`**
 
 ```rust
 //! The measurement plugin through uniffi: typed records, one handle, one
@@ -2064,17 +2064,17 @@ impl MeasurementHandle {
 
 `create_measurement`'s promise resolves an `epdf_annotation_core::AnnotationRef`; if `MeasurementCapability::create_measurement` returns `Promise<epdf_plugin_annotation::AnnotationRef>` under another path, convert through whatever `From` plan 05 provides. Delete the `opts` identity helper if clippy flags it; it's there so the `set_scale` closure reads the same as its siblings.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-measurement --features uniffi --test ffi`
 Expected: PASS, 12 tests. If `measure_distance_reads_in_the_page_scale` reports a label other than `"1 m"`, read it from `cargo test -p epdf-plugin-measurement` vector `units-precision-and-presets` and match that; the plugin, not this test, owns label formatting.
 
-- [ ] **Step 6: Run the conformance vectors without `uniffi`**
+- [x] **Step 6: Run the conformance vectors without `uniffi`**
 
 Run: `cargo test -p epdf-plugin-measurement`
 Expected: PASS. The `cfg_attr` derives don't change the default build.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/measurement
@@ -2091,7 +2091,7 @@ git commit -m "Export the measurement plugin through uniffi"
 - Consumes: Task 2's wire kinds; Task 3's `MeasurementHandle`, `ffi::MeasurementConfig`.
 - Produces: `ViewerConfig.measurement: Option<MeasurementConfig>`; `ViewerHost::measurement(document_id: String) -> Result<Arc<MeasurementHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -2126,12 +2126,12 @@ fn viewports_decode_to_the_list() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL, `maps("page.measure")` is false.
 
-- [ ] **Step 3: Map the paths**
+- [x] **Step 3: Map the paths**
 
 In `translate.rs`, `route`:
 
@@ -2166,12 +2166,12 @@ and, because the request loop drops `null` values and a cleared scale is an expl
 
 Update the Appendix C row in `docs/superpowers/plans/2026-10-01-swift-package.md` for `page.measure.setScale`, `page.measure.viewports` to `mapped (08-measurement.md)`.
 
-- [ ] **Step 4: Run the translation tests**
+- [x] **Step 4: Run the translation tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing host test**
+- [x] **Step 5: Write the failing host test**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, following the file's existing `report.pdf` helpers:
 
@@ -2208,12 +2208,12 @@ fn a_measurement_scale_persists_through_the_native_engine() {
 
 Use the first id `presets()` returns if `"metric-1-100"` isn't one (`crates/plugins/measurement/src/scale.rs:19` lists them). `NullDelegate` and `fixture` are the helpers the file already defines; if they're named differently, use those names.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host a_measurement_scale`
 Expected: FAIL to compile, `no field measurement on ViewerConfig`.
 
-- [ ] **Step 7: Wire the host**
+- [x] **Step 7: Wire the host**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugin lines:
 
@@ -2258,12 +2258,12 @@ epdf-plugin-measurement = { path = "../plugins/measurement", default-features = 
     }
 ```
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-01-swift-package.md
@@ -2281,7 +2281,7 @@ git commit -m "Map page.measure and add measurement to ViewerHost"
 - Consumes: Task 4's generated `MeasurementHandle`, `ViewerHost.measurement(documentId:)`; plan 05's `PDFViewer.annotations(for:)` and `AnnotationCapability` for the round-trip test.
 - Produces: `MeasurementCapability`, `PDFViewer.measurement(for:)`.
 
-- [ ] **Step 1: Add the fixture to the build script**
+- [x] **Step 1: Add the fixture to the build script**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2289,7 +2289,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   packages/engine/main/test/fixtures/measure-acrobat-metric.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/MeasurementTests.swift
@@ -2435,12 +2435,12 @@ extension BaseSuite {
 
 The cancellation tests accept either outcome (a cancel can land after the call settled), and both then make one more call so a hung kernel fails the suite's one-minute limit. The same shape is `MetadataTests.cancellingARefreshDoesNotHang`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/MeasurementTests)`
 Expected: FAIL to compile, `value of type PDFViewer has no member measurement`.
 
-- [ ] **Step 4: Write `Measurement.swift`**
+- [x] **Step 4: Write `Measurement.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2641,12 +2641,12 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 5: Run the Swift tests**
+- [x] **Step 5: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS, including the 11 new `MeasurementTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple
@@ -2658,21 +2658,21 @@ git commit -m "Add MeasurementCapability to the Swift package"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 In `.github/workflows/plugin-rust.yml`, append `measurement` to the `crates=( ... )` list in plan-number order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | measurement | `MeasurementCapability` | `measurement: MeasurementConfig()` (with `interaction`, `annotation`) | `2026-10-06-swift-plugins/08-measurement.md` |
 ```
 
-- [ ] **Step 3: Mark Appendix A delivered**
+- [x] **Step 3: Mark Appendix A delivered**
 
 In `2026-10-01-swift-package.md` §A.3, change `**measurement** (D, requires ...)` to `**measurement** (D), delivered by 08-measurement.md (requires ...)`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-measurement --features uniffi
@@ -2688,7 +2688,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -2700,7 +2700,7 @@ libepdf_viewer_host.a (ios-sim, release): <before> -> <after> bytes"
 
 Take `<before>` from the same `ls` on `research/swift-plugins` before Task 1, and fill both numbers in.
 
-- [ ] **Step 6: Merge, rerun, clean up**
+- [ ] **Step 6: Merge, rerun, clean up** (the orchestrator merges)
 
 From the integration worktree:
 

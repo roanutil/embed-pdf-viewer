@@ -1240,6 +1240,94 @@ fn without_its_config_the_redaction_plugin_is_not_installed() {
     assert!(block_on(host.redaction(doc.id)).is_err());
 }
 
+use epdf_plugin_measurement::ScaleChangeOptions;
+use epdf_plugin_measurement::ffi::{
+    MeasurementConfig, MeasurementPageTarget, MeasurementReading, MeasurementScaleSource,
+};
+
+fn with_measurement() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        annotation: Some(AnnotationConfig::default()),
+        measurement: Some(MeasurementConfig::default()),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn a_measurement_scale_persists_through_the_native_engine() {
+    let host = with_measurement();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let m = block_on(host.measurement(doc.id.clone())).unwrap();
+    block_on(m.ensure_loaded(page, CancelToken::new())).unwrap();
+    let before = block_on(m.page_scale(page)).unwrap();
+    assert!(before.persistent, "the native engine answers page.measure");
+    assert_eq!(before.source, MeasurementScaleSource::Default);
+    let preset = block_on(m.presets()).unwrap()[0].id.clone();
+    let reports = block_on(m.set_preset(
+        MeasurementPageTarget::Page { page },
+        preset,
+        ScaleChangeOptions::default(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(reports.len(), 1);
+    assert_eq!(block_on(m.page_scale(page)).unwrap().source, MeasurementScaleSource::Owned);
+    let reading = block_on(m.measure_distance(
+        page,
+        epdf_ffi::Point { x: 0.0, y: 0.0 },
+        epdf_ffi::Point { x: 72.0, y: 0.0 },
+    ))
+    .unwrap();
+    assert!(matches!(reading, MeasurementReading::Value { .. }), "{reading:?}");
+}
+
+#[test]
+fn a_foreign_scale_is_read_and_kept_through_the_native_engine() {
+    let host = with_measurement();
+    let doc =
+        block_on(host.open_document(
+            test_support::fixture(test_support::MEASURE_FOREIGN_VIEWPORT),
+            options(),
+        ))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let m = block_on(host.measurement(doc.id.clone())).unwrap();
+    block_on(m.ensure_loaded(page, CancelToken::new())).unwrap();
+    let foreign = block_on(m.page_scale(page)).unwrap();
+    assert_eq!(foreign.source, MeasurementScaleSource::Foreign);
+    assert_eq!(foreign.measure.unwrap().ratio.as_deref(), Some("1 in = 1 m"));
+    let preset = block_on(m.presets()).unwrap()[0].id.clone();
+    block_on(m.set_preset(
+        MeasurementPageTarget::Page { page },
+        preset,
+        ScaleChangeOptions::default(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(block_on(m.page_scale(page)).unwrap().source, MeasurementScaleSource::Owned);
+    block_on(m.clear_scale(
+        MeasurementPageTarget::Page { page },
+        ScaleChangeOptions::default(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(block_on(m.page_scale(page)).unwrap().source, MeasurementScaleSource::Foreign);
+}
+
+#[test]
+fn without_its_config_the_measurement_plugin_is_not_installed() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.measurement(doc.id)).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

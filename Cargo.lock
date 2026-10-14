@@ -616,13 +616,16 @@ name = "epdf-plugin-measurement"
 version = "0.0.0"
 dependencies = [
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -863,6 +866,7 @@ dependencies = [
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
  "epdf-plugin-link",
+ "epdf-plugin-measurement",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
  "epdf-plugin-redaction",

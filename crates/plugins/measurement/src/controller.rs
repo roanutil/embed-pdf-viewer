@@ -78,6 +78,12 @@ impl MeasurementCapability {
         self.connect_viewports()
     }
 
+    /// The instance lifetime, aborted when the document closes. Not in the
+    /// TypeScript: the foreign handle's `instance-closed` check reads it.
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.s().cx.lifetime()
+    }
+
     /// May write a page scale (`doc.annotate.modify`).
     pub fn can_calibrate(&self) -> bool {
         self.s().can_calibrate()

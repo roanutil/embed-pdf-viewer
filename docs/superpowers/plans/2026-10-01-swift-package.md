@@ -3209,7 +3209,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 
 **redaction** (D, requires `annotation`, optional `selection`, `search`), delivered by 07-redaction.md. Members: `pending` (`listPending`), `pending_item` (`getPending`), `pending_count`, `estimate_collateral`, `mark_selection`, `mark_area`, `mark_page`, `mark_matches`, `unmark`, `clear_pending`, `update_label`, `apply`, `apply_pages`, `apply_all`, `can_mark`, `can_apply`, `is_applying`, `last_result`, `subscribe` (applied, pending changed).
 
-**measurement** (D, requires `annotation`, `interaction`). Members: `can_measure`, `page_scale`, `is_busy`, `last_reports`, `presets`, `units`, `area_units`, `readout`, `measure_distance`, `measure_area`, `calibration_request`, `set_scale`, `calibrate`, `set_unit`, `set_area_unit`, `set_precision`, `set_preset`, `clear_scale`, `start_calibration`, `dismiss_calibration`, `create_measurement`, `can_calibrate`, `ensure_loaded`, `subscribe` (scale changed, calibration requested/completed/dismissed).
+**measurement** (D, requires `annotation`, `interaction`), delivered by 08-measurement.md. Members: `can_measure`, `page_scale`, `is_busy`, `last_reports`, `presets`, `units`, `area_units`, `readout`, `measure_distance`, `measure_area`, `calibration_request`, `set_scale`, `calibrate`, `set_unit`, `set_area_unit`, `set_precision`, `set_preset`, `clear_scale`, `start_calibration`, `dismiss_calibration`, `create_measurement`, `can_calibrate`, `ensure_loaded`, `subscribe` (scale changed, calibration requested/completed/dismissed).
 
 **stamp** (W, optional `annotation`, `actions`). Port: `AssetEngine` is a second `NativeEngine` the host builds for stamp assets. Members: `libraries`, `library`, `assets`, `asset`, `asset_preview`, `render_asset_preview`, `read_asset_bytes`, `export_library`, `can_place`, `can_import`, `create_library`, `update_library`, `import_library`, `delete_library`, `create_asset`, `create_asset_from_annotations`, `update_asset`, `delete_asset`, `move_asset`, `duplicate_asset`, `arm_asset`, `place_asset`, `place_asset_on_pages`, `disarm`, `armed_asset`, `subscribe` (library changed/created/updated/deleted, asset created/updated/deleted, arm changed).
 
@@ -3262,6 +3262,6 @@ Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with 
 | `forms.exportData`, `forms.importData` | `forms.export`, `forms.import` | B2 |
 | `forms.submit` | none on the wire | B3 (host submit handler) |
 | `redaction.apply` | same | B2 |
-| `page.measure.setScale`, `page.measure.viewports` | none on the wire | B2 (needs an `epdf-engine` addition) |
+| `page.measure.setScale`, `page.measure.viewports` | `measure.setScale`, `measure.viewports` | mapped (08-measurement.md) |
 | `actions.read` | same | B3 |
 | `signatures.*` (`list`, `analyze`, `contents`, `prepare`, `abort`, `revisionBytes`) | none on the wire | B4 (needs `epdf-engine` work) |

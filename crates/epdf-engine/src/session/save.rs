@@ -167,6 +167,11 @@ pub enum DocumentEventInit {
     FormWidgetAttached(serde_json::Value),
     #[serde(rename = "form.widgetDetached")]
     FormWidgetDetached(serde_json::Value),
+    /// `measure.setScale`. The TypeScript publishes it from
+    /// `LocalPageMeasureService` rather than the worker, with the same
+    /// `PageScaleResult` the call answers.
+    #[serde(rename = "page.viewportsChanged")]
+    PageViewportsChanged(serde_json::Value),
 }
 
 impl DocumentEventInit {
@@ -198,7 +203,8 @@ impl DocumentEventInit {
             | Self::FormFieldUpdated(v)
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
-            | Self::FormWidgetDetached(v) => v,
+            | Self::FormWidgetDetached(v)
+            | Self::PageViewportsChanged(v) => v,
         }
     }
 
@@ -226,6 +232,7 @@ impl DocumentEventInit {
             Self::FormFieldDeleted(_) => "form.fieldDeleted",
             Self::FormWidgetAttached(_) => "form.widgetAttached",
             Self::FormWidgetDetached(_) => "form.widgetDetached",
+            Self::PageViewportsChanged(_) => "page.viewportsChanged",
         }
     }
 

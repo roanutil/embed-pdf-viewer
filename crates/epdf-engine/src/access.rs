@@ -160,6 +160,16 @@ impl OwnedDocument {
         self.document.page_count()
     }
 
+    /// A page's display index, for the `...ByIndex` reads that take one.
+    pub fn page_index(&self, page: PageObjectNumber) -> Result<u32, EngineError> {
+        self.index_by_object_number.get(&page).copied().ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no page with object number {page}"),
+            )
+        })
+    }
+
     pub fn document(&self) -> &Document {
         &self.document
     }

@@ -102,6 +102,9 @@ impl Session {
         if let Some(redaction) = config.redaction {
             plugins.push(epdf_plugin_redaction::redaction_plugin(redaction.into()));
         }
+        if let Some(measurement) = config.measurement {
+            plugins.push(epdf_plugin_measurement::measurement_plugin(measurement.into()));
+        }
         if config.page_edit {
             plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }
