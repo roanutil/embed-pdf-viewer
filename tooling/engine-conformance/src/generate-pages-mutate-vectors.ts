@@ -20,6 +20,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenPageRefs, pageObjectNumbers, pageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -273,11 +274,11 @@ async function readCase(entry: MutateCase): Promise<unknown> {
     try {
       const run = async () => {
         if (entry.move) {
-          return (await doc.pages.move(entry.move.pages as never, entry.move.destIndex)).layout;
+          return (await doc.pages.move(pageRefs(entry.move.pages) as never, entry.move.destIndex)).layout;
         }
         if (entry.rotate) {
           return (
-            await doc.pages.rotate(entry.rotate.pages as never, entry.rotate.rotation as never)
+            await doc.pages.rotate(pageRefs(entry.rotate.pages) as never, entry.rotate.rotation as never)
           ).layout;
         }
         if (entry.insertBlank) {
@@ -285,18 +286,18 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             { size: entry.insertBlank.size, count: entry.insertBlank.count } as never,
             entry.insertBlank.destIndex,
           );
-          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+          return { layout: result.layout, inserted: pageObjectNumbers(result.insertedPages) };
         }
         if (entry.flatten) {
           const result = await doc.pages.flatten(
-            entry.flatten.pages as never,
+            pageRefs(entry.flatten.pages) as never,
             entry.flatten.usage,
           );
           // The whole result, not just the per-page outcomes: it echoes
           // the request back, and an engine that lost the echo would still
           // agree about what happened.
-          const { meta: _meta, ...flattened } = result as Record<string, unknown>;
-          return { flattened };
+          const { meta: _meta, pages, ...rest } = result as Record<string, unknown>;
+          return { flattened: { pageObjectNumbers: pageObjectNumbers(pages), ...rest } };
         }
         if (entry.insert) {
           const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
@@ -304,9 +305,9 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             source.buffer as ArrayBuffer,
             entry.insert.destIndex,
           );
-          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+          return { layout: result.layout, inserted: pageObjectNumbers(result.insertedPages) };
         }
-        return (await doc.pages.delete(entry.delete!.pages as never)).layout;
+        return (await doc.pages.delete(pageRefs(entry.delete!.pages) as never)).layout;
       };
 
       if (entry.refused) {
@@ -319,7 +320,7 @@ async function readCase(entry: MutateCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      const produced = (await run()) as Record<string, unknown>;
+      const produced = flattenPageRefs(await run()) as Record<string, unknown>;
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
       if ('flattened' in produced) return { ...entry, flattened: produced.flattened };
