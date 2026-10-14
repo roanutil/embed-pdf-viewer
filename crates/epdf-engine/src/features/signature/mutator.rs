@@ -12,8 +12,9 @@
 //! The TypeScript's candidate is a fresh layer over a memory base; a plain
 //! document over the same bytes is what the fork's candidate calls are
 //! specified against, and what this uses. The file-backed store
-//! (`FileCandidateStore`) and `CandidateFinalizer.ts` are the cloud's and
-//! are not ported.
+//! (`FileCandidateStore`) is the cloud's and is not ported.
+//! `CandidateFinalizer.ts`, the session-less half of a durable signing, is
+//! [`finalize_candidate`].
 
 use pdfium::{Document, Library, PdfSaveMode, SavedCandidate, SignaturePrepareOptions};
 use serde::{Deserialize, Serialize};
@@ -516,6 +517,142 @@ pub fn abort(session: &DocumentSession, signing_id: &str) -> SignatureAbortResul
         return SignatureAbortResult { status: AbortStatus::AlreadyCompleted };
     }
     SignatureAbortResult { status: AbortStatus::Unknown }
+}
+
+/// `FinalizeCandidateInput`, less the CMS, which travels as a payload.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FinalizeCandidateInput {
+    /// The rebuilt candidate on this filesystem; patched in place.
+    pub path: String,
+    /// The `/ByteRange` the prepare reported.
+    pub byte_range: [u64; 4],
+    /// The reserved `/Contents` size the prepare reported.
+    pub contents_size: u64,
+    pub field_object_number: u32,
+    #[serde(default)]
+    pub password: Option<String>,
+}
+
+/// `FinalizedCandidate`: what the sealed FILE says, not what the writer
+/// meant.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FinalizedCandidate {
+    pub signature: SignatureDto,
+    pub protection: DocumentProtection,
+    /// The version the sealed file IS: hash and length of the whole file.
+    pub version: BaseVersionInfo,
+}
+
+/// `CandidateFinalizer.finalize`: the session-less half of a durable
+/// signing. The CMS is hex-encoded into the candidate file's `/Contents`
+/// hole in place (only the hole is read and written), then the file is
+/// opened like any other and read back through the signature model.
+/// Nothing here touches a live session.
+pub fn finalize_candidate(
+    input: &FinalizeCandidateInput,
+    cms: &[u8],
+) -> Result<FinalizedCandidate, EngineError> {
+    use std::io::{Read, Seek, SeekFrom, Write};
+
+    let invalid = |message: String| EngineError::with_message(EngineErrorCode::InvalidArg, message);
+    let path = std::path::Path::new(&input.path);
+    let size = std::fs::metadata(path)
+        .map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("the candidate could not be opened: {e}"),
+            )
+        })?
+        .len();
+    let [r0, r1, r2, r3] = input.byte_range;
+    if r0 != 0 || r1 >= r2 || r2.checked_add(r3) != Some(size) {
+        return Err(invalid(format!(
+            "byteRange [{r0} {r1} {r2} {r3}] does not span a {size}-byte candidate"
+        )));
+    }
+    // The hole is `<` + hex digits + `>`: the range's gap, less the
+    // delimiters.
+    let hex_length = (r2 - r1).checked_sub(2);
+    if hex_length != input.contents_size.checked_mul(2) {
+        return Err(invalid(format!(
+            "the /Contents hole holds {} hex digits, not the {} of contentsSize",
+            (r2 - r1) as i128 - 2,
+            i128::from(input.contents_size) * 2
+        )));
+    }
+    let hex_length = hex_length.expect("equal to a checked product");
+    if cms.first() != Some(&0x30) {
+        return Err(refused("the CMS is not a DER SEQUENCE"));
+    }
+    if cms.len() as u64 > input.contents_size {
+        return Err(refused(format!(
+            "the CMS ({} bytes) does not fit the reserved {} bytes",
+            cms.len(),
+            input.contents_size
+        )));
+    }
+
+    // `writeContentsIntoFile`: the hole alone, its delimiters checked so a
+    // wrong offset patches nothing.
+    let io = |e: std::io::Error| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("patching the candidate failed: {e}"),
+        )
+    };
+    let mut file = std::fs::OpenOptions::new().read(true).write(true).open(path).map_err(io)?;
+    let mut span = vec![0u8; (hex_length + 2) as usize];
+    file.seek(SeekFrom::Start(r1)).map_err(io)?;
+    file.read_exact(&mut span).map_err(io)?;
+    if span.first() != Some(&b'<') || span.last() != Some(&b'>') {
+        return Err(invalid(
+            "the byteRange gap is not a <\u{2026}> /Contents hole of the candidate".to_owned(),
+        ));
+    }
+    if !pdfium::write_signature_contents(&mut span, 1, hex_length, cms) {
+        return Err(refused("the CMS is not one DER object that fits the reserved /Contents"));
+    }
+    file.seek(SeekFrom::Start(r1)).map_err(io)?;
+    file.write_all(&span).map_err(io)?;
+    file.flush().map_err(io)?;
+    drop(file);
+
+    // Opened afresh, never through a session: the file is this attempt's
+    // own.
+    let access = pdfium::FileAccess::from_file(path).map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::NotFound,
+            format!("the candidate could not be opened: {e}"),
+        )
+    })?;
+    let document =
+        Document::from_file_access(Library::acquire(), &access, input.password.as_deref())
+            .map_err(|e| {
+                EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
+            })?;
+    if document.is_encrypted() {
+        document.set_runtime_owner_permissions(true);
+    }
+    assert_sealed_signature(&document, input.field_object_number, input.byte_range, cms)?;
+    let snapshot = read_snapshot(&document)?;
+    let signature = snapshot
+        .signatures
+        .into_iter()
+        .find(|s| s.field_object_number() == input.field_object_number)
+        .ok_or_else(|| refused("the sealed bytes lost the signature field"))?;
+    let byte_length = document.base_bytes_size();
+    let digest = super::reader::digest_range(
+        &document,
+        [0, byte_length, byte_length, 0],
+        DigestAlgorithm::Sha256,
+    )?;
+    Ok(FinalizedCandidate {
+        signature,
+        protection: snapshot.protection,
+        version: BaseVersionInfo { sha256: super::reader::to_hex(&digest), byte_length },
+    })
 }
 
 /// `sealCheck.ts` `assertSealedSignature`: the sealed bytes carry a

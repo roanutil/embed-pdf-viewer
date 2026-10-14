@@ -326,6 +326,21 @@ impl Host {
                 )?;
                 return Ok(encoded_response(encoded));
             }
+            // `WorkerHost.handleSignaturesFinalizeCandidate`: session-less,
+            // like `document.renderPageFile`. The candidate file is the
+            // caller's, patched in place and read back through a document
+            // that is never registered as a session.
+            "signatures.finalizeCandidate" => {
+                let input: crate::features::signature::mutator::FinalizeCandidateInput =
+                    serde_json::from_value(body.clone()).map_err(|e| {
+                        EngineError::with_message(
+                            EngineErrorCode::WireFormat,
+                            format!("signatures.finalizeCandidate is not the shape it takes: {e}"),
+                        )
+                    })?;
+                let cms = payload(&payloads, 0, "the CMS")?;
+                value(&crate::features::signature::mutator::finalize_candidate(&input, cms)?)?
+            }
             _ => return self.route_session(&header, &body, payloads, &cancel),
         };
         Ok(ok(result))
