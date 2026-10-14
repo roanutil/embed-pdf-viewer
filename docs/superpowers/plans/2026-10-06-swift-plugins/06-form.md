@@ -79,7 +79,7 @@ platforms/apple/build-xcframework.sh   + form_fields.pdf in FIXTURES
 - Consumes: nothing new.
 - Produces: `epdf_ffi::FormFieldRef { ObjectNumber { field_object_number: u32 }, Fqn { name: String } }` with `to_json(&self) -> serde_json::Value` and `from_json(&Value) -> Result<Self, epdf_kernel::Error>`; `epdf_ffi::FormFieldFamily` (`Text`, `Checkbox`, `Radio`, `Combobox`, `Listbox`, `Pushbutton`, `Signature`, `Unknown`) with `as_str` and `parse`. Plan 16 uses both by name.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-form -b research/swift-form research/swift-plugins
@@ -88,7 +88,7 @@ cd .claude/worktrees/swift-form
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 05 have merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` and `rg -n 'interaction' crates/epdf-viewer-host/src/api.rs` both print a line.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/form.rs`:
 
@@ -124,12 +124,12 @@ fn families_parse_their_engine_names() {
 }
 ```
 
-- [ ] **Step 3: Run it to see it fail**
+- [x] **Step 3: Run it to see it fail**
 
 Run: `cargo test -p epdf-ffi --test form`
 Expected: compile errors, `cannot find type FormFieldRef in crate epdf_ffi`.
 
-- [ ] **Step 4: Write `form.rs`**
+- [x] **Step 4: Write `form.rs`**
 
 ```rust
 //! The form records more than one plugin returns: how a field is addressed
@@ -224,12 +224,12 @@ impl FormFieldFamily {
 
 In `crates/epdf-ffi/src/lib.rs`: `pub mod form;` and `pub use form::{FormFieldFamily, FormFieldRef};`. `serde_json` is already a dependency after plan 05's Task 1.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-ffi --test form`
 Expected: 4 passed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-ffi
