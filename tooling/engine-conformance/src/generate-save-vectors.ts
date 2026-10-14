@@ -95,17 +95,17 @@ async function describe(
     const metadata = await doc.metadata.read();
     const annotations = await doc.annotations.listRawAll();
     const byPage = new Map(
-      annotations.pages.map((p) => [p.pageState.pageObjectNumber, p.annotations.length]),
+      annotations.pages.map((p) => [p.pageState.page.pageObjectNumber, p.annotations.length]),
     );
     const pages = [];
     for (const page of listing.pages) {
-      const handle = doc.page(page.pageObjectNumber);
+      const handle = doc.page(page.ref);
       pages.push({
         width: page.size.width,
         height: page.size.height,
         rotation: page.rotation,
         text: (await handle.text.read()).text,
-        annotationCount: byPage.get(page.pageObjectNumber) ?? 0,
+        annotationCount: byPage.get(page.ref.pageObjectNumber) ?? 0,
       });
     }
     return {

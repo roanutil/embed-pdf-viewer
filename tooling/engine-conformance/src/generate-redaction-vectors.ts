@@ -19,6 +19,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenPageRefs, pageRef, pageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -122,6 +123,33 @@ const CASES: readonly RedactionCase[] = [
 ];
 
 /** The fixture with its three markings stripped, for the unchanged case. */
+/**
+ * A case's scope is written in the wire's shape, which is what the vector
+ * pins; the public API takes PageRefs (`9f13cea3c`), so convert going in.
+ */
+function publicScope(scope: Record<string, unknown>): unknown {
+  if (scope.kind === 'pages') {
+    return { kind: 'pages', pages: pageRefs(scope.pageObjectNumbers as number[]) };
+  }
+  const refs = scope.refs as Record<string, unknown>[];
+  return {
+    kind: scope.kind,
+    refs: refs.map(({ pageObjectNumber, revision, ...ref }) => ({
+      ...ref,
+      page: pageRef(pageObjectNumber as number),
+      ...(revision === undefined
+        ? {}
+        : {
+            revision: {
+              docSessionId: (revision as { docSessionId: string }).docSessionId,
+              page: pageRef((revision as { pageObjectNumber: number }).pageObjectNumber),
+              generation: (revision as { generation: number }).generation,
+            },
+          }),
+    })),
+  };
+}
+
 function needsStrippedFixture(entry: RedactionCase): boolean {
   return entry.name === 'page-with-no-markings';
 }
@@ -145,9 +173,9 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
     try {
       if (needsStrippedFixture(entry)) {
         // Apply everything first, so the second apply has nothing left.
-        await doc.redaction.apply({ kind: 'pages', pageObjectNumbers: [PAGE] } as never);
+        await doc.redaction.apply({ kind: 'pages', pages: [pageRef(PAGE)] } as never);
       }
-      const run = () => doc.redaction.apply(entry.scope as never);
+      const run = () => doc.redaction.apply(publicScope(entry.scope) as never);
       if (entry.refused) {
         let code: string | null = null;
         try {
@@ -161,7 +189,7 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       const result = (await run()) as Record<string, unknown>;
       // What is left on the page afterwards, which is how a caller sees
       // that the markings went and the rest did not.
-      const page = doc.page(PAGE as never);
+      const page = doc.page(pageRef(PAGE) as never);
       const remaining = (await page.annotations.list()).annotations.map(
         (annotation: { subtype: string; nm: string | null }) => ({
           subtype: annotation.subtype,
@@ -170,7 +198,7 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       );
       return {
         ...entry,
-        results: result.results,
+        results: flattenPageRefs(result.results),
         removedAnnotationCount: result.removedAnnotationCount,
         remaining,
       };

@@ -25,6 +25,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { pageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -102,9 +103,9 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
       sourceObjectNumbers = entry.sourcePages.map((index) => {
         const page = listing.pages[index];
         if (!page) throw new Error(`${entry.name}: the fixture has no page ${index}`);
-        return page.pageObjectNumber;
+        return page.ref.pageObjectNumber;
       });
-      extracted = await doc.pages.extract(sourceObjectNumbers);
+      extracted = await doc.pages.extract(pageRefs(sourceObjectNumbers));
     } finally {
       await doc.close();
     }
@@ -118,7 +119,7 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
       const listing = await reopened.pages.list();
       const pages: ExtractedPage[] = [];
       for (const page of listing.pages) {
-        const handle = reopened.page(page.pageObjectNumber);
+        const handle = reopened.page(page.ref);
         pages.push({
           width: page.size.width,
           height: page.size.height,
