@@ -29,6 +29,7 @@ mod geom;
 mod library;
 mod metadata;
 mod metadata_write;
+pub mod named_pages;
 mod page;
 mod page_list;
 mod page_write;

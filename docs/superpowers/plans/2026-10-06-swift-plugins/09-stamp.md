@@ -126,7 +126,7 @@ git commit -m "Bind the fork's named-page registry in pdfium-sys"
 **Interfaces:**
 - Produces: `pages.list` results carry `namedPages: [{tree: "pages" | "templates", name, pageObjectNumber}]` (`packages/engine/core/src/dto/NamedPage.ts`); wire kinds `pages.setName` (`{name, pageObjectNumber, replace?}`) and `pages.removeName` (`{name}`), both answering the fresh page list as `{layout}` inside a mutation envelope.
 
-- [ ] **Step 1: Write the failing `pdfium` test**
+- [x] **Step 1: Write the failing `pdfium` test**
 
 ```rust
 // crates/pdfium/tests/named_pages.rs
@@ -160,12 +160,12 @@ fn an_empty_name_is_refused() {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p pdfium --test named_pages`
 Expected: FAIL, `could not find named_pages in pdfium`.
 
-- [ ] **Step 3: Write `crates/pdfium/src/named_pages.rs`**
+- [x] **Step 3: Write `crates/pdfium/src/named_pages.rs`**
 
 ```rust
 //! The catalog's `/Names /Pages` and `/Names /Templates` trees.
@@ -246,12 +246,12 @@ impl Document {
 
 Check `EPDFDoc_GetNamedPageAt`'s exact parameter order against `epdf_named_pages.h:67-80` before running; the call above assumes `(document, tree, index, buffer, buflen, out_page_obj_num)`. If the header orders them differently, reorder the call and keep the function's signature. `read_utf16_opt` is the helper plan 08 moved into `text.rs`; if plan 08 hasn't merged, move `action.rs:379`'s `read_utf16` there now under that name. Add `PdfiumError::WriteFailed(&'static str)` if it's absent. Add `pub mod named_pages;` to `lib.rs`, and `Document::page_object_number(index) -> Result<u32, PdfiumError>` if the crate has none under another name (`EPDFDoc_GetPageObjectNumberByIndex`).
 
-- [ ] **Step 4: Run the `pdfium` test**
+- [x] **Step 4: Run the `pdfium` test**
 
 Run: `cargo test -p pdfium --test named_pages`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 5: Write the failing engine test**
+- [x] **Step 5: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/named_pages.rs
@@ -299,12 +299,12 @@ fn replace_moves_a_name() {
 
 `common::{call, open_fixture}` are the helpers plan 08 added to `crates/epdf-engine/tests/common/mod.rs`; add them as that plan describes if they're missing.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test named_pages`
 Expected: FAIL, unknown request kind `pages.setName`.
 
-- [ ] **Step 7: Implement**
+- [x] **Step 7: Implement**
 
 In `crates/epdf-engine/src/features/pages.rs`, where the page list snapshot is built, add `named_pages` to the serialized struct, skipped when empty so existing vectors stay byte-identical:
 
@@ -383,12 +383,12 @@ pub fn remove_name(doc: &pdfium::Document, name: &str) -> Result<(), EngineError
 
 Route both in `host.rs` beside `"pages.move"` (line 807), copying that arm's shape: resolve the page (`page_field`) so an unknown page is `NotFound`, call the writer, then answer `{layout: <fresh pages.list>}` through the same mutation-envelope helper `pages.move` uses, with no revision bump (names are layout).
 
-- [ ] **Step 8: Run the engine tests**
+- [x] **Step 8: Run the engine tests**
 
 Run: `cargo test -p epdf-engine --test named_pages && cargo test -p epdf-engine`
 Expected: PASS, and the existing `pages.list` vectors unchanged.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine

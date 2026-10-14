@@ -143,6 +143,16 @@ pub enum DocumentEventInit {
     PagesInserted(serde_json::Value),
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
+    /// `pages.setName` and `pages.removeName`. The event names the key and
+    /// the page it now points at (`None` once removed) beside the result,
+    /// as `LocalDocumentPagesService.runNameJob` publishes it.
+    #[serde(rename = "pages.named", rename_all = "camelCase")]
+    PagesNamed {
+        name: String,
+        page_object_number: Option<u32>,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "redaction.applied")]
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
@@ -199,6 +209,7 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
             | Self::FormWidgetDetached(v) => v,
+            Self::PagesNamed { result, .. } => result,
         }
     }
 
@@ -214,6 +225,7 @@ impl DocumentEventInit {
             Self::PagesDeleted(_) => "pages.deleted",
             Self::PagesInserted(_) => "pages.inserted",
             Self::PagesFlattened(_) => "pages.flattened",
+            Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
             Self::AttachmentCreated(_) => "attachment.created",
