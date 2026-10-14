@@ -81,6 +81,8 @@ pub struct DocumentSession {
     open: Option<OpenState>,
     /// Bytes retained for a later unlock attempt. Locked sessions only.
     parked_bytes: Option<Vec<u8>>,
+    /// The authority a parked open asked for, applied when it unlocks.
+    parked_authority: Option<SessionAuthority>,
     mutation_sequence: Cell<u64>,
     /// What this session's caller may do. Grants nothing until open sets it,
     /// so a session that failed to open cannot be read through.
@@ -103,6 +105,7 @@ impl DocumentSession {
             session_id: session_id.into(),
             open: None,
             parked_bytes: None,
+            parked_authority: None,
             mutation_sequence: Cell::new(0),
             authority: SessionAuthority::default(),
             retained: Vec::new(),
@@ -280,6 +283,28 @@ impl DocumentSession {
             ));
         }
         self.parked_bytes = Some(bytes);
+        Ok(())
+    }
+
+    /// [`DocumentSession::park_locked`], remembering the authority the open
+    /// asked for so the unlock grants the same and no more.
+    pub fn park_locked_under(
+        &mut self,
+        bytes: Vec<u8>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
+        self.park_locked(bytes)?;
+        self.parked_authority = Some(authority);
+        Ok(())
+    }
+
+    /// Unlock a parked session under the authority it was parked with, or
+    /// full authority when it was parked without one.
+    pub fn unlock_parked(&mut self, password: &str) -> Result<(), EngineError> {
+        let authority =
+            self.parked_authority.clone().unwrap_or_else(SessionAuthority::unrestricted);
+        self.unlock_with(password, authority)?;
+        self.parked_authority = None;
         Ok(())
     }
 

@@ -57,12 +57,12 @@ fn a_document_opens_and_lists_its_pages() {
 }
 
 #[test]
-fn a_locked_document_reports_that_it_needs_a_password() {
+fn a_locked_document_opens_as_a_locked_tab() {
     let host = started();
-    let error =
+    let doc =
         block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
-            .unwrap_err();
-    assert!(format!("{error}").contains("DocPasswordRequired"), "{error}");
+            .unwrap();
+    assert_eq!(doc.status, DocumentStatus::Locked, "{doc:?}");
 }
 
 #[test]
@@ -77,16 +77,16 @@ fn the_password_reaches_the_engine() {
 #[test]
 fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
     let host = started();
-    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
+    // A wrong password fails the open; no password at all opens locked.
+    let options = OpenDocumentOptions { password: Some("nope".into()), ..options() };
+    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options))
         .unwrap_err();
     let documents = block_on(host.documents()).unwrap();
     let [tab] = documents.as_slice() else { panic!("{documents:?}") };
     assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
     let error = tab.error.as_ref().expect("a failed tab without its error");
-    // The kernel's `toPluginError` maps the engine's `DocPasswordRequired`
-    // to `permission-denied` and keeps the engine code in the message.
-    assert_eq!(error.code, "permission-denied", "{error:?}");
-    assert!(error.message.starts_with("DocPasswordRequired"), "{error:?}");
+    // The kernel's `toPluginError` keeps the engine code in the message.
+    assert!(error.message.starts_with("DocPasswordIncorrect"), "{error:?}");
 }
 
 #[test]

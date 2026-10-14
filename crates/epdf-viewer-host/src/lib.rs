@@ -151,9 +151,8 @@ impl ViewerHost {
         self.call_promise(|s| Ok(s.kernel.destroy()), |()| ()).await
     }
 
-    /// A locked document rejects with code `DocPasswordRequired`: the
-    /// native engine fails the open itself, so the kernel records a failed
-    /// tab rather than a locked one. Open again with `password` set.
+    /// A password-protected document opened without its password resolves
+    /// as a `Locked` tab; `unlock_document` opens it.
     pub async fn open_document(
         &self,
         bytes: Vec<u8>,

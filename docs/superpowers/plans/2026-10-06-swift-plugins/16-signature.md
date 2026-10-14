@@ -143,7 +143,7 @@ git commit -m "Bind the fork's signature, checkpoint and digest headers"
 
 `SessionAuthority` and `check_capability` already exist (`crates/epdf-engine/src/session/authority.rs:47-123`, `auth/scope/resolver.rs:43-104`). What's missing is the wire: `open.fatMem` always passes `SessionAuthority::unrestricted()` (`host.rs:1169`), and the native document ignores the answer. The kernel reads permissions only through `DocumentSecurity`, so the native side must answer from the same authority the engine enforces with, or a control would show enabled and then fail.
 
-- [ ] **Step 1: Write the failing engine test**
+- [x] **Step 1: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/security_scope.rs
@@ -178,12 +178,12 @@ fn an_open_with_a_narrow_scope_refuses_a_metadata_write() {
 
 `open_fixture_with` sends `open.fatMem` with the extra fields merged into the request; add it to `tests/common/mod.rs` beside `open_fixture`. The bit position for "fill in forms" is bit 9 (`1 << 8`), per `resolver.ts:306`.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test security_scope`
 Expected: FAIL to compile, no `DocSign`.
 
-- [ ] **Step 3: Add the capabilities and read the scope**
+- [x] **Step 3: Add the capabilities and read the scope**
 
 In `types.rs`, add `DocSign` and `DocSignCertify` to `DocCapability`, to `ALL` (its length becomes 23), and to `as_str` (`"doc.sign"`, `"doc.sign.certify"`), in the order `packages/engine/core/src/auth/scope/types.ts:52-53` declares them. Add both strings to the known list in `parser.rs` (`parser.ts:36-37`). In `resolver.rs`, where bit 6 or bit 9 grants `DocFormsFill`, grant `DocSign` too:
 
@@ -206,12 +206,12 @@ In `types.rs`, add `DocSign` and `DocSignCertify` to `DocCapability`, to `ALL` (
 
 and pass `authority`. The registry already calls `set_pdf_bits` once it has probed the document (`authority.rs:83-92`); confirm `open_memory` does, and add the call after the probe if it doesn't. Add `"doc.sign"` and `"doc.sign.certify"` to any capability list `tests/wire_contract.rs` or the scope vectors check, and regenerate nothing: `tooling/engine-conformance/vectors/scope/` comes from the TypeScript, which already has both.
 
-- [ ] **Step 4: Run the engine tests**
+- [x] **Step 4: Run the engine tests**
 
 Run: `cargo test -p epdf-engine`
 Expected: PASS, including `security_scope` and the scope vectors.
 
-- [ ] **Step 5: Write the failing host test**
+- [x] **Step 5: Write the failing host test**
 
 ```rust
 // crates/epdf-viewer-host/tests/security.rs
@@ -262,12 +262,12 @@ fn the_default_scope_allows_everything() {
 
 `encrypted-hello.pdf`'s password is the one `pdfium-multiplatform-prototype/fixtures/README.md` gives; use that string. Move `NullDelegate` and `fixture` into `tests/common/mod.rs` if they live inside `viewer_host.rs` today.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test security`
 Expected: FAIL, `no field scope`; once that compiles, `a_locked_document_opens_locked_and_unlocks` fails because the open rejects with `DocPasswordRequired` (`lib.rs:128-130`).
 
-- [ ] **Step 7: Implement `NativeSecurity` and the locked open**
+- [x] **Step 7: Implement `NativeSecurity` and the locked open**
 
 `api.rs`, in `ViewerConfig`, before the plugin fields:
 
@@ -398,12 +398,12 @@ In `PDFViewer.swift`, replace `unlock`'s doc comment:
   /// tab stays locked.
 ```
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS. Earlier tests that expected a locked open to throw (`a_locked_document_reports_that_it_needs_a_password`, from the spec's Task 3) now fail; change them to assert `DocumentStatus::Locked` and say why in the commit message. The Swift `ViewerTests` equivalent changes the same way in Task 10.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-engine crates/epdf-viewer-host platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift

@@ -31,7 +31,7 @@ impl Session {
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
         HostTable::install_bytes_resolver();
-        let engine = Rc::new(NativeEngine::new(worker.clone(), post.clone()));
+        let engine = Rc::new(NativeEngine::new(worker.clone(), post.clone(), config.scope.clone()));
         let reporter = delegate.clone();
         let options = KernelOptions {
             report: Some(Rc::new(move |error: &Error| {

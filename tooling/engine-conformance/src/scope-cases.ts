@@ -83,6 +83,8 @@ export const ALL_CAPABILITIES = [
   'doc.metadata.modify',
   'doc.attachments.modify',
   'doc.redact',
+  'doc.sign',
+  'doc.sign.certify',
 ] as const;
 
 const bit = (n: number) => 1 << (n - 1);

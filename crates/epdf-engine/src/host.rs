@@ -35,6 +35,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::access::DocumentAccess;
+use crate::auth::scope::{DocCapability, IdentityClaims};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::session::authority::SessionAuthority;
@@ -575,6 +576,13 @@ impl Host {
             }
             "document.checkPasswordPermissions" => {
                 let password = string_field(body, "password")?;
+                // The one request a locked session accepts: on a parked
+                // session, "check this password" loads the parked bytes with
+                // it (`WorkerHost.handleDocumentCheckPasswordPermissions`).
+                // A wrong one fails and leaves the session parked.
+                if self.sessions.is_locked(&key) {
+                    self.sessions.unlock_parked(&key, &password)?;
+                }
                 let mode: crate::features::security::reader::PasswordMode =
                     optional(body, "mode")?.unwrap_or_default();
                 let probe = self.sessions.check_password_permissions(
@@ -588,6 +596,7 @@ impl Host {
 
             // ── Mutations ─────────────────────────────────────────────
             "metadata.update" => {
+                self.sessions.session(&key)?.require(DocCapability::DocMetadataModify)?;
                 let patch: crate::dto::MetadataPatch = field(body, "patch")?;
                 let result = {
                     let d = self.document(&key)?;
@@ -1160,14 +1169,19 @@ impl Host {
         let bytes = payloads.remove(0);
         let password = body.get("password").and_then(serde_json::Value::as_str);
         let key = header.key()?;
-        match self.sessions.open_memory(
-            key.clone(),
-            bytes,
-            password,
-            // Unrestricted until the scope arrives on the wire: G3's
-            // resolver takes a scope string and no caller sends one yet.
-            SessionAuthority::unrestricted(),
-        ) {
+        // A native extension of the wire: the TypeScript enforces scope in
+        // `engine/main`, above the worker, and a native host has no such
+        // layer. Absent is `["*"]`, everything.
+        let scope: Vec<String> = optional(body, "scope")?.unwrap_or_else(|| vec!["*".to_string()]);
+        let identity: WireIdentity = optional(body, "identity")?.unwrap_or_default();
+        let authority = SessionAuthority::new(&scope, identity.into(), Default::default())
+            .map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!("invalid scope: {e}"),
+                )
+            })?;
+        match self.sessions.open_memory(key.clone(), bytes, password, authority) {
             Ok(()) => {}
             // A password is a STATE on the wire, not a failure. The registry
             // reports it as an error because internally it IS one: the
@@ -1386,6 +1400,28 @@ fn optional<T: for<'de> Deserialize<'de>>(
     match body.get(name) {
         None | Some(serde_json::Value::Null) => Ok(None),
         Some(_) => field(body, name).map(Some),
+    }
+}
+
+/// The identity an `open.fatMem` may carry, spelled as the TypeScript's
+/// `IdentityClaims` (`auth/scope/types.ts`), snake_case keys and all.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct WireIdentity {
+    user_id: Option<String>,
+    group_id: Option<String>,
+    groups: Vec<String>,
+    display_name: Option<String>,
+}
+
+impl From<WireIdentity> for IdentityClaims {
+    fn from(w: WireIdentity) -> Self {
+        IdentityClaims {
+            user_id: w.user_id,
+            group_id: w.group_id,
+            groups: w.groups,
+            display_name: w.display_name,
+        }
     }
 }
 

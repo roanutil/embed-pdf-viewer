@@ -22,8 +22,9 @@
 //! So after open, PDFium is not enforcing anything. This is what is.
 
 use crate::auth::scope::{
-    Capabilities, DocCapability, IdentityClaims, InvalidScope, ParsedScope, PdfBits,
-    check_any_capability, check_capability, expanded_capabilities, parse_all,
+    Capabilities, CollabAction, CollabTarget, DocCapability, IdentityClaims, InvalidScope,
+    ParsedScope, PdfBits, check_any_capability, check_capability, check_collab, check_set_group,
+    expanded_capabilities, parse_all,
 };
 use crate::error::{EngineError, EngineErrorCode};
 
@@ -101,6 +102,16 @@ impl SessionAuthority {
 
     pub fn allows_any(&self, capabilities: &[DocCapability]) -> bool {
         check_any_capability(capabilities, &self.scope, self.pdf_bits)
+    }
+
+    /// `ScopeGuard.canCollab`: the collab action against a record's owner.
+    pub fn allows_collab(&self, action: CollabAction, target: &CollabTarget) -> bool {
+        check_collab(action, target, &self.scope, &self.identity, self.pdf_bits)
+    }
+
+    /// `ScopeGuard.canSetGroup`: assigning `group_id` to an annotation.
+    pub fn allows_set_group(&self, group_id: &str) -> bool {
+        check_set_group(group_id, self.identity.group_id.as_deref(), &self.scope)
     }
 
     /// Everything this caller may do, for an `/access`-style report.

@@ -212,7 +212,7 @@ fn on_kernel<T: Send + 'static>(
     worker: EngineWorker,
     job: impl FnOnce(&NativeEngine, oneshot::Sender<T>) + Send + 'static,
 ) -> T {
-    let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post))).unwrap();
+    let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post, None))).unwrap();
     let answer = futures::executor::block_on(thread.call(move |engine: &mut NativeEngine| {
         let (tx, rx) = oneshot::channel();
         job(engine, tx);
@@ -275,16 +275,16 @@ fn a_metadata_update_answers_its_result_after_publishing_its_event() {
 }
 
 #[test]
-fn a_locked_open_rejects_and_leaves_no_session_on_the_host() {
+fn a_locked_open_resolves_locked_and_keeps_its_session_on_the_host() {
     let worker = EngineWorker::spawn();
-    let code = on_kernel(worker.clone(), |engine, tx| {
+    let prompt = on_kernel(worker.clone(), |engine, tx| {
         engine.open(open_input(test_support::ENCRYPTED), None).on_settle(move |doc| {
-            let _ = tx.send(doc.as_ref().err().and_then(|e| e.code().map(str::to_owned)));
+            let _ = tx.send(doc.as_ref().ok().map(|d| d.security().password_prompt()));
         });
     });
-    assert_eq!(code.as_deref(), Some("DocPasswordRequired"));
-    // The engine's own close went out before the open rejected, and the
-    // worker is first in, first out, so a second close finds nothing.
+    assert_eq!(prompt, Some(json!({ "state": "required" })));
+    // The session stays parked on the host, waiting for its password, so a
+    // close finds it.
     let (tx, rx) = oneshot::channel();
     worker.submit(
         json!({ "kind": "close", "jobId": 0, "docId": "doc-1" }).to_string(),
@@ -294,7 +294,7 @@ fn a_locked_open_rejects_and_leaves_no_session_on_the_host() {
         }),
     );
     let answer: Value = serde_json::from_str(&futures::executor::block_on(rx).unwrap()).unwrap();
-    assert_eq!(answer, json!({ "result": { "closedSessions": 0 } }));
+    assert_eq!(answer, json!({ "result": { "closedSessions": 1 } }));
 }
 
 use epdf_viewer_host::translate::{PATHS, maps, optional_whole, whole};
