@@ -87,14 +87,14 @@ platforms/apple/build-xcframework.sh                      + signature fixtures a
 - Consumes: `research/swift-plugins` with plans 01, 05 and 06 merged (and 09 if present).
 - Produces: `pdfium_sys::EPDFSig_*`, `EPDFDoc_GetRevision*`, `EPDFDoc_OpenRevision`, `EPDFDoc_ReadLoadedBytes`, `EPDFObjectDiff_*`, `EPDFAnnot_SetAppearanceFromPage` bindings.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-signature -b research/swift-signature research/swift-plugins
 cd .claude/worktrees/swift-signature
 ```
 
-- [ ] **Step 2: Check the PDFium slices**
+- [x] **Step 2: Check the PDFium slices**
 
 ```bash
 for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
@@ -106,7 +106,7 @@ done
 
 Expected: no output. Otherwise this worktree fetched the old slices: run `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>` for each, and if a header is still missing, stop and finish umbrella Task 0b, which rebuilds the slices from fork commit `6dc31d14e` or later.
 
-- [ ] **Step 3: Include the headers**
+- [x] **Step 3: Include the headers**
 
 In `crates/pdfium-sys/wrapper.h`, after the last `epdf_*.h` include:
 
@@ -116,12 +116,12 @@ In `crates/pdfium-sys/wrapper.h`, after the last `epdf_*.h` include:
 #include "epdf_signature.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFSig_GetByteRange\|pub fn EPDFDoc_GetRevisionCount\|pub fn EPDFObjectDiff_GetCount\|pub fn EPDFSig_DigestByteRange' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `4`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h
