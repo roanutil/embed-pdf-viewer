@@ -705,7 +705,7 @@ git commit -m "Read and write measurement viewports in the Rust engine"
 
 Before writing a record, run `grep -rn 'pub struct PdfMeasurement\|pub struct PdfNumberFormat\|pub enum MeasureFraction' crates/epdf-ffi/src crates/plugins/*/src/ffi.rs`. If plan 05 already exported any of them, import that one and leave its mirror out of this file.
 
-- [ ] **Step 1: Add the feature and scaffolding**
+- [x] **Step 1: Add the feature and scaffolding**
 
 `crates/plugins/measurement/Cargo.toml`:
 
@@ -770,7 +770,7 @@ pub struct ScaleChangeOptions {
 }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```rust
 // crates/plugins/measurement/tests/ffi.rs
@@ -1113,12 +1113,12 @@ fn closing_the_document_ends_its_subscriptions() {
 
 Add `epdf-annotation-core`, `epdf-plugin-annotation` and `epdf-plugin-interaction` to `[dev-dependencies]` with `default-features = false` if the test can't see them through the normal dependencies. Add `epdf-kernel` too, for `Error::engine`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-measurement --features uniffi --test ffi`
 Expected: FAIL to compile, `could not find ffi in epdf_plugin_measurement`.
 
-- [ ] **Step 4: Write `crates/plugins/measurement/src/ffi.rs`**
+- [x] **Step 4: Write `crates/plugins/measurement/src/ffi.rs`**
 
 ```rust
 //! The measurement plugin through uniffi: typed records, one handle, one
@@ -2064,17 +2064,17 @@ impl MeasurementHandle {
 
 `create_measurement`'s promise resolves an `epdf_annotation_core::AnnotationRef`; if `MeasurementCapability::create_measurement` returns `Promise<epdf_plugin_annotation::AnnotationRef>` under another path, convert through whatever `From` plan 05 provides. Delete the `opts` identity helper if clippy flags it; it's there so the `set_scale` closure reads the same as its siblings.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-measurement --features uniffi --test ffi`
 Expected: PASS, 12 tests. If `measure_distance_reads_in_the_page_scale` reports a label other than `"1 m"`, read it from `cargo test -p epdf-plugin-measurement` vector `units-precision-and-presets` and match that; the plugin, not this test, owns label formatting.
 
-- [ ] **Step 6: Run the conformance vectors without `uniffi`**
+- [x] **Step 6: Run the conformance vectors without `uniffi`**
 
 Run: `cargo test -p epdf-plugin-measurement`
 Expected: PASS. The `cfg_attr` derives don't change the default build.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/measurement
