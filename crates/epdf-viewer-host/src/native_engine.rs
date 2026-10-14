@@ -52,6 +52,10 @@ struct Inner {
     documents: Cell<u64>,
     /// The asset engine: renders answer encoded bytes, not raw pixels.
     encoded_renders: bool,
+    /// What its document ids start with. `PENDING`, `LISTENERS` and
+    /// `LAYOUTS` are per kernel thread and keyed by id, and the asset engine
+    /// shares the thread with the viewer's engine, so their ids must differ.
+    prefix: &'static str,
 }
 
 impl NativeEngine {
@@ -71,9 +75,9 @@ impl NativeEngine {
     }
 
     fn with(worker: EngineWorker, post: KernelPost, encoded_renders: bool) -> NativeEngine {
-        NativeEngine {
-            inner: Rc::new(Inner { worker, post, documents: Cell::new(0), encoded_renders }),
-        }
+        let prefix = if encoded_renders { "asset" } else { "doc" };
+        let documents = Cell::new(0);
+        NativeEngine { inner: Rc::new(Inner { worker, post, documents, encoded_renders, prefix }) }
     }
 }
 
@@ -183,7 +187,7 @@ impl Engine for NativeEngine {
         let password = options.as_ref().and_then(|o| o.get("password")).cloned();
         let n = self.inner.documents.get() + 1;
         self.inner.documents.set(n);
-        let doc = format!("doc-{n}");
+        let doc = format!("{}-{n}", self.inner.prefix);
         let opened = self.inner.send(&doc, |job| {
             Ok(WireCall {
                 request: json!({

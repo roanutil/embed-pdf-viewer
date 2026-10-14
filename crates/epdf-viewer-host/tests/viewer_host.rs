@@ -1234,6 +1234,67 @@ fn dropping_the_host_mid_import_joins_the_asset_engine_thread() {
 }
 
 #[test]
+fn placing_into_a_closed_document_fails_and_clears_its_arming() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let library =
+        block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new()))
+            .unwrap();
+    let filter = StampAssetFilter { library_id: Some(library), ..Default::default() };
+    let asset = block_on(stamp.assets(Some(filter))).unwrap()[0].id.clone();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    block_on(stamp.arm_asset(doc.id.clone(), asset.clone(), None, CancelToken::new())).unwrap();
+    assert!(block_on(stamp.armed_asset(doc.id.clone())).unwrap().is_some());
+    block_on(host.close_document(doc.id.clone())).unwrap();
+    let at = epdf_ffi::Point { x: 10.0, y: 10.0 };
+    let error = block_on(stamp.place_asset(
+        doc.id.clone(),
+        asset,
+        page,
+        at,
+        None,
+        None,
+        CancelToken::new(),
+    ))
+    .unwrap_err();
+    match error {
+        // The kernel's plain error for a token on a document it no longer
+        // has, as the TypeScript kernel throws it: no code.
+        ViewerError::Kernel { name, code, detail } => {
+            assert_eq!((name.as_str(), code), ("Error", None));
+            assert!(detail.contains("no document"), "{detail}");
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(block_on(stamp.armed_asset(doc.id)).unwrap().is_none());
+}
+
+#[test]
+fn a_library_edit_leaves_an_open_documents_pages_alone() {
+    // The asset engine shares the kernel thread with the viewer's engine; its
+    // documents must not be mistaken for the viewer's.
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    // Two open documents, so the import and the delete (each opening a
+    // library document of its own) both have a viewer document to collide with.
+    let _first =
+        block_on(host.open_document(test_support::fixture(test_support::COLORS), options()))
+            .unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let before = block_on(host.pages(doc.id.clone())).unwrap();
+    let library =
+        block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new()))
+            .unwrap();
+    let filter = StampAssetFilter { library_id: Some(library), ..Default::default() };
+    let asset = block_on(stamp.assets(Some(filter))).unwrap()[0].id.clone();
+    block_on(stamp.delete_asset(asset, CancelToken::new())).unwrap();
+    assert_eq!(block_on(host.pages(doc.id)).unwrap(), before);
+}
+
+#[test]
 fn without_its_config_the_stamp_plugin_is_not_installed() {
     let host = started();
     assert!(block_on(host.stamp()).is_err());

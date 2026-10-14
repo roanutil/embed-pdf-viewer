@@ -953,7 +953,17 @@ fn a_named_page_target_arrives_as_a_page_ref() {
     let decoded = decode(&set.decode, answer(mutation)).unwrap();
     assert_eq!(decoded.value["layout"]["pages"][0]["ref"], page_ref(3));
     assert_eq!(decoded.value["layout"]["namedPages"][0]["target"]["page"], page_ref(3));
-    assert_eq!(decoded.event.unwrap()["type"], json!("pages.named"));
+    let event = decoded.event.unwrap();
+    assert_eq!(event["type"], json!("pages.named"));
+    // `page: PageRef | null`, as `LocalDocumentPagesService.runNameJob` spells it.
+    assert_eq!(event["page"], page_ref(3));
+    assert!(event.get("pageObjectNumber").is_none());
+    let remove =
+        translate("doc-1", "pages.removeName", None, &[json!({ "name": "a=A" })], 2).unwrap();
+    let removed = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"pageObjectNumber":3}],"namedPages":[]}},"mutationSequence":2,"event":{"type":"pages.named","name":"a=A","pageObjectNumber":null,"layout":{"pageCount":1,"pages":[{"index":0,"pageObjectNumber":3}],"namedPages":[]}}}}"#;
+    let event = decode(&remove.decode, answer(removed)).unwrap().event.unwrap();
+    assert_eq!(event["page"], Value::Null);
+    assert!(event.get("pageObjectNumber").is_none());
 }
 
 #[test]

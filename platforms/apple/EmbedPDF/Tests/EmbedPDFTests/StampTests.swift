@@ -78,9 +78,16 @@ extension BaseSuite {
       let (viewer, stamps, _, asset) = try await imported()
       let document = try await viewer.open(Fixture.data("report"))
       let page = try await viewer.pages(of: document)[0].page
+      try await stamps.arm(asset.id, in: document)
+      let armedBefore = try await stamps.armedAsset(in: document)
+      expectNoDifference(armedBefore?.id, asset.id)
       try await viewer.close(document)
-      await #expect(throws: PDFError.self) {
+      await #expect {
         _ = try await stamps.place(asset.id, in: document, on: page, at: Point(x: 10, y: 10))
+      } throws: { error in
+        // The kernel's error for a document it no longer has: no code.
+        guard let error = error as? PDFError else { return false }
+        return error.name == "Error" && error.detail.contains("no document")
       }
       let armed = try await stamps.armedAsset(in: document)
       expectNoDifference(armed, nil)

@@ -660,6 +660,19 @@ fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     Ok(())
 }
 
+/// A `pages.named` event's page, `page: PageRef | null` as the TypeScript
+/// publishes it, where the host spells `pageObjectNumber`.
+fn named_page_in(event: &mut Value) {
+    if event.get("type").and_then(Value::as_str) != Some("pages.named") {
+        return;
+    }
+    if let Value::Object(map) = event {
+        let page = page_number(map.remove("pageObjectNumber").as_ref())
+            .map_or(Value::Null, |pon| PageRef::new(pon).to_json());
+        map.insert("page".into(), page);
+    }
+}
+
 /// A page list's `namedPages`, each page target's `pageObjectNumber` as
 /// the `page: PageRef` `NamedPageTarget` has. Templates and dangling
 /// entries keep their spelling.
@@ -780,6 +793,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             let mut event = result.remove("event");
             if let Some(event) = event.as_mut() {
                 add_layout_refs(event, "a page event")?;
+                named_page_in(event);
             }
             return Ok(Decoded { value, event });
         }
