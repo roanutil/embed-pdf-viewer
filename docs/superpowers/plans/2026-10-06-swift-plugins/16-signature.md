@@ -680,7 +680,7 @@ git commit -m "Read signatures, revisions and document protection in the Rust en
 
 `SignatureAnalyzer.ts` is 665 lines over `EPDFDoc_CompareRevisions` and `EPDFObjectDiff_*`. Port it as one module, keeping the TypeScript's function boundaries and names (snake-cased), and keep its classification table (`forbidden` / `permitted` per object kind and modification level) as a `const` table, not a `match` spread across functions, so the two can be diffed by eye.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 // crates/epdf-engine/tests/signature_analyze.rs
@@ -730,12 +730,12 @@ fn a_field_mdp_lock_forbids_a_locked_field_change() {
 
 The `annotations.create` draft shape follows whatever plan 05's translate tests send; copy one from `crates/epdf-viewer-host/tests/translate.rs`. As in Task 3, take any fixture fact that disagrees from `packages/engine/main/test/` and pin that.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_analyze`
 Expected: FAIL, unknown request kind `signatures.analyze`.
 
-- [ ] **Step 3: Port the analyzer**
+- [x] **Step 3: Port the analyzer**
 
 Add `ObjectDiff` to `crates/pdfium/src/signature.rs` over `EPDFDoc_CompareRevisions`, `EPDFObjectDiff_GetCount`, `GetEntry`, `GetValue`, `GetReferrer`, `GetReferrerCount`, `GetReadStatus`, `GetRevisionHealth` and `Close` (closed on drop), plus `Document::open_revision(index)` (`EPDFDoc_OpenRevision`) and `open_base_overlay` (`EPDFDoc_OpenBaseOverlay`) for the working copy. Then `analyzer.rs`:
 
@@ -760,12 +760,12 @@ pub fn read_working_copy_snapshot(session: &DocumentSession, cancel: &CancelToke
 
 Fill both bodies by transcribing the named TypeScript ranges, with the helpers it calls in the same file. Route `signatures.analyze` in `host.rs` with the document reads, and send `signatures.list {workingCopy: true}` to `read_working_copy_snapshot`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine

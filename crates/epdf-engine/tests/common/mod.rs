@@ -1,18 +1,19 @@
-//! Helpers the wire-level engine tests share: open a fixture through
-//! `open.fatMem`, and send a request and read its `result` and payloads.
+//! Helpers the wire-level engine tests share.
+//!
+//! 16 signature: the `sig_*` helpers open a fixture through `open.fatMem`
+//! (named after its file) and send a request, reading its `result` and
+//! payloads.
 #![allow(dead_code)]
 
 use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
-// Signature (plan 16).
-
-fn read_fixture(path: &str) -> Vec<u8> {
+fn sig_read_fixture(path: &str) -> Vec<u8> {
     std::fs::read(test_support::workspace_root().join(path))
         .unwrap_or_else(|e| panic!("read {path}: {e}"))
 }
 
-fn send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> (Value, Vec<Vec<u8>>) {
+fn sig_send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> (Value, Vec<Vec<u8>>) {
     if request.get("jobId").is_none() {
         request["jobId"] = json!(1);
     }
@@ -24,7 +25,7 @@ fn send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> (Value, 
 
 /// Open the workspace-relative `path` with `extra` merged into the
 /// `open.fatMem` request. Answers the document id.
-pub fn open_fixture_with(host: &mut Host, path: &str, extra: Value) -> String {
+pub fn sig_open_fixture_with(host: &mut Host, path: &str, extra: Value) -> String {
     let doc = path.rsplit('/').next().unwrap_or(path).to_string();
     let mut request = json!({ "kind": "open.fatMem", "docId": doc });
     if let Value::Object(extra) = extra {
@@ -32,15 +33,15 @@ pub fn open_fixture_with(host: &mut Host, path: &str, extra: Value) -> String {
             request[k] = v;
         }
     }
-    send(host, request, vec![read_fixture(path)]);
+    sig_send(host, request, vec![sig_read_fixture(path)]);
     doc
 }
 
 /// Open `path` with the default scope. Answers the document id and its
 /// first page's object number.
-pub fn open_fixture(host: &mut Host, path: &str) -> (String, u32) {
-    let doc = open_fixture_with(host, path, json!({}));
-    let pages = call(host, json!({ "kind": "pages.list", "docId": doc }));
+pub fn sig_open_fixture(host: &mut Host, path: &str) -> (String, u32) {
+    let doc = sig_open_fixture_with(host, path, json!({}));
+    let pages = sig_call(host, json!({ "kind": "pages.list", "docId": doc }));
     let first = pages
         .as_array()
         .or_else(|| pages["pages"].as_array())
@@ -52,23 +53,23 @@ pub fn open_fixture(host: &mut Host, path: &str) -> (String, u32) {
 }
 
 /// Send `request` and answer its `result`, failing on an error envelope.
-pub fn call(host: &mut Host, request: Value) -> Value {
-    send(host, request, Vec::new()).0
+pub fn sig_call(host: &mut Host, request: Value) -> Value {
+    sig_send(host, request, Vec::new()).0
 }
 
 /// `call`, answering the first payload.
-pub fn call_bytes(host: &mut Host, request: Value) -> Vec<u8> {
-    call_bytes_with(host, request).1
+pub fn sig_call_bytes(host: &mut Host, request: Value) -> Vec<u8> {
+    sig_call_bytes_with(host, request).1
 }
 
 /// `call`, answering the result and the first payload.
-pub fn call_bytes_with(host: &mut Host, request: Value) -> (Value, Vec<u8>) {
-    let (result, mut payloads) = send(host, request, Vec::new());
+pub fn sig_call_bytes_with(host: &mut Host, request: Value) -> (Value, Vec<u8>) {
+    let (result, mut payloads) = sig_send(host, request, Vec::new());
     assert!(!payloads.is_empty(), "no payload in the answer: {result}");
     (result, payloads.remove(0))
 }
 
 /// `call` with one payload.
-pub fn call_with_payload(host: &mut Host, request: Value, payload: Vec<u8>) -> Value {
-    send(host, request, vec![payload]).0
+pub fn sig_call_with_payload(host: &mut Host, request: Value, payload: Vec<u8>) -> Value {
+    sig_send(host, request, vec![payload]).0
 }

@@ -407,8 +407,22 @@ impl Host {
 
             // ── Signatures (reads) ───────────────────────────────────
             "signatures.list" => {
+                // The working copy: the unsaved state as one more revision
+                // over the loaded bytes. The same as the loaded bytes when
+                // nothing is unsaved.
+                let working_copy: bool = optional(body, "workingCopy")?.unwrap_or(false);
+                if working_copy {
+                    let session = self.sessions.session(&key)?;
+                    let snapshot = f::signature::analyzer::read_working_copy_snapshot(session)?;
+                    return Ok(ok(value(&snapshot)?));
+                }
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::signature::reader::read_snapshot(d)?)?))
+            }
+            "signatures.analyze" => {
+                let input: f::signature::analysis::types::AnalyzeInput = field(body, "input")?;
+                let session = self.sessions.session(&key)?;
+                Ok(ok(value(&f::signature::analyzer::analyze(session, &input)?)?))
             }
             "signatures.contents" => {
                 let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;

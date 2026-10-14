@@ -110,6 +110,71 @@ impl Document {
         owned_buffer(ptr, size).ok_or(PdfiumError::Save)
     }
 
+    /// `EPDF_SaveDocumentToOwnedBufferEx`: as [`Document::save_to_buffer`],
+    /// but `Ok(None)` when the save found nothing changed since load (the
+    /// loaded bytes are then the document) and wrote nothing.
+    pub fn save_to_buffer_ex(&self, mode: PdfSaveMode) -> Result<Option<Vec<u8>>, PdfiumError> {
+        let mut size: std::os::raw::c_ulong = 0;
+        let mut status: pdfium_sys::EPDFSaveStatus =
+            pdfium_sys::EPDFSaveStatus_EPDFSaveStatus_kFailed;
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ptr = unsafe {
+            pdfium_sys::EPDF_SaveDocumentToOwnedBufferEx(
+                self.as_raw(),
+                mode.flags() as pdfium_sys::FPDF_DWORD,
+                0,
+                &raw mut size,
+                &raw mut status,
+            )
+        };
+        if status == pdfium_sys::EPDFSaveStatus_EPDFSaveStatus_kUnchangedSinceLoad {
+            if !ptr.is_null() {
+                // SAFETY: allocated by the save call, freed once.
+                unsafe { pdfium_sys::EPDF_FreeBuffer(ptr) };
+            }
+            return Ok(None);
+        }
+        let bytes = owned_buffer(ptr, size).ok_or(PdfiumError::Save)?;
+        if status != pdfium_sys::EPDFSaveStatus_EPDFSaveStatus_kWritten {
+            return Err(PdfiumError::Save);
+        }
+        Ok(Some(bytes))
+    }
+
+    /// `EPDFLayer_SaveDeltaToOwnedBufferEx`: a layer's cumulative delta and
+    /// whether anything changed since load. `(None, false)` when nothing
+    /// did; `(None, true)` when the layer changed back to its base and the
+    /// delta is empty.
+    pub fn save_layer_delta_ex(&self) -> Result<(Option<Vec<u8>>, bool), LayerSaveError> {
+        let mut size: std::os::raw::c_ulong = 0;
+        let mut status = u32::MAX;
+        let mut changed: pdfium_sys::FPDF_BOOL = 0;
+        // SAFETY: the handle is live and every out-parameter is valid.
+        let ptr = unsafe {
+            pdfium_sys::EPDFLayer_SaveDeltaToOwnedBufferEx(
+                self.as_raw(),
+                &raw mut size,
+                &raw mut status,
+                &raw mut changed,
+            )
+        };
+        if status != pdfium_sys::EPDFLayerSaveStatus_EPDFLayerSaveStatus_kSuccess {
+            if !ptr.is_null() {
+                // SAFETY: allocated by the save call, freed once.
+                unsafe { pdfium_sys::EPDF_FreeBuffer(ptr) };
+            }
+            return Err(LayerSaveError::SaveFailed);
+        }
+        if size == 0 {
+            if !ptr.is_null() {
+                // SAFETY: as above.
+                unsafe { pdfium_sys::EPDF_FreeBuffer(ptr) };
+            }
+            return Ok((None, changed != 0));
+        }
+        Ok((owned_buffer(ptr, size), changed != 0))
+    }
+
     /// Serialize a layer document's artifact or its delta.
     ///
     /// The caller is responsible for this being a layer. PDFium answers for a

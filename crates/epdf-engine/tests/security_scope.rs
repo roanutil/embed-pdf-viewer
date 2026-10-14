@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::json;
 
 mod common;
-use common::open_fixture_with;
+use common::sig_open_fixture_with;
 
 #[test]
 fn doc_sign_expands_from_form_fill_bits() {
@@ -19,7 +19,7 @@ fn doc_sign_expands_from_form_fill_bits() {
 #[test]
 fn an_open_with_a_narrow_scope_refuses_a_metadata_write() {
     let mut host = Host::new();
-    let doc = open_fixture_with(
+    let doc = sig_open_fixture_with(
         &mut host,
         "pdfium-multiplatform-prototype/fixtures/report.pdf",
         json!({ "scope": ["doc.open", "doc.render"] }),
@@ -52,7 +52,7 @@ fn an_invalid_scope_fails_the_open() {
 #[test]
 fn a_parked_open_unlocks_through_a_password_check_under_its_scope() {
     let mut host = Host::new();
-    let doc = open_fixture_with(
+    let doc = sig_open_fixture_with(
         &mut host,
         "pdfium-multiplatform-prototype/fixtures/encrypted-hello.pdf",
         json!({ "scope": ["doc.open", "doc.render"] }),
@@ -70,7 +70,7 @@ fn a_parked_open_unlocks_through_a_password_check_under_its_scope() {
     assert_eq!(wrong["error"]["code"], json!("DocPasswordIncorrect"), "{wrong}");
     let right = check(&mut host, "hôtel");
     assert!(right.get("error").is_none(), "{right}");
-    let pages = common::call(&mut host, json!({ "kind": "pages.list", "docId": doc }));
+    let pages = common::sig_call(&mut host, json!({ "kind": "pages.list", "docId": doc }));
     assert!(!pages.is_null());
     let response = host.call(
         &json!({ "kind": "metadata.update", "jobId": 3, "docId": doc, "patch": { "title": "x" } })

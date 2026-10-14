@@ -71,6 +71,9 @@ pub use page_write::{FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};
 pub use piece_info_write::PieceInfoValue;
 pub use save::{LayerOutput, LayerSaveError, PdfSaveMode};
-pub use signature::{DigestAlgorithm, SignatureModel, field_list, string_key};
+pub use signature::{
+    DerivedDocument, DiffRevisionHealth, DigestAlgorithm, ObjectDiff, ObjectDiffEntry,
+    SignatureModel, field_list, string_key,
+};
 pub use stamp::{ImageObject, StampFit};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

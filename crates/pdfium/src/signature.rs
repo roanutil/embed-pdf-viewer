@@ -358,3 +358,295 @@ where
     let end = buffer.iter().position(|&u| u == 0).unwrap_or(buffer.len());
     Ok(Some(String::from_utf16_lossy(&buffer[..end])))
 }
+
+/// A document opened over another's bytes: one revision prefix
+/// (`EPDFDoc_OpenRevision`) or a layer's base with a working delta
+/// (`EPDFDoc_OpenBaseOverlay`). It reads through `'parent`, so it closes
+/// before the document it was opened from.
+pub struct DerivedDocument<'parent> {
+    document: Document,
+    _parent: PhantomData<&'parent Document>,
+}
+
+impl std::ops::Deref for DerivedDocument<'_> {
+    type Target = Document;
+    fn deref(&self) -> &Document {
+        &self.document
+    }
+}
+
+impl Document {
+    /// `EPDFDoc_OpenRevision`: the revision ending at `end` (a revision end
+    /// [`Document::revision`] reported) as its own read-only document.
+    pub fn open_revision(&self, end: u64) -> Option<DerivedDocument<'_>> {
+        // SAFETY: live document.
+        let raw = unsafe { pdfium_sys::EPDFDoc_OpenRevision(self.as_raw(), end) };
+        // SAFETY: non-null, closed once by the wrapper, and the lifetime keeps
+        // the parent it reads through open longer.
+        (!raw.is_null()).then(|| DerivedDocument {
+            document: unsafe { Document::from_raw_layer(raw, self.library()) },
+            _parent: PhantomData,
+        })
+    }
+
+    /// `EPDFDoc_OpenBaseOverlay`: a layer's base followed by `delta`
+    /// (copied), read-only. `None` for a plain document, an empty delta, or
+    /// one that does not compose.
+    pub fn open_base_overlay(&self, delta: &[u8]) -> Option<DerivedDocument<'_>> {
+        // SAFETY: `delta` is readable for its length; the runtime copies it.
+        let raw = unsafe {
+            pdfium_sys::EPDFDoc_OpenBaseOverlay(
+                self.as_raw(),
+                delta.as_ptr().cast(),
+                delta.len() as c_ulong,
+            )
+        };
+        // SAFETY: as for `open_revision`.
+        (!raw.is_null()).then(|| DerivedDocument {
+            document: unsafe { Document::from_raw_layer(raw, self.library()) },
+            _parent: PhantomData,
+        })
+    }
+
+    /// A fresh layer over this layer's base: the document when every edit
+    /// brought the layer back to its base. `None` when it does not open.
+    pub fn open_fresh_layer_over_base(
+        &self,
+        password: Option<&str>,
+    ) -> Option<DerivedDocument<'_>> {
+        let password = std::ffi::CString::new(password.unwrap_or("")).ok()?;
+        // SAFETY: live layer document.
+        let base = unsafe { pdfium_sys::EPDFLayer_GetBaseDocument(self.as_raw()) };
+        if base.is_null() {
+            return None;
+        }
+        let mut status: pdfium_sys::EPDFLayerOpenStatus = u32::MAX as _;
+        // SAFETY: the base outlives the layer it backs; a null file access
+        // opens the layer with no delta.
+        let raw = unsafe {
+            pdfium_sys::EPDFLayer_OpenLayer(
+                base,
+                std::ptr::null_mut(),
+                password.as_ptr(),
+                &mut status,
+            )
+        };
+        if raw.is_null() || status != 0 {
+            if !raw.is_null() {
+                // SAFETY: opened above, closed once.
+                unsafe { pdfium_sys::FPDF_CloseDocument(raw) };
+            }
+            return None;
+        }
+        // SAFETY: as for `open_revision`.
+        Some(DerivedDocument {
+            document: unsafe { Document::from_raw_layer(raw, self.library()) },
+            _parent: PhantomData,
+        })
+    }
+
+    /// `EPDFDoc_GetStructureObjectNumbers`: the catalog, `/AcroForm` (0 when
+    /// direct or absent) and page tree root.
+    pub fn structure_object_numbers(&self) -> (u32, u32, u32) {
+        let (mut root, mut acro, mut pages) = (0u32, 0u32, 0u32);
+        // SAFETY: live document, three out-params.
+        unsafe {
+            pdfium_sys::EPDFDoc_GetStructureObjectNumbers(
+                self.as_raw(),
+                &mut root,
+                &mut acro,
+                &mut pages,
+            )
+        };
+        (root, acro, pages)
+    }
+
+    /// `EPDFDoc_CompareRevisions(self, newer)`: the exact object diff from
+    /// this revision to `newer`. `None` when they share no byte history.
+    pub fn compare_revisions(&self, newer: &Document) -> Option<ObjectDiff> {
+        // SAFETY: both documents live while the diff is built; it is
+        // detached afterwards.
+        let raw = unsafe { pdfium_sys::EPDFDoc_CompareRevisions(self.as_raw(), newer.as_raw()) };
+        (!raw.is_null()).then_some(ObjectDiff { raw, _not_send: PhantomData })
+    }
+}
+
+/// `EPDF_OBJECT_DIFF`, closed on drop. Detached from both documents.
+pub struct ObjectDiff {
+    raw: pdfium_sys::EPDF_OBJECT_DIFF,
+    _not_send: PhantomData<*const ()>,
+}
+
+impl Drop for ObjectDiff {
+    fn drop(&mut self) {
+        // SAFETY: built by `EPDFDoc_CompareRevisions`, closed once.
+        unsafe { pdfium_sys::EPDFObjectDiff_Close(self.raw) };
+    }
+}
+
+/// One `EPDFObjectDiff_GetEntry`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ObjectDiffEntry {
+    pub object_number: u32,
+    /// `EPDF_DIFF_ADDED` / `MODIFIED` / `FREED`.
+    pub change: i32,
+    /// `EPDF_DIFF_OBJ_*`.
+    pub kind: i32,
+    pub old_generation: i32,
+    pub new_generation: i32,
+    pub stream_data_changed: bool,
+}
+
+/// `EPDFObjectDiff_GetRevisionHealth`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DiffRevisionHealth {
+    pub sparse_xref: bool,
+    pub bare_references: u32,
+    pub referrers_complete: bool,
+}
+
+/// Bytes one to one as chars, as the TypeScript's `String.fromCharCode`
+/// per byte reads them: the serialisation may carry binary string data.
+fn latin1(bytes: &[u8]) -> String {
+    bytes.iter().map(|&b| b as char).collect()
+}
+
+impl ObjectDiff {
+    pub fn count(&self) -> i32 {
+        // SAFETY: live diff; likewise below.
+        unsafe { pdfium_sys::EPDFObjectDiff_GetCount(self.raw) }
+    }
+
+    pub fn entry(&self, index: i32) -> Option<ObjectDiffEntry> {
+        let (mut num, mut change, mut kind, mut old_gen, mut new_gen) =
+            (0u32, 0i32, 0i32, 0i32, 0i32);
+        let mut stream: pdfium_sys::FPDF_BOOL = 0;
+        let ok = unsafe {
+            pdfium_sys::EPDFObjectDiff_GetEntry(
+                self.raw,
+                index,
+                &mut num,
+                &mut change,
+                &mut kind,
+                &mut old_gen,
+                &mut new_gen,
+                &mut stream,
+            )
+        };
+        (ok != 0).then_some(ObjectDiffEntry {
+            object_number: num,
+            change,
+            kind,
+            old_generation: old_gen,
+            new_generation: new_gen,
+            stream_data_changed: stream != 0,
+        })
+    }
+
+    /// The shallow serialisation on side `which` (0 old, 1 new), as
+    /// latin-1 text, and whether it was truncated. `None` text when absent.
+    pub fn value(&self, index: i32, which: i32) -> (Option<String>, bool) {
+        let mut truncated: pdfium_sys::FPDF_BOOL = 0;
+        let length = unsafe {
+            pdfium_sys::EPDFObjectDiff_GetValue(
+                self.raw,
+                index,
+                which,
+                std::ptr::null_mut(),
+                0,
+                &mut truncated,
+            )
+        };
+        // A value past the cap reports length 0 with the flag set.
+        let probe = truncated != 0;
+        if length == 0 {
+            return (None, probe);
+        }
+        let mut buffer = vec![0u8; length as usize];
+        truncated = 0;
+        let written = unsafe {
+            pdfium_sys::EPDFObjectDiff_GetValue(
+                self.raw,
+                index,
+                which,
+                buffer.as_mut_ptr().cast(),
+                length,
+                &mut truncated,
+            )
+        };
+        if written == 0 {
+            return (None, truncated != 0);
+        }
+        let end = (written as usize).saturating_sub(1).min(buffer.len());
+        (Some(latin1(&buffer[..end])), truncated != 0)
+    }
+
+    /// `EPDF_DIFF_READ_*` of side `which`, -1 for bad arguments.
+    pub fn read_status(&self, index: i32, which: i32) -> i32 {
+        unsafe { pdfium_sys::EPDFObjectDiff_GetReadStatus(self.raw, index, which) }
+    }
+
+    pub fn revision_health(&self, which: i32) -> Option<DiffRevisionHealth> {
+        let (mut sparse, mut complete): (pdfium_sys::FPDF_BOOL, pdfium_sys::FPDF_BOOL) = (0, 0);
+        let mut bare = 0u32;
+        let ok = unsafe {
+            pdfium_sys::EPDFObjectDiff_GetRevisionHealth(
+                self.raw,
+                which,
+                &mut sparse,
+                &mut bare,
+                &mut complete,
+            )
+        };
+        (ok != 0).then_some(DiffRevisionHealth {
+            sparse_xref: sparse != 0,
+            bare_references: bare,
+            referrers_complete: complete != 0,
+        })
+    }
+
+    /// Every inbound reference to `object_number` on side `which`, as
+    /// `(parent, label)`.
+    pub fn referrers(&self, which: i32, object_number: u32) -> Vec<(u32, String)> {
+        let count =
+            unsafe { pdfium_sys::EPDFObjectDiff_GetReferrerCount(self.raw, which, object_number) };
+        let mut out = Vec::new();
+        for k in 0..count.max(0) {
+            let mut parent = 0u32;
+            let length = unsafe {
+                pdfium_sys::EPDFObjectDiff_GetReferrer(
+                    self.raw,
+                    which,
+                    object_number,
+                    k,
+                    &mut parent,
+                    std::ptr::null_mut(),
+                    0,
+                )
+            };
+            let label = if length == 0 {
+                String::new()
+            } else {
+                let mut buffer = vec![0u8; length as usize];
+                let written = unsafe {
+                    pdfium_sys::EPDFObjectDiff_GetReferrer(
+                        self.raw,
+                        which,
+                        object_number,
+                        k,
+                        &mut parent,
+                        buffer.as_mut_ptr().cast(),
+                        length,
+                    )
+                };
+                if written == 0 {
+                    String::new()
+                } else {
+                    latin1(&buffer[..(written as usize).saturating_sub(1).min(buffer.len())])
+                }
+            };
+            out.push((parent, label));
+        }
+        out
+    }
+}

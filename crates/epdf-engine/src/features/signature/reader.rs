@@ -9,10 +9,12 @@
 
 use pdfium::{Document, SignatureModel, field_list, string_key};
 
+use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::forms::snapshot::FormFieldRef;
+use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_snapshot};
 use crate::session::document::{DocumentSession, OpenKind};
 
+use super::analysis::types::{RevisionField, RevisionStructure};
 use super::protection::derive_protection;
 use super::types::{
     BaseVersionInfo, DigestAlgorithm, DocumentProtection, FieldLockAction, FieldLockSpec,
@@ -402,4 +404,44 @@ fn require_signed_index(
 
 pub fn to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// The widget annotation numbers of a field, in snapshot order.
+fn widget_numbers(kind: &FormFieldKind) -> Vec<u32> {
+    match kind {
+        FormFieldKind::Text { widgets, .. }
+        | FormFieldKind::Combobox { widgets, .. }
+        | FormFieldKind::Listbox { widgets, .. }
+        | FormFieldKind::Pushbutton { widgets }
+        | FormFieldKind::Signature { widgets }
+        | FormFieldKind::Unknown { widgets, .. } => {
+            widgets.iter().map(|w| w.annot_object_number).collect()
+        }
+        FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => {
+            widgets.iter().map(|w| w.widget.annot_object_number).collect()
+        }
+    }
+}
+
+/// `readSignatureModel.ts` `readStructure`: the catalog, AcroForm and page
+/// tree object numbers, the pages, the terminal fields with their widgets,
+/// and the signatures of one document (a revision prefix, usually).
+pub fn read_structure(doc: &Document) -> Result<RevisionStructure, EngineError> {
+    let (root, acro_form, pages_root) = doc.structure_object_numbers();
+    let pages = (0..doc.page_count()).map(|i| doc.page_object_number_by_index(i)).collect();
+    let mut fields = Vec::new();
+    if let Some(model) = doc.form_model() {
+        let snapshot = read_form_snapshot(&model, &CancelToken::never())?;
+        for f in snapshot.fields {
+            fields.push(RevisionField {
+                object_number: f.base.field_object_number,
+                name: f.base.name,
+                family: f.base.family,
+                widgets: widget_numbers(&f.kind),
+                flags: Some(f.base.flags.raw),
+            });
+        }
+    }
+    let signatures = with_signature_model(doc, read_signatures_from_model)?;
+    Ok(RevisionStructure { root, acro_form, pages_root, pages, fields, signatures })
 }

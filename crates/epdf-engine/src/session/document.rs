@@ -83,6 +83,12 @@ pub struct DocumentSession {
     parked_bytes: Option<Vec<u8>>,
     /// The authority a parked open asked for, applied when it unlocks.
     parked_authority: Option<SessionAuthority>,
+    /// The password the document opened with, for documents derived from its
+    /// bytes (a signature's working copy, the sealed bytes it reloads onto).
+    password: Option<String>,
+    /// The mutation sequence the current bytes were loaded at
+    /// (`DocumentSession.ts` `loadedSeq`).
+    loaded_sequence: Cell<u64>,
     mutation_sequence: Cell<u64>,
     /// What this session's caller may do. Grants nothing until open sets it,
     /// so a session that failed to open cannot be read through.
@@ -106,6 +112,8 @@ impl DocumentSession {
             open: None,
             parked_bytes: None,
             parked_authority: None,
+            password: None,
+            loaded_sequence: Cell::new(0),
             mutation_sequence: Cell::new(0),
             authority: SessionAuthority::default(),
             retained: Vec::new(),
@@ -214,6 +222,8 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.password = password.map(str::to_owned);
+        self.loaded_sequence.set(self.mutation_sequence.get());
         Ok(())
     }
 
@@ -265,6 +275,7 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.loaded_sequence.set(self.mutation_sequence.get());
         // Runs after `close` has dropped the layer document, which is the
         // order the base's lifetime requires.
         self.retain_until_close(move || drop(base));
@@ -534,6 +545,16 @@ impl DocumentSession {
     /// state. Per-domain counters are a later optimization.
     pub fn mutation_sequence(&self) -> u64 {
         self.mutation_sequence.get()
+    }
+
+    /// `hasUnsavedEdits`: a mutation since the current bytes were loaded.
+    pub fn has_unsaved_edits(&self) -> bool {
+        self.mutation_sequence.get() != self.loaded_sequence.get()
+    }
+
+    /// The password the document opened with.
+    pub fn password(&self) -> Option<&str> {
+        self.password.as_deref()
     }
 
     /// Record one successful mutation. Saturating, for the reason in

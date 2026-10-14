@@ -6,6 +6,8 @@
 //! Each function keeps its TypeScript namesake's boundaries, snake-cased, so
 //! the two can be read side by side.
 
+pub mod analysis;
+pub mod analyzer;
 pub mod protection;
 pub mod reader;
 pub mod types;
