@@ -95,6 +95,13 @@ pub enum Decode {
     /// `page.viewportsChanged` event's nested as `page: PageRef`, which is
     /// what the measurement plugin's viewport sync reads.
     MeasureMutation,
+    /// `pages.renderEncoded`: width, height and type in the result, the
+    /// encoded bytes as the payload, answered as the `PageImage` a local
+    /// engine gives the stamp plugin (`source.kind == "bytes"`).
+    Encoded,
+    /// A read that answers `null` for nothing there (`pieceInfo.read` for
+    /// an application with no entry), else the result as the host sent it.
+    OptionalResult,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -149,6 +156,14 @@ pub const PATHS: &[&str] = &[
     "forms.deleteField",
     "forms.attachWidget",
     "forms.detachWidget",
+    "pieceInfo.read",
+    "page.pieceInfo.read",
+    "pieceInfo.update",
+    "page.pieceInfo.update",
+    "pages.setName",
+    "pages.removeName",
+    "pages.flatten",
+    "download",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
@@ -205,6 +220,14 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
         "forms.attachWidget" => ("forms.attachWidget", Decode::FormFieldMutation),
         "forms.detachWidget" => ("forms.detachWidget", Decode::FormFieldMutation),
+        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
+        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
+        "pages.setName" => ("pages.setName", Decode::PageMutation),
+        "pages.removeName" => ("pages.removeName", Decode::PageMutation),
+        // `AnnotationMutation` for its `nest_refs`: each per-page result's
+        // `pageObjectNumber` arrives as the `page` the stamp plugin reads.
+        "pages.flatten" => ("pages.flatten", Decode::AnnotationMutation),
+        "download" => ("document.saveBuffer", Decode::HostBytes),
         _ => return None,
     })
 }
@@ -312,6 +335,34 @@ pub fn translate(
                 ("onState", widget.get("onState").cloned().unwrap_or(Value::Null)),
             ]
         }
+        "pieceInfo.read" if path == "page.pieceInfo.read" => {
+            vec![("pageObjectNumber", page()?), ("application", arg(0))]
+        }
+        "pieceInfo.read" => vec![("application", arg(0))],
+        "pieceInfo.update" if path == "page.pieceInfo.update" => {
+            vec![("pageObjectNumber", page()?), ("application", arg(0)), ("patch", arg(1))]
+        }
+        "pieceInfo.update" => vec![("application", arg(0)), ("patch", arg(1))],
+        "pages.setName" => {
+            let input = arg(0);
+            let pon = input
+                .get("page")
+                .and_then(PageRef::from_json)
+                .map(|p| Value::from(p.page_object_number))
+                .ok_or_else(|| {
+                    coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
+                })?;
+            vec![
+                ("name", input.get("name").cloned().unwrap_or(Value::Null)),
+                ("pageObjectNumber", pon),
+                ("replace", input.get("replace").cloned().unwrap_or(Value::Null)),
+            ]
+        }
+        "pages.removeName" => vec![("name", arg(0).get("name").cloned().unwrap_or(Value::Null))],
+        "pages.flatten" => {
+            vec![("pageObjectNumbers", object_numbers(path, &arg(0))?), ("usage", arg(1))]
+        }
+        "document.saveBuffer" => vec![("mode", "full".into())],
         _ => vec![],
     };
     let mut request = Map::new();
@@ -331,6 +382,37 @@ pub fn translate(
         request.insert("measure".into(), measure);
     }
     Ok(WireCall { request: Value::Object(request), payloads, decode })
+}
+
+/// `page.render.image` on the stamp plugin's asset engine: the same options
+/// as `pages.render`, plus the encode the plugin asked for (`format`,
+/// default png). Png is the one encoder the asset engine has.
+pub fn translate_encoded_render(
+    doc: &str,
+    pon: Option<u32>,
+    args: &[Value],
+    job: u64,
+) -> Result<WireCall, Error> {
+    let page = pon.ok_or_else(|| {
+        coded("invalid-input", "[epdf-viewer-host] page.render.image needs a page".into())
+    })?;
+    let options = args.first().cloned().unwrap_or(Value::Null);
+    let format = options.get("format").and_then(Value::as_str).unwrap_or("png");
+    if format != "png" {
+        return Err(coded(
+            "unsupported",
+            format!("[epdf-viewer-host] the asset engine encodes png only, not {format}"),
+        ));
+    }
+    let request = serde_json::json!({
+        "kind": "pages.renderEncoded",
+        "jobId": job,
+        "docId": doc,
+        "pageObjectNumber": page,
+        "options": render_options(options),
+        "encode": { "format": "png" },
+    });
+    Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
 /// A JavaScript number as the whole, non-negative integer the host parses.
@@ -752,7 +834,39 @@ fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     for page in pages {
         add_page_ref(page, "ref", "a layout page")?;
     }
+    if let Some(layout) = object.get_mut("layout") {
+        nest_named_pages(layout);
+    }
     Ok(())
+}
+
+/// A `pages.named` event's page, `page: PageRef | null` as the TypeScript
+/// publishes it, where the host spells `pageObjectNumber`.
+fn named_page_in(event: &mut Value) {
+    if event.get("type").and_then(Value::as_str) != Some("pages.named") {
+        return;
+    }
+    if let Value::Object(map) = event {
+        let page = page_number(map.remove("pageObjectNumber").as_ref())
+            .map_or(Value::Null, |pon| PageRef::new(pon).to_json());
+        map.insert("page".into(), page);
+    }
+}
+
+/// A page list's `namedPages`, each page target's `pageObjectNumber` as
+/// the `page: PageRef` `NamedPageTarget` has. Templates and dangling
+/// entries keep their spelling.
+fn nest_named_pages(list: &mut Value) {
+    let Some(Value::Array(named)) = list.get_mut("namedPages") else { return };
+    for target in named.iter_mut().filter_map(|n| n.get_mut("target")) {
+        if let Value::Object(map) = target
+            && map.get("kind").and_then(Value::as_str) == Some("page")
+            && let Some(pon) = page_number(map.get("pageObjectNumber"))
+        {
+            map.remove("pageObjectNumber");
+            map.insert("page".into(), PageRef::new(pon).to_json());
+        }
+    }
 }
 
 /// Read a host response into what the call's caller expects.
@@ -769,6 +883,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     }
     let mut result = match envelope.get_mut("result").map(Value::take) {
         Some(Value::Object(result)) => result,
+        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
+            return Ok(Decoded { value: Value::Null, event: None });
+        }
         Some(other) => return Err(malformed(format!("a result that is not an object: {other}"))),
         None => return Err(malformed("neither a result nor an error".into())),
     };
@@ -777,7 +894,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     };
     let value = match decode {
         Decode::Unit => unreachable!("answered above"),
-        Decode::Result => Value::Object(result),
+        Decode::Result | Decode::OptionalResult => Value::Object(result),
         Decode::Field(name) => take(&mut result, name)?,
         Decode::PageList => {
             let Some(Value::Array(pages)) = result.get_mut("pages") else {
@@ -786,7 +903,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             for page in pages {
                 add_page_ref(page, "ref", "a page")?;
             }
-            Value::Object(result)
+            let mut list = Value::Object(result);
+            nest_named_pages(&mut list);
+            list
         }
         Decode::SearchSlice => {
             let Some(Value::Array(matches)) = result.get_mut("matches") else {
@@ -911,6 +1030,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             let mut event = result.remove("event");
             if let Some(event) = event.as_mut() {
                 add_layout_refs(event, "a page event")?;
+                named_page_in(event);
             }
             return Ok(Decoded { value, event });
         }
@@ -921,6 +1041,20 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .next()
                 .ok_or_else(|| malformed("bytes without their payload".into()))?;
             serde_json::json!({ "$hostBytes": HostTable::put(bytes) })
+        }
+        Decode::Encoded => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("an encoded render without its bytes".into()))?;
+            let content_type = take(&mut result, "mimeType")?;
+            serde_json::json!({
+                "contentType": content_type,
+                "width": result.remove("width").unwrap_or(Value::Null),
+                "height": result.remove("height").unwrap_or(Value::Null),
+                "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
+            })
         }
         Decode::Raster => {
             let bytes = response

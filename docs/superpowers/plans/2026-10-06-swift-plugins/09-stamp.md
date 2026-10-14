@@ -77,14 +77,14 @@ platforms/apple/build-xcframework.sh              + stamps fixture
 - Consumes: `research/swift-plugins` with plans 01, 05 and 10 merged.
 - Produces: `pdfium_sys::EPDFDoc_SetNamedPage`, `EPDFDoc_RemoveNamedPage`, `EPDFDoc_GetNamedPageCount`, `EPDFDoc_GetNamedPageAt`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-stamp -b research/swift-stamp research/swift-plugins
 cd .claude/worktrees/swift-stamp
 ```
 
-- [ ] **Step 2: Check the prerequisites**
+- [x] **Step 2: Check the prerequisites**
 
 ```bash
 grep -n '"pages.insert"\|"pages.extract"' crates/epdf-viewer-host/src/translate.rs
@@ -95,7 +95,7 @@ done
 
 Expected: both `translate.rs` rows (from plan 10), three header paths. A missing header means umbrella Task 0b hasn't run, or this worktree fetched the old slices: run `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>` for each, and if the header is still missing, stop and finish Task 0b.
 
-- [ ] **Step 3: Include the header**
+- [x] **Step 3: Include the header**
 
 In `crates/pdfium-sys/wrapper.h`, after `epdf_form.h` (and after `epdf_measure.h` if plan 08 added it):
 
@@ -103,12 +103,12 @@ In `crates/pdfium-sys/wrapper.h`, after `epdf_form.h` (and after `epdf_measure.h
 #include "epdf_named_pages.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFDoc_SetNamedPage\|pub fn EPDFDoc_RemoveNamedPage\|pub fn EPDFDoc_GetNamedPageAt' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `3`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h
@@ -126,7 +126,7 @@ git commit -m "Bind the fork's named-page registry in pdfium-sys"
 **Interfaces:**
 - Produces: `pages.list` results carry `namedPages: [{tree: "pages" | "templates", name, pageObjectNumber}]` (`packages/engine/core/src/dto/NamedPage.ts`); wire kinds `pages.setName` (`{name, pageObjectNumber, replace?}`) and `pages.removeName` (`{name}`), both answering the fresh page list as `{layout}` inside a mutation envelope.
 
-- [ ] **Step 1: Write the failing `pdfium` test**
+- [x] **Step 1: Write the failing `pdfium` test**
 
 ```rust
 // crates/pdfium/tests/named_pages.rs
@@ -160,12 +160,12 @@ fn an_empty_name_is_refused() {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p pdfium --test named_pages`
 Expected: FAIL, `could not find named_pages in pdfium`.
 
-- [ ] **Step 3: Write `crates/pdfium/src/named_pages.rs`**
+- [x] **Step 3: Write `crates/pdfium/src/named_pages.rs`**
 
 ```rust
 //! The catalog's `/Names /Pages` and `/Names /Templates` trees.
@@ -246,12 +246,12 @@ impl Document {
 
 Check `EPDFDoc_GetNamedPageAt`'s exact parameter order against `epdf_named_pages.h:67-80` before running; the call above assumes `(document, tree, index, buffer, buflen, out_page_obj_num)`. If the header orders them differently, reorder the call and keep the function's signature. `read_utf16_opt` is the helper plan 08 moved into `text.rs`; if plan 08 hasn't merged, move `action.rs:379`'s `read_utf16` there now under that name. Add `PdfiumError::WriteFailed(&'static str)` if it's absent. Add `pub mod named_pages;` to `lib.rs`, and `Document::page_object_number(index) -> Result<u32, PdfiumError>` if the crate has none under another name (`EPDFDoc_GetPageObjectNumberByIndex`).
 
-- [ ] **Step 4: Run the `pdfium` test**
+- [x] **Step 4: Run the `pdfium` test**
 
 Run: `cargo test -p pdfium --test named_pages`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 5: Write the failing engine test**
+- [x] **Step 5: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/named_pages.rs
@@ -299,12 +299,12 @@ fn replace_moves_a_name() {
 
 `common::{call, open_fixture}` are the helpers plan 08 added to `crates/epdf-engine/tests/common/mod.rs`; add them as that plan describes if they're missing.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test named_pages`
 Expected: FAIL, unknown request kind `pages.setName`.
 
-- [ ] **Step 7: Implement**
+- [x] **Step 7: Implement**
 
 In `crates/epdf-engine/src/features/pages.rs`, where the page list snapshot is built, add `named_pages` to the serialized struct, skipped when empty so existing vectors stay byte-identical:
 
@@ -383,12 +383,12 @@ pub fn remove_name(doc: &pdfium::Document, name: &str) -> Result<(), EngineError
 
 Route both in `host.rs` beside `"pages.move"` (line 807), copying that arm's shape: resolve the page (`page_field`) so an unknown page is `NotFound`, call the writer, then answer `{layout: <fresh pages.list>}` through the same mutation-envelope helper `pages.move` uses, with no revision bump (names are layout).
 
-- [ ] **Step 8: Run the engine tests**
+- [x] **Step 8: Run the engine tests**
 
 Run: `cargo test -p epdf-engine --test named_pages && cargo test -p epdf-engine`
 Expected: PASS, and the existing `pages.list` vectors unchanged.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine
@@ -405,7 +405,7 @@ git commit -m "Read and write named pages in the Rust engine"
 - Consumes: Task 2's wire kinds.
 - Produces: `NativeEngine::assets(post: KernelPost) -> (NativeEngine, EngineWorker)`, an engine whose `open` takes `{"kind": "bytes", "bytes": {"$bytes": ...}}` and whose `page.render.image` answers `{source: {kind: "bytes", bytes: {"$bytes": ...}}, contentType: "image/png", width, height}`; `translate::Decode::Encoded`; `PATHS` entries for those routes, so `translate::maps` answers `pieceInfo`, `page.pieceInfo`, `pages.setName`, `pages.removeName`, `pages.flatten`.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -453,12 +453,12 @@ fn an_encoded_render_asks_for_png_and_answers_bytes() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL to compile, no `translate_encoded_render`, no `Decode::Encoded`.
 
-- [ ] **Step 3: Extend `translate.rs`**
+- [x] **Step 3: Extend `translate.rs`**
 
 Add routes:
 
@@ -580,12 +580,12 @@ and in `decode`:
         }
 ```
 
-- [ ] **Step 4: Run the translation tests**
+- [x] **Step 4: Run the translation tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing asset-engine test**
+- [x] **Step 5: Write the failing asset-engine test**
 
 `packages/default-stamps/en/stamps.pdf` is the shipped English stamp library: a canonical library with a `/Names /Pages` registry.
 
@@ -642,12 +642,12 @@ fn dropping_the_host_joins_the_asset_engine_thread() {
 
 `rt::block_on_kernel` stands for however the existing host tests drive a kernel future to completion on the kernel thread; `crates/epdf-viewer-host/tests/viewer_host.rs` drives through `ViewerHost`, so if no such helper exists, write this test through `ViewerHost` with `stamp: Some(StampConfig::default())` after Task 5 instead, calling `StampHandle::import_library` and `asset_preview`, and keep the two assertions (PNG magic, `namedPages` non-empty via a non-empty asset list).
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test asset_engine`
 Expected: FAIL to compile, no `NativeEngine::assets`.
 
-- [ ] **Step 7: Write the encoder, the worker constructor and the asset engine**
+- [x] **Step 7: Write the encoder, the worker constructor and the asset engine**
 
 `crates/epdf-viewer-host/Cargo.toml`:
 
@@ -764,12 +764,12 @@ In `NativeDocument::call`, route the render:
 
 `Engine::open` already accepts the stamp plugin's `{"kind": "bytes", "bytes": ...}` input beside `{"$host": id}`: umbrella Task 0e reads `bytes` whatever the `kind`.
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, including `asset_engine`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-viewer-host Cargo.lock
@@ -788,7 +788,7 @@ git commit -m "Add a native asset engine for stamp libraries"
 
 The members, from `crates/plugins/stamp/src/harness.rs` `MEMBERS` (lines 50-84), under their FFI names: `libraries`, `library`, `assets`, `asset`, `asset_preview`, `render_asset_preview`, `read_asset_bytes`, `export_library`, `can_place`, `can_import`, `create_library`, `update_library`, `import_library`, `delete_library`, `create_asset`, `create_asset_from_annotations`, `update_asset`, `delete_asset`, `move_asset`, `duplicate_asset`, `arm_asset`, `place_asset`, `place_asset_on_pages`, `disarm`, `armed_asset`, and `subscribe` for the eight `on*` hooks. `restore` and `persist` wrap `persistence.rs`'s `restore_stamp_libraries` and `persist_stamp_libraries`, which aren't capability members but are how an embedder keeps custom libraries.
 
-- [ ] **Step 1: Feature, scaffolding, in-place derives**
+- [x] **Step 1: Feature, scaffolding, in-place derives**
 
 `Cargo.toml` gets the same `uniffi` feature, optional `epdf-ffi` and `uniffi` dependencies, dev-dependencies and `[[test]] name = "ffi" required-features = ["uniffi"]` block plan 08 Task 3 Step 1 shows, with `stamp` in place of `measurement`. `lib.rs` gets `#[cfg(feature = "uniffi")] pub mod ffi;` and `#[cfg(feature = "uniffi")] uniffi::setup_scaffolding!();`.
 
@@ -811,7 +811,7 @@ pub struct StampLibrary { /* unchanged */ }
 pub enum StampLibraryChangeReason { /* unchanged */ }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 The fake engine can't open library bytes, so these tests drive the handle's own behaviour: listing, unknown ids, arming errors, events and persistence over a fake store. Task 6 and the host test in Task 5 cover import over real PDFium.
 
@@ -969,12 +969,12 @@ fn subscribe_and_cancel_do_not_leak() {
 
 If `create_asset_from_annotations` answers a code outside the three the test allows, that's this plan's Review Focus item 5 not holding: read what the plugin does when `page.annotations.exportAppearance` is absent (`write/assets.rs:291`), and make the FFI answer `unsupported` there if the plugin throws something less clear.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stamp --features uniffi --test ffi`
 Expected: FAIL to compile, no `ffi` module.
 
-- [ ] **Step 4: Write `crates/plugins/stamp/src/ffi.rs`**
+- [x] **Step 4: Write `crates/plugins/stamp/src/ffi.rs`**
 
 ```rust
 //! The stamp plugin through uniffi: workspace-scoped, so the handle needs
@@ -1758,12 +1758,12 @@ impl StampHandle {
 
 Check three signatures against the crate before running, and adapt the call, not the FFI shape: `restore_stamp_libraries`'s `Warn` type (`persistence.rs:80`), `persist_stamp_libraries`'s return (`Rc<dyn Fn()>`, line 154), and the `PageRef` type `place_asset_on_pages` takes (`epdf_kernel::geometry::PageRef`, from `write/placement.rs:308`). `persist`'s `stop` closure isn't `Send`, so it runs on the kernel thread through the subscription slot; `StampPersistence::stop` only cancels that subscription.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-stamp --features uniffi --test ffi && cargo test -p epdf-plugin-stamp`
 Expected: PASS, 9 FFI tests, and the conformance vectors without `uniffi`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stamp
@@ -1779,7 +1779,7 @@ git commit -m "Export the stamp plugin through uniffi"
 - Consumes: Task 3's `NativeEngine::assets`, Task 4's `StampHandle`, `ffi::StampConfig::into_core`.
 - Produces: `ViewerConfig.stamp: Option<StampConfig>`; `ViewerHost::stamp() -> Result<Arc<StampHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing host test**
+- [x] **Step 1: Write the failing host test**
 
 ```rust
 #[test]
@@ -1821,12 +1821,12 @@ fn a_plain_pdf_imports_one_asset_per_page() {
 
 `read_repo_file` reads a path relative to the workspace root; add it next to `fixture` if the file has none. Check `report.pdf`'s page count with `host.pages` once and put the number in the test.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host stamp`
 Expected: FAIL to compile, no `stamp` on `ViewerConfig`.
 
-- [ ] **Step 3: Wire the host**
+- [x] **Step 3: Wire the host**
 
 `Cargo.toml`:
 
@@ -1894,12 +1894,12 @@ and in `Drop for Session`, after `self.worker.join()`:
     }
 ```
 
-- [ ] **Step 4: Run the host tests**
+- [x] **Step 4: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS. The existing `dropping_the_host_joins_both_threads` still passes; with stamp on and an import done, there are three threads to join, and Task 3's test covers the third.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -1916,7 +1916,7 @@ git commit -m "Add stamp to ViewerHost with a lazily started asset engine"
 - Consumes: generated `StampHandle`, `ViewerHost.stamp()`; plan 05's `PDFViewer.annotations(for:)`.
 - Produces: `StampCapability`, `PDFViewer.stamps()`, `FileStampLibraryStore`.
 
-- [ ] **Step 1: Add the fixture**
+- [x] **Step 1: Add the fixture**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -1924,7 +1924,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   packages/default-stamps/en/stamps.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/StampTests.swift
@@ -2037,12 +2037,12 @@ extension BaseSuite {
 
 `stamp` is workspace-scoped, so the standing `aClosedDocumentsCapabilityThrows` doesn't apply (umbrella, "The template"). `placingIntoAClosedDocumentThrows` covers the document-scoped part of the API instead. Every `CancelToken` member also gets the cancellation shape `importCancelsWhenTheTaskIsCancelled` shows; add one test per member as you write it in Step 4, named `<member>CancelsWhenTheTaskIsCancelled`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/StampTests)`
 Expected: FAIL to compile, no `stamps()` on `PDFViewer`.
 
-- [ ] **Step 4: Write `Stamp.swift`**
+- [x] **Step 4: Write `Stamp.swift`**
 
 ```swift
 public import CoreGraphics
@@ -2307,12 +2307,12 @@ extension PDFViewer {
 
 `ViewerError` and `StampLibraryStore` come from `EmbedPDFBindings`; the generated protocol's method signatures decide the exact `throws` spelling (UniFFI 0.32 generates `throws` for a fallible foreign method), so match what `Sources/EmbedPDFBindings/epdf_plugin_stamp.swift` declares. If `ViewerError` isn't public through `EmbedPDF`, add `public typealias ViewerError = EmbedPDFBindings.ViewerError` here; it's needed by anyone implementing their own store. If generated code calls the protocol from a non-main thread under Swift 6 strict concurrency and the class's `Sendable` conformance is refused, keep `FileStampLibraryStore` `final` with only `let` properties, which is what makes the conformance hold.
 
-- [ ] **Step 5: Run the Swift tests**
+- [x] **Step 5: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple
@@ -2324,17 +2324,17 @@ git commit -m "Add StampCapability and a file-backed library store to the Swift 
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1:** Append `stamp` to `crates=( ... )` in `plugin-rust.yml`, in plan-number order.
+- [ ] **Step 1:** (skipped: no CI edits on this branch) Append `stamp` to `crates=( ... )` in `plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2:** Add the README row:
+- [x] **Step 2:** Add the README row:
 
 ```markdown
 | stamp | `StampCapability` | `stamp: StampConfig()` (with `annotation` to place) | `2026-10-06-swift-plugins/09-stamp.md` |
 ```
 
-- [ ] **Step 3:** In `2026-10-01-swift-package.md` §A.3, mark `**stamp** (W), delivered by 09-stamp.md`, and note there that `create_asset_from_annotations` is `unsupported` natively until `annotations.exportAppearance` exists in `epdf-engine`.
+- [x] **Step 3:** In `2026-10-01-swift-package.md` §A.3, mark `**stamp** (W), delivered by 09-stamp.md`, and note there that `create_asset_from_annotations` is `unsupported` natively until `annotations.exportAppearance` exists in `epdf-engine`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-stamp --features uniffi
@@ -2350,7 +2350,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -2360,7 +2360,7 @@ git commit -m "Test the stamp exports in CI and list them in the README
 libepdf_viewer_host.a (ios-sim, release): <before> -> <after> bytes"
 ```
 
-- [ ] **Step 6: Merge, rerun, clean up**
+- [ ] **Step 6: Merge, rerun, clean up** (the orchestrator merges)
 
 From the integration worktree:
 

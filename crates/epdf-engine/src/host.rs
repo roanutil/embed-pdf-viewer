@@ -821,6 +821,38 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesMoved(value(&result)?),
                 )
             }
+            "pages.setName" => {
+                let name: String = field(body, "name")?;
+                let page = page_field(body)?;
+                let replace: Option<String> = optional(body, "replace")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::set_name(d, &name, page, replace.as_deref(), cancel)?
+                };
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesNamed {
+                        name,
+                        page_object_number: Some(page.get()),
+                        result: value(&result)?,
+                    },
+                )
+            }
+            "pages.removeName" => {
+                let name: String = field(body, "name")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::remove_name(d, &name, cancel)?
+                };
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesNamed {
+                        name,
+                        page_object_number: None,
+                        result: value(&result)?,
+                    },
+                )
+            }
             "pages.rotate" => {
                 let pages: Vec<crate::identity::PageObjectNumber> =
                     field(body, "pageObjectNumbers")?;

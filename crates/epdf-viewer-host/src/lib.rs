@@ -10,6 +10,7 @@ pub mod engine_worker;
 mod experimental;
 pub mod host_table;
 pub mod native_engine;
+pub mod png_encoder;
 pub mod session;
 pub mod translate;
 
@@ -44,6 +45,7 @@ use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_selection::ffi::SelectionHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
 use epdf_plugin_stage::ffi::StageHandle;
+use epdf_plugin_stamp::ffi::StampHandle;
 use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
 
@@ -414,6 +416,17 @@ impl ViewerHost {
         .await
     }
 
+    /// The workspace's stamp libraries. Needs `ViewerConfig.stamp`; without
+    /// it the kernel refuses the token. One capability for the whole viewer.
+    pub async fn stamp(&self) -> Result<Arc<StampHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_stamp::STAMP, None)?;
+            Ok(StampHandle::new(cap, post))
+        })
+        .await
+    }
+
     /// The page-edit capability of an open document. Needs
     /// `ViewerConfig.page_edit`; without it the kernel refuses the token.
     pub async fn page_edit(&self, document_id: String) -> Result<Arc<PageEditHandle>, ViewerError> {
@@ -506,6 +519,15 @@ impl ViewerHost {
     #[doc(hidden)]
     pub async fn engine_thread_witness(&self) -> Result<std::sync::Weak<()>, ViewerError> {
         self.call(|s| Ok(s.engine_alive())).await
+    }
+
+    /// The stamp plugin's asset engine thread, once its first open started
+    /// it. Dropped once that thread has closed PDFium.
+    #[doc(hidden)]
+    pub async fn asset_engine_thread_witness(
+        &self,
+    ) -> Result<Option<std::sync::Weak<()>>, ViewerError> {
+        self.call(|s| Ok(s.asset_engine_alive())).await
     }
 }
 

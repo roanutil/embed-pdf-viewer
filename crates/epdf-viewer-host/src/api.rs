@@ -73,6 +73,10 @@ pub struct ViewerConfig {
     /// readouts. Needs `interaction` and `annotation`.
     #[uniffi(default = None)]
     pub measurement: Option<epdf_plugin_measurement::ffi::MeasurementConfig>,
+    /// Install `stampPlugin(config)`: workspace stamp libraries, opened on
+    /// their own asset engine thread. Placing needs `annotation`.
+    #[uniffi(default = None)]
+    pub stamp: Option<epdf_plugin_stamp::ffi::StampConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

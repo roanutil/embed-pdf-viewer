@@ -75,6 +75,59 @@ pub struct PageActions {
 pub struct PageListSnapshot {
     pub page_count: u32,
     pub pages: Vec<PageLayout>,
+    /// The catalog's `/Names /Pages` and `/Names /Templates` registrations,
+    /// `/Pages` first, each in key order. Always present, so a consumer can
+    /// tell "no registrations" from an engine that predates the field.
+    #[serde(default)]
+    pub named_pages: Vec<NamedPageEntry>,
+}
+
+/// One named-page registration (`NamedPage.ts`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NamedPageEntry {
+    /// The decoded key, never interpreted.
+    pub name: String,
+    pub target: NamedPageTarget,
+}
+
+/// What a registration resolves to (`NamedPageTarget`). A page target is
+/// flat on this wire, like every other page address.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum NamedPageTarget {
+    #[serde(rename_all = "camelCase")]
+    Page {
+        page_object_number: u32,
+    },
+    #[serde(rename_all = "camelCase")]
+    Template {
+        object_number: u32,
+    },
+    Dangling,
+}
+
+/// `readNamedPages` in `PagesReader.ts`.
+pub fn read_named_pages(document: &Document) -> Result<Vec<NamedPageEntry>, EngineError> {
+    use pdfium::named_pages::{NamedPageTarget as Raw, NamedPageTree};
+    let mut out = Vec::new();
+    for tree in [NamedPageTree::Pages, NamedPageTree::Templates] {
+        let entries = document.named_pages(tree).map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                format!("reading the named-page registry failed: {e}"),
+            )
+        })?;
+        for entry in entries {
+            let target = match entry.target {
+                Raw::Page(page_object_number) => NamedPageTarget::Page { page_object_number },
+                Raw::Template(object_number) => NamedPageTarget::Template { object_number },
+                Raw::Dangling => NamedPageTarget::Dangling,
+            };
+            out.push(NamedPageEntry { name: entry.name, target });
+        }
+    }
+    Ok(out)
 }
 
 /// List every page.
@@ -122,7 +175,11 @@ pub fn list_pages(
         });
     }
 
-    Ok(PageListSnapshot { page_count: pages.len() as u32, pages })
+    Ok(PageListSnapshot {
+        page_count: pages.len() as u32,
+        pages,
+        named_pages: read_named_pages(document)?,
+    })
 }
 
 /// A page's action trees, or `None` when it has neither.
