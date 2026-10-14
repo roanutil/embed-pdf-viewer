@@ -22,6 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { destinationPageRefs, flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -630,22 +631,22 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
+      const page = doc.page(first.ref);
 
       const payloads = { ...(entry.resources ?? {}) };
       const created = await page.annotations.create(
-        materialize(entry.draft, payloads) as never,
+        destinationPageRefs(materialize(entry.draft, payloads)) as never,
       );
       const result = await page.annotations.update(
         created.created.ref,
-        materialize(entry.patch, payloads) as never,
+        destinationPageRefs(materialize(entry.patch, payloads)) as never,
       );
 
       const { modified, ...updated } = result.updated as Record<string, unknown>;
       return {
         ...entry,
-        pageObjectNumber: first.pageObjectNumber,
-        updated,
+        pageObjectNumber: first.ref.pageObjectNumber,
+        updated: flattenPageRefs(updated),
         hasModified: typeof modified === 'string' && modified.length > 0,
         appearance: result.appearance,
         meta: {
