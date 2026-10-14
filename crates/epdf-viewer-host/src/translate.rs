@@ -102,6 +102,12 @@ pub enum Decode {
     /// A read that answers `null` for nothing there (`pieceInfo.read` for
     /// an application with no entry), else the result as the host sent it.
     OptionalResult,
+    /// The first payload itself, as `{"$bytes": base64}`: a signature's
+    /// `/Contents`, a digest, a revision's bytes.
+    InlineBytes,
+    /// The result, with the first payload added under this key as
+    /// `{"$bytes": base64}` (`signatures.prepare`'s digest).
+    ResultWithBytes(&'static str),
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -164,11 +170,21 @@ pub const PATHS: &[&str] = &[
     "pages.removeName",
     "pages.flatten",
     "download",
+    "signatures.list",
+    "signatures.contents",
+    "signatures.digest",
+    "signatures.revisionBytes",
+    "signatures.analyze",
+    "signatures.prepare",
+    "signatures.complete",
+    "signatures.abort",
+    "document.version",
+    "forms.setSignatureAppearance",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
 /// a namespace of one (`document.versioned`). One per line, in plan order.
-pub const FLAGS: &[&str] = &[];
+pub const FLAGS: &[&str] = &["document.versioned"];
 
 /// Whether `translate` maps `path`; or, for a bare namespace such as
 /// `redaction`, any listed path under it; or a listed flag. This is what
@@ -228,6 +244,16 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         // `pageObjectNumber` arrives as the `page` the stamp plugin reads.
         "pages.flatten" => ("pages.flatten", Decode::AnnotationMutation),
         "download" => ("document.saveBuffer", Decode::HostBytes),
+        "signatures.list" => ("signatures.list", Decode::Result),
+        "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
+        "signatures.digest" => ("signatures.digest", Decode::InlineBytes),
+        "signatures.revisionBytes" => ("signatures.revisionBytes", Decode::InlineBytes),
+        "signatures.analyze" => ("signatures.analyze", Decode::Result),
+        "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
+        "signatures.complete" => ("signatures.complete", Decode::Mutation),
+        "signatures.abort" => ("signatures.abort", Decode::Result),
+        "document.version" => ("document.version", Decode::Result),
+        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::FormMutation),
         _ => return None,
     })
 }
@@ -363,6 +389,59 @@ pub fn translate(
             vec![("pageObjectNumbers", object_numbers(path, &arg(0))?), ("usage", arg(1))]
         }
         "document.saveBuffer" => vec![("mode", "full".into())],
+        "signatures.list" => {
+            vec![("workingCopy", arg(0).get("workingCopy").cloned().unwrap_or(Value::Null))]
+        }
+        "signatures.contents" => vec![("ref", wire_field_ref(path, arg(0))?)],
+        "signatures.digest" => {
+            vec![("ref", wire_field_ref(path, arg(0))?), ("algorithm", arg(1))]
+        }
+        "signatures.revisionBytes" => {
+            vec![("revisionIndex", whole(path, "revisionIndex", &arg(0))?)]
+        }
+        "signatures.analyze" => {
+            let mut input = arg(0);
+            for pointer in ["/since/signatureIndex", "/since/revisionIndex", "/until/revisionIndex"]
+            {
+                whole_at(path, &mut input, pointer)?;
+            }
+            vec![("input", input)]
+        }
+        "signatures.prepare" => {
+            let mut input = wire_field_ref(path, arg(0))?;
+            for pointer in ["/certify/permission", "/lock/permission", "/contentsSize"] {
+                whole_at(path, &mut input, pointer)?;
+            }
+            // The artwork travels as a payload; no artwork, no appearance.
+            if let Some(appearance) = input.get_mut("appearance") {
+                let pdf = appearance.get("pdf").and_then(epdf_kernel::bytes::Bytes::from_json);
+                match pdf {
+                    Some(pdf) => {
+                        payloads.push(pdf.0);
+                        let page = optional_whole(path, "pageIndex", appearance.get("pageIndex"))?;
+                        *appearance = serde_json::json!({ "pageIndex": if page.is_null() { 0.into() } else { page } });
+                    }
+                    None => {
+                        input.as_object_mut().map(|m| m.remove("appearance"));
+                    }
+                }
+            }
+            vec![("input", input)]
+        }
+        "signatures.complete" => {
+            let mut input = arg(0);
+            payloads.push(bytes_at(&input, "cms", path)?);
+            whole_at(path, &mut input, "/expectedVersion/editsVersion")?;
+            vec![("input", without(input, "cms"))]
+        }
+        "signatures.abort" => vec![("signingId", arg(0))],
+        "forms.setSignatureAppearance" => {
+            payloads.push(bytes_at(&arg(1), "pdf", path)?);
+            vec![
+                ("ref", wire_field_ref(path, arg(0))?),
+                ("pageIndex", optional_whole(path, "pageIndex", arg(1).get("pageIndex"))?),
+            ]
+        }
         _ => vec![],
     };
     let mut request = Map::new();
@@ -439,6 +518,33 @@ pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<
         Some(v) if epdf_kernel::is_undefined(v) => Ok(Value::Null),
         Some(v) => whole(path, field, v),
     }
+}
+
+/// `value` without `key`.
+fn without(mut value: Value, key: &str) -> Value {
+    if let Value::Object(map) = &mut value {
+        map.remove(key);
+    }
+    value
+}
+
+/// The `Bytes` JSON under `key`, as bytes.
+fn bytes_at(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
+    value.get(key).and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0).ok_or_else(|| {
+        coded("invalid-input", format!("[epdf-viewer-host] {path} needs {key} bytes"))
+    })
+}
+
+/// The number at a JSON `pointer` inside `value`, made whole; absent or
+/// null is left as it is.
+fn whole_at(path: &str, value: &mut Value, pointer: &str) -> Result<(), Error> {
+    if let Some(slot) = value.pointer_mut(pointer)
+        && !slot.is_null()
+    {
+        let field = pointer.rsplit('/').next().unwrap_or(pointer);
+        *slot = whole(path, field, slot)?;
+    }
+    Ok(())
 }
 
 /// `[PageRef]` as the host's `[pageObjectNumber]`.
@@ -1033,6 +1139,23 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 named_page_in(event);
             }
             return Ok(Decoded { value, event });
+        }
+        Decode::InlineBytes => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("bytes without their payload".into()))?;
+            epdf_kernel::bytes::Bytes(bytes).to_json()
+        }
+        Decode::ResultWithBytes(key) => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed(format!("a result without its {key} payload")))?;
+            result.insert((*key).into(), epdf_kernel::bytes::Bytes(bytes).to_json());
+            Value::Object(result)
         }
         Decode::HostBytes => {
             let bytes = response

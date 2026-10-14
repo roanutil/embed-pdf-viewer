@@ -48,6 +48,15 @@ impl<S: 'static> KernelThread<S> {
                 rt::set_monotonic_clock(Some(std::rc::Rc::new(move || {
                     origin.elapsed().as_secs_f64() * 1000.0
                 })));
+                // The virtual clock is `Date.now()`: epoch milliseconds, as a
+                // browser's is. Plugins read it as a date (signature trust
+                // checks a certificate's validity at `now`), not only as a
+                // timer base.
+                let epoch = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map_or(0.0, |d| d.as_secs_f64() * 1000.0);
+                rt::advance(epoch);
+                let origin = (origin, rt::now());
                 let mut state = match build(post) {
                     Ok(state) => {
                         let _ = built_tx.send(Ok(()));
@@ -166,9 +175,9 @@ fn sender<S>(tx: &SharedSender<S>) -> Option<Sender<Msg<S>>> {
 /// Catch the virtual clock up to wall time, then run everything runnable.
 /// `rt::advance` fires each due timer and drains after it. False when a
 /// timer or task panicked; the work queued behind it is left unrun.
-fn drain(origin: Instant) -> bool {
+fn drain((origin, epoch): (Instant, f64)) -> bool {
     catch_unwind(|| {
-        let wall = origin.elapsed().as_secs_f64() * 1000.0;
+        let wall = epoch + origin.elapsed().as_secs_f64() * 1000.0;
         let behind = wall - rt::now();
         if behind > 0.0 {
             rt::advance(behind);

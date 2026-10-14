@@ -40,7 +40,7 @@ fn a_page_chain_without_a_page_is_invalid_input() {
 
 #[test]
 fn an_unmapped_path_is_unsupported_not_a_panic() {
-    let error = translate("d1", "signatures.prepare", None, &[], 10).err().unwrap();
+    let error = translate("d1", "scripts.compile", None, &[], 10).err().unwrap();
     assert_eq!(error.code(), Some("unsupported"));
 }
 
@@ -212,7 +212,7 @@ fn on_kernel<T: Send + 'static>(
     worker: EngineWorker,
     job: impl FnOnce(&NativeEngine, oneshot::Sender<T>) + Send + 'static,
 ) -> T {
-    let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post))).unwrap();
+    let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post, None))).unwrap();
     let answer = futures::executor::block_on(thread.call(move |engine: &mut NativeEngine| {
         let (tx, rx) = oneshot::channel();
         job(engine, tx);
@@ -275,16 +275,16 @@ fn a_metadata_update_answers_its_result_after_publishing_its_event() {
 }
 
 #[test]
-fn a_locked_open_rejects_and_leaves_no_session_on_the_host() {
+fn a_locked_open_resolves_locked_and_keeps_its_session_on_the_host() {
     let worker = EngineWorker::spawn();
-    let code = on_kernel(worker.clone(), |engine, tx| {
+    let prompt = on_kernel(worker.clone(), |engine, tx| {
         engine.open(open_input(test_support::ENCRYPTED), None).on_settle(move |doc| {
-            let _ = tx.send(doc.as_ref().err().and_then(|e| e.code().map(str::to_owned)));
+            let _ = tx.send(doc.as_ref().ok().map(|d| d.security().password_prompt()));
         });
     });
-    assert_eq!(code.as_deref(), Some("DocPasswordRequired"));
-    // The engine's own close went out before the open rejected, and the
-    // worker is first in, first out, so a second close finds nothing.
+    assert_eq!(prompt, Some(json!({ "state": "required" })));
+    // The session stays parked on the host, waiting for its password, so a
+    // close finds it.
     let (tx, rx) = oneshot::channel();
     worker.submit(
         json!({ "kind": "close", "jobId": 0, "docId": "doc-1" }).to_string(),
@@ -294,7 +294,7 @@ fn a_locked_open_rejects_and_leaves_no_session_on_the_host() {
         }),
     );
     let answer: Value = serde_json::from_str(&futures::executor::block_on(rx).unwrap()).unwrap();
-    assert_eq!(answer, json!({ "result": { "closedSessions": 0 } }));
+    assert_eq!(answer, json!({ "result": { "closedSessions": 1 } }));
 }
 
 use epdf_viewer_host::translate::{PATHS, maps, optional_whole, whole};
@@ -325,6 +325,13 @@ fn every_routed_path_is_listed() {
         // `a_flatten_carries_its_pages_and_usage_and_answers_page_refs`.
         "pages.setName",
         "pages.flatten",
+        // An index and two byte payloads, covered by
+        // `the_reads_carry_their_arguments`,
+        // `complete_moves_the_cms_into_a_payload` and
+        // `a_visual_fill_moves_the_pdf_into_a_payload`.
+        "signatures.revisionBytes",
+        "signatures.complete",
+        "forms.setSignatureAppearance",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
@@ -338,7 +345,7 @@ fn a_namespace_answers_when_a_listed_path_is_under_it() {
     assert!(maps("page.text"));
     assert!(!maps("meta"));
     assert!(!maps("metadata.write"));
-    assert!(!maps("signatures"));
+    assert!(!maps("scripts"));
 }
 
 #[test]
@@ -985,7 +992,7 @@ fn redaction_is_present_once_its_path_is_listed() {
     assert!(maps("redaction"));
     assert!(maps("redaction.apply"));
     assert!(!maps("redact"));
-    assert!(!maps("signatures"));
+    assert!(!maps("scripts"));
 }
 
 #[test]
@@ -1265,4 +1272,116 @@ fn an_encoded_render_asks_for_png_and_answers_bytes() {
     let jpeg = json!({ "format": "jpeg" });
     let refused = translate_encoded_render("doc-1", Some(2), &[jpeg], 2);
     assert_eq!(refused.err().unwrap().code(), Some("unsupported"));
+}
+
+// 16 signature.
+
+#[test]
+fn signature_paths_are_mapped() {
+    for path in [
+        "signatures",
+        "document.versioned",
+        "forms.setSignatureAppearance",
+        "signatures.list",
+        "signatures.contents",
+        "signatures.digest",
+        "signatures.revisionBytes",
+        "signatures.analyze",
+        "signatures.prepare",
+        "signatures.complete",
+        "signatures.abort",
+        "document.version",
+    ] {
+        assert!(epdf_viewer_host::translate::maps(path), "{path}");
+    }
+}
+
+#[test]
+fn complete_moves_the_cms_into_a_payload() {
+    let input = json!({ "signingId": "s1", "cms": { "$bytes": "AQID" },
+                        "expectedVersion": { "baseSha256": "x", "editsVersion": 0.0 } });
+    let call = translate("doc-1", "signatures.complete", None, &[input], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("signatures.complete"));
+    assert!(call.request["input"].get("cms").is_none());
+    assert_eq!(call.request["input"]["expectedVersion"]["editsVersion"], json!(0));
+    assert_eq!(call.payloads, vec![vec![1, 2, 3]]);
+    assert!(matches!(call.decode, Decode::Mutation));
+}
+
+#[test]
+fn a_visual_fill_moves_the_pdf_into_a_payload() {
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 12.0 });
+    let call = translate(
+        "doc-1",
+        "forms.setSignatureAppearance",
+        None,
+        &[field, json!({ "pdf": { "$bytes": "JVBERg==" }, "pageIndex": 0.0 })],
+        1,
+    )
+    .unwrap();
+    assert_eq!(call.request["ref"], json!({ "kind": "objectNumber", "fieldObjectNumber": 12 }));
+    assert_eq!(call.request["pageIndex"], json!(0));
+    assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
+}
+
+#[test]
+fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
+    let request = json!({
+        "field": { "kind": "objectNumber", "fieldObjectNumber": 12.0 },
+        "certify": { "permission": 2.0 },
+        "lock": { "action": "include", "fields": ["a"], "permission": 1.0 },
+        "appearance": { "pdf": { "$bytes": "JVBERg==" }, "pageIndex": 0.0 },
+    });
+    let call = translate("doc-1", "signatures.prepare", None, &[request], 1).unwrap();
+    let input = &call.request["input"];
+    assert_eq!(input["field"]["fieldObjectNumber"], json!(12));
+    assert_eq!(input["certify"]["permission"], json!(2));
+    assert_eq!(input["lock"]["permission"], json!(1));
+    assert_eq!(input["appearance"], json!({ "pageIndex": 0 }));
+    assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
+    // No artwork: the appearance is left out altogether.
+    let bare = json!({ "field": { "kind": "objectNumber", "fieldObjectNumber": 12 },
+                       "appearance": { "pdf": null, "pageIndex": 0 } });
+    let call = translate("doc-1", "signatures.prepare", None, &[bare], 2).unwrap();
+    assert!(call.request["input"].get("appearance").is_none(), "{}", call.request);
+    assert!(call.payloads.is_empty());
+}
+
+#[test]
+fn the_reads_carry_their_arguments() {
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 5 });
+    let call =
+        translate("d", "signatures.contents", None, std::slice::from_ref(&field), 1).unwrap();
+    assert_eq!(call.request["ref"], field);
+    let call =
+        translate("d", "signatures.digest", None, &[field.clone(), json!("sha256")], 1).unwrap();
+    assert_eq!(call.request["algorithm"], json!("sha256"));
+    let call = translate("d", "signatures.revisionBytes", None, &[json!(1.0)], 1).unwrap();
+    assert_eq!(call.request["revisionIndex"], json!(1));
+    let call = translate("d", "signatures.abort", None, &[json!("s1")], 1).unwrap();
+    assert_eq!(call.request["signingId"], json!("s1"));
+    let input = json!({ "since": { "signatureIndex": 1.0 }, "until": "working-copy" });
+    let call = translate("d", "signatures.analyze", None, &[input], 1).unwrap();
+    assert_eq!(call.request["input"]["since"]["signatureIndex"], json!(1));
+    let call = translate("d", "signatures.list", None, &[], 1).unwrap();
+    assert!(call.request.get("workingCopy").is_none());
+    let call = translate("d", "document.version", None, &[], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("document.version"));
+}
+
+#[test]
+fn contents_come_back_as_bytes() {
+    let response =
+        HostResponse { json: r#"{"result":{"size":3}}"#.into(), payloads: vec![vec![1, 2, 3]] };
+    let decoded = decode(&Decode::InlineBytes, response).unwrap();
+    assert_eq!(decoded.value, json!({ "$bytes": "AQID" }));
+}
+
+#[test]
+fn prepare_answers_its_digest_inside_the_result() {
+    let response =
+        HostResponse { json: r#"{"result":{"signingId":"s1"}}"#.into(), payloads: vec![vec![9]] };
+    let decoded = decode(&Decode::ResultWithBytes("digest"), response).unwrap();
+    assert_eq!(decoded.value["digest"], json!({ "$bytes": "CQ==" }));
+    assert_eq!(decoded.value["signingId"], json!("s1"));
 }

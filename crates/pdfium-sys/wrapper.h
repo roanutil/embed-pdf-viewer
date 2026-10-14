@@ -34,3 +34,6 @@
 #include "epdf_pieceinfo.h"
 #include "epdf_redact.h"
 #include "epdf_text.h"
+#include "epdf_checkpoint.h"
+#include "epdf_digest.h"
+#include "epdf_signature.h"

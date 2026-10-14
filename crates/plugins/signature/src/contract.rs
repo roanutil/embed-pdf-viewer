@@ -40,6 +40,23 @@ pub enum SignatureMode {
 pub enum SignerSource {
     Port(SignerPort),
     Thunk(Rc<dyn Fn() -> Promise<SignerPort>>),
+    /// A native host's signer slot, which may be empty: `resolve` per
+    /// signing, and `available` says whether a signer is set now, which
+    /// `getMode` and `canSign` read where the TypeScript reads `config.signer`.
+    Host {
+        resolve: Rc<dyn Fn() -> Promise<SignerPort>>,
+        available: Rc<dyn Fn() -> bool>,
+    },
+}
+
+impl SignerSource {
+    /// Whether this source has a signer to offer now.
+    pub fn is_available(&self) -> bool {
+        match self {
+            SignerSource::Host { available, .. } => available(),
+            _ => true,
+        }
+    }
 }
 
 /// What the host supplies beside the config: the TypeScript's

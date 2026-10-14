@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use pdfium::{CreatableFieldFamily, Document};
 
 use super::snapshot::{FormFieldDto, FormFieldFamily, FormFieldRef, FormWidgetRef};
-use super::write::{load_model, read_field_back, require_writable, resolve};
+use super::write::{load_model, read_field_back, require_unlocked, require_writable, resolve};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
@@ -350,6 +350,7 @@ pub fn update_field(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
     let family = FormFieldFamily::from_code(
         model.field(resolved.index).expect("the index resolved").family_code(),
     );
@@ -452,6 +453,7 @@ pub fn delete_field(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
 
     // The widgets are read BEFORE the deletion. Afterwards the field is
     // gone and nothing can say which annotations used to belong to it.
@@ -490,6 +492,7 @@ pub fn attach_widget(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
     let family = FormFieldFamily::from_code(
         model.field(resolved.index).expect("the index resolved").family_code(),
     );
@@ -525,6 +528,7 @@ pub fn detach_widget(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
     drop(model);
 
     if !document.detach_widget(object_number, widget_object_number) {

@@ -685,3 +685,46 @@ impl HarnessPlugin for SignatureHarness {
         capability.downcast_ref::<SignatureCapability>().map(|_| MEMBERS.to_vec())
     }
 }
+
+/// A CADES-B detached CMS over `digest` (SHA-256), signed with a PKCS#8
+/// PEM RSA key and carrying one PEM certificate. For engine tests that seal
+/// a prepared signing with the CMS this crate builds, without a kernel.
+pub fn test_cms_over_digest(
+    digest: &[u8],
+    private_key_pem: &str,
+    certificate_pem: &str,
+) -> Vec<u8> {
+    let pem_body = |pem: &str| {
+        let body: String = pem.lines().filter(|l| !l.starts_with("-----")).collect();
+        STANDARD.decode(body).expect("PEM base64")
+    };
+    let key = RsaPrivateKey::from_pkcs8_der(&pem_body(private_key_pem)).expect("a PKCS#8 RSA key");
+    let signer = crate::cms::RawSigner {
+        certificate_chain: vec![pem_body(certificate_pem)],
+        algorithm: crate::cms::RawAlgorithm::RsaPkcs1,
+        hash: Digest::Sha256,
+        sign: std::rc::Rc::new(move |message: Vec<u8>| {
+            match key.sign(Pkcs1v15Sign::new::<sha2::Sha256>(), &Digest::Sha256.hash(&message)) {
+                Ok(signature) => Promise::resolved(signature),
+                Err(e) => Promise::rejected(Error::new(e.to_string())),
+            }
+        }),
+    };
+    let build = crate::cms::build_detached_cms(crate::cms::BuildInput {
+        digest: digest.to_vec(),
+        hash: Digest::Sha256,
+        profile: crate::cms::Profile::CadesB,
+        signer,
+        signing_time: None,
+    });
+    // The signer answers synchronously; the kernel runtime drains the rest.
+    type Built = Option<Result<Vec<u8>, Error>>;
+    let out: Rc<std::cell::RefCell<Built>> = Rc::default();
+    let slot = out.clone();
+    epdf_kernel::rt::spawn(async move {
+        *slot.borrow_mut() = Some(build.await);
+    });
+    epdf_kernel::rt::run_until_stalled();
+    let built = out.borrow_mut().take();
+    built.expect("the CMS build settled").expect("the CMS builds")
+}

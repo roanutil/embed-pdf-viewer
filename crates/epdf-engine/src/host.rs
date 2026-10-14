@@ -35,6 +35,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::access::DocumentAccess;
+use crate::auth::scope::{DocCapability, IdentityClaims};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::session::authority::SessionAuthority;
@@ -347,6 +348,11 @@ impl Host {
         use crate::features as f;
 
         let key = header.key()?;
+        if MUTATING_KINDS.contains(&header.kind.as_str())
+            && let Ok(session) = self.sessions.session(&key)
+        {
+            f::signature::mutator::assert_no_pending_signing(session)?;
+        }
         match header.kind.as_str() {
             // ── Document reads ────────────────────────────────────────
             "metadata.read" => {
@@ -402,6 +408,106 @@ impl Host {
                 let snapshot =
                     f::files::piece_info::read_piece_info(d, holder, &application, cancel)?;
                 Ok(ok(value(&snapshot)?))
+            }
+
+            // ── Signatures (reads) ───────────────────────────────────
+            "signatures.list" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
+                // The working copy: the unsaved state as one more revision
+                // over the loaded bytes. The same as the loaded bytes when
+                // nothing is unsaved.
+                let working_copy: bool = optional(body, "workingCopy")?.unwrap_or(false);
+                if working_copy {
+                    let session = self.sessions.session(&key)?;
+                    let snapshot = f::signature::analyzer::read_working_copy_snapshot(session)?;
+                    return Ok(ok(value(&snapshot)?));
+                }
+                let d = self.document(&key)?;
+                Ok(ok(value(&f::signature::reader::read_snapshot(d)?)?))
+            }
+            // ── Signatures (writes) ──────────────────────────────────
+            "signatures.prepare" => {
+                let input: f::signature::mutator::SignaturePrepareInput = field(body, "input")?;
+                let session = self.sessions.session(&key)?;
+                session.require(DocCapability::DocSign)?;
+                if input.certify.is_some() {
+                    session.require(DocCapability::DocSignCertify)?;
+                }
+                let appearance = input.appearance.and(payloads.first().map(Vec::as_slice));
+                let signing_id = self.ids.next_uuid_v4();
+                let (prepared, digest) =
+                    f::signature::mutator::prepare(session, &input, appearance, signing_id)?;
+                Ok(HostResponse { json: envelope(value(&prepared)?), payloads: vec![digest] })
+            }
+            "signatures.complete" => {
+                let input: f::signature::mutator::SignatureCompleteInput = field(body, "input")?;
+                let cms = payload(&payloads, 0, "the CMS")?.to_vec();
+                let session = self.sessions.session_mut(&key)?;
+                session.require(DocCapability::DocSign)?;
+                let result = f::signature::mutator::complete(session, &input, &cms)?;
+                let result = value(&result)?;
+                if result["status"] == "already-completed" {
+                    return Ok(ok(serde_json::json!({
+                        "result": result,
+                        "mutationSequence": session.mutation_sequence(),
+                    })));
+                }
+                let mut event = result.clone();
+                event["signingId"] = serde_json::json!(input.signing_id);
+                self.finish_with(
+                    &key,
+                    crate::session::save::DocumentEventInit::SignatureCompleted(event),
+                    result,
+                )
+            }
+            "signatures.abort" => {
+                let signing_id = string_field(body, "signingId")?;
+                let session = self.sessions.session(&key)?;
+                session.require(DocCapability::DocSign)?;
+                Ok(ok(value(&f::signature::mutator::abort(session, &signing_id))?))
+            }
+            "forms.setSignatureAppearance" => {
+                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let page_index: i32 = optional(body, "pageIndex")?.unwrap_or(0);
+                let pdf = payload(&payloads, 0, "the appearance PDF")?.to_vec();
+                let session = self.sessions.session_mut(&key)?;
+                session.require(DocCapability::DocFormsFill)?;
+                let result = f::signature::mutator::set_signature_appearance(
+                    session, &reference, &pdf, page_index, cancel,
+                )?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::FormFieldUpdated(value(&result)?),
+                )
+            }
+            "signatures.analyze" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
+                let input: f::signature::analysis::types::AnalyzeInput = field(body, "input")?;
+                let session = self.sessions.session(&key)?;
+                Ok(ok(value(&f::signature::analyzer::analyze(session, &input)?)?))
+            }
+            "signatures.contents" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
+                let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::read_contents(d, &target)?))
+            }
+            "signatures.digest" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
+                let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let algorithm: f::signature::types::DigestAlgorithm = field(body, "algorithm")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::digest(d, &target, algorithm)?))
+            }
+            "signatures.revisionBytes" => {
+                self.sessions.session(&key)?.require(DocCapability::DocDownload)?;
+                let index: u32 = field(body, "revisionIndex")?;
+                let d = self.document(&key)?;
+                Ok(bytes_response(f::signature::reader::revision_bytes(d, index)?))
+            }
+            "document.version" => {
+                let session = self.sessions.session(&key)?;
+                Ok(ok(value(&f::signature::reader::version(session)?)?))
             }
 
             // ── Per-page reads ────────────────────────────────────────
@@ -578,6 +684,13 @@ impl Host {
             }
             "document.checkPasswordPermissions" => {
                 let password = string_field(body, "password")?;
+                // The one request a locked session accepts: on a parked
+                // session, "check this password" loads the parked bytes with
+                // it (`WorkerHost.handleDocumentCheckPasswordPermissions`).
+                // A wrong one fails and leaves the session parked.
+                if self.sessions.is_locked(&key) {
+                    self.sessions.unlock_parked(&key, &password)?;
+                }
                 let mode: crate::features::security::reader::PasswordMode =
                     optional(body, "mode")?.unwrap_or_default();
                 let probe = self.sessions.check_password_permissions(
@@ -586,11 +699,17 @@ impl Host {
                     mode,
                     self.clock.as_ref(),
                 )?;
-                Ok(ok(value(&probe)?))
+                // The protection beside the probe, as the TypeScript's
+                // answer carries it, so a host that just unlocked knows
+                // what the signatures forbid.
+                let mut answer = value(&probe)?;
+                answer["protection"] = self.protection_of(&key);
+                Ok(ok(answer))
             }
 
             // ── Mutations ─────────────────────────────────────────────
             "metadata.update" => {
+                self.sessions.session(&key)?.require(DocCapability::DocMetadataModify)?;
                 let patch: crate::dto::MetadataPatch = field(body, "patch")?;
                 let result = {
                     let d = self.document(&key)?;
@@ -1098,9 +1217,20 @@ impl Host {
         key: &SessionKey,
         event: crate::session::save::DocumentEventInit,
     ) -> Result<HostResponse, EngineError> {
+        let result = event.result().clone();
+        self.finish_with(key, event, result)
+    }
+
+    /// [`Host::finish`], answering `result` where the event carries more
+    /// (a completed signature's event adds its `signingId`).
+    fn finish_with(
+        &mut self,
+        key: &SessionKey,
+        event: crate::session::save::DocumentEventInit,
+        result: serde_json::Value,
+    ) -> Result<HostResponse, EngineError> {
         use crate::session::save;
 
-        let result = event.result().clone();
         let session = self.sessions.session(key)?;
         let finished = save::finish_mutation(session, event.family(), &CancelToken::never())?;
         let published = save::publish(
@@ -1227,14 +1357,19 @@ impl Host {
         let bytes = payloads.remove(0);
         let password = body.get("password").and_then(serde_json::Value::as_str);
         let key = header.key()?;
-        match self.sessions.open_memory(
-            key.clone(),
-            bytes,
-            password,
-            // Unrestricted until the scope arrives on the wire: G3's
-            // resolver takes a scope string and no caller sends one yet.
-            SessionAuthority::unrestricted(),
-        ) {
+        // A native extension of the wire: the TypeScript enforces scope in
+        // `engine/main`, above the worker, and a native host has no such
+        // layer. Absent is `["*"]`, everything.
+        let scope: Vec<String> = optional(body, "scope")?.unwrap_or_else(|| vec!["*".to_string()]);
+        let identity: WireIdentity = optional(body, "identity")?.unwrap_or_default();
+        let authority = SessionAuthority::new(&scope, identity.into(), Default::default())
+            .map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!("invalid scope: {e}"),
+                )
+            })?;
+        match self.sessions.open_memory(key.clone(), bytes, password, authority) {
             Ok(()) => {}
             // A password is a STATE on the wire, not a failure. The registry
             // reports it as an error because internally it IS one: the
@@ -1246,7 +1381,21 @@ impl Host {
             Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {}
             Err(error) => return Err(error),
         }
-        Ok(serde_json::json!({ "security": value(&self.security_on_open(&key)?)? }))
+        Ok(serde_json::json!({
+            "security": value(&self.security_on_open(&key)?)?,
+            "protection": self.protection_of(&key),
+        }))
+    }
+
+    /// What an open document's signatures forbid (`WorkerHost.probeProtection`),
+    /// `null` for a locked, unsigned or unreadable one.
+    fn protection_of(&self, key: &SessionKey) -> serde_json::Value {
+        self.sessions
+            .session(key)
+            .ok()
+            .and_then(|s| s.authority().protection())
+            .and_then(|p| serde_json::to_value(p).ok())
+            .unwrap_or(serde_json::Value::Null)
     }
 
     /// The security probe an open reports.
@@ -1453,6 +1602,64 @@ fn optional<T: for<'de> Deserialize<'de>>(
     match body.get(name) {
         None | Some(serde_json::Value::Null) => Ok(None),
         Some(_) => field(body, name).map(Some),
+    }
+}
+
+/// Every kind that writes to a session's document: refused while a signing
+/// is parked (`WorkerHost.ts` `MUTATING_KINDS`, the kinds this host routes).
+const MUTATING_KINDS: &[&str] = &[
+    "metadata.update",
+    "annotations.create",
+    "annotations.update",
+    "annotations.delete",
+    "annotations.move",
+    "annotations.flatten",
+    "forms.setValue",
+    "forms.reset",
+    "forms.applyEffects",
+    "forms.import",
+    "forms.repair",
+    "forms.createField",
+    "forms.updateField",
+    "forms.setSignatureAppearance",
+    "forms.deleteField",
+    "forms.attachWidget",
+    "forms.detachWidget",
+    "pages.move",
+    "pages.rotate",
+    "pages.delete",
+    "pages.setName",
+    "pages.removeName",
+    "pages.flatten",
+    "pages.insert",
+    "pages.insertBlank",
+    "redaction.apply",
+    "attachments.create",
+    "attachments.delete",
+    "measure.setScale",
+    "pieceInfo.update",
+    "pieceInfo.clear",
+];
+
+/// The identity an `open.fatMem` may carry, spelled as the TypeScript's
+/// `IdentityClaims` (`auth/scope/types.ts`), snake_case keys and all.
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct WireIdentity {
+    user_id: Option<String>,
+    group_id: Option<String>,
+    groups: Vec<String>,
+    display_name: Option<String>,
+}
+
+impl From<WireIdentity> for IdentityClaims {
+    fn from(w: WireIdentity) -> Self {
+        IdentityClaims {
+            user_id: w.user_id,
+            group_id: w.group_id,
+            groups: w.groups,
+            display_name: w.display_name,
+        }
     }
 }
 

@@ -148,6 +148,11 @@ FIXTURES=(
   packages/default-stamps/en/stamps.pdf
   tooling/engine-conformance/fixtures/document_actions.pdf
   crates/test-support/fixtures/measure-foreign-viewport.pdf
+  packages/engine/main/test/fixtures/signed_two_approvals.pdf
+  packages/engine/main/test/fixtures/signed_certified.pdf
+  packages/engine/main/test/fixtures/unsigned_sigfield.pdf
+  packages/engine/main/test/fixtures/signature_artwork.pdf
+  packages/engine/main/test/fixtures/signature-compat/keys/TEST-ONLY-*.pem
 )
 for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"

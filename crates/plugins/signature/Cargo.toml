@@ -20,6 +20,8 @@ harness = [
   "epdf-plugin-form/harness",
   "epdf-plugin-stamp/harness",
 ]
+# The uniffi exports (`ffi` module), for `epdf-viewer-host`.
+uniffi = ["dep:uniffi", "dep:epdf-ffi", "dep:epdf-annotation-core"]
 
 [dependencies]
 epdf-kernel = { path = "../../epdf-kernel" }
@@ -31,7 +33,21 @@ epdf-plugin-stamp = { path = "../stamp", default-features = false }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+epdf-ffi = { path = "../../epdf-ffi", optional = true }
+epdf-annotation-core = { path = "../annotation-core", default-features = false, optional = true }
+uniffi = { version = "=0.32.0", optional = true }
+
+[dev-dependencies]
+futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+plugin-conformance = { path = "../../plugin-conformance" }
+rsa = { version = "0.9", default-features = false, features = ["std", "u64_digit"] }
+sha2 = { version = "0.10", features = ["oid"] }
+base64 = "0.22"
 
 [[test]]
 name = "conformance"
 required-features = ["harness"]
+
+[[test]]
+name = "ffi"
+required-features = ["uniffi"]

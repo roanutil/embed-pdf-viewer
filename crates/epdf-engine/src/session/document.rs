@@ -81,6 +81,16 @@ pub struct DocumentSession {
     open: Option<OpenState>,
     /// Bytes retained for a later unlock attempt. Locked sessions only.
     parked_bytes: Option<Vec<u8>>,
+    /// The authority a parked open asked for, applied when it unlocks.
+    parked_authority: Option<SessionAuthority>,
+    /// A parked signing and the last completed one (`SignatureMutator.ts`).
+    signing: std::cell::RefCell<crate::features::signature::mutator::SigningState>,
+    /// The password the document opened with, for documents derived from its
+    /// bytes (a signature's working copy, the sealed bytes it reloads onto).
+    password: Option<String>,
+    /// The mutation sequence the current bytes were loaded at
+    /// (`DocumentSession.ts` `loadedSeq`).
+    loaded_sequence: Cell<u64>,
     mutation_sequence: Cell<u64>,
     /// What this session's caller may do. Grants nothing until open sets it,
     /// so a session that failed to open cannot be read through.
@@ -103,6 +113,10 @@ impl DocumentSession {
             session_id: session_id.into(),
             open: None,
             parked_bytes: None,
+            parked_authority: None,
+            signing: Default::default(),
+            password: None,
+            loaded_sequence: Cell::new(0),
             mutation_sequence: Cell::new(0),
             authority: SessionAuthority::default(),
             retained: Vec::new(),
@@ -200,6 +214,7 @@ impl DocumentSession {
         // `permissions()` reports the owner word for every encrypted document.
         let mut authority = authority;
         authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
@@ -211,6 +226,8 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.password = password.map(str::to_owned);
+        self.loaded_sequence.set(self.mutation_sequence.get());
         Ok(())
     }
 
@@ -251,6 +268,7 @@ impl DocumentSession {
 
         let mut authority = authority;
         authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
@@ -262,6 +280,7 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.loaded_sequence.set(self.mutation_sequence.get());
         // Runs after `close` has dropped the layer document, which is the
         // order the base's lifetime requires.
         self.retain_until_close(move || drop(base));
@@ -280,6 +299,28 @@ impl DocumentSession {
             ));
         }
         self.parked_bytes = Some(bytes);
+        Ok(())
+    }
+
+    /// [`DocumentSession::park_locked`], remembering the authority the open
+    /// asked for so the unlock grants the same and no more.
+    pub fn park_locked_under(
+        &mut self,
+        bytes: Vec<u8>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
+        self.park_locked(bytes)?;
+        self.parked_authority = Some(authority);
+        Ok(())
+    }
+
+    /// Unlock a parked session under the authority it was parked with, or
+    /// full authority when it was parked without one.
+    pub fn unlock_parked(&mut self, password: &str) -> Result<(), EngineError> {
+        let authority =
+            self.parked_authority.clone().unwrap_or_else(SessionAuthority::unrestricted);
+        self.unlock_with(password, authority)?;
+        self.parked_authority = None;
         Ok(())
     }
 
@@ -511,6 +552,54 @@ impl DocumentSession {
         self.mutation_sequence.get()
     }
 
+    /// `hasUnsavedEdits`: a mutation since the current bytes were loaded.
+    pub fn has_unsaved_edits(&self) -> bool {
+        self.mutation_sequence.get() != self.loaded_sequence.get()
+    }
+
+    /// The password the document opened with.
+    pub fn password(&self) -> Option<&str> {
+        self.password.as_deref()
+    }
+
+    /// The session's signing state.
+    pub fn signing(
+        &self,
+    ) -> &std::cell::RefCell<crate::features::signature::mutator::SigningState> {
+        &self.signing
+    }
+
+    /// `DocumentSession.install`: move the session onto new bytes (a sealed
+    /// signature), opened under its password. Every page it had is re-pinned
+    /// (its revision bumped) and the bytes count as loaded.
+    pub fn install(&mut self, bytes: Vec<u8>) -> Result<(), EngineError> {
+        let document = Document::from_bytes(Library::acquire(), &bytes, self.password.as_deref())
+            .map_err(|e| {
+            EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
+        })?;
+        if document.is_encrypted() {
+            document.set_runtime_owner_permissions(true);
+        }
+        let protection = document_protection(&document);
+        let document = OwnedDocument::new(document)?;
+        self.authority.set_protection(protection);
+        let state = self.state_mut()?;
+        let previous: Vec<PageObjectNumber> =
+            state.records.iter().map(|r| r.page_object_number).collect();
+        state.pages.close_all();
+        state.pages = PagePtrPool::new();
+        state.document = document;
+        state.kind = OpenKind::FatMemory;
+        state.records.clear();
+        state.fully_enumerated = false;
+        for pon in previous {
+            state.revisions.bump(pon);
+        }
+        self.mutation_sequence.set(self.mutation_sequence.get().saturating_add(1));
+        self.loaded_sequence.set(self.mutation_sequence.get());
+        Ok(())
+    }
+
     /// Record one successful mutation. Saturating, for the reason in
     /// [`RevisionAuthority::bump`].
     pub fn note_mutation(&self) {
@@ -575,4 +664,14 @@ impl Drop for DocumentSession {
     fn drop(&mut self) {
         self.close();
     }
+}
+
+/// What a document's signatures forbid, for its authority. A document
+/// whose signature model cannot be built is not known to be protected.
+fn document_protection(
+    document: &Document,
+) -> Option<crate::features::signature::types::DocumentProtection> {
+    crate::features::signature::reader::read_protection(document)
+        .ok()
+        .filter(|p| p.judged.is_some())
 }

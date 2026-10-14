@@ -182,6 +182,9 @@ pub enum DocumentEventInit {
     /// `PageScaleResult` the call answers.
     #[serde(rename = "page.viewportsChanged")]
     PageViewportsChanged(serde_json::Value),
+    /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
+    #[serde(rename = "signature.completed")]
+    SignatureCompleted(serde_json::Value),
 }
 
 impl DocumentEventInit {
@@ -214,7 +217,8 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
             | Self::FormWidgetDetached(v)
-            | Self::PageViewportsChanged(v) => v,
+            | Self::PageViewportsChanged(v)
+            | Self::SignatureCompleted(v) => v,
             Self::PagesNamed { result, .. } => result,
         }
     }
@@ -245,6 +249,7 @@ impl DocumentEventInit {
             Self::FormWidgetAttached(_) => "form.widgetAttached",
             Self::FormWidgetDetached(_) => "form.widgetDetached",
             Self::PageViewportsChanged(_) => "page.viewportsChanged",
+            Self::SignatureCompleted(_) => "signature.completed",
         }
     }
 
@@ -263,7 +268,9 @@ impl DocumentEventInit {
             | Self::FormFieldUpdated(_)
             | Self::FormFieldDeleted(_)
             | Self::FormWidgetAttached(_)
-            | Self::FormWidgetDetached(_) => MutationFamily::SelfSequenced,
+            | Self::FormWidgetDetached(_)
+            // The install already advanced the sequence.
+            | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,
         }
     }

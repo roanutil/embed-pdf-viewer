@@ -53,7 +53,8 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
 fn the_document_engine_still_answers_raw_pixels() {
     // Only the asset engine encodes: a viewer's render stays a raster.
     let worker = EngineWorker::spawn_with(Host::new);
-    let thread = KernelThread::spawn(move |post| Ok(NativeEngine::new(worker, post))).unwrap();
+    let thread =
+        KernelThread::spawn(move |post| Ok(NativeEngine::new(worker, post, None))).unwrap();
     let answer = block_on(thread.call(|engine: &mut NativeEngine| {
         let (tx, rx) = oneshot::channel::<Value>();
         let input = json!({ "kind": "bytes", "bytes": Bytes(stamps()).to_json() });

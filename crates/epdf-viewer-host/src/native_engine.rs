@@ -7,15 +7,18 @@
 //! what a plugin waiting on its own confirmed event (metadata's `update`)
 //! needs.
 //!
-//! Document security is not enforced: `NativeSecurity` allows everything and
-//! reports an anonymous identity. Enforcing document permissions is
-//! follow-on plan B4.
+//! Document security is enforced from `ViewerConfig.scope`: `NativeSecurity`
+//! answers from the same scope and permission bits the engine checks with.
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use epdf_engine::auth::scope::{
+    CollabAction, CollabTarget, DocCapability, IdentityClaims, decode_pdf_bits,
+};
 use epdf_engine::host::HostResponse;
+use epdf_engine::session::authority::SessionAuthority;
 use epdf_ffi::KernelPost;
 use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
 use epdf_kernel::geometry::PageRef;
@@ -40,6 +43,10 @@ thread_local! {
     /// Each open document's current `PageListSnapshot`: the one its open
     /// loaded, then the `layout` of every page mutation's event.
     static LAYOUTS: RefCell<HashMap<String, Value>> = RefCell::new(HashMap::new());
+    /// Each open document's security state, so a completed signature's
+    /// event can hand it the new protection.
+    static STATES: RefCell<HashMap<String, std::rc::Weak<NativeDocumentState>>> =
+        RefCell::new(HashMap::new());
 }
 
 pub struct NativeEngine {
@@ -56,11 +63,13 @@ struct Inner {
     /// `LAYOUTS` are per kernel thread and keyed by id, and the asset engine
     /// shares the thread with the viewer's engine, so their ids must differ.
     prefix: &'static str,
+    /// The scope every `open.fatMem` carries. `["*"]` when none was set.
+    scope: Vec<String>,
 }
 
 impl NativeEngine {
-    pub fn new(worker: EngineWorker, post: KernelPost) -> NativeEngine {
-        NativeEngine::with(worker, post, false)
+    pub fn new(worker: EngineWorker, post: KernelPost, scope: Option<Vec<String>>) -> NativeEngine {
+        NativeEngine::with(worker, post, false, scope)
     }
 
     /// The stamp plugin's asset engine: its own engine thread (PDFium's
@@ -71,13 +80,21 @@ impl NativeEngine {
         let worker = EngineWorker::spawn_with(|| {
             epdf_engine::host::Host::new().with_encoder(Box::new(crate::png_encoder::PngEncoder))
         });
-        (NativeEngine::with(worker.clone(), post, true), worker)
+        (NativeEngine::with(worker.clone(), post, true, None), worker)
     }
 
-    fn with(worker: EngineWorker, post: KernelPost, encoded_renders: bool) -> NativeEngine {
+    fn with(
+        worker: EngineWorker,
+        post: KernelPost,
+        encoded_renders: bool,
+        scope: Option<Vec<String>>,
+    ) -> NativeEngine {
         let prefix = if encoded_renders { "asset" } else { "doc" };
         let documents = Cell::new(0);
-        NativeEngine { inner: Rc::new(Inner { worker, post, documents, encoded_renders, prefix }) }
+        let scope = scope.unwrap_or_else(|| vec!["*".to_string()]);
+        NativeEngine {
+            inner: Rc::new(Inner { worker, post, documents, encoded_renders, prefix, scope }),
+        }
     }
 }
 
@@ -155,8 +172,27 @@ fn publish(doc: &str, event: &Value) {
     let listeners: Vec<Listener> = LISTENERS.with(|l| {
         l.borrow().1.get(doc).map_or_else(Vec::new, |v| v.iter().map(|(_, f)| f.clone()).collect())
     });
-    for listener in listeners {
+    for listener in listeners.iter() {
         listener(event);
+    }
+    // A completed signature moved the document to new saved bytes, which
+    // the TypeScript's `LocalDocumentSignaturesService.complete` follows
+    // with `document.versioned`: byte-level facts must be re-read.
+    if event.get("type").and_then(Value::as_str) == Some("signature.completed") {
+        // What the signatures forbid moved with the bytes
+        // (`LocalDocumentSignaturesService.complete`'s `setProtection`).
+        let state = STATES.with(|s| s.borrow().get(doc).and_then(std::rc::Weak::upgrade));
+        if let Some(state) = state {
+            state.take_protection(event.get("protection").unwrap_or(&Value::Null));
+        }
+        let versioned = json!({
+            "type": "document.versioned",
+            "version": event.get("version").cloned().unwrap_or(Value::Null),
+            "origin": event.get("origin").cloned().unwrap_or(Value::Null),
+        });
+        for listener in listeners {
+            listener(&versioned);
+        }
     }
 }
 
@@ -195,9 +231,10 @@ impl Engine for NativeEngine {
                     "jobId": job,
                     "docId": doc,
                     "password": password.unwrap_or(Value::Null),
+                    "scope": self.inner.scope,
                 }),
                 payloads: vec![bytes],
-                decode: Decode::Field("security"),
+                decode: Decode::Result,
             })
         });
         let (promise, resolver) = Promise::<Rc<dyn DocumentHandle>>::pending();
@@ -205,12 +242,25 @@ impl Engine for NativeEngine {
         let inner = self.inner.clone();
         let (settled, stopped) = (resolver.clone(), aborted.clone());
         rt::spawn(async move {
-            let security = match opened.await {
-                Ok(security) => security,
+            let (security, protection) = match opened.await {
+                Ok(mut answer) => (
+                    answer.get_mut("security").map(Value::take).unwrap_or(Value::Null),
+                    answer.get_mut("protection").map(Value::take).unwrap_or(Value::Null),
+                ),
                 Err(error) => return settled.reject(error),
             };
             if stopped.get() {
                 return inner.close(&doc);
+            }
+            // A document that needs a password stays open, parked on the
+            // host, and comes up as a locked tab: `password_prompt` says so,
+            // and `NativeSecurity::unlock` loads it.
+            let state = Rc::new(NativeDocumentState::new(doc.clone(), inner.clone(), security));
+            state.take_protection(&protection);
+            STATES.with(|s| s.borrow_mut().insert(doc.clone(), Rc::downgrade(&state)));
+            if state.locked.get() {
+                let pages = json!({ "pages": [] });
+                return settled.resolve(Rc::new(NativeDocument { id: doc, inner, pages, state }));
             }
             let listed = inner
                 .send(&doc, |job| translate::translate(&doc, "pages.list", None, &[], job))
@@ -223,7 +273,7 @@ impl Engine for NativeEngine {
                 Ok(_) if stopped.get() => inner.close(&doc),
                 Ok(pages) => {
                     LAYOUTS.with(|l| l.borrow_mut().insert(doc.clone(), pages.clone()));
-                    settled.resolve(Rc::new(NativeDocument { id: doc, inner, pages, security }))
+                    settled.resolve(Rc::new(NativeDocument { id: doc, inner, pages, state }))
                 }
             }
         });
@@ -263,8 +313,64 @@ struct NativeDocument {
     id: String,
     inner: Rc<Inner>,
     pages: Value,
-    /// The `DocumentSecurityState` the open reported.
-    security: Value,
+    /// What `security()` answers from, shared with every `NativeSecurity`
+    /// it hands out so an unlock is seen by all of them.
+    state: Rc<NativeDocumentState>,
+}
+
+/// One document's authority and security state.
+struct NativeDocumentState {
+    id: String,
+    inner: Rc<Inner>,
+    /// Built from the same scope the open sent, with the permission bits the
+    /// engine's probe reported, so it answers as the engine enforces.
+    authority: RefCell<SessionAuthority>,
+    /// The `DocumentSecurityState` the open, or the unlock, reported.
+    security: RefCell<Value>,
+    /// Parked on the host until a password unlocks it.
+    locked: Cell<bool>,
+}
+
+impl NativeDocumentState {
+    fn new(id: String, inner: Rc<Inner>, security: Value) -> NativeDocumentState {
+        // A scope the engine refused fails the open before this runs; the
+        // default grants nothing, should one get here anyway.
+        let authority =
+            SessionAuthority::new(&inner.scope, IdentityClaims::default(), Default::default())
+                .unwrap_or_default();
+        let state = NativeDocumentState {
+            id,
+            inner,
+            authority: RefCell::new(authority),
+            security: RefCell::new(Value::Null),
+            locked: Cell::new(false),
+        };
+        state.take_probe(security);
+        state
+    }
+
+    /// Adopt the document's signature protection (`ScopeGuard.setProtection`):
+    /// what it forbids, no scope grants. `null` or unreadable is none.
+    fn take_protection(&self, protection: &Value) {
+        let protection = serde_json::from_value::<
+            epdf_engine::features::signature::types::DocumentProtection,
+        >(protection.clone())
+        .ok()
+        .filter(|p| p.judged.is_some());
+        self.authority.borrow_mut().set_protection(protection);
+    }
+
+    /// Adopt a security probe: the permission bits for `pdf.permissions`,
+    /// and whether the document is still waiting for a password (it needs
+    /// one and has not been opened as anybody).
+    fn take_probe(&self, security: Value) {
+        let bits = security.get("pdfPermissionsBits").and_then(Value::as_i64);
+        self.authority.borrow_mut().set_pdf_bits(decode_pdf_bits(bits));
+        let needs_password = security.get("encryptionRequiresPassword") == Some(&Value::Bool(true));
+        let opened = security.get("pdfOpenedAs").is_some_and(|v| !v.is_null());
+        self.locked.set(needs_password && !opened);
+        *self.security.borrow_mut() = security;
+    }
 }
 
 impl DocumentHandle for NativeDocument {
@@ -277,7 +383,7 @@ impl DocumentHandle for NativeDocument {
     }
 
     fn security(&self) -> Rc<dyn DocumentSecurity> {
-        Rc::new(NativeSecurity { current: self.security.clone() })
+        Rc::new(NativeSecurity { state: self.state.clone() })
     }
 
     fn has(&self, member: &str) -> bool {
@@ -287,6 +393,7 @@ impl DocumentHandle for NativeDocument {
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
         if path == "close" {
             LAYOUTS.with(|l| l.borrow_mut().remove(&self.id));
+            STATES.with(|s| s.borrow_mut().remove(&self.id));
         }
         if self.inner.encoded_renders && path == "page.render.image" {
             return self.inner.send(&self.id, |job| {
@@ -333,48 +440,126 @@ impl DocumentHandle for NativeDocument {
     }
 }
 
-/// Allows everything, for an anonymous caller.
+/// What the kernel asks before an action, answered from the same scope and
+/// permission bits the engine enforces with (`LocalDocumentSecurityService`).
+/// A locked document allows nothing until it unlocks.
 struct NativeSecurity {
-    current: Value,
+    state: Rc<NativeDocumentState>,
+}
+
+impl NativeSecurity {
+    fn open(&self) -> bool {
+        !self.state.locked.get()
+    }
+}
+
+/// A record's owner as the annotation plugin passes it: `{userId, groupId}`.
+fn collab_target(target: &Value) -> CollabTarget {
+    let text = |key: &str| target.get(key).and_then(Value::as_str).map(str::to_owned);
+    CollabTarget { user_id: text("userId"), group_id: text("groupId") }
 }
 
 impl DocumentSecurity for NativeSecurity {
-    fn allows(&self, _capability: &str) -> bool {
-        true
+    fn allows(&self, capability: &str) -> bool {
+        self.open()
+            && DocCapability::parse(capability)
+                .is_some_and(|c| self.state.authority.borrow().allows(c))
     }
 
+    /// `ScopeGuard.targetForSelfCreate`: the caller's own identity.
     fn allows_annotation_create(&self) -> bool {
-        true
+        let authority = self.state.authority.borrow();
+        let identity = authority.identity();
+        let target =
+            CollabTarget { user_id: identity.user_id.clone(), group_id: identity.group_id.clone() };
+        self.open() && authority.allows_collab(CollabAction::Create, &target)
     }
 
-    fn allows_annotation_mutation(&self, _action: &str, _target: &Value) -> bool {
-        true
+    fn allows_annotation_mutation(&self, action: &str, target: &Value) -> bool {
+        let Some(action) = CollabAction::parse(action) else { return false };
+        self.open() && self.state.authority.borrow().allows_collab(action, &collab_target(target))
     }
 
-    fn allows_annotation_group_assignment(&self, _group_id: &str) -> bool {
-        true
+    fn allows_annotation_group_assignment(&self, group_id: &str) -> bool {
+        self.open() && self.state.authority.borrow().allows_set_group(group_id)
     }
 
+    /// Sorted, as `ScopeGuard.effectiveScope` answers.
     fn effective_scope(&self) -> Vec<String> {
-        Vec::new()
+        let mut scope: Vec<String> = self
+            .state
+            .authority
+            .borrow()
+            .expanded()
+            .iter()
+            .map(|c| c.as_str().to_owned())
+            .collect();
+        scope.sort();
+        scope
     }
 
+    /// No identity is configured natively, so `null`, as the TypeScript
+    /// answers for an empty one.
     fn identity(&self) -> Value {
         Value::Null
     }
 
     fn current(&self) -> Value {
-        self.current.clone()
+        self.state.security.borrow().clone()
     }
 
     fn password_prompt(&self) -> Value {
-        json!({ "state": "none" })
+        if self.state.locked.get() {
+            json!({ "state": "required" })
+        } else {
+            json!({ "state": "none" })
+        }
     }
 
-    fn unlock(&self, _input: Value) -> EngineCall<Value> {
-        Promise::rejected(
-            Error::new("[epdf-viewer-host] the native engine has no \"security.unlock\" yet")
-                .with("code", "unsupported"),
-        )
+    /// `document.checkPasswordPermissions`, which on a parked session loads
+    /// it with the password, then the page list the open skipped. A wrong
+    /// password rejects (`DocPasswordIncorrect`) and the tab stays locked.
+    fn unlock(&self, input: Value) -> EngineCall<Value> {
+        let state = self.state.clone();
+        let password = input.get("password").cloned().unwrap_or(Value::Null);
+        let mode = input.get("mode").cloned().unwrap_or_else(|| json!("any"));
+        let id = state.id.clone();
+        let checked = state.inner.send(&id, |job| {
+            Ok(WireCall {
+                request: json!({ "kind": "document.checkPasswordPermissions", "jobId": job,
+                                 "docId": id, "password": password, "mode": mode }),
+                payloads: Vec::new(),
+                decode: Decode::Result,
+            })
+        });
+        let (promise, resolver) = Promise::pending();
+        rt::spawn(async move {
+            let (security, protection) = match checked.await {
+                Ok(mut security) => {
+                    let protection = security
+                        .as_object_mut()
+                        .and_then(|m| m.remove("protection"))
+                        .unwrap_or(Value::Null);
+                    (security, protection)
+                }
+                Err(error) => return resolver.reject(error),
+            };
+            let pages = state
+                .inner
+                .send(&state.id, |job| {
+                    translate::translate(&state.id, "pages.list", None, &[], job)
+                })
+                .await;
+            match pages {
+                Ok(pages) => {
+                    LAYOUTS.with(|l| l.borrow_mut().insert(state.id.clone(), pages));
+                    state.take_probe(security.clone());
+                    state.take_protection(&protection);
+                    resolver.resolve(json!({ "security": security }));
+                }
+                Err(error) => resolver.reject(error),
+            }
+        });
+        promise
     }
 }

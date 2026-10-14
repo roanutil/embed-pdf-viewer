@@ -24,6 +24,11 @@ pub(crate) use epdf_ffi::page::decode_pages;
 /// One field per plugin as each plugin lands.
 #[derive(Debug, Default, uniffi::Record)]
 pub struct ViewerConfig {
+    /// The capability scope every document opens with, as the engine
+    /// parses it (`doc.open`, `doc.annotate.modify`, `pdf.permissions`,
+    /// ...). `None` is `["*"]`: everything.
+    #[uniffi(default = None)]
+    pub scope: Option<Vec<String>>,
     /// Install `metadataPlugin()`: the document Info dict, read and edited.
     #[uniffi(default = false)]
     pub metadata: bool,
@@ -100,6 +105,12 @@ pub struct ViewerConfig {
     /// per document.
     #[uniffi(default = None)]
     pub actions: Option<ActionsConfig>,
+    /// Install `signaturePlugin(config)`: signature fields, validation and
+    /// signing. Needs `form` (and so `interaction`). The signer and the
+    /// trust anchors are set with `ViewerHost::set_signature_signer` and
+    /// `set_signature_trust`.
+    #[uniffi(default = None)]
+    pub signature: Option<epdf_plugin_signature::ffi::SignatureConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]
@@ -119,9 +130,8 @@ pub struct DocumentInfo {
     pub page_count: u32,
     pub status: DocumentStatus,
     /// `Failed` only: why the open failed, as the kernel's
-    /// `toPluginErrorInfo` reports it. A locked document opened without its
-    /// password carries code `permission-denied`, with the engine's
-    /// `DocPasswordRequired` leading the message.
+    /// `toPluginErrorInfo` reports it. A wrong password leads the message
+    /// with the engine's `DocPasswordIncorrect`.
     pub error: Option<PluginErrorInfo>,
 }
 

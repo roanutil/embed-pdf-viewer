@@ -121,6 +121,7 @@ impl SessionRegistry {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
         let mut session = DocumentSession::new();
+        let parked_authority = authority.clone();
         match session.open_with(bytes.clone(), password, authority) {
             Ok(()) => {
                 self.sessions.insert(key, session);
@@ -137,7 +138,7 @@ impl SessionRegistry {
             // needed, and returning Ok here would tell it the document is
             // readable.
             Err(error) if error.code == EngineErrorCode::DocPasswordRequired => {
-                session.park_locked(bytes)?;
+                session.park_locked_under(bytes, parked_authority)?;
                 self.sessions.insert(key, session);
                 Err(error)
             }
@@ -160,6 +161,18 @@ impl SessionRegistry {
         self.refuse_if_destroyed()?;
         let session = self.sessions.get_mut(key).ok_or_else(|| not_open(key))?;
         session.unlock_with(password, authority)
+    }
+
+    /// Whether `key` names a session parked for a password.
+    pub fn is_locked(&self, key: &SessionKey) -> bool {
+        self.sessions.get(key).is_some_and(DocumentSession::is_locked)
+    }
+
+    /// Unlock a parked session under the authority its open asked for.
+    pub fn unlock_parked(&mut self, key: &SessionKey, password: &str) -> Result<(), EngineError> {
+        self.refuse_if_destroyed()?;
+        let session = self.sessions.get_mut(key).ok_or_else(|| not_open(key))?;
+        session.unlock_parked(password)
     }
 
     /// Open a fresh layer over a base, registering the base under `base_key`.

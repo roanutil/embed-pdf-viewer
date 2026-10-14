@@ -51,11 +51,18 @@ uniffi's own assessment and a fair reason not to review it in a diff.
 | i18n | `I18nCapability`, `BundleLocaleLoader` | `i18n: I18nConfig(locales: [...], lazyLocales: [...], loader: BundleLocaleLoader())` | `2026-10-06-swift-plugins/13-i18n.md` |
 | commands | `CommandsCapability`, `CommandHandler` | `commands: true` | `2026-10-06-swift-plugins/14-commands.md` |
 | actions | `ActionsCapability`, `JavaScriptCoreEngineFactory` | `actions: .forCurrentTimeZone(javascript: ActionsJavaScriptConfig(enabled: true, engine: JavaScriptCoreEngineFactory()))` | `2026-10-06-swift-plugins/15-actions.md` |
+| signature | `SignatureCapability`, `KeychainSigner`, `TrustAnchors` | `interaction: true, form: FormConfig(), signature: SignatureConfig()` | `2026-10-06-swift-plugins/16-signature.md` |
 
 > Note: `JavaScriptCoreEngine` enforces a script's time budget by abandoning the realm, because
 > JavaScriptCore has no public execution limit. A runaway script keeps one thread busy until the
 > app exits. Memory and stack budgets aren't enforced. JavaScript on a real document also needs
 > the form and annotation plugins (plans 05 and 06), whose engine paths the script world reads.
+>
+> Note: trust anchors are the app's own, set with `PDFViewer.setTrust(_:)`. iOS can't list the
+> system roots (`SecTrustCopyAnchorCertificates` is macOS only), and validating against the system
+> store would need a `SecTrust`-evaluating port in `epdf-signature-core`. Without anchors a good
+> signature reads `.validUntrusted`. Document permissions follow `ViewerConfig.scope`; `nil` grants
+> everything.
 
 ## What the script assembles
 

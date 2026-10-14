@@ -87,14 +87,14 @@ platforms/apple/build-xcframework.sh                      + signature fixtures a
 - Consumes: `research/swift-plugins` with plans 01, 05 and 06 merged (and 09 if present).
 - Produces: `pdfium_sys::EPDFSig_*`, `EPDFDoc_GetRevision*`, `EPDFDoc_OpenRevision`, `EPDFDoc_ReadLoadedBytes`, `EPDFObjectDiff_*`, `EPDFAnnot_SetAppearanceFromPage` bindings.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-signature -b research/swift-signature research/swift-plugins
 cd .claude/worktrees/swift-signature
 ```
 
-- [ ] **Step 2: Check the PDFium slices**
+- [x] **Step 2: Check the PDFium slices**
 
 ```bash
 for t in darwin-arm64 ios-arm64 ios-sim-arm64; do
@@ -106,7 +106,7 @@ done
 
 Expected: no output. Otherwise this worktree fetched the old slices: run `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>` for each, and if a header is still missing, stop and finish umbrella Task 0b, which rebuilds the slices from fork commit `6dc31d14e` or later.
 
-- [ ] **Step 3: Include the headers**
+- [x] **Step 3: Include the headers**
 
 In `crates/pdfium-sys/wrapper.h`, after the last `epdf_*.h` include:
 
@@ -116,12 +116,12 @@ In `crates/pdfium-sys/wrapper.h`, after the last `epdf_*.h` include:
 #include "epdf_signature.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFSig_GetByteRange\|pub fn EPDFDoc_GetRevisionCount\|pub fn EPDFObjectDiff_GetCount\|pub fn EPDFSig_DigestByteRange' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `4`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h
@@ -143,7 +143,7 @@ git commit -m "Bind the fork's signature, checkpoint and digest headers"
 
 `SessionAuthority` and `check_capability` already exist (`crates/epdf-engine/src/session/authority.rs:47-123`, `auth/scope/resolver.rs:43-104`). What's missing is the wire: `open.fatMem` always passes `SessionAuthority::unrestricted()` (`host.rs:1169`), and the native document ignores the answer. The kernel reads permissions only through `DocumentSecurity`, so the native side must answer from the same authority the engine enforces with, or a control would show enabled and then fail.
 
-- [ ] **Step 1: Write the failing engine test**
+- [x] **Step 1: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/security_scope.rs
@@ -178,12 +178,12 @@ fn an_open_with_a_narrow_scope_refuses_a_metadata_write() {
 
 `open_fixture_with` sends `open.fatMem` with the extra fields merged into the request; add it to `tests/common/mod.rs` beside `open_fixture`. The bit position for "fill in forms" is bit 9 (`1 << 8`), per `resolver.ts:306`.
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test security_scope`
 Expected: FAIL to compile, no `DocSign`.
 
-- [ ] **Step 3: Add the capabilities and read the scope**
+- [x] **Step 3: Add the capabilities and read the scope**
 
 In `types.rs`, add `DocSign` and `DocSignCertify` to `DocCapability`, to `ALL` (its length becomes 23), and to `as_str` (`"doc.sign"`, `"doc.sign.certify"`), in the order `packages/engine/core/src/auth/scope/types.ts:52-53` declares them. Add both strings to the known list in `parser.rs` (`parser.ts:36-37`). In `resolver.rs`, where bit 6 or bit 9 grants `DocFormsFill`, grant `DocSign` too:
 
@@ -206,12 +206,12 @@ In `types.rs`, add `DocSign` and `DocSignCertify` to `DocCapability`, to `ALL` (
 
 and pass `authority`. The registry already calls `set_pdf_bits` once it has probed the document (`authority.rs:83-92`); confirm `open_memory` does, and add the call after the probe if it doesn't. Add `"doc.sign"` and `"doc.sign.certify"` to any capability list `tests/wire_contract.rs` or the scope vectors check, and regenerate nothing: `tooling/engine-conformance/vectors/scope/` comes from the TypeScript, which already has both.
 
-- [ ] **Step 4: Run the engine tests**
+- [x] **Step 4: Run the engine tests**
 
 Run: `cargo test -p epdf-engine`
 Expected: PASS, including `security_scope` and the scope vectors.
 
-- [ ] **Step 5: Write the failing host test**
+- [x] **Step 5: Write the failing host test**
 
 ```rust
 // crates/epdf-viewer-host/tests/security.rs
@@ -262,12 +262,12 @@ fn the_default_scope_allows_everything() {
 
 `encrypted-hello.pdf`'s password is the one `pdfium-multiplatform-prototype/fixtures/README.md` gives; use that string. Move `NullDelegate` and `fixture` into `tests/common/mod.rs` if they live inside `viewer_host.rs` today.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test security`
 Expected: FAIL, `no field scope`; once that compiles, `a_locked_document_opens_locked_and_unlocks` fails because the open rejects with `DocPasswordRequired` (`lib.rs:128-130`).
 
-- [ ] **Step 7: Implement `NativeSecurity` and the locked open**
+- [x] **Step 7: Implement `NativeSecurity` and the locked open**
 
 `api.rs`, in `ViewerConfig`, before the plugin fields:
 
@@ -398,12 +398,12 @@ In `PDFViewer.swift`, replace `unlock`'s doc comment:
   /// tab stays locked.
 ```
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS. Earlier tests that expected a locked open to throw (`a_locked_document_reports_that_it_needs_a_password`, from the spec's Task 3) now fail; change them to assert `DocumentStatus::Locked` and say why in the commit message. The Swift `ViewerTests` equivalent changes the same way in Task 10.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-engine crates/epdf-viewer-host platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift
@@ -436,7 +436,7 @@ The TypeScript to port, function for function:
 
 `protection.rs` is pure and is pinned by a vector: generate `tooling/engine-conformance/vectors/signature/protection.json` from the TypeScript with a generator script beside the existing ones (copy `tooling/engine-conformance/scripts/` `security` generator's shape), add its `:check` script to `package.json` and `.github/workflows/engine-rust.yml`, and replay it in `crates/epdf-engine/tests/signature_protection.rs`. Every other function here touches PDFium and is pinned by the fixture tests below.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 // crates/epdf-engine/tests/signature_read.rs
@@ -504,12 +504,12 @@ fn contents_and_revision_bytes_are_payloads() {
 
 `call_bytes` is `call` that returns the first payload; add it to `tests/common/mod.rs`. If the fixture facts differ (three revisions, `judged == "fill"`), take the true values from `packages/engine/main/test/signatures*.test.ts`, which runs the same fixtures through the TypeScript, and use those: the TypeScript is the reference, and this test pins the port to it.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_read`
 Expected: FAIL, unknown request kind `signatures.list`.
 
-- [ ] **Step 3: Write the `pdfium` layer**
+- [x] **Step 3: Write the `pdfium` layer**
 
 `crates/pdfium/src/signature.rs` opens with the model handle and the per-signature facts the reader needs:
 
@@ -591,7 +591,7 @@ impl Drop for SignatureModel<'_> {
 
 Then `SignatureModel::count`, `facts(index) -> SignatureFacts`, `contents(index) -> Vec<u8>`, `field_mdp(index)`, `lock(index)` and `seed_value(index)`, each the transcription of the matching block of `readSignatureModel.ts` and calling the `EPDFSig_Get*` function that block calls (the list is in the Task 1 grep, and every one of them is in `epdf_signature.h`). Check each function's exact signature in the generated `bindings.rs` as you write its call; the names above (`EPDF_SIGMODEL`, `EPDFSig_LoadModel`) are the header's, but the TypeScript's `EPDFForm_LoadModel` / `EPDFSig_CloseModel` pairing says the model may be opened through the form model, in which case `signature_model` takes the `FormModel` the crate already has (`crates/pdfium/src/form.rs`).
 
-- [ ] **Step 4: Write the engine reader**
+- [x] **Step 4: Write the engine reader**
 
 `crates/epdf-engine/src/features/signature/reader.rs`:
 
@@ -657,12 +657,12 @@ pub fn version(session: &DocumentSession, cancel: &CancelToken) -> Result<Value,
 
 with `read_revisions`, `signature_json` and `resolve_field` transcribed from `SignatureReader.ts:101-145` and `readSignatureModel.ts`. If `features::binary` has no `sha256_hex`, use the SHA-256 `epdf-signature-core` already depends on through its `crypto.rs`, or add `sha2` to `epdf-engine` if that's the only way, and say so in the commit. Route the four kinds in `host.rs` with the document reads; `signatures.contents` and `signatures.revisionBytes` answer through `bytes_response` (the helper `pages.extract` uses, `host.rs:542`). `workingCopy: true` on `signatures.list` goes to Task 4's `read_working_copy_snapshot`; until then, answer it from the loaded bytes, which the TypeScript does too when there are no unsaved edits.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine`
 Expected: PASS, including `signature_read` and `signature_protection`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine tooling package.json .github/workflows/engine-rust.yml
@@ -680,7 +680,7 @@ git commit -m "Read signatures, revisions and document protection in the Rust en
 
 `SignatureAnalyzer.ts` is 665 lines over `EPDFDoc_CompareRevisions` and `EPDFObjectDiff_*`. Port it as one module, keeping the TypeScript's function boundaries and names (snake-cased), and keep its classification table (`forbidden` / `permitted` per object kind and modification level) as a `const` table, not a `match` spread across functions, so the two can be diffed by eye.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 // crates/epdf-engine/tests/signature_analyze.rs
@@ -730,12 +730,12 @@ fn a_field_mdp_lock_forbids_a_locked_field_change() {
 
 The `annotations.create` draft shape follows whatever plan 05's translate tests send; copy one from `crates/epdf-viewer-host/tests/translate.rs`. As in Task 3, take any fixture fact that disagrees from `packages/engine/main/test/` and pin that.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_analyze`
 Expected: FAIL, unknown request kind `signatures.analyze`.
 
-- [ ] **Step 3: Port the analyzer**
+- [x] **Step 3: Port the analyzer**
 
 Add `ObjectDiff` to `crates/pdfium/src/signature.rs` over `EPDFDoc_CompareRevisions`, `EPDFObjectDiff_GetCount`, `GetEntry`, `GetValue`, `GetReferrer`, `GetReferrerCount`, `GetReadStatus`, `GetRevisionHealth` and `Close` (closed on drop), plus `Document::open_revision(index)` (`EPDFDoc_OpenRevision`) and `open_base_overlay` (`EPDFDoc_OpenBaseOverlay`) for the working copy. Then `analyzer.rs`:
 
@@ -760,12 +760,12 @@ pub fn read_working_copy_snapshot(session: &DocumentSession, cancel: &CancelToke
 
 Fill both bodies by transcribing the named TypeScript ranges, with the helpers it calls in the same file. Route `signatures.analyze` in `host.rs` with the document reads, and send `signatures.list {workingCopy: true}` to `read_working_copy_snapshot`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine
@@ -784,7 +784,7 @@ git commit -m "Analyze changes after a signature in the Rust engine"
 
 Port `SignatureMutator.ts` (538 lines) with `internal/candidateStore.ts` (451), `internal/appearance.ts` (67) and `internal/sealCheck.ts` (72). The candidate store keeps a prepared signing's bytes in memory keyed by `signingId`, with the `expectedVersion` fence; `complete` refuses a version that moved (`Conflict`), replays idempotently for the same CMS (`already-completed`), and reloads the session onto the sealed bytes, which re-pins every page (the result's `meta`). `CandidateFinalizer.ts` is the cloud's session-less path and isn't ported.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 The test signs with `TEST-ONLY-private-key.pem` through `epdf-signature-core`'s own CMS builder, so the engine is tested against the CMS the plugin will hand it.
 
@@ -868,12 +868,12 @@ fn completing_after_the_document_moved_is_a_conflict() {
 
 `call_bytes_with` returns `(result, first payload)`; `call_with_payload` sends one payload and returns the whole envelope's `result` object (so `["result"]["status"]` reads the mutation's inner result). `epdf_signature_core::harness::test_cms_over_digest` doesn't exist yet: add it to `crates/plugins/signature-core/src/harness.rs` as a thin wrapper that loads the PKCS#8 key (as `harness.rs:175` does), builds a `RawSigner` with the certificate, and calls `cms::build_detached_cms` with `Profile::CadesB` and `Digest::Sha256`, blocking on the promise with `epdf_kernel::rt::block_on`. Gate it behind the crate's existing `harness` feature.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_sign`
 Expected: FAIL, unknown request kind `signatures.prepare`.
 
-- [ ] **Step 3: Port the mutator**
+- [x] **Step 3: Port the mutator**
 
 `crates/pdfium/src/signature_write.rs` wraps the fork's candidate calls `SignatureMutator.ts` makes (`EPDFSig_DigestByteRange`, the `/Contents` hole reservation, `EPDFAnnot_SetAppearanceFromPage`, `EPDFAnnot_UpdateAppearanceToRect`, the incremental save the candidate is built from). `mutator.rs` holds `CandidateStore` (a `HashMap<String, Candidate>` on the session, with each candidate's bytes, byte range, contents size, digest, field object number and `expectedVersion`) and:
 
@@ -886,12 +886,12 @@ pub fn set_signature_appearance(session: &mut DocumentSession, field: &Value, pd
 
 each transcribing its TypeScript namesake (`prepare` 127-247, `complete` 248-327, `abort` 328-end, and `appearance.ts` for the fill). `prepare` validates `contentsSize` in 256..=4 MiB (default 8192) and refuses `certify` unless the document has no signature yet and the caller holds `doc.sign.certify`; `complete` runs `sealCheck.ts`'s checks before swapping the session onto the sealed bytes. Route the four kinds in `host.rs`: `prepare` answers its digest as a payload; `complete` and `forms.setSignatureAppearance` go through the mutation envelope helper with event kinds `signatures.completed` and `forms.changed`; `abort` is a plain read-shaped answer. The `doc.sign` / `doc.forms.fill` checks use `session.authority().require(...)` like every other mutation.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine -p epdf-signature-core`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine crates/plugins/signature-core
@@ -908,7 +908,7 @@ git commit -m "Prepare, complete and abort signatures, and draw visual fills, in
 
 The plugin passes bytes as `Bytes` JSON (`{"$bytes": base64}`, `crates/plugins/signature/src/write/fill.rs:52`) and reads them back the same way. Translation moves them into and out of payloads, so a CMS or a revision never crosses the worker as base64.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[test]
@@ -957,12 +957,12 @@ fn prepare_answers_its_digest_inside_the_result() {
 
 Check the plugin's actual argument shapes before running: `signatures.complete` at `crates/plugins/signature/src/write/sign.rs:184-190`, `signatures.prepare` at `:150-154`, `signatures.revisionBytes` at `sync/hydration.rs:175` (a bare index), and the signature-core calls `grep -rn 'call("signatures' crates/plugins/signature-core/src` finds. Adjust the tests' inputs to what the plugin sends, never the reverse.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Routes:
 
@@ -1026,12 +1026,12 @@ fn bytes_at(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
 
 `decode` gains the two arms, each taking the first payload and wrapping it with `Bytes(..).to_json()`. Update Appendix C's `signatures.*` row in `2026-10-01-swift-package.md` to `mapped (16-signature.md)`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-01-swift-package.md
@@ -1050,7 +1050,7 @@ git commit -m "Map the signature paths in the native engine"
 
 The members, from `crates/plugins/signature/src/harness.rs` `MEMBERS` (lines 52-91), under FFI names: `snapshot`, `status`, `signatures`, `unsigned_fields`, `signature`, `verdicts`, `verdict`, `protection`, `pending`, `is_busy`, `mode`, `target`, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, `sign`, `prepare_signature`, `complete_signature`, `abort_pending`, `fill_field`, `clear_field`, `place_mark`, `can_sign`, `can_fill`, `can_certify`, and `subscribe` for the nine `on*` hooks. This task does the reads, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, the `can_*` members and `subscribe`; Task 8 does the writes.
 
-- [ ] **Step 1: Feature and scaffolding**
+- [x] **Step 1: Feature and scaffolding**
 
 `Cargo.toml` gets the `uniffi` feature, optional `epdf-ffi` and `uniffi`, dev-dependencies (`futures`, `plugin-conformance`, `rsa`, `epdf-signature-core` with `harness`), and `[[test]] name = "ffi" required-features = ["uniffi"]`, as plan 08 Task 3 Step 1 shows. `lib.rs` gets `#[cfg(feature = "uniffi")] pub mod ffi;` and `uniffi::setup_scaffolding!();`. `controller.rs` gets:
 
@@ -1061,7 +1061,7 @@ The members, from `crates/plugins/signature/src/harness.rs` `MEMBERS` (lines 52-
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```rust
 // crates/plugins/signature/tests/ffi.rs
@@ -1263,12 +1263,12 @@ fn closing_the_document_ends_its_subscriptions() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: FAIL to compile, no `ffi` module.
 
-- [ ] **Step 4: Write the records**
+- [x] **Step 4: Write the records**
 
 `crates/plugins/signature/src/ffi/records.rs` mirrors `types.ts:56-197` and `verdict.ts:12-47` field for field. Each mirror has a private serde twin it decodes through, so the JSON shape is written once:
 
@@ -1434,7 +1434,7 @@ pub struct SignatureModifications {
 
 Events mirror `contract.rs:183-245`: `SignatureEvent { Signed { field, result: SignatureCompletion }, Filled { field }, Cleared { field }, Validated { verdicts: Vec<SignatureVerdict> }, ProtectionChanged { protection: DocumentProtection }, Invalidating { field, detail: String }, TargetChanged { field: Option<FormFieldRef> }, SignRequested { field, mark: SignatureMark }, InspectionRequested { field } }`, with `origin` dropped as metadata drops `ChangeOrigin`. `SignatureCompletion` mirrors `SignatureCompleteResult` (`status: SignatureCompletionStatus { Completed, AlreadyCompleted }`, `signature: SignatureInfo`, `version: SignatureBaseVersion { sha256, byte_length }`, `previous: SignatureVersionRef { base_sha256, edits_version }`, `protection`), dropping `meta`. `SignatureMark { Asset { asset_id: String }, Source { bytes: Vec<u8> } }` lands in Task 8 but is declared here because the event uses it.
 
-- [ ] **Step 5: Write the handle's read members**
+- [x] **Step 5: Write the handle's read members**
 
 `crates/plugins/signature/src/ffi/mod.rs`:
 
@@ -1658,12 +1658,12 @@ impl SignatureHandle {
 
 `SignatureChangeAnalysis` is a small record in `records.rs` over what `verdict.rs:185-200` reads (`primary: Option<SignatureChangePrimary { verdict, object_number, detail }>`, `later_revisions`, `undone`). `records::register_hooks` registers the nine `on_*` hooks with one decoding closure each and returns one `Unsubscribe`, the same shape as plan 08's `subscribe`. `SignatureValidateRequest { at: Option<SignatureValidationTime>, until: Option<SignatureModificationsBasis> }` converts into the plugin's `ValidateRequest`. Write `from_json` on each record as `decode` into its serde twin, then convert.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi && cargo test -p epdf-plugin-signature`
 Expected: PASS, 8 tests, and the conformance vectors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/signature
@@ -1679,7 +1679,7 @@ git commit -m "Export the signature plugin's reads and validation through uniffi
 **Interfaces:**
 - Produces: foreign traits `SignatureSigner` and `SignatureTrust`; enums `SignatureKeyAlgorithm { RsaPkcs1, RsaPss, Ecdsa }`, `SignatureDigest { Sha256, Sha384, Sha512 }`; records `SignatureMark`, `SignatureSignInput`, `SignaturePrepareInput`, `SignatureAttribution`, `SignaturePrepared`, `SignaturePlaceTarget`, `SignaturePlaceResult`, `SignatureCompletion`; adapters `ports::signer_port(Arc<dyn SignatureSigner>) -> SignerPort` and `ports::trust_port(Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort>`, used by Task 9.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/signature/tests/ffi.rs`:
 
@@ -1820,12 +1820,12 @@ fn a_visual_fill_reaches_the_engine() {
 
 Review Focus item 3 (`a_changed_document_validates_invalid`) and item 5 (`without_anchors_a_good_signature_is_valid_untrusted`) need a real CMS over real bytes, so they're host tests over PDFium in Task 9, not here.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: FAIL to compile, no `SignatureSigner`.
 
-- [ ] **Step 3: Write `ports.rs`**
+- [x] **Step 3: Write `ports.rs`**
 
 ```rust
 //! The host ports, implemented in Swift: a key that signs, and the anchors
@@ -1922,7 +1922,7 @@ pub fn trust_port(trust: Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort> {
 
 A fallible foreign trait needs `impl From<uniffi::UnexpectedUniFFICallbackError> for ViewerError` in `epdf-ffi`. Plan 01 is the first plan with a foreign trait and should have added it; if it's missing, add it in `crates/epdf-ffi/src/error.rs`, mapping to `ViewerError::Kernel { name: "CallbackError", code: Some("internal"), detail: reason }`.
 
-- [ ] **Step 4: Write the signing members**
+- [x] **Step 4: Write the signing members**
 
 In `ffi/mod.rs`, the inputs (in `records.rs`):
 
@@ -2032,12 +2032,12 @@ The members:
 
 `From<SignatureMark> for crate::Mark` wraps `Source` bytes as `Bytes(bytes).to_json()`. `SignatureSignInput::into_core(signer)` builds `crate::SignFieldInput` with `field_json`, the attribution as `{name, reason, location, contactInfo}` JSON, `certify` as `{"permission": n}`, and `lock` through `to_json`.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: PASS, 12 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/signature crates/epdf-ffi
@@ -2055,7 +2055,7 @@ git commit -m "Export signing through uniffi with Swift signer and trust ports"
 
 A UniFFI record can't carry a foreign trait object, so the signer and trust can't sit in `ViewerConfig`. The plugin's config takes a signer thunk (`SignerSource::Thunk`, `contract.rs:39-43`) resolved per signing and a `TrustPort` called per validation, so the host passes closures that read two slots, and `set_signature_signer` / `set_signature_trust` fill them. Changing the signer then takes effect at the next signing, for every open document.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 ```rust
 #[test]
@@ -2128,12 +2128,12 @@ fn create_square(annotations: &AnnotationHandle, page: PageRef) {
 ```
  `TestSigner` is the one from Task 8; move it into `tests/common/mod.rs` so both crates' tests can't drift (the plugin test keeps its own copy, since a crate's tests can't share a module with another crate's).
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host signature`
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Wire the host**
+- [x] **Step 3: Wire the host**
 
 `Cargo.toml`:
 
@@ -2224,12 +2224,12 @@ created in `new` and cloned into `Session::build`, and:
 
 with `SlotTrust` a `TrustPort` that reads the slot and answers no anchors when it's empty. Passing `signer: Some(Thunk)` always would make `get_mode()` answer `Sign` and `can_sign()` answer true with no signer set (`authority.rs:20-50`). So `can_sign` and `mode` on `SignatureHandle` check the slot too: give the handle an `Arc<Mutex<Option<..>>>` it reads (pass it to `SignatureHandle::new` from the host accessor), answering `mode = config.mode ?? (slot set ? Sign : Visual)` and `can_sign = cap.can_sign() && slot set`. Add a host test for that: `can_sign` is false until `set_signature_signer`, then true.
 
-- [ ] **Step 4: Run the host tests**
+- [x] **Step 4: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host crates/plugins/signature
@@ -2248,7 +2248,7 @@ git commit -m "Add signature to ViewerHost with host-level signer and trust slot
 
 On iOS there's no API that lists the system's trust anchors (`SecTrustCopyAnchorCertificates` is macOS-only), and `epdf-signature-core` validates paths itself against the anchors it's given (`trust.rs:26-28`). So the Swift trust port is `TrustAnchors`, a list of DER certificates the app bundles (its organisation's CA, say). Validating against the system store through `SecTrustEvaluateWithError` would need a different port shape in `epdf-signature-core` (evaluate a chain rather than list anchors); this plan doesn't change the core, and says so in the README row.
 
-- [ ] **Step 1: Add the fixtures**
+- [x] **Step 1: Add the fixtures**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2264,7 +2264,7 @@ The copy loop leaves entries unquoted, so the glob expands.
 
 Add `static func text(_ name: String, ext: String) throws -> String` to `Fixture` in `BaseSuite.swift` for the PEMs.
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/KeychainSignerTests.swift
@@ -2466,12 +2466,12 @@ struct CancellingSigner: SignatureSigner {
 
 Every other `CancelToken` member (`refresh`, `validateField`, `analyzeChanges`, `readRevision`, `sign`, `prepareSignature`, `completeSignature`, `abortPending`, `fill`, `clearField`, `place`) gets its own `<member>CancelsWhenTheTaskIsCancelled` in the same shape; write each as you write the member in Step 4. `PDFViewer.hasStampPlugin` is `true` when `Stamp.swift` is compiled in; define it in `Stamp.swift` if plan 09 has merged and as `false` here otherwise. In `ViewerTests.swift`, the test that expected a locked open to throw now expects `.locked`, matching Task 2's Rust change.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/SignatureTests -only-testing:EmbedPDFTests/BaseSuite/SecurityTests -only-testing:EmbedPDFTests/BaseSuite/KeychainSignerTests)`
 Expected: FAIL to compile.
 
-- [ ] **Step 4: Write `KeychainSigner.swift`**
+- [x] **Step 4: Write `KeychainSigner.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2620,7 +2620,7 @@ public struct TrustAnchors: SignatureTrust, Sendable {
 
 `DERReader` is a small `struct` over `[UInt8]` with `take(tag:)` as in `rawECDSA` and `privateKeyInfoOctets()`; write it in the same file and have `rawECDSA` use it too. `SecTrustCopyCertificateChain` is iOS 15+, under the package's iOS 17 floor.
 
-- [ ] **Step 5: Write `Signature.swift` and the viewer methods**
+- [x] **Step 5: Write `Signature.swift` and the viewer methods**
 
 Typealiases for every record and enum Task 7 and 8 produced (same pattern as `Metadata.swift`), then:
 
@@ -2733,12 +2733,12 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 6: Run the Swift tests**
+- [x] **Step 6: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple
@@ -2752,7 +2752,7 @@ git commit -m "Add SignatureCapability, a Keychain signer and app trust anchors 
 
 - [ ] **Step 1:** Append `signature` to `crates=( ... )` in `plugin-rust.yml`.
 
-- [ ] **Step 2:** Add the README rows, and replace the README's note that document permissions aren't enforced with one line pointing at `ViewerConfig.scope`:
+- [x] **Step 2:** Add the README rows, and replace the README's note that document permissions aren't enforced with one line pointing at `ViewerConfig.scope`:
 
 ```markdown
 | signature | `SignatureCapability`, `KeychainSigner`, `TrustAnchors` | `signature: SignatureConfig()` (with `form`) | `2026-10-06-swift-plugins/16-signature.md` |
@@ -2760,9 +2760,9 @@ git commit -m "Add SignatureCapability, a Keychain signer and app trust anchors 
 
 and, under the table: "Trust anchors are the app's own: iOS can't list the system roots, and validation against the system store would need a `SecTrust`-evaluating port in `epdf-signature-core`."
 
-- [ ] **Step 3:** In `2026-10-01-swift-package.md`, mark §A.5 delivered by `16-signature.md` and Appendix B row B4 done. In `multiplatform-port-status.md`, move the signature engine paths from "Not started" to done, pointing at `crates/epdf-engine/tests/signature_*.rs`.
+- [x] **Step 3:** In `2026-10-01-swift-package.md`, mark §A.5 delivered by `16-signature.md` and Appendix B row B4 done. In `multiplatform-port-status.md`, move the signature engine paths from "Not started" to done, pointing at `crates/epdf-engine/tests/signature_*.rs`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-signature --features uniffi
@@ -2779,7 +2779,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0. The `pnpm` script name is whatever Task 3 named the protection vector's check.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a

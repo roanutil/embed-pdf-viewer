@@ -446,6 +446,7 @@ name = "epdf-engine"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-signature-core",
  "getrandom 0.3.4",
  "pdfium",
  "pdfium-sys",
@@ -758,15 +759,22 @@ dependencies = [
 name = "epdf-plugin-signature"
 version = "0.0.0"
 dependencies = [
+ "base64",
+ "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-form",
  "epdf-plugin-interaction",
  "epdf-plugin-stamp",
  "epdf-signature-core",
+ "futures",
  "plugin-conformance",
+ "rsa",
  "serde",
  "serde_json",
+ "sha2",
+ "uniffi",
 ]
 
 [[package]]
@@ -898,14 +906,17 @@ dependencies = [
  "epdf-plugin-search",
  "epdf-plugin-selection",
  "epdf-plugin-shell",
+ "epdf-plugin-signature",
  "epdf-plugin-stage",
  "epdf-plugin-stamp",
  "epdf-plugin-view-manager",
  "epdf-uniffi",
  "futures",
  "png",
+ "rsa",
  "serde",
  "serde_json",
+ "sha2",
  "test-support",
  "thiserror",
  "uniffi",
