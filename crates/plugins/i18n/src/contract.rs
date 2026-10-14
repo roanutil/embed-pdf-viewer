@@ -136,6 +136,7 @@ pub struct LocaleInfo {
 
 /// `LocaleChangedEvent`: the current locale changed and is usable.
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct LocaleChangedEvent {
     pub locale: String,

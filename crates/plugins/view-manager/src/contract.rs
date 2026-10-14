@@ -14,6 +14,7 @@ pub type PaneId = String;
 
 /// `PaneInfo`: the public read-only shape of a pane.
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct PaneInfo {
     pub id: PaneId,
@@ -25,6 +26,7 @@ pub struct PaneInfo {
 
 /// `PaneEvent`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct PaneEvent {
     pub pane_id: PaneId,
@@ -32,6 +34,7 @@ pub struct PaneEvent {
 
 /// `PaneFocusChangedEvent`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct PaneFocusChangedEvent {
     pub pane_id: Option<PaneId>,
@@ -39,6 +42,7 @@ pub struct PaneFocusChangedEvent {
 
 /// `DocumentMovedEvent`: `None` is "no pane" (opened, or closed).
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentMovedEvent {
     pub document_id: String,

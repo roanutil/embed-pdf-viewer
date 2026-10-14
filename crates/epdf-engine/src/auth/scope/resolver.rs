@@ -249,12 +249,14 @@ fn add_pdf_permissions(out: &mut Capabilities, b: PdfBits) {
     }
     if b.bit6 || b.bit9 {
         out.insert(DocCapability::DocFormsFill);
+        out.insert(DocCapability::DocSign);
     }
     if b.bit6 && b.bit4 {
         out.insert(DocCapability::DocFormsModify);
     }
-    // No bit expands to doc.forms.submit, doc.download or
-    // doc.download.flattened. ISO 32000 defines no submit permission and the
-    // download capabilities are cloud-only, so they are grant-minted or not
-    // held at all.
+    // No bit expands to doc.forms.submit, doc.download,
+    // doc.download.flattened or doc.sign.certify. ISO 32000 defines no
+    // submit permission, the download capabilities are cloud-only, and a
+    // certification is grant-minted only, so they are granted explicitly or
+    // not held at all.
 }

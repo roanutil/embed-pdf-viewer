@@ -212,3 +212,42 @@ fn a_layer_close_answers_whether_there_was_one_to_close() {
     );
     assert_eq!(json["result"]["closed"], false);
 }
+
+#[test]
+fn a_page_edit_reaches_the_page_reads() {
+    // Every page read checks the object number against the open document's
+    // index first. A page mutation rebuilds the session's registry; the read
+    // index has to follow it, or an inserted page is `NotFound` and a
+    // deleted one is still found.
+    let mut host = Host::new();
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
+    let inserted = call(
+        &mut host,
+        serde_json::json!({
+            "kind": "pages.insertBlank", "docId": "d",
+            "size": { "width": 612.0, "height": 792.0 }
+        }),
+        Vec::new(),
+    );
+    let new_page = inserted["result"]["result"]["insertedPageObjectNumbers"][0].clone();
+    assert!(new_page.is_u64(), "no inserted page: {inserted}");
+    let text = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": new_page }),
+        Vec::new(),
+    );
+    assert!(text.get("error").is_none(), "the inserted page is unknown to reads: {text}");
+
+    let deleted = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.delete", "docId": "d", "pageObjectNumbers": [new_page] }),
+        Vec::new(),
+    );
+    assert!(deleted.get("error").is_none(), "{deleted}");
+    let text = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": new_page }),
+        Vec::new(),
+    );
+    assert_eq!(text["error"]["code"], "NotFound", "a deleted page still reads: {text}");
+}

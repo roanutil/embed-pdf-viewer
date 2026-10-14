@@ -26,6 +26,7 @@ pub static STAMP: LazyLock<Token<StampCapability>> = LazyLock::new(|| {
 });
 
 /// `StampAssetKind`.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum StampAssetKind {
@@ -166,6 +167,7 @@ impl<'de> Deserialize<'de> for StampLibrary {
 }
 
 /// `StampLibraryChange['reason']`.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StampLibraryChangeReason {

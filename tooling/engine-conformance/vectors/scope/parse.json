@@ -25,6 +25,8 @@
   {"name":"capability-doc.metadata.modify","covers":"A member of the closed capability set.","scope":"doc.metadata.modify","valid":true,"parsed":{"kind":"capability","name":"doc.metadata.modify"}},
   {"name":"capability-doc.attachments.modify","covers":"A member of the closed capability set.","scope":"doc.attachments.modify","valid":true,"parsed":{"kind":"capability","name":"doc.attachments.modify"}},
   {"name":"capability-doc.redact","covers":"A member of the closed capability set.","scope":"doc.redact","valid":true,"parsed":{"kind":"capability","name":"doc.redact"}},
+  {"name":"capability-doc.sign","covers":"A member of the closed capability set.","scope":"doc.sign","valid":true,"parsed":{"kind":"capability","name":"doc.sign"}},
+  {"name":"capability-doc.sign.certify","covers":"A member of the closed capability set.","scope":"doc.sign.certify","valid":true,"parsed":{"kind":"capability","name":"doc.sign.certify"}},
   {"name":"legacy-doc-read","covers":"A removed legacy name still has to be refused.","scope":"doc.read","valid":false,"issue":"invalid scope \"doc.read\": unknown capability: doc.read"},
   {"name":"legacy-doc-edit-pages","covers":"A removed legacy name still has to be refused.","scope":"doc.edit-pages","valid":false,"issue":"invalid scope \"doc.edit-pages\": invalid capability name shape"},
   {"name":"legacy-doc-save","covers":"A removed legacy name still has to be refused.","scope":"doc.save","valid":false,"issue":"invalid scope \"doc.save\": unknown capability: doc.save"},

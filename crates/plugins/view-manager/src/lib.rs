@@ -17,6 +17,12 @@ pub mod record;
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 pub use contract::{
     DocumentMovedEvent, PaneEvent, PaneFocusChangedEvent, PaneId, PaneInfo, VIEW_MANAGER,
 };

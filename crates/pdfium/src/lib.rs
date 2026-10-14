@@ -27,14 +27,18 @@ mod form;
 mod form_write;
 mod geom;
 mod library;
+pub mod measure;
 mod metadata;
 mod metadata_write;
+pub mod named_pages;
 mod page;
 mod page_list;
 mod page_write;
 mod piece_info;
 mod piece_info_write;
 mod save;
+mod signature;
+mod signature_write;
 mod stamp;
 mod text;
 
@@ -70,5 +74,13 @@ pub use page_write::{FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};
 pub use piece_info_write::PieceInfoValue;
 pub use save::{LayerOutput, LayerSaveError, PdfSaveMode};
+pub use signature::{
+    DerivedDocument, DiffRevisionHealth, DigestAlgorithm, ObjectDiff, ObjectDiffEntry,
+    SignatureModel, field_list, string_key,
+};
+pub use signature_write::{
+    SavedCandidate, SealedCandidate, SignaturePrepareOptions, seal_signature_candidate,
+    write_signature_contents,
+};
 pub use stamp::{ImageObject, StampFit};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

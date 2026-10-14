@@ -126,8 +126,8 @@ pub trait DocumentAccess {
 /// keeps `recordsByIndex` and `recordsByObjectNumber` alongside a
 /// `fullyEnumerated` flag so a lazy per-page lookup and a full enumeration
 /// agree on identity (`DocumentSession.ts:41-44`). That agreement is a G6 gate
-/// and this type does not attempt it: it enumerates once, up front, and says
-/// so.
+/// and this type does not attempt it: it enumerates up front, and again after
+/// every page edit ([`OwnedDocument::reindex`]), and says so.
 #[derive(Debug)]
 pub struct OwnedDocument {
     /// Shared so a [`pdfium::SharedPage`] can hold the document open on its
@@ -145,20 +145,29 @@ impl OwnedDocument {
     /// rejected, so a document with one broken page still serves its others,
     /// and asking for that page reports `NotFound`.
     pub fn new(document: Document) -> Result<Self, EngineError> {
-        let mut index_by_object_number = BTreeMap::new();
-        for index in 0..document.page_count() {
-            let page = document.page(index).map_err(|e| {
-                EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
-            })?;
-            if let Ok(number) = PageObjectNumber::new(page.object_number()) {
-                index_by_object_number.insert(number, index);
-            }
-        }
+        let index_by_object_number = index_pages(&document)?;
         Ok(Self { document: Rc::new(document), index_by_object_number })
+    }
+
+    /// Walk the pages again after a page edit (insert, delete, move), so a
+    /// read finds an inserted page and no longer finds a deleted one.
+    pub fn reindex(&mut self) -> Result<(), EngineError> {
+        self.index_by_object_number = index_pages(&self.document)?;
+        Ok(())
     }
 
     pub fn page_count(&self) -> u32 {
         self.document.page_count()
+    }
+
+    /// A page's display index, for the `...ByIndex` reads that take one.
+    pub fn page_index(&self, page: PageObjectNumber) -> Result<u32, EngineError> {
+        self.index_by_object_number.get(&page).copied().ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no page with object number {page}"),
+            )
+        })
     }
 
     pub fn document(&self) -> &Document {
@@ -180,6 +189,20 @@ impl OwnedDocument {
             EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
         })
     }
+}
+
+/// Object number to display index, skipping direct-object pages.
+fn index_pages(document: &Document) -> Result<BTreeMap<PageObjectNumber, u32>, EngineError> {
+    let mut index_by_object_number = BTreeMap::new();
+    for index in 0..document.page_count() {
+        let page = document.page(index).map_err(|e| {
+            EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
+        })?;
+        if let Ok(number) = PageObjectNumber::new(page.object_number()) {
+            index_by_object_number.insert(number, index);
+        }
+    }
+    Ok(index_by_object_number)
 }
 
 impl DocumentAccess for OwnedDocument {

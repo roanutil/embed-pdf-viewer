@@ -363,3 +363,63 @@ fn subscribing_after_the_close_ends_at_once() {
     rig.ping();
     assert_eq!(events.ends(), 1);
 }
+
+use epdf_plugin_render::ffi::{RenderPageViewDemand, RenderPolicy, RenderViewport};
+
+#[test]
+fn the_default_policy_is_continuous_and_a_viewport_conforms_to_a_width() {
+    let rig = Rig::pixels();
+    assert_eq!(block_on(rig.render.render_policy()).unwrap(), RenderPolicy::Continuous);
+    let viewport = block_on(rig.render.conform_viewport(LARGE, 2.0)).unwrap();
+    assert_eq!(viewport, RenderViewport::Width { width: 8.0 });
+}
+
+#[test]
+fn a_source_key_names_the_raster_render_source_produces() {
+    let rig = Rig::pixels();
+    let a = block_on(rig.render.source_key(LARGE, 2.0, None)).unwrap();
+    let b = block_on(rig.render.source_key(LARGE, 2.0, Some(true))).unwrap();
+    let c = block_on(rig.render.source_key(LARGE, 3.0, None)).unwrap();
+    assert_eq!(a, b);
+    assert_ne!(a, c);
+    let image = block_on(rig.render.render_source(LARGE, 2.0, None, token())).unwrap();
+    assert_eq!((image.width, image.height), (8, 4));
+}
+
+#[test]
+fn a_page_not_in_the_document_is_not_found() {
+    let rig = Rig::pixels();
+    let missing = PageRef { page_object_number: 99 };
+    let error = block_on(rig.render.source_key(missing, 1.0, None)).unwrap_err();
+    assert_eq!(code(&error), Some("not-found"), "{error:?}");
+}
+
+#[test]
+fn a_view_demand_plans_and_disposes() {
+    let rig = Rig::pixels();
+    let paint = block_on(rig.render.paint_settings()).unwrap();
+    let view = block_on(rig.render.create_view_demand("main".into())).unwrap();
+    let demand = RenderPageViewDemand {
+        desired_device_width: 8.0,
+        visible_rect: None,
+        velocity_x: None,
+        velocity_y: None,
+    };
+    block_on(view.set_demand(LARGE, demand, None)).unwrap();
+    let plan = block_on(view.plan(LARGE)).unwrap();
+    // The full-page raster already supplies 8 device pixels across, so the
+    // tile plane stays disengaged whether or not tiles are on.
+    assert!(!plan.engaged && plan.paint.is_empty(), "{plan:?} (tiles {})", paint.tiles);
+    assert!(block_on(view.tile_image(LARGE, "no-such-key".into())).unwrap().is_none());
+    block_on(view.release(LARGE)).unwrap();
+    block_on(view.dispose()).unwrap();
+}
+
+#[test]
+fn a_closed_documents_view_demand_refuses() {
+    let rig = Rig::pixels();
+    let view = block_on(rig.render.create_view_demand("main".into())).unwrap();
+    rig.close();
+    let error = block_on(view.plan(LARGE)).unwrap_err();
+    assert_eq!(code(&error), Some("instance-closed"), "{error:?}");
+}

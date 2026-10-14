@@ -59,6 +59,7 @@ let package = Package(
       ],
       resources: [
         .copy("Fixtures"),
+        .copy("Locales"),
       ]
     ),
     .testTarget(

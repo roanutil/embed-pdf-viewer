@@ -40,6 +40,7 @@ impl From<PageRef> for PageTarget {
 }
 
 /// `ScalePreset`: one entry of the scale picker.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScalePreset {
     pub id: String,
@@ -96,10 +97,12 @@ pub struct MeasurementConfig {
 }
 
 /// `ScaleChangeOptions`.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
 pub struct ScaleChangeOptions {
     /// Re-measure the page's measurement annotations with the new scale.
     /// Default true.
+    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
     #[serde(default)]
     pub recalculate: Option<bool>,
 }

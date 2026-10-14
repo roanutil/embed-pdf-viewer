@@ -182,6 +182,18 @@ pub fn create_stage_controller(
             // interaction hub does the same with its handlers).
             inner.providers.borrow_mut().clear();
             *inner.rules.borrow_mut() = Rc::new(Vec::new());
+            // Rust only: the TypeScript leaves a tween, fling or rest
+            // countdown ticking after the close. Each tick's camera write is
+            // then a dispatch on a closed instance, which a native host
+            // reports through a sink that outlives the document. Cancel the
+            // frames instead.
+            if let Some(scheduler) = &inner.scheduler {
+                for frame in [inner.raf.replace(0), inner.rest_raf.replace(0)] {
+                    if frame != 0 {
+                        scheduler.caf(frame);
+                    }
+                }
+            }
         }
     });
     stage
@@ -200,5 +212,14 @@ impl StageCapability {
     /// Whether two handles are the same lens.
     pub fn same(&self, other: &StageCapability) -> bool {
         Rc::ptr_eq(&self.inner, &other.inner)
+    }
+
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    #[doc(hidden)]
+    pub fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.ctx.lifetime()
     }
 }

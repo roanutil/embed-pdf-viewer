@@ -2,6 +2,7 @@
 //! `NativeEngine`, the engine's worker, and the store subscription that
 //! tells the delegate the state moved.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -14,9 +15,19 @@ use crate::engine_worker::EngineWorker;
 use crate::host_table::HostTable;
 use crate::native_engine::NativeEngine;
 
+/// The signer and trust anchors a host sets, shared with the signature
+/// plugin's ports (16 signature).
+#[derive(Clone, Default)]
+pub struct SignatureSlots {
+    pub signer: epdf_plugin_signature::ffi::ports::SignatureSignerSlot,
+    pub trust: epdf_plugin_signature::ffi::ports::SignatureTrustSlot,
+}
+
 pub struct Session {
     pub kernel: Kernel,
     worker: EngineWorker,
+    /// The stamp plugin's asset engine thread, once its factory has run.
+    asset_worker: Rc<RefCell<Option<EngineWorker>>>,
     on_change: Unsubscribe,
 }
 
@@ -28,9 +39,11 @@ impl Session {
         delegate: Arc<dyn ViewerDelegate>,
         revision: Arc<AtomicU64>,
         post: KernelPost,
+        signature_slots: SignatureSlots,
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
-        let engine = Rc::new(NativeEngine::new(worker.clone(), post));
+        HostTable::install_bytes_resolver();
+        let engine = Rc::new(NativeEngine::new(worker.clone(), post.clone(), config.scope.clone()));
         let reporter = delegate.clone();
         let options = KernelOptions {
             report: Some(Rc::new(move |error: &Error| {
@@ -65,6 +78,98 @@ impl Session {
             };
             plugins.push(epdf_plugin_render::render_plugin_with_host(render.into(), host));
         }
+        if config.interaction {
+            plugins.push(epdf_plugin_interaction::interaction_plugin(Default::default()));
+        }
+        if let Some(feedback) = config.feedback {
+            plugins.push(epdf_plugin_interaction::feedback_plugin(feedback.to_options()));
+        }
+        if let Some(stage) = config.stage {
+            // A config that does not convert ends the build, and the worker
+            // goes with it, as a failed `Kernel::new` does below.
+            let config = match stage.into_config() {
+                Ok(config) => config,
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            };
+            plugins.push(epdf_plugin_stage::stage_plugin(epdf_plugin_stage::StagePluginOptions {
+                config,
+                ..Default::default()
+            }));
+        }
+        if config.selection {
+            plugins.push(epdf_plugin_selection::selection_plugin(Default::default()));
+        }
+        if config.link {
+            plugins.push(epdf_plugin_link::link_plugin(Default::default()));
+        }
+        if let Some(annotation) = config.annotation {
+            plugins.push(epdf_plugin_annotation::annotation_plugin(annotation.into()));
+        }
+        if let Some(form) = config.form {
+            plugins.push(epdf_plugin_form::form_plugin(form.into()));
+        }
+        if let Some(redaction) = config.redaction {
+            plugins.push(epdf_plugin_redaction::redaction_plugin(redaction.into()));
+        }
+        if let Some(measurement) = config.measurement {
+            plugins.push(epdf_plugin_measurement::measurement_plugin(measurement.into()));
+        }
+        let asset_worker: Rc<RefCell<Option<EngineWorker>>> = Rc::default();
+        if let Some(stamp) = config.stamp {
+            // The asset engine starts on the plugin's first open, on its own
+            // engine thread, and is joined with the session.
+            let (slot, assets_post) = (asset_worker.clone(), post.clone());
+            let factory: Rc<dyn Fn() -> Result<epdf_plugin_stamp::AssetEngineRef, Error>> =
+                Rc::new(move || {
+                    let (engine, worker) = NativeEngine::assets(assets_post.clone());
+                    if let Some(old) = slot.borrow_mut().replace(worker) {
+                        old.join();
+                    }
+                    Ok(epdf_plugin_stamp::AssetEngineRef::Ready(Rc::new(engine)))
+                });
+            let asset_engine = epdf_plugin_stamp::AssetEngine::Factory(factory);
+            plugins.push(epdf_plugin_stamp::stamp_plugin(stamp.into_core(Some(asset_engine))));
+        }
+        if config.page_edit {
+            plugins.push(epdf_plugin_page_edit::page_edit_plugin());
+        }
+        if config.view_manager {
+            plugins.push(epdf_plugin_view_manager::view_manager_plugin());
+        }
+        if config.shell {
+            plugins.push(epdf_plugin_shell::shell_plugin());
+        }
+        if let Some(i18n) = config.i18n {
+            match i18n.into_plugin_config(post.clone()) {
+                Ok(i18n) => plugins.push(epdf_plugin_i18n::i18n_plugin(i18n)),
+                Err(error) => {
+                    worker.join();
+                    return Err(error);
+                }
+            }
+        }
+        if config.commands {
+            plugins.push(epdf_plugin_commands::commands_plugin(
+                epdf_plugin_commands::CommandsConfig::default(),
+            ));
+        }
+        if let Some(actions) = config.actions {
+            // A throwing observer on one of the five hooks goes where the
+            // kernel's own reports go.
+            let observer = delegate.clone();
+            let config =
+                actions.into_plugin_config(Some(Rc::new(move |_hook: &str, error: &Error| {
+                    observer.report(ViewerError::from(error.clone()));
+                })));
+            plugins.push(epdf_plugin_actions::actions_plugin(config));
+        }
+        if let Some(signature) = config.signature {
+            let SignatureSlots { signer, trust } = signature_slots;
+            plugins.push(epdf_plugin_signature::ffi::host_plugin(signature, signer, trust));
+        }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,
             Err(error) => {
@@ -83,12 +188,17 @@ impl Session {
             }
             Ok(())
         }));
-        Ok(Session { kernel, worker, on_change })
+        Ok(Session { kernel, worker, asset_worker, on_change })
     }
 
     /// Dropped once the engine's client thread has closed PDFium.
     pub fn engine_alive(&self) -> Weak<()> {
         self.worker.alive()
+    }
+
+    /// The asset engine's, once the stamp plugin has started it.
+    pub fn asset_engine_alive(&self) -> Option<Weak<()>> {
+        self.asset_worker.borrow().as_ref().map(EngineWorker::alive)
     }
 }
 
@@ -99,5 +209,9 @@ impl Drop for Session {
         // replies post here and fail without blocking, so this join cannot
         // wait on itself. PDFium is closed when it returns.
         self.worker.join();
+        let assets = self.asset_worker.borrow_mut().take();
+        if let Some(worker) = assets {
+            worker.join();
+        }
     }
 }

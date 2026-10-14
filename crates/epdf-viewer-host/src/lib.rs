@@ -10,6 +10,7 @@ pub mod engine_worker;
 mod experimental;
 pub mod host_table;
 pub mod native_engine;
+pub mod png_encoder;
 pub mod session;
 pub mod translate;
 
@@ -27,10 +28,26 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
-use epdf_kernel::{Error, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_plugin_actions::ffi::ActionsHandle;
+use epdf_plugin_annotation::ffi::AnnotationHandle;
+use epdf_plugin_commands::ffi::CommandsHandle;
+use epdf_plugin_form::ffi::FormHandle;
+use epdf_plugin_i18n::ffi::I18nHandle;
+use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
+use epdf_plugin_link::ffi::LinkHandle;
+use epdf_plugin_measurement::ffi::MeasurementHandle;
 use epdf_plugin_metadata::ffi::MetadataHandle;
+use epdf_plugin_page_edit::ffi::PageEditHandle;
+use epdf_plugin_redaction::ffi::RedactionHandle;
 use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
+use epdf_plugin_selection::ffi::SelectionHandle;
+use epdf_plugin_shell::ffi::ShellHandle;
+use epdf_plugin_signature::ffi::{SignatureHandle, SignatureSigner, SignatureTrust};
+use epdf_plugin_stage::ffi::StageHandle;
+use epdf_plugin_stamp::ffi::StampHandle;
+use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
 
 pub use api::{
@@ -39,7 +56,19 @@ pub use api::{
 };
 use api::{Lifecycle, decode_pages};
 use host_table::HostTable;
-use session::Session;
+use session::{Session, SignatureSlots};
+
+/// The kernel's report sink, for an adapter that calls a foreign port and
+/// has nowhere else to send its failure. It reaches `ViewerDelegate.report`.
+/// Weak: the session owns the store.
+fn reporter(kernel: &Kernel) -> Rc<dyn Fn(&Error)> {
+    let store = Rc::downgrade(&kernel.store());
+    Rc::new(move |error: &Error| {
+        if let Some(store) = store.upgrade() {
+            store.report(error);
+        }
+    })
+}
 
 #[derive(uniffi::Object)]
 pub struct ViewerHost {
@@ -47,6 +76,8 @@ pub struct ViewerHost {
     /// The store revision, mirrored so `state_revision` never posts a job.
     revision: Arc<AtomicU64>,
     post: KernelPost,
+    /// The signer and anchors every document's signature plugin reads.
+    signature_slots: SignatureSlots,
     /// This host's entry in the manual bridge's registry.
     #[cfg(feature = "manual-bridge")]
     token: u64,
@@ -101,17 +132,25 @@ impl ViewerHost {
     ) -> Result<Arc<Self>, ViewerError> {
         let revision = Arc::new(AtomicU64::new(0));
         let mirror = revision.clone();
+        let signature_slots = SignatureSlots::default();
+        let slots = signature_slots.clone();
         let thread =
-            KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post))?;
+            KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post, slots))?;
         let post = thread.post();
         #[cfg(not(feature = "manual-bridge"))]
-        let host = Arc::new(ViewerHost { thread: Mutex::new(Some(thread)), revision, post });
+        let host = Arc::new(ViewerHost {
+            thread: Mutex::new(Some(thread)),
+            revision,
+            post,
+            signature_slots,
+        });
         #[cfg(feature = "manual-bridge")]
         let host = Arc::new_cyclic(|weak| ViewerHost {
             token: experimental::register(weak.clone(), post.clone()),
             thread: Mutex::new(Some(thread)),
             revision,
             post,
+            signature_slots,
         });
         Ok(host)
     }
@@ -126,9 +165,8 @@ impl ViewerHost {
         self.call_promise(|s| Ok(s.kernel.destroy()), |()| ()).await
     }
 
-    /// A locked document rejects with code `DocPasswordRequired`: the
-    /// native engine fails the open itself, so the kernel records a failed
-    /// tab rather than a locked one. Open again with `password` set.
+    /// A password-protected document opened without its password resolves
+    /// as a `Locked` tab; `unlock_document` opens it.
     pub async fn open_document(
         &self,
         bytes: Vec<u8>,
@@ -267,6 +305,230 @@ impl ViewerHost {
         .await
     }
 
+    /// The pointer hub of an open document. Needs `ViewerConfig.interaction`;
+    /// without it the kernel refuses the token.
+    pub async fn interaction(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<InteractionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id))?;
+            Ok(InteractionHandle::new(cap, post, reporter(&s.kernel)))
+        })
+        .await
+    }
+
+    /// The workspace's haptics. Needs `ViewerConfig.feedback`.
+    pub async fn feedback(&self) -> Result<Arc<FeedbackHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_interaction::FEEDBACK, None)?;
+            Ok(FeedbackHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The viewport lens of an open document. Needs `ViewerConfig.stage`.
+    pub async fn stage(&self, document_id: String) -> Result<Arc<StageHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_stage::STAGE, Some(&document_id))?;
+            let hub =
+                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id)).ok();
+            Ok(StageHandle::with_hub(cap, hub, post, reporter(&s.kernel)))
+        })
+        .await
+    }
+
+    /// The text selection of an open document. Needs
+    /// `ViewerConfig.selection` (and `interaction`).
+    pub async fn selection(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<SelectionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_selection::SELECTION, Some(&document_id))?;
+            Ok(SelectionHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The links of an open document. Needs `ViewerConfig.link` (and
+    /// `interaction`). A tap's activation error goes to the delegate.
+    pub async fn link(&self, document_id: String) -> Result<Arc<LinkHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_link::LINK, Some(&document_id))?;
+            Ok(LinkHandle::with_report(cap, post, reporter(&s.kernel)))
+        })
+        .await
+    }
+
+    /// The annotation capability of an open document. Needs
+    /// `ViewerConfig.annotation` and `ViewerConfig.interaction`; without
+    /// them the kernel refuses the token.
+    pub async fn annotation(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<AnnotationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
+            Ok(AnnotationHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The form capability of an open document. Needs `ViewerConfig.form`
+    /// and `ViewerConfig.interaction`; without them the kernel refuses the
+    /// token.
+    pub async fn form(&self, document_id: String) -> Result<Arc<FormHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_form::FORM, Some(&document_id))?;
+            Ok(FormHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The redaction capability of an open document. Needs
+    /// `ViewerConfig.redaction` and `ViewerConfig.annotation`; without them
+    /// the kernel refuses the token.
+    pub async fn redaction(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<RedactionHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_redaction::REDACTION, Some(&document_id))?;
+            Ok(RedactionHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The measurement capability of an open document. Needs
+    /// `ViewerConfig.measurement`, `ViewerConfig.annotation` and
+    /// `ViewerConfig.interaction`; without them the kernel refuses the token.
+    pub async fn measurement(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<MeasurementHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_measurement::MEASUREMENT, Some(&document_id))?;
+            Ok(MeasurementHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace's stamp libraries. Needs `ViewerConfig.stamp`; without
+    /// it the kernel refuses the token. One capability for the whole viewer.
+    pub async fn stamp(&self) -> Result<Arc<StampHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_stamp::STAMP, None)?;
+            Ok(StampHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The page-edit capability of an open document. Needs
+    /// `ViewerConfig.page_edit`; without it the kernel refuses the token.
+    pub async fn page_edit(&self, document_id: String) -> Result<Arc<PageEditHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_page_edit::PAGE_EDIT, Some(&document_id))?;
+            Ok(PageEditHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace's panes. Needs `ViewerConfig.view_manager`; without it
+    /// the kernel refuses the token. One capability for the whole viewer:
+    /// it takes no document id and lives until `destroy`.
+    pub async fn view_manager(&self) -> Result<Arc<ViewManagerHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_view_manager::VIEW_MANAGER, None)?;
+            Ok(ViewManagerHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The shell of an open document: its open surfaces and menus. Needs
+    /// `ViewerConfig.shell`; without it the kernel refuses the token.
+    pub async fn shell(&self, document_id: String) -> Result<Arc<ShellHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_shell::SHELL, Some(&document_id))?;
+            Ok(ShellHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace i18n capability: there is one per viewer, and it works
+    /// before any document opens. Needs `ViewerConfig.i18n`.
+    pub async fn i18n(&self) -> Result<Arc<I18nHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_i18n::I18N, None)?;
+            Ok(I18nHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The workspace command registry. Needs `ViewerConfig.commands`.
+    pub async fn commands(&self) -> Result<Arc<CommandsHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_commands::COMMANDS, None)?;
+            Ok(CommandsHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The action engine of an open document. Needs `ViewerConfig.actions`.
+    pub async fn actions(&self, document_id: String) -> Result<Arc<ActionsHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_actions::ACTIONS, Some(&document_id))?;
+            Ok(ActionsHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The signature capability of an open document. Needs
+    /// `ViewerConfig.signature` and `ViewerConfig.form`; without them the
+    /// kernel refuses the token.
+    pub async fn signature(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<SignatureHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_signature::SIGNATURE, Some(&document_id))?;
+            Ok(SignatureHandle::new(cap, post))
+        })
+        .await
+    }
+
+    /// The signer every document's `sign` uses when the call names none.
+    /// Takes effect at the next signing. `None` clears it.
+    pub fn set_signature_signer(&self, signer: Option<Arc<dyn SignatureSigner>>) {
+        *self.signature_slots.signer.lock().unwrap() = signer;
+    }
+
+    /// The anchors validation trusts. `None` makes every verdict top out at
+    /// `ValidUntrusted`.
+    pub fn set_signature_trust(&self, trust: Option<Arc<dyn SignatureTrust>>) {
+        *self.signature_slots.trust.lock().unwrap() = trust;
+    }
+
     pub fn state_revision(&self) -> u64 {
         self.revision.load(Ordering::SeqCst)
     }
@@ -294,6 +556,15 @@ impl ViewerHost {
     #[doc(hidden)]
     pub async fn engine_thread_witness(&self) -> Result<std::sync::Weak<()>, ViewerError> {
         self.call(|s| Ok(s.engine_alive())).await
+    }
+
+    /// The stamp plugin's asset engine thread, once its first open started
+    /// it. Dropped once that thread has closed PDFium.
+    #[doc(hidden)]
+    pub async fn asset_engine_thread_witness(
+        &self,
+    ) -> Result<Option<std::sync::Weak<()>>, ViewerError> {
+        self.call(|s| Ok(s.asset_engine_alive())).await
     }
 }
 

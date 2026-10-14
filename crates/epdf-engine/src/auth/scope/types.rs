@@ -37,11 +37,13 @@ pub enum DocCapability {
     DocMetadataModify,
     DocAttachmentsModify,
     DocRedact,
+    DocSign,
+    DocSignCertify,
 }
 
 impl DocCapability {
     /// Every capability, in the order `types.ts` declares them.
-    pub const ALL: [DocCapability; 21] = [
+    pub const ALL: [DocCapability; 23] = [
         Self::DocOpen,
         Self::DocRender,
         Self::DocTextSelect,
@@ -63,6 +65,8 @@ impl DocCapability {
         Self::DocMetadataModify,
         Self::DocAttachmentsModify,
         Self::DocRedact,
+        Self::DocSign,
+        Self::DocSignCertify,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -88,6 +92,8 @@ impl DocCapability {
             Self::DocMetadataModify => "doc.metadata.modify",
             Self::DocAttachmentsModify => "doc.attachments.modify",
             Self::DocRedact => "doc.redact",
+            Self::DocSign => "doc.sign",
+            Self::DocSignCertify => "doc.sign.certify",
         }
     }
 
@@ -125,6 +131,12 @@ impl CollabAction {
             Self::Delete => "delete",
             Self::SetGroup => "set-group",
         }
+    }
+
+    pub fn parse(raw: &str) -> Option<Self> {
+        [Self::Create, Self::Update, Self::Delete, Self::SetGroup]
+            .into_iter()
+            .find(|a| a.as_str() == raw)
     }
 }
 

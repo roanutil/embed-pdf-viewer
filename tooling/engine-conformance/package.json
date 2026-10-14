@@ -12,6 +12,8 @@
     "search:check": "tsx --conditions=development src/generate-search-vectors.ts --check",
     "scope": "tsx --conditions=development src/generate-scope-vectors.ts",
     "scope:check": "tsx --conditions=development src/generate-scope-vectors.ts --check",
+    "signature-protection": "tsx --conditions=development src/generate-signature-protection-vectors.ts",
+    "signature-protection:check": "tsx --conditions=development src/generate-signature-protection-vectors.ts --check",
     "security": "tsx --conditions=development src/generate-security-vectors.ts",
     "security:check": "tsx --conditions=development src/generate-security-vectors.ts --check",
     "render": "tsx --conditions=development src/generate-render-vectors.ts",

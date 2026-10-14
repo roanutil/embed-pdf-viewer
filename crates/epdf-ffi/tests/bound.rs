@@ -340,3 +340,32 @@ fn a_cancelled_subscription_does_not_end() {
     assert_eq!(ends.ended.load(Ordering::SeqCst), 0);
     assert!(ends.unsubscribed.load(Ordering::SeqCst));
 }
+
+thread_local! {
+    static WATCH: std::cell::RefCell<Option<std::rc::Weak<Cell<u32>>>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+#[test]
+fn a_clone_shares_the_value_and_the_last_drop_frees_it() {
+    let (thread, bound) = bound();
+    block_on(bound.call(|c| {
+        WATCH.with(|w| *w.borrow_mut() = Some(Rc::downgrade(&c.0)));
+        Ok(())
+    }))
+    .unwrap();
+    let clone = bound.clone();
+    drop(bound);
+    let n = block_on(clone.call(|c| {
+        c.0.set(5);
+        Ok(c.0.get())
+    }))
+    .unwrap();
+    assert_eq!(n, 5);
+    drop(clone);
+    let alive = block_on(thread.call(|_| {
+        WATCH.with(|w| w.borrow().as_ref().is_some_and(|weak| weak.upgrade().is_some()))
+    }))
+    .unwrap();
+    assert!(!alive, "the slab entry outlived its last handle");
+}

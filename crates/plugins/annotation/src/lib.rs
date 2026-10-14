@@ -38,6 +38,12 @@ pub mod tools;
 pub mod value;
 pub mod write;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 #[cfg(feature = "harness")]
 pub mod harness;
 

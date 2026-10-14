@@ -36,6 +36,12 @@ pub struct EngineWorker {
 
 impl EngineWorker {
     pub fn spawn() -> EngineWorker {
+        EngineWorker::spawn_with(Host::new)
+    }
+
+    /// `spawn`, with the host built by `setup` on the owner thread: the
+    /// stamp plugin's asset engine installs an image encoder there.
+    pub fn spawn_with(setup: impl FnOnce() -> Host + Send + 'static) -> EngineWorker {
         let (tx, rx) = mpsc::channel::<Request>();
         let alive = Arc::new(());
         let witness = Arc::downgrade(&alive);
@@ -44,7 +50,7 @@ impl EngineWorker {
         let handle = std::thread::Builder::new()
             .name("epdf-engine-client".into())
             .spawn(move || {
-                let mut owner = OwnerThread::start(Host::new);
+                let mut owner = OwnerThread::start(setup);
                 for request in rx {
                     match request {
                         Request::Call { reply, .. } if skip.load(Ordering::SeqCst) => {

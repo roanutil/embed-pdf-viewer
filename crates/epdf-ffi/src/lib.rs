@@ -2,21 +2,49 @@
 //! shares: the kernel's owner thread, the handle that reaches it, the error
 //! every export returns, and the records more than one plugin uses.
 
+pub mod annotation;
 pub mod bound;
 pub mod cancel;
 pub mod error;
+pub mod foreign;
+pub mod form;
 pub mod geometry;
+pub mod input;
 pub mod kernel_thread;
+pub mod mirror;
+pub mod page;
+pub mod registration;
 pub mod status;
 pub mod subscription;
+pub mod view;
 
+pub use annotation::{
+    AnnotationBlendMode, AnnotationBorder, AnnotationCallout, AnnotationFlags,
+    AnnotationFlagsPatch, AnnotationLineEnding, AnnotationLineEndings, AnnotationLineEndingsPatch,
+    AnnotationPropKey, AnnotationProps, AnnotationPropsPatch, AnnotationTextAlign,
+    CreationDraftAnchor,
+};
+pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, PdfLinkTarget};
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
+pub use foreign::{ForeignSettle, HostError};
+pub use form::{FormFieldFamily, FormFieldRef};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
+pub use input::{
+    Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample,
+};
 pub use kernel_thread::{Job, KernelPost, KernelThread};
+pub use mirror::to_u32;
+pub use page::PageInfo;
+pub use registration::RegistrationHandle;
 pub use status::ResourceStatus;
 pub use subscription::{Subscription, SubscriptionSlot};
+pub use view::{
+    Camera, PageFrameInsets, StageAlign, StageAlignValue, StageAlignment, StageAlignmentValue,
+    StageDirection, StageScrollMetrics, StageSizingMode, StageSpreadMode, ViewAnchor, ZoomMode,
+    ZoomSpec,
+};
 
 /// Returns at once on the calling thread: the pure cost of entering Rust
 /// through uniffi, for the bridge benchmarks. Experimental, never shipped.

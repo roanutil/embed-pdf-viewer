@@ -146,6 +146,64 @@ pub fn delete_pages(
     read_back(document, cancel)
 }
 
+/// `PagesMutator.setName`: register `name` for the page, removing
+/// `replace` first when it is a different, non-empty name. Names are
+/// layout: no page moves and nothing's identity changes.
+pub fn set_name(
+    document: &Document,
+    name: &str,
+    page: PageObjectNumber,
+    replace: Option<&str>,
+    cancel: &CancelToken,
+) -> Result<PageMutationResult, EngineError> {
+    cancel.check()?;
+    if name.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "pages.setName requires a non-empty name",
+        ));
+    }
+    require_page(document, page)?;
+    if let Some(old) = replace.filter(|r| !r.is_empty() && *r != name) {
+        // The fork answers false for a key it did not have, which the
+        // TypeScript ignores too: the rename still registers `name`.
+        document.remove_named_page(old).map_err(named_page_error)?;
+    }
+    if !document.set_named_page(name, page.get()).map_err(named_page_error)? {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("EPDFDoc_SetNamedPage rejected '{name}' for page {}", page.get()),
+        ));
+    }
+    read_back(document, cancel)
+}
+
+/// `PagesMutator.removeName`: drop one registration; the page stays.
+pub fn remove_name(
+    document: &Document,
+    name: &str,
+    cancel: &CancelToken,
+) -> Result<PageMutationResult, EngineError> {
+    cancel.check()?;
+    if name.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "pages.removeName requires a non-empty name",
+        ));
+    }
+    if !document.remove_named_page(name).map_err(named_page_error)? {
+        return Err(EngineError::with_message(
+            EngineErrorCode::NotFound,
+            format!("pages.removeName: no /Names /Pages registration '{name}'"),
+        ));
+    }
+    read_back(document, cancel)
+}
+
+fn named_page_error(error: pdfium::PdfiumError) -> EngineError {
+    EngineError::with_message(EngineErrorCode::InvalidArg, error.to_string())
+}
+
 /// Every page named, and each named once.
 ///
 /// A duplicate is refused rather than deduplicated. In a move it would make

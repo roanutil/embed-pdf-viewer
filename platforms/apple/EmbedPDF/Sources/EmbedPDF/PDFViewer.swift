@@ -5,19 +5,28 @@ public final class PDFViewer: Sendable {
   let host: ViewerHost
   let registry = StreamRegistry()
   private let stateContinuation: AsyncStream<UInt64>.Continuation
+  private let errorContinuation: AsyncStream<PDFError>.Continuation
+
+  /// Errors the kernel reports rather than throws: a listener that failed,
+  /// a foreign handler that threw (`HostError`). Keeps the newest 16. The
+  /// stream supports a single consumer.
+  public let reportedErrors: AsyncStream<PDFError>
 
   /// Revisions of the viewer's state. The stream supports a single consumer.
   public let stateRevisions: AsyncStream<UInt64>
 
   public init(_ config: ViewerConfig) throws(PDFError) {
     let (stream, continuation) = AsyncStream<UInt64>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    let (errors, errorContinuation) = AsyncStream<PDFError>.makeStream(bufferingPolicy: .bufferingNewest(16))
     do {
-      host = try ViewerHost(config: config, delegate: StateRelay(continuation))
+      host = try ViewerHost(config: config, delegate: StateRelay(continuation, errors: errorContinuation))
     } catch {
       throw PDFError(error)
     }
     stateRevisions = stream
     stateContinuation = continuation
+    reportedErrors = errors
+    self.errorContinuation = errorContinuation
   }
 
   public func start() async throws(PDFError) {
@@ -38,10 +47,9 @@ public final class PDFViewer: Sendable {
     }
   }
 
-  /// Not usable yet: it cannot succeed until document security lands
-  /// (follow-on plan B4). The native engine fails a locked open outright, so
-  /// the kernel records a failed tab, not a locked one, and there is nothing
-  /// to unlock. Open the document again with `password` instead.
+  /// Unlock a document that opened `.locked` (password-protected and opened
+  /// without one). Throws `DocPasswordIncorrect` for a wrong password; the
+  /// tab stays locked.
   public func unlock(_ document: PDFDocument, password: String) async throws(PDFError) {
     try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
   }
@@ -67,6 +75,7 @@ public final class PDFViewer: Sendable {
   func finishStreams() {
     registry.finishAll()
     stateContinuation.finish()
+    errorContinuation.finish()
   }
 
   deinit {

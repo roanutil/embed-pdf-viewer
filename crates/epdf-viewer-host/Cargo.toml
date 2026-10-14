@@ -21,12 +21,29 @@ epdf-engine = { path = "../epdf-engine" }
 epdf-ffi = { path = "../epdf-ffi" }
 epdf-kernel = { path = "../epdf-kernel" }
 epdf-manual-bridge = { path = "../epdf-manual-bridge", optional = true }
+epdf-plugin-actions = { path = "../plugins/actions", default-features = false, features = ["uniffi"] }
+epdf-plugin-annotation = { path = "../plugins/annotation", default-features = false, features = ["uniffi"] }
+epdf-plugin-form = { path = "../plugins/form", default-features = false, features = ["uniffi"] }
+epdf-plugin-commands = { path = "../plugins/commands", default-features = false, features = ["uniffi"] }
+epdf-plugin-i18n = { path = "../plugins/i18n", default-features = false, features = ["uniffi"] }
+epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
+epdf-plugin-link = { path = "../plugins/link", default-features = false, features = ["uniffi"] }
+epdf-plugin-measurement = { path = "../plugins/measurement", default-features = false, features = ["uniffi"] }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
+epdf-plugin-page-edit = { path = "../plugins/page-edit", default-features = false, features = ["uniffi"] }
+epdf-plugin-redaction = { path = "../plugins/redaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }
 epdf-plugin-search = { path = "../plugins/search", default-features = false, features = ["uniffi"] }
+epdf-plugin-selection = { path = "../plugins/selection", default-features = false, features = ["uniffi"] }
+epdf-plugin-shell = { path = "../plugins/shell", default-features = false, features = ["uniffi"] }
+epdf-plugin-signature = { path = "../plugins/signature", default-features = false, features = ["uniffi"] }
+epdf-plugin-stage = { path = "../plugins/stage", default-features = false, features = ["uniffi"] }
+epdf-plugin-stamp = { path = "../plugins/stamp", default-features = false, features = ["uniffi"] }
+epdf-plugin-view-manager = { path = "../plugins/view-manager", default-features = false, features = ["uniffi"] }
 epdf-uniffi = { path = "../epdf-uniffi" }
 base64 = "0.22"
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
+png = "0.17"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
@@ -37,6 +54,9 @@ build-support = { path = "../build-support" }
 
 [dev-dependencies]
 test-support = { path = "../test-support" }
+# The signature tests' signer: the TEST-ONLY RSA key.
+rsa = { version = "0.9", default-features = false, features = ["std", "u64_digit"] }
+sha2 = "0.10"
 
 # The manual bridge's C ABI, driving a real host. Here rather than in
 # `epdf-manual-bridge` so that no dev-dependency turns `manual-bridge` on

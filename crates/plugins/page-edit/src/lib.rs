@@ -18,6 +18,12 @@ pub mod controller;
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 pub use contract::{InsertBlankOptions, InsertFromBytesOptions, PAGE_EDIT, PagePlacement, PdfSize};
 pub use controller::{PageEditCapability, create_page_edit_controller};
 

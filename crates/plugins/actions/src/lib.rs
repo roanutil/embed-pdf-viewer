@@ -32,6 +32,12 @@ pub mod services;
 pub mod submit;
 pub mod submit_encoding;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 #[cfg(feature = "harness")]
 pub mod harness;
 

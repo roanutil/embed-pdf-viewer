@@ -143,6 +143,16 @@ pub enum DocumentEventInit {
     PagesInserted(serde_json::Value),
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
+    /// `pages.setName` and `pages.removeName`. The event names the key and
+    /// the page it now points at (`None` once removed) beside the result,
+    /// as `LocalDocumentPagesService.runNameJob` publishes it.
+    #[serde(rename = "pages.named", rename_all = "camelCase")]
+    PagesNamed {
+        name: String,
+        page_object_number: Option<u32>,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "redaction.applied")]
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
@@ -167,6 +177,14 @@ pub enum DocumentEventInit {
     FormWidgetAttached(serde_json::Value),
     #[serde(rename = "form.widgetDetached")]
     FormWidgetDetached(serde_json::Value),
+    /// `measure.setScale`. The TypeScript publishes it from
+    /// `LocalPageMeasureService` rather than the worker, with the same
+    /// `PageScaleResult` the call answers.
+    #[serde(rename = "page.viewportsChanged")]
+    PageViewportsChanged(serde_json::Value),
+    /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
+    #[serde(rename = "signature.completed")]
+    SignatureCompleted(serde_json::Value),
 }
 
 impl DocumentEventInit {
@@ -198,7 +216,10 @@ impl DocumentEventInit {
             | Self::FormFieldUpdated(v)
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
-            | Self::FormWidgetDetached(v) => v,
+            | Self::FormWidgetDetached(v)
+            | Self::PageViewportsChanged(v)
+            | Self::SignatureCompleted(v) => v,
+            Self::PagesNamed { result, .. } => result,
         }
     }
 
@@ -214,6 +235,7 @@ impl DocumentEventInit {
             Self::PagesDeleted(_) => "pages.deleted",
             Self::PagesInserted(_) => "pages.inserted",
             Self::PagesFlattened(_) => "pages.flattened",
+            Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
             Self::AttachmentCreated(_) => "attachment.created",
@@ -226,6 +248,8 @@ impl DocumentEventInit {
             Self::FormFieldDeleted(_) => "form.fieldDeleted",
             Self::FormWidgetAttached(_) => "form.widgetAttached",
             Self::FormWidgetDetached(_) => "form.widgetDetached",
+            Self::PageViewportsChanged(_) => "page.viewportsChanged",
+            Self::SignatureCompleted(_) => "signature.completed",
         }
     }
 
@@ -244,7 +268,9 @@ impl DocumentEventInit {
             | Self::FormFieldUpdated(_)
             | Self::FormFieldDeleted(_)
             | Self::FormWidgetAttached(_)
-            | Self::FormWidgetDetached(_) => MutationFamily::SelfSequenced,
+            | Self::FormWidgetDetached(_)
+            // The install already advanced the sequence.
+            | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,
         }
     }
