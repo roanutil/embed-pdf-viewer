@@ -114,7 +114,12 @@ impl AnnotationHandle {
     /// Start hydration if it has not run. Returns before it finishes;
     /// `refresh` waits.
     pub async fn ensure_hydrated(&self) -> Result<(), ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.ensure_hydrated())).await
+        self.cap
+            .call(|c| {
+                open(c)?.ensure_hydrated();
+                Ok(())
+            })
+            .await
     }
 
     /// Re-read every annotation from the engine and wait for it.

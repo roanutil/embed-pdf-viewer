@@ -648,7 +648,9 @@ fn dump_annotation_shapes() {
 fn refs_are_nested_on_the_way_in_and_flattened_on_the_way_out() {
     let nested = json!({ "kind": "objectNumber",
         "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17 });
-    let call = translate("d1", "page.annotations.delete", Some(3), &[nested.clone()], 12).unwrap();
+    let call =
+        translate("d1", "page.annotations.delete", Some(3), std::slice::from_ref(&nested), 12)
+            .unwrap();
     assert_eq!(
         call.request["ref"],
         json!({ "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 })

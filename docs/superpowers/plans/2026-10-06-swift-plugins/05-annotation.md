@@ -4314,7 +4314,7 @@ git commit -m "Add EmbedPDF's AnnotationCapability"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md` (Appendix A §A.3, the annotation entry)
 
-- [ ] **Step 1: CI and README**
+- [x] **Step 1: CI and README**
 
 Append `annotation` to the `crates=( … )` list in `plugin-rust.yml`'s "Test the uniffi exports" step, after plan 01's `interaction`. Add a row to the README's plugin table:
 
@@ -4324,7 +4324,7 @@ Append `annotation` to the `crates=( … )` list in `plugin-rust.yml`'s "Test th
 
 In the spec's §A.3, change `**annotation** (D, requires …)` to begin `**annotation** (D), delivered by 05-annotation.md, requires …`.
 
-- [ ] **Step 2: Record the binary size**
+- [x] **Step 2: Record the binary size**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -4333,7 +4333,7 @@ ls -l ../swift-plugins-integration/target/aarch64-apple-ios-sim/release/libepdf_
 
 The first is this plan's archive, the second the integration branch's last build. Put both sizes in the commit message below.
 
-- [ ] **Step 3: Run the definition of done**
+- [x] **Step 3: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-annotation --features uniffi
@@ -4348,7 +4348,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
