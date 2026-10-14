@@ -258,6 +258,10 @@ pub struct FreeTextPatchFields {
     pub rotation: Patch<f64>,
     #[serde(skip_serializing_if = "Patch::is_keep")]
     pub unrotated_rect: Patch<PdfRect>,
+    /// A rich replacement of the text. With `contents` too, `contents` must
+    /// be its plain projection.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rich_text: Option<crate::features::annotation::rich_text::RichTextDocumentInput>,
 }
 
 /// What a redaction patch may change.

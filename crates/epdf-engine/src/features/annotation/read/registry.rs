@@ -83,9 +83,9 @@ pub fn read_annotation_kind(
         AnnotationSubtype::Line => AnnotationKind::Line { fields: read_line(annotation)? },
         AnnotationSubtype::Ink => AnnotationKind::Ink { fields: read_ink(annotation)? },
         AnnotationSubtype::Text => AnnotationKind::Text { fields: read_text(annotation)? },
-        AnnotationSubtype::FreeText => {
-            AnnotationKind::FreeText { fields: read_free_text(annotation)? }
-        }
+        AnnotationSubtype::FreeText => AnnotationKind::FreeText {
+            fields: read_free_text(annotation, base.contents.as_deref())?,
+        },
         AnnotationSubtype::Stamp => AnnotationKind::Stamp { fields: read_stamp(annotation)? },
         AnnotationSubtype::Caret => AnnotationKind::Caret { fields: read_caret(annotation)? },
         AnnotationSubtype::Redact => AnnotationKind::Redact { fields: read_redact(annotation)? },

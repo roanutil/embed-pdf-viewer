@@ -105,7 +105,7 @@ pub fn create_annotation(
     })?;
 
     apply_base_draft(&annotation, &draft.base)?;
-    apply_kind_draft(document, page, &annotation, &draft.kind, context)?;
+    apply_kind_draft(document, page, &annotation, draft, context)?;
 
     // After the subtype writer, so a writer that set `/T` or `/M` itself
     // cannot win.
@@ -332,6 +332,10 @@ fn preflight(
             }
             box_rotation_satisfiable(fields.rotation, fields.unrotated_rect)?;
             font_resolvable(&fields.font_family, context)?;
+            crate::features::annotation::rich_text::assert_agreement(
+                draft.base.contents.as_set().map(String::as_str),
+                fields.rich_text.as_ref(),
+            )?;
         }
         AnnotationDraftKind::Ink { fields, ink_list, .. } => {
             normalized(&fields.rect)?;
@@ -467,10 +471,10 @@ fn apply_kind_draft(
     document: &pdfium::Document,
     page: &PageView<'_>,
     annotation: &pdfium::Annotation<'_>,
-    kind: &AnnotationDraftKind,
+    draft: &AnnotationDraft,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
-    match kind {
+    match &draft.kind {
         AnnotationDraftKind::Highlight { fields } => {
             apply_text_markup(annotation, fields, DEFAULT_HIGHLIGHT_COLOR)
         }
@@ -546,7 +550,9 @@ fn apply_kind_draft(
         }
         AnnotationDraftKind::Text { fields } => apply_text(annotation, fields),
         AnnotationDraftKind::Caret { fields } => apply_caret(annotation, fields),
-        AnnotationDraftKind::FreeText { fields } => apply_free_text(annotation, fields, context),
+        AnnotationDraftKind::FreeText { fields } => {
+            apply_free_text(annotation, fields, &draft.base.contents, context)
+        }
         AnnotationDraftKind::Redact { fields } => apply_redact(annotation, fields, context),
         AnnotationDraftKind::FileAttachment { fields } => {
             apply_file_attachment(document, annotation, fields, context)
@@ -759,6 +765,7 @@ fn option_patch<T>(value: Option<T>) -> Patch<T> {
 fn apply_free_text(
     annotation: &pdfium::Annotation<'_>,
     fields: &super::draft::FreeTextDraftFields,
+    contents: &Patch<String>,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
     set_rect(annotation, fields.rect)?;
@@ -849,7 +856,30 @@ fn apply_free_text(
             unrotated_rect: option_patch(fields.unrotated_rect),
         },
         || Ok(false),
-    )
+    )?;
+
+    // Rich text last, always: a box is born with all four forms (`/RC`,
+    // `/DS`, `/DA`, `/Contents`) and its appearance, which is Acrobat's
+    // shape. From the draft's rich document, else from its plain contents as
+    // body-style paragraphs. The body becomes the body style (the `/DA` font
+    // and size follow it; the `/DA` colour written above is kept). After the
+    // geometry, which the layout needs. `applyFreeTextDraft` in
+    // `writeFreeTextAnnotation.ts`.
+    let plain;
+    let input = match &fields.rich_text {
+        Some(rich) => rich,
+        None => {
+            plain = crate::features::annotation::rich_text::RichTextDocumentInput {
+                body: None,
+                paragraphs: crate::features::annotation::rich_text::paragraphs_from_plain_text(
+                    contents.as_set().map_or("", String::as_str),
+                ),
+            };
+            &plain
+        }
+    };
+    let describe = |key: &str| context.describe_font(key);
+    crate::features::annotation::rich_text::write_rich_text(annotation, input, Some(&describe))
 }
 
 /// A redaction marking.

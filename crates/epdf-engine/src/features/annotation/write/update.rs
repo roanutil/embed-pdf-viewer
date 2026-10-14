@@ -142,7 +142,7 @@ pub fn update_annotation(
         .clone();
 
     apply_base_patch(&annotation, &patch.base)?;
-    apply_kind_patch(document, page, &annotation, &patch.kind, context)?;
+    apply_kind_patch(document, page, &annotation, patch, context)?;
 
     let modified = format_pdf_date(clock.now()).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
@@ -295,6 +295,10 @@ fn preflight(
                     format!("a free-text patch's fontSize must be positive, not {size}"),
                 ));
             }
+            crate::features::annotation::rich_text::assert_agreement(
+                patch.base.contents.as_set().map(String::as_str),
+                fields.rich_text.as_ref(),
+            )?;
         }
         AnnotationPatchKind::Stamp { fields } => {
             box_rotation_satisfiable(annotation, &fields.rotation, &fields.unrotated_rect)?;
@@ -470,10 +474,10 @@ fn apply_kind_patch(
     document: &pdfium::Document,
     page: &PageView<'_>,
     annotation: &pdfium::Annotation<'_>,
-    kind: &AnnotationPatchKind,
+    patch: &AnnotationPatch,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
-    match kind {
+    match &patch.kind {
         AnnotationPatchKind::Highlight { fields }
         | AnnotationPatchKind::Underline { fields }
         | AnnotationPatchKind::Squiggly { fields } => apply_text_markup_patch(annotation, fields),
@@ -562,7 +566,7 @@ fn apply_kind_patch(
         AnnotationPatchKind::Text { fields } => apply_text_patch(annotation, fields),
         AnnotationPatchKind::Caret { fields } => apply_caret_patch(annotation, fields),
         AnnotationPatchKind::FreeText { fields } => {
-            apply_free_text_patch(annotation, fields, context)
+            apply_free_text_patch(annotation, fields, &patch.base.contents, context)
         }
         AnnotationPatchKind::Redact { fields } => apply_redact_patch(annotation, fields, context),
         AnnotationPatchKind::Link { fields } => apply_link_patch(document, annotation, fields),
@@ -1010,16 +1014,17 @@ fn patch_rect_differences(
     Ok(())
 }
 
-/// A free text or a callout.
+/// A free text or a callout. `applyFreeTextPatch` in
+/// `writeFreeTextAnnotation.ts`.
 ///
-/// `/DA` packs the font, the size and the colour into one string, so a patch
-/// naming any of the three READS the other two rather than defaulting them:
-/// defaulting would reset a font nobody mentioned. The one thing the read
-/// cannot recover is a registered family, which comes back as a font code,
-/// so preserving one across a size change means restating it.
+/// Every text write goes through the rich document: the body style lives
+/// there and the fork derives `/DA` from it. So the `/DA` read-modify-write
+/// here carries only the `/DA` COLOUR (the border and the leader), and the
+/// font, size, text colour and alignment are body-style changes.
 fn apply_free_text_patch(
     annotation: &pdfium::Annotation<'_>,
     fields: &super::patch::FreeTextPatchFields,
+    contents: &Patch<String>,
     context: &super::context::AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
     if let Some(rect) = fields.rect {
@@ -1036,32 +1041,78 @@ fn apply_free_text_patch(
     set_opacity_patch(annotation, fields.opacity)?;
     patch_border(annotation, fields.border_style, fields.stroke_width, &fields.dash_array)?;
 
-    if fields.font_family.is_some() || fields.font_size.is_some() || fields.color.is_some() {
-        let current = annotation.default_appearance();
-        let family = fields.font_family.clone().unwrap_or_else(|| {
-            current
-                .map_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT, |da| {
-                    crate::features::annotation::vocabulary::StandardFont::from_code(da.font_code)
-                })
-                .as_str()
-                .to_owned()
-        });
-        let size = fields.font_size.unwrap_or_else(|| {
-            current.map_or(crate::features::annotation::read::free_text::DEFAULT_FONT_SIZE, |da| {
-                f64::from(da.font_size)
+    use crate::features::annotation::rich_text;
+    let current = rich_text::read_rich_text(annotation);
+    if let Some(color) = fields.color {
+        let da = annotation.default_appearance();
+        let family = da
+            .map_or(crate::features::annotation::vocabulary::DEFAULT_STANDARD_FONT, |da| {
+                crate::features::annotation::vocabulary::StandardFont::from_code(da.font_code)
             })
-        });
-        let color = fields.color.unwrap_or_else(|| {
-            current.map_or(
-                crate::features::annotation::read::free_text::DEFAULT_FREE_TEXT_COLOR,
-                |da| Color { r: da.color.0, g: da.color.1, b: da.color.2 },
-            )
-        });
-        super::create::set_default_appearance(annotation, &family, size, color, context)?;
+            .as_str();
+        let size = da
+            .map(|da| f64::from(da.font_size))
+            .filter(|size| *size > 0.0)
+            .unwrap_or(crate::features::annotation::read::free_text::DEFAULT_FONT_SIZE);
+        super::create::set_default_appearance(annotation, family, size, color, context)?;
     }
     // After the `/DA`, on the same terms as the draft.
     if let Some(font_color) = fields.font_color {
         set_color(annotation, AnnotationColorType::TextColor, font_color)?;
+    }
+    let describe = |key: &str| context.describe_font(key);
+    if let Some(rich) = &fields.rich_text {
+        // Rich replacement: everything regenerated. A `contents` given too
+        // was checked against its projection in preflight.
+        rich_text::write_rich_text(annotation, rich, Some(&describe))?;
+    } else if !contents.is_keep() {
+        // Plain-text replacement: body-style paragraphs, one per line break.
+        // Run formatting is lost by design: a plain-text client cannot
+        // preserve what it cannot see.
+        let input = rich_text::RichTextDocumentInput {
+            body: None,
+            paragraphs: rich_text::paragraphs_from_plain_text(
+                contents.as_set().map_or("", String::as_str),
+            ),
+        };
+        rich_text::write_rich_text(annotation, &input, Some(&describe))?;
+    } else if let Some(current) = current
+        && (fields.font_family.is_some()
+            || fields.font_size.is_some()
+            || fields.font_color.is_some()
+            || fields.text_align.is_some())
+    {
+        // Default-style change: the body moves, and since runs are deltas,
+        // every run that did not override the property follows. Alignment
+        // is a body property too: the `/RC` body's alignment wins over `/Q`
+        // on regeneration, so `/Q` alone (set below) would not move it.
+        let mut body = current.body;
+        if let Some(family) = fields.font_family.as_deref() {
+            let face = rich_text::face_for_free_text_font(family, Some(&describe));
+            body.family = face.family;
+            if let Some(weight) = face.weight {
+                body.weight = weight;
+            }
+            if let Some(italic) = face.italic {
+                body.italic = italic;
+            }
+        }
+        if let Some(size) = fields.font_size {
+            body.size = size;
+        }
+        if let Some(color) = fields.font_color {
+            body.color = rich_text::hex_color(color.r, color.g, color.b);
+        }
+        if let Some(align) = fields.text_align {
+            body.align = align.as_str().to_owned();
+        }
+        let body = match serde_json::to_value(&body).expect("a rich body serializes") {
+            serde_json::Value::Object(body) => body,
+            _ => unreachable!("a struct serializes to an object"),
+        };
+        let input =
+            rich_text::RichTextDocumentInput { body: Some(body), paragraphs: current.paragraphs };
+        rich_text::write_rich_text(annotation, &input, Some(&describe))?;
     }
     if let Some(align) = fields.text_align
         && !annotation.set_text_alignment(align.code())

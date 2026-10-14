@@ -76,6 +76,12 @@ impl<'a> AnnotationWriteContext<'a> {
         })
     }
 
+    /// What a registered key resolved to, or `None` when it is not one.
+    /// `describeRegisteredFont` in `annotationWriteContext.ts`.
+    pub fn describe_font(&self, key: &str) -> Option<pdfium::FontIdentity> {
+        self.fonts.and_then(|fonts| fonts.describe(key))
+    }
+
     /// Resolve a registered font key to this thread's id.
     ///
     /// A key with no registry behind it is a programming error rather than a

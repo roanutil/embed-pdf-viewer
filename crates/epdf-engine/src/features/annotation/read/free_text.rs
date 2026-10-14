@@ -16,6 +16,15 @@
 //! the `/DA` colour. `TextColor` overrides the text alone, so a value equal to
 //! `color` overrides nothing, and putting it on the wire anyway would make a
 //! round trip write an override where the file had none.
+//!
+//! # The text is always rich
+//!
+//! `richText` is the annotation's `/RC` when it has one, else the same shape
+//! the fork synthesises from `/Contents`, `/DA` and `/Q`. Its body is the
+//! face `/DA` names, resolved by identity, which is why `fontFamily` comes
+//! from the body rather than from the `/DA` font code: a registered font
+//! reads back as its key, and a `/DA` font the fork cannot resolve reads back
+//! as the empty family it reports.
 
 use pdfium::Annotation;
 use serde::{Deserialize, Serialize};
@@ -27,6 +36,10 @@ use super::transform::{read_rotation, read_unrotated_rect};
 use super::{dictionary_read, points_to_wire};
 use crate::error::EngineError;
 use crate::features::annotation::intent::FreeTextIntent;
+use crate::features::annotation::rich_text::{
+    RichTextBody, RichTextDocument, RichTextParagraph, RichTextRun, free_text_font_for_face,
+    read_rich_text,
+};
 use crate::features::annotation::vocabulary::{
     AnnotationColorType, DEFAULT_STANDARD_FONT, LineEnding, StandardFont, TextAlignment,
 };
@@ -42,9 +55,14 @@ pub const DEFAULT_FONT_SIZE: f64 = 12.0;
 #[serde(rename_all = "camelCase")]
 pub struct FreeTextFields {
     pub intent: FreeTextIntent,
-    pub font_family: StandardFont,
+    /// The body face: a standard name, the key of a registered font whose
+    /// identity matches, or the family itself.
+    pub font_family: String,
     pub font_size: f64,
     pub text_align: TextAlignment,
+    /// The text, as a rich document, always. `contents` is its plain
+    /// projection.
+    pub rich_text: RichTextDocument,
     /// The `/DA` colour: the border, and the text unless `font_color`
     /// overrides it.
     pub color: Color,
@@ -69,13 +87,46 @@ pub struct FreeTextFields {
 }
 
 /// Read them.
-pub fn read_free_text(annotation: &Annotation<'_>) -> Result<FreeTextFields, EngineError> {
+pub fn read_free_text(
+    annotation: &Annotation<'_>,
+    contents: Option<&str>,
+) -> Result<FreeTextFields, EngineError> {
     let appearance = annotation.default_appearance();
     let color = appearance.map_or(DEFAULT_FREE_TEXT_COLOR, |da| Color {
         r: da.color.0,
         g: da.color.1,
         b: da.color.2,
     });
+
+    let rich = read_rich_text(annotation);
+    let key_for_face = crate::features::fonts::key_for_face;
+    let font_family = match &rich {
+        Some(rich) => free_text_font_for_face(
+            &rich.body.family,
+            rich.body.weight,
+            rich.body.italic,
+            Some(&key_for_face),
+        ),
+        None => appearance
+            .map_or(DEFAULT_STANDARD_FONT, |da| StandardFont::from_code(da.font_code))
+            .as_str()
+            .to_owned(),
+    };
+    // A `/DA` size of zero means auto-fit, which free text has no support
+    // for, so it normalizes to the default. A redaction keeps its zero,
+    // because there it is a real instruction.
+    let font_size = rich
+        .as_ref()
+        .map(|rich| rich.body.size)
+        .filter(|size| *size > 0.0)
+        .or_else(|| appearance.map(|da| f64::from(da.font_size)).filter(|size| *size > 0.0))
+        .unwrap_or(DEFAULT_FONT_SIZE);
+    // The rich body's alignment is what the appearance paints (it wins over
+    // `/Q`); a plain box's synthesised body carries `/Q`, so both agree.
+    // Justify has no `/Q` value and reads back as the `/Q` alignment.
+    let quadding = TextAlignment::from_code(annotation.text_alignment());
+    let text_align = rich.as_ref().and_then(|rich| rich.body.text_alignment()).unwrap_or(quadding);
+    let rich_text = rich.unwrap_or_else(|| synthesised(font_size, contents));
 
     let text_color = read_color_entry(annotation, AnnotationColorType::TextColor);
     let callout_line = read_callout_line(annotation)?;
@@ -86,16 +137,10 @@ pub fn read_free_text(annotation: &Annotation<'_>) -> Result<FreeTextFields, Eng
 
     Ok(FreeTextFields {
         intent: FreeTextIntent::from_name(dictionary_read("IT", annotation.intent())?.as_deref()),
-        font_family: appearance
-            .map_or(DEFAULT_STANDARD_FONT, |da| StandardFont::from_code(da.font_code)),
-        // A `/DA` size of zero means auto-fit, which free text has no support
-        // for, so it normalizes to the default. A redaction keeps its zero,
-        // because there it is a real instruction.
-        font_size: appearance
-            .map(|da| f64::from(da.font_size))
-            .filter(|size| *size > 0.0)
-            .unwrap_or(DEFAULT_FONT_SIZE),
-        text_align: TextAlignment::from_code(annotation.text_alignment()),
+        font_family,
+        font_size,
+        text_align,
+        rich_text,
         color,
         font_color: text_color.filter(|text| *text != color),
         interior_color: read_color_entry(annotation, AnnotationColorType::Color),
@@ -110,6 +155,31 @@ pub fn read_free_text(annotation: &Annotation<'_>) -> Result<FreeTextFields, Eng
         rotation: read_rotation(annotation)?,
         unrotated_rect: read_unrotated_rect(annotation)?,
     })
+}
+
+/// The document the TypeScript falls back to when the fork returns no rich
+/// text at all: Helvetica at the read size, one run of `/Contents`.
+fn synthesised(size: f64, contents: Option<&str>) -> RichTextDocument {
+    RichTextDocument {
+        body: RichTextBody {
+            family: "Helvetica".into(),
+            weight: 400,
+            italic: false,
+            size,
+            color: "#000000".into(),
+            decoration: Vec::new(),
+            script: "normal".into(),
+            letter_spacing: 0.0,
+            horizontal_scale: 1.0,
+            align: "left".into(),
+            dir: "ltr".into(),
+            rest: serde_json::Map::new(),
+        },
+        paragraphs: vec![RichTextParagraph {
+            runs: vec![RichTextRun { text: contents.unwrap_or_default().to_owned(), style: None }],
+            props: serde_json::Map::new(),
+        }],
+    }
 }
 
 /// `/CL`, which §12.5.6.6 permits with two points or three.

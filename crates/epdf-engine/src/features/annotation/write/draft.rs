@@ -539,6 +539,11 @@ pub struct FreeTextDraftFields {
     pub rotation: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unrotated_rect: Option<PdfRect>,
+    /// The text as a rich document. Absent writes `contents` as body-style
+    /// paragraphs, one per line. With both, `contents` must be this
+    /// document's plain projection.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rich_text: Option<crate::features::annotation::rich_text::RichTextDocumentInput>,
 }
 
 /// What a sticky-note draft carries.
