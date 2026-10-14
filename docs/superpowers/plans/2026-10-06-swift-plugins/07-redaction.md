@@ -1586,7 +1586,7 @@ git commit -m "Add EmbedPDF's RedactionCapability"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md` (Appendix A §A.3, the redaction entry)
 
-- [ ] **Step 1: CI and README**
+- [x] **Step 1: CI and README** (README and spec only; the `plugin-rust.yml` line is skipped: no CI edits on this branch)
 
 Append `redaction` to `plugin-rust.yml`'s `crates=( … )`, after `form`. Add the README row:
 
@@ -1596,14 +1596,14 @@ Append `redaction` to `plugin-rust.yml`'s `crates=( … )`, after `form`. Add th
 
 In the spec's §A.3, change `**redaction** (D, requires …)` to begin `**redaction** (D), delivered by 07-redaction.md, requires …`.
 
-- [ ] **Step 2: Record the binary size**
+- [x] **Step 2: Record the binary size**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ls -l ../swift-plugins-integration/target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ```
 
-- [ ] **Step 3: Run the definition of done**
+- [x] **Step 3: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-redaction --features uniffi
@@ -1618,7 +1618,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
