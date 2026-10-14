@@ -73,7 +73,7 @@ platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift
 
 Members, under their FFI names (TypeScript name in parentheses where it differs): `pending` (`listPending`), `pending_item` (`getPending`), `pending_count` (`getPendingCount`), `estimate_collateral`, `mark_selection`, `mark_area`, `mark_page`, `mark_matches`, `unmark`, `clear_pending`, `update_label`, `apply`, `apply_pages`, `apply_all`, `can_mark`, `can_apply`, `is_applying`, `last_result` (`getLastResult`), `subscribe` (`onApplied`, `onPendingChanged`).
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-redaction -b research/swift-redaction research/swift-plugins
@@ -82,7 +82,7 @@ cd .claude/worktrees/swift-redaction
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plan 05 has merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` prints a line.
 
-- [ ] **Step 2: Add the feature and the lifetime**
+- [x] **Step 2: Add the feature and the lifetime**
 
 `crates/plugins/redaction/Cargo.toml`, in `[features]`:
 
@@ -129,7 +129,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 `crates/plugins/redaction/tests/ffi.rs`:
 
@@ -394,12 +394,12 @@ fn cancelling_an_apply_before_it_runs_applies_nothing() {
 
 `pending_marks_project_from_the_annotation_plane` asserts `kind: Area` for a DTO with empty `quadPoints`. Read `crates/plugins/redaction/src/read/pending.rs` `regions_of` and the code that picks the kind before running: if the kind comes from another member, set that member in `mark_dto` instead of changing the assertion.
 
-- [ ] **Step 4: Run them to see them fail**
+- [x] **Step 4: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-redaction --features uniffi --test ffi`
 Expected: compile errors, `could not find ffi in epdf_plugin_redaction`.
 
-- [ ] **Step 5: Write `ffi.rs`**
+- [x] **Step 5: Write `ffi.rs`**
 
 ```rust
 //! The redaction plugin through uniffi: one handle over the two-stage
@@ -943,7 +943,7 @@ impl RedactionHandle {
 
 Add `epdf-annotation-core = { path = "../annotation-core", default-features = false }` is already in the crate's `[dependencies]`; nothing to add there.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-redaction --features uniffi --test ffi`
 Expected: 10 passed.
@@ -953,7 +953,7 @@ If `a_label_edit_goes_through_the_plugins_update_label` fails on the styling ass
 Run: `cargo test -p epdf-plugin-redaction`
 Expected: the conformance vectors still pass with the feature off.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/redaction

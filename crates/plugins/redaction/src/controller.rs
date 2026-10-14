@@ -53,6 +53,14 @@ impl RedactionCapability {
         self.0.cx.try_get(&SEARCH)
     }
 
+    /// The instance lifetime, aborted when the document closes. A foreign
+    /// handle outlives the close, checks this before every call, and ends
+    /// its event streams when it aborts.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     // ── the controller's own members ──────────────────────────────────────────
 
     /// Marks are annotations: marking authority is annotation create
