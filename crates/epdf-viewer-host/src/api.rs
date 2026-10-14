@@ -54,6 +54,12 @@ pub struct ViewerConfig {
     /// Requires `interaction`. With `stage`, a `goto` link reveals its page.
     #[uniffi(default = false)]
     pub link: bool,
+    /// Install `annotationPlugin(config)`: read, create, edit and comment
+    /// on annotations, one per document. Requires `interaction`; uses
+    /// `selection` for markup from selected text and `actions` for the
+    /// hover feed when they are installed.
+    #[uniffi(default = None)]
+    pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]

@@ -904,6 +904,116 @@ fn without_its_flag_the_link_plugin_is_not_installed() {
     assert!(block_on(host.link(doc.id)).is_err());
 }
 
+use epdf_plugin_annotation::ffi::{AnnotationConfig, AnnotationPatch, CreateAnnotationInput};
+
+const ANNOTATED: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf";
+
+fn with_annotation() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        annotation: Some(AnnotationConfig::default()),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_annotation_plugin_hydrates_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(ANNOTATED), options())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let all = block_on(annotations.list(None)).unwrap();
+    assert!(!all.is_empty(), "annotation_kinds.pdf has annotations");
+}
+
+#[test]
+fn an_annotation_read_back_updates_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(ANNOTATED), options())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let first = block_on(annotations.list(None)).unwrap().remove(0);
+    block_on(annotations.update(
+        first.annotation_ref.clone(),
+        AnnotationPatch { contents: Some("Edited from Rust".into()), ..Default::default() },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let again = block_on(annotations.get(first.annotation_ref)).unwrap().unwrap();
+    assert_eq!(again.contents.as_deref(), Some("Edited from Rust"));
+}
+
+#[test]
+fn a_square_created_on_report_is_listed() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let created = block_on(annotations.create(
+        CreateAnnotationInput {
+            page: pages[0].page,
+            subtype: "square".into(),
+            bounds: Some(epdf_ffi::Rect { x: 72.0, y: 72.0, width: 100.0, height: 50.0 }),
+            ..Default::default()
+        },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert!(block_on(annotations.get(created)).unwrap().is_some());
+}
+
+#[test]
+fn annotation_without_interaction_fails_to_build() {
+    let config = ViewerConfig {
+        interaction: false,
+        annotation: Some(AnnotationConfig::default()),
+        ..Default::default()
+    };
+    let error = ViewerHost::new(config, Arc::new(Delegate)).err().expect("no interaction plugin");
+    assert!(format!("{error}").contains("interaction"), "{error}");
+}
+
+#[test]
+fn without_its_config_the_annotation_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.annotation(doc.id)).is_err());
+}
+
+#[test]
+fn a_reply_lands_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let root = block_on(annotations.create(
+        CreateAnnotationInput {
+            page: pages[0].page,
+            subtype: "square".into(),
+            bounds: Some(epdf_ffi::Rect { x: 72.0, y: 72.0, width: 100.0, height: 50.0 }),
+            ..Default::default()
+        },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let reply =
+        block_on(annotations.threads().reply(root, "Agreed".into(), CancelToken::new())).unwrap();
+    // The draft's `inReplyTo` reaches the host as the flat ref it parses
+    // (before, the create failed WireFormat). `epdf-engine`'s create does
+    // not write `/IRT` yet, so the reply is not read back as threaded.
+    let read = block_on(annotations.get(reply)).unwrap().unwrap();
+    assert_eq!(read.subtype, "text");
+    assert_eq!(read.contents.as_deref(), Some("Agreed"));
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

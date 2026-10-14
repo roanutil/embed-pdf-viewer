@@ -97,7 +97,7 @@ platforms/apple/build-xcframework.sh   + annotation_kinds.pdf, tiny.png in FIXTU
 - Consumes: `epdf_annotation_core::{AnnotationRef, RevisionToken, AnnotationFlags, AnnotationFlagsPatch, AnnotationProps, AnnotationPropsPatch, PropKey, LineEnding, LineEndings, LineEndingsPatch, BlendMode, TextAlign, Border, PdfLinkTarget, PdfDestination, Callout, CreationDraftAnchor, PageRef}` and `epdf_annotation_core::js::Nullable`.
 - Produces, all in `epdf_ffi`, beside plan 04's `AnnotationRef`, `AnnotationRevisionToken`, `PdfDestination` and `PdfLinkTarget`: `AnnotationFlags`, `AnnotationFlagsPatch`, `AnnotationPropKey`, `AnnotationProps`, `AnnotationPropsPatch`, `AnnotationLineEnding`, `AnnotationLineEndings`, `AnnotationLineEndingsPatch`, `AnnotationBlendMode`, `AnnotationTextAlign`, `AnnotationBorder`, `AnnotationCallout`, `CreationDraftAnchor`, each with `From` to and from its core type (`TryFrom` where the core is wider). Plans 06, 07, 08, 09 and 16 use these by name.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-annotation -b research/swift-annotation research/swift-plugins
@@ -106,11 +106,11 @@ cd .claude/worktrees/swift-annotation
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 04 have merged: `grep -n 'interaction' crates/epdf-viewer-host/src/api.rs` prints the `interaction: bool` field, and `grep -n 'page.annotations.list' crates/epdf-viewer-host/src/translate.rs` prints plan 04's route.
 
-- [ ] **Step 2: Check the dependencies**
+- [x] **Step 2: Check the dependencies**
 
 `crates/epdf-ffi/Cargo.toml` already has `epdf-annotation-core` (plan 04) and `serde_json` (umbrella Task 0d). Run `grep -n 'epdf-annotation-core\|serde_json' crates/epdf-ffi/Cargo.toml` and expect both.
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 `crates/epdf-ffi/tests/annotation_props.rs` (plan 04 owns `tests/annotation.rs`):
 
@@ -211,17 +211,17 @@ fn a_goto_link_keeps_its_page_and_drops_undefined_coordinates() {
 }
 ```
 
-- [ ] **Step 4: Run it to see it fail**
+- [x] **Step 4: Run it to see it fail**
 
 Run: `cargo test -p epdf-ffi --test annotation_props`
 Expected: compile errors, `cannot find type AnnotationRef in crate epdf_ffi` and the rest.
 
-- [ ] **Step 5: Confirm plan 04's records are there**
+- [x] **Step 5: Confirm plan 04's records are there**
 
 Run: `grep -n 'pub enum AnnotationRef\|pub struct AnnotationRevisionToken\|impl From<ac::PageRef> for PageRef' crates/epdf-ffi/src/*.rs`
 Expected: three hits, all from plan 04. If plan 04 hasn't merged, stop: this plan waits for it (umbrella Waves).
 
-- [ ] **Step 6: Extend `annotation.rs`**
+- [x] **Step 6: Extend `annotation.rs`**
 
 Plan 04 created `crates/epdf-ffi/src/annotation.rs` with `AnnotationRef`, `AnnotationRevisionToken`, `PdfDestination`, `PdfLinkTarget` and the core `PageRef` conversions. Append the block below to it. Of the `use` lines, add only those the file doesn't have yet (plan 04 imports the core as `ac` and `Nullable` already; keep both aliases, `core` is what the code below uses).
 
@@ -617,7 +617,7 @@ impl From<core::CreationDraftAnchor> for CreationDraftAnchor {
 
 `CreationDraftKind` has one variant (`Poly`), so the record drops it.
 
-- [ ] **Step 7: Export the module**
+- [x] **Step 7: Export the module**
 
 In `crates/epdf-ffi/src/lib.rs`, plan 04 already declared `pub mod annotation;` and re-exported its four records. Add a second re-export:
 
@@ -630,7 +630,7 @@ pub use annotation::{
 };
 ```
 
-- [ ] **Step 8: Run the tests**
+- [x] **Step 8: Run the tests**
 
 Run: `cargo test -p epdf-ffi --test annotation_props`
 Expected: 7 passed.
@@ -638,7 +638,7 @@ Expected: 7 passed.
 Run: `cargo test -p epdf-ffi`
 Expected: every existing `epdf-ffi` test still passes.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-ffi
@@ -663,7 +663,7 @@ git commit -m "Add the shared annotation records to epdf-ffi"
 
 Members exported here, under their FFI names (TypeScript name in parentheses where it differs): `get`, `list`, `selected` (`listSelected`), `hit_test_at` (`hitTestAt`), `status` (`getStatus`), `hydration` (`getHydration`), `ensure_hydrated`, `refresh`, `reload_page`, `create`, `create_many`, `update`, `update_many`, `set_rotation`, `rotate_by`, `delete`, `delete_many`, `can_read`, `can_create`, `can_edit`, `can_delete`, `subscribe` (`onResynced`, `onCreated`, `onUpdated`, `onDeleted`, `onSelectionChanged`, `onDraftChanged`, `onEditingChanged`, and the comments lens's `onThreadChanged`).
 
-- [ ] **Step 1: Add the feature**
+- [x] **Step 1: Add the feature**
 
 In `crates/plugins/annotation/Cargo.toml`:
 
@@ -721,7 +721,7 @@ In `src/controller.rs`, inside `impl AnnotationCapability`:
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `crates/plugins/annotation/tests/ffi.rs`:
 
@@ -986,12 +986,12 @@ fn cancelling_a_create_before_it_runs_creates_nothing() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `could not find ffi in epdf_plugin_annotation`.
 
-- [ ] **Step 4: Write `ffi/mod.rs`**
+- [x] **Step 4: Write `ffi/mod.rs`**
 
 ```rust
 //! The annotation plugin through uniffi: five handles over the one
@@ -1541,7 +1541,7 @@ pub trait AnnotationEventListener: Send + Sync {
 
 `Error::plugin_error_info` is the kernel's existing canonical face (`crates/epdf-kernel/src/error.rs`), which `BatchResult::to_json` already uses.
 
-- [ ] **Step 5: Write `ffi/handle.rs`**
+- [x] **Step 5: Write `ffi/handle.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -1915,7 +1915,7 @@ pub enum AnnotationTextFormat { Bold, Italic, Underline }
 
 Do the same for the others with the names `ffi/mod.rs` re-exports. Tasks 3 to 5 replace each file whole.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 8 passed.
@@ -1925,7 +1925,7 @@ If `unknown_prop_keys_are_dropped_not_fatal` fails with `invalid-state`, `core::
 Run: `cargo test -p epdf-plugin-annotation`
 Expected: the conformance vectors still pass with the feature off.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/annotation
@@ -1948,7 +1948,7 @@ git commit -m "Export the annotation plugin's reads, writes and events through u
 
 Members: selection handle `select`, `select_all`, `select_in_rect`, `clear` (`clearSelection`), `refs` (`getSelection`), `props` (`getSelectionProps`), `update` (`updateSelection`), `update_flags` (`updateSelectionFlags`), `delete` (`deleteSelection`), `rotate_by` (`rotateSelectionBy`), `reset_rotation` (`resetSelectionRotation`), `toggle_text_format`, `group`, `ungroup`, `can_group`, `can_ungroup`. Tools handle `tools` (`listTools`), `tool` (`getTool`), `defaults` (`getToolDefaults`), `set_defaults` (`setToolDefaults`), `prop_specs` (`listPropSpecs`), `snap_settings` (`getSnapSettings`), `update_snap_settings`. `getSelectionFlags` returns a free-form `Map<String, Value>` and isn't exported; `update_flags` covers writing them.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -2006,12 +2006,12 @@ fn the_default_tools_are_listed_with_their_specs() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named selection found for struct Arc<AnnotationHandle>`.
 
-- [ ] **Step 3: Write `ffi/selection.rs`**
+- [x] **Step 3: Write `ffi/selection.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2171,7 +2171,7 @@ impl AnnotationSelectionHandle {
 
 Check two signatures before running: `rg -n 'pub fn update_selection|pub fn update_selection_flags' -A4 crates/plugins/annotation/src/write/selection.rs`. They take a patch and return `Promise<BatchResult<AnnotationRef>>`. If either returns `Promise<()>`, change that method's return type to `()` and its map to `|()| ()`. Same for `rg -n 'pub struct PropSpec' -A8 crates/plugins/annotation-core/src/kinds.rs`: the code assumes a `key: PropKey` field.
 
-- [ ] **Step 4: Write `ffi/tools.rs`**
+- [x] **Step 4: Write `ffi/tools.rs`**
 
 ```rust
 use epdf_ffi::{AnnotationFlagsPatch, AnnotationPropKey, AnnotationProps, AnnotationPropsPatch, KernelBound, ViewerError};
@@ -2261,7 +2261,7 @@ impl AnnotationToolsHandle {
 
 The fields of `PropSpec` (`crates/plugins/annotation-core/src/kinds.rs:16`) decide `AnnotationPropSpec`'s. Read the struct and mirror every field it has whose type UniFFI can carry, renaming nothing; drop only a `Value` field, and say so in the record's doc.
 
-- [ ] **Step 5: Add the accessors to `AnnotationHandle`**
+- [x] **Step 5: Add the accessors to `AnnotationHandle`**
 
 In `ffi/handle.rs`, inside `#[uniffi::export] impl AnnotationHandle`:
 
@@ -2277,12 +2277,12 @@ In `ffi/handle.rs`, inside `#[uniffi::export] impl AnnotationHandle`:
 
 `KernelBound` is `Clone` (umbrella Task 0c): clones share one slab entry, freed when the last one drops.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 12 passed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/annotation
@@ -2305,7 +2305,7 @@ git commit -m "Export the annotation selection and tools handles"
 
 Members: drafts handle `creation_draft` (`getCreationDraft`), `has_creation_draft`, `finish_creation_draft`, `finish_ink_draft`, `cancel_creation_draft`, `cancel`, `set_contents`, `begin_text_edit`, `begin_text_edit_at`, `end_text_edit`, `editing_ref` (`getEditingRef`), `editing_id` (`getEditingId`), `draft_contents`, `set_text_selection`, `create_markup`, `create_caret`, `create_replace_text`, `preview_markup`, `clear_markup_preview`, `create_from_selection`, `arm_stamp`, `disarm_stamp`, `place_stamp`, `has_armed_stamp`, `place_armed_stamp`, `request_stamp_at`, `hover_ghost_at`, `clear_ghost`, `set_placement_preview`, `clear_placement_preview`, `place_at`, `create_attachment`, `read_attachment`. Threads handle `threads` (`listThreads`), `thread` (`getThread`), `reply`, `set_text`, `set_status`, `set_marked`, `delete`, `delete_thread`, `permissions` (`getPermissions`), `link` (`links.get`), `set_link` (`links.set`), `clear_link` (`links.clear`). `setRichText` and `draftRichText` take a rich-text paragraph tree; they're left for the native editing follow-on with the other text-overlay members.
 
-- [ ] **Step 1: Read the signatures this task wraps**
+- [x] **Step 1: Read the signatures this task wraps**
 
 Run each and keep the output open while writing Step 3:
 
@@ -2318,7 +2318,7 @@ rg -n 'pub fn (create_attachment|read_attachment)' -A10 crates/plugins/annotatio
 
 The code below assumes what those signatures were on 2026-10-06. Where one differs, change only that method's argument conversion.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -2369,12 +2369,12 @@ fn an_ink_draft_has_nothing_to_finish_before_drawing() {
 
 `tooling/engine-conformance/fixtures/tiny.png` must exist. Run `ls tooling/engine-conformance/fixtures/*.png`; if there is no PNG, add a 1x1 PNG there in this step (`printf '\x89PNG\r\n\x1a\n...'` is fragile, so generate it with `python3 -c 'import zlib,struct;...'` or copy any PNG from `packages/engine/main/test/fixtures/`), and commit it with this task. `FakeEngine::calls(path)` must also exist: `rg -n 'pub fn calls' crates/plugin-conformance/src/fake_engine.rs`. If it doesn't, assert through a `respond_page` closure that pushes `args[0]` into an `Rc<RefCell<Vec<Value>>>` instead.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named drafts`.
 
-- [ ] **Step 4: Write `ffi/drafts.rs`**
+- [x] **Step 4: Write `ffi/drafts.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2700,7 +2700,7 @@ impl AnnotationDraftsHandle {
 }
 ```
 
-- [ ] **Step 5: Write `ffi/threads.rs`**
+- [x] **Step 5: Write `ffi/threads.rs`**
 
 ```rust
 use std::sync::Arc;
@@ -2927,7 +2927,7 @@ impl AnnotationThreadsHandle {
 
 `CommentThread.review.last_change` is `Option<ReviewStatus>`, and `ReviewStatus.state` is a `String` (`crates/plugins/annotation/src/comments/build.rs`). Check with `rg -n 'pub struct ReviewStatus' -A8 crates/plugins/annotation/src/comments/build.rs` before compiling.
 
-- [ ] **Step 6: Add the accessors**
+- [x] **Step 6: Add the accessors**
 
 In `ffi/handle.rs`:
 
@@ -2941,12 +2941,12 @@ In `ffi/handle.rs`:
     }
 ```
 
-- [ ] **Step 7: Run the tests**
+- [x] **Step 7: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: 15 passed.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add crates/plugins/annotation tooling/engine-conformance/fixtures
@@ -2968,7 +2968,7 @@ git commit -m "Export the annotation drafts and threads handles"
 
 The provider is called on the kernel thread and returns a kernel `Promise`. The foreign `pick` is an async Swift call that completes on Swift's executor, which the kernel's single-threaded runtime can't poll. The adapter runs it on a short-lived thread with `futures::executor::block_on` and posts the answer back with `KernelPost`. One thread per prompt is fine: a prompt is a user tapping "choose image".
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/ffi.rs`:
 
@@ -3061,12 +3061,12 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
 
 Add `async-trait = "0.1"` to `[dev-dependencies]`. UniFFI's async foreign traits are implemented in Rust tests through `#[async_trait]` (the uniffi 0.32 docs, "Async foreign traits"); check `rg -n 'async_trait' ~/.cargo/registry/src/*/uniffi_macros-0.32.0/src` shows the macro accepts it before relying on it, and if it doesn't, declare the trait method `async fn` and implement it with a plain `async fn` in the test.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: compile errors, `no method named set_file_picker`.
 
-- [ ] **Step 3: Write `ffi/picker.rs`**
+- [x] **Step 3: Write `ffi/picker.rs`**
 
 ```rust
 use std::rc::Rc;
@@ -3151,7 +3151,7 @@ pub(crate) fn provider(picker: Arc<dyn AnnotationFilePicker>, post: KernelPost) 
 
 Add `async-trait = "0.1"` to the annotation crate's `[dependencies]` under the `uniffi` feature (`async-trait = { version = "0.1", optional = true }`, and `"dep:async-trait"` in the feature list).
 
-- [ ] **Step 4: Add `set_file_picker`**
+- [x] **Step 4: Add `set_file_picker`**
 
 In `ffi/handle.rs`, inside the export block:
 
@@ -3172,12 +3172,12 @@ In `ffi/handle.rs`, inside the export block:
     }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-annotation --features uniffi --test ffi`
 Expected: all pass, including the 3 picker tests (18 in `ffi`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/annotation
@@ -3200,7 +3200,7 @@ git commit -m "Add the annotation file-picker port"
 
 The kernel spells an annotation ref `{kind, page: {kind: "objectNumber", pageObjectNumber}, annotObjectNumber}`; the host spells it `{kind, pageObjectNumber, annotObjectNumber}`. Plan 04 wrote the rewrite both ways (`flatten_refs`, `nest_refs`). Outgoing args here get every ref flattened; incoming results get every ref nested.
 
-- [ ] **Step 1: Capture the host's real shapes**
+- [x] **Step 1: Capture the host's real shapes**
 
 Add an ignored test to `crates/epdf-viewer-host/tests/translate.rs` that prints what the host sends for the fixture, then run it once:
 
@@ -3227,7 +3227,7 @@ cargo test -p epdf-viewer-host --test translate dump_annotation_shapes -- --igno
 
 Read the output and confirm three things before writing the rewrite: each annotation's `ref` is flat, each annotation has `page` as a number or lacks it, and `pages[].pageState.page` is a number or a `PageRef`. The rewrite below assumes flat refs and numeric pages. Write down any other difference from the vectors' DTO (`square()` in Task 2's test) as a comment at the top of the rewrite, and handle it there.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -3290,12 +3290,12 @@ fn list_raw_all_answers_nested_refs() {
 }
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail with code `unsupported` from `translate`.
 
-- [ ] **Step 4: Add the routes and decoders**
+- [x] **Step 4: Add the routes and decoders**
 
 In `translate.rs`, extend `Decode` beside plan 04's `Annotations`:
 
@@ -3421,12 +3421,12 @@ and add `Decode::AnnotationMutation` to the `Decode::Unit => unreachable!` neigh
 
 The event a mutation publishes goes to the plugin's document-event subscription (`sync/document_events.rs`), which reads `ref` and `page` the kernel's way too, so it is nested here as well.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: every test passes, the 5 new ones included.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
@@ -3448,7 +3448,7 @@ git commit -m "Map the annotation engine paths onto the native host"
 - Consumes: `epdf_plugin_annotation::ffi::{AnnotationHandle, AnnotationConfig}`, plan 01's `ViewerConfig.interaction: bool`.
 - Produces: `ViewerConfig.annotation: Option<AnnotationConfig>`; `ViewerHost::annotation(document_id: String) -> Result<Arc<AnnotationHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -3528,12 +3528,12 @@ fn without_its_config_the_annotation_plugin_is_not_installed() {
 
 Plan 03 owns `a_plugin_without_its_requirement_fails_to_build` (umbrella Review Focus 2). If it already exists in the file under that name, rename this one `annotation_without_interaction_fails_to_build`.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field annotation on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`, alphabetically in `[dependencies]`:
 
@@ -3573,7 +3573,7 @@ epdf-plugin-annotation = { path = "../plugins/annotation", default-features = fa
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. If `the_annotation_plugin_hydrates_through_the_native_engine` reports `invalid-state`, a field Task 6's dump showed differs from the kernel's DTO and the rewrite missed it. Go back to Task 6 Step 1's output and add that field to `nest_refs`.
@@ -3581,7 +3581,7 @@ Expected: all pass. If `the_annotation_plugin_hydrates_through_the_native_engine
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -3601,12 +3601,12 @@ git commit -m "Install the annotation plugin in the viewer host"
 - Consumes: the generated `AnnotationHandle`, sub-handles, records and `AnnotationEventListener` in `EmbedPDFBindings`; `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`, `StreamRegistry` in `EmbedPDF`.
 - Produces: `AnnotationCapability`, `AnnotationSelectionCapability`, `AnnotationToolsCapability`, `AnnotationDraftsCapability`, `AnnotationThreadsCapability`, `PDFViewer.annotations(for:)`, `AnnotationCapability.setFilePicker(_:)` taking a Swift `AnnotationFilePicker`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: it finishes, and `rg -n 'class AnnotationHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds the generated class.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/AnnotationTests.swift`:
 
@@ -3730,12 +3730,12 @@ extension BaseSuite {
 
 `createCancelsWhenTheTaskIsCancelled` accepts both counts on purpose. A cancel that lands after the engine write was sent can't recall it (`MetadataHandle.update`'s doc says the same), so the test pins only that the call returns and the capability still answers. The Rust test in Task 2 pins the deterministic before-it-runs case.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/AnnotationTests)`
 Expected: build failure, `value of type PDFViewer has no member annotations`.
 
-- [ ] **Step 4: Write `Annotation.swift`**
+- [x] **Step 4: Write `Annotation.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -4256,7 +4256,7 @@ extension PDFViewer {
 
 UniFFI renames `annotation_ref` to `annotationRef` and `tool_id` to `toolId` in the generated Swift. If the compiler reports a different label for any call, use the generated one; the generated file is the source of truth.
 
-- [ ] **Step 5: Add the fixtures and run the tests**
+- [x] **Step 5: Add the fixtures and run the tests**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -4293,12 +4293,12 @@ If plan 03 (selection) has merged into `research/swift-plugins`, add the cross-p
 
 Use plan 03's real method name for selecting a page (`rg -n 'func selectPage\|func select' platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift`).
 
-- [ ] **Step 6: Run the whole Swift suite**
+- [x] **Step 6: Run the whole Swift suite**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple/build-xcframework.sh platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests
@@ -4314,7 +4314,7 @@ git commit -m "Add EmbedPDF's AnnotationCapability"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md` (Appendix A §A.3, the annotation entry)
 
-- [ ] **Step 1: CI and README**
+- [x] **Step 1: CI and README**
 
 Append `annotation` to the `crates=( … )` list in `plugin-rust.yml`'s "Test the uniffi exports" step, after plan 01's `interaction`. Add a row to the README's plugin table:
 
@@ -4324,7 +4324,7 @@ Append `annotation` to the `crates=( … )` list in `plugin-rust.yml`'s "Test th
 
 In the spec's §A.3, change `**annotation** (D, requires …)` to begin `**annotation** (D), delivered by 05-annotation.md, requires …`.
 
-- [ ] **Step 2: Record the binary size**
+- [x] **Step 2: Record the binary size**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -4333,7 +4333,7 @@ ls -l ../swift-plugins-integration/target/aarch64-apple-ios-sim/release/libepdf_
 
 The first is this plan's archive, the second the integration branch's last build. Put both sizes in the commit message below.
 
-- [ ] **Step 3: Run the definition of done**
+- [x] **Step 3: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-annotation --features uniffi
@@ -4348,7 +4348,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md
