@@ -9,4 +9,9 @@ enum Fixture {
     let url = try #require(Bundle.module.url(forResource: name, withExtension: "pdf", subdirectory: "Fixtures"))
     return try Data(contentsOf: url)
   }
+
+  static func text(_ name: String, ext: String) throws -> String {
+    let url = try #require(Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "Fixtures"))
+    return try String(contentsOf: url, encoding: .utf8)
+  }
 }

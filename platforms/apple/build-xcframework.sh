@@ -146,6 +146,11 @@ FIXTURES=(
   tooling/engine-conformance/fixtures/tiny.png
   tooling/engine-conformance/fixtures/form_fields.pdf
   tooling/engine-conformance/fixtures/document_actions.pdf
+  packages/engine/main/test/fixtures/signed_two_approvals.pdf
+  packages/engine/main/test/fixtures/signed_certified.pdf
+  packages/engine/main/test/fixtures/unsigned_sigfield.pdf
+  packages/engine/main/test/fixtures/signature_artwork.pdf
+  packages/engine/main/test/fixtures/signature-compat/keys/TEST-ONLY-*.pem
 )
 for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"

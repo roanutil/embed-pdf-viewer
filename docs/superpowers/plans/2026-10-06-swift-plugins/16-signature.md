@@ -2248,7 +2248,7 @@ git commit -m "Add signature to ViewerHost with host-level signer and trust slot
 
 On iOS there's no API that lists the system's trust anchors (`SecTrustCopyAnchorCertificates` is macOS-only), and `epdf-signature-core` validates paths itself against the anchors it's given (`trust.rs:26-28`). So the Swift trust port is `TrustAnchors`, a list of DER certificates the app bundles (its organisation's CA, say). Validating against the system store through `SecTrustEvaluateWithError` would need a different port shape in `epdf-signature-core` (evaluate a chain rather than list anchors); this plan doesn't change the core, and says so in the README row.
 
-- [ ] **Step 1: Add the fixtures**
+- [x] **Step 1: Add the fixtures**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2264,7 +2264,7 @@ The copy loop leaves entries unquoted, so the glob expands.
 
 Add `static func text(_ name: String, ext: String) throws -> String` to `Fixture` in `BaseSuite.swift` for the PEMs.
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/KeychainSignerTests.swift
@@ -2466,12 +2466,12 @@ struct CancellingSigner: SignatureSigner {
 
 Every other `CancelToken` member (`refresh`, `validateField`, `analyzeChanges`, `readRevision`, `sign`, `prepareSignature`, `completeSignature`, `abortPending`, `fill`, `clearField`, `place`) gets its own `<member>CancelsWhenTheTaskIsCancelled` in the same shape; write each as you write the member in Step 4. `PDFViewer.hasStampPlugin` is `true` when `Stamp.swift` is compiled in; define it in `Stamp.swift` if plan 09 has merged and as `false` here otherwise. In `ViewerTests.swift`, the test that expected a locked open to throw now expects `.locked`, matching Task 2's Rust change.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/SignatureTests -only-testing:EmbedPDFTests/BaseSuite/SecurityTests -only-testing:EmbedPDFTests/BaseSuite/KeychainSignerTests)`
 Expected: FAIL to compile.
 
-- [ ] **Step 4: Write `KeychainSigner.swift`**
+- [x] **Step 4: Write `KeychainSigner.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2620,7 +2620,7 @@ public struct TrustAnchors: SignatureTrust, Sendable {
 
 `DERReader` is a small `struct` over `[UInt8]` with `take(tag:)` as in `rawECDSA` and `privateKeyInfoOctets()`; write it in the same file and have `rawECDSA` use it too. `SecTrustCopyCertificateChain` is iOS 15+, under the package's iOS 17 floor.
 
-- [ ] **Step 5: Write `Signature.swift` and the viewer methods**
+- [x] **Step 5: Write `Signature.swift` and the viewer methods**
 
 Typealiases for every record and enum Task 7 and 8 produced (same pattern as `Metadata.swift`), then:
 
@@ -2733,12 +2733,12 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 6: Run the Swift tests**
+- [x] **Step 6: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple

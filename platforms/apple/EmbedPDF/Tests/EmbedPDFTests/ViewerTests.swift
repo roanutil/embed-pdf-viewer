@@ -19,21 +19,18 @@ extension BaseSuite {
       expectNoDifference(pages.count, 14)
     }
 
-    @Test func aLockedDocumentReportsThatItNeedsAPassword() async throws {
+    @Test func aLockedDocumentOpensAsALockedTab() async throws {
       let viewer = try await started()
-      await #expect {
-        _ = try await viewer.open(Fixture.data("encrypted-hello"))
-      } throws: { error in
-        (error as? PDFError)?.detail.contains("DocPasswordRequired") == true
-      }
+      let document = try await viewer.open(Fixture.data("encrypted-hello"))
+      expectNoDifference(document.status, .locked)
     }
 
     @Test func aFailedOpenListsItsTabAsFailed() async throws {
       let viewer = try await started()
-      _ = try? await viewer.open(Fixture.data("encrypted-hello"))
+      _ = try? await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
       let documents = try await viewer.documents()
       expectNoDifference(documents.map(\.status), [DocumentStatus.failed])
-      expectNoDifference(documents.first?.error?.code, "permission-denied")
+      expectNoDifference(documents.first?.error?.message.hasPrefix("DocPasswordIncorrect"), true)
     }
 
     @Test func openingAndClosingAreObserved() async throws {
