@@ -3,7 +3,7 @@
 Generated from `src/operations.ts`. Do not edit by hand; run
 `pnpm --filter @embedpdf/tooling-engine-conformance run operations`.
 
-Every one of the 65 `WorkerRequest` kinds, the port group that owns it,
+Every one of the 84 `WorkerRequest` kinds, the port group that owns it,
 the ownership stage it moves under, the phase that moves it, and the
 cancellation case it has to document. Group assignments come from
 `multiplatform-port-order.md` Section 3; cancellation cases from
@@ -26,7 +26,7 @@ cancellation case it has to document. Group assignments come from
 | `document.probeSecurityFile` | A | 1 | queued-only | ported |  |
 | `close` | control | 1 | control | routed | Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents. |
 | `layer.close` | control | 1 | control | routed |  |
-| `abort` | control | 1 | control | routed | Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds. |
+| `abort` | control | 1 | control | routed | Handled before the WorkerHost switch (WorkerHost.ts:282), which is why that switch has 83 arms and the protocol has 84 kinds. |
 | `shutdown` | control | 1 | control | routed |  |
 
 ## G4
@@ -38,6 +38,8 @@ cancellation case it has to document. Group assignments come from
 | `fonts.addFallback` | A | 1 | queued-only | routed |  |
 | `fonts.clearFallbacks` | A | 1 | queued-only | routed |  |
 | `fonts.clear` | A | 1 | queued-only | routed |  |
+| `fonts.authorizeEditing` | A | 1 | queued-only | routed |  |
+| `document.setFontSettings` | A | 1 | queued-only | routed | Per-document session state on the handle (EPDFDoc_SetFontEmbeddingPolicy, EPDFDoc_SetTypographicFeatures), never written to the file. Filed with the fonts it configures. |
 
 ## G5
 
@@ -53,6 +55,7 @@ cancellation case it has to document. Group assignments come from
 | `metadata.read` | A | 2 | cooperative | ported |  |
 | `pages.list` | A | 2 | cooperative | ported | Page identity must agree between lazy per-page lookup and full enumeration (DocumentSession.ts:41-44). |
 | `actions.read` | A | 2 | cooperative | ported |  |
+| `measure.viewports` | A | 2 | cooperative | routed |  |
 
 ## G7
 
@@ -74,12 +77,19 @@ cancellation case it has to document. Group assignments come from
 | `pieceInfo.applications` | A | 2 | cooperative | ported |  |
 | `forms.list` | A | 2 | cooperative | ported | Filed by behaviour: a read despite the forms. prefix. |
 | `forms.export` | A | 2 | cooperative | routed |  |
+| `signatures.list` | A | 2 | queued-only | routed | The signature handlers take no AbortSignal (WorkerHost.ts), so no throwIfAborted reaches them. |
+| `signatures.contents` | A | 2 | queued-only | routed |  |
+| `signatures.digest` | A | 2 | queued-only | routed |  |
+| `signatures.revisionBytes` | A | 2 | queued-only | routed |  |
+| `signatures.analyze` | A | 2 | queued-only | routed |  |
+| `document.version` | A | 2 | queued-only | routed | SignatureReader.version: the hash and length of the base the session is on. |
 
 ## G9
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
 | `pages.extract` | A | 2 | cooperative | ported | Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing". |
+| `annotations.exportAppearance` | A | 2 | non-preemptible | ported | A read that builds a scratch single-page document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning, like pages.extract. Gated by vectors/pages/mutate.json. |
 
 ## G10
 
@@ -112,6 +122,10 @@ cancellation case it has to document. Group assignments come from
 | `forms.deleteField` | C | 4 | after-first-write | ported |  |
 | `forms.attachWidget` | C | 4 | after-first-write | ported |  |
 | `forms.detachWidget` | C | 4 | after-first-write | ported |  |
+| `forms.setSignatureAppearance` | C | 4 | after-first-write | routed |  |
+| `signatures.prepare` | C | 4 | queued-only | routed | Never touches the live document: the candidate is parked on the session until complete or abort. |
+| `signatures.complete` | C | 4 | queued-only | routed | Installs the sealed bytes as the session document; the install advances the mutation sequence itself. |
+| `signatures.abort` | C | 4 | queued-only | routed |  |
 
 ## G13
 
@@ -122,7 +136,10 @@ cancellation case it has to document. Group assignments come from
 | `pages.delete` | C | 4 | after-first-write | ported |  |
 | `pages.insertBlank` | C | 4 | after-first-write | routed |  |
 | `pages.insert` | C | 4 | after-first-write | routed | Source retention lives on one owner (PagesInserter.ts:77, session.retainUntilClose). A source document handle never crosses owners. |
+| `pages.setName` | C | 4 | after-first-write | routed |  |
+| `pages.removeName` | C | 4 | after-first-write | routed |  |
 | `pages.flatten` | C | 4 | after-first-write | ported |  |
+| `annotations.flatten` | C | 4 | after-first-write | ported | pages.flatten for a chosen set of one page's annotations. Gated by vectors/pages/mutate.json. |
 | `redaction.apply` | C | 4 | after-first-write | ported |  |
 
 ## G14
@@ -132,6 +149,7 @@ cancellation case it has to document. Group assignments come from
 | `metadata.update` | C | 4 | after-first-write | ported | MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep \| Clear \| Set(T). Operation parity lands here. |
 | `pieceInfo.update` | C | 4 | after-first-write | ported |  |
 | `pieceInfo.clear` | C | 4 | after-first-write | ported |  |
+| `measure.setScale` | C | 4 | after-first-write | routed |  |
 | `attachments.create` | C | 4 | after-first-write | ported |  |
 | `attachments.delete` | C | 4 | after-first-write | ported |  |
 
@@ -143,3 +161,4 @@ cancellation case it has to document. Group assignments come from
 | `annotations.renderAppearancesEncoded` | C | 5 | non-preemptible | routed |  |
 | `document.renderPageFile` | C | 5 | non-preemptible | routed |  |
 | `document.renderPageFileEncoded` | C | 5 | non-preemptible | routed |  |
+| `signatures.finalizeCandidate` | C | 5 | queued-only | routed | Session-less, like document.renderPageFile: patches the caller's candidate file in place and reads it back through a document that is never a session. |

@@ -27,7 +27,7 @@ const RENDERED = resolve(packageRoot, 'OPERATIONS.md');
  * are quoted in both documents, and a silent drift between the documents and
  * the code is exactly what this file exists to catch.
  */
-const EXPECTED_TOTAL = 65;
+const EXPECTED_TOTAL = 84;
 const EXPECTED_CONTROL = 4;
 
 function report(problems: string[]): never | void {

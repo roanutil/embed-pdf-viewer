@@ -569,16 +569,16 @@ flowchart TB
 
 ## 6. Operation coverage check
 
-The `WorkerRequest` union (`worker-protocol.ts:866`) has 63 members.
+The `WorkerRequest` union (`worker-protocol.ts:1102`) has 82 members.
 `OpenWorkerRequest` is a union alias expanding to three `open.*` kinds, so there
-are 65 distinct request kinds. Four are control frames (`abort`, `close`,
-`layer.close`, `shutdown`), all in G3, leaving 61 non-control operations,
+are 84 distinct request kinds. Four are control frames (`abort`, `close`,
+`layer.close`, `shutdown`), all in G3, leaving 80 non-control operations,
 including engine-wide font operations. Every one appears in exactly one group
 above. G3w routes a subset of G3's kinds to a second backend and adds no row.
 
-Do not use 64: that is the `case` arm count in `WorkerHost.ts`, which is 65
+Do not use 83: that is the `case` arm count in `WorkerHost.ts`, which is 84
 minus `abort` because `abort` is handled before the switch
-(`WorkerHost.ts:199`).
+(`WorkerHost.ts:282`).
 
 The response/lifecycle kinds are `resolve`, `reject`, `ready` and `init-error`;
 their transport envelopes stay TypeScript-owned. `fresh`, `raw-delta`,

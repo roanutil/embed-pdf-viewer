@@ -168,7 +168,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'control',
     rustStatus: 'routed',
-    note: 'Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds.',
+    note: 'Handled before the WorkerHost switch (WorkerHost.ts:282), which is why that switch has 83 arms and the protocol has 84 kinds.',
   },
   {
     kind: 'shutdown',
@@ -223,6 +223,23 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'queued-only',
     rustStatus: 'routed',
   },
+  {
+    kind: 'fonts.authorizeEditing',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'document.setFontSettings',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'Per-document session state on the handle (EPDFDoc_SetFontEmbeddingPolicy, EPDFDoc_SetTypographicFeatures), never written to the file. Filed with the fonts it configures.',
+  },
 
   // --- G5. Text and search.
   {
@@ -269,6 +286,14 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
+  },
+  {
+    kind: 'measure.viewports',
+    group: 'G6',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'routed',
   },
 
   // --- G7. Annotation reads. Rust never creates or retains the form model;
@@ -366,6 +391,56 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'cooperative',
     rustStatus: 'routed',
   },
+  {
+    kind: 'signatures.list',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'The signature handlers take no AbortSignal (WorkerHost.ts), so no throwIfAborted reaches them.',
+  },
+  {
+    kind: 'signatures.contents',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'signatures.digest',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'signatures.revisionBytes',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'signatures.analyze',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'document.version',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'SignatureReader.version: the hash and length of the base the session is on.',
+  },
 
   // --- G9. Page extract. Rust owns a scratch document end to end and closes
   // it before returning; it never takes ownership of the session's.
@@ -377,6 +452,15 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'cooperative',
     rustStatus: 'ported',
     note: 'Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing".',
+  },
+  {
+    kind: 'annotations.exportAppearance',
+    group: 'G9',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'non-preemptible',
+    rustStatus: 'ported',
+    note: 'A read that builds a scratch single-page document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning, like pages.extract. Gated by vectors/pages/mutate.json.',
   },
 
   // --- G10. Session authority and save. Stage B.
@@ -521,6 +605,40 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'after-first-write',
     rustStatus: 'ported',
   },
+  {
+    kind: 'forms.setSignatureAppearance',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'signatures.prepare',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'Never touches the live document: the candidate is parked on the session until complete or abort.',
+  },
+  {
+    kind: 'signatures.complete',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'Installs the sealed bytes as the session document; the install advances the mutation sequence itself.',
+  },
+  {
+    kind: 'signatures.abort',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+  },
 
   // --- G13. Page assembly and redaction.
   {
@@ -566,12 +684,37 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: 'Source retention lives on one owner (PagesInserter.ts:77, session.retainUntilClose). A source document handle never crosses owners.',
   },
   {
+    kind: 'pages.setName',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'routed',
+  },
+  {
+    kind: 'pages.removeName',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'routed',
+  },
+  {
     kind: 'pages.flatten',
     group: 'G13',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+  },
+  {
+    kind: 'annotations.flatten',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'ported',
+    note: 'pages.flatten for a chosen set of one page\'s annotations. Gated by vectors/pages/mutate.json.',
   },
   {
     kind: 'redaction.apply',
@@ -607,6 +750,14 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+  },
+  {
+    kind: 'measure.setScale',
+    group: 'G14',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'routed',
   },
   {
     kind: 'attachments.create',
@@ -659,5 +810,14 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
+  },
+  {
+    kind: 'signatures.finalizeCandidate',
+    group: 'G15',
+    stage: 'C',
+    phase: 5,
+    cancellation: 'queued-only',
+    rustStatus: 'routed',
+    note: 'Session-less, like document.renderPageFile: patches the caller\'s candidate file in place and reads it back through a document that is never a session.',
   },
 ];
