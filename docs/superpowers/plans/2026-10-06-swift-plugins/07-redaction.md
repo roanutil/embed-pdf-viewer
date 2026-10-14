@@ -1299,12 +1299,12 @@ field is Option<RedactionConfig>."
 - Consumes: the generated `RedactionHandle`, records and `RedactionEventListener`; `SearchQuery` (already re-exported by `Search.swift`); `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`.
 - Produces: `RedactionCapability`, `PDFViewer.redaction(for:)`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: `rg -n 'class RedactionHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds it.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift`:
 
@@ -1422,12 +1422,12 @@ If plan 03 (selection) has merged into `research/swift-plugins`, add:
 
 using plan 03's real select-a-page method name.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/RedactionTests)`
 Expected: build failure, `value of type PDFViewer has no member redaction`.
 
-- [ ] **Step 4: Write `Redaction.swift`**
+- [x] **Step 4: Write `Redaction.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -1562,7 +1562,7 @@ extension PDFViewer {
 
 The `ViewerConfig` memberwise initializer UniFFI generates orders arguments as the Rust struct declares its fields. The test passes `interaction:`, `search:`, `annotation:`, `redaction:` in the order the fields sit in `api.rs` after plans 01 to 07; if the compiler asks for another order, follow it.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/RedactionTests)`
 Expected: 6 tests pass (7 with the selection test).
@@ -1570,7 +1570,7 @@ Expected: 6 tests pass (7 with the selection test).
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests/RedactionTests.swift
