@@ -17,6 +17,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenFormWidgets } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -71,7 +72,7 @@ async function readCase(entry: FormCase): Promise<unknown> {
     try {
       const forms = doc.forms;
       if (!forms) throw new Error(`${entry.name}: the engine exposes no forms service`);
-      return { ...entry, snapshot: await forms.list() };
+      return { ...entry, snapshot: flattenFormWidgets(await forms.list()) };
     } finally {
       await doc.close();
     }

@@ -41,6 +41,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenFormWidgets } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -267,10 +268,10 @@ async function runCase(entry: EffectsCase): Promise<unknown> {
           index: item.index,
           status: item.status,
           fields: item.fields.map((dto) => field(dto as never)),
-          changedWidgets: item.changedWidgets,
+          changedWidgets: flattenFormWidgets(item.changedWidgets),
           ...(item.error ? { errorCode: String(item.error.code ?? 'unknown') } : {}),
         })),
-        changedWidgets: result.changedWidgets,
+        changedWidgets: flattenFormWidgets(result.changedWidgets),
         // Only whether there is one. Its contents are a cloud concern and
         // empty on a local engine.
         wrote: result.meta !== null,

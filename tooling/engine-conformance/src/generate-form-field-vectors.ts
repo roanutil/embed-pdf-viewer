@@ -19,6 +19,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenFormWidgets, pageRef } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -290,6 +291,27 @@ const CASES: readonly FieldCase[] = [
   },
 ];
 
+/** A recorded widget placement, which names its page by object number, as the API's `page`. */
+function placementIn(placement: Record<string, unknown>): Record<string, unknown> {
+  const { pageObjectNumber, ...rest } = placement;
+  return { ...rest, page: pageRef(pageObjectNumber as number) };
+}
+
+/** A recorded draft with its widget placements converted for the public API. */
+function draftIn(draft: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...draft };
+  if (draft.widget) out.widget = placementIn(draft.widget as Record<string, unknown>);
+  if (draft.widgets) {
+    out.widgets = (draft.widgets as Record<string, unknown>[]).map(placementIn);
+  }
+  return out;
+}
+
+/** The widget a case names, as the `AnnotationRef` attach and detach take. */
+function widgetRefIn(annotObjectNumber: number) {
+  return { kind: 'objectNumber' as const, page: pageRef(PAGE), annotObjectNumber };
+}
+
 async function readCase(entry: FieldCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
   const engine = createLocalEngine({
@@ -308,7 +330,9 @@ async function readCase(entry: FieldCase): Promise<unknown> {
     );
     try {
       const run = async () => {
-        if (entry.draft) return { field: (await doc.forms.createField(entry.draft as never)).field };
+        if (entry.draft) {
+          return { field: (await doc.forms.createField(draftIn(entry.draft) as never)).field };
+        }
         if (entry.patchOf) {
           return {
             field: (await doc.forms.updateField(entry.patchOf as never, entry.patch as never))
@@ -328,10 +352,10 @@ async function readCase(entry: FieldCase): Promise<unknown> {
         if (entry.detachFrom) {
           return {
             field: (
-              await doc.forms.detachWidget(entry.detachFrom as never, {
-                annotObjectNumber: entry.widgetObjectNumber!,
-                pageObjectNumber: PAGE,
-              } as never)
+              await doc.forms.detachWidget(
+                entry.detachFrom as never,
+                widgetRefIn(entry.widgetObjectNumber!),
+              )
             ).field,
           };
         }
@@ -339,7 +363,7 @@ async function readCase(entry: FieldCase): Promise<unknown> {
           field: (
             await doc.forms.attachWidget(
               entry.attachTo as never,
-              { annotObjectNumber: entry.widgetObjectNumber!, pageObjectNumber: PAGE } as never,
+              widgetRefIn(entry.widgetObjectNumber!),
               entry.onState,
             )
           ).field,
@@ -356,7 +380,7 @@ async function readCase(entry: FieldCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      return { ...entry, result: await run() };
+      return { ...entry, result: flattenFormWidgets(await run()) };
     } finally {
       await doc.close();
     }

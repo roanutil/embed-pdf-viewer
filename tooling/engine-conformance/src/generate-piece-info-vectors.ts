@@ -71,7 +71,7 @@ async function readCase(entry: PieceInfoCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
+      const page = doc.page(first.ref);
 
       const catalog = doc.pieceInfo;
       const pageInfo = page.pieceInfo;
@@ -91,7 +91,7 @@ async function readCase(entry: PieceInfoCase): Promise<unknown> {
         holders[label] = { applications: await service.applications(), snapshots };
       }
 
-      return { ...entry, pageObjectNumber: first.pageObjectNumber, holders };
+      return { ...entry, pageObjectNumber: first.ref.pageObjectNumber, holders };
     } finally {
       await doc.close();
     }
