@@ -145,6 +145,7 @@ FIXTURES=(
   tooling/engine-conformance/fixtures/annotation_kinds.pdf
   tooling/engine-conformance/fixtures/tiny.png
   tooling/engine-conformance/fixtures/document_actions.pdf
+  crates/test-support/fixtures/measure-foreign-viewport.pdf
 )
 for tests in "${TEST_TARGETS[@]}"; do
   mkdir -p "$OUT/Tests/$tests/Fixtures"

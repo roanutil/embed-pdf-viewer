@@ -2281,7 +2281,7 @@ git commit -m "Map page.measure and add measurement to ViewerHost"
 - Consumes: Task 4's generated `MeasurementHandle`, `ViewerHost.measurement(documentId:)`; plan 05's `PDFViewer.annotations(for:)` and `AnnotationCapability` for the round-trip test.
 - Produces: `MeasurementCapability`, `PDFViewer.measurement(for:)`.
 
-- [ ] **Step 1: Add the fixture to the build script**
+- [x] **Step 1: Add the fixture to the build script**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2289,7 +2289,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   packages/engine/main/test/fixtures/measure-acrobat-metric.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/MeasurementTests.swift
@@ -2435,12 +2435,12 @@ extension BaseSuite {
 
 The cancellation tests accept either outcome (a cancel can land after the call settled), and both then make one more call so a hung kernel fails the suite's one-minute limit. The same shape is `MetadataTests.cancellingARefreshDoesNotHang`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/MeasurementTests)`
 Expected: FAIL to compile, `value of type PDFViewer has no member measurement`.
 
-- [ ] **Step 4: Write `Measurement.swift`**
+- [x] **Step 4: Write `Measurement.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2641,12 +2641,12 @@ extension PDFViewer {
 }
 ```
 
-- [ ] **Step 5: Run the Swift tests**
+- [x] **Step 5: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS, including the 11 new `MeasurementTests`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple
