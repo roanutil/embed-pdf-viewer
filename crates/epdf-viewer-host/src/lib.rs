@@ -42,6 +42,7 @@ use epdf_plugin_render::ffi::RenderHandle;
 use epdf_plugin_search::ffi::SearchHandle;
 use epdf_plugin_selection::ffi::SelectionHandle;
 use epdf_plugin_shell::ffi::ShellHandle;
+use epdf_plugin_signature::ffi::{SignatureHandle, SignatureSigner, SignatureTrust};
 use epdf_plugin_stage::ffi::StageHandle;
 use epdf_plugin_view_manager::ffi::ViewManagerHandle;
 use serde_json::{Map, Value, json};
@@ -52,7 +53,7 @@ pub use api::{
 };
 use api::{Lifecycle, decode_pages};
 use host_table::HostTable;
-use session::Session;
+use session::{Session, SignatureSlots};
 
 /// The kernel's report sink, for an adapter that calls a foreign port and
 /// has nowhere else to send its failure. It reaches `ViewerDelegate.report`.
@@ -72,6 +73,8 @@ pub struct ViewerHost {
     /// The store revision, mirrored so `state_revision` never posts a job.
     revision: Arc<AtomicU64>,
     post: KernelPost,
+    /// The signer and anchors every document's signature plugin reads.
+    signature_slots: SignatureSlots,
     /// This host's entry in the manual bridge's registry.
     #[cfg(feature = "manual-bridge")]
     token: u64,
@@ -126,17 +129,25 @@ impl ViewerHost {
     ) -> Result<Arc<Self>, ViewerError> {
         let revision = Arc::new(AtomicU64::new(0));
         let mirror = revision.clone();
+        let signature_slots = SignatureSlots::default();
+        let slots = signature_slots.clone();
         let thread =
-            KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post))?;
+            KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post, slots))?;
         let post = thread.post();
         #[cfg(not(feature = "manual-bridge"))]
-        let host = Arc::new(ViewerHost { thread: Mutex::new(Some(thread)), revision, post });
+        let host = Arc::new(ViewerHost {
+            thread: Mutex::new(Some(thread)),
+            revision,
+            post,
+            signature_slots,
+        });
         #[cfg(feature = "manual-bridge")]
         let host = Arc::new_cyclic(|weak| ViewerHost {
             token: experimental::register(weak.clone(), post.clone()),
             thread: Mutex::new(Some(thread)),
             revision,
             post,
+            signature_slots,
         });
         Ok(host)
     }
@@ -459,6 +470,34 @@ impl ViewerHost {
             Ok(ActionsHandle::new(cap, post))
         })
         .await
+    }
+
+    /// The signature capability of an open document. Needs
+    /// `ViewerConfig.signature` and `ViewerConfig.form`; without them the
+    /// kernel refuses the token.
+    pub async fn signature(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<SignatureHandle>, ViewerError> {
+        let post = self.post.clone();
+        let slot = self.signature_slots.signer.clone();
+        self.call(move |s| {
+            let cap = s.kernel.capability(&epdf_plugin_signature::SIGNATURE, Some(&document_id))?;
+            Ok(SignatureHandle::with_signer_slot(cap, post, slot))
+        })
+        .await
+    }
+
+    /// The signer every document's `sign` uses when the call names none.
+    /// Takes effect at the next signing. `None` clears it.
+    pub fn set_signature_signer(&self, signer: Option<Arc<dyn SignatureSigner>>) {
+        *self.signature_slots.signer.lock().unwrap() = signer;
+    }
+
+    /// The anchors validation trusts. `None` makes every verdict top out at
+    /// `ValidUntrusted`.
+    pub fn set_signature_trust(&self, trust: Option<Arc<dyn SignatureTrust>>) {
+        *self.signature_slots.trust.lock().unwrap() = trust;
     }
 
     pub fn state_revision(&self) -> u64 {

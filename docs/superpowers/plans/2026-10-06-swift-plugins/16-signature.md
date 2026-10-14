@@ -2055,7 +2055,7 @@ git commit -m "Export signing through uniffi with Swift signer and trust ports"
 
 A UniFFI record can't carry a foreign trait object, so the signer and trust can't sit in `ViewerConfig`. The plugin's config takes a signer thunk (`SignerSource::Thunk`, `contract.rs:39-43`) resolved per signing and a `TrustPort` called per validation, so the host passes closures that read two slots, and `set_signature_signer` / `set_signature_trust` fill them. Changing the signer then takes effect at the next signing, for every open document.
 
-- [ ] **Step 1: Write the failing host tests**
+- [x] **Step 1: Write the failing host tests**
 
 ```rust
 #[test]
@@ -2128,12 +2128,12 @@ fn create_square(annotations: &AnnotationHandle, page: PageRef) {
 ```
  `TestSigner` is the one from Task 8; move it into `tests/common/mod.rs` so both crates' tests can't drift (the plugin test keeps its own copy, since a crate's tests can't share a module with another crate's).
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host signature`
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Wire the host**
+- [x] **Step 3: Wire the host**
 
 `Cargo.toml`:
 
@@ -2224,12 +2224,12 @@ created in `new` and cloned into `Session::build`, and:
 
 with `SlotTrust` a `TrustPort` that reads the slot and answers no anchors when it's empty. Passing `signer: Some(Thunk)` always would make `get_mode()` answer `Sign` and `can_sign()` answer true with no signer set (`authority.rs:20-50`). So `can_sign` and `mode` on `SignatureHandle` check the slot too: give the handle an `Arc<Mutex<Option<..>>>` it reads (pass it to `SignatureHandle::new` from the host accessor), answering `mode = config.mode ?? (slot set ? Sign : Visual)` and `can_sign = cap.can_sign() && slot set`. Add a host test for that: `can_sign` is false until `set_signature_signer`, then true.
 
-- [ ] **Step 4: Run the host tests**
+- [x] **Step 4: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host crates/plugins/signature

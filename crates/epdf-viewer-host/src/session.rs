@@ -14,6 +14,14 @@ use crate::engine_worker::EngineWorker;
 use crate::host_table::HostTable;
 use crate::native_engine::NativeEngine;
 
+/// The signer and trust anchors a host sets, shared with the signature
+/// plugin's ports (16 signature).
+#[derive(Clone, Default)]
+pub struct SignatureSlots {
+    pub signer: epdf_plugin_signature::ffi::ports::SignatureSignerSlot,
+    pub trust: epdf_plugin_signature::ffi::ports::SignatureTrustSlot,
+}
+
 pub struct Session {
     pub kernel: Kernel,
     worker: EngineWorker,
@@ -28,6 +36,7 @@ impl Session {
         delegate: Arc<dyn ViewerDelegate>,
         revision: Arc<AtomicU64>,
         post: KernelPost,
+        signature_slots: SignatureSlots,
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
         HostTable::install_bytes_resolver();
@@ -134,6 +143,10 @@ impl Session {
                     observer.report(ViewerError::from(error.clone()));
                 })));
             plugins.push(epdf_plugin_actions::actions_plugin(config));
+        }
+        if let Some(signature) = config.signature {
+            let SignatureSlots { signer, trust } = signature_slots;
+            plugins.push(epdf_plugin_signature::ffi::host_plugin(signature, signer, trust));
         }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,

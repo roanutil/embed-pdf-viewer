@@ -49,13 +49,84 @@ fn status(s: crate::ResourceStatus) -> ResourceStatus {
 pub struct SignatureHandle {
     pub(crate) cap: KernelBound<SignatureCapability>,
     pub(crate) post: KernelPost,
+    /// The host's signer slot, when the plugin's signer is a thunk over it
+    /// (`host_plugin`): `mode` and `can_sign` then follow whether a signer
+    /// is set rather than whether one is configured.
+    signer_slot: Option<ports::SignatureSignerSlot>,
 }
 
 impl SignatureHandle {
     /// On the kernel thread.
     pub fn new(cap: SignatureCapability, post: KernelPost) -> Arc<Self> {
-        Arc::new(SignatureHandle { cap: KernelBound::new(cap, post.clone()), post })
+        Arc::new(SignatureHandle {
+            cap: KernelBound::new(cap, post.clone()),
+            post,
+            signer_slot: None,
+        })
     }
+
+    /// On the kernel thread: a handle over a plugin `host_plugin` built.
+    pub fn with_signer_slot(
+        cap: SignatureCapability,
+        post: KernelPost,
+        slot: ports::SignatureSignerSlot,
+    ) -> Arc<Self> {
+        Arc::new(SignatureHandle {
+            cap: KernelBound::new(cap, post.clone()),
+            post,
+            signer_slot: Some(slot),
+        })
+    }
+
+    fn signer_set(&self) -> Option<bool> {
+        self.signer_slot.as_ref().map(|slot| slot.lock().unwrap().is_some())
+    }
+}
+
+/// The plugin's options a host sets. The signer and the trust anchors are
+/// set on the host (`ViewerHost::set_signature_signer`, `set_signature_trust`).
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
+pub struct SignatureConfig {
+    /// `None` is `Sign` while a signer is set, else `Visual`.
+    #[uniffi(default = None)]
+    pub mode: Option<SignatureMode>,
+    /// Let the UI offer a certification. `None` is false.
+    #[uniffi(default = None)]
+    pub allow_certify: Option<bool>,
+}
+
+/// `signaturePlugin(config)` for a host: the signer is a thunk over
+/// `signer` (resolved per signing, `invalid-input` while empty) and the
+/// trust a port over `trust` (no anchors while empty).
+pub fn host_plugin(
+    config: SignatureConfig,
+    signer: ports::SignatureSignerSlot,
+    trust: ports::SignatureTrustSlot,
+) -> epdf_kernel::AnyPlugin {
+    let thunk: std::rc::Rc<dyn Fn() -> epdf_kernel::rt::Promise<epdf_signature_core::SignerPort>> =
+        std::rc::Rc::new(move || {
+            let current = signer.lock().unwrap().clone();
+            match current {
+                Some(signer) => match ports::signer_port(signer) {
+                    Ok(port) => epdf_kernel::rt::Promise::resolved(port),
+                    Err(error) => epdf_kernel::rt::Promise::rejected(error),
+                },
+                None => epdf_kernel::rt::Promise::rejected(plugin_error(
+                    code::INVALID_INPUT,
+                    "signature",
+                    "no signer: set one on the viewer first",
+                    None,
+                    None,
+                )),
+            }
+        });
+    crate::signature_plugin(crate::SignatureConfig {
+        mode: config.mode.map(Into::into),
+        signer: Some(crate::SignerSource::Thunk(thunk)),
+        trust: Some(std::rc::Rc::new(ports::SlotTrust(trust))),
+        allow_certify: config.allow_certify,
+        host: Default::default(),
+    })
 }
 
 #[uniffi::export]
@@ -157,7 +228,17 @@ impl SignatureHandle {
 
     /// What placing a mark on a field does.
     pub async fn mode(&self) -> Result<SignatureMode, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_mode().into())).await
+        let signer_set = self.signer_set();
+        self.cap
+            .call(move |c| {
+                let cap = open(c)?;
+                Ok(match (cap.config().mode, signer_set) {
+                    (None, Some(true)) => SignatureMode::Sign,
+                    (None, Some(false)) => SignatureMode::Visual,
+                    _ => cap.get_mode().into(),
+                })
+            })
+            .await
     }
 
     /// The field the next picked mark goes to.
@@ -388,7 +469,8 @@ impl SignatureHandle {
 
     /// `doc.sign` is granted and a signer is configured.
     pub async fn can_sign(&self) -> Result<bool, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.can_sign())).await
+        let signer_set = self.signer_set();
+        self.cap.call(move |c| Ok(open(c)?.can_sign() && signer_set != Some(false))).await
     }
 
     /// `doc.forms.fill` is granted and the engine draws into signature fields.

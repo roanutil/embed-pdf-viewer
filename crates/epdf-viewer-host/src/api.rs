@@ -97,6 +97,12 @@ pub struct ViewerConfig {
     /// per document.
     #[uniffi(default = None)]
     pub actions: Option<ActionsConfig>,
+    /// Install `signaturePlugin(config)`: signature fields, validation and
+    /// signing. Needs `form` (and so `interaction`). The signer and the
+    /// trust anchors are set with `ViewerHost::set_signature_signer` and
+    /// `set_signature_trust`.
+    #[uniffi(default = None)]
+    pub signature: Option<epdf_plugin_signature::ffi::SignatureConfig>,
 }
 
 #[derive(Debug, uniffi::Record)]
