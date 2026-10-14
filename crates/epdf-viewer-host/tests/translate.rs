@@ -958,3 +958,15 @@ fn a_field_edit_answers_its_field_under_field_as_the_kernel_reads_it() {
         assert!(event.get("name").is_none(), "{path}");
     }
 }
+
+#[test]
+fn an_effects_batch_publishes_effects_applied() {
+    // The host finishes applyEffects as `form.valueChanged`; the TypeScript
+    // engine publishes `form.effectsApplied`, which carries no `field`.
+    let call = translate("d1", "forms.applyEffects", None, &[json!([])], 31).unwrap();
+    let json = r#"{"result":{"result":{"results":[],"changedWidgets":[]},"mutationSequence":4,"event":{"type":"form.valueChanged","origin":{"kind":"local"},"results":[],"changedWidgets":[]}}}"#;
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    let event = decoded.event.unwrap();
+    assert_eq!(event["type"], "form.effectsApplied");
+    assert_eq!(event["changedWidgets"], json!([]));
+}

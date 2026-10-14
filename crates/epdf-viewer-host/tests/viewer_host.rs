@@ -1085,6 +1085,33 @@ fn a_checkbox_is_checked_by_its_on_state() {
 }
 
 #[test]
+fn a_reset_restores_the_default_through_the_native_engine() {
+    let reports = Arc::new(Reports::default());
+    let config = ViewerConfig {
+        interaction: true,
+        form: Some(FormConfig { validation: Some(FormValidation::None) }),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, reports.clone()).unwrap();
+    block_on(host.start()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let text = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .unwrap();
+    block_on(form.set_text(text.field_ref.clone(), "Changed".into(), CancelToken::new())).unwrap();
+    // `reset` takes `forms.applyEffects` when the host has it.
+    block_on(form.reset(text.field_ref.clone(), CancelToken::new())).unwrap();
+    let read = block_on(form.field(text.field_ref)).unwrap().unwrap();
+    let FormFieldDetail::Text { value, default_value, .. } = read.detail else { unreachable!() };
+    assert_eq!(value, default_value);
+    assert_eq!(*reports.0.lock().unwrap(), Vec::<String>::new());
+}
+
+#[test]
 fn an_fdf_export_imports_back() {
     let host = with_form();
     let bytes = test_support::fixture(FORM);

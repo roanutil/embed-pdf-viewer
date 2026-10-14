@@ -75,6 +75,10 @@ pub enum Decode {
     /// `forms.applyEffects` batch that wrote nothing answers a bare result
     /// with no `mutationSequence`; that answers itself with no event.
     FormMutation,
+    /// `forms.applyEffects`: `FormMutation`, with the event the host
+    /// publishes as `form.valueChanged` renamed `form.effectsApplied`, as
+    /// the TypeScript engine publishes it. The batch result has no `field`.
+    FormEffects,
     /// A field edit (`createField`, `updateField`, a widget link):
     /// `FormMutation`, with the bare field the host answers put under
     /// `field` in the result and in the event, where the host spreads it
@@ -179,7 +183,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.list" => ("forms.list", Decode::Forms),
         "forms.setValue" => ("forms.setValue", Decode::FormMutation),
         "forms.reset" => ("forms.reset", Decode::FormMutation),
-        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
+        "forms.applyEffects" => ("forms.applyEffects", Decode::FormEffects),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::FormMutation),
         "forms.repair" => ("forms.repair", Decode::FormMutation),
@@ -758,7 +762,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             nest_refs(&mut value);
             value
         }
-        Decode::FormMutation => {
+        Decode::FormMutation | Decode::FormEffects => {
             if !result.contains_key("mutationSequence") {
                 let mut value = Value::Object(result);
                 nest_widgets(&mut value);
@@ -772,6 +776,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             if let Some(event) = event.as_mut() {
                 nest_widgets(event);
                 nest_refs(event);
+                if let (Decode::FormEffects, Value::Object(map)) = (decode, event) {
+                    map.insert("type".into(), "form.effectsApplied".into());
+                }
             }
             return Ok(Decoded { value, event });
         }
