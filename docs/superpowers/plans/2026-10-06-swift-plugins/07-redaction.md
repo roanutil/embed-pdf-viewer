@@ -1159,7 +1159,7 @@ git commit -m "Map redaction.apply onto the native host"
 
 The umbrella's cross-plan table lists `redaction: bool`. This plan uses `Option<RedactionConfig>` because the overlay fill colour and label font are the only things a native app sets, and a `bool` can't carry them. Change the umbrella's row in this task's commit, as the umbrella allows.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -1220,12 +1220,12 @@ fn without_its_config_the_redaction_plugin_is_not_installed() {
 
 `SearchHit.page` and `find_all`'s signature come from `crates/plugins/search/src/ffi.rs`; check with `rg -n 'pub async fn find_all' -A6 crates/plugins/search/src/ffi.rs` and adjust the argument list to it.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field redaction on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`:
 
@@ -1268,7 +1268,7 @@ epdf-plugin-redaction = { path = "../plugins/redaction", default-features = fals
 
 In `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`, change row 07's `ViewerConfig` field from `redaction: bool` to `redaction: Option<RedactionConfig>`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. If `applying_a_page_removes_its_marked_text` still finds the text, the engine applied nothing: check `result.results[0].status` first (an `Unchanged` means the marks never reached the page, so look at the `page.annotations.create` translation), then check that `find_all` doesn't serve a cached text layer (the search plugin re-reads on the `redaction.applied` event; if it doesn't, `search.refresh` before the second `find_all` and say so in the test).
@@ -1276,7 +1276,7 @@ Expected: all pass. If `applying_a_page_removes_its_marked_text` still finds the
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md

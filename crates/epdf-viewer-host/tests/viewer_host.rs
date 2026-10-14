@@ -1014,6 +1014,64 @@ fn a_reply_lands_through_the_native_engine() {
     assert_eq!(read.contents.as_deref(), Some("Agreed"));
 }
 
+use epdf_plugin_redaction::ffi::{RedactionConfig, RedactionPageStatus};
+
+fn with_redaction() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        annotation: Some(AnnotationConfig::default()),
+        search: Some(SearchConfig::default()),
+        redaction: Some(RedactionConfig::default()),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn a_native_viewer_can_apply() {
+    let host = with_redaction();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let redaction = block_on(host.redaction(doc.id)).unwrap();
+    assert!(block_on(redaction.can_apply()).unwrap());
+    assert!(block_on(redaction.can_mark()).unwrap());
+}
+
+#[test]
+fn applying_a_page_removes_its_marked_text() {
+    let host = with_redaction();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let search = block_on(host.search(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id.clone())).unwrap();
+    let redaction = block_on(host.redaction(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let query = || SearchQuery { text: "Report".into(), ..Default::default() };
+    let before = block_on(search.find_all(query(), None, CancelToken::new())).unwrap();
+    assert!(!before.is_empty(), "report.pdf contains \"Report\"");
+    let page = before[0].page;
+    let marks =
+        block_on(redaction.mark_matches(query(), Some(vec![page]), CancelToken::new())).unwrap();
+    assert!(!marks.is_empty());
+    assert_eq!(block_on(redaction.pending(Some(page))).unwrap().len(), marks.len());
+    let result = block_on(redaction.apply_pages(vec![page], CancelToken::new())).unwrap();
+    assert_eq!(result.results[0].page, page);
+    assert_eq!(result.results[0].status, RedactionPageStatus::Applied);
+    let after = block_on(search.find_all(query(), None, CancelToken::new())).unwrap();
+    assert!(after.iter().all(|hit| hit.page != page), "{after:?}");
+    assert!(block_on(redaction.pending(Some(page))).unwrap().is_empty());
+}
+
+#[test]
+fn without_its_config_the_redaction_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.redaction(doc.id)).is_err());
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

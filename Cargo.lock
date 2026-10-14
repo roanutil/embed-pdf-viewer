@@ -861,6 +861,7 @@ dependencies = [
  "epdf-plugin-link",
  "epdf-plugin-metadata",
  "epdf-plugin-page-edit",
+ "epdf-plugin-redaction",
  "epdf-plugin-render",
  "epdf-plugin-search",
  "epdf-plugin-selection",
