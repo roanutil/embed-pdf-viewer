@@ -314,6 +314,11 @@ fn every_routed_path_is_listed() {
         "pages.extract",
         // A scope, covered by `a_pages_scope_goes_out_as_object_numbers`.
         "redaction.apply",
+        // A page and a page list, covered by
+        // `named_page_paths_go_out_as_the_host_reads_them` and
+        // `a_flatten_carries_its_pages_and_usage_and_answers_page_refs`.
+        "pages.setName",
+        "pages.flatten",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
@@ -869,4 +874,126 @@ fn an_annotations_apply_result_answers_nested_refs() {
         decoded.value["scope"]["refs"][0],
         json!({ "kind": "objectNumber", "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17 })
     );
+}
+
+// ── stamp ──────────────────────────────────────────────────────────────────
+
+#[test]
+fn piece_info_paths_carry_their_holder() {
+    assert!(maps("pieceInfo") && maps("page.pieceInfo"));
+    let doc = translate("doc-1", "pieceInfo.read", None, &[json!("EmbedPDF")], 1).unwrap();
+    assert_eq!(doc.request["kind"], json!("pieceInfo.read"));
+    assert_eq!(doc.request["application"], json!("EmbedPDF"));
+    assert!(doc.request.get("pageObjectNumber").is_none());
+    let page = translate(
+        "doc-1",
+        "page.pieceInfo.update",
+        Some(4),
+        &[json!("EmbedPDF"), json!({ "set": {} })],
+        2,
+    )
+    .unwrap();
+    assert_eq!(page.request["kind"], json!("pieceInfo.update"));
+    assert_eq!(page.request["pageObjectNumber"], json!(4));
+    assert_eq!(page.request["patch"], json!({ "set": {} }));
+}
+
+#[test]
+fn named_page_paths_go_out_as_the_host_reads_them() {
+    assert!(maps("pages.setName") && maps("pages.removeName"));
+    let set = translate(
+        "doc-1",
+        "pages.setName",
+        None,
+        &[json!({ "name": "a=A", "page": page_ref(3), "replace": "a=Z" })],
+        1,
+    )
+    .unwrap();
+    assert_eq!(set.request["kind"], json!("pages.setName"));
+    assert_eq!(set.request["name"], json!("a=A"));
+    assert_eq!(set.request["pageObjectNumber"], json!(3));
+    assert_eq!(set.request["replace"], json!("a=Z"));
+    let remove =
+        translate("doc-1", "pages.removeName", None, &[json!({ "name": "a=A" })], 2).unwrap();
+    assert_eq!(remove.request["name"], json!("a=A"));
+    let pageless = translate("doc-1", "pages.setName", None, &[json!({ "name": "a=A" })], 3);
+    assert_eq!(pageless.err().unwrap().code(), Some("invalid-input"));
+}
+
+#[test]
+fn a_named_page_target_arrives_as_a_page_ref() {
+    let json = r#"{"result":{"pageCount":1,"pages":[{"index":0,"pageObjectNumber":3}],"namedPages":[{"name":"a=A","target":{"kind":"page","pageObjectNumber":3}},{"name":"t","target":{"kind":"template","objectNumber":9}}]}}"#;
+    let decoded = decode(&Decode::PageList, answer(json)).unwrap();
+    assert_eq!(
+        decoded.value["namedPages"][0]["target"],
+        json!({ "kind": "page", "page": page_ref(3) })
+    );
+    assert_eq!(
+        decoded.value["namedPages"][1]["target"],
+        json!({ "kind": "template", "objectNumber": 9 })
+    );
+    let set = translate(
+        "doc-1",
+        "pages.setName",
+        None,
+        &[json!({ "name": "a=A", "page": page_ref(3) })],
+        1,
+    )
+    .unwrap();
+    let mutation = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"pageObjectNumber":3}],"namedPages":[{"name":"a=A","target":{"kind":"page","pageObjectNumber":3}}]}},"mutationSequence":1,"event":{"type":"pages.named","name":"a=A","pageObjectNumber":3,"layout":{"pageCount":1,"pages":[{"index":0,"pageObjectNumber":3}],"namedPages":[]}}}}"#;
+    let decoded = decode(&set.decode, answer(mutation)).unwrap();
+    assert_eq!(decoded.value["layout"]["pages"][0]["ref"], page_ref(3));
+    assert_eq!(decoded.value["layout"]["namedPages"][0]["target"]["page"], page_ref(3));
+    assert_eq!(decoded.event.unwrap()["type"], json!("pages.named"));
+}
+
+#[test]
+fn a_flatten_carries_its_pages_and_usage_and_answers_page_refs() {
+    let call =
+        translate("doc-1", "pages.flatten", None, &[json!([page_ref(3)]), json!("display")], 1)
+            .unwrap();
+    assert_eq!(call.request["kind"], json!("pages.flatten"));
+    assert_eq!(call.request["pageObjectNumbers"], json!([3]));
+    assert_eq!(call.request["usage"], json!("display"));
+    let json = r#"{"result":{"result":{"pageObjectNumbers":[3],"usage":"display","results":[{"pageObjectNumber":3,"status":"applied"}]},"mutationSequence":1,"event":null}}"#;
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(decoded.value["results"][0]["page"], page_ref(3));
+}
+
+#[test]
+fn a_download_saves_the_whole_file_into_the_host_table() {
+    assert!(maps("download"));
+    let call = translate("doc-1", "download", None, &[], 1).unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "document.saveBuffer", "jobId": 1, "docId": "doc-1", "mode": "full" })
+    );
+    let response =
+        HostResponse { json: r#"{"result":{"size":3}}"#.into(), payloads: vec![vec![1, 2, 3]] };
+    let decoded = decode(&call.decode, response).unwrap();
+    let id = decoded.value["$hostBytes"].as_u64().unwrap();
+    assert_eq!(HostTable::take(id), Some(vec![1, 2, 3]));
+}
+
+#[test]
+fn an_encoded_render_asks_for_png_and_answers_bytes() {
+    use epdf_viewer_host::translate::translate_encoded_render;
+    let options = json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });
+    let call = translate_encoded_render("doc-1", Some(2), &[options], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("pages.renderEncoded"));
+    assert_eq!(call.request["pageObjectNumber"], json!(2));
+    assert_eq!(call.request["encode"], json!({ "format": "png" }));
+    assert!(call.request["options"].get("format").is_none());
+    let response = HostResponse {
+        json: r#"{"result":{"mimeType":"image/png","width":64,"height":80,"size":3}}"#.into(),
+        payloads: vec![vec![1, 2, 3]],
+    };
+    let decoded = decode(&Decode::Encoded, response).unwrap();
+    assert_eq!(decoded.value["contentType"], json!("image/png"));
+    assert_eq!(decoded.value["width"], json!(64));
+    assert_eq!(decoded.value["source"]["kind"], json!("bytes"));
+    assert_eq!(decoded.value["source"]["bytes"], json!({ "$bytes": "AQID" }));
+    let jpeg = json!({ "format": "jpeg" });
+    let refused = translate_encoded_render("doc-1", Some(2), &[jpeg], 2);
+    assert_eq!(refused.err().unwrap().code(), Some("unsupported"));
 }

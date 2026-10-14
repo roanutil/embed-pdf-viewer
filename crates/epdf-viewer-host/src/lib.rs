@@ -10,6 +10,7 @@ pub mod engine_worker;
 mod experimental;
 pub mod host_table;
 pub mod native_engine;
+pub mod png_encoder;
 pub mod session;
 pub mod translate;
 

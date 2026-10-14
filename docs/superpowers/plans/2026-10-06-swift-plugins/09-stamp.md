@@ -405,7 +405,7 @@ git commit -m "Read and write named pages in the Rust engine"
 - Consumes: Task 2's wire kinds.
 - Produces: `NativeEngine::assets(post: KernelPost) -> (NativeEngine, EngineWorker)`, an engine whose `open` takes `{"kind": "bytes", "bytes": {"$bytes": ...}}` and whose `page.render.image` answers `{source: {kind: "bytes", bytes: {"$bytes": ...}}, contentType: "image/png", width, height}`; `translate::Decode::Encoded`; `PATHS` entries for those routes, so `translate::maps` answers `pieceInfo`, `page.pieceInfo`, `pages.setName`, `pages.removeName`, `pages.flatten`.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -453,12 +453,12 @@ fn an_encoded_render_asks_for_png_and_answers_bytes() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL to compile, no `translate_encoded_render`, no `Decode::Encoded`.
 
-- [ ] **Step 3: Extend `translate.rs`**
+- [x] **Step 3: Extend `translate.rs`**
 
 Add routes:
 
@@ -580,12 +580,12 @@ and in `decode`:
         }
 ```
 
-- [ ] **Step 4: Run the translation tests**
+- [x] **Step 4: Run the translation tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing asset-engine test**
+- [x] **Step 5: Write the failing asset-engine test**
 
 `packages/default-stamps/en/stamps.pdf` is the shipped English stamp library: a canonical library with a `/Names /Pages` registry.
 
@@ -642,12 +642,12 @@ fn dropping_the_host_joins_the_asset_engine_thread() {
 
 `rt::block_on_kernel` stands for however the existing host tests drive a kernel future to completion on the kernel thread; `crates/epdf-viewer-host/tests/viewer_host.rs` drives through `ViewerHost`, so if no such helper exists, write this test through `ViewerHost` with `stamp: Some(StampConfig::default())` after Task 5 instead, calling `StampHandle::import_library` and `asset_preview`, and keep the two assertions (PNG magic, `namedPages` non-empty via a non-empty asset list).
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test asset_engine`
 Expected: FAIL to compile, no `NativeEngine::assets`.
 
-- [ ] **Step 7: Write the encoder, the worker constructor and the asset engine**
+- [x] **Step 7: Write the encoder, the worker constructor and the asset engine**
 
 `crates/epdf-viewer-host/Cargo.toml`:
 
@@ -764,12 +764,12 @@ In `NativeDocument::call`, route the render:
 
 `Engine::open` already accepts the stamp plugin's `{"kind": "bytes", "bytes": ...}` input beside `{"$host": id}`: umbrella Task 0e reads `bytes` whatever the `kind`.
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS, including `asset_engine`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-viewer-host Cargo.lock

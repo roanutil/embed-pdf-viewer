@@ -71,6 +71,10 @@ pub enum Decode {
     /// A byte payload (an extracted PDF), parked in the `HostTable` and
     /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
     HostBytes,
+    /// `pages.renderEncoded`: width, height and type in the result, the
+    /// encoded bytes as the payload, answered as the `PageImage` a local
+    /// engine gives the stamp plugin (`source.kind == "bytes"`).
+    Encoded,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -111,6 +115,14 @@ pub const PATHS: &[&str] = &[
     "pages.insertBlank",
     "pages.extract",
     "actions.read",
+    "pieceInfo.read",
+    "page.pieceInfo.read",
+    "pieceInfo.update",
+    "page.pieceInfo.update",
+    "pages.setName",
+    "pages.removeName",
+    "pages.flatten",
+    "download",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
@@ -153,6 +165,14 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
+        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::Result),
+        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
+        "pages.setName" => ("pages.setName", Decode::PageMutation),
+        "pages.removeName" => ("pages.removeName", Decode::PageMutation),
+        // `AnnotationMutation` for its `nest_refs`: each per-page result's
+        // `pageObjectNumber` arrives as the `page` the stamp plugin reads.
+        "pages.flatten" => ("pages.flatten", Decode::AnnotationMutation),
+        "download" => ("document.saveBuffer", Decode::HostBytes),
         _ => return None,
     })
 }
@@ -218,6 +238,34 @@ pub fn translate(
             payloads.push(pdf_bytes(path, &arg(0))?);
             vec![("destIndex", optional_whole(path, "destIndex", args.get(1))?)]
         }
+        "pieceInfo.read" if path == "page.pieceInfo.read" => {
+            vec![("pageObjectNumber", page()?), ("application", arg(0))]
+        }
+        "pieceInfo.read" => vec![("application", arg(0))],
+        "pieceInfo.update" if path == "page.pieceInfo.update" => {
+            vec![("pageObjectNumber", page()?), ("application", arg(0)), ("patch", arg(1))]
+        }
+        "pieceInfo.update" => vec![("application", arg(0)), ("patch", arg(1))],
+        "pages.setName" => {
+            let input = arg(0);
+            let pon = input
+                .get("page")
+                .and_then(PageRef::from_json)
+                .map(|p| Value::from(p.page_object_number))
+                .ok_or_else(|| {
+                    coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
+                })?;
+            vec![
+                ("name", input.get("name").cloned().unwrap_or(Value::Null)),
+                ("pageObjectNumber", pon),
+                ("replace", input.get("replace").cloned().unwrap_or(Value::Null)),
+            ]
+        }
+        "pages.removeName" => vec![("name", arg(0).get("name").cloned().unwrap_or(Value::Null))],
+        "pages.flatten" => {
+            vec![("pageObjectNumbers", object_numbers(path, &arg(0))?), ("usage", arg(1))]
+        }
+        "document.saveBuffer" => vec![("mode", "full".into())],
         _ => vec![],
     };
     let mut request = Map::new();
@@ -230,6 +278,37 @@ pub fn translate(
         }
     }
     Ok(WireCall { request: Value::Object(request), payloads, decode })
+}
+
+/// `page.render.image` on the stamp plugin's asset engine: the same options
+/// as `pages.render`, plus the encode the plugin asked for (`format`,
+/// default png). Png is the one encoder the asset engine has.
+pub fn translate_encoded_render(
+    doc: &str,
+    pon: Option<u32>,
+    args: &[Value],
+    job: u64,
+) -> Result<WireCall, Error> {
+    let page = pon.ok_or_else(|| {
+        coded("invalid-input", "[epdf-viewer-host] page.render.image needs a page".into())
+    })?;
+    let options = args.first().cloned().unwrap_or(Value::Null);
+    let format = options.get("format").and_then(Value::as_str).unwrap_or("png");
+    if format != "png" {
+        return Err(coded(
+            "unsupported",
+            format!("[epdf-viewer-host] the asset engine encodes png only, not {format}"),
+        ));
+    }
+    let request = serde_json::json!({
+        "kind": "pages.renderEncoded",
+        "jobId": job,
+        "docId": doc,
+        "pageObjectNumber": page,
+        "options": render_options(options),
+        "encode": { "format": "png" },
+    });
+    Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
 /// A JavaScript number as the whole, non-negative integer the host parses.
@@ -572,7 +651,26 @@ fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     for page in pages {
         add_page_ref(page, "ref", "a layout page")?;
     }
+    if let Some(layout) = object.get_mut("layout") {
+        nest_named_pages(layout);
+    }
     Ok(())
+}
+
+/// A page list's `namedPages`, each page target's `pageObjectNumber` as
+/// the `page: PageRef` `NamedPageTarget` has. Templates and dangling
+/// entries keep their spelling.
+fn nest_named_pages(list: &mut Value) {
+    let Some(Value::Array(named)) = list.get_mut("namedPages") else { return };
+    for target in named.iter_mut().filter_map(|n| n.get_mut("target")) {
+        if let Value::Object(map) = target
+            && map.get("kind").and_then(Value::as_str) == Some("page")
+            && let Some(pon) = page_number(map.get("pageObjectNumber"))
+        {
+            map.remove("pageObjectNumber");
+            map.insert("page".into(), PageRef::new(pon).to_json());
+        }
+    }
 }
 
 /// Read a host response into what the call's caller expects.
@@ -606,7 +704,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             for page in pages {
                 add_page_ref(page, "ref", "a page")?;
             }
-            Value::Object(result)
+            let mut list = Value::Object(result);
+            nest_named_pages(&mut list);
+            list
         }
         Decode::SearchSlice => {
             let Some(Value::Array(matches)) = result.get_mut("matches") else {
@@ -684,6 +784,20 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .next()
                 .ok_or_else(|| malformed("bytes without their payload".into()))?;
             serde_json::json!({ "$hostBytes": HostTable::put(bytes) })
+        }
+        Decode::Encoded => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("an encoded render without its bytes".into()))?;
+            let content_type = take(&mut result, "mimeType")?;
+            serde_json::json!({
+                "contentType": content_type,
+                "width": result.remove("width").unwrap_or(Value::Null),
+                "height": result.remove("height").unwrap_or(Value::Null),
+                "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
+            })
         }
         Decode::Raster => {
             let bytes = response

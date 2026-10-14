@@ -50,11 +50,30 @@ struct Inner {
     worker: EngineWorker,
     post: KernelPost,
     documents: Cell<u64>,
+    /// The asset engine: renders answer encoded bytes, not raw pixels.
+    encoded_renders: bool,
 }
 
 impl NativeEngine {
     pub fn new(worker: EngineWorker, post: KernelPost) -> NativeEngine {
-        NativeEngine { inner: Rc::new(Inner { worker, post, documents: Cell::new(0) }) }
+        NativeEngine::with(worker, post, false)
+    }
+
+    /// The stamp plugin's asset engine: its own engine thread (PDFium's
+    /// globals are per thread), with a PNG encoder, opening library bytes
+    /// and answering previews as encoded bytes. The caller joins the worker
+    /// when the session ends.
+    pub fn assets(post: KernelPost) -> (NativeEngine, EngineWorker) {
+        let worker = EngineWorker::spawn_with(|| {
+            epdf_engine::host::Host::new().with_encoder(Box::new(crate::png_encoder::PngEncoder))
+        });
+        (NativeEngine::with(worker.clone(), post, true), worker)
+    }
+
+    fn with(worker: EngineWorker, post: KernelPost, encoded_renders: bool) -> NativeEngine {
+        NativeEngine {
+            inner: Rc::new(Inner { worker, post, documents: Cell::new(0), encoded_renders }),
+        }
     }
 }
 
@@ -264,6 +283,11 @@ impl DocumentHandle for NativeDocument {
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
         if path == "close" {
             LAYOUTS.with(|l| l.borrow_mut().remove(&self.id));
+        }
+        if self.inner.encoded_renders && path == "page.render.image" {
+            return self.inner.send(&self.id, |job| {
+                translate::translate_encoded_render(&self.id, pon, &args, job)
+            });
         }
         self.inner.send(&self.id, |job| translate::translate(&self.id, path, pon, &args, job))
     }
