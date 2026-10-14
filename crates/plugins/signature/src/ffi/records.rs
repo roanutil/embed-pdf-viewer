@@ -744,6 +744,9 @@ impl SignatureCompletion {
 // ── events ───────────────────────────────────────────────────────────────────
 
 /// The plugin's nine change hooks, as one stream. Origins are dropped.
+// A uniffi enum crosses by value; boxing the completion would change the
+// Swift type for no gain on a value built once per event.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum SignatureEvent {
     Signed {
@@ -1046,6 +1049,9 @@ impl TryFrom<SignaturePlaceTarget> for crate::PlaceTarget {
 }
 
 /// What `place_mark` did.
+// A uniffi enum crosses by value; boxing the completion would change the
+// Swift type for no gain on a value built once per event.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum SignaturePlaceResult {
     Signed {

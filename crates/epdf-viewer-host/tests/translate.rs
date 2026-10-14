@@ -1138,7 +1138,8 @@ fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
 #[test]
 fn the_reads_carry_their_arguments() {
     let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 5 });
-    let call = translate("d", "signatures.contents", None, &[field.clone()], 1).unwrap();
+    let call =
+        translate("d", "signatures.contents", None, std::slice::from_ref(&field), 1).unwrap();
     assert_eq!(call.request["ref"], field);
     let call =
         translate("d", "signatures.digest", None, &[field.clone(), json!("sha256")], 1).unwrap();

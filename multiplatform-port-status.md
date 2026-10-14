@@ -81,6 +81,7 @@ them as verified, not as pinned.
 | G15 | `document.renderPageFile`, and the injected image encoder | `tests/server_surfaces.rs` |
 | cross-cutting | rotation normalization | `tests/rotation_normalization.rs` |
 | cross-cutting | cancel traces | `tests/cancel_traces.rs` |
+| B4 | signatures: `signatures.list`, `contents`, `digest`, `revisionBytes`, `analyze`, `prepare`, `complete`, `abort`, `document.version`, `forms.setSignatureAppearance` | `vectors/signature/protection.json`, `tests/signature_protection.rs`; fixture tests `tests/signature_read.rs`, `signature_analyze.rs`, `signature_sign.rs` |
 
 ## Not started, and what each gap actually is
 

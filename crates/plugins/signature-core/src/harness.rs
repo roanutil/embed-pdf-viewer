@@ -718,7 +718,8 @@ pub fn test_cms_over_digest(
         signing_time: None,
     });
     // The signer answers synchronously; the kernel runtime drains the rest.
-    let out: Rc<std::cell::RefCell<Option<Result<Vec<u8>, Error>>>> = Rc::default();
+    type Built = Option<Result<Vec<u8>, Error>>;
+    let out: Rc<std::cell::RefCell<Built>> = Rc::default();
     let slot = out.clone();
     epdf_kernel::rt::spawn(async move {
         *slot.borrow_mut() = Some(build.await);

@@ -3229,7 +3229,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 
 ### A.5 Signatures, follow-on plan B4
 
-**signature** (D, requires `form`, optional `interaction`, `stamp`, `annotation`). Ports: `SignerSource` (Swift: Keychain `SecIdentity`) and `TrustPort` (Swift: `SecTrust`). Engine paths `signatures.*` don't exist in `host.rs`, so B4 starts in `epdf-engine`. Members: `snapshot`, `status`, `signatures`, `unsigned_fields`, `signature`, `verdicts`, `verdict`, `protection`, `pending`, `is_busy`, `mode`, `target`, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, `sign`, `prepare_signature`, `complete_signature`, `abort_pending`, `fill_field`, `clear_field`, `place_mark`, `can_sign`, `can_fill`, `can_certify`, `subscribe` (signed, filled, cleared, validated, protection changed, invalidating, target changed, sign requested, inspection requested). Signature state is raw `Value` in Rust, so every record here is a mirror.
+**signature** (D, requires `form`, optional `interaction`, `stamp`, `annotation`), delivered by 16-signature.md. Ports: `SignerSource` (Swift: Keychain `SecIdentity`) and `TrustPort` (Swift: `SecTrust`). Engine paths `signatures.*` don't exist in `host.rs`, so B4 starts in `epdf-engine`. Members: `snapshot`, `status`, `signatures`, `unsigned_fields`, `signature`, `verdicts`, `verdict`, `protection`, `pending`, `is_busy`, `mode`, `target`, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, `sign`, `prepare_signature`, `complete_signature`, `abort_pending`, `fill_field`, `clear_field`, `place_mark`, `can_sign`, `can_fill`, `can_certify`, `subscribe` (signed, filled, cleared, validated, protection changed, invalidating, target changed, sign requested, inspection requested). Signature state is raw `Value` in Rust, so every record here is a mirror.
 
 ## Appendix B: Follow-on plans
 
@@ -3238,7 +3238,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 | B1 navigation | stage, interaction + feedback, selection and link slices; render's viewport members; `dispatch_pointer` latency at 120 Hz; a SwiftUI scrolling reader sample | this plan |
 | B2 content | annotation, form, redaction, measurement and stamp slices; their engine paths | B1 (`interaction`) |
 | B3 document | page-edit, view-manager, shell, commands, i18n and actions slices; JavaScriptCore `ScriptSandbox` | this plan |
-| B4 signatures and security | `signatures.*` in `epdf-engine`; Keychain signer; `SecTrust` port; `NativeSecurity` that enforces document permissions | B2 (`form`) |
+| B4 signatures and security (done, 16-signature.md) | `signatures.*` in `epdf-engine`; Keychain signer; `SecTrust` port; `NativeSecurity` that enforces document permissions | B2 (`form`) |
 | B5 hardening | TSAN soak of two concurrent viewers (`multiplatform-plan.md` Phase 5); signed device run (Phase 1 exit), including Task 11's benchmarks on device; a hand-written raster path if Task 11 recommends one; binary size budget for all 19 slices; macOS slice once a static darwin PDFium exists | this plan |
 
 ## Appendix C: Kernel engine paths and their native status

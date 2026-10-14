@@ -42,7 +42,7 @@ pub enum DigestAlgorithm {
 }
 
 impl DigestAlgorithm {
-    pub fn len(self) -> usize {
+    pub fn output_len(self) -> usize {
         match self {
             Self::Sha1 => 20,
             Self::Sha256 => 32,
@@ -135,7 +135,7 @@ impl Document {
         range: [u64; 4],
         algorithm: DigestAlgorithm,
     ) -> Option<Vec<u8>> {
-        let mut out = vec![0u8; algorithm.len()];
+        let mut out = vec![0u8; algorithm.output_len()];
         let mut len = out.len() as c_ulong;
         // SAFETY: four u64s in, `len` writable bytes out.
         let ok = unsafe {

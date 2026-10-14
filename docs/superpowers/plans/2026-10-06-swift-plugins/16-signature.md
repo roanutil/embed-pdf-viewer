@@ -2752,7 +2752,7 @@ git commit -m "Add SignatureCapability, a Keychain signer and app trust anchors 
 
 - [ ] **Step 1:** Append `signature` to `crates=( ... )` in `plugin-rust.yml`.
 
-- [ ] **Step 2:** Add the README rows, and replace the README's note that document permissions aren't enforced with one line pointing at `ViewerConfig.scope`:
+- [x] **Step 2:** Add the README rows, and replace the README's note that document permissions aren't enforced with one line pointing at `ViewerConfig.scope`:
 
 ```markdown
 | signature | `SignatureCapability`, `KeychainSigner`, `TrustAnchors` | `signature: SignatureConfig()` (with `form`) | `2026-10-06-swift-plugins/16-signature.md` |
@@ -2760,9 +2760,9 @@ git commit -m "Add SignatureCapability, a Keychain signer and app trust anchors 
 
 and, under the table: "Trust anchors are the app's own: iOS can't list the system roots, and validation against the system store would need a `SecTrust`-evaluating port in `epdf-signature-core`."
 
-- [ ] **Step 3:** In `2026-10-01-swift-package.md`, mark §A.5 delivered by `16-signature.md` and Appendix B row B4 done. In `multiplatform-port-status.md`, move the signature engine paths from "Not started" to done, pointing at `crates/epdf-engine/tests/signature_*.rs`.
+- [x] **Step 3:** In `2026-10-01-swift-package.md`, mark §A.5 delivered by `16-signature.md` and Appendix B row B4 done. In `multiplatform-port-status.md`, move the signature engine paths from "Not started" to done, pointing at `crates/epdf-engine/tests/signature_*.rs`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-signature --features uniffi
@@ -2779,7 +2779,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0. The `pnpm` script name is whatever Task 3 named the protection vector's check.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a

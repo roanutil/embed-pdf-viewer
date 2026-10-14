@@ -1743,7 +1743,7 @@ fn a_document_signs_and_validates_over_pdfium() {
             .unwrap();
     assert_eq!(verdict.integrity, SignatureIntegrity::Valid, "{verdict:?}");
     assert_eq!(verdict.summary, SignatureSummary::ValidUntrusted, "{verdict:?}");
-    assert_eq!(verdict.signature.signer.name.is_some(), true);
+    assert!(verdict.signature.signer.name.is_some());
 }
 
 #[test]

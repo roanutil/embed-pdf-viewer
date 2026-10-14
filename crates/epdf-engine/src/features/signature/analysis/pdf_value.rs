@@ -204,14 +204,7 @@ impl Parser {
     }
 
     fn starts_with(&self, token: &str) -> bool {
-        let mut i = self.pos;
-        for c in token.chars() {
-            if self.text.get(i) != Some(&c) {
-                return false;
-            }
-            i += 1;
-        }
-        true
+        (self.pos..).zip(token.chars()).all(|(i, c)| self.text.get(i) == Some(&c))
     }
 
     fn peek(&self) -> Option<char> {
