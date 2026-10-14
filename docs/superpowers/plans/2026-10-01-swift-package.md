@@ -3198,7 +3198,7 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 
 **annotation** (D, requires `interaction`, optional `selection`, `actions`), delivered by 05-annotation.md (98 of the 140 callable members; the plan's Decisions list the rest). Port: `AnnotationHost` keeps its defaults (logging, `random_uuid`, system fonts). It has 142 members. B2 splits them across several handle objects that mirror the TypeScript capability's sub-objects (`AnnotationHandle` returns `AnnotationDraftsHandle`, `AnnotationSelectionHandle`, `AnnotationThreadsHandle`, `AnnotationToolsHandle`), and copies the full list from `crates/plugins/annotation/src/harness.rs` `MEMBERS`. Events: resynced, draft captured, created, updated, deleted, selection changed, draft changed, editing changed, thread changed. `AnnotationState` and `AnnotationAction` are Serialize-only and carry engine `Value`s, so expect mirrors for most of this plugin's records.
 
-**form** (D, requires `interaction`, optional `annotation`, `actions`). Members:
+**form** (D, requires `interaction`, optional `annotation`, `actions`), delivered by 06-form.md (39 of the 45 members; the plan's Decisions list the six left out). Members:
 - Read: `snapshot`, `field`, `field_for_widget`, `fields`, `value`, `export_values`, `fill_items`, `fill_item`, `ensure_loaded`, `widget_at`, `page_box`, `widgets`, `refresh`, `status`.
 - Fill: `set_value`, `set_text`, `set_checked`, `set_choice`, `set_value_raw`, `set_values`, `import_values`, `reset`, `reset_all`, `reset_form_action`.
 - Design: `create_field`, `update_field`, `delete_field`, `detach_widget`, `attach_widget`.
