@@ -77,14 +77,14 @@ platforms/apple/build-xcframework.sh              + stamps fixture
 - Consumes: `research/swift-plugins` with plans 01, 05 and 10 merged.
 - Produces: `pdfium_sys::EPDFDoc_SetNamedPage`, `EPDFDoc_RemoveNamedPage`, `EPDFDoc_GetNamedPageCount`, `EPDFDoc_GetNamedPageAt`.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-stamp -b research/swift-stamp research/swift-plugins
 cd .claude/worktrees/swift-stamp
 ```
 
-- [ ] **Step 2: Check the prerequisites**
+- [x] **Step 2: Check the prerequisites**
 
 ```bash
 grep -n '"pages.insert"\|"pages.extract"' crates/epdf-viewer-host/src/translate.rs
@@ -95,7 +95,7 @@ done
 
 Expected: both `translate.rs` rows (from plan 10), three header paths. A missing header means umbrella Task 0b hasn't run, or this worktree fetched the old slices: run `bash packages/engine/runtime/scripts/fetch-libpdfium.sh <slice>` for each, and if the header is still missing, stop and finish Task 0b.
 
-- [ ] **Step 3: Include the header**
+- [x] **Step 3: Include the header**
 
 In `crates/pdfium-sys/wrapper.h`, after `epdf_form.h` (and after `epdf_measure.h` if plan 08 added it):
 
@@ -103,12 +103,12 @@ In `crates/pdfium-sys/wrapper.h`, after `epdf_form.h` (and after `epdf_measure.h
 #include "epdf_named_pages.h"
 ```
 
-- [ ] **Step 4: Confirm the bindings**
+- [x] **Step 4: Confirm the bindings**
 
 Run: `cargo build -p pdfium-sys && grep -c 'pub fn EPDFDoc_SetNamedPage\|pub fn EPDFDoc_RemoveNamedPage\|pub fn EPDFDoc_GetNamedPageAt' target/debug/build/pdfium-sys-*/out/bindings.rs`
 Expected: `3`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium-sys/wrapper.h

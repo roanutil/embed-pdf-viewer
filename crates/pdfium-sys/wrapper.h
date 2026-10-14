@@ -29,6 +29,7 @@
 #include "epdf_action.h"
 #include "epdf_font.h"
 #include "epdf_form.h"
+#include "epdf_named_pages.h"
 #include "epdf_pieceinfo.h"
 #include "epdf_redact.h"
 #include "epdf_text.h"
