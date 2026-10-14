@@ -61,8 +61,9 @@ pub struct FreeTextFields {
     pub font_size: f64,
     pub text_align: TextAlignment,
     /// The text, as a rich document, always. `contents` is its plain
-    /// projection.
-    pub rich_text: RichTextDocument,
+    /// projection. Boxed: it is the bulk of the struct, and unboxed it would
+    /// size every other `AnnotationKind` variant to fit.
+    pub rich_text: Box<RichTextDocument>,
     /// The `/DA` colour: the border, and the text unless `font_color`
     /// overrides it.
     pub color: Color,
@@ -126,7 +127,7 @@ pub fn read_free_text(
     // Justify has no `/Q` value and reads back as the `/Q` alignment.
     let quadding = TextAlignment::from_code(annotation.text_alignment());
     let text_align = rich.as_ref().and_then(|rich| rich.body.text_alignment()).unwrap_or(quadding);
-    let rich_text = rich.unwrap_or_else(|| synthesised(font_size, contents));
+    let rich_text = Box::new(rich.unwrap_or_else(|| synthesised(font_size, contents)));
 
     let text_color = read_color_entry(annotation, AnnotationColorType::TextColor);
     let callout_line = read_callout_line(annotation)?;

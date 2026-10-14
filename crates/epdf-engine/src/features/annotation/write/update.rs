@@ -297,7 +297,7 @@ fn preflight(
             }
             crate::features::annotation::rich_text::assert_agreement(
                 patch.base.contents.as_set().map(String::as_str),
-                fields.rich_text.as_ref(),
+                fields.rich_text.as_deref(),
             )?;
         }
         AnnotationPatchKind::Stamp { fields } => {
