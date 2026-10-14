@@ -1,7 +1,7 @@
 //! Every wire kind reaches an implementation.
 //!
 //! Replays `vectors/wire/requests.json`, which the TypeScript compiler
-//! produced by reading the `WorkerRequest` union: sixty-five kinds and the
+//! produced by reading the `WorkerRequest` union: eighty-four kinds and the
 //! arguments each one carries.
 //!
 //! # What a dispatcher can get wrong that a compiler cannot catch
@@ -139,7 +139,7 @@ fn payloads() -> Payloads {
 #[test]
 fn every_wire_kind_routes_to_an_implementation() {
     let cases = cases();
-    assert_eq!(cases.len(), 65, "the vector and the protocol disagree about how many kinds exist");
+    assert_eq!(cases.len(), 84, "the vector and the protocol disagree about how many kinds exist");
 
     let mut unrouted = Vec::new();
     for case in &cases {

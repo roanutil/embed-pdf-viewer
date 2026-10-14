@@ -7,7 +7,7 @@
  *   pnpm --filter @embedpdf/tooling-engine-conformance run wire:check
  *
  * This is what makes the Rust bindings checkable. `crates/epdf-engine` routes
- * one JSON envelope rather than exporting sixty-five functions, so nothing in
+ * one JSON envelope rather than exporting eighty-four functions, so nothing in
  * its signature says which kinds exist or what each one takes; the compiler
  * cannot catch a missing arm or a misspelled argument key.
  * `crates/epdf-engine/tests/wire_contract.rs` replays this file to catch both.
@@ -30,7 +30,7 @@ const vectorsRoot = join(packageRoot, 'vectors', 'wire');
 const SCHEMA_VERSION = 1;
 
 /** Asserted rather than derived; both port documents quote it. */
-const EXPECTED_KINDS = 65;
+const EXPECTED_KINDS = 84;
 
 function serialize(entries: readonly unknown[]): string {
   const head = JSON.stringify(
