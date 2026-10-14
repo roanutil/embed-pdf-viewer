@@ -313,3 +313,22 @@ fn a_remote_apply_arrives_as_a_typed_result() {
         "{seen:?}"
     );
 }
+
+#[test]
+fn a_failed_pages_error_decodes_from_either_spelling() {
+    let (thread, redaction) = handle(vec![]);
+    // engine-core serializes the error (`SerializedEngineError`); the
+    // native host sends its message as a string.
+    let event = json!({ "type": "redaction.applied", "origin": { "kind": "remote" },
+        "scope": { "kind": "pages", "pages": [page(1), page(2)] },
+        "results": [
+            { "page": page(1), "status": "failed", "removedAnnotationCount": 0,
+                "error": { "name": "EngineError", "code": "operation-failed", "message": "boom" } },
+            { "page": page(2), "status": "failed", "removedAnnotationCount": 0, "error": "bang" }],
+        "removedAnnotationCount": 0 });
+    block_on(thread.call(move |k| k.emit(&event))).unwrap().unwrap();
+    let last = block_on(redaction.last_result()).unwrap().unwrap();
+    assert_eq!(last.results[0].status, RedactionPageStatus::Failed);
+    assert_eq!(last.results[0].error.as_deref(), Some("boom"));
+    assert_eq!(last.results[1].error.as_deref(), Some("bang"));
+}

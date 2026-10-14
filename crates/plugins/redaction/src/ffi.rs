@@ -7,6 +7,7 @@ use std::sync::Arc;
 use epdf_annotation_core as core;
 use epdf_ffi::{
     AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Rect, Subscription, ViewerError,
+    to_u32,
 };
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
@@ -263,6 +264,7 @@ pub struct RedactionPageResult {
     /// Annotations removed alongside the marks (popups, detached widgets),
     /// not the marks themselves.
     pub removed_annotation_count: u32,
+    /// Why the page failed: the engine error's message.
     pub error: Option<String>,
 }
 
@@ -291,8 +293,10 @@ impl RedactionApplyResult {
             page: core::PageRef,
             status: RedactionPageStatus,
             removed_annotation_count: u32,
+            /// engine-core's `SerializedEngineError`, or the native host's
+            /// bare message.
             #[serde(default)]
-            error: Option<String>,
+            error: Option<Value>,
         }
         #[derive(Deserialize)]
         #[serde(rename_all = "camelCase")]
@@ -318,7 +322,16 @@ impl RedactionApplyResult {
                     page: i.page.into(),
                     status: i.status,
                     removed_annotation_count: i.removed_annotation_count,
-                    error: i.error,
+                    error: i.error.and_then(|e| match e {
+                        Value::String(message) => Some(message),
+                        Value::Null => None,
+                        other => Some(
+                            other
+                                .get("message")
+                                .and_then(Value::as_str)
+                                .map_or_else(|| other.to_string(), str::to_string),
+                        ),
+                    }),
                 })
                 .collect(),
             removed_annotation_count: dto.removed_annotation_count,
@@ -393,7 +406,7 @@ impl RedactionHandle {
         self.cap
             .call(move |c| {
                 let page = page.map(core::PageRef::from);
-                Ok(u32::try_from(open(c)?.get_pending_count(page.as_ref())).unwrap_or(u32::MAX))
+                to_u32(open(c)?.get_pending_count(page.as_ref()), "a pending count")
             })
             .await
     }
@@ -409,7 +422,7 @@ impl RedactionHandle {
                 let refs = refs.map(refs_in);
                 let estimate = open(c)?.estimate_collateral(refs.as_deref());
                 Ok(RedactionCollateral {
-                    count: u32::try_from(estimate.count).unwrap_or(u32::MAX),
+                    count: to_u32(estimate.count, "a collateral count")?,
                     refs: estimate.refs.iter().map(json_ref).collect::<Result<_, _>>()?,
                 })
             })
