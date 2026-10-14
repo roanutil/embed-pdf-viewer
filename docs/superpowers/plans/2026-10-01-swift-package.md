@@ -3241,6 +3241,15 @@ Engine paths to map: `page.annotations.*`, `annotations.listRawAll`, `forms.*`, 
 | B4 signatures and security (done, 16-signature.md) | `signatures.*` in `epdf-engine`; Keychain signer; `SecTrust` port; `NativeSecurity` that enforces document permissions | B2 (`form`) |
 | B5 hardening | TSAN soak of two concurrent viewers (`multiplatform-plan.md` Phase 5); signed device run (Phase 1 exit), including Task 11's benchmarks on device; a hand-written raster path if Task 11 recommends one; binary size budget for all 19 slices; macOS slice once a static darwin PDFium exists | this plan |
 
+B5's size budget starts from this series, measured by `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` Task 17 on `research/swift-plugins`. Each figure is `target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a` at that integration commit. The archive is not the shipped app: the linker drops what the app never reaches, so a device build's text size is the number to budget against.
+
+| Integration commit | Plugins merged | Bytes |
+|---|---|---|
+| `e9367b593` | metadata, search, render | 94,029,176 |
+| `9889fad90` | plus shell, page-edit, view-manager, i18n, interaction, feedback, commands, actions, selection, stage, link, annotation, redaction, form | 180,803,400 |
+| `087d6fcfa` | plus measurement, stamp | 196,940,120 |
+| `8ee6618a2` | plus signature (all twenty) | 216,589,976 |
+
 ## Appendix C: Kernel engine paths and their native status
 
 Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with what `translate.rs` does after this plan:

@@ -227,7 +227,7 @@ git worktree add .claude/worktrees/swift-plugins-integration research/swift-plug
 cd .claude/worktrees/swift-plugins-integration
 ```
 
-- [ ] **Step 2: Turn the uniffi test step into a list** (skipped: no CI edits on this branch)
+- [x] **Step 2: Turn the uniffi test step into a list** (skipped: no CI edits on this branch)
 
 The step `2026-10-01-swift-package.md` Task 10 added is one long line, so every plan would conflict on it. Replace it with:
 
@@ -250,7 +250,7 @@ The step `2026-10-01-swift-package.md` Task 10 added is one long line, so every 
 
 Each plan appends its crate name to `crates=( ... )`.
 
-- [ ] **Step 3: Run the step locally** (skipped with Step 2)
+- [x] **Step 3: Run the step locally** (skipped with Step 2)
 
 Run the `run:` body in bash from the repository root.
 Expected: the metadata, search and render `ffi` tests pass, as they did before the edit.
@@ -1303,11 +1303,11 @@ Execute `01-interaction.md` through `16-signature.md` by wave. Tick each one her
 - [x] 13 i18n
 - [x] 14 commands
 - [x] 15 actions
-- [ ] 16 signature
+- [x] 16 signature
 
 ### Task 17: Close out
 
-- [ ] **Step 1:** On `research/swift-plugins`, run the full definition of done with every plugin on: `ViewerConfig` with every field set, in `crates/epdf-viewer-host/tests/viewer_host.rs` as `every_plugin_builds_together`.
-- [ ] **Step 2:** Update `multiplatform-port-status.md` with one line per plugin pointing at its Swift test file.
-- [ ] **Step 3:** Hand B5 (hardening, spec Appendix B) the binary size series from Review Focus item 5.
+- [x] **Step 1:** On `research/swift-plugins`, run the full definition of done with every plugin on: `ViewerConfig` with every field set, in `crates/epdf-viewer-host/tests/viewer_host.rs` as `every_plugin_builds_together`.
+- [x] **Step 2:** Update `multiplatform-port-status.md` with one line per plugin pointing at its Swift test file.
+- [x] **Step 3:** Hand B5 (hardening, spec Appendix B) the binary size series from Review Focus item 5. (Recorded under Appendix B of `2026-10-01-swift-package.md`.)
 - [ ] **Step 4:** Confirm no plan worktree is left: `git worktree list | grep swift-` prints only `swift-plugins-integration`. Then remove that one too, once `research/swift-plugins` is merged or pushed wherever it's going: `git worktree remove .claude/worktrees/swift-plugins-integration`.

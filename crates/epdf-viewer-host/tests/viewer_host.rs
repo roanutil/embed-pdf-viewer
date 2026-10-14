@@ -2268,3 +2268,74 @@ fn a_narrow_scope_cannot_read_a_revision() {
     let field = block_on(s.signatures()).unwrap()[0].field.clone();
     assert!(block_on(s.read_revision(field, CancelToken::new())).is_err());
 }
+
+// 17 close-out.
+
+/// Every `ViewerConfig` field set at once: the plugins install together,
+/// a document opens, and each plugin's handle resolves for it.
+#[test]
+fn every_plugin_builds_together() {
+    let ticks = Arc::new(Ticks::default());
+    let config = ViewerConfig {
+        scope: None,
+        metadata: true,
+        search: Some(SearchConfig::default()),
+        render: Some(RenderConfig::default()),
+        interaction: true,
+        feedback: Some(FeedbackConfig::new(ticks)),
+        stage: Some(StageConfig { frames: false, ..Default::default() }),
+        selection: true,
+        link: true,
+        annotation: Some(AnnotationConfig::default()),
+        form: Some(FormConfig { validation: Some(FormValidation::None) }),
+        redaction: Some(RedactionConfig::default()),
+        measurement: Some(MeasurementConfig::default()),
+        stamp: Some(StampConfig::default()),
+        page_edit: true,
+        view_manager: true,
+        shell: true,
+        i18n: Some(I18nConfig {
+            locale: None,
+            fallback_locale: None,
+            locales: vec![en_pack()],
+            lazy_locales: vec![],
+            loader: None,
+        }),
+        commands: true,
+        actions: Some(epdf_plugin_actions::ffi::ActionsConfig {
+            policy: None,
+            triggers: None,
+            open_sequence: Some(OpenSequence::Off),
+            javascript: None,
+            utc_offset_minutes: None,
+        }),
+        signature: Some(SignatureConfig::default()),
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    let bytes = test_support::fixture(&format!("{SIGNING}/unsigned_sigfield.pdf"));
+    let doc = block_on(host.open_document(bytes, options())).unwrap().id;
+    assert!(!block_on(host.pages(doc.clone())).unwrap().is_empty());
+    block_on(host.metadata(doc.clone())).unwrap();
+    block_on(host.search(doc.clone())).unwrap();
+    block_on(host.render(doc.clone())).unwrap();
+    block_on(host.interaction(doc.clone())).unwrap();
+    block_on(host.feedback()).unwrap();
+    block_on(host.stage(doc.clone())).unwrap();
+    block_on(host.selection(doc.clone())).unwrap();
+    block_on(host.link(doc.clone())).unwrap();
+    block_on(host.annotation(doc.clone())).unwrap();
+    block_on(host.form(doc.clone())).unwrap();
+    block_on(host.redaction(doc.clone())).unwrap();
+    block_on(host.measurement(doc.clone())).unwrap();
+    block_on(host.stamp()).unwrap();
+    block_on(host.page_edit(doc.clone())).unwrap();
+    block_on(host.view_manager()).unwrap();
+    block_on(host.shell(doc.clone())).unwrap();
+    block_on(host.commands()).unwrap();
+    block_on(host.actions(doc.clone())).unwrap();
+    let s = block_on(host.signature(doc.clone())).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    assert!(!block_on(s.unsigned_fields()).unwrap().is_empty());
+    block_on(host.close_document(doc)).unwrap();
+}

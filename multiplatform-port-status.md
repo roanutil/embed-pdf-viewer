@@ -211,6 +211,42 @@ TypeScript. Seventeen reach an implementation whose only gate is that routing
 check, which proves the arm exists and says nothing about what it does;
 `tooling/engine-conformance/OPERATIONS.md` marks which is which.
 
+## The Swift plugins
+
+Every Rust plugin crate is wrapped for Swift in `platforms/apple/EmbedPDF`,
+per `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`. Each
+row is the plugin's `ViewerConfig` field, its Swift source under
+`Sources/EmbedPDF/Plugins/`, and the test file under `Tests/EmbedPDFTests/`
+that runs it on the iOS simulator. `every_plugin_builds_together` in
+`crates/epdf-viewer-host/tests/viewer_host.rs` installs all of them at once.
+
+| Plugin | `ViewerConfig` | Swift | Tests |
+|---|---|---|---|
+| metadata | `metadata` | `Metadata.swift` | `MetadataTests.swift` |
+| search | `search` | `Search.swift` | `SearchTests.swift`, `EmbedPDFUITests/SearchModelTests.swift` |
+| render | `render` | `Render.swift` | `RenderTests.swift`, `RenderViewportTests.swift` |
+| interaction | `interaction` | `Interaction.swift` | `InteractionTests.swift`, `PointerLatencyTests.swift` |
+| feedback | `feedback` | `Feedback.swift` | `FeedbackTests.swift` |
+| stage | `stage` | `Stage.swift` | `StageTests.swift`, `EmbedPDFUITests/StageReaderModelTests.swift` |
+| selection | `selection` | `Selection.swift` | `SelectionTests.swift` |
+| link | `link` | `Link.swift` | `LinkTests.swift` |
+| annotation | `annotation` | `Annotation.swift` | `AnnotationTests.swift` |
+| form | `form` | `Form.swift` | `FormTests.swift` |
+| redaction | `redaction` | `Redaction.swift` | `RedactionTests.swift` |
+| measurement | `measurement` | `Measurement.swift` | `MeasurementTests.swift` |
+| stamp | `stamp` | `Stamp.swift` | `StampTests.swift` |
+| page-edit | `page_edit` | `PageEdit.swift` | `PageEditTests.swift` |
+| view-manager | `view_manager` | `ViewManager.swift` | `ViewManagerTests.swift` |
+| shell | `shell` | `Shell.swift` | `ShellTests.swift` |
+| i18n | `i18n` | `I18n.swift` | `I18nTests.swift` |
+| commands | `commands` | `Commands.swift` | `CommandsTests.swift` |
+| actions | `actions` | `Actions.swift`, `JavaScriptCoreEngine.swift` | `ActionsTests.swift`, `JavaScriptCoreEngineTests.swift` |
+| signature | `signature`, `scope` | `Signature.swift`, `KeychainSigner.swift` | `SignatureTests.swift`, `SecurityTests.swift`, `KeychainSignerTests.swift` |
+
+The cost is in the archive. `libepdf_viewer_host.a` for
+`aarch64-apple-ios-sim` release was 94,029,176 bytes before the first plugin
+and is 216,589,976 bytes with all twenty; B5 owns trimming it.
+
 ## Where the Rust core actually runs
 
 The published WASM payload carries it. `scripts/build-target.sh` builds
