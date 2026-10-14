@@ -122,7 +122,7 @@ git commit -m "Bind the fork's measurement viewports in pdfium-sys"
 
 The TypeScript is three files: `MeasureReader.ts` (22 lines), `MeasureMutator.ts` (85 lines) and `internal/measureCodec.ts` (163 lines), with `internal/readViewports.ts` (32 lines). The Rust follows them function for function. `CALIBRATION_NAME` is `"EmbedPDF"`. A viewport is EmbedPDF's own (`owned`) when its name is `"EmbedPDF"` and it has no measure or an `RL` one. A write never rewrites `/VP`: it updates EmbedPDF's last owned viewport, or adds one over the crop box (falling back to the media box), or, for `null`, removes every owned viewport from the highest index down.
 
-- [ ] **Step 1: Write the failing `pdfium` test**
+- [x] **Step 1: Write the failing `pdfium` test**
 
 `packages/engine/main/test/fixtures/measure-acrobat-metric.pdf` is Acrobat's own metric calibration: one page, one viewport with an `RL` measure that isn't named `EmbedPDF`.
 
@@ -175,12 +175,12 @@ fn a_written_viewport_reads_back_and_removes() {
 }
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `cargo test -p pdfium --test measure`
 Expected: FAIL, `could not find measure in pdfium`.
 
-- [ ] **Step 3: Write `crates/pdfium/src/measure.rs`**
+- [x] **Step 3: Write `crates/pdfium/src/measure.rs`**
 
 ```rust
 //! Measurement viewports (`/VP`) and their `/Measure` dictionaries.
@@ -423,12 +423,12 @@ impl Measure {
 
 Add `pub mod measure;` to `crates/pdfium/src/lib.rs`, and `read_utf16_opt` / `with_utf16` to `crates/pdfium/src/text.rs` if they aren't there under those names (`action.rs:379` has a private `read_utf16` of the same shape: move it to `text.rs` as `pub(crate) fn read_utf16_opt` and call it from both). Add `PdfiumError::WriteFailed(&'static str)` if `error.rs` has no variant for a refused write.
 
-- [ ] **Step 4: Run the `pdfium` test**
+- [x] **Step 4: Run the `pdfium` test**
 
 Run: `cargo test -p pdfium --test measure`
 Expected: PASS, 2 tests.
 
-- [ ] **Step 5: Write the failing engine test**
+- [x] **Step 5: Write the failing engine test**
 
 ```rust
 // crates/epdf-engine/tests/measure.rs
@@ -500,12 +500,12 @@ fn set_scale_refuses_an_unwritable_measure() {
 
 If `crates/epdf-engine/tests/common/mod.rs` has no `open_fixture` and `call`, add them there: `open_fixture` reads the file relative to the workspace root, sends `open.fatMem` with the bytes as the payload, then `pages.list`, and returns the doc id and the first page's `pageObjectNumber`; `call` adds a `jobId`, sends, panics on an `error` envelope, and returns `result`.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-engine --test measure`
 Expected: FAIL, the envelope's error is `unknown request kind "measure.viewports"`.
 
-- [ ] **Step 7: Write `crates/epdf-engine/src/features/measure.rs`**
+- [x] **Step 7: Write `crates/epdf-engine/src/features/measure.rs`**
 
 ```rust
 //! `measure.viewports` and `measure.setScale`: a page's measurement
@@ -681,12 +681,12 @@ Route both kinds in `crates/epdf-engine/src/host.rs`. `measure.viewports` goes w
 
 If `host.rs` has no `mutate_page` helper, follow the shape of the `"pages.rotate"` arm (`host.rs:821`) exactly and name the event the same way. Add `pub mod measure;` to `features/mod.rs`. Add both kinds to the wire-contract list `crates/epdf-engine/tests/wire_contract.rs` checks, if it enumerates kinds.
 
-- [ ] **Step 8: Run the engine tests**
+- [x] **Step 8: Run the engine tests**
 
 Run: `cargo test -p epdf-engine --test measure && cargo test -p epdf-engine`
 Expected: PASS, 3 new tests, nothing else broken.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine

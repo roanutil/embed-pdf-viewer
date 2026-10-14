@@ -409,6 +409,9 @@ impl Host {
                 .on_page(&key, body, |page| value(&f::text::reader::read_page_text(page, cancel)?)),
             "pages.geometry" => self
                 .on_page(&key, body, |page| value(&f::geometry::read_page_geometry(page, cancel)?)),
+            "measure.viewports" => {
+                self.on_page(&key, body, |page| f::measure::read_viewports(page.view(), cancel))
+            }
             "pages.render" | "pages.renderEncoded" => {
                 let options = render_options(body)?;
                 let raster = self.on_page_raw(&key, body, |page| {
@@ -967,6 +970,32 @@ impl Host {
                     crate::session::save::DocumentEventInit::AttachmentDeleted(serde_json::json!({
                         "key": name,
                     })),
+                )
+            }
+            "measure.setScale" => {
+                use crate::access::{DocumentAccess, PageAccess};
+                let pon = page_field(body)?;
+                // `PdfMeasure | null`. A host that drops `null` members (the
+                // viewer host's translation does) sends no `measure` at all,
+                // which reads as the same `null`.
+                let measure = body.get("measure").filter(|m| !m.is_null());
+                {
+                    let owned = self.sessions.session(&key)?.document()?;
+                    let index = owned.page_index(pon)?;
+                    let page = owned.page(pon)?;
+                    f::measure::set_scale(owned.document(), index, page.view(), measure, cancel)?;
+                }
+                // `PageScaleResult`, with the page spelled the host's way.
+                // A calibration changes no page pixels and no annotation
+                // indices, so `meta` is empty.
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PageViewportsChanged(
+                        serde_json::json!({
+                            "pageObjectNumber": pon,
+                            "meta": { "affectedPages": [], "cacheDelta": null },
+                        }),
+                    ),
                 )
             }
             "pieceInfo.update" | "pieceInfo.clear" => {

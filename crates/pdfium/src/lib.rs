@@ -27,6 +27,7 @@ mod form;
 mod form_write;
 mod geom;
 mod library;
+pub mod measure;
 mod metadata;
 mod metadata_write;
 mod page;
