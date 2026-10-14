@@ -3601,12 +3601,12 @@ git commit -m "Install the annotation plugin in the viewer host"
 - Consumes: the generated `AnnotationHandle`, sub-handles, records and `AnnotationEventListener` in `EmbedPDFBindings`; `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`, `StreamRegistry` in `EmbedPDF`.
 - Produces: `AnnotationCapability`, `AnnotationSelectionCapability`, `AnnotationToolsCapability`, `AnnotationDraftsCapability`, `AnnotationThreadsCapability`, `PDFViewer.annotations(for:)`, `AnnotationCapability.setFilePicker(_:)` taking a Swift `AnnotationFilePicker`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: it finishes, and `rg -n 'class AnnotationHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds the generated class.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/AnnotationTests.swift`:
 
@@ -3730,12 +3730,12 @@ extension BaseSuite {
 
 `createCancelsWhenTheTaskIsCancelled` accepts both counts on purpose. A cancel that lands after the engine write was sent can't recall it (`MetadataHandle.update`'s doc says the same), so the test pins only that the call returns and the capability still answers. The Rust test in Task 2 pins the deterministic before-it-runs case.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/AnnotationTests)`
 Expected: build failure, `value of type PDFViewer has no member annotations`.
 
-- [ ] **Step 4: Write `Annotation.swift`**
+- [x] **Step 4: Write `Annotation.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -4256,7 +4256,7 @@ extension PDFViewer {
 
 UniFFI renames `annotation_ref` to `annotationRef` and `tool_id` to `toolId` in the generated Swift. If the compiler reports a different label for any call, use the generated one; the generated file is the source of truth.
 
-- [ ] **Step 5: Add the fixtures and run the tests**
+- [x] **Step 5: Add the fixtures and run the tests**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -4293,12 +4293,12 @@ If plan 03 (selection) has merged into `research/swift-plugins`, add the cross-p
 
 Use plan 03's real method name for selecting a page (`rg -n 'func selectPage\|func select' platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift`).
 
-- [ ] **Step 6: Run the whole Swift suite**
+- [x] **Step 6: Run the whole Swift suite**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple/build-xcframework.sh platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests
