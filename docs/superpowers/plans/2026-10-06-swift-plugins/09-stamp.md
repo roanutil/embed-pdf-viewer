@@ -2324,17 +2324,17 @@ git commit -m "Add StampCapability and a file-backed library store to the Swift 
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1:** Append `stamp` to `crates=( ... )` in `plugin-rust.yml`, in plan-number order.
+- [ ] **Step 1:** (skipped: no CI edits on this branch) Append `stamp` to `crates=( ... )` in `plugin-rust.yml`, in plan-number order.
 
-- [ ] **Step 2:** Add the README row:
+- [x] **Step 2:** Add the README row:
 
 ```markdown
 | stamp | `StampCapability` | `stamp: StampConfig()` (with `annotation` to place) | `2026-10-06-swift-plugins/09-stamp.md` |
 ```
 
-- [ ] **Step 3:** In `2026-10-01-swift-package.md` §A.3, mark `**stamp** (W), delivered by 09-stamp.md`, and note there that `create_asset_from_annotations` is `unsupported` natively until `annotations.exportAppearance` exists in `epdf-engine`.
+- [x] **Step 3:** In `2026-10-01-swift-package.md` §A.3, mark `**stamp** (W), delivered by 09-stamp.md`, and note there that `create_asset_from_annotations` is `unsupported` natively until `annotations.exportAppearance` exists in `epdf-engine`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-stamp --features uniffi
@@ -2350,7 +2350,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -2360,7 +2360,7 @@ git commit -m "Test the stamp exports in CI and list them in the README
 libepdf_viewer_host.a (ios-sim, release): <before> -> <after> bytes"
 ```
 
-- [ ] **Step 6: Merge, rerun, clean up**
+- [ ] **Step 6: Merge, rerun, clean up** (the orchestrator merges)
 
 From the integration worktree:
 

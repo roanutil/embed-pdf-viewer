@@ -30,7 +30,7 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
                 let options =
                     json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });
                 doc.call("page.render.image", Some(pon), vec![options]).on_settle(move |image| {
-                    let image = image.as_ref().map(Clone::clone).map_err(|e| e.to_string());
+                    let image = image.clone().map_err(|e| e.to_string());
                     let _ = tx.send((list, image));
                 });
             });
