@@ -233,3 +233,69 @@ fn without_doc_sign_a_prepare_is_forbidden() {
     );
     assert_eq!(certify["error"]["code"], json!("Forbidden"), "{certify}");
 }
+
+// ── document-derived protection (final review) ───────────────────────────────
+
+#[test]
+fn a_certification_narrows_the_session_authority() {
+    use epdf_engine::auth::scope::DocCapability;
+    let mut session = epdf_engine::session::document::DocumentSession::new();
+    session.open(test_support::fixture(&format!("{FIX}/signed_certified.pdf")), None).unwrap();
+    // P=2: form fill and signing only, whatever the scope grants.
+    let authority = session.authority();
+    assert!(!authority.allows(DocCapability::DocPagesModify));
+    assert!(!authority.allows(DocCapability::DocAnnotateModify));
+    assert!(authority.allows(DocCapability::DocFormsFill));
+    assert!(authority.allows(DocCapability::DocSign));
+}
+
+#[test]
+fn a_field_locked_by_a_signature_refuses_a_write() {
+    let mut host = Host::new();
+    let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/signed_fieldmdp.pdf"));
+    let response = envelope(
+        &mut host,
+        json!({ "kind": "forms.setValue", "docId": doc,
+                "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 },
+                "value": { "type": "text", "value": "changed" } }),
+        Vec::new(),
+    );
+    assert_eq!(response["error"]["code"], json!("ProtectedDocument"), "{response}");
+}
+
+#[test]
+fn signature_reads_are_gated_as_the_typescript_gates_them() {
+    let mut host = Host::new();
+    let doc = sig_open_fixture_with(
+        &mut host,
+        &format!("{FIX}/signed_two_approvals.pdf"),
+        json!({ "scope": ["doc.open", "doc.render"] }),
+    );
+    let list = envelope(&mut host, json!({ "kind": "signatures.list", "docId": doc }), Vec::new());
+    assert_eq!(list["error"]["code"], json!("Forbidden"), "{list}");
+    let revision = envelope(
+        &mut host,
+        json!({ "kind": "signatures.revisionBytes", "docId": doc, "revisionIndex": 0 }),
+        Vec::new(),
+    );
+    assert_eq!(revision["error"]["code"], json!("Forbidden"), "{revision}");
+    let analyze = envelope(
+        &mut host,
+        json!({ "kind": "signatures.analyze", "docId": doc, "input": { "since": { "signatureIndex": 0 } } }),
+        Vec::new(),
+    );
+    assert_eq!(analyze["error"]["code"], json!("Forbidden"), "{analyze}");
+    // Form read grants the list, not the revision bytes (`doc.download`).
+    let reader = sig_open_fixture_with(
+        &mut host,
+        &format!("{FIX}/signed_certified.pdf"),
+        json!({ "scope": ["doc.open", "doc.forms.read"] }),
+    );
+    sig_call(&mut host, json!({ "kind": "signatures.list", "docId": reader }));
+    let bytes = envelope(
+        &mut host,
+        json!({ "kind": "signatures.revisionBytes", "docId": reader, "revisionIndex": 0 }),
+        Vec::new(),
+    );
+    assert_eq!(bytes["error"]["code"], json!("Forbidden"), "{bytes}");
+}

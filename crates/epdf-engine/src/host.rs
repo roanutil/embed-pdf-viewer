@@ -412,6 +412,7 @@ impl Host {
 
             // ── Signatures (reads) ───────────────────────────────────
             "signatures.list" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 // The working copy: the unsaved state as one more revision
                 // over the loaded bytes. The same as the loaded bytes when
                 // nothing is unsaved.
@@ -480,22 +481,26 @@ impl Host {
                 )
             }
             "signatures.analyze" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let input: f::signature::analysis::types::AnalyzeInput = field(body, "input")?;
                 let session = self.sessions.session(&key)?;
                 Ok(ok(value(&f::signature::analyzer::analyze(session, &input)?)?))
             }
             "signatures.contents" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let d = self.document(&key)?;
                 Ok(bytes_response(f::signature::reader::read_contents(d, &target)?))
             }
             "signatures.digest" => {
+                self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let algorithm: f::signature::types::DigestAlgorithm = field(body, "algorithm")?;
                 let d = self.document(&key)?;
                 Ok(bytes_response(f::signature::reader::digest(d, &target, algorithm)?))
             }
             "signatures.revisionBytes" => {
+                self.sessions.session(&key)?.require(DocCapability::DocDownload)?;
                 let index: u32 = field(body, "revisionIndex")?;
                 let d = self.document(&key)?;
                 Ok(bytes_response(f::signature::reader::revision_bytes(d, index)?))
@@ -691,7 +696,12 @@ impl Host {
                     mode,
                     self.clock.as_ref(),
                 )?;
-                Ok(ok(value(&probe)?))
+                // The protection beside the probe, as the TypeScript's
+                // answer carries it, so a host that just unlocked knows
+                // what the signatures forbid.
+                let mut answer = value(&probe)?;
+                answer["protection"] = self.protection_of(&key);
+                Ok(ok(answer))
             }
 
             // ── Mutations ─────────────────────────────────────────────
@@ -1304,7 +1314,21 @@ impl Host {
             Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {}
             Err(error) => return Err(error),
         }
-        Ok(serde_json::json!({ "security": value(&self.security_on_open(&key)?)? }))
+        Ok(serde_json::json!({
+            "security": value(&self.security_on_open(&key)?)?,
+            "protection": self.protection_of(&key),
+        }))
+    }
+
+    /// What an open document's signatures forbid (`WorkerHost.probeProtection`),
+    /// `null` for a locked, unsigned or unreadable one.
+    fn protection_of(&self, key: &SessionKey) -> serde_json::Value {
+        self.sessions
+            .session(key)
+            .ok()
+            .and_then(|s| s.authority().protection())
+            .and_then(|p| serde_json::to_value(p).ok())
+            .unwrap_or(serde_json::Value::Null)
     }
 
     /// The security probe an open reports.

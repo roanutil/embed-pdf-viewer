@@ -214,6 +214,7 @@ impl DocumentSession {
         // `permissions()` reports the owner word for every encrypted document.
         let mut authority = authority;
         authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
@@ -267,6 +268,7 @@ impl DocumentSession {
 
         let mut authority = authority;
         authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
+        authority.set_protection(document_protection(&document));
 
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
@@ -578,7 +580,9 @@ impl DocumentSession {
         if document.is_encrypted() {
             document.set_runtime_owner_permissions(true);
         }
+        let protection = document_protection(&document);
         let document = OwnedDocument::new(document)?;
+        self.authority.set_protection(protection);
         let state = self.state_mut()?;
         let previous: Vec<PageObjectNumber> =
             state.records.iter().map(|r| r.page_object_number).collect();
@@ -660,4 +664,14 @@ impl Drop for DocumentSession {
     fn drop(&mut self) {
         self.close();
     }
+}
+
+/// What a document's signatures forbid, for its authority. A document
+/// whose signature model cannot be built is not known to be protected.
+fn document_protection(
+    document: &Document,
+) -> Option<crate::features::signature::types::DocumentProtection> {
+    crate::features::signature::reader::read_protection(document)
+        .ok()
+        .filter(|p| p.judged.is_some())
 }

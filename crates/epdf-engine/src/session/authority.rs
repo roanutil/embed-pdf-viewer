@@ -23,10 +23,12 @@
 
 use crate::auth::scope::{
     Capabilities, CollabAction, CollabTarget, DocCapability, IdentityClaims, InvalidScope,
-    ParsedScope, PdfBits, check_any_capability, check_capability, check_collab, check_set_group,
-    expanded_capabilities, parse_all,
+    ParsedScope, PdfBits, check_capability, check_collab, check_set_group, expanded_capabilities,
+    parse_all,
 };
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::signature::protection::protected_capabilities;
+use crate::features::signature::types::DocumentProtection;
 
 /// One caller's authority over one open document.
 #[derive(Debug, Clone)]
@@ -43,6 +45,11 @@ pub struct SessionAuthority {
     /// so an unprobed document grants nothing through the virtual scope rather
     /// than everything.
     pdf_bits: PdfBits,
+    /// What the document's signatures forbid (`deriveProtection`), which no
+    /// scope grants, the wildcard included (`resolver.ts` `checkCapability`
+    /// under `signedDocumentPolicy: 'protect'`, the default). `None` for an
+    /// unsigned document or one not read yet.
+    protection: Option<DocumentProtection>,
 }
 
 impl SessionAuthority {
@@ -56,7 +63,7 @@ impl SessionAuthority {
         identity: IdentityClaims,
         pdf_bits: PdfBits,
     ) -> Result<Self, InvalidScope> {
-        Ok(Self { scope: parse_all(scope)?, identity, pdf_bits })
+        Ok(Self { scope: parse_all(scope)?, identity, pdf_bits, protection: None })
     }
 
     /// Full authority, for a host with no notion of scopes.
@@ -70,6 +77,7 @@ impl SessionAuthority {
             scope: vec![ParsedScope::Wildcard],
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
+            protection: None,
         }
     }
 
@@ -92,21 +100,38 @@ impl SessionAuthority {
         self.pdf_bits = pdf_bits;
     }
 
+    /// Adopt the document's signature protection (`ScopeGuard.setProtection`).
+    pub fn set_protection(&mut self, protection: Option<DocumentProtection>) {
+        self.protection = protection;
+    }
+
+    pub fn protection(&self) -> Option<&DocumentProtection> {
+        self.protection.as_ref()
+    }
+
+    /// What the protection removes from every caller.
+    fn protected(&self) -> Capabilities {
+        protected_capabilities(self.protection.as_ref())
+    }
+
     pub fn scope(&self) -> &[ParsedScope] {
         &self.scope
     }
 
     pub fn allows(&self, capability: DocCapability) -> bool {
-        check_capability(capability, &self.scope, self.pdf_bits)
+        !self.protected().contains(&capability)
+            && check_capability(capability, &self.scope, self.pdf_bits)
     }
 
     pub fn allows_any(&self, capabilities: &[DocCapability]) -> bool {
-        check_any_capability(capabilities, &self.scope, self.pdf_bits)
+        capabilities.iter().any(|c| self.allows(*c))
     }
 
     /// `ScopeGuard.canCollab`: the collab action against a record's owner.
     pub fn allows_collab(&self, action: CollabAction, target: &CollabTarget) -> bool {
-        check_collab(action, target, &self.scope, &self.identity, self.pdf_bits)
+        // A declared signature constraint outranks the collab authority.
+        !self.protected().contains(&DocCapability::DocAnnotateModify)
+            && check_collab(action, target, &self.scope, &self.identity, self.pdf_bits)
     }
 
     /// `ScopeGuard.canSetGroup`: assigning `group_id` to an annotation.
@@ -116,7 +141,11 @@ impl SessionAuthority {
 
     /// Everything this caller may do, for an `/access`-style report.
     pub fn expanded(&self) -> Capabilities {
+        let protected = self.protected();
         expanded_capabilities(&self.scope, self.pdf_bits)
+            .into_iter()
+            .filter(|c| !protected.contains(c))
+            .collect()
     }
 
     /// Refuse unless the capability is granted.
@@ -161,6 +190,7 @@ impl Default for SessionAuthority {
             scope: Vec::new(),
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
+            protection: None,
         }
     }
 }

@@ -43,6 +43,10 @@ thread_local! {
     /// Each open document's current `PageListSnapshot`: the one its open
     /// loaded, then the `layout` of every page mutation's event.
     static LAYOUTS: RefCell<HashMap<String, Value>> = RefCell::new(HashMap::new());
+    /// Each open document's security state, so a completed signature's
+    /// event can hand it the new protection.
+    static STATES: RefCell<HashMap<String, std::rc::Weak<NativeDocumentState>>> =
+        RefCell::new(HashMap::new());
 }
 
 pub struct NativeEngine {
@@ -145,6 +149,12 @@ fn publish(doc: &str, event: &Value) {
     // the TypeScript's `LocalDocumentSignaturesService.complete` follows
     // with `document.versioned`: byte-level facts must be re-read.
     if event.get("type").and_then(Value::as_str) == Some("signature.completed") {
+        // What the signatures forbid moved with the bytes
+        // (`LocalDocumentSignaturesService.complete`'s `setProtection`).
+        let state = STATES.with(|s| s.borrow().get(doc).and_then(std::rc::Weak::upgrade));
+        if let Some(state) = state {
+            state.take_protection(event.get("protection").unwrap_or(&Value::Null));
+        }
         let versioned = json!({
             "type": "document.versioned",
             "version": event.get("version").cloned().unwrap_or(Value::Null),
@@ -194,7 +204,7 @@ impl Engine for NativeEngine {
                     "scope": self.inner.scope,
                 }),
                 payloads: vec![bytes],
-                decode: Decode::Field("security"),
+                decode: Decode::Result,
             })
         });
         let (promise, resolver) = Promise::<Rc<dyn DocumentHandle>>::pending();
@@ -202,8 +212,11 @@ impl Engine for NativeEngine {
         let inner = self.inner.clone();
         let (settled, stopped) = (resolver.clone(), aborted.clone());
         rt::spawn(async move {
-            let security = match opened.await {
-                Ok(security) => security,
+            let (security, protection) = match opened.await {
+                Ok(mut answer) => (
+                    answer.get_mut("security").map(Value::take).unwrap_or(Value::Null),
+                    answer.get_mut("protection").map(Value::take).unwrap_or(Value::Null),
+                ),
                 Err(error) => return settled.reject(error),
             };
             if stopped.get() {
@@ -213,6 +226,8 @@ impl Engine for NativeEngine {
             // host, and comes up as a locked tab: `password_prompt` says so,
             // and `NativeSecurity::unlock` loads it.
             let state = Rc::new(NativeDocumentState::new(doc.clone(), inner.clone(), security));
+            state.take_protection(&protection);
+            STATES.with(|s| s.borrow_mut().insert(doc.clone(), Rc::downgrade(&state)));
             if state.locked.get() {
                 let pages = json!({ "pages": [] });
                 return settled.resolve(Rc::new(NativeDocument { id: doc, inner, pages, state }));
@@ -304,6 +319,17 @@ impl NativeDocumentState {
         state
     }
 
+    /// Adopt the document's signature protection (`ScopeGuard.setProtection`):
+    /// what it forbids, no scope grants. `null` or unreadable is none.
+    fn take_protection(&self, protection: &Value) {
+        let protection = serde_json::from_value::<
+            epdf_engine::features::signature::types::DocumentProtection,
+        >(protection.clone())
+        .ok()
+        .filter(|p| p.judged.is_some());
+        self.authority.borrow_mut().set_protection(protection);
+    }
+
     /// Adopt a security probe: the permission bits for `pdf.permissions`,
     /// and whether the document is still waiting for a password (it needs
     /// one and has not been opened as anybody).
@@ -337,6 +363,7 @@ impl DocumentHandle for NativeDocument {
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
         if path == "close" {
             LAYOUTS.with(|l| l.borrow_mut().remove(&self.id));
+            STATES.with(|s| s.borrow_mut().remove(&self.id));
         }
         self.inner.send(&self.id, |job| translate::translate(&self.id, path, pon, &args, job))
     }
@@ -472,8 +499,14 @@ impl DocumentSecurity for NativeSecurity {
         });
         let (promise, resolver) = Promise::pending();
         rt::spawn(async move {
-            let security = match checked.await {
-                Ok(security) => security,
+            let (security, protection) = match checked.await {
+                Ok(mut security) => {
+                    let protection = security
+                        .as_object_mut()
+                        .and_then(|m| m.remove("protection"))
+                        .unwrap_or(Value::Null);
+                    (security, protection)
+                }
                 Err(error) => return resolver.reject(error),
             };
             let pages = state
@@ -486,6 +519,7 @@ impl DocumentSecurity for NativeSecurity {
                 Ok(pages) => {
                     LAYOUTS.with(|l| l.borrow_mut().insert(state.id.clone(), pages));
                     state.take_probe(security.clone());
+                    state.take_protection(&protection);
                     resolver.resolve(json!({ "security": security }));
                 }
                 Err(error) => resolver.reject(error),

@@ -1881,3 +1881,74 @@ fn signature_without_form_fails_to_build() {
     );
     assert!(built.is_err());
 }
+
+#[test]
+fn a_certified_document_refuses_edits_natively() {
+    let host = signature_host();
+    let doc = open_signing(&host, "signed_certified.pdf");
+    // P=2: form fill and signing only, whatever the scope grants.
+    let edit = block_on(host.page_edit(doc.clone())).unwrap();
+    assert!(!block_on(edit.can_edit()).unwrap());
+    let annotations = block_on(host.annotation(doc.clone())).unwrap();
+    assert!(!block_on(annotations.can_create()).unwrap());
+    let s = block_on(host.signature(doc)).unwrap();
+    assert!(block_on(s.can_fill()).unwrap());
+}
+
+#[test]
+fn a_certification_signed_here_protects_the_document() {
+    let host = ViewerHost::new(
+        ViewerConfig {
+            interaction: true,
+            form: Some(Default::default()),
+            page_edit: true,
+            signature: Some(SignatureConfig { mode: None, allow_certify: Some(true) }),
+            ..Default::default()
+        },
+        Arc::new(Delegate),
+    )
+    .unwrap();
+    block_on(host.start()).unwrap();
+    host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let edit = block_on(host.page_edit(doc.clone())).unwrap();
+    assert!(block_on(edit.can_edit()).unwrap());
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    let input = SignatureSignInput { certify: Some(1), ..sign_input(field) };
+    block_on(s.sign(input, None, CancelToken::new())).unwrap();
+    assert!(!block_on(edit.can_edit()).unwrap());
+}
+
+#[test]
+fn placing_a_mark_without_a_signer_fills_the_field() {
+    let host = signature_host();
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    assert_eq!(block_on(s.mode()).unwrap(), SignatureMode::Visual);
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    let artwork = test_support::fixture(&format!("{SIGNING}/signature_artwork.pdf"));
+    let result = block_on(s.place_mark(
+        SignatureMark::Source { bytes: artwork },
+        SignaturePlaceTarget::Field { field: field.clone() },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(result, SignaturePlaceResult::Filled { field });
+}
+
+#[test]
+fn a_narrow_scope_cannot_read_a_revision() {
+    let host = signature_host_with(Some(vec![
+        "doc.open".into(),
+        "doc.render".into(),
+        "doc.forms.read".into(),
+    ]));
+    let doc = open_signing(&host, "signed_two_approvals.pdf");
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.signatures()).unwrap()[0].field.clone();
+    assert!(block_on(s.read_revision(field, CancelToken::new())).is_err());
+}

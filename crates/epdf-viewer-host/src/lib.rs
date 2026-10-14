@@ -480,10 +480,9 @@ impl ViewerHost {
         document_id: String,
     ) -> Result<Arc<SignatureHandle>, ViewerError> {
         let post = self.post.clone();
-        let slot = self.signature_slots.signer.clone();
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_signature::SIGNATURE, Some(&document_id))?;
-            Ok(SignatureHandle::with_signer_slot(cap, post, slot))
+            Ok(SignatureHandle::new(cap, post))
         })
         .await
     }

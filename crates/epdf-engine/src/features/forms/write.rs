@@ -152,8 +152,43 @@ pub(crate) fn read_writable_field(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
     drop(model);
     read_field_back(document, object_number, cancel)
+}
+
+/// `FormMutator.assertNotLockedBySignature`: a field an earlier signature
+/// froze (its FieldMDP, or the `/Lock` of a signed field) refuses every
+/// write, `ProtectedDocument`. A document whose signature model cannot be
+/// built is not known to be locked.
+pub(super) fn require_unlocked(
+    document: &Document,
+    model: &FormModel<'_>,
+    resolved: &ResolvedField,
+) -> Result<(), EngineError> {
+    use crate::features::signature::protection::field_lock_for;
+    use crate::features::signature::types::FieldLockSource;
+    let Ok(protection) = crate::features::signature::reader::read_protection(document) else {
+        return Ok(());
+    };
+    if protection.field_locks.is_empty() {
+        return Ok(());
+    }
+    let name = model
+        .field(resolved.index)
+        .and_then(|f| super::snapshot::text(f.name()).ok().flatten())
+        .unwrap_or_default();
+    if let Some(lock) = field_lock_for(&protection, &name) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::ProtectedDocument,
+            format!(
+                "form field \"{name}\" is locked by signature {} ({})",
+                lock.signature_index,
+                if lock.source == FieldLockSource::Fieldmdp { "FieldMDP" } else { "/Lock" }
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// Set a field's value.
@@ -167,6 +202,7 @@ pub fn set_value(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
 
     // The family check happens HERE rather than being left to PDFium. A
     // toggle state on a text field is the caller having confused two fields,
@@ -231,6 +267,7 @@ pub fn reset(
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
     let object_number = require_writable(&resolved)?;
+    require_unlocked(document, &model, &resolved)?;
     drop(model);
     cancel.check()?;
 
