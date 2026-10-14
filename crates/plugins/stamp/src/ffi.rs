@@ -11,8 +11,8 @@ use std::sync::{Arc, Mutex};
 
 use epdf_annotation_core as ac;
 use epdf_ffi::{
-    AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Point, Size, Subscription,
-    ViewerError,
+    AnnotationRef, CancelToken, HostError, KernelBound, KernelPost, PageRef, Point, Size,
+    Subscription, ViewerError,
 };
 use epdf_kernel::bytes::Bytes;
 use epdf_kernel::rt::Promise;
@@ -408,28 +408,22 @@ pub struct StoredStampLibrary {
 
 /// Where custom libraries live: bytes by library id. Swift implements it
 /// over files. Called on the kernel thread, synchronously; keep it to
-/// local disk.
+/// local disk. A throw fails the `restore` (for `list`) or is dropped with
+/// that one write (for `put` and `delete`), as `persistence.ts` does.
 #[uniffi::export(with_foreign)]
 pub trait StampLibraryStore: Send + Sync {
-    fn list(&self) -> Result<Vec<StoredStampLibrary>, ViewerError>;
-    fn put(&self, id: String, bytes: Vec<u8>) -> Result<(), ViewerError>;
-    fn delete(&self, id: String) -> Result<(), ViewerError>;
+    fn list(&self) -> Result<Vec<StoredStampLibrary>, HostError>;
+    fn put(&self, id: String, bytes: Vec<u8>) -> Result<(), HostError>;
+    fn delete(&self, id: String) -> Result<(), HostError>;
 }
 
 /// The Rust store over the foreign one.
 struct ForeignStore(Arc<dyn StampLibraryStore>);
 
-fn settled<T: Clone + 'static>(result: Result<T, ViewerError>) -> Promise<T> {
+fn settled<T: Clone + 'static>(result: Result<T, HostError>) -> Promise<T> {
     match result {
         Ok(value) => Promise::resolved(value),
-        Err(ViewerError::Kernel { name, code, detail }) => {
-            let mut error = Error::named(name, detail);
-            if let Some(code) = code {
-                error = error.with("code", code);
-            }
-            Promise::rejected(error)
-        }
-        Err(ViewerError::Closed) => Promise::rejected(Error::new("[stamp] the store is closed")),
+        Err(error) => Promise::rejected(error.into()),
     }
 }
 

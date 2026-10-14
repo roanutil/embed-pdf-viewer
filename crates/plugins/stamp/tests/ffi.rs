@@ -7,7 +7,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{CancelToken, KernelThread, PageRef, ViewerError};
+use epdf_ffi::{CancelToken, HostError, KernelThread, PageRef, ViewerError};
 use epdf_plugin_stamp::ffi::{
     StampAddAssetInput, StampEvent, StampEventListener, StampHandle, StampLibraryStore,
     StoredStampLibrary,
@@ -30,16 +30,16 @@ impl StampEventListener for Events {
 struct Store(Mutex<Vec<StoredStampLibrary>>);
 
 impl StampLibraryStore for Store {
-    fn list(&self) -> Result<Vec<StoredStampLibrary>, ViewerError> {
+    fn list(&self) -> Result<Vec<StoredStampLibrary>, HostError> {
         Ok(self.0.lock().unwrap().clone())
     }
-    fn put(&self, id: String, bytes: Vec<u8>) -> Result<(), ViewerError> {
+    fn put(&self, id: String, bytes: Vec<u8>) -> Result<(), HostError> {
         let mut rows = self.0.lock().unwrap();
         rows.retain(|r| r.id != id);
         rows.push(StoredStampLibrary { id, bytes });
         Ok(())
     }
-    fn delete(&self, id: String) -> Result<(), ViewerError> {
+    fn delete(&self, id: String) -> Result<(), HostError> {
         self.0.lock().unwrap().retain(|r| r.id != id);
         Ok(())
     }
@@ -49,17 +49,13 @@ impl StampLibraryStore for Store {
 struct BrokenStore;
 
 impl StampLibraryStore for BrokenStore {
-    fn list(&self) -> Result<Vec<StoredStampLibrary>, ViewerError> {
-        Err(ViewerError::Kernel {
-            name: "StoreError".into(),
-            code: Some("io".into()),
-            detail: "no disk".into(),
-        })
+    fn list(&self) -> Result<Vec<StoredStampLibrary>, HostError> {
+        Err(HostError::Failed { detail: "no disk".into() })
     }
-    fn put(&self, _: String, _: Vec<u8>) -> Result<(), ViewerError> {
+    fn put(&self, _: String, _: Vec<u8>) -> Result<(), HostError> {
         Ok(())
     }
-    fn delete(&self, _: String) -> Result<(), ViewerError> {
+    fn delete(&self, _: String) -> Result<(), HostError> {
         Ok(())
     }
 }
@@ -188,7 +184,13 @@ fn restore_reads_nothing_from_an_empty_store() {
 fn a_store_that_throws_fails_the_restore_with_its_error() {
     let (_thread, stamp, _) = handle();
     let error = block_on(stamp.restore(Arc::new(BrokenStore), CancelToken::new())).unwrap_err();
-    assert_eq!(code(&error), Some("io"), "{error:?}");
+    match error {
+        ViewerError::Kernel { name, code, detail } => {
+            assert_eq!((name.as_str(), code.as_deref()), ("HostError", Some("operation-failed")));
+            assert!(detail.contains("no disk"), "{detail}");
+        }
+        other => panic!("{other:?}"),
+    }
 }
 
 #[test]

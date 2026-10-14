@@ -1916,7 +1916,7 @@ git commit -m "Add stamp to ViewerHost with a lazily started asset engine"
 - Consumes: generated `StampHandle`, `ViewerHost.stamp()`; plan 05's `PDFViewer.annotations(for:)`.
 - Produces: `StampCapability`, `PDFViewer.stamps()`, `FileStampLibraryStore`.
 
-- [ ] **Step 1: Add the fixture**
+- [x] **Step 1: Add the fixture**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -1924,7 +1924,7 @@ In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella 
   packages/default-stamps/en/stamps.pdf
 ```
 
-- [ ] **Step 2: Write the failing Swift tests**
+- [x] **Step 2: Write the failing Swift tests**
 
 ```swift
 // platforms/apple/EmbedPDF/Tests/EmbedPDFTests/StampTests.swift
@@ -2037,12 +2037,12 @@ extension BaseSuite {
 
 `stamp` is workspace-scoped, so the standing `aClosedDocumentsCapabilityThrows` doesn't apply (umbrella, "The template"). `placingIntoAClosedDocumentThrows` covers the document-scoped part of the API instead. Every `CancelToken` member also gets the cancellation shape `importCancelsWhenTheTaskIsCancelled` shows; add one test per member as you write it in Step 4, named `<member>CancelsWhenTheTaskIsCancelled`.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/StampTests)`
 Expected: FAIL to compile, no `stamps()` on `PDFViewer`.
 
-- [ ] **Step 4: Write `Stamp.swift`**
+- [x] **Step 4: Write `Stamp.swift`**
 
 ```swift
 public import CoreGraphics
@@ -2307,12 +2307,12 @@ extension PDFViewer {
 
 `ViewerError` and `StampLibraryStore` come from `EmbedPDFBindings`; the generated protocol's method signatures decide the exact `throws` spelling (UniFFI 0.32 generates `throws` for a fallible foreign method), so match what `Sources/EmbedPDFBindings/epdf_plugin_stamp.swift` declares. If `ViewerError` isn't public through `EmbedPDF`, add `public typealias ViewerError = EmbedPDFBindings.ViewerError` here; it's needed by anyone implementing their own store. If generated code calls the protocol from a non-main thread under Swift 6 strict concurrency and the class's `Sendable` conformance is refused, keep `FileStampLibraryStore` `final` with only `let` properties, which is what makes the conformance hold.
 
-- [ ] **Step 5: Run the Swift tests**
+- [x] **Step 5: Run the Swift tests**
 
 Run: `bash platforms/apple/build-xcframework.sh && (cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add platforms/apple
