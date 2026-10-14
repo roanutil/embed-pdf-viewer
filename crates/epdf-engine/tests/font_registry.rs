@@ -244,3 +244,23 @@ fn a_registry_can_be_filled_before_any_document_is_open() {
         assert!(registry.contains("roboto"), "opening a document disturbed the registry");
     });
 }
+
+#[test]
+fn a_registered_face_maps_back_to_its_key_and_clear_forgets_it() {
+    // `FontRegistrar.describe` / `keyForFace`: a rich text body reads back by
+    // family, weight and italic, and the read maps that to the host's key.
+    on_a_fresh_thread(|| {
+        let mut registry = FontRegistry::new().unwrap();
+        registry.register("roboto", &FontDescription::inferred(), &roboto_bytes()).unwrap();
+        let identity = registry.describe("roboto").expect("an identity");
+        assert_eq!(identity.family_name, "Roboto");
+        assert!(registry.describe("missing").is_none());
+
+        let found = epdf_engine::features::fonts::key_for_face("roboto", 400, false);
+        assert_eq!(found.as_deref(), Some("roboto"));
+        assert_eq!(epdf_engine::features::fonts::key_for_face("Helvetica", 400, false), None);
+
+        registry.clear();
+        assert_eq!(epdf_engine::features::fonts::key_for_face("Roboto", 400, false), None);
+    });
+}

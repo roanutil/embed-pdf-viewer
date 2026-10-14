@@ -33,6 +33,7 @@ pub mod appearance;
 pub mod flags;
 pub mod intent;
 pub mod read;
+pub mod rich_text;
 pub mod state;
 pub mod subtype;
 pub mod vocabulary;

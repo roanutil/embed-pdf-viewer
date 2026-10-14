@@ -260,6 +260,17 @@ impl Annotation<'_> {
         }
     }
 
+    /// Replace a free text's rich text with the fork's JSON shape: `/RC`,
+    /// `/DS`, `/DA`, `/Contents` and the appearance, all or nothing. False
+    /// for invalid JSON, an empty `/Rect`, or a font resource the fork could
+    /// not build; the annotation is then unchanged.
+    pub fn set_rich_text_json(&self, json: &str) -> Result<bool, PdfiumError> {
+        let json = CString::new(json)
+            .map_err(|_| PdfiumError::InvalidArgument("rich text JSON contains NUL"))?;
+        // SAFETY: the handle is live and `json` is NUL-terminated for the call.
+        Ok(unsafe { pdfium_sys::EPDFAnnot_SetRichTextJSON(self.as_raw(), json.as_ptr()) != 0 })
+    }
+
     /// `/Q`, as an `FPDF_TEXT_ALIGNMENT` code.
     pub fn set_text_alignment(&self, alignment: i32) -> bool {
         // SAFETY: the handle is live.

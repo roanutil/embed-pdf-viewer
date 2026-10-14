@@ -132,3 +132,34 @@ pub fn clear_fallback_fonts() {
 pub fn clear_registered_fonts() {
     unsafe { pdfium_sys::EPDFFont_ClearRegisteredFonts() };
 }
+
+/// What the fork resolved a registered font to: the family (the name given at
+/// registration, else the font's own), the weight and the italic flag. A rich
+/// text body names a face by these, so a host maps them back to its keys.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FontIdentity {
+    pub family_name: String,
+    pub weight: i32,
+    pub italic: bool,
+}
+
+/// The identity of a font registered on this thread. `None` for an id the
+/// fork does not know.
+pub fn font_identity(id: FontId) -> Option<FontIdentity> {
+    // SAFETY: a null buffer with length zero asks for the length only.
+    let needed = unsafe { pdfium_sys::EPDFFont_GetFamilyName(id.raw(), std::ptr::null_mut(), 0) };
+    if needed == 0 {
+        return None;
+    }
+    let mut buffer = vec![0u8; needed as usize];
+    // SAFETY: `buffer` is `needed` bytes and lives for the call.
+    let written =
+        unsafe { pdfium_sys::EPDFFont_GetFamilyName(id.raw(), buffer.as_mut_ptr().cast(), needed) };
+    let produced = (written as usize).saturating_sub(1).min(buffer.len());
+    let family_name = String::from_utf8_lossy(&buffer[..produced]).into_owned();
+    // SAFETY: plain getters over a thread-local registry; an unknown id
+    // answers zero rather than faulting.
+    let weight = unsafe { pdfium_sys::EPDFFont_GetWeight(id.raw()) };
+    let italic = unsafe { pdfium_sys::EPDFFont_IsItalic(id.raw()) } != 0;
+    Some(FontIdentity { family_name, weight, italic })
+}

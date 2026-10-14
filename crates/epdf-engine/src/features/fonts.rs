@@ -32,7 +32,7 @@ use std::collections::BTreeMap;
 
 use std::rc::Rc;
 
-use pdfium::{FileAccess, FontDescription, FontId, Library, PdfiumError};
+use pdfium::{FileAccess, FontDescription, FontId, FontIdentity, Library, PdfiumError};
 
 use crate::error::{EngineError, EngineErrorCode};
 
@@ -92,6 +92,57 @@ thread_local! {
     /// breaking it a loud failure at the second construction rather than a
     /// quiet one at the first clear.
     static REGISTRY_ON_THREAD: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+
+    /// What each registered key resolved to, in registration order.
+    ///
+    /// Thread-local for the same reason the registry is one per thread: a
+    /// rich text body read back on this thread names a face by family,
+    /// weight and italic, and mapping that back to a key (`keyForFace` in
+    /// `FontRegistrar.ts`) has to work from the readers, which are handed no
+    /// registry. Order is kept because the TypeScript's `Map` breaks ties by
+    /// it.
+    static IDENTITIES: std::cell::RefCell<Vec<(String, FontIdentity)>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// Record a key's identity: what the fork resolved, else what was given (a
+/// runtime without the getters reports registration's own description).
+fn remember_identity(key: &str, id: FontId, given: &FontDescription) {
+    let identity = pdfium::font_identity(id).unwrap_or_else(|| FontIdentity {
+        family_name: given.family_name.clone(),
+        weight: if given.weight == 0 { 400 } else { given.weight },
+        italic: given.italic == Some(true),
+    });
+    IDENTITIES.with(|all| {
+        let mut all = all.borrow_mut();
+        match all.iter_mut().find(|(k, _)| k == key) {
+            Some(entry) => entry.1 = identity,
+            None => all.push((key.to_owned(), identity)),
+        }
+    });
+}
+
+/// The key of the font registered on this thread whose identity matches a
+/// face: family compared the fork's way, then the closest weight, italic
+/// first. `None` when no registered family matches. Ports
+/// `FontRegistrar.keyForFace`.
+pub fn key_for_face(family: &str, weight: u32, italic: bool) -> Option<String> {
+    let wanted = crate::features::annotation::rich_text::family_key(family);
+    IDENTITIES.with(|all| {
+        let mut best: Option<(&str, i64)> = None;
+        let all = all.borrow();
+        for (key, identity) in all.iter() {
+            if crate::features::annotation::rich_text::family_key(&identity.family_name) != wanted {
+                continue;
+            }
+            let score = (i64::from(identity.weight) - i64::from(weight)).abs()
+                + if identity.italic == italic { 0 } else { 1000 };
+            if best.is_none_or(|(_, s)| score < s) {
+                best = Some((key, score));
+            }
+        }
+        best.map(|(key, _)| key.to_owned())
+    })
 }
 
 impl FontRegistry {
@@ -131,6 +182,7 @@ impl FontRegistry {
         let key = key.into();
         let id = pdfium::register_memory_font(description, bytes)
             .map_err(|e| registration_failed(&key, None, e))?;
+        remember_identity(&key, id, description);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -150,6 +202,7 @@ impl FontRegistry {
         // Retained only on success. A failed registration that kept its handle
         // would leak a file descriptor per attempt.
         self.retained.push(access);
+        remember_identity(&key, id, description);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -202,6 +255,7 @@ impl FontRegistry {
     pub fn clear(&mut self) {
         pdfium::clear_registered_fonts();
         self.ids.clear();
+        IDENTITIES.with(|all| all.borrow_mut().clear());
         self.fallback_order.clear();
         self.retained.clear();
     }
@@ -213,6 +267,17 @@ impl FontRegistry {
                 EngineErrorCode::InvalidArg,
                 format!("font not registered on this thread: {key}"),
             )
+        })
+    }
+
+    /// What a key resolved to. `None` for a key never registered here.
+    /// Ports `FontRegistrar.describeOrUndefined`.
+    pub fn describe(&self, key: &str) -> Option<FontIdentity> {
+        if !self.ids.contains_key(key) {
+            return None;
+        }
+        IDENTITIES.with(|all| {
+            all.borrow().iter().find(|(k, _)| k == key).map(|(_, identity)| identity.clone())
         })
     }
 

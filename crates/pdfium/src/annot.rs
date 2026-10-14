@@ -409,6 +409,17 @@ impl Annotation<'_> {
         })
     }
 
+    /// The rich text of a free text (`/RC` over `/DS` and `/DA`) or a rich
+    /// text field, as the fork's UTF-8 JSON. When there is no `/RC` the fork
+    /// synthesises the same shape from `/Contents`, so a free text always has
+    /// one. `None` when the fork reports an error.
+    pub fn rich_text_json(&self) -> Result<Option<String>, PdfiumError> {
+        read_utf8(|buffer, len| {
+            // SAFETY: the handle is live, and `len` describes `buffer` in bytes.
+            unsafe { pdfium_sys::EPDFAnnot_GetRichTextJSON(self.handle, buffer.cast(), len) }
+        })
+    }
+
     /// `/Q`, the raw quadding code. An absent `/Q` answers zero, which is
     /// left, and is indistinguishable from an explicit zero. That is the
     /// PDF's own doing: zero is the default.
