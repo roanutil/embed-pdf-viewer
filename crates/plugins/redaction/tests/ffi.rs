@@ -296,11 +296,12 @@ fn a_remote_apply_arrives_as_a_typed_result() {
     let events = Arc::new(Events::default());
     let _sub = redaction.subscribe(events.clone());
     block_on(thread.call(|_| ())).unwrap();
-    // A remote apply carries its result inside the `redaction.applied` event.
+    // A remote apply is the whole `redaction.applied` event, the result's
+    // members spread into it (the vectors' shape).
     let event = json!({ "type": "redaction.applied", "origin": { "kind": "remote" },
-        "result": { "scope": { "kind": "pages", "pages": [page(1)] },
-            "results": [{ "page": page(1), "status": "applied", "removedAnnotationCount": 0 }],
-            "removedAnnotationCount": 0 } });
+        "scope": { "kind": "pages", "pages": [page(1)] },
+        "results": [{ "page": page(1), "status": "applied", "removedAnnotationCount": 0 }],
+        "removedAnnotationCount": 0 });
     block_on(thread.call(move |k| k.emit(&event))).unwrap().unwrap();
     let expected = RedactionApplyScope::Pages { pages: vec![PageRef { page_object_number: 1 }] };
     let last = block_on(redaction.last_result()).unwrap().unwrap();

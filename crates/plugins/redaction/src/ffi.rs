@@ -276,10 +276,9 @@ pub struct RedactionApplyResult {
 impl RedactionApplyResult {
     /// The kernel's spelling (`engine-core`'s `RedactionApplyResult`), which
     /// `translate.rs` turns the host's answer into. A remote apply hands the
-    /// plugin the whole `redaction.applied` event, with the result under
-    /// `result`; a result itself has no such member.
+    /// plugin the whole `redaction.applied` event, which spreads the result's
+    /// members beside `type` and `origin`, so it decodes the same way.
     pub(crate) fn from_json(value: &Value) -> Result<Self, Error> {
-        let value = value.get("result").unwrap_or(value);
         #[derive(Deserialize)]
         #[serde(tag = "kind", rename_all = "camelCase")]
         enum Scope {
