@@ -2658,21 +2658,21 @@ git commit -m "Add MeasurementCapability to the Swift package"
 **Files:**
 - Modify: `.github/workflows/plugin-rust.yml`, `platforms/apple/README.md`, `docs/superpowers/plans/2026-10-01-swift-package.md`
 
-- [ ] **Step 1: Add the crate to CI**
+- [ ] **Step 1: Add the crate to CI** (skipped: no CI edits on this branch)
 
 In `.github/workflows/plugin-rust.yml`, append `measurement` to the `crates=( ... )` list in plan-number order.
 
-- [ ] **Step 2: Add the README row**
+- [x] **Step 2: Add the README row**
 
 ```markdown
 | measurement | `MeasurementCapability` | `measurement: MeasurementConfig()` (with `interaction`, `annotation`) | `2026-10-06-swift-plugins/08-measurement.md` |
 ```
 
-- [ ] **Step 3: Mark Appendix A delivered**
+- [x] **Step 3: Mark Appendix A delivered**
 
 In `2026-10-01-swift-package.md` §A.3, change `**measurement** (D, requires ...)` to `**measurement** (D), delivered by 08-measurement.md (requires ...)`.
 
-- [ ] **Step 4: Run the definition of done**
+- [x] **Step 4: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-measurement --features uniffi
@@ -2688,7 +2688,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 5: Commit, with the size line**
+- [x] **Step 5: Commit, with the size line**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
@@ -2700,7 +2700,7 @@ libepdf_viewer_host.a (ios-sim, release): <before> -> <after> bytes"
 
 Take `<before>` from the same `ls` on `research/swift-plugins` before Task 1, and fill both numbers in.
 
-- [ ] **Step 6: Merge, rerun, clean up**
+- [ ] **Step 6: Merge, rerun, clean up** (the orchestrator merges)
 
 From the integration worktree:
 
