@@ -26,6 +26,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -91,7 +92,7 @@ async function readCase(entry: ReadCase): Promise<unknown> {
     );
     try {
       const snapshot = await doc.annotations.listRawAll();
-      return { ...entry, pages: snapshot.pages };
+      return { ...entry, pages: flattenPageRefs(snapshot.pages) };
     } finally {
       await doc.close();
     }
