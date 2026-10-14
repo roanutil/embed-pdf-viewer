@@ -254,7 +254,7 @@ impl Host {
                 let job_id = string_field(&body, "jobId")?;
                 serde_json::json!({ "aborted": self.sessions.abort(&job_id) })
             }
-            // Fonts belong to the library, not to a document, so these four
+            // Fonts belong to the library, not to a document, so these five
             // route before a session is resolved. A document id on one of
             // them would be a lie about the scope of the change.
             "fonts.register" => {
@@ -278,6 +278,12 @@ impl Host {
             "fonts.clearFallbacks" => {
                 self.fonts()?.clear_fallbacks();
                 serde_json::json!({ "fallbacks": [] })
+            }
+            // `WorkerHost.handleFontsAuthorizeEditing`.
+            "fonts.authorizeEditing" => {
+                let key = string_field(&body, "fontKey")?;
+                let identity = self.fonts()?.authorize_editing(&key)?;
+                serde_json::json!({ "identity": identity })
             }
             "fonts.clear" => {
                 self.fonts()?.clear();
@@ -508,6 +514,15 @@ impl Host {
             "document.version" => {
                 let session = self.sessions.session(&key)?;
                 Ok(ok(value(&f::signature::reader::version(session)?)?))
+            }
+            // `WorkerHost.handleDocumentSetFontSettings`: session state on
+            // the handle, never written to the file, so not a mutation.
+            "document.setFontSettings" => {
+                let policy: Option<String> = optional(body, "embeddingPolicy")?;
+                let features: Option<bool> = optional(body, "typographicFeatures")?;
+                let d = self.document(&key)?;
+                f::fonts::apply_document_font_settings(d, policy.as_deref(), features)?;
+                Ok(ok(serde_json::Value::Null))
             }
 
             // ── Per-page reads ────────────────────────────────────────

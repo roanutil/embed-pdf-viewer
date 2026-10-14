@@ -32,9 +32,60 @@ use std::collections::BTreeMap;
 
 use std::rc::Rc;
 
-use pdfium::{FileAccess, FontDescription, FontId, FontIdentity, Library, PdfiumError};
+use pdfium::{
+    FileAccess, FontDescription, FontId, FontIdentity, FontLicence, Library, PdfiumError,
+};
+use serde::Serialize;
 
 use crate::error::{EngineError, EngineErrorCode};
+
+/// `FontEmbeddingPermission`: the OS/2 `fsType` licence as the wire spells
+/// it. Restricted and bitmap-only fonts are refused at registration, so
+/// they never reach a key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum FontEmbeddingPermission {
+    Installable,
+    Editable,
+    PreviewAndPrint,
+}
+
+impl FontEmbeddingPermission {
+    /// `permissionFromCode` in `FontRegistrar.ts`.
+    fn from_code(code: i32) -> Self {
+        match code {
+            1 => Self::Editable,
+            2 => Self::PreviewAndPrint,
+            _ => Self::Installable,
+        }
+    }
+}
+
+/// `FontIdentityInfo`: what the runtime resolved for a key, the identity a
+/// document names the face by and the licence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FontIdentityInfo {
+    pub family_name: String,
+    pub weight: i32,
+    pub italic: bool,
+    pub embedding_permission: FontEmbeddingPermission,
+    pub editing_authorized: bool,
+    pub instanced: bool,
+}
+
+impl FontIdentityInfo {
+    fn new(identity: FontIdentity, licence: FontLicence) -> Self {
+        Self {
+            family_name: identity.family_name,
+            weight: identity.weight,
+            italic: identity.italic,
+            embedding_permission: FontEmbeddingPermission::from_code(licence.embedding_permission),
+            editing_authorized: licence.editing_authorized,
+            instanced: licence.instanced,
+        }
+    }
+}
 
 /// A font to register at startup, from a file.
 ///
@@ -281,6 +332,35 @@ impl FontRegistry {
         })
     }
 
+    /// The application asserts a licence permitting editing with a font.
+    /// Ports `FontRegistrar.authorizeEditing`: `InvalidArg` for an unknown
+    /// key or a refusal, else the identity and licence read back after the
+    /// change.
+    pub fn authorize_editing(&mut self, key: &str) -> Result<FontIdentityInfo, EngineError> {
+        let id = self.id_for(key)?;
+        if !pdfium::authorize_font_editing(id) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("authorizeEditing failed: {key}"),
+            ));
+        }
+        let previous = self.describe(key).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("font not registered on this thread: {key}"),
+            )
+        })?;
+        // `readIdentity` with the previous identity as what was "given".
+        let given = FontDescription {
+            family_name: previous.family_name,
+            weight: previous.weight,
+            italic: Some(previous.italic),
+        };
+        remember_identity(key, id, &given);
+        let identity = self.describe(key).expect("just remembered");
+        Ok(FontIdentityInfo::new(identity, pdfium::font_licence(id)))
+    }
+
     pub fn contains(&self, key: &str) -> bool {
         self.ids.contains_key(key)
     }
@@ -328,4 +408,39 @@ fn registration_failed(
         EngineErrorCode::InvalidArg,
         format!("font registration failed for {where_}: {error}"),
     )
+}
+
+/// `WorkerHost.handleDocumentSetFontSettings`: per-document font and
+/// text-layout settings. Only the members given change. Session state of
+/// the handle; nothing is written to the file.
+pub fn apply_document_font_settings(
+    document: &pdfium::Document,
+    embedding_policy: Option<&str>,
+    typographic_features: Option<bool>,
+) -> Result<(), EngineError> {
+    if let Some(policy) = embedding_policy {
+        // `{ default: 0, subset: 1, full: 2 }`. A name outside the map is
+        // refused the way the fork refuses an invalid code.
+        let code = match policy {
+            "default" => 0,
+            "subset" => 1,
+            "full" => 2,
+            _ => -1,
+        };
+        if code < 0 || !document.set_font_embedding_policy(code) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "EPDFDoc_SetFontEmbeddingPolicy failed",
+            ));
+        }
+    }
+    if let Some(enabled) = typographic_features
+        && !document.set_typographic_features(enabled)
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "EPDFDoc_SetTypographicFeatures failed",
+        ));
+    }
+    Ok(())
 }

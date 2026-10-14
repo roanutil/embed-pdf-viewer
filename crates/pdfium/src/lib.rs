@@ -57,8 +57,9 @@ pub use document::{Document, FileBackedDocument, PasswordPermissions};
 pub use error::PdfiumError;
 pub use file_access::FileAccess;
 pub use fonts::{
-    FontDescription, FontId, FontIdentity, add_fallback_font, clear_fallback_fonts,
-    clear_registered_fonts, font_identity, register_font_file, register_memory_font,
+    FontDescription, FontId, FontIdentity, FontLicence, add_fallback_font, authorize_font_editing,
+    clear_fallback_fonts, clear_registered_fonts, font_identity, font_licence, register_font_file,
+    register_memory_font,
 };
 pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
 pub use form_write::{

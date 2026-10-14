@@ -163,3 +163,68 @@ pub fn font_identity(id: FontId) -> Option<FontIdentity> {
     let italic = unsafe { pdfium_sys::EPDFFont_IsItalic(id.raw()) } != 0;
     Some(FontIdentity { family_name, weight, italic })
 }
+
+/// What a registered font's licence allows, as the fork reports it: the
+/// OS/2 `fsType` embedding permission (`EPDF_FONT_EMBEDDING_*`), whether new
+/// text may be authored with it, and whether registration instanced it from
+/// a variable font.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FontLicence {
+    /// `EPDFFont_GetEmbeddingPermission`: one of `EPDF_FONT_EMBEDDING_*`,
+    /// or -1 for an id the fork does not know.
+    pub embedding_permission: i32,
+    pub editing_authorized: bool,
+    pub instanced: bool,
+}
+
+/// The licence of a font registered on this thread.
+pub fn font_licence(id: FontId) -> FontLicence {
+    // SAFETY: plain getters over a thread-local registry; an unknown id
+    // answers -1 or false rather than faulting.
+    unsafe {
+        FontLicence {
+            embedding_permission: pdfium_sys::EPDFFont_GetEmbeddingPermission(id.raw()),
+            editing_authorized: pdfium_sys::EPDFFont_IsEditingAuthorized(id.raw()) != 0,
+            instanced: pdfium_sys::EPDFFont_IsInstanced(id.raw()) != 0,
+        }
+    }
+}
+
+/// `EPDFFont_AuthorizeEditing`: the application asserts a licence that
+/// permits editing with the font. False for an id the fork does not know.
+pub fn authorize_font_editing(id: FontId) -> bool {
+    // SAFETY: takes an id only; an unknown one answers false.
+    unsafe { pdfium_sys::EPDFFont_AuthorizeEditing(id.raw()) != 0 }
+}
+
+impl crate::Document {
+    /// `EPDFDoc_SetFontEmbeddingPolicy`: one of
+    /// `EPDF_FONT_EMBEDDING_POLICY_*` (0 default, 1 subset, 2 full). Session
+    /// state of the handle, never written to the file. False for an
+    /// invalid policy.
+    pub fn set_font_embedding_policy(&self, policy: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFDoc_SetFontEmbeddingPolicy(self.as_raw(), policy) != 0 }
+    }
+
+    /// `EPDFDoc_GetFontEmbeddingPolicy`: the policy in force, or -1.
+    pub fn font_embedding_policy(&self) -> i32 {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFDoc_GetFontEmbeddingPolicy(self.as_raw()) }
+    }
+
+    /// `EPDFDoc_SetTypographicFeatures`: Latin shaping features for rich
+    /// text appearances generated after the call. Session state.
+    pub fn set_typographic_features(&self, enabled: bool) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFDoc_SetTypographicFeatures(self.as_raw(), i32::from(enabled)) != 0
+        }
+    }
+
+    /// `EPDFDoc_GetTypographicFeatures`.
+    pub fn typographic_features(&self) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFDoc_GetTypographicFeatures(self.as_raw()) != 0 }
+    }
+}
