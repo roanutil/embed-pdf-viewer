@@ -908,7 +908,7 @@ git commit -m "Prepare, complete and abort signatures, and draw visual fills, in
 
 The plugin passes bytes as `Bytes` JSON (`{"$bytes": base64}`, `crates/plugins/signature/src/write/fill.rs:52`) and reads them back the same way. Translation moves them into and out of payloads, so a CMS or a revision never crosses the worker as base64.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```rust
 #[test]
@@ -957,12 +957,12 @@ fn prepare_answers_its_digest_inside_the_result() {
 
 Check the plugin's actual argument shapes before running: `signatures.complete` at `crates/plugins/signature/src/write/sign.rs:184-190`, `signatures.prepare` at `:150-154`, `signatures.revisionBytes` at `sync/hydration.rs:175` (a bare index), and the signature-core calls `grep -rn 'call("signatures' crates/plugins/signature-core/src` finds. Adjust the tests' inputs to what the plugin sends, never the reverse.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Routes:
 
@@ -1026,12 +1026,12 @@ fn bytes_at(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
 
 `decode` gains the two arms, each taking the first payload and wrapping it with `Bytes(..).to_json()`. Update Appendix C's `signatures.*` row in `2026-10-01-swift-package.md` to `mapped (16-signature.md)`.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-01-swift-package.md

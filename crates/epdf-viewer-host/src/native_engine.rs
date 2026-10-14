@@ -138,8 +138,21 @@ fn publish(doc: &str, event: &Value) {
     let listeners: Vec<Listener> = LISTENERS.with(|l| {
         l.borrow().1.get(doc).map_or_else(Vec::new, |v| v.iter().map(|(_, f)| f.clone()).collect())
     });
-    for listener in listeners {
+    for listener in listeners.iter() {
         listener(event);
+    }
+    // A completed signature moved the document to new saved bytes, which
+    // the TypeScript's `LocalDocumentSignaturesService.complete` follows
+    // with `document.versioned`: byte-level facts must be re-read.
+    if event.get("type").and_then(Value::as_str) == Some("signature.completed") {
+        let versioned = json!({
+            "type": "document.versioned",
+            "version": event.get("version").cloned().unwrap_or(Value::Null),
+            "origin": event.get("origin").cloned().unwrap_or(Value::Null),
+        });
+        for listener in listeners {
+            listener(&versioned);
+        }
     }
 }
 

@@ -40,7 +40,7 @@ fn a_page_chain_without_a_page_is_invalid_input() {
 
 #[test]
 fn an_unmapped_path_is_unsupported_not_a_panic() {
-    let error = translate("d1", "signatures.prepare", None, &[], 10).err().unwrap();
+    let error = translate("d1", "scripts.compile", None, &[], 10).err().unwrap();
     assert_eq!(error.code(), Some("unsupported"));
 }
 
@@ -320,6 +320,13 @@ fn every_routed_path_is_listed() {
         "forms.detachWidget",
         // A scope, covered by `a_pages_scope_goes_out_as_object_numbers`.
         "redaction.apply",
+        // An index and two byte payloads, covered by
+        // `the_reads_carry_their_arguments`,
+        // `complete_moves_the_cms_into_a_payload` and
+        // `a_visual_fill_moves_the_pdf_into_a_payload`.
+        "signatures.revisionBytes",
+        "signatures.complete",
+        "forms.setSignatureAppearance",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
@@ -333,7 +340,7 @@ fn a_namespace_answers_when_a_listed_path_is_under_it() {
     assert!(maps("page.text"));
     assert!(!maps("meta"));
     assert!(!maps("metadata.write"));
-    assert!(!maps("signatures"));
+    assert!(!maps("scripts"));
 }
 
 #[test]
@@ -980,7 +987,7 @@ fn redaction_is_present_once_its_path_is_listed() {
     assert!(maps("redaction"));
     assert!(maps("redaction.apply"));
     assert!(!maps("redact"));
-    assert!(!maps("signatures"));
+    assert!(!maps("scripts"));
 }
 
 #[test]
@@ -1053,4 +1060,115 @@ fn an_annotations_apply_result_answers_nested_refs() {
         decoded.value["scope"]["refs"][0],
         json!({ "kind": "objectNumber", "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17 })
     );
+}
+
+// 16 signature.
+
+#[test]
+fn signature_paths_are_mapped() {
+    for path in [
+        "signatures",
+        "document.versioned",
+        "forms.setSignatureAppearance",
+        "signatures.list",
+        "signatures.contents",
+        "signatures.digest",
+        "signatures.revisionBytes",
+        "signatures.analyze",
+        "signatures.prepare",
+        "signatures.complete",
+        "signatures.abort",
+        "document.version",
+    ] {
+        assert!(epdf_viewer_host::translate::maps(path), "{path}");
+    }
+}
+
+#[test]
+fn complete_moves_the_cms_into_a_payload() {
+    let input = json!({ "signingId": "s1", "cms": { "$bytes": "AQID" },
+                        "expectedVersion": { "baseSha256": "x", "editsVersion": 0.0 } });
+    let call = translate("doc-1", "signatures.complete", None, &[input], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("signatures.complete"));
+    assert!(call.request["input"].get("cms").is_none());
+    assert_eq!(call.request["input"]["expectedVersion"]["editsVersion"], json!(0));
+    assert_eq!(call.payloads, vec![vec![1, 2, 3]]);
+    assert!(matches!(call.decode, Decode::Mutation));
+}
+
+#[test]
+fn a_visual_fill_moves_the_pdf_into_a_payload() {
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 12.0 });
+    let call = translate(
+        "doc-1",
+        "forms.setSignatureAppearance",
+        None,
+        &[field, json!({ "pdf": { "$bytes": "JVBERg==" }, "pageIndex": 0.0 })],
+        1,
+    )
+    .unwrap();
+    assert_eq!(call.request["ref"], json!({ "kind": "objectNumber", "fieldObjectNumber": 12 }));
+    assert_eq!(call.request["pageIndex"], json!(0));
+    assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
+}
+
+#[test]
+fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
+    let request = json!({
+        "field": { "kind": "objectNumber", "fieldObjectNumber": 12.0 },
+        "certify": { "permission": 2.0 },
+        "lock": { "action": "include", "fields": ["a"], "permission": 1.0 },
+        "appearance": { "pdf": { "$bytes": "JVBERg==" }, "pageIndex": 0.0 },
+    });
+    let call = translate("doc-1", "signatures.prepare", None, &[request], 1).unwrap();
+    let input = &call.request["input"];
+    assert_eq!(input["field"]["fieldObjectNumber"], json!(12));
+    assert_eq!(input["certify"]["permission"], json!(2));
+    assert_eq!(input["lock"]["permission"], json!(1));
+    assert_eq!(input["appearance"], json!({ "pageIndex": 0 }));
+    assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
+    // No artwork: the appearance is left out altogether.
+    let bare = json!({ "field": { "kind": "objectNumber", "fieldObjectNumber": 12 },
+                       "appearance": { "pdf": null, "pageIndex": 0 } });
+    let call = translate("doc-1", "signatures.prepare", None, &[bare], 2).unwrap();
+    assert!(call.request["input"].get("appearance").is_none(), "{}", call.request);
+    assert!(call.payloads.is_empty());
+}
+
+#[test]
+fn the_reads_carry_their_arguments() {
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 5 });
+    let call = translate("d", "signatures.contents", None, &[field.clone()], 1).unwrap();
+    assert_eq!(call.request["ref"], field);
+    let call =
+        translate("d", "signatures.digest", None, &[field.clone(), json!("sha256")], 1).unwrap();
+    assert_eq!(call.request["algorithm"], json!("sha256"));
+    let call = translate("d", "signatures.revisionBytes", None, &[json!(1.0)], 1).unwrap();
+    assert_eq!(call.request["revisionIndex"], json!(1));
+    let call = translate("d", "signatures.abort", None, &[json!("s1")], 1).unwrap();
+    assert_eq!(call.request["signingId"], json!("s1"));
+    let input = json!({ "since": { "signatureIndex": 1.0 }, "until": "working-copy" });
+    let call = translate("d", "signatures.analyze", None, &[input], 1).unwrap();
+    assert_eq!(call.request["input"]["since"]["signatureIndex"], json!(1));
+    let call = translate("d", "signatures.list", None, &[], 1).unwrap();
+    assert!(call.request.get("workingCopy").is_none());
+    let call = translate("d", "document.version", None, &[], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("document.version"));
+}
+
+#[test]
+fn contents_come_back_as_bytes() {
+    let response =
+        HostResponse { json: r#"{"result":{"size":3}}"#.into(), payloads: vec![vec![1, 2, 3]] };
+    let decoded = decode(&Decode::InlineBytes, response).unwrap();
+    assert_eq!(decoded.value, json!({ "$bytes": "AQID" }));
+}
+
+#[test]
+fn prepare_answers_its_digest_inside_the_result() {
+    let response =
+        HostResponse { json: r#"{"result":{"signingId":"s1"}}"#.into(), payloads: vec![vec![9]] };
+    let decoded = decode(&Decode::ResultWithBytes("digest"), response).unwrap();
+    assert_eq!(decoded.value["digest"], json!({ "$bytes": "CQ==" }));
+    assert_eq!(decoded.value["signingId"], json!("s1"));
 }

@@ -3264,4 +3264,4 @@ Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with 
 | `redaction.apply` | same | B2 |
 | `page.measure.setScale`, `page.measure.viewports` | none on the wire | B2 (needs an `epdf-engine` addition) |
 | `actions.read` | same | B3 |
-| `signatures.*` (`list`, `analyze`, `contents`, `prepare`, `abort`, `revisionBytes`) | none on the wire | B4 (needs `epdf-engine` work) |
+| `signatures.*` (`list`, `contents`, `digest`, `revisionBytes`, `analyze`, `prepare`, `complete`, `abort`), `document.version`, `forms.setSignatureAppearance` | same | mapped (16-signature.md) |
