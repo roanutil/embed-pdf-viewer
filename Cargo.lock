@@ -735,15 +735,22 @@ dependencies = [
 name = "epdf-plugin-signature"
 version = "0.0.0"
 dependencies = [
+ "base64",
+ "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-form",
  "epdf-plugin-interaction",
  "epdf-plugin-stamp",
  "epdf-signature-core",
+ "futures",
  "plugin-conformance",
+ "rsa",
  "serde",
  "serde_json",
+ "sha2",
+ "uniffi",
 ]
 
 [[package]]

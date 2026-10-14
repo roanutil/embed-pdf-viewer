@@ -101,6 +101,12 @@ impl SignatureCapability {
         &self.0.cx
     }
 
+    /// The instance lifetime, aborted when the document closes.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     pub(crate) fn config(&self) -> &SignatureConfig {
         &self.0.config
     }

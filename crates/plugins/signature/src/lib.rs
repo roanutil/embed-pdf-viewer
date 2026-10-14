@@ -31,6 +31,12 @@ pub mod write;
 #[cfg(feature = "harness")]
 pub mod harness;
 
+#[cfg(feature = "uniffi")]
+pub mod ffi;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();
+
 use std::rc::Rc;
 
 use epdf_kernel::plugin::ConnectFn;

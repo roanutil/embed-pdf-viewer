@@ -1050,7 +1050,7 @@ git commit -m "Map the signature paths in the native engine"
 
 The members, from `crates/plugins/signature/src/harness.rs` `MEMBERS` (lines 52-91), under FFI names: `snapshot`, `status`, `signatures`, `unsigned_fields`, `signature`, `verdicts`, `verdict`, `protection`, `pending`, `is_busy`, `mode`, `target`, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, `sign`, `prepare_signature`, `complete_signature`, `abort_pending`, `fill_field`, `clear_field`, `place_mark`, `can_sign`, `can_fill`, `can_certify`, and `subscribe` for the nine `on*` hooks. This task does the reads, `refresh`, `validate`, `validate_field`, `analyze_changes`, `read_revision`, `set_target`, `request_inspection`, the `can_*` members and `subscribe`; Task 8 does the writes.
 
-- [ ] **Step 1: Feature and scaffolding**
+- [x] **Step 1: Feature and scaffolding**
 
 `Cargo.toml` gets the `uniffi` feature, optional `epdf-ffi` and `uniffi`, dev-dependencies (`futures`, `plugin-conformance`, `rsa`, `epdf-signature-core` with `harness`), and `[[test]] name = "ffi" required-features = ["uniffi"]`, as plan 08 Task 3 Step 1 shows. `lib.rs` gets `#[cfg(feature = "uniffi")] pub mod ffi;` and `uniffi::setup_scaffolding!();`. `controller.rs` gets:
 
@@ -1061,7 +1061,7 @@ The members, from `crates/plugins/signature/src/harness.rs` `MEMBERS` (lines 52-
     }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```rust
 // crates/plugins/signature/tests/ffi.rs
@@ -1263,12 +1263,12 @@ fn closing_the_document_ends_its_subscriptions() {
 }
 ```
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: FAIL to compile, no `ffi` module.
 
-- [ ] **Step 4: Write the records**
+- [x] **Step 4: Write the records**
 
 `crates/plugins/signature/src/ffi/records.rs` mirrors `types.ts:56-197` and `verdict.ts:12-47` field for field. Each mirror has a private serde twin it decodes through, so the JSON shape is written once:
 
@@ -1434,7 +1434,7 @@ pub struct SignatureModifications {
 
 Events mirror `contract.rs:183-245`: `SignatureEvent { Signed { field, result: SignatureCompletion }, Filled { field }, Cleared { field }, Validated { verdicts: Vec<SignatureVerdict> }, ProtectionChanged { protection: DocumentProtection }, Invalidating { field, detail: String }, TargetChanged { field: Option<FormFieldRef> }, SignRequested { field, mark: SignatureMark }, InspectionRequested { field } }`, with `origin` dropped as metadata drops `ChangeOrigin`. `SignatureCompletion` mirrors `SignatureCompleteResult` (`status: SignatureCompletionStatus { Completed, AlreadyCompleted }`, `signature: SignatureInfo`, `version: SignatureBaseVersion { sha256, byte_length }`, `previous: SignatureVersionRef { base_sha256, edits_version }`, `protection`), dropping `meta`. `SignatureMark { Asset { asset_id: String }, Source { bytes: Vec<u8> } }` lands in Task 8 but is declared here because the event uses it.
 
-- [ ] **Step 5: Write the handle's read members**
+- [x] **Step 5: Write the handle's read members**
 
 `crates/plugins/signature/src/ffi/mod.rs`:
 
@@ -1658,12 +1658,12 @@ impl SignatureHandle {
 
 `SignatureChangeAnalysis` is a small record in `records.rs` over what `verdict.rs:185-200` reads (`primary: Option<SignatureChangePrimary { verdict, object_number, detail }>`, `later_revisions`, `undone`). `records::register_hooks` registers the nine `on_*` hooks with one decoding closure each and returns one `Unsubscribe`, the same shape as plan 08's `subscribe`. `SignatureValidateRequest { at: Option<SignatureValidationTime>, until: Option<SignatureModificationsBasis> }` converts into the plugin's `ValidateRequest`. Write `from_json` on each record as `decode` into its serde twin, then convert.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi && cargo test -p epdf-plugin-signature`
 Expected: PASS, 8 tests, and the conformance vectors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/signature
