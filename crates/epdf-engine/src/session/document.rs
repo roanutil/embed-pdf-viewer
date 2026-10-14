@@ -83,6 +83,8 @@ pub struct DocumentSession {
     parked_bytes: Option<Vec<u8>>,
     /// The authority a parked open asked for, applied when it unlocks.
     parked_authority: Option<SessionAuthority>,
+    /// A parked signing and the last completed one (`SignatureMutator.ts`).
+    signing: std::cell::RefCell<crate::features::signature::mutator::SigningState>,
     /// The password the document opened with, for documents derived from its
     /// bytes (a signature's working copy, the sealed bytes it reloads onto).
     password: Option<String>,
@@ -112,6 +114,7 @@ impl DocumentSession {
             open: None,
             parked_bytes: None,
             parked_authority: None,
+            signing: Default::default(),
             password: None,
             loaded_sequence: Cell::new(0),
             mutation_sequence: Cell::new(0),
@@ -555,6 +558,42 @@ impl DocumentSession {
     /// The password the document opened with.
     pub fn password(&self) -> Option<&str> {
         self.password.as_deref()
+    }
+
+    /// The session's signing state.
+    pub fn signing(
+        &self,
+    ) -> &std::cell::RefCell<crate::features::signature::mutator::SigningState> {
+        &self.signing
+    }
+
+    /// `DocumentSession.install`: move the session onto new bytes (a sealed
+    /// signature), opened under its password. Every page it had is re-pinned
+    /// (its revision bumped) and the bytes count as loaded.
+    pub fn install(&mut self, bytes: Vec<u8>) -> Result<(), EngineError> {
+        let document = Document::from_bytes(Library::acquire(), &bytes, self.password.as_deref())
+            .map_err(|e| {
+            EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
+        })?;
+        if document.is_encrypted() {
+            document.set_runtime_owner_permissions(true);
+        }
+        let document = OwnedDocument::new(document)?;
+        let state = self.state_mut()?;
+        let previous: Vec<PageObjectNumber> =
+            state.records.iter().map(|r| r.page_object_number).collect();
+        state.pages.close_all();
+        state.pages = PagePtrPool::new();
+        state.document = document;
+        state.kind = OpenKind::FatMemory;
+        state.records.clear();
+        state.fully_enumerated = false;
+        for pon in previous {
+            state.revisions.bump(pon);
+        }
+        self.mutation_sequence.set(self.mutation_sequence.get().saturating_add(1));
+        self.loaded_sequence.set(self.mutation_sequence.get());
+        Ok(())
     }
 
     /// Record one successful mutation. Saturating, for the reason in

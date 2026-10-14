@@ -141,6 +141,21 @@ pub(super) fn require_writable(resolved: &ResolvedField) -> Result<u32, EngineEr
     Ok(resolved.object_number)
 }
 
+/// Resolve a reference, refuse a direct-object field, and read the field
+/// through a fresh model: `resolveFieldRef`, `assertWritable`, `readFieldAt`
+/// for a caller outside this module (the signature visual fill).
+pub(crate) fn read_writable_field(
+    document: &Document,
+    reference: &FormFieldRef,
+    cancel: &CancelToken,
+) -> Result<FormFieldDto, EngineError> {
+    let model = load_model(document)?;
+    let resolved = resolve(&model, reference)?;
+    let object_number = require_writable(&resolved)?;
+    drop(model);
+    read_field_back(document, object_number, cancel)
+}
+
 /// Set a field's value.
 pub fn set_value(
     document: &Document,

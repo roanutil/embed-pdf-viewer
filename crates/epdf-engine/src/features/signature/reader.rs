@@ -406,8 +406,9 @@ pub fn to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The widget annotation numbers of a field, in snapshot order.
-fn widget_numbers(kind: &FormFieldKind) -> Vec<u32> {
+/// A field's widgets as `(annotObjectNumber, pageObjectNumber)`, in
+/// snapshot order.
+pub(crate) fn widget_refs(kind: &FormFieldKind) -> Vec<(u32, u32)> {
     match kind {
         FormFieldKind::Text { widgets, .. }
         | FormFieldKind::Combobox { widgets, .. }
@@ -415,11 +416,12 @@ fn widget_numbers(kind: &FormFieldKind) -> Vec<u32> {
         | FormFieldKind::Pushbutton { widgets }
         | FormFieldKind::Signature { widgets }
         | FormFieldKind::Unknown { widgets, .. } => {
-            widgets.iter().map(|w| w.annot_object_number).collect()
+            widgets.iter().map(|w| (w.annot_object_number, w.page_object_number)).collect()
         }
-        FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => {
-            widgets.iter().map(|w| w.widget.annot_object_number).collect()
-        }
+        FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => widgets
+            .iter()
+            .map(|w| (w.widget.annot_object_number, w.widget.page_object_number))
+            .collect(),
     }
 }
 
@@ -437,7 +439,7 @@ pub fn read_structure(doc: &Document) -> Result<RevisionStructure, EngineError> 
                 object_number: f.base.field_object_number,
                 name: f.base.name,
                 family: f.base.family,
-                widgets: widget_numbers(&f.kind),
+                widgets: widget_refs(&f.kind).into_iter().map(|(annot, _)| annot).collect(),
                 flags: Some(f.base.flags.raw),
             });
         }

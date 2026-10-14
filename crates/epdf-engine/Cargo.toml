@@ -34,3 +34,5 @@ test-support = { path = "../test-support" }
 # The Stage B spike's write test calls PDFium through the leased raw pointer,
 # which is what the host does with it. Goes with the spike.
 pdfium-sys = { path = "../pdfium-sys" }
+# Signing tests build their CMS with the plugin's own builder.
+epdf-signature-core = { path = "../plugins/signature-core" }

@@ -425,6 +425,7 @@ name = "epdf-engine"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-signature-core",
  "getrandom 0.3.4",
  "pdfium",
  "pdfium-sys",

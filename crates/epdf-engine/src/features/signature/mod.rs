@@ -8,6 +8,7 @@
 
 pub mod analysis;
 pub mod analyzer;
+pub mod mutator;
 pub mod protection;
 pub mod reader;
 pub mod types;

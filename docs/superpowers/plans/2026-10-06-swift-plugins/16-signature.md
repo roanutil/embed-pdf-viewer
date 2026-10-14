@@ -784,7 +784,7 @@ git commit -m "Analyze changes after a signature in the Rust engine"
 
 Port `SignatureMutator.ts` (538 lines) with `internal/candidateStore.ts` (451), `internal/appearance.ts` (67) and `internal/sealCheck.ts` (72). The candidate store keeps a prepared signing's bytes in memory keyed by `signingId`, with the `expectedVersion` fence; `complete` refuses a version that moved (`Conflict`), replays idempotently for the same CMS (`already-completed`), and reloads the session onto the sealed bytes, which re-pins every page (the result's `meta`). `CandidateFinalizer.ts` is the cloud's session-less path and isn't ported.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 The test signs with `TEST-ONLY-private-key.pem` through `epdf-signature-core`'s own CMS builder, so the engine is tested against the CMS the plugin will hand it.
 
@@ -868,12 +868,12 @@ fn completing_after_the_document_moved_is_a_conflict() {
 
 `call_bytes_with` returns `(result, first payload)`; `call_with_payload` sends one payload and returns the whole envelope's `result` object (so `["result"]["status"]` reads the mutation's inner result). `epdf_signature_core::harness::test_cms_over_digest` doesn't exist yet: add it to `crates/plugins/signature-core/src/harness.rs` as a thin wrapper that loads the PKCS#8 key (as `harness.rs:175` does), builds a `RawSigner` with the certificate, and calls `cms::build_detached_cms` with `Profile::CadesB` and `Digest::Sha256`, blocking on the promise with `epdf_kernel::rt::block_on`. Gate it behind the crate's existing `harness` feature.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-engine --test signature_sign`
 Expected: FAIL, unknown request kind `signatures.prepare`.
 
-- [ ] **Step 3: Port the mutator**
+- [x] **Step 3: Port the mutator**
 
 `crates/pdfium/src/signature_write.rs` wraps the fork's candidate calls `SignatureMutator.ts` makes (`EPDFSig_DigestByteRange`, the `/Contents` hole reservation, `EPDFAnnot_SetAppearanceFromPage`, `EPDFAnnot_UpdateAppearanceToRect`, the incremental save the candidate is built from). `mutator.rs` holds `CandidateStore` (a `HashMap<String, Candidate>` on the session, with each candidate's bytes, byte range, contents size, digest, field object number and `expectedVersion`) and:
 
@@ -886,12 +886,12 @@ pub fn set_signature_appearance(session: &mut DocumentSession, field: &Value, pd
 
 each transcribing its TypeScript namesake (`prepare` 127-247, `complete` 248-327, `abort` 328-end, and `appearance.ts` for the fill). `prepare` validates `contentsSize` in 256..=4 MiB (default 8192) and refuses `certify` unless the document has no signature yet and the caller holds `doc.sign.certify`; `complete` runs `sealCheck.ts`'s checks before swapping the session onto the sealed bytes. Route the four kinds in `host.rs`: `prepare` answers its digest as a payload; `complete` and `forms.setSignatureAppearance` go through the mutation envelope helper with event kinds `signatures.completed` and `forms.changed`; `abort` is a plain read-shaped answer. The `doc.sign` / `doc.forms.fill` checks use `session.authority().require(...)` like every other mutation.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p pdfium -p epdf-engine -p epdf-signature-core`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/pdfium crates/epdf-engine crates/plugins/signature-core

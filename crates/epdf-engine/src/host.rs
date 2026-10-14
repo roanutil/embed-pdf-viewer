@@ -348,6 +348,11 @@ impl Host {
         use crate::features as f;
 
         let key = header.key()?;
+        if MUTATING_KINDS.contains(&header.kind.as_str())
+            && let Ok(session) = self.sessions.session(&key)
+        {
+            f::signature::mutator::assert_no_pending_signing(session)?;
+        }
         match header.kind.as_str() {
             // ── Document reads ────────────────────────────────────────
             "metadata.read" => {
@@ -418,6 +423,61 @@ impl Host {
                 }
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::signature::reader::read_snapshot(d)?)?))
+            }
+            // ── Signatures (writes) ──────────────────────────────────
+            "signatures.prepare" => {
+                let input: f::signature::mutator::SignaturePrepareInput = field(body, "input")?;
+                let session = self.sessions.session(&key)?;
+                session.require(DocCapability::DocSign)?;
+                if input.certify.is_some() {
+                    session.require(DocCapability::DocSignCertify)?;
+                }
+                let appearance = input.appearance.and(payloads.first().map(Vec::as_slice));
+                let signing_id = self.ids.next_uuid_v4();
+                let (prepared, digest) =
+                    f::signature::mutator::prepare(session, &input, appearance, signing_id)?;
+                Ok(HostResponse { json: envelope(value(&prepared)?), payloads: vec![digest] })
+            }
+            "signatures.complete" => {
+                let input: f::signature::mutator::SignatureCompleteInput = field(body, "input")?;
+                let cms = payload(&payloads, 0, "the CMS")?.to_vec();
+                let session = self.sessions.session_mut(&key)?;
+                session.require(DocCapability::DocSign)?;
+                let result = f::signature::mutator::complete(session, &input, &cms)?;
+                let result = value(&result)?;
+                if result["status"] == "already-completed" {
+                    return Ok(ok(serde_json::json!({
+                        "result": result,
+                        "mutationSequence": session.mutation_sequence(),
+                    })));
+                }
+                let mut event = result.clone();
+                event["signingId"] = serde_json::json!(input.signing_id);
+                self.finish_with(
+                    &key,
+                    crate::session::save::DocumentEventInit::SignatureCompleted(event),
+                    result,
+                )
+            }
+            "signatures.abort" => {
+                let signing_id = string_field(body, "signingId")?;
+                let session = self.sessions.session(&key)?;
+                session.require(DocCapability::DocSign)?;
+                Ok(ok(value(&f::signature::mutator::abort(session, &signing_id))?))
+            }
+            "forms.setSignatureAppearance" => {
+                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let page_index: i32 = optional(body, "pageIndex")?.unwrap_or(0);
+                let pdf = payload(&payloads, 0, "the appearance PDF")?.to_vec();
+                let session = self.sessions.session_mut(&key)?;
+                session.require(DocCapability::DocFormsFill)?;
+                let result = f::signature::mutator::set_signature_appearance(
+                    session, &reference, &pdf, page_index, cancel,
+                )?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::FormFieldUpdated(value(&result)?),
+                )
             }
             "signatures.analyze" => {
                 let input: f::signature::analysis::types::AnalyzeInput = field(body, "input")?;
@@ -1080,9 +1140,20 @@ impl Host {
         key: &SessionKey,
         event: crate::session::save::DocumentEventInit,
     ) -> Result<HostResponse, EngineError> {
+        let result = event.result().clone();
+        self.finish_with(key, event, result)
+    }
+
+    /// [`Host::finish`], answering `result` where the event carries more
+    /// (a completed signature's event adds its `signingId`).
+    fn finish_with(
+        &mut self,
+        key: &SessionKey,
+        event: crate::session::save::DocumentEventInit,
+        result: serde_json::Value,
+    ) -> Result<HostResponse, EngineError> {
         use crate::session::save;
 
-        let result = event.result().clone();
         let session = self.sessions.session(key)?;
         let finished = save::finish_mutation(session, event.family(), &CancelToken::never())?;
         let published = save::publish(
@@ -1442,6 +1513,42 @@ fn optional<T: for<'de> Deserialize<'de>>(
         Some(_) => field(body, name).map(Some),
     }
 }
+
+/// Every kind that writes to a session's document: refused while a signing
+/// is parked (`WorkerHost.ts` `MUTATING_KINDS`, the kinds this host routes).
+const MUTATING_KINDS: &[&str] = &[
+    "metadata.update",
+    "annotations.create",
+    "annotations.update",
+    "annotations.delete",
+    "annotations.move",
+    "annotations.flatten",
+    "forms.setValue",
+    "forms.reset",
+    "forms.applyEffects",
+    "forms.import",
+    "forms.repair",
+    "forms.createField",
+    "forms.updateField",
+    "forms.setSignatureAppearance",
+    "forms.deleteField",
+    "forms.attachWidget",
+    "forms.detachWidget",
+    "pages.move",
+    "pages.rotate",
+    "pages.delete",
+    "pages.setName",
+    "pages.removeName",
+    "pages.flatten",
+    "pages.insert",
+    "pages.insertBlank",
+    "redaction.apply",
+    "attachments.create",
+    "attachments.delete",
+    "measure.setScale",
+    "pieceInfo.update",
+    "pieceInfo.clear",
+];
 
 /// The identity an `open.fatMem` may carry, spelled as the TypeScript's
 /// `IdentityClaims` (`auth/scope/types.ts`), snake_case keys and all.
