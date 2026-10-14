@@ -29,6 +29,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -101,19 +102,19 @@ async function readCase(entry: AppearanceCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
+      const page = doc.page(first.ref);
       const result = await page.annotations.renderAppearances({
         ...(entry.scale !== undefined ? { scale: entry.scale } : {}),
         ...(entry.modes !== undefined ? { modes: entry.modes } : {}),
       });
       const appearances: Placed[] = result.appearances.map((a) => ({
-        ref: a.ref,
+        ref: flattenPageRefs(a.ref),
         mode: a.mode,
         rect: a.rect,
         width: a.raster.width,
         height: a.raster.height,
       }));
-      return { ...entry, pageObjectNumber: first.pageObjectNumber, appearances };
+      return { ...entry, pageObjectNumber: first.ref.pageObjectNumber, appearances };
     } finally {
       await doc.close();
     }
