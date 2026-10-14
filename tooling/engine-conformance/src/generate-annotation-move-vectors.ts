@@ -113,19 +113,19 @@ async function readCase(entry: MoveCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const pon = first.pageObjectNumber;
-      const before = await doc.annotations.listRaw(pon);
+      const pon = first.ref.pageObjectNumber;
+      const before = await doc.annotations.listRaw(first.ref);
 
       const refs = entry.from.map((index) => ({
         kind: 'index' as const,
-        pageObjectNumber: pon,
+        page: first.ref,
         index,
         revision: before.pageState.revision,
       }));
 
-      const page = doc.page(pon);
+      const page = doc.page(first.ref);
       const result = await page.annotations.move(refs as never, entry.toIndex);
-      const after = await doc.annotations.listRaw(pon);
+      const after = await doc.annotations.listRaw(first.ref);
 
       return {
         ...entry,
