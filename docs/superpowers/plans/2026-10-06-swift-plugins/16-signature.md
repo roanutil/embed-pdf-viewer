@@ -1679,7 +1679,7 @@ git commit -m "Export the signature plugin's reads and validation through uniffi
 **Interfaces:**
 - Produces: foreign traits `SignatureSigner` and `SignatureTrust`; enums `SignatureKeyAlgorithm { RsaPkcs1, RsaPss, Ecdsa }`, `SignatureDigest { Sha256, Sha384, Sha512 }`; records `SignatureMark`, `SignatureSignInput`, `SignaturePrepareInput`, `SignatureAttribution`, `SignaturePrepared`, `SignaturePlaceTarget`, `SignaturePlaceResult`, `SignatureCompletion`; adapters `ports::signer_port(Arc<dyn SignatureSigner>) -> SignerPort` and `ports::trust_port(Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort>`, used by Task 9.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `crates/plugins/signature/tests/ffi.rs`:
 
@@ -1820,12 +1820,12 @@ fn a_visual_fill_reaches_the_engine() {
 
 Review Focus item 3 (`a_changed_document_validates_invalid`) and item 5 (`without_anchors_a_good_signature_is_valid_untrusted`) need a real CMS over real bytes, so they're host tests over PDFium in Task 9, not here.
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: FAIL to compile, no `SignatureSigner`.
 
-- [ ] **Step 3: Write `ports.rs`**
+- [x] **Step 3: Write `ports.rs`**
 
 ```rust
 //! The host ports, implemented in Swift: a key that signs, and the anchors
@@ -1922,7 +1922,7 @@ pub fn trust_port(trust: Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort> {
 
 A fallible foreign trait needs `impl From<uniffi::UnexpectedUniFFICallbackError> for ViewerError` in `epdf-ffi`. Plan 01 is the first plan with a foreign trait and should have added it; if it's missing, add it in `crates/epdf-ffi/src/error.rs`, mapping to `ViewerError::Kernel { name: "CallbackError", code: Some("internal"), detail: reason }`.
 
-- [ ] **Step 4: Write the signing members**
+- [x] **Step 4: Write the signing members**
 
 In `ffi/mod.rs`, the inputs (in `records.rs`):
 
@@ -2032,12 +2032,12 @@ The members:
 
 `From<SignatureMark> for crate::Mark` wraps `Source` bytes as `Bytes(bytes).to_json()`. `SignatureSignInput::into_core(signer)` builds `crate::SignFieldInput` with `field_json`, the attribution as `{name, reason, location, contactInfo}` JSON, `certify` as `{"permission": n}`, and `lock` through `to_json`.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-signature --features uniffi --test ffi`
 Expected: PASS, 12 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/signature crates/epdf-ffi

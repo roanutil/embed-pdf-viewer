@@ -2,6 +2,7 @@
 //! plugin's JSON ([`records`]), one handle, one event enum. Every method
 //! hops to the kernel thread through `KernelBound`.
 
+pub mod ports;
 pub mod records;
 
 use std::sync::Arc;
@@ -14,6 +15,7 @@ use epdf_kernel::bytes::Bytes;
 use epdf_kernel::error::{code, plugin_error};
 use serde_json::{Value, json};
 
+pub use ports::{SignatureDigest, SignatureKeyAlgorithm, SignatureSigner, SignatureTrust};
 pub use records::*;
 
 use crate::SignatureCapability;
@@ -273,6 +275,115 @@ impl SignatureHandle {
                 Ok(())
             })
             .await
+    }
+
+    /// Seal `input.field` with `signer`, or the signer the viewer has.
+    /// Fails with the signer's own error if it throws, and leaves nothing
+    /// pending.
+    pub async fn sign(
+        &self,
+        input: SignatureSignInput,
+        signer: Option<Arc<dyn SignatureSigner>>,
+        cancel: Arc<CancelToken>,
+    ) -> Result<SignatureCompletion, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| {
+                    let signer =
+                        signer.map(ports::signer_port).transpose()?.map(crate::SignerSource::Port);
+                    Ok(open(c)?.sign(input.into_core(signer)))
+                },
+                |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),
+            )
+            .await?
+    }
+
+    /// Phase one of an external signing: the digest to sign elsewhere. The
+    /// document is read-only until `complete_signature` or `abort_pending`.
+    pub async fn prepare_signature(
+        &self,
+        input: SignaturePrepareInput,
+        cancel: Arc<CancelToken>,
+    ) -> Result<SignaturePrepared, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.prepare_signature(input.into_core())),
+                |v: Value| SignaturePrepared::from_json(&v).map_err(ViewerError::from),
+            )
+            .await?
+    }
+
+    /// Phase two: seal the parked signing with a detached CMS.
+    pub async fn complete_signature(
+        &self,
+        signing_id: String,
+        cms: Vec<u8>,
+        cancel: Arc<CancelToken>,
+    ) -> Result<SignatureCompletion, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.complete_signature(signing_id, cms)),
+                |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),
+            )
+            .await?
+    }
+
+    /// Cancel the parked signing, if any.
+    pub async fn abort_pending(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
+        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.abort_pending()), |()| ()).await
+    }
+
+    /// Draw `mark` into an unsigned field without sealing it.
+    pub async fn fill_field(
+        &self,
+        field: FormFieldRef,
+        mark: SignatureMark,
+        cancel: Arc<CancelToken>,
+    ) -> Result<(), ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.fill_field(field_json(&field), mark.into())),
+                |()| (),
+            )
+            .await
+    }
+
+    /// Undo a visual fill.
+    pub async fn clear_field(
+        &self,
+        field: FormFieldRef,
+        cancel: Arc<CancelToken>,
+    ) -> Result<(), ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.clear_field(field_json(&field))),
+                |()| (),
+            )
+            .await
+    }
+
+    /// What placing `mark` does follows `mode`: sign, fill, or ask. A free
+    /// placement is a stamp.
+    pub async fn place_mark(
+        &self,
+        mark: SignatureMark,
+        target: SignaturePlaceTarget,
+        cancel: Arc<CancelToken>,
+    ) -> Result<SignaturePlaceResult, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.place_mark(mark.into(), target.try_into()?)),
+                |r: crate::PlaceMarkResult| {
+                    SignaturePlaceResult::try_from(r).map_err(ViewerError::from)
+                },
+            )
+            .await?
     }
 
     /// `doc.sign` is granted and a signer is configured.

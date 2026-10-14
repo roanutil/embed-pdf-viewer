@@ -263,3 +263,209 @@ fn closing_the_document_ends_its_subscriptions() {
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 1);
 }
+
+// ── signing (Task 8) ─────────────────────────────────────────────────────────
+
+use epdf_plugin_signature::ffi::{
+    SignatureDigest, SignatureKeyAlgorithm, SignatureMark, SignatureSignInput, SignatureSigner,
+};
+use rsa::pkcs8::DecodePrivateKey;
+use rsa::{Pkcs1v15Sign, RsaPrivateKey};
+use sha2::Digest as _;
+
+const KEYS: &str = "packages/engine/main/test/fixtures/signature-compat/keys";
+
+fn repo_file(path: &str) -> Vec<u8> {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    std::fs::read(root.join(path)).unwrap()
+}
+
+fn pem_body(pem: &[u8]) -> Vec<u8> {
+    use base64::Engine as _;
+    let body: String =
+        String::from_utf8_lossy(pem).lines().filter(|l| !l.starts_with("-----")).collect();
+    base64::engine::general_purpose::STANDARD.decode(body).unwrap()
+}
+
+struct TestSigner {
+    key: RsaPrivateKey,
+    chain: Vec<Vec<u8>>,
+    fail: bool,
+}
+
+impl TestSigner {
+    fn load(fail: bool) -> Self {
+        let key = RsaPrivateKey::from_pkcs8_der(&pem_body(&repo_file(&format!(
+            "{KEYS}/TEST-ONLY-private-key.pem"
+        ))))
+        .unwrap();
+        let cert = pem_body(&repo_file(&format!("{KEYS}/TEST-ONLY-signer.pem")));
+        TestSigner { key, chain: vec![cert], fail }
+    }
+}
+
+impl SignatureSigner for TestSigner {
+    fn certificate_chain(&self) -> Result<Vec<Vec<u8>>, ViewerError> {
+        Ok(self.chain.clone())
+    }
+    fn algorithm(&self) -> SignatureKeyAlgorithm {
+        SignatureKeyAlgorithm::RsaPkcs1
+    }
+    fn digest(&self) -> SignatureDigest {
+        SignatureDigest::Sha256
+    }
+    fn sign(&self, message: Vec<u8>) -> Result<Vec<u8>, ViewerError> {
+        if self.fail {
+            return Err(ViewerError::Kernel {
+                name: "UserCancelled".into(),
+                code: Some("operation-cancelled".into()),
+                detail: "the user cancelled".into(),
+            });
+        }
+        Ok(self
+            .key
+            .sign(Pkcs1v15Sign::new::<sha2::Sha256>(), &sha2::Sha256::digest(&message))
+            .unwrap())
+    }
+}
+
+/// The unsigned field (14), signed.
+fn signed_14() -> Value {
+    let mut s = snapshot()["signatures"][1].clone();
+    s["signed"] = json!(true);
+    s["coverage"] = json!("whole-revision");
+    s["revisionIndex"] = json!(1);
+    s["byteRange"] = json!([0, 300, 400, 100]);
+    s
+}
+
+/// `spec()` plus prepare and complete responders that record the CMS.
+fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
+    spec()
+        .respond("signatures.prepare", |_| {
+            Ok(Reply::value(json!({
+                "signingId": "s1", "digest": { "$bytes": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=" },
+                "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSize": 8192,
+                "subFilter": "ETSI.CAdES.detached",
+                "expectedVersion": { "baseSha256": "x", "editsVersion": 0 }, "expiresAt": null
+            })))
+        })
+        .respond("signatures.complete", move |args| {
+            *cms.lock().unwrap() = args.first().and_then(|a| a.get("cms")).cloned();
+            Ok(Reply::value(json!({
+                "status": "completed", "signature": signed_14(),
+                "version": { "sha256": "y", "byteLength": 500 },
+                "previous": { "baseSha256": "x", "editsVersion": 0 },
+                "protection": snapshot()["protection"].clone()
+            })))
+        })
+        .respond("signatures.abort", |_| Ok(Reply::value(json!({ "status": "aborted" }))))
+}
+
+fn unsigned_input(s: &SignatureHandle) -> SignatureSignInput {
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    SignatureSignInput { field, mark: None, attribution: None, certify: None, lock: None }
+}
+
+#[test]
+fn signing_hands_the_engine_a_cms_from_the_foreign_signer() {
+    let cms = Arc::new(Mutex::new(None));
+    let seen = cms.clone();
+    let (_thread, s) = handle_with(SignatureConfig::default, move || signing_spec(seen));
+    let events = Arc::new(Events::default());
+    let _sub = s.subscribe(events.clone());
+    let input = unsigned_input(&s);
+    let done = block_on(s.sign(input, Some(Arc::new(TestSigner::load(false))), CancelToken::new()))
+        .unwrap();
+    assert!(done.signature.signed);
+    let cms = cms.lock().unwrap().clone().unwrap();
+    let der = epdf_kernel::bytes::Bytes::from_json(&cms).unwrap().0;
+    assert_eq!(der[0], 0x30);
+    assert_eq!(block_on(s.pending()).unwrap(), None);
+    assert!(events.0.lock().unwrap().iter().any(|e| matches!(e, SignatureEvent::Signed { .. })));
+}
+
+#[test]
+fn a_throwing_signer_leaves_nothing_pending() {
+    let (_thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
+    let input = unsigned_input(&s);
+    let error = block_on(s.sign(input, Some(Arc::new(TestSigner::load(true))), CancelToken::new()))
+        .unwrap_err();
+    assert_eq!(code(&error), Some("operation-cancelled"), "{error:?}");
+    assert_eq!(block_on(s.pending()).unwrap(), None);
+    assert!(!block_on(s.is_busy()).unwrap());
+}
+
+#[test]
+fn signing_without_a_signer_is_invalid_input() {
+    let (_thread, s) = handle();
+    let input = unsigned_input(&s);
+    let error = block_on(s.sign(input, None, CancelToken::new())).unwrap_err();
+    assert_eq!(code(&error), Some("invalid-input"), "{error:?}");
+}
+
+#[test]
+fn a_two_phase_signing_parks_then_completes() {
+    let (_thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
+    let input = unsigned_input(&s);
+    let prepared = block_on(s.prepare_signature(
+        epdf_plugin_signature::ffi::SignaturePrepareInput {
+            field: input.field.clone(),
+            mark: None,
+            attribution: None,
+            certify: None,
+            lock: None,
+            sub_filter: None,
+            digest: Some(SignatureDigest::Sha256),
+        },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(prepared.digest.len(), 32);
+    assert_eq!(block_on(s.pending()).unwrap().map(|p| p.signing_id), Some("s1".to_string()));
+    let done =
+        block_on(s.complete_signature("s1".into(), vec![0x30, 0], CancelToken::new())).unwrap();
+    assert!(done.signature.signed);
+    assert_eq!(block_on(s.pending()).unwrap(), None);
+}
+
+#[test]
+fn a_visual_fill_reaches_the_engine() {
+    let filled = Arc::new(Mutex::new(false));
+    let saw = filled.clone();
+    let (_thread, s) = handle_with(SignatureConfig::default, move || {
+        spec().respond("forms.setSignatureAppearance", move |_| {
+            *saw.lock().unwrap() = true;
+            Ok(Reply::value(json!({})))
+        })
+    });
+    let input = unsigned_input(&s);
+    let artwork = repo_file("packages/engine/main/test/fixtures/signature_artwork.pdf");
+    block_on(s.fill_field(
+        input.field,
+        SignatureMark::Source { bytes: artwork },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert!(*filled.lock().unwrap());
+}
+
+#[test]
+fn placing_a_mark_in_visual_mode_fills_the_field() {
+    let (_thread, s) = handle_with(SignatureConfig::default, || {
+        spec().respond("forms.setSignatureAppearance", |_| Ok(Reply::value(json!({}))))
+    });
+    let input = unsigned_input(&s);
+    let artwork = repo_file("packages/engine/main/test/fixtures/signature_artwork.pdf");
+    let result = block_on(s.place_mark(
+        SignatureMark::Source { bytes: artwork },
+        epdf_plugin_signature::ffi::SignaturePlaceTarget::Field { field: input.field.clone() },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(
+        result,
+        epdf_plugin_signature::ffi::SignaturePlaceResult::Filled { field: input.field }
+    );
+}

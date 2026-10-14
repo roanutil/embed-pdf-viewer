@@ -868,3 +868,221 @@ pub(crate) fn register_hooks(
     ];
     epdf_kernel::Unsubscribe::new(move || offs.iter().for_each(epdf_kernel::Unsubscribe::call))
 }
+
+// ── signing inputs ───────────────────────────────────────────────────────────
+
+/// What the signature dictionary says about the signer. Every member
+/// optional; the certificate's common name is the default `name`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, uniffi::Record)]
+pub struct SignatureAttribution {
+    #[uniffi(default = None)]
+    pub name: Option<String>,
+    #[uniffi(default = None)]
+    pub reason: Option<String>,
+    #[uniffi(default = None)]
+    pub location: Option<String>,
+    #[uniffi(default = None)]
+    pub contact_info: Option<String>,
+}
+
+impl SignatureAttribution {
+    /// The members that are set, in the engine's spelling.
+    pub(crate) fn to_json(&self) -> Value {
+        let mut out = serde_json::Map::new();
+        for (key, value) in [
+            ("name", &self.name),
+            ("reason", &self.reason),
+            ("location", &self.location),
+            ("contactInfo", &self.contact_info),
+        ] {
+            if let Some(value) = value {
+                out.insert(key.into(), json!(value));
+            }
+        }
+        Value::Object(out)
+    }
+}
+
+/// `sign`'s input.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct SignatureSignInput {
+    pub field: FormFieldRef,
+    /// The artwork drawn into the field; `None` signs with no appearance.
+    #[uniffi(default = None)]
+    pub mark: Option<SignatureMark>,
+    #[uniffi(default = None)]
+    pub attribution: Option<SignatureAttribution>,
+    /// The DocMDP permission (1, 2 or 3) to certify with. Needs
+    /// `allow_certify` and `doc.sign.certify`, and no earlier signature.
+    #[uniffi(default = None)]
+    pub certify: Option<u8>,
+    /// A FieldMDP for this signature, mirrored as the field's `/Lock`.
+    #[uniffi(default = None)]
+    pub lock: Option<SignatureFieldLock>,
+}
+
+impl SignatureSignInput {
+    pub(crate) fn into_core(self, signer: Option<crate::SignerSource>) -> crate::SignFieldInput {
+        crate::SignFieldInput {
+            field: field_json(&self.field),
+            mark: self.mark.map(Into::into),
+            signer,
+            attribution: self.attribution.map(|a| a.to_json()),
+            appearance: None,
+            certify: self.certify.map(|p| json!({ "permission": p })),
+            lock: self.lock.map(|l| l.to_json()),
+        }
+    }
+}
+
+/// `prepare_signature`'s input: `sign`'s, plus the CMS profile and digest
+/// the external signer will use.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct SignaturePrepareInput {
+    pub field: FormFieldRef,
+    #[uniffi(default = None)]
+    pub mark: Option<SignatureMark>,
+    #[uniffi(default = None)]
+    pub attribution: Option<SignatureAttribution>,
+    #[uniffi(default = None)]
+    pub certify: Option<u8>,
+    #[uniffi(default = None)]
+    pub lock: Option<SignatureFieldLock>,
+    /// `adbe.pkcs7.detached` or `ETSI.CAdES.detached` (the default).
+    #[uniffi(default = None)]
+    pub sub_filter: Option<String>,
+    #[uniffi(default = None)]
+    pub digest: Option<super::ports::SignatureDigest>,
+}
+
+impl SignaturePrepareInput {
+    pub(crate) fn into_core(self) -> crate::PrepareSignatureInput {
+        crate::PrepareSignatureInput {
+            field: field_json(&self.field),
+            mark: self.mark.map(Into::into),
+            appearance: None,
+            attribution: self.attribution.map(|a| a.to_json()),
+            certify: self.certify.map(|p| json!({ "permission": p })),
+            lock: self.lock.map(|l| l.to_json()),
+            sub_filter: self.sub_filter.map(Value::String),
+            digest: self.digest.map(|d| json!(d.name())),
+        }
+    }
+}
+
+/// Phase one of an external signing: the digest to sign elsewhere.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct SignaturePrepared {
+    pub signing_id: String,
+    pub digest: Vec<u8>,
+    /// `sha256`, `sha384` or `sha512`.
+    pub algorithm: String,
+    pub byte_range: Vec<u64>,
+    pub contents_size: u64,
+    pub sub_filter: String,
+    /// What `complete_signature` must present.
+    pub expected_version: SignatureVersionRef,
+    pub expires_at: Option<String>,
+}
+
+impl SignaturePrepared {
+    pub(crate) fn from_json(value: &Value) -> Result<Self, Error> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Json {
+            signing_id: String,
+            digest: Value,
+            algorithm: String,
+            byte_range: Vec<u64>,
+            contents_size: u64,
+            sub_filter: String,
+            expected_version: SignatureVersionRef,
+            #[serde(default)]
+            expires_at: Option<String>,
+        }
+        let j: Json = decode("a prepared signing", value)?;
+        Ok(SignaturePrepared {
+            signing_id: j.signing_id,
+            digest: Bytes::from_json(&j.digest)
+                .map(|b| b.0)
+                .ok_or_else(|| invalid_state("a digest", &j.digest))?,
+            algorithm: j.algorithm,
+            byte_range: j.byte_range,
+            contents_size: j.contents_size,
+            sub_filter: j.sub_filter,
+            expected_version: j.expected_version,
+            expires_at: j.expires_at,
+        })
+    }
+}
+
+/// Where `place_mark` puts a mark.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum SignaturePlaceTarget {
+    /// Into a signature field, by `mode`.
+    Field { field: FormFieldRef },
+    /// Freely on a page, as a stamp. `at` is the centre, in page space.
+    Free { page: PageRef, at: epdf_ffi::Point, target_width: Option<f64>, rotation: Option<f64> },
+}
+
+impl TryFrom<SignaturePlaceTarget> for crate::PlaceTarget {
+    type Error = Error;
+    fn try_from(t: SignaturePlaceTarget) -> Result<Self, Error> {
+        match t {
+            SignaturePlaceTarget::Field { field } => {
+                Ok(crate::PlaceTarget::Field(field_json(&field)))
+            }
+            SignaturePlaceTarget::Free { page, at, target_width, rotation } => {
+                let placement = json!({
+                    "page": { "kind": "objectNumber", "pageObjectNumber": page.page_object_number },
+                    "at": { "x": at.x, "y": at.y },
+                    "targetWidth": target_width,
+                    "rotation": rotation,
+                });
+                Ok(crate::PlaceTarget::Free(decode("a placement", &placement)?))
+            }
+        }
+    }
+}
+
+/// What `place_mark` did.
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
+pub enum SignaturePlaceResult {
+    Signed {
+        field: FormFieldRef,
+        result: SignatureCompletion,
+    },
+    Filled {
+        field: FormFieldRef,
+    },
+    /// `SignRequested` fired: the app decides.
+    Requested {
+        field: FormFieldRef,
+    },
+    /// A free placement became this stamp annotation.
+    Placed {
+        annotation: AnnotationRef,
+    },
+}
+
+impl TryFrom<crate::PlaceMarkResult> for SignaturePlaceResult {
+    type Error = Error;
+    fn try_from(r: crate::PlaceMarkResult) -> Result<Self, Error> {
+        Ok(match r {
+            crate::PlaceMarkResult::Signed { field, result } => SignaturePlaceResult::Signed {
+                field: field_from_json(&field)?,
+                result: SignatureCompletion::from_json(&result)?,
+            },
+            crate::PlaceMarkResult::Filled { field } => {
+                SignaturePlaceResult::Filled { field: field_from_json(&field)? }
+            }
+            crate::PlaceMarkResult::Requested { field } => {
+                SignaturePlaceResult::Requested { field: field_from_json(&field)? }
+            }
+            crate::PlaceMarkResult::Placed { annotation } => SignaturePlaceResult::Placed {
+                annotation: annotation_from_json(&annotation)?
+                    .ok_or_else(|| invalid_state("a placed annotation", &annotation))?,
+            },
+        })
+    }
+}
