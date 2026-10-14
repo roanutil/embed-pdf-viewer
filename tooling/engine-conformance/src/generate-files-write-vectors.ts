@@ -185,7 +185,7 @@ async function readCase(entry: FilesCase): Promise<unknown> {
     );
     try {
       const listing = await doc.pages.list();
-      const firstPage = listing.pages[0]!.pageObjectNumber;
+      const firstPage = listing.pages[0]!.ref;
 
       const run = async () => {
         if (entry.pieceInfo) {
