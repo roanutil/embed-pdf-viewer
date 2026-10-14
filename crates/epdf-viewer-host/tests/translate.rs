@@ -762,3 +762,27 @@ fn an_attachment_read_carries_its_page_and_ref_and_answers_its_bytes() {
     let id = decoded["data"]["$hostBytes"].as_u64().unwrap();
     assert_eq!(HostTable::take(id), Some(b"hi".to_vec()));
 }
+
+/// A reply's `inReplyTo` and a link's `goto` destination sit inside the
+/// draft or patch, not in `ref`; the host parses both flat and whole.
+#[test]
+fn refs_inside_a_draft_or_patch_go_out_flat_and_whole() {
+    let page3 = json!({ "kind": "objectNumber", "pageObjectNumber": 3 });
+    let draft = json!({ "subtype": "text", "index": 2.5,
+        "inReplyTo": { "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 17.0 } });
+    let call = translate("d1", "page.annotations.create", Some(3), &[draft], 21).unwrap();
+    assert_eq!(
+        call.request["draft"]["inReplyTo"],
+        json!({ "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 })
+    );
+    // A draft member that only shares a ref member's name is left alone.
+    assert_eq!(call.request["draft"]["index"], json!(2.5));
+    let target = json!({ "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 5.0 });
+    let patch = json!({ "target": { "kind": "goto",
+        "destination": { "kind": "fit", "page": { "kind": "objectNumber", "pageObjectNumber": 7 } } } });
+    let call = translate("d1", "page.annotations.update", Some(3), &[target, patch], 22).unwrap();
+    assert_eq!(
+        call.request["patch"]["target"]["destination"],
+        json!({ "kind": "fit", "pageObjectNumber": 7 })
+    );
+}

@@ -986,6 +986,34 @@ fn without_its_config_the_annotation_plugin_is_not_installed() {
     assert!(block_on(host.annotation(doc.id)).is_err());
 }
 
+#[test]
+fn a_reply_lands_through_the_native_engine() {
+    let host = with_annotation();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let pages = block_on(host.pages(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let root = block_on(annotations.create(
+        CreateAnnotationInput {
+            page: pages[0].page,
+            subtype: "square".into(),
+            bounds: Some(epdf_ffi::Rect { x: 72.0, y: 72.0, width: 100.0, height: 50.0 }),
+            ..Default::default()
+        },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let reply =
+        block_on(annotations.threads().reply(root, "Agreed".into(), CancelToken::new())).unwrap();
+    // The draft's `inReplyTo` reaches the host as the flat ref it parses
+    // (before, the create failed WireFormat). `epdf-engine`'s create does
+    // not write `/IRT` yet, so the reply is not read back as threaded.
+    let read = block_on(annotations.get(reply)).unwrap().unwrap();
+    assert_eq!(read.subtype, "text");
+    assert_eq!(read.contents.as_deref(), Some("Agreed"));
+}
+
 fn with_page_edit() -> Arc<ViewerHost> {
     let config = ViewerConfig {
         page_edit: true,

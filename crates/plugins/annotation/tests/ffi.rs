@@ -493,3 +493,26 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
     let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().len()))).unwrap();
     assert_eq!(sent, 0);
 }
+
+#[test]
+fn a_create_batch_names_each_failure_by_its_input_index() {
+    let (_thread, annotations) = handle_over(vec![]);
+    block_on(annotations.refresh(token())).unwrap();
+    let square_at = |x: f64| CreateAnnotationInput {
+        page: PageRef { page_object_number: 1 },
+        subtype: "square".into(),
+        bounds: Some(Rect { x, y: 100.0, width: 50.0, height: 50.0 }),
+        ..Default::default()
+    };
+    let no_geometry = CreateAnnotationInput {
+        page: PageRef { page_object_number: 1 },
+        subtype: "square".into(),
+        ..Default::default()
+    };
+    let result = block_on(
+        annotations.create_many(vec![square_at(10.0), square_at(80.0), no_geometry], token()),
+    )
+    .unwrap();
+    assert_eq!(result.applied.len(), 2, "{result:?}");
+    assert_eq!(result.failed.iter().map(|f| f.index).collect::<Vec<_>>(), vec![2]);
+}

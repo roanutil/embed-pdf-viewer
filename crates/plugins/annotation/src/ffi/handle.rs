@@ -161,33 +161,37 @@ impl AnnotationHandle {
         inputs: Vec<CreateAnnotationInput>,
         cancel: Arc<CancelToken>,
     ) -> Result<AnnotationCreateBatchResult, ViewerError> {
+        // The plugin answers a failed entry with the input JSON it got, so
+        // each failure is matched back to its position here, the first
+        // unclaimed equal input winning when two inputs are the same.
+        let inputs = inputs
+            .into_iter()
+            .map(|i| Ok(create_input_json(&crate::CreateAnnotationInput::try_from(i)?)))
+            .collect::<Result<Vec<_>, epdf_kernel::Error>>()?;
+        let sent = inputs.clone();
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let inputs = inputs
-                        .into_iter()
-                        .map(|i| {
-                            let input = crate::CreateAnnotationInput::try_from(i)?;
-                            Ok(create_input_json(&input))
-                        })
-                        .collect::<Result<Vec<_>, epdf_kernel::Error>>()?;
-                    Ok(open(c)?.create_many(inputs))
-                },
-                |batch| {
+                move |c| Ok(open(c)?.create_many(inputs)),
+                move |batch| {
                     let applied =
                         batch.applied.into_iter().map(ref_out).collect::<Result<Vec<_>, _>>()?;
-                    let failed = batch
-                        .failed
-                        .into_iter()
-                        .map(|(entry, e)| AnnotationCreateFailure {
-                            index: entry
-                                .get("index")
-                                .and_then(serde_json::Value::as_u64)
-                                .unwrap_or(0) as u32,
+                    let mut claimed = vec![false; sent.len()];
+                    let mut failed = Vec::new();
+                    for (entry, e) in batch.failed {
+                        let index = (0..sent.len())
+                            .find(|&i| !claimed[i] && sent[i] == entry)
+                            .ok_or_else(|| {
+                                super::invalid(format!(
+                                    "a failed create matches no input it was given: {entry}"
+                                ))
+                            })?;
+                        claimed[index] = true;
+                        failed.push(AnnotationCreateFailure {
+                            index: index as u32,
                             error: plugin_error_info(&e),
-                        })
-                        .collect();
+                        });
+                    }
                     Ok::<_, ViewerError>(AnnotationCreateBatchResult { applied, failed })
                 },
             )

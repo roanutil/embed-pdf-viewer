@@ -177,10 +177,12 @@ pub fn translate(
         "annotations.listRawPage" => vec![("pageObjectNumber", page()?)],
         "annotations.create" => {
             let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
+            let draft = wire_refs_in(path, draft)?;
             vec![("pageObjectNumber", page()?), ("draft", draft), ("resources", resources)]
         }
         "annotations.update" => {
             let (patch, resources) = normalize_binary(arg(1), &mut payloads)?;
+            let patch = wire_refs_in(path, patch)?;
             vec![("ref", wire_ref(path, arg(0))?), ("patch", patch), ("resources", resources)]
         }
         "annotations.delete" => vec![("ref", wire_ref(path, arg(0))?)],
@@ -389,23 +391,57 @@ pub fn nest_refs(value: &mut Value) {
 /// (`annotObjectNumber`, `index`, a revision's `generation`, each sent as
 /// `17.0`) as the whole integers the host's serde parses.
 fn wire_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    fn whole_members(path: &str, value: &mut Value) -> Result<(), Error> {
-        if let Value::Object(map) = value {
-            for key in ["annotObjectNumber", "index", "generation", "pageObjectNumber"] {
-                if let Some(n) = map.get(key).filter(|n| n.is_f64()) {
-                    let n = whole(path, key, n)?;
-                    map.insert(key.into(), n);
-                }
-            }
-            for member in map.values_mut() {
-                whole_members(path, member)?;
+    flatten_refs(&mut target);
+    whole_refs(path, &mut target)?;
+    Ok(target)
+}
+
+/// A draft or patch the host's way: every ref inside it (a reply's
+/// `inReplyTo`, a link's `goto` destination) flat and whole, as
+/// `wire_ref` makes the call's own ref. Other members keep their numbers.
+fn wire_refs_in(path: &str, mut value: Value) -> Result<Value, Error> {
+    flatten_refs(&mut value);
+    whole_refs(path, &mut value)?;
+    Ok(value)
+}
+
+/// The JavaScript numbers of every annotation ref (an object whose `kind`
+/// is `objectNumber`, `nm` or `index`, beside a `pageObjectNumber`) and
+/// of its revision token, as whole integers.
+fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
+    fn whole_keys(path: &str, map: &mut Map<String, Value>, keys: &[&str]) -> Result<(), Error> {
+        for key in keys {
+            if let Some(n) = map.get(*key).filter(|n| n.is_f64()) {
+                let n = whole(path, key, n)?;
+                map.insert((*key).into(), n);
             }
         }
         Ok(())
     }
-    flatten_refs(&mut target);
-    whole_members(path, &mut target)?;
-    Ok(target)
+    match value {
+        Value::Object(map) => {
+            let is_ref = matches!(
+                map.get("kind").and_then(Value::as_str),
+                Some("objectNumber" | "nm" | "index")
+            ) && map.contains_key("pageObjectNumber");
+            if is_ref {
+                whole_keys(path, map, &["annotObjectNumber", "index", "pageObjectNumber"])?;
+                if let Some(Value::Object(revision)) = map.get_mut("revision") {
+                    whole_keys(path, revision, &["generation", "pageObjectNumber"])?;
+                }
+            }
+            for member in map.values_mut() {
+                whole_refs(path, member)?;
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                whole_refs(path, item)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 /// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
