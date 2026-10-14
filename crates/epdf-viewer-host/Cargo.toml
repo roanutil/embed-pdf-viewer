@@ -27,6 +27,7 @@ epdf-plugin-commands = { path = "../plugins/commands", default-features = false,
 epdf-plugin-i18n = { path = "../plugins/i18n", default-features = false, features = ["uniffi"] }
 epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-link = { path = "../plugins/link", default-features = false, features = ["uniffi"] }
+epdf-plugin-measurement = { path = "../plugins/measurement", default-features = false, features = ["uniffi"] }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
 epdf-plugin-page-edit = { path = "../plugins/page-edit", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }

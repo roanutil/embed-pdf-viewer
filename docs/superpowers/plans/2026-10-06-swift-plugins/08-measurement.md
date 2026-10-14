@@ -2091,7 +2091,7 @@ git commit -m "Export the measurement plugin through uniffi"
 - Consumes: Task 2's wire kinds; Task 3's `MeasurementHandle`, `ffi::MeasurementConfig`.
 - Produces: `ViewerConfig.measurement: Option<MeasurementConfig>`; `ViewerHost::measurement(document_id: String) -> Result<Arc<MeasurementHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing translation tests**
+- [x] **Step 1: Write the failing translation tests**
 
 Append to `crates/epdf-viewer-host/tests/translate.rs`:
 
@@ -2126,12 +2126,12 @@ fn viewports_decode_to_the_list() {
 }
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: FAIL, `maps("page.measure")` is false.
 
-- [ ] **Step 3: Map the paths**
+- [x] **Step 3: Map the paths**
 
 In `translate.rs`, `route`:
 
@@ -2166,12 +2166,12 @@ and, because the request loop drops `null` values and a cleared scale is an expl
 
 Update the Appendix C row in `docs/superpowers/plans/2026-10-01-swift-package.md` for `page.measure.setScale`, `page.measure.viewports` to `mapped (08-measurement.md)`.
 
-- [ ] **Step 4: Run the translation tests**
+- [x] **Step 4: Run the translation tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: PASS.
 
-- [ ] **Step 5: Write the failing host test**
+- [x] **Step 5: Write the failing host test**
 
 Append to `crates/epdf-viewer-host/tests/viewer_host.rs`, following the file's existing `report.pdf` helpers:
 
@@ -2208,12 +2208,12 @@ fn a_measurement_scale_persists_through_the_native_engine() {
 
 Use the first id `presets()` returns if `"metric-1-100"` isn't one (`crates/plugins/measurement/src/scale.rs:19` lists them). `NullDelegate` and `fixture` are the helpers the file already defines; if they're named differently, use those names.
 
-- [ ] **Step 6: Run it to verify it fails**
+- [x] **Step 6: Run it to verify it fails**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host a_measurement_scale`
 Expected: FAIL to compile, `no field measurement on ViewerConfig`.
 
-- [ ] **Step 7: Wire the host**
+- [x] **Step 7: Wire the host**
 
 `crates/epdf-viewer-host/Cargo.toml`, alphabetical among the plugin lines:
 
@@ -2258,12 +2258,12 @@ epdf-plugin-measurement = { path = "../plugins/measurement", default-features = 
     }
 ```
 
-- [ ] **Step 8: Run the host tests**
+- [x] **Step 8: Run the host tests**
 
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add crates/epdf-viewer-host docs/superpowers/plans/2026-10-01-swift-package.md

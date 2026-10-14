@@ -68,6 +68,10 @@ pub enum Decode {
     /// A byte payload (an extracted PDF), parked in the `HostTable` and
     /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
     HostBytes,
+    /// A scale write: `Mutation`, with the `PageScaleResult`'s page and the
+    /// `page.viewportsChanged` event's nested as `page: PageRef`, which is
+    /// what the measurement plugin's viewport sync reads.
+    MeasureMutation,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -100,6 +104,8 @@ pub const PATHS: &[&str] = &[
     "page.annotations.update",
     "page.annotations.delete",
     "page.annotations.downloadFile",
+    "page.measure.viewports",
+    "page.measure.setScale",
     "pages.move",
     "pages.rotate",
     "pages.delete",
@@ -141,6 +147,8 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.annotations.update" => ("annotations.update", Decode::AnnotationMutation),
         "page.annotations.delete" => ("annotations.delete", Decode::AnnotationMutation),
         "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
+        "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
+        "page.measure.setScale" => ("measure.setScale", Decode::MeasureMutation),
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -189,6 +197,8 @@ pub fn translate(
         "annotations.readFile" => {
             vec![("pageObjectNumber", page()?), ("ref", wire_ref(path, arg(0))?)]
         }
+        "measure.viewports" => vec![("pageObjectNumber", page()?)],
+        "measure.setScale" => vec![("pageObjectNumber", page()?)],
         "pages.move" => vec![
             ("pageObjectNumbers", object_numbers(path, &arg(0))?),
             ("destIndex", whole(path, "destIndex", &arg(1))?),
@@ -222,6 +232,13 @@ pub fn translate(
         if !value.is_null() && !epdf_kernel::is_undefined(&value) {
             request.insert(key.into(), value);
         }
+    }
+    // `PdfMeasure | null`: a cleared scale is an explicit `null`, which the
+    // loop above would drop.
+    if kind == "measure.setScale" {
+        let measure = arg(0);
+        let measure = if epdf_kernel::is_undefined(&measure) { Value::Null } else { measure };
+        request.insert("measure".into(), measure);
     }
     Ok(WireCall { request: Value::Object(request), payloads, decode })
 }
@@ -574,7 +591,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             nest_refs(&mut value);
             value
         }
-        Decode::AnnotationMutation => {
+        Decode::AnnotationMutation | Decode::MeasureMutation => {
             let mut value = take(&mut result, "result")?;
             nest_refs(&mut value);
             let mut event = result.remove("event");

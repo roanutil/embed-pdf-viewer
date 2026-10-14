@@ -786,3 +786,69 @@ fn refs_inside_a_draft_or_patch_go_out_flat_and_whole() {
         json!({ "kind": "fit", "pageObjectNumber": 7 })
     );
 }
+
+#[test]
+fn page_measure_paths_go_to_the_measure_kinds() {
+    assert!(epdf_viewer_host::translate::maps("page.measure"));
+    let read = translate("doc-1", "page.measure.viewports", Some(7), &[], 3).unwrap();
+    assert_eq!(read.request["kind"], json!("measure.viewports"));
+    assert_eq!(read.request["pageObjectNumber"], json!(7));
+    assert!(matches!(read.decode, Decode::Field("viewports")));
+    let measure = json!({ "subtype": "RL", "ratio": "1 in = 1 m" });
+    let write =
+        translate("doc-1", "page.measure.setScale", Some(7), std::slice::from_ref(&measure), 4)
+            .unwrap();
+    assert_eq!(write.request["kind"], json!("measure.setScale"));
+    assert_eq!(write.request["pageObjectNumber"], json!(7));
+    assert_eq!(write.request["measure"], measure);
+}
+
+#[test]
+fn clearing_a_scale_sends_an_explicit_null() {
+    let write = translate("doc-1", "page.measure.setScale", Some(7), &[Value::Null], 4).unwrap();
+    assert!(write.request.as_object().unwrap().contains_key("measure"));
+    assert_eq!(write.request["measure"], Value::Null);
+}
+
+#[test]
+fn viewports_decode_to_the_list() {
+    let call = translate("doc-1", "page.measure.viewports", Some(7), &[], 3).unwrap();
+    let decoded = decode(
+        &call.decode,
+        answer(
+            &json!({ "result": { "viewports": [{
+                "bbox": { "left": 0, "bottom": 0, "right": 1, "top": 1 }, "owned": true
+            }] } })
+            .to_string(),
+        ),
+    )
+    .unwrap();
+    assert_eq!(decoded.value.as_array().unwrap().len(), 1);
+}
+
+#[test]
+fn a_scale_write_publishes_its_page_as_a_page_ref() {
+    let call = translate("doc-1", "page.measure.setScale", Some(7), &[Value::Null], 4).unwrap();
+    let result =
+        json!({ "pageObjectNumber": 7, "meta": { "affectedPages": [], "cacheDelta": null } });
+    let response = HostResponse {
+        json: json!({ "result": {
+            "result": result,
+            "mutationSequence": 2,
+            "event": {
+                "type": "page.viewportsChanged",
+                "pageObjectNumber": 7,
+                "meta": { "affectedPages": [], "cacheDelta": null },
+                "origin": { "kind": "local", "sessionId": "s", "ts": 1 }
+            }
+        } })
+        .to_string(),
+        payloads: Vec::new(),
+    };
+    let decoded = decode(&call.decode, response).unwrap();
+    let page = json!({ "kind": "objectNumber", "pageObjectNumber": 7 });
+    assert_eq!(decoded.value["page"], page);
+    let event = decoded.event.expect("the event to publish");
+    assert_eq!(event["type"], json!("page.viewportsChanged"));
+    assert_eq!(event["page"], page);
+}

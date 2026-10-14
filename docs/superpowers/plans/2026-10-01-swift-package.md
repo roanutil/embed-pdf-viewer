@@ -3262,6 +3262,6 @@ Every path a plugin calls (`grep -rho 'call("…"' crates/plugins/*/src`), with 
 | `forms.exportData`, `forms.importData` | `forms.export`, `forms.import` | B2 |
 | `forms.submit` | none on the wire | B3 (host submit handler) |
 | `redaction.apply` | same | B2 |
-| `page.measure.setScale`, `page.measure.viewports` | none on the wire | B2 (needs an `epdf-engine` addition) |
+| `page.measure.setScale`, `page.measure.viewports` | `measure.setScale`, `measure.viewports` | mapped (08-measurement.md) |
 | `actions.read` | same | B3 |
 | `signatures.*` (`list`, `analyze`, `contents`, `prepare`, `abort`, `revisionBytes`) | none on the wire | B4 (needs `epdf-engine` work) |

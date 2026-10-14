@@ -60,6 +60,10 @@ pub struct ViewerConfig {
     /// hover feed when they are installed.
     #[uniffi(default = None)]
     pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
+    /// Install `measurementPlugin(config)`: page scale, calibration and
+    /// readouts. Needs `interaction` and `annotation`.
+    #[uniffi(default = None)]
+    pub measurement: Option<epdf_plugin_measurement::ffi::MeasurementConfig>,
     /// Install `pageEditPlugin()`: rotate, move, delete, insert and extract
     /// pages, addressed by `PageRef`.
     #[uniffi(default = false)]
