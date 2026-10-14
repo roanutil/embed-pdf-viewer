@@ -312,6 +312,12 @@ fn every_routed_path_is_listed() {
         "pages.insert",
         "pages.insertBlank",
         "pages.extract",
+        // Form's import (bytes) and widget links (a widget ref), covered by
+        // `an_import_sends_its_bytes_as_a_payload` and
+        // `a_widget_link_sends_the_widgets_object_number`.
+        "forms.importData",
+        "forms.attachWidget",
+        "forms.detachWidget",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
@@ -785,4 +791,145 @@ fn refs_inside_a_draft_or_patch_go_out_flat_and_whole() {
         call.request["patch"]["target"]["destination"],
         json!({ "kind": "fit", "pageObjectNumber": 7 })
     );
+}
+
+// ── forms (plan 06) ───────────────────────────────────────────────────────
+
+#[test]
+fn a_form_list_gives_each_widget_its_ref_and_page() {
+    let json = r#"{"result":{"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"family":"checkbox","widgets":[{"annotObjectNumber":9,"pageObjectNumber":2,"onState":"On","exportValue":"Yes","checked":true}]}]}}"#;
+    let call = translate("d1", "forms.list", None, &[], 20).unwrap();
+    let widget =
+        decode(&call.decode, answer(json)).unwrap().value["fields"][0]["widgets"][0].clone();
+    assert_eq!(
+        widget,
+        json!({
+            "annotObjectNumber": 9, "onState": "On", "exportValue": "Yes", "checked": true,
+            "page": { "kind": "objectNumber", "pageObjectNumber": 2 },
+            "ref": { "kind": "objectNumber", "annotObjectNumber": 9,
+                "page": { "kind": "objectNumber", "pageObjectNumber": 2 } }
+        })
+    );
+}
+
+#[test]
+fn a_field_ref_is_left_as_it_is() {
+    let call = translate(
+        "d1",
+        "forms.setValue",
+        None,
+        &[
+            json!({ "kind": "objectNumber", "fieldObjectNumber": 4 }),
+            json!({ "type": "text", "value": "x" }),
+        ],
+        21,
+    )
+    .unwrap();
+    assert_eq!(call.request["ref"], json!({ "kind": "objectNumber", "fieldObjectNumber": 4 }));
+    assert_eq!(call.request["value"], json!({ "type": "text", "value": "x" }));
+}
+
+#[test]
+fn a_widget_placement_goes_out_with_its_object_number() {
+    let draft = json!({ "family": "text", "name": "f",
+        "widget": { "page": { "kind": "objectNumber", "pageObjectNumber": 2 },
+            "rect": { "left": 0, "bottom": 0, "right": 10, "top": 10 } } });
+    let call = translate("d1", "forms.createField", None, &[draft], 22).unwrap();
+    assert_eq!(call.request["draft"]["widget"]["pageObjectNumber"], 2);
+    assert!(call.request["draft"]["widget"].get("page").is_none());
+}
+
+#[test]
+fn an_export_answers_its_payload_as_bytes() {
+    let call = translate("d1", "forms.exportData", None, &[json!("fdf")], 23).unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "forms.export", "jobId": 23, "docId": "d1", "format": "fdf" })
+    );
+    let response = HostResponse {
+        json: r#"{"result":{"format":"fdf","size":8}}"#.into(),
+        payloads: vec![b"%FDF-1.2".to_vec()],
+    };
+    let value = decode(&call.decode, response).unwrap().value;
+    assert_eq!(value["format"], "fdf");
+    assert_eq!(value["bytes"], json!({ "$bytes": "JUZERi0xLjI=" }));
+}
+
+#[test]
+fn an_import_sends_its_bytes_as_a_payload() {
+    let call = translate(
+        "d1",
+        "forms.importData",
+        None,
+        &[json!({ "$bytes": "JUZERi0xLjI=" }), epdf_kernel::undefined()],
+        24,
+    )
+    .unwrap();
+    assert_eq!(call.request, json!({ "kind": "forms.import", "jobId": 24, "docId": "d1" }));
+    assert_eq!(call.payloads, vec![b"%FDF-1.2".to_vec()]);
+}
+
+#[test]
+fn a_repair_reads_bake_appearances_from_its_options() {
+    let call =
+        translate("d1", "forms.repair", None, &[json!({ "bakeAppearances": true })], 25).unwrap();
+    assert_eq!(call.request["bakeAppearances"], true);
+    assert!(matches!(call.decode, Decode::FormMutation));
+}
+
+#[test]
+fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
+    let call = translate(
+        "d1",
+        "forms.reset",
+        None,
+        &[json!({ "kind": "objectNumber", "fieldObjectNumber": 4.0 })],
+        26,
+    )
+    .unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "forms.reset", "jobId": 26, "docId": "d1",
+        "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 } })
+    );
+    assert!(matches!(call.decode, Decode::FormMutation));
+}
+
+#[test]
+fn a_widget_link_sends_the_widgets_object_number() {
+    let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9.0,
+        "page": { "kind": "objectNumber", "pageObjectNumber": 2 } });
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
+    for (path, kind) in
+        [("forms.attachWidget", "forms.attachWidget"), ("forms.detachWidget", "forms.detachWidget")]
+    {
+        let call = translate("d1", path, None, &[field.clone(), widget.clone()], 27).unwrap();
+        assert_eq!(
+            call.request,
+            json!({ "kind": kind, "jobId": 27, "docId": "d1",
+            "ref": field, "widget": 9 })
+        );
+    }
+}
+
+#[test]
+fn a_form_mutation_without_a_sequence_answers_the_bare_result() {
+    let call = translate("d1", "forms.applyEffects", None, &[json!([])], 28).unwrap();
+    let decoded = decode(&call.decode, answer(r#"{"result":{"results":[]}}"#)).unwrap();
+    assert_eq!(decoded.value, json!({ "results": [] }));
+    assert!(decoded.event.is_none());
+}
+
+#[test]
+fn a_form_mutation_nests_the_widgets_of_its_result_and_event() {
+    let call = translate("d1", "forms.setValue", None, &[json!({}), json!({})], 29).unwrap();
+    let field = r#"{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"widgets":[{"annotObjectNumber":9,"pageObjectNumber":2}]}"#;
+    let json = format!(
+        r#"{{"result":{{"result":{{"field":{field}}},"mutationSequence":3,"event":{{"type":"form.valueChanged","field":{field}}}}}}}"#
+    );
+    let decoded = decode(&call.decode, answer(&json)).unwrap();
+    let nested = json!({ "kind": "objectNumber", "annotObjectNumber": 9,
+        "page": { "kind": "objectNumber", "pageObjectNumber": 2 } });
+    assert_eq!(decoded.value["field"]["widgets"][0]["ref"], nested);
+    assert_eq!(decoded.event.unwrap()["field"]["widgets"][0]["ref"], nested);
 }

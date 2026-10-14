@@ -68,6 +68,16 @@ pub enum Decode {
     /// A byte payload (an extracted PDF), parked in the `HostTable` and
     /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
     HostBytes,
+    /// A form read: every widget given the `ref` and `page` the kernel
+    /// reads, every other page reference nested as `Annotations` does.
+    Forms,
+    /// A form mutation: `Forms` over the inner result and its event. A
+    /// `forms.applyEffects` batch that wrote nothing answers a bare result
+    /// with no `mutationSequence`; that answers itself with no event.
+    FormMutation,
+    /// Bytes in the first payload, put back into the result as `bytes`
+    /// (`{"$bytes": base64}`), as the form plugin reads an export.
+    ExportBytes,
 }
 
 /// A decoded answer: the call's value, and the document event a mutation
@@ -107,6 +117,18 @@ pub const PATHS: &[&str] = &[
     "pages.insertBlank",
     "pages.extract",
     "actions.read",
+    "forms.list",
+    "forms.setValue",
+    "forms.reset",
+    "forms.applyEffects",
+    "forms.exportData",
+    "forms.importData",
+    "forms.repair",
+    "forms.createField",
+    "forms.updateField",
+    "forms.deleteField",
+    "forms.attachWidget",
+    "forms.detachWidget",
 ];
 
 /// Feature names a plugin checks with `doc.has` that are neither a path nor
@@ -148,6 +170,18 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
+        "forms.list" => ("forms.list", Decode::Forms),
+        "forms.setValue" => ("forms.setValue", Decode::FormMutation),
+        "forms.reset" => ("forms.reset", Decode::FormMutation),
+        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
+        "forms.exportData" => ("forms.export", Decode::ExportBytes),
+        "forms.importData" => ("forms.import", Decode::FormMutation),
+        "forms.repair" => ("forms.repair", Decode::FormMutation),
+        "forms.createField" => ("forms.createField", Decode::FormMutation),
+        "forms.updateField" => ("forms.updateField", Decode::FormMutation),
+        "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
+        "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
+        "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
         _ => return None,
     })
 }
@@ -211,6 +245,46 @@ pub fn translate(
         "pages.insert" => {
             payloads.push(pdf_bytes(path, &arg(0))?);
             vec![("destIndex", optional_whole(path, "destIndex", args.get(1))?)]
+        }
+        "forms.setValue" => {
+            vec![("ref", wire_field_ref(path, arg(0))?), ("value", arg(1))]
+        }
+        "forms.reset" | "forms.deleteField" => vec![("ref", wire_field_ref(path, arg(0))?)],
+        "forms.applyEffects" => {
+            let mut effects = wire_refs_in(path, arg(0))?;
+            whole_field_refs(path, &mut effects)?;
+            vec![("effects", effects)]
+        }
+        "forms.export" => vec![("format", arg(0))],
+        "forms.import" => {
+            let data = epdf_kernel::bytes::Bytes::from_json(&arg(0)).ok_or_else(|| {
+                coded("invalid-input", format!("[epdf-viewer-host] {path} needs bytes"))
+            })?;
+            payloads.push(data.0);
+            vec![("format", arg(1))]
+        }
+        "forms.repair" => {
+            let bake = arg(0).get("bakeAppearances").cloned().unwrap_or(Value::Bool(false));
+            vec![("bakeAppearances", bake)]
+        }
+        "forms.createField" => {
+            let mut draft = arg(0);
+            flatten_placements(&mut draft);
+            vec![("draft", draft)]
+        }
+        "forms.updateField" => {
+            vec![("ref", wire_field_ref(path, arg(0))?), ("patch", arg(1))]
+        }
+        "forms.attachWidget" | "forms.detachWidget" => {
+            let widget = arg(1);
+            vec![
+                ("ref", wire_field_ref(path, arg(0))?),
+                (
+                    "widget",
+                    whole(path, "widget", widget.get("annotObjectNumber").unwrap_or(&Value::Null))?,
+                ),
+                ("onState", widget.get("onState").cloned().unwrap_or(Value::Null)),
+            ]
         }
         _ => vec![],
     };
@@ -444,6 +518,85 @@ fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
     Ok(())
 }
 
+/// A form field ref the host's way: an object-number ref's
+/// `fieldObjectNumber`, sent as a JavaScript number, whole.
+fn wire_field_ref(path: &str, mut target: Value) -> Result<Value, Error> {
+    whole_field_refs(path, &mut target)?;
+    Ok(target)
+}
+
+/// Every form field ref inside `value` (`{kind: "objectNumber",
+/// fieldObjectNumber}`) with a whole `fieldObjectNumber`.
+fn whole_field_refs(path: &str, value: &mut Value) -> Result<(), Error> {
+    match value {
+        Value::Object(map) => {
+            if let Some(n) = map.get("fieldObjectNumber").filter(|n| n.is_f64()) {
+                let n = whole(path, "fieldObjectNumber", n)?;
+                map.insert("fieldObjectNumber".into(), n);
+            }
+            for member in map.values_mut() {
+                whole_field_refs(path, member)?;
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                whole_field_refs(path, item)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// A form widget the host spells `{annotObjectNumber, pageObjectNumber}`,
+/// given the `ref` and `page` the plugin reads. A toggle widget's
+/// `onState`, `exportValue` and `checked` stay beside them.
+pub fn nest_widgets(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            let widget = map.contains_key("annotObjectNumber")
+                && !map.contains_key("kind")
+                && !map.contains_key("ref");
+            if widget
+                && let (Some(annot), Some(pon)) = (
+                    map.get("annotObjectNumber").and_then(Value::as_u64),
+                    page_number(map.get("pageObjectNumber")),
+                )
+            {
+                map.remove("pageObjectNumber");
+                let page = PageRef::new(pon).to_json();
+                map.insert("page".into(), page.clone());
+                map.insert(
+                    "ref".into(),
+                    serde_json::json!({ "kind": "objectNumber", "page": page, "annotObjectNumber": annot }),
+                );
+            }
+            map.values_mut().for_each(nest_widgets);
+        }
+        Value::Array(items) => items.iter_mut().for_each(nest_widgets),
+        _ => {}
+    }
+}
+
+/// A field draft's widget placements: `page: PageRef` out as
+/// `pageObjectNumber`, which `WidgetPlacement` reads.
+fn flatten_placements(draft: &mut Value) {
+    let flatten = |placement: &mut Value| {
+        if let Value::Object(map) = placement
+            && let Some(pon) = map.get("page").and_then(|p| p.get("pageObjectNumber")).cloned()
+        {
+            map.remove("page");
+            map.insert("pageObjectNumber".into(), pon);
+        }
+    };
+    if let Some(widget) = draft.get_mut("widget") {
+        flatten(widget);
+    }
+    if let Some(Value::Array(widgets)) = draft.get_mut("widgets") {
+        widgets.iter_mut().for_each(flatten);
+    }
+}
+
 /// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
 /// normalize.ts`): a stamp's `source` and an attachment's `file`, each a
 /// `BinarySource` the kernel spells `{data: {"$bytes": …}, mimeType?,
@@ -591,6 +744,38 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .ok_or_else(|| malformed("a file without its payload".into()))?;
             result
                 .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
+            Value::Object(result)
+        }
+        Decode::Forms => {
+            let mut value = Value::Object(result);
+            nest_widgets(&mut value);
+            nest_refs(&mut value);
+            value
+        }
+        Decode::FormMutation => {
+            if !result.contains_key("mutationSequence") {
+                let mut value = Value::Object(result);
+                nest_widgets(&mut value);
+                nest_refs(&mut value);
+                return Ok(Decoded { value, event: None });
+            }
+            let mut value = take(&mut result, "result")?;
+            nest_widgets(&mut value);
+            nest_refs(&mut value);
+            let mut event = result.remove("event");
+            if let Some(event) = event.as_mut() {
+                nest_widgets(event);
+                nest_refs(event);
+            }
+            return Ok(Decoded { value, event });
+        }
+        Decode::ExportBytes => {
+            let bytes = response
+                .payloads
+                .into_iter()
+                .next()
+                .ok_or_else(|| malformed("an export without its bytes".into()))?;
+            result.insert("bytes".into(), epdf_kernel::bytes::Bytes(bytes).to_json());
             Value::Object(result)
         }
         Decode::Mutation => {

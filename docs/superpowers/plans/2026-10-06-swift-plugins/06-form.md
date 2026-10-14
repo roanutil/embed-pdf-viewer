@@ -1789,7 +1789,7 @@ git commit -m "Export the form plugin through uniffi"
 
 The kernel spells a widget `{ref: <nested AnnotationRef>, annotObjectNumber, page: PageRef}` (`crates/plugins/form/tests/api.rs`). The host spells it `{annotObjectNumber, pageObjectNumber}` (`FormWidgetRef`, `snapshot.rs:173`), with a toggle widget's `onState`, `exportValue`, `checked` flattened beside. A widget placement goes out as `{page: PageRef, rect}` from the plugin (`write/fields.rs`) and the host reads `{pageObjectNumber, rect}` (`WidgetPlacement`, `field.rs:121`).
 
-- [ ] **Step 1: Capture the host's real shapes**
+- [x] **Step 1: Capture the host's real shapes**
 
 Add beside plan 05's `dump_annotation_shapes`:
 
@@ -1812,7 +1812,7 @@ cargo test -p epdf-viewer-host --test translate dump_form_shapes -- --ignored --
 
 Confirm each field's `widgets[]` entries are flat (`pageObjectNumber`, no `ref`, no `page`) and that the family-specific members (`value`, `checked`, `options`) sit at the top level beside the base. If anything differs from the kernel's spelling in Task 2's `snapshot()`, handle it in `nest_widgets` and note it in its doc comment.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -1878,12 +1878,12 @@ fn a_repair_reads_bake_appearances_from_its_options() {
 
 `epdf_kernel::undefined()` serializes as a marker (`$undefined`). The `forms.importData` row must treat it as absent, which the existing `is_null` filter does not, so the row checks `is_undefined` itself (Step 4).
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail with code `unsupported`.
 
-- [ ] **Step 4: Add the routes and decoders**
+- [x] **Step 4: Add the routes and decoders**
 
 Extend `Decode`:
 
@@ -2045,12 +2045,12 @@ In `decode`:
 
 `response.payloads` is moved by `Decode::Raster` already; `Decode::ExportBytes` takes it the same way.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
