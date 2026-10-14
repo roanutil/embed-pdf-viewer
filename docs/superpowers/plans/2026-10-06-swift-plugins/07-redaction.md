@@ -975,7 +975,7 @@ git commit -m "Export the redaction plugin through uniffi"
 
 The kernel sends `{kind: "pages", pages: [PageRef]}` or `{kind: "annotations", refs: [<nested ref>]}` (`crates/plugins/redaction/src/write/apply.rs:65-96`). The host reads `{kind: "pages", pageObjectNumbers: [n]}` or `{kind: "annotations", refs: [<flat ref>]}`. Its answer (`RedactionApplyResult`, `redaction.rs:75`) has the scope in the host's spelling and `results[].pageObjectNumber`; the kernel's spelling, which the vectors pin (`tooling/plugin-conformance/vectors/plugins/redaction.json`), is the scope as sent and `results[].page: PageRef`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -1027,12 +1027,12 @@ fn an_apply_result_answers_pages_and_nested_refs() {
 
 Check the event's shape against the host before trusting the last assertion: `crate::session::save::DocumentEventInit::RedactionApplied(value(&result)?)` builds it, and `rg -n 'RedactionApplied' -A8 crates/epdf-engine/src/session/save.rs` shows whether the result sits under `result` or is spread into the event. Match the test JSON to that.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail, `maps("redaction")` answering `false` and `redaction.apply` answering `unsupported`.
 
-- [ ] **Step 3: List the path**
+- [x] **Step 3: List the path**
 
 Add to `PATHS` in `translate.rs` (umbrella Task 0e), one line in plan order:
 
@@ -1042,7 +1042,7 @@ Add to `PATHS` in `translate.rs` (umbrella Task 0e), one line in plan order:
 
 `maps` derives namespaces from `PATHS`, so `maps("redaction")` answers `true` once this line and Step 4's route are in, and `every_routed_path_is_listed` checks the two agree.
 
-- [ ] **Step 4: Add the route and decoder**
+- [x] **Step 4: Add the route and decoder**
 
 `Decode`:
 
@@ -1130,12 +1130,12 @@ fn redaction_result_in(result: &mut Value) {
         }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs

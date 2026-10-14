@@ -60,6 +60,9 @@ pub enum Decode {
     /// An annotation's embedded file: the result (`name`, `mimeType`,
     /// `size`), with the payload parked in the `HostTable` as `data`.
     AttachmentContent,
+    /// A redaction apply: `Mutation`, with the scope and the per-page
+    /// results of the result and the event in the kernel's spelling.
+    Redaction,
     /// A page mutation: `Mutation`, with `ref` added to every layout page of
     /// the result and the event (the kernel's page registry and the
     /// page-edit plugin read `ref`), and the host's
@@ -100,6 +103,7 @@ pub const PATHS: &[&str] = &[
     "page.annotations.update",
     "page.annotations.delete",
     "page.annotations.downloadFile",
+    "redaction.apply",
     "pages.move",
     "pages.rotate",
     "pages.delete",
@@ -141,6 +145,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.annotations.update" => ("annotations.update", Decode::AnnotationMutation),
         "page.annotations.delete" => ("annotations.delete", Decode::AnnotationMutation),
         "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
+        "redaction.apply" => ("redaction.apply", Decode::Redaction),
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -189,6 +194,7 @@ pub fn translate(
         "annotations.readFile" => {
             vec![("pageObjectNumber", page()?), ("ref", wire_ref(path, arg(0))?)]
         }
+        "redaction.apply" => vec![("scope", redaction_scope_out(path, arg(0))?)],
         "pages.move" => vec![
             ("pageObjectNumbers", object_numbers(path, &arg(0))?),
             ("destIndex", whole(path, "destIndex", &arg(1))?),
@@ -515,6 +521,48 @@ fn take_binary(
     Ok((key, mime, name))
 }
 
+/// The kernel's apply scope as the host's `RedactionScope` reads it:
+/// `{kind: "pages", pages: [PageRef]}` becomes `pageObjectNumbers`, and an
+/// annotations scope's refs go flat and whole.
+fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
+    match scope.get("kind").and_then(Value::as_str) {
+        Some("pages") => {
+            let pages = scope.get("pages").cloned().unwrap_or(Value::Null);
+            let numbers = object_numbers(path, &pages)?;
+            Ok(serde_json::json!({ "kind": "pages", "pageObjectNumbers": numbers }))
+        }
+        Some("annotations") => wire_refs_in(path, scope),
+        _ => Err(coded(
+            "invalid-input",
+            format!("[epdf-viewer-host] {path} takes a pages or annotations scope: {scope}"),
+        )),
+    }
+}
+
+/// A host `RedactionApplyResult` (or the `redaction.applied` event, which
+/// spreads one) in the kernel's spelling: the scope's `pageObjectNumbers`
+/// as `pages: [PageRef]`, and every `pageObjectNumber` (a result's, a
+/// ref's) as `page: PageRef`.
+fn redaction_result_in(result: &mut Value, what: &str) -> Result<(), Error> {
+    if let Some(scope) = result.get_mut("scope").and_then(Value::as_object_mut)
+        && let Some(numbers) = scope.remove("pageObjectNumbers")
+    {
+        let pages = numbers
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|n| {
+                page_number(Some(n))
+                    .map(|n| PageRef::new(n).to_json())
+                    .ok_or_else(|| malformed(format!("{what} naming a page that is not one: {n}")))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        scope.insert("pages".into(), Value::Array(pages));
+    }
+    nest_refs(result);
+    Ok(())
+}
+
 /// `ref` on every page of `object.layout.pages`, which must be there.
 fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
     let Some(Value::Array(pages)) = object.get_mut("layout").and_then(|l| l.get_mut("pages"))
@@ -592,6 +640,15 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             result
                 .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
             Value::Object(result)
+        }
+        Decode::Redaction => {
+            let mut value = take(&mut result, "result")?;
+            redaction_result_in(&mut value, "a redaction result")?;
+            let mut event = result.remove("event");
+            if let Some(event) = event.as_mut().filter(|e| e.is_object()) {
+                redaction_result_in(event, "a redaction event")?;
+            }
+            return Ok(Decoded { value, event });
         }
         Decode::Mutation => {
             let value = take(&mut result, "result")?;

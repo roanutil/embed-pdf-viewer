@@ -312,6 +312,8 @@ fn every_routed_path_is_listed() {
         "pages.insert",
         "pages.insertBlank",
         "pages.extract",
+        // A scope, covered by `a_pages_scope_goes_out_as_object_numbers`.
+        "redaction.apply",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");
@@ -784,5 +786,87 @@ fn refs_inside_a_draft_or_patch_go_out_flat_and_whole() {
     assert_eq!(
         call.request["patch"]["target"]["destination"],
         json!({ "kind": "fit", "pageObjectNumber": 7 })
+    );
+}
+
+// ── redaction ──────────────────────────────────────────────────────────────
+
+#[test]
+fn redaction_is_present_once_its_path_is_listed() {
+    assert!(maps("redaction"));
+    assert!(maps("redaction.apply"));
+    assert!(!maps("redact"));
+    assert!(!maps("signatures"));
+}
+
+#[test]
+fn a_pages_scope_goes_out_as_object_numbers() {
+    // Page object numbers arrive as JavaScript numbers.
+    let scope = json!({ "kind": "pages", "pages": [
+        { "kind": "objectNumber", "pageObjectNumber": 3.0 },
+        { "kind": "objectNumber", "pageObjectNumber": 7 } ] });
+    let call = translate("d1", "redaction.apply", None, &[scope], 30).unwrap();
+    assert_eq!(
+        call.request,
+        json!({ "kind": "redaction.apply", "jobId": 30, "docId": "d1",
+            "scope": { "kind": "pages", "pageObjectNumbers": [3, 7] } })
+    );
+    assert!(call.request["scope"]["pageObjectNumbers"][0].is_u64());
+}
+
+#[test]
+fn an_annotations_scope_goes_out_with_flat_whole_refs() {
+    let scope = json!({ "kind": "annotations", "refs": [{ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17.0 }] });
+    let call = translate("d1", "redaction.apply", None, &[scope], 31).unwrap();
+    assert_eq!(
+        call.request["scope"],
+        json!({ "kind": "annotations", "refs": [{ "kind": "objectNumber", "pageObjectNumber": 3, "annotObjectNumber": 17 }] })
+    );
+    assert!(call.request["scope"]["refs"][0]["annotObjectNumber"].is_u64());
+}
+
+#[test]
+fn a_redaction_scope_that_is_neither_kind_is_invalid_input() {
+    let error = translate("d1", "redaction.apply", None, &[json!({})], 33).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+    let pages = json!({ "kind": "pages", "pages": [{ "pageObjectNumber": "x" }] });
+    let error = translate("d1", "redaction.apply", None, &[pages], 34).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
+fn an_apply_result_answers_pages_and_nested_refs() {
+    // The host's event spreads the result's members beside `type` and
+    // `origin` (`DocumentEventInit` is an internally tagged enum).
+    let json = r#"{"result":{"result":{"scope":{"kind":"pages","pageObjectNumbers":[3]},"results":[{"pageObjectNumber":3,"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2},"mutationSequence":4,"event":{"type":"redaction.applied","origin":{"kind":"local","serverId":null},"scope":{"kind":"pages","pageObjectNumbers":[3]},"results":[{"pageObjectNumber":3,"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2}}}"#;
+    let call =
+        translate("d1", "redaction.apply", None, &[json!({ "kind": "pages", "pages": [] })], 32)
+            .unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    let page3 = json!({ "kind": "objectNumber", "pageObjectNumber": 3 });
+    assert_eq!(decoded.value["scope"], json!({ "kind": "pages", "pages": [page3.clone()] }));
+    assert_eq!(decoded.value["results"][0]["page"], page3);
+    assert!(decoded.value["results"][0].get("pageObjectNumber").is_none());
+    let event = decoded.event.unwrap();
+    assert_eq!(event["scope"], json!({ "kind": "pages", "pages": [page3.clone()] }));
+    assert_eq!(event["results"][0]["page"], page3);
+}
+
+#[test]
+fn an_annotations_apply_result_answers_nested_refs() {
+    let json = r#"{"result":{"result":{"scope":{"kind":"annotations","refs":[{"kind":"objectNumber","pageObjectNumber":3,"annotObjectNumber":17}]},"results":[{"pageObjectNumber":3,"status":"applied","removedAnnotationCount":0}],"removedAnnotationCount":0},"mutationSequence":5,"event":null}}"#;
+    let call = translate(
+        "d1",
+        "redaction.apply",
+        None,
+        &[json!({ "kind": "annotations", "refs": [] })],
+        35,
+    )
+    .unwrap();
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(
+        decoded.value["scope"]["refs"][0],
+        json!({ "kind": "objectNumber", "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17 })
     );
 }
