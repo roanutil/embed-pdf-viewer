@@ -49,3 +49,39 @@ export function flattenPageRefs(value: unknown): unknown {
   }
   return out;
 }
+
+// ── forms ──
+
+function isFormWidget(
+  value: Record<string, unknown>,
+): value is { annotObjectNumber: number; page: { pageObjectNumber: number } | null } {
+  return (
+    !('kind' in value) &&
+    typeof value.annotObjectNumber === 'number' &&
+    'page' in value &&
+    (value.page === null || isObjectNumberRef(value.page))
+  );
+}
+
+/**
+ * A form widget record (`FormWidget`, 40c96e5ab and 9f13cea3c) back to the
+ * wire's `FormWidgetRef`: the engine-computed `ref` is dropped, and `page`
+ * becomes `pageObjectNumber` in the same position, `0` when unplaced. Every
+ * other key (and every non-widget value) passes through, recursively.
+ */
+export function flattenFormWidgets(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(flattenFormWidgets);
+  if (value === null || typeof value !== 'object') return value;
+  const record = value as Record<string, unknown>;
+  const widget = isFormWidget(record);
+  const out: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(record)) {
+    if (widget && key === 'ref') continue;
+    if (widget && key === 'page') {
+      out.pageObjectNumber = (field as { pageObjectNumber: number } | null)?.pageObjectNumber ?? 0;
+    } else {
+      out[key] = flattenFormWidgets(field);
+    }
+  }
+  return out;
+}
