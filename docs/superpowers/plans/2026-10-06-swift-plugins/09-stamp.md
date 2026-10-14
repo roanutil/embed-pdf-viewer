@@ -788,7 +788,7 @@ git commit -m "Add a native asset engine for stamp libraries"
 
 The members, from `crates/plugins/stamp/src/harness.rs` `MEMBERS` (lines 50-84), under their FFI names: `libraries`, `library`, `assets`, `asset`, `asset_preview`, `render_asset_preview`, `read_asset_bytes`, `export_library`, `can_place`, `can_import`, `create_library`, `update_library`, `import_library`, `delete_library`, `create_asset`, `create_asset_from_annotations`, `update_asset`, `delete_asset`, `move_asset`, `duplicate_asset`, `arm_asset`, `place_asset`, `place_asset_on_pages`, `disarm`, `armed_asset`, and `subscribe` for the eight `on*` hooks. `restore` and `persist` wrap `persistence.rs`'s `restore_stamp_libraries` and `persist_stamp_libraries`, which aren't capability members but are how an embedder keeps custom libraries.
 
-- [ ] **Step 1: Feature, scaffolding, in-place derives**
+- [x] **Step 1: Feature, scaffolding, in-place derives**
 
 `Cargo.toml` gets the same `uniffi` feature, optional `epdf-ffi` and `uniffi` dependencies, dev-dependencies and `[[test]] name = "ffi" required-features = ["uniffi"]` block plan 08 Task 3 Step 1 shows, with `stamp` in place of `measurement`. `lib.rs` gets `#[cfg(feature = "uniffi")] pub mod ffi;` and `#[cfg(feature = "uniffi")] uniffi::setup_scaffolding!();`.
 
@@ -811,7 +811,7 @@ pub struct StampLibrary { /* unchanged */ }
 pub enum StampLibraryChangeReason { /* unchanged */ }
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 The fake engine can't open library bytes, so these tests drive the handle's own behaviour: listing, unknown ids, arming errors, events and persistence over a fake store. Task 6 and the host test in Task 5 cover import over real PDFium.
 
@@ -969,12 +969,12 @@ fn subscribe_and_cancel_do_not_leak() {
 
 If `create_asset_from_annotations` answers a code outside the three the test allows, that's this plan's Review Focus item 5 not holding: read what the plugin does when `page.annotations.exportAppearance` is absent (`write/assets.rs:291`), and make the FFI answer `unsupported` there if the plugin throws something less clear.
 
-- [ ] **Step 3: Run them to verify they fail**
+- [x] **Step 3: Run them to verify they fail**
 
 Run: `cargo test -p epdf-plugin-stamp --features uniffi --test ffi`
 Expected: FAIL to compile, no `ffi` module.
 
-- [ ] **Step 4: Write `crates/plugins/stamp/src/ffi.rs`**
+- [x] **Step 4: Write `crates/plugins/stamp/src/ffi.rs`**
 
 ```rust
 //! The stamp plugin through uniffi: workspace-scoped, so the handle needs
@@ -1758,12 +1758,12 @@ impl StampHandle {
 
 Check three signatures against the crate before running, and adapt the call, not the FFI shape: `restore_stamp_libraries`'s `Warn` type (`persistence.rs:80`), `persist_stamp_libraries`'s return (`Rc<dyn Fn()>`, line 154), and the `PageRef` type `place_asset_on_pages` takes (`epdf_kernel::geometry::PageRef`, from `write/placement.rs:308`). `persist`'s `stop` closure isn't `Send`, so it runs on the kernel thread through the subscription slot; `StampPersistence::stop` only cancels that subscription.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-plugin-stamp --features uniffi --test ffi && cargo test -p epdf-plugin-stamp`
 Expected: PASS, 9 FFI tests, and the conformance vectors without `uniffi`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/plugins/stamp
