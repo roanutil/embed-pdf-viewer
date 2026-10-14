@@ -475,7 +475,7 @@ impl FlattenUsage {
     /// that passed `Display` for both passes every vector, and the mapping
     /// is written the way the fork's header names it rather than the way
     /// this corpus can prove.
-    fn native(self) -> pdfium::FlattenUsage {
+    pub(crate) fn native(self) -> pdfium::FlattenUsage {
         match self {
             Self::Display => pdfium::FlattenUsage::Display,
             Self::Print => pdfium::FlattenUsage::Print,

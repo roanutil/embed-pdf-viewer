@@ -194,3 +194,113 @@ impl Document {
         }
     }
 }
+
+/// One annotation's outcome in [`crate::PageView::flatten_annotations`]:
+/// `EPDF_FLATTEN_STATUS_*`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationFlattenStatus {
+    /// Painted into the page content and removed from `/Annots`.
+    Applied,
+    /// Left in place: hidden for the usage, a Popup, or without a usable
+    /// normal appearance.
+    Skipped,
+    /// Not an annotation of the page; the call failed whole.
+    NotOnPage,
+    /// A code this build does not know, kept rather than collapsed.
+    Unknown(i32),
+}
+
+impl AnnotationFlattenStatus {
+    fn from_code(code: i32) -> Self {
+        match code {
+            0 => Self::Applied,
+            1 => Self::Skipped,
+            2 => Self::NotOnPage,
+            other => Self::Unknown(other),
+        }
+    }
+}
+
+/// `FPDF_SAVE_FLAGS`: a whole file rather than an incremental update.
+const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
+
+impl crate::PageView<'_> {
+    /// `EPDFPage_FlattenAnnotations`: flatten a chosen set of this page's
+    /// annotations. All-or-nothing on validity: a handle that is not on
+    /// this page fails the call and changes nothing.
+    ///
+    /// The handles must be dropped (closed) before they are used again: a
+    /// flattened annotation is gone from the page.
+    pub fn flatten_annotations(
+        &self,
+        annotations: &[crate::Annotation<'_>],
+        usage: FlattenUsage,
+    ) -> (FlattenOutcome, Vec<AnnotationFlattenStatus>) {
+        let mut handles: Vec<pdfium_sys::FPDF_ANNOTATION> =
+            annotations.iter().map(crate::Annotation::as_raw).collect();
+        let mut statuses = vec![0i32; handles.len()];
+        // SAFETY: the page and every annotation handle are live, and both
+        // arrays hold `handles.len()` entries as the count claims.
+        let code = unsafe {
+            pdfium_sys::EPDFPage_FlattenAnnotations(
+                self.as_raw(),
+                handles.as_mut_ptr(),
+                handles.len() as i32,
+                usage as i32,
+                statuses.as_mut_ptr(),
+            )
+        };
+        let outcome = match code {
+            0 => FlattenOutcome::Failed,
+            1 => FlattenOutcome::Applied,
+            2 => FlattenOutcome::NothingToDo,
+            other => FlattenOutcome::Unknown(other),
+        };
+        (outcome, statuses.into_iter().map(AnnotationFlattenStatus::from_code).collect())
+    }
+
+    /// `EPDFPage_ExportAnnotationsAsDocument`, saved whole: the normal
+    /// appearances of a chosen set of this page's annotations as a new
+    /// single-page PDF. The source document is untouched.
+    ///
+    /// `Ok(None)` when the fork refuses (any entry hidden, a Popup, without
+    /// a normal appearance, or not on this page), `Err(Save)` when the new
+    /// document would not serialize.
+    pub fn export_annotations_as_document(
+        &self,
+        annotations: &[crate::Annotation<'_>],
+    ) -> Result<Option<Vec<u8>>, crate::PdfiumError> {
+        let mut handles: Vec<pdfium_sys::FPDF_ANNOTATION> =
+            annotations.iter().map(crate::Annotation::as_raw).collect();
+        // SAFETY: the page and every annotation handle are live, and the
+        // array holds `handles.len()` entries.
+        let exported = unsafe {
+            pdfium_sys::EPDFPage_ExportAnnotationsAsDocument(
+                self.as_raw(),
+                handles.as_mut_ptr(),
+                handles.len() as i32,
+            )
+        };
+        if exported.is_null() {
+            return Ok(None);
+        }
+        struct Scratch(pdfium_sys::FPDF_DOCUMENT);
+        impl Drop for Scratch {
+            fn drop(&mut self) {
+                // SAFETY: created above and closed exactly once.
+                unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
+            }
+        }
+        let scratch = Scratch(exported);
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and `size` is a valid out-parameter.
+        let ptr = unsafe {
+            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
+                scratch.0,
+                FPDF_NO_INCREMENTAL,
+                &raw mut size,
+            )
+        };
+        crate::save::owned_buffer(ptr, size).map(Some).ok_or(crate::PdfiumError::Save)
+    }
+}

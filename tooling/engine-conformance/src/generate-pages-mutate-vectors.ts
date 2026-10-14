@@ -1,6 +1,8 @@
 /**
  * Emits `vectors/pages/mutate.json`: what `pages.move`, `pages.rotate` and
- * `pages.delete` leave in the document.
+ * `pages.delete` leave in the document, and what the per-annotation flatten
+ * verbs (`annotations.flatten`, `annotations.exportAppearance`) do to one
+ * page's annotations.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate:check
@@ -20,7 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenPageRefs, pageObjectNumbers, pageRefs } from './wire-page-refs';
+import { flattenPageRefs, pageObjectNumbers, pageRef, pageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -52,8 +54,28 @@ interface MutateCase {
     readonly pages: number[];
     readonly usage: 'display' | 'print';
   };
+  /**
+   * Flatten a chosen set of one page's annotations, named by `/NM`. The refs
+   * are built on `refPage` when given, which is how a case names a ref on a
+   * page other than the one asked about.
+   */
+  readonly flattenAnnotations?: {
+    readonly fixture: string;
+    readonly page: number;
+    readonly nms: string[];
+    readonly usage: 'display' | 'print';
+    readonly refPage?: number;
+  };
+  /** Export a chosen set of one page's annotation appearances as a new PDF. */
+  readonly exportAppearance?: {
+    readonly fixture: string;
+    readonly page: number;
+    readonly nms: string[];
+  };
   readonly refused?: true;
 }
+
+const APPEARANCES = 'tooling/engine-conformance/fixtures/annotation_appearances.pdf';
 
 const CASES: readonly MutateCase[] = [
   {
@@ -227,6 +249,89 @@ const CASES: readonly MutateCase[] = [
     refused: true,
   },
   {
+    name: 'flatten-annotations-subset',
+    covers:
+      'A chosen set of one page\'s annotations. The highlight with no appearance stream is SKIPPED rather than refused, so a caller can say "2 of 3 flattened".',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-bare-highlight', 'a-rotated-polygon'],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-annotations-for-print',
+    covers:
+      'The other usage, over the square that prints and never shows on screen. The fork flattens it for both usages on this corpus (see FlattenUsage in pages_write.rs).',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-print-only-square', 'a-rotated-polygon'],
+      usage: 'print',
+    },
+  },
+  {
+    name: 'flatten-annotations-nothing-eligible',
+    covers:
+      'Every ref skipped. Nothing is applied, which is no mutation at all: no new revision and no event.',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-bare-highlight'],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-annotations-empty-refused',
+    covers: 'No refs is a malformed request rather than a flatten of nothing.',
+    flattenAnnotations: { fixture: APPEARANCES, page: 3, nms: [], usage: 'display' },
+    refused: true,
+  },
+  {
+    name: 'flatten-annotations-other-page-refused',
+    covers: 'A ref that names a different page than the one asked about, refused before anything resolves.',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square'],
+      usage: 'display',
+      refPage: 4,
+    },
+    refused: true,
+  },
+  {
+    name: 'flatten-annotations-unknown-ref-refused',
+    covers: 'An /NM no annotation on the page carries. Nothing is flattened.',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'no-such-annotation'],
+      usage: 'display',
+    },
+    refused: true,
+  },
+  {
+    name: 'export-appearance',
+    covers:
+      'Two appearances as a new single-page PDF sized to the union of their /Rect. The source is untouched, so the answer is the new document\'s layout.',
+    exportAppearance: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-rotated-polygon'],
+    },
+  },
+  {
+    name: 'export-appearance-without-appearance-refused',
+    covers:
+      'All or nothing: a highlight with no appearance stream refuses the whole export, since a stamp silently missing one of its parts would be worse than an error.',
+    exportAppearance: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-bare-highlight'],
+    },
+    refused: true,
+  },
+  {
     name: 'delete-one',
     covers:
       'A page removed. Its object number is RETIRED rather than freed, so per-page state a caller kept can never attach to an unrelated future page.',
@@ -254,9 +359,12 @@ const CASES: readonly MutateCase[] = [
 async function readCase(entry: MutateCase): Promise<unknown> {
   // A flatten needs a page with annotations on it, which the page-order
   // fixture has none of, so those cases name their own.
-  const bytes = new Uint8Array(
-    await readFile(join(repoRoot, entry.flatten?.fixture ?? FIXTURE)),
-  );
+  const fixture =
+    entry.flatten?.fixture ??
+    entry.flattenAnnotations?.fixture ??
+    entry.exportAppearance?.fixture ??
+    FIXTURE;
+  const bytes = new Uint8Array(await readFile(join(repoRoot, fixture)));
   const engine = createLocalEngine({
     runtime: {
       prefer: 'wasm',
@@ -299,6 +407,40 @@ async function readCase(entry: MutateCase): Promise<unknown> {
           const { meta: _meta, pages, ...rest } = result as Record<string, unknown>;
           return { flattened: { pageObjectNumbers: pageObjectNumbers(pages), ...rest } };
         }
+        if (entry.flattenAnnotations) {
+          const input = entry.flattenAnnotations;
+          const page = pageRef(input.page);
+          const refs = input.nms.map((nm) => ({
+            kind: 'nm' as const,
+            page: pageRef(input.refPage ?? input.page),
+            nm,
+          }));
+          const result = await doc.page(page).annotations.flatten!(refs as never, input.usage);
+          const after = await doc.annotations.listRaw(page);
+          // The pins in `meta` carry a session id, so what is recorded is
+          // whether there was one: an apply is a mutation and a skip is not.
+          const { meta, ...rest } = result as unknown as Record<string, unknown>;
+          return {
+            annotationsFlattened: rest,
+            applied: meta !== null,
+            remaining: after.annotations.length,
+          };
+        }
+        if (entry.exportAppearance) {
+          const input = entry.exportAppearance;
+          const page = pageRef(input.page);
+          const refs = input.nms.map((nm) => ({ kind: 'nm' as const, page, nm }));
+          const exported = await doc.page(page).annotations.exportAppearance!(refs as never);
+          const copy = await engine.open(
+            { kind: 'bytes', id: `pages-mutate:${entry.name}:exported`, bytes: exported },
+            { scope: ['*'] },
+          );
+          try {
+            return { exported: (await copy.pages.list()).pages };
+          } finally {
+            await copy.close();
+          }
+        }
         if (entry.insert) {
           const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
           const result = await doc.pages.insert(
@@ -324,6 +466,8 @@ async function readCase(entry: MutateCase): Promise<unknown> {
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
       if ('flattened' in produced) return { ...entry, flattened: produced.flattened };
+      if ('annotationsFlattened' in produced) return { ...entry, ...produced };
+      if ('exported' in produced) return { ...entry, exported: produced.exported };
       return 'layout' in produced
         ? { ...entry, layout: produced.layout, inserted: produced.inserted }
         : { ...entry, layout: produced };

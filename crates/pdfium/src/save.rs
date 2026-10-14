@@ -225,7 +225,10 @@ impl Document {
 ///
 /// The copy is unavoidable: the bytes are in PDFium's allocator and handing a
 /// `Vec` over them would free them with Rust's.
-fn owned_buffer(ptr: *mut std::ffi::c_void, size: std::os::raw::c_ulong) -> Option<Vec<u8>> {
+pub(crate) fn owned_buffer(
+    ptr: *mut std::ffi::c_void,
+    size: std::os::raw::c_ulong,
+) -> Option<Vec<u8>> {
     if ptr.is_null() {
         return None;
     }

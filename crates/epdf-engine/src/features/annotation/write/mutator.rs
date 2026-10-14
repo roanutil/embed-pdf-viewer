@@ -34,9 +34,11 @@
 use crate::access::{DocumentAccess, OwnedDocument, PageAccess};
 use crate::cancel::CancelToken;
 use crate::clock::Clock;
-use crate::error::EngineError;
+use crate::error::{EngineError, EngineErrorCode};
+use crate::features::pages_write::FlattenUsage;
 use crate::identity::{AnnotationRef, PageObjectNumber};
 use crate::ids::IdSource;
+use crate::mutation::MutationMeta;
 use crate::revision::WeakAnnotationState;
 use crate::session::document::DocumentSession;
 
@@ -46,6 +48,7 @@ use super::delete::{AnnotationDeleteResult, WidgetAttachment, delete_annotation}
 use super::draft::{AnnotationActor, AnnotationDraft};
 use super::patch::AnnotationPatch;
 use super::move_::{AnnotationMoveResult, move_annotations};
+use super::resolve::resolve_annotation;
 use super::update::{AnnotationUpdateResult, update_annotation};
 
 /// Whether this page holds an annotation nothing can address durably.
@@ -293,4 +296,181 @@ pub fn move_to(
     result.meta.affected_pages = vec![session.page_state(page_object_number)?];
     session.note_mutation();
     Ok(result)
+}
+
+/// One ref's outcome in [`flatten`]: `AnnotationFlattenItemResult`.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct AnnotationFlattenItem {
+    #[serde(rename = "ref")]
+    pub annotation_ref: AnnotationRef,
+    pub status: AnnotationFlattenStatus,
+}
+
+/// `applied`: painted into the page content and removed. `skipped`: left
+/// in place, hidden for the usage, a Popup, or without a usable normal
+/// appearance.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AnnotationFlattenStatus {
+    Applied,
+    Skipped,
+}
+
+/// `AnnotationFlattenResult`. `meta` is `None` when nothing was applied.
+///
+/// The page is the wire's `pageObjectNumber`, as every other result this
+/// crate answers names it.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationFlattenResult {
+    pub page_object_number: PageObjectNumber,
+    pub usage: FlattenUsage,
+    pub results: Vec<AnnotationFlattenItem>,
+    pub meta: Option<MutationMeta>,
+}
+
+/// `AnnotationFlattener.requireRefs`.
+fn require_refs(
+    op: &str,
+    page_object_number: PageObjectNumber,
+    refs: &[AnnotationRef],
+) -> Result<(), EngineError> {
+    if refs.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("{op} requires at least one ref"),
+        ));
+    }
+    for annotation_ref in refs {
+        if annotation_ref.page() != page_object_number {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!(
+                    "{op} refs must all target page {}; got ref on page {}",
+                    page_object_number.get(),
+                    annotation_ref.page().get()
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// `AnnotationFlattener.resolveAll`: every ref on the page, an index ref's
+/// revision validated first (`resolveAnnotPtr`). A failure drops, and so
+/// closes, whatever was opened.
+fn resolve_all<'page>(
+    session: &DocumentSession,
+    page: &'page pdfium::PageView<'_>,
+    refs: &[AnnotationRef],
+) -> Result<Vec<pdfium::Annotation<'page>>, EngineError> {
+    refs.iter()
+        .map(|annotation_ref| {
+            if let AnnotationRef::Index { revision, .. } = annotation_ref {
+                session.validate_revision(revision)?;
+            }
+            resolve_annotation(page, annotation_ref)
+        })
+        .collect()
+}
+
+/// `AnnotationFlattener.flatten`: `pages.flatten` for a chosen set of one
+/// page's annotations. A content and annotation mutation of that page.
+pub fn flatten(
+    session: &mut DocumentSession,
+    page_object_number: PageObjectNumber,
+    refs: &[AnnotationRef],
+    usage: FlattenUsage,
+    cancel: &CancelToken,
+) -> Result<AnnotationFlattenResult, EngineError> {
+    cancel.check()?;
+    require_refs("annotations.flatten", page_object_number, refs)?;
+
+    let (outcome, statuses) = {
+        let owned = session.document()?;
+        let page = owned.page(page_object_number)?;
+        let annotations = resolve_all(session, page.view(), refs)?;
+        page.view().flatten_annotations(&annotations, usage.native())
+        // Every handle closes here, before anything reads the page again.
+    };
+
+    if outcome == pdfium::FlattenOutcome::Failed {
+        // Every ref resolved on THIS page, so a failure is the fork
+        // disagreeing with /Annots or a catalog write failing.
+        let foreign =
+            statuses.iter().position(|s| *s == pdfium::AnnotationFlattenStatus::NotOnPage);
+        return Err(match foreign {
+            Some(index) => EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!(
+                    "annotations.flatten: ref {index} is not an annotation of page {}",
+                    page_object_number.get()
+                ),
+            ),
+            None => EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "native annotation flatten failed after preflight",
+            ),
+        });
+    }
+
+    let results = refs
+        .iter()
+        .zip(&statuses)
+        .map(|(annotation_ref, status)| AnnotationFlattenItem {
+            annotation_ref: annotation_ref.clone(),
+            status: if *status == pdfium::AnnotationFlattenStatus::Applied {
+                AnnotationFlattenStatus::Applied
+            } else {
+                AnnotationFlattenStatus::Skipped
+            },
+        })
+        .collect();
+    if outcome != pdfium::FlattenOutcome::Applied {
+        return Ok(AnnotationFlattenResult { page_object_number, usage, results, meta: None });
+    }
+
+    // Content and annotation liveness changed on this page: the same
+    // bookkeeping the whole-page flatten performs per affected page.
+    session.note_mutation();
+    session.bump_revision(page_object_number)?;
+    // The TypeScript re-lists the page for its weak-annotation state and
+    // ignores a failure, so this does too.
+    if let Ok(has_weak) = scan_weak(session, page_object_number) {
+        let _ = session.record_weak_flag(page_object_number, has_weak);
+    }
+    let meta = MutationMeta {
+        affected_pages: vec![session.page_state(page_object_number)?],
+        cache_delta: None,
+    };
+    Ok(AnnotationFlattenResult { page_object_number, usage, results, meta: Some(meta) })
+}
+
+/// `AnnotationFlattener.exportAppearance`: a chosen set of one page's
+/// annotation appearances as a NEW single-page PDF. A read: nothing about
+/// the document changes.
+pub fn export_appearance(
+    session: &DocumentSession,
+    page_object_number: PageObjectNumber,
+    refs: &[AnnotationRef],
+    cancel: &CancelToken,
+) -> Result<Vec<u8>, EngineError> {
+    cancel.check()?;
+    require_refs("annotations.exportAppearance", page_object_number, refs)?;
+    let owned = session.document()?;
+    let page = owned.page(page_object_number)?;
+    let annotations = resolve_all(session, page.view(), refs)?;
+    match page.view().export_annotations_as_document(&annotations) {
+        // All-or-nothing by contract: a ref without a usable normal
+        // appearance (hidden, popup, no /AP) refuses the whole export.
+        Ok(None) => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "annotations.exportAppearance: every ref must be a visible annotation of this page with a normal appearance",
+        )),
+        Ok(Some(bytes)) => Ok(bytes),
+        Err(_) => Err(EngineError::with_message(
+            EngineErrorCode::DocOpenFailed,
+            "failed to save exported appearances",
+        )),
+    }
 }

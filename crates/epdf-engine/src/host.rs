@@ -807,6 +807,45 @@ impl Host {
                 )
             }
 
+            // `WorkerHost.handleAnnotationsFlatten`. Nothing applied is no
+            // mutation: no event, no artifact, as the TypeScript answers it.
+            "annotations.flatten" => {
+                let page = page_field(body)?;
+                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
+                let usage: f::pages_write::FlattenUsage = field(body, "usage")?;
+                let result = f::annotation::write::mutator::flatten(
+                    self.sessions.session_mut(&key)?,
+                    page,
+                    &refs,
+                    usage,
+                    cancel,
+                )?;
+                if result.meta.is_none() {
+                    let session = self.sessions.session(&key)?;
+                    return Ok(ok(serde_json::json!({
+                        "result": value(&result)?,
+                        "mutationSequence": session.mutation_sequence(),
+                    })));
+                }
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::AnnotationsFlattened(value(&result)?),
+                )
+            }
+            // `WorkerHost.handleAnnotationsExportAppearance`: a read, so no
+            // event and no artifact. The bytes travel as the payload.
+            "annotations.exportAppearance" => {
+                let page = page_field(body)?;
+                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
+                let bytes = f::annotation::write::mutator::export_appearance(
+                    self.sessions.session(&key)?,
+                    page,
+                    &refs,
+                    cancel,
+                )?;
+                Ok(bytes_response(bytes))
+            }
+
             "forms.setValue" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let form_value: f::forms::write::FormFieldValue = field(body, "value")?;

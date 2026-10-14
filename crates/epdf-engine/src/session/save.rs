@@ -133,6 +133,9 @@ pub enum DocumentEventInit {
     AnnotationDeleted(serde_json::Value),
     #[serde(rename = "annotation.moved")]
     AnnotationMoved(serde_json::Value),
+    /// `annotations.flatten`, published only when something was applied.
+    #[serde(rename = "annotations.flattened")]
+    AnnotationsFlattened(serde_json::Value),
     #[serde(rename = "pages.moved")]
     PagesMoved(serde_json::Value),
     #[serde(rename = "pages.rotated")]
@@ -200,6 +203,7 @@ impl DocumentEventInit {
             | Self::AnnotationUpdated(v)
             | Self::AnnotationDeleted(v)
             | Self::AnnotationMoved(v)
+            | Self::AnnotationsFlattened(v)
             | Self::PagesMoved(v)
             | Self::PagesRotated(v)
             | Self::PagesDeleted(v)
@@ -230,6 +234,7 @@ impl DocumentEventInit {
             Self::AnnotationUpdated(_) => "annotation.updated",
             Self::AnnotationDeleted(_) => "annotation.deleted",
             Self::AnnotationMoved(_) => "annotation.moved",
+            Self::AnnotationsFlattened(_) => "annotations.flattened",
             Self::PagesMoved(_) => "pages.moved",
             Self::PagesRotated(_) => "pages.rotated",
             Self::PagesDeleted(_) => "pages.deleted",
