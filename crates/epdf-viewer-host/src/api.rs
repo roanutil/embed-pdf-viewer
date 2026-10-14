@@ -60,6 +60,10 @@ pub struct ViewerConfig {
     /// hover feed when they are installed.
     #[uniffi(default = None)]
     pub annotation: Option<epdf_plugin_annotation::ffi::AnnotationConfig>,
+    /// Install `formPlugin(config)`: read, fill and design AcroForm fields.
+    /// Needs `interaction`.
+    #[uniffi(default = None)]
+    pub form: Option<epdf_plugin_form::ffi::FormConfig>,
     /// Install `redactionPlugin(config)`: mark regions, then apply them.
     /// Needs `annotation` (and so `interaction`); marks from search hits
     /// need `search`, marks from the text selection need `selection`.

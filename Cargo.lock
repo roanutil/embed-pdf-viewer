@@ -551,15 +551,18 @@ version = "0.0.0"
 dependencies = [
  "epdf-acrojs",
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
+ "futures",
  "indexmap",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -856,6 +859,7 @@ dependencies = [
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-commands",
+ "epdf-plugin-form",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
  "epdf-plugin-link",

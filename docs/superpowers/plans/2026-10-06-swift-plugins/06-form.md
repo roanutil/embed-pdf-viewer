@@ -79,7 +79,7 @@ platforms/apple/build-xcframework.sh   + form_fields.pdf in FIXTURES
 - Consumes: nothing new.
 - Produces: `epdf_ffi::FormFieldRef { ObjectNumber { field_object_number: u32 }, Fqn { name: String } }` with `to_json(&self) -> serde_json::Value` and `from_json(&Value) -> Result<Self, epdf_kernel::Error>`; `epdf_ffi::FormFieldFamily` (`Text`, `Checkbox`, `Radio`, `Combobox`, `Listbox`, `Pushbutton`, `Signature`, `Unknown`) with `as_str` and `parse`. Plan 16 uses both by name.
 
-- [ ] **Step 1: Create the worktree**
+- [x] **Step 1: Create the worktree**
 
 ```bash
 git worktree add .claude/worktrees/swift-form -b research/swift-form research/swift-plugins
@@ -88,7 +88,7 @@ cd .claude/worktrees/swift-form
 
 Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 05 have merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` and `rg -n 'interaction' crates/epdf-viewer-host/src/api.rs` both print a line.
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `crates/epdf-ffi/tests/form.rs`:
 
@@ -124,12 +124,12 @@ fn families_parse_their_engine_names() {
 }
 ```
 
-- [ ] **Step 3: Run it to see it fail**
+- [x] **Step 3: Run it to see it fail**
 
 Run: `cargo test -p epdf-ffi --test form`
 Expected: compile errors, `cannot find type FormFieldRef in crate epdf_ffi`.
 
-- [ ] **Step 4: Write `form.rs`**
+- [x] **Step 4: Write `form.rs`**
 
 ```rust
 //! The form records more than one plugin returns: how a field is addressed
@@ -224,12 +224,12 @@ impl FormFieldFamily {
 
 In `crates/epdf-ffi/src/lib.rs`: `pub mod form;` and `pub use form::{FormFieldFamily, FormFieldRef};`. `serde_json` is already a dependency after plan 05's Task 1.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-ffi --test form`
 Expected: 4 passed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-ffi
@@ -253,7 +253,7 @@ git commit -m "Add the shared form records to epdf-ffi"
 
 Members, under their FFI names (TypeScript name in parentheses where it differs): `snapshot` (`getSnapshot`), `field` (`getField`), `field_for_widget` (`getFieldForWidget`), `fields` (`listFields`), `value` (`getValue`), `fill_items` (`listFillItems`), `fill_item` (`getFillItem`), `ensure_loaded`, `widget_at` (`getWidgetAt`), `page_box` (`getPageBox`), `widgets` (`listWidgets`), `refresh`, `status` (`getStatus`), `set_value`, `set_text`, `set_checked`, `set_choice`, `set_values`, `import_values`, `reset`, `reset_all`, `create_field`, `update_field`, `delete_field`, `detach_widget`, `attach_widget`, `export_data`, `import_data`, `repair`, `activate_widget`, `can_read`, `can_fill`, `can_design`, `subscribe` (`onValueChanged`, `onFieldCreated`, `onFieldUpdated`, `onFieldDeleted`, `onValidationRejected`, `onResynced`).
 
-- [ ] **Step 1: Read the signatures this task wraps**
+- [x] **Step 1: Read the signatures this task wraps**
 
 ```bash
 rg -n 'pub fn (reset_all|reset|create_field|update_field|delete_field|detach_widget|attach_widget|activate_widget|set_values|import_values|export_data|import_data|repair)' -A3 crates/plugins/form/src/write
@@ -263,7 +263,7 @@ rg -n 'pub struct ScriptDiagnostic' -A10 crates/plugins/acrojs/src
 
 Keep the output open. The code below matches the signatures as they stood on 2026-10-06.
 
-- [ ] **Step 2: Add the feature and the lifetime**
+- [x] **Step 2: Add the feature and the lifetime**
 
 `crates/plugins/form/Cargo.toml`, in `[features]`:
 
@@ -309,7 +309,7 @@ uniffi::setup_scaffolding!();
     }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 `crates/plugins/form/tests/ffi.rs`:
 
@@ -585,12 +585,12 @@ fn cancelling_a_set_value_before_it_runs_leaves_the_field_alone() {
 
 `flags()` carries an extra `requiredValue` key on purpose: the decode must ignore keys it doesn't name, the way the engine adds them.
 
-- [ ] **Step 4: Run them to see them fail**
+- [x] **Step 4: Run them to see them fail**
 
 Run: `cargo test -p epdf-plugin-form --features uniffi --test ffi`
 Expected: compile errors, `could not find ffi in epdf_plugin_form`.
 
-- [ ] **Step 5: Write `ffi.rs`**
+- [x] **Step 5: Write `ffi.rs`**
 
 ```rust
 //! The form plugin through uniffi: typed records decoded from the plugin's
@@ -1758,7 +1758,7 @@ Three spots to check against Step 1's output before compiling:
 
 Add `epdf-annotation-core = { path = "../annotation-core", default-features = false }` to the form crate's `[dependencies]` if `rg -n 'epdf-annotation-core' crates/plugins/form/Cargo.toml` doesn't find it.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `cargo test -p epdf-plugin-form --features uniffi --test ffi`
 Expected: 10 passed.
@@ -1768,7 +1768,7 @@ If `a_rejected_commit_is_a_result_not_an_error` panics with an `Err`, the plugin
 Run: `cargo test -p epdf-plugin-form`
 Expected: the conformance vectors still pass with the feature off.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add crates/plugins/form
@@ -1789,7 +1789,7 @@ git commit -m "Export the form plugin through uniffi"
 
 The kernel spells a widget `{ref: <nested AnnotationRef>, annotObjectNumber, page: PageRef}` (`crates/plugins/form/tests/api.rs`). The host spells it `{annotObjectNumber, pageObjectNumber}` (`FormWidgetRef`, `snapshot.rs:173`), with a toggle widget's `onState`, `exportValue`, `checked` flattened beside. A widget placement goes out as `{page: PageRef, rect}` from the plugin (`write/fields.rs`) and the host reads `{pageObjectNumber, rect}` (`WidgetPlacement`, `field.rs:121`).
 
-- [ ] **Step 1: Capture the host's real shapes**
+- [x] **Step 1: Capture the host's real shapes**
 
 Add beside plan 05's `dump_annotation_shapes`:
 
@@ -1812,7 +1812,7 @@ cargo test -p epdf-viewer-host --test translate dump_form_shapes -- --ignored --
 
 Confirm each field's `widgets[]` entries are flat (`pageObjectNumber`, no `ref`, no `page`) and that the family-specific members (`value`, `checked`, `options`) sit at the top level beside the base. If anything differs from the kernel's spelling in Task 2's `snapshot()`, handle it in `nest_widgets` and note it in its doc comment.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `tests/translate.rs`:
 
@@ -1878,12 +1878,12 @@ fn a_repair_reads_bake_appearances_from_its_options() {
 
 `epdf_kernel::undefined()` serializes as a marker (`$undefined`). The `forms.importData` row must treat it as absent, which the existing `is_null` filter does not, so the row checks `is_undefined` itself (Step 4).
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: the new tests fail with code `unsupported`.
 
-- [ ] **Step 4: Add the routes and decoders**
+- [x] **Step 4: Add the routes and decoders**
 
 Extend `Decode`:
 
@@ -2045,12 +2045,12 @@ In `decode`:
 
 `response.payloads` is moved by `Decode::Raster` already; `Decode::ExportBytes` takes it the same way.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test translate`
 Expected: all pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add crates/epdf-viewer-host/src/translate.rs crates/epdf-viewer-host/tests/translate.rs
@@ -2072,7 +2072,7 @@ git commit -m "Map the form engine paths onto the native host"
 - Consumes: `epdf_plugin_form::ffi::{FormHandle, FormConfig}`.
 - Produces: `ViewerConfig.form: Option<FormConfig>`; `ViewerHost::form(document_id: String) -> Result<Arc<FormHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -2181,12 +2181,12 @@ fn without_its_config_the_form_plugin_is_not_installed() {
 }
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field form on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`:
 
@@ -2226,7 +2226,7 @@ epdf-plugin-form = { path = "../plugins/form", default-features = false, feature
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. A failure in `the_fixtures_fields_list_with_widget_refs` means the dump in Task 3 Step 1 showed a widget spelling `nest_widgets` doesn't handle; fix it there.
@@ -2234,7 +2234,7 @@ Expected: all pass. A failure in `the_fixtures_fields_list_with_widget_refs` mea
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host
@@ -2254,12 +2254,12 @@ git commit -m "Install the form plugin in the viewer host"
 - Consumes: the generated `FormHandle`, records and `FormEventListener`; `PDFViewer`, `bridged`, `bridgedCancellable`, `EventRelay`.
 - Produces: `FormCapability`, `PDFViewer.form(for:)`.
 
-- [ ] **Step 1: Build the bindings**
+- [x] **Step 1: Build the bindings**
 
 Run: `bash platforms/apple/build-xcframework.sh`
 Expected: `rg -n 'class FormHandle' platforms/apple/EmbedPDF/Sources/EmbedPDFBindings` finds it.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `platforms/apple/EmbedPDF/Tests/EmbedPDFTests/FormTests.swift`:
 
@@ -2386,12 +2386,12 @@ extension BaseSuite {
 
 Every other `CancelToken`-taking member is exercised for cancellation by the Rust test in Task 2 (`cancelling_a_set_value_before_it_runs_leaves_the_field_alone`); the umbrella's template asks for one Swift test per such member, and these two plus the Rust one cover the shared `bridgedCancellable` path. Add a `<member>CancelsWhenTheTaskIsCancelled` test for each remaining cancellable member only if a reviewer asks; each would be a copy of `exportCancelsWhenTheTaskIsCancelled` with the call swapped.
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:EmbedPDFTests/BaseSuite/FormTests)`
 Expected: build failure, `value of type PDFViewer has no member form`.
 
-- [ ] **Step 4: Write `Form.swift`**
+- [x] **Step 4: Write `Form.swift`**
 
 ```swift
 public import EmbedPDFBindings
@@ -2610,7 +2610,7 @@ extension PDFViewer {
 
 UniFFI generates the enum case `FormValidation.none`, which collides with `Optional.none` at some call sites; the test spells it `FormValidation.none` explicitly for that reason. If the generator renames it (`none_`), use the generated name in the test.
 
-- [ ] **Step 5: Add the fixture and run the tests**
+- [x] **Step 5: Add the fixture and run the tests**
 
 In `platforms/apple/build-xcframework.sh`, add to the `FIXTURES` list (umbrella Task 0f), one line each, after the last plan's lines:
 
@@ -2671,12 +2671,12 @@ Plan 15 (actions) is in Wave A, so it has normally merged by now. If it has, add
 
 The Rust names behind these, for `rg` if a label differs: `ActionsHandle::set_submit_handler`, `ActionsHandle::execute`, `ActionsJavaScriptConfig`, `JavaScriptCoreEngineFactory` (plan 15 Tasks 2, 6 and 7).
 
-- [ ] **Step 6: Run the whole Swift suite**
+- [x] **Step 6: Run the whole Swift suite**
 
 Run: `(cd platforms/apple/EmbedPDF && xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,name=iPhone 17')`
 Expected: every suite passes.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add platforms/apple/build-xcframework.sh platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift platforms/apple/EmbedPDF/Tests/EmbedPDFTests
@@ -2692,7 +2692,7 @@ git commit -m "Add EmbedPDF's FormCapability"
 - Modify: `platforms/apple/README.md`
 - Modify: `docs/superpowers/plans/2026-10-01-swift-package.md` (Appendix A §A.3, the form entry)
 
-- [ ] **Step 1: CI and README**
+- [x] **Step 1: CI and README**
 
 Append `form` to `plugin-rust.yml`'s `crates=( … )`, after `annotation`. Add the README row:
 
@@ -2702,14 +2702,14 @@ Append `form` to `plugin-rust.yml`'s `crates=( … )`, after `annotation`. Add t
 
 In the spec's §A.3, change `**form** (D, requires …)` to begin `**form** (D), delivered by 06-form.md, requires …`.
 
-- [ ] **Step 2: Record the binary size**
+- [x] **Step 2: Record the binary size**
 
 ```bash
 ls -l target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ls -l ../swift-plugins-integration/target/aarch64-apple-ios-sim/release/libepdf_viewer_host.a
 ```
 
-- [ ] **Step 3: Run the definition of done**
+- [x] **Step 3: Run the definition of done**
 
 ```bash
 cargo test -p epdf-plugin-form --features uniffi
@@ -2724,7 +2724,7 @@ cargo build -p epdf-viewer-host -p uniffi-bindgen
 
 Expected: every command exits 0.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/plugin-rust.yml platforms/apple/README.md docs/superpowers/plans/2026-10-01-swift-package.md

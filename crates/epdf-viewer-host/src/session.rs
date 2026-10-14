@@ -96,6 +96,9 @@ impl Session {
         if let Some(annotation) = config.annotation {
             plugins.push(epdf_plugin_annotation::annotation_plugin(annotation.into()));
         }
+        if let Some(form) = config.form {
+            plugins.push(epdf_plugin_form::form_plugin(form.into()));
+        }
         if let Some(redaction) = config.redaction {
             plugins.push(epdf_plugin_redaction::redaction_plugin(redaction.into()));
         }

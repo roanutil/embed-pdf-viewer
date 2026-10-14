@@ -7,6 +7,7 @@ pub mod bound;
 pub mod cancel;
 pub mod error;
 pub mod foreign;
+pub mod form;
 pub mod geometry;
 pub mod input;
 pub mod kernel_thread;
@@ -28,6 +29,7 @@ pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
 pub use foreign::{ForeignSettle, HostError};
+pub use form::{FormFieldFamily, FormFieldRef};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
 pub use input::{
     Modifiers, PointerGesture, PointerKind, PointerPageHit, PointerPhase, PointerSample,

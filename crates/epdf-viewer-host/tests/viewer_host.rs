@@ -1014,6 +1014,174 @@ fn a_reply_lands_through_the_native_engine() {
     assert_eq!(read.contents.as_deref(), Some("Agreed"));
 }
 
+use epdf_plugin_form::ffi::{
+    FormConfig, FormDataFormat, FormFieldDetail, FormKind, FormValidation,
+};
+
+const FORM: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
+
+fn with_form() -> Arc<ViewerHost> {
+    let config = ViewerConfig {
+        interaction: true,
+        annotation: Some(epdf_plugin_annotation::ffi::AnnotationConfig::default()),
+        form: Some(FormConfig { validation: Some(FormValidation::None) }),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, Arc::new(Delegate)).unwrap();
+    block_on(host.start()).unwrap();
+    host
+}
+
+#[test]
+fn the_fixtures_fields_list_with_widget_refs() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let fields = block_on(form.fields(None)).unwrap();
+    assert!(!fields.is_empty());
+    assert!(fields.iter().flat_map(|f| &f.widgets).all(|w| w.annotation_ref.is_some()));
+}
+
+#[test]
+fn a_text_field_fills_through_the_native_engine() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let text = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .expect("form_fields.pdf has a writable text field");
+    block_on(form.set_text(text.field_ref.clone(), "Filled".into(), CancelToken::new())).unwrap();
+    let again = block_on(form.field(text.field_ref)).unwrap().unwrap();
+    assert!(matches!(again.detail, FormFieldDetail::Text { value, .. } if value == "Filled"));
+}
+
+#[test]
+fn a_checkbox_is_checked_by_its_on_state() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let field = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Checkbox { .. }) && !f.flags.read_only)
+        .expect("form_fields.pdf has a writable checkbox");
+    let on_state = field.widgets[0].toggle.as_ref().unwrap().on_state.clone();
+    // The fixture's box starts checked; clear it so checking it is a change.
+    let cleared =
+        block_on(form.set_checked(field.field_ref.clone(), None, CancelToken::new())).unwrap();
+    assert_eq!(cleared.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
+    let checked =
+        block_on(form.set_checked(field.field_ref.clone(), Some(on_state), CancelToken::new()))
+            .unwrap();
+    assert_eq!(checked.status, epdf_plugin_form::ffi::FormCommitStatus::Applied);
+    let read = block_on(form.field(field.field_ref)).unwrap().unwrap();
+    assert!(matches!(read.detail, FormFieldDetail::Checkbox { checked: true, .. }), "{read:?}");
+    assert_eq!(read.widgets[0].toggle.as_ref().map(|t| t.checked), Some(true));
+}
+
+#[test]
+fn a_reset_restores_the_default_through_the_native_engine() {
+    let reports = Arc::new(Reports::default());
+    let config = ViewerConfig {
+        interaction: true,
+        form: Some(FormConfig { validation: Some(FormValidation::None) }),
+        ..Default::default()
+    };
+    let host = ViewerHost::new(config, reports.clone()).unwrap();
+    block_on(host.start()).unwrap();
+    let doc = block_on(host.open_document(test_support::fixture(FORM), options())).unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let text = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .unwrap();
+    block_on(form.set_text(text.field_ref.clone(), "Changed".into(), CancelToken::new())).unwrap();
+    // `reset` takes `forms.applyEffects` when the host has it.
+    block_on(form.reset(text.field_ref.clone(), CancelToken::new())).unwrap();
+    let read = block_on(form.field(text.field_ref)).unwrap().unwrap();
+    let FormFieldDetail::Text { value, default_value, .. } = read.detail else { unreachable!() };
+    assert_eq!(value, default_value);
+    assert_eq!(*reports.0.lock().unwrap(), Vec::<String>::new());
+}
+
+#[test]
+fn an_fdf_export_imports_back() {
+    let host = with_form();
+    let bytes = test_support::fixture(FORM);
+    let first = block_on(host.open_document(bytes.clone(), options())).unwrap();
+    let form = block_on(host.form(first.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let text = block_on(form.fields(None))
+        .unwrap()
+        .into_iter()
+        .find(|f| matches!(f.detail, FormFieldDetail::Text { .. }) && !f.flags.read_only)
+        .unwrap();
+    block_on(form.set_text(text.field_ref.clone(), "Round trip".into(), CancelToken::new()))
+        .unwrap();
+    let export = block_on(form.export_data(Some(FormDataFormat::Fdf), CancelToken::new())).unwrap();
+    assert!(export.bytes.starts_with(b"%FDF"));
+    let second = block_on(host.open_document(bytes, options())).unwrap();
+    let fresh = block_on(host.form(second.id)).unwrap();
+    block_on(fresh.refresh(CancelToken::new())).unwrap();
+    block_on(fresh.import_data(export.bytes, Some(FormDataFormat::Fdf), CancelToken::new()))
+        .unwrap();
+    let imported = block_on(fresh.field(text.field_ref)).unwrap().unwrap();
+    assert!(
+        matches!(imported.detail, FormFieldDetail::Text { value, .. } if value == "Round trip")
+    );
+}
+
+#[test]
+fn a_document_without_a_form_lists_no_fields() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let form = block_on(host.form(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    assert!(block_on(form.fields(None)).unwrap().is_empty());
+    assert_eq!(block_on(form.snapshot()).unwrap().map(|s| s.form_kind), Some(FormKind::None));
+}
+
+#[test]
+fn a_created_field_is_selectable_as_an_annotation() {
+    let host = with_form();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let page = block_on(host.pages(doc.id.clone())).unwrap()[0].page;
+    let form = block_on(host.form(doc.id.clone())).unwrap();
+    let annotations = block_on(host.annotation(doc.id)).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    block_on(annotations.refresh(CancelToken::new())).unwrap();
+    let created = block_on(form.create_field(
+        epdf_plugin_form::ffi::FormCreateFieldInput {
+            family: epdf_ffi::FormFieldFamily::Text,
+            page,
+            bounds: epdf_ffi::Rect { x: 72.0, y: 72.0, width: 200.0, height: 24.0 },
+            name: Some("added".into()),
+            options: None,
+        },
+        CancelToken::new(),
+    ))
+    .unwrap();
+    let widget = created.widget.and_then(|w| w.annotation_ref).expect("the widget's ref");
+    assert!(block_on(annotations.get(widget)).unwrap().is_some());
+}
+
+#[test]
+fn without_its_config_the_form_plugin_is_not_installed() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    assert!(block_on(host.form(doc.id)).is_err());
+}
+
 use epdf_plugin_redaction::ffi::{RedactionConfig, RedactionPageStatus};
 
 fn with_redaction() -> Arc<ViewerHost> {
@@ -1514,3 +1682,4 @@ fn executing_a_named_next_page_action_moves_the_stage() {
     assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed, "{result:?}");
     assert_eq!(block_on(stage.current_page_index()).unwrap(), 1);
 }
+
