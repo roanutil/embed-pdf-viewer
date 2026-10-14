@@ -3448,7 +3448,7 @@ git commit -m "Map the annotation engine paths onto the native host"
 - Consumes: `epdf_plugin_annotation::ffi::{AnnotationHandle, AnnotationConfig}`, plan 01's `ViewerConfig.interaction: bool`.
 - Produces: `ViewerConfig.annotation: Option<AnnotationConfig>`; `ViewerHost::annotation(document_id: String) -> Result<Arc<AnnotationHandle>, ViewerError>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/viewer_host.rs`:
 
@@ -3528,12 +3528,12 @@ fn without_its_config_the_annotation_plugin_is_not_installed() {
 
 Plan 03 owns `a_plugin_without_its_requirement_fails_to_build` (umbrella Review Focus 2). If it already exists in the file under that name, rename this one `annotation_without_interaction_fails_to_build`.
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: compile errors, `no field annotation on ViewerConfig`.
 
-- [ ] **Step 3: Wire it in**
+- [x] **Step 3: Wire it in**
 
 `Cargo.toml`, alphabetically in `[dependencies]`:
 
@@ -3573,7 +3573,7 @@ epdf-plugin-annotation = { path = "../plugins/annotation", default-features = fa
     }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `cargo test -p epdf-viewer-host --test viewer_host`
 Expected: all pass. If `the_annotation_plugin_hydrates_through_the_native_engine` reports `invalid-state`, a field Task 6's dump showed differs from the kernel's DTO and the rewrite missed it. Go back to Task 6 Step 1's output and add that field to `nest_refs`.
@@ -3581,7 +3581,7 @@ Expected: all pass. If `the_annotation_plugin_hydrates_through_the_native_engine
 Run: `cargo test -p epdf-ffi -p epdf-viewer-host`
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add crates/epdf-viewer-host

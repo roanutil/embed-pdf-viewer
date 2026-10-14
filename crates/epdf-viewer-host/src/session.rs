@@ -93,6 +93,9 @@ impl Session {
         if config.link {
             plugins.push(epdf_plugin_link::link_plugin(Default::default()));
         }
+        if let Some(annotation) = config.annotation {
+            plugins.push(epdf_plugin_annotation::annotation_plugin(annotation.into()));
+        }
         if config.page_edit {
             plugins.push(epdf_plugin_page_edit::page_edit_plugin());
         }

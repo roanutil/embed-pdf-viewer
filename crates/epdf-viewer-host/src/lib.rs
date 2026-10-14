@@ -29,6 +29,7 @@ use std::sync::{Arc, Mutex};
 use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_actions::ffi::ActionsHandle;
+use epdf_plugin_annotation::ffi::AnnotationHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
 use epdf_plugin_i18n::ffi::I18nHandle;
 use epdf_plugin_interaction::ffi::{FeedbackHandle, InteractionHandle};
@@ -347,6 +348,22 @@ impl ViewerHost {
         self.call(move |s| {
             let cap = s.kernel.capability(&epdf_plugin_link::LINK, Some(&document_id))?;
             Ok(LinkHandle::with_report(cap, post, reporter(&s.kernel)))
+        })
+        .await
+    }
+
+    /// The annotation capability of an open document. Needs
+    /// `ViewerConfig.annotation` and `ViewerConfig.interaction`; without
+    /// them the kernel refuses the token.
+    pub async fn annotation(
+        &self,
+        document_id: String,
+    ) -> Result<Arc<AnnotationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.call(move |s| {
+            let cap =
+                s.kernel.capability(&epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
+            Ok(AnnotationHandle::new(cap, post))
         })
         .await
     }

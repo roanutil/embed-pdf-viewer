@@ -851,6 +851,7 @@ dependencies = [
  "epdf-kernel",
  "epdf-manual-bridge",
  "epdf-plugin-actions",
+ "epdf-plugin-annotation",
  "epdf-plugin-commands",
  "epdf-plugin-i18n",
  "epdf-plugin-interaction",
