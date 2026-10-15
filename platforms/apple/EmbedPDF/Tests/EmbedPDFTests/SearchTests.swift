@@ -42,7 +42,7 @@ extension BaseSuite {
       }
     }
 
-    @Test func searchCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func findAllCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, search) = try await opened()
       let task = Task { try await search.findAll(SearchQuery(text: "e")) }
       task.cancel()
@@ -54,6 +54,26 @@ extension BaseSuite {
       // The capability still answers after a cancelled call.
       let hits = try await search.findAll(SearchQuery(text: "Report"))
       #expect(!hits.isEmpty)
+    }
+
+    @Test func searchCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, search) = try await opened()
+      await expectCancelledBeforeItStarts { try await search.search(SearchQuery(text: "the")) }
+    }
+
+    @Test func refreshCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, search) = try await opened()
+      _ = try await search.search(SearchQuery(text: "the"))
+      await expectCancelledBeforeItStarts { try await search.refresh() }
+    }
+
+    @Test func droppingTheStreamUnsubscribes() async throws {
+      let (_, _, search) = try await opened()
+      let task = Task { for await _ in search.events {} }
+      try await Task.sleep(for: .milliseconds(20))
+      task.cancel()
+      _ = await task.value
+      _ = try await search.search(SearchQuery(text: "the"))
     }
 
     @Test func aClosedDocumentsCapabilityThrows() async throws {

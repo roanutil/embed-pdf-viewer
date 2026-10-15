@@ -46,6 +46,31 @@ extension BaseSuite {
       expectNoDifference(pixels.at(x: 35, y: 5), [51, 102, 153, 255])
     }
 
+    @Test func renderPageCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, page, render) = try await opened()
+      await expectCancelledBeforeItStarts { try await render.renderPage(page, options: RenderPageOptions(scale: 1)) }
+    }
+
+    @Test func renderThumbnailCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, page, render) = try await opened()
+      await expectCancelledBeforeItStarts { try await render.renderThumbnail(page, maxWidth: 40) }
+    }
+
+    @Test func renderPagesCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, page, render) = try await opened()
+      await expectCancelledBeforeItStarts { try await render.renderPages([page], options: RenderPageOptions(scale: 1)) }
+    }
+
+    @Test func droppingTheStreamUnsubscribes() async throws {
+      let (_, _, page, render) = try await opened()
+      let task = Task { for await _ in render.events {} }
+      try await Task.sleep(for: .milliseconds(20))
+      task.cancel()
+      _ = await task.value
+      // A render after the drop still answers (and emits to no one).
+      _ = try await render.renderPage(page, options: RenderPageOptions(scale: 0.5))
+    }
+
     @Test func aBadScaleIsRefused() async throws {
       let (_, _, page, render) = try await opened()
       await #expect {

@@ -105,6 +105,60 @@ extension BaseSuite {
       #expect(try await edit.canEdit())
     }
 
+    // One per remaining member that takes a `CancelToken`, each called in
+    // an already-cancelled task.
+
+    func firstPage() async throws -> (PDFViewer, PageEditCapability, PageRef) {
+      let (viewer, document, edit) = try await opened()
+      return (viewer, edit, try await viewer.pages(of: document)[0].page)
+    }
+
+    @Test func setRotationCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, page) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.setRotation(.clockwise90, of: [page]) }
+    }
+
+    @Test func movePagesCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, page) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.movePages([page], to: .end) }
+    }
+
+    @Test func deletePagesCancelsWhenTheTaskIsCancelled() async throws {
+      let (viewer, edit, page) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.deletePages([page]) }
+      let document = try #require(try await viewer.documents().first)
+      let count = try await viewer.pages(of: document).count
+      expectNoDifference(count, 14)
+    }
+
+    @Test func insertBlankCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, _) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.insertBlank() }
+    }
+
+    @Test func insertFromBytesCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, _) = try await firstPage()
+      let colors = try Fixture.data("colors")
+      await expectCancelledBeforeItStarts { try await edit.insert(contentsOf: colors) }
+    }
+
+    @Test func insertFromDocumentCancelsWhenTheTaskIsCancelled() async throws {
+      let (viewer, edit, _) = try await firstPage()
+      let other = try await viewer.open(Fixture.data("colors"))
+      let source = try await viewer.pages(of: other).map(\.page)
+      await expectCancelledBeforeItStarts { try await edit.insert(source, from: other) }
+    }
+
+    @Test func duplicateCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, page) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.duplicate([page]) }
+    }
+
+    @Test func extractCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, edit, page) = try await firstPage()
+      await expectCancelledBeforeItStarts { try await edit.extract([page]) }
+    }
+
     @Test func aClosedDocumentsCapabilityThrows() async throws {
       let (viewer, document, edit) = try await opened()
       try await viewer.close(document)

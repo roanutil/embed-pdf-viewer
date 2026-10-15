@@ -61,6 +61,19 @@ extension BaseSuite {
       try await metadata.refresh()
     }
 
+    @Test func updateCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, metadata) = try await opened()
+      try await metadata.refresh()
+      await expectCancelledBeforeItStarts { try await metadata.update(MetadataPatch(title: "Renamed")) }
+      let snapshot = try await metadata.snapshot()
+      #expect(snapshot?.title != "Renamed")
+    }
+
+    @Test func refreshCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, metadata) = try await opened()
+      await expectCancelledBeforeItStarts { try await metadata.refresh() }
+    }
+
     @Test func destroyingTheViewerFinishesTheEvents() async throws {
       let (viewer, _, metadata) = try await opened()
       let events = Task { for await _ in metadata.events {} }

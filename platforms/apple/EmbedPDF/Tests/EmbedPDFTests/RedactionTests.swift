@@ -88,6 +88,67 @@ extension BaseSuite {
       _ = try await redaction.pending()
     }
 
+    // One per member that takes a `CancelToken`, beyond `applyAll` and
+    // `markMatches` above. Each is called in an already-cancelled task.
+
+    /// A pending mark on the first page.
+    func marked() async throws -> (RedactionCapability, AnnotationRef, PageRef) {
+      let (viewer, document, redaction, _) = try await opened()
+      let page = try await viewer.pages(of: document)[0].page
+      let mark = try await redaction.markArea(Rect(x: 72, y: 72, width: 200, height: 20), on: page)
+      return (redaction, mark, page)
+    }
+
+    @Test func markSelectionCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, _, _) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.markSelection() }
+    }
+
+    @Test func markAreaCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, _, page) = try await marked()
+      await expectCancelledBeforeItStarts {
+        try await redaction.markArea(Rect(x: 72, y: 200, width: 50, height: 20), on: page)
+      }
+      let count = try await redaction.pendingCount(on: page)
+      expectNoDifference(count, 1)
+    }
+
+    @Test func markPageCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, _, page) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.markPage(page) }
+    }
+
+    @Test func unmarkCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, mark, page) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.unmark([mark]) }
+      let count = try await redaction.pendingCount(on: page)
+      expectNoDifference(count, 1)
+    }
+
+    @Test func clearPendingCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, _, _) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.clearPending() }
+    }
+
+    @Test func updateLabelCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, mark, _) = try await marked()
+      await expectCancelledBeforeItStarts {
+        try await redaction.updateLabel(mark, RedactionLabelPatch(overlayText: "X"))
+      }
+    }
+
+    @Test func applyCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, mark, page) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.apply([mark]) }
+      let count = try await redaction.pendingCount(on: page)
+      expectNoDifference(count, 1)
+    }
+
+    @Test func applyPagesCancelsWhenTheTaskIsCancelled() async throws {
+      let (redaction, _, page) = try await marked()
+      await expectCancelledBeforeItStarts { try await redaction.apply(pages: [page]) }
+    }
+
     @Test func markingTheSelectionCreatesOneMarkPerPage() async throws {
       let viewer = try PDFViewer(
         ViewerConfig(interaction: true, selection: true, annotation: AnnotationConfig(), redaction: RedactionConfig()))

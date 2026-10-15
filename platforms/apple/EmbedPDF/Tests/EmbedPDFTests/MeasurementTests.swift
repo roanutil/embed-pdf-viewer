@@ -109,7 +109,7 @@ extension BaseSuite {
       _ = try await measurement.setPreset(.page(page: page), presetId: preset.id)
     }
 
-    @Test func setScaleCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func setPresetCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, measurement, page) = try await opened()
       let preset = try #require(try await measurement.presets().first)
       let task = Task { try await measurement.setPreset(.page(page: page), presetId: preset.id) }
@@ -120,6 +120,53 @@ extension BaseSuite {
         expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
       }
       _ = try await measurement.pageScale(page)
+    }
+
+    // One per remaining member that takes a `CancelToken`, each called in
+    // an already-cancelled task.
+
+    @Test func setScaleCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts {
+        try await measurement.setScale(.page(page: page), measure: PdfMeasurement(subtype: "RL", ratio: "1 in = 1 ft"))
+      }
+    }
+
+    @Test func calibrateCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts {
+        try await measurement.calibrate(
+          MeasurementCalibrateInput(page: page, from: Point(x: 0, y: 0), to: Point(x: 72, y: 0), value: 1, unit: "in"))
+      }
+    }
+
+    @Test func setUnitCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts { try await measurement.setUnit(.page(page: page), unit: "cm") }
+    }
+
+    @Test func setAreaUnitCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts { try await measurement.setAreaUnit(.page(page: page), unit: "cm") }
+    }
+
+    @Test func setPrecisionCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts { try await measurement.setPrecision(.page(page: page), precision: 2) }
+    }
+
+    @Test func clearScaleCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      await expectCancelledBeforeItStarts { try await measurement.clearScale(.page(page: page)) }
+    }
+
+    @Test func createMeasurementCancelsWhenTheTaskIsCancelled() async throws {
+      let (_, _, measurement, page) = try await opened()
+      try await measurement.ensureLoaded(page)
+      await expectCancelledBeforeItStarts {
+        try await measurement.createMeasurement(
+          CreateMeasurementInput(kind: .distance, page: page, points: [Point(x: 10, y: 10), Point(x: 82, y: 10)]))
+      }
     }
 
     @Test func ensureLoadedCancelsWhenTheTaskIsCancelled() async throws {

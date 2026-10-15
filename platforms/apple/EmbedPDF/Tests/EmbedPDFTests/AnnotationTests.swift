@@ -215,6 +215,210 @@ extension BaseSuite {
       _ = try await annotations.list()
     }
 
+    // One per member that takes a `CancelToken`, beyond `refresh` and
+    // `create` above. Each is called in an already-cancelled task.
+
+    /// The fixture's first annotation and its page.
+    func cancellable() async throws -> (AnnotationCapability, AnnotationRef, PageRef) {
+      let (_, _, annotations) = try await opened()
+      let first = try #require(try await annotations.list().first)
+      return (annotations, first.annotationRef, first.page)
+    }
+
+    func square(on page: PageRef) -> CreateAnnotationInput {
+      CreateAnnotationInput(page: page, subtype: "square", bounds: Rect(x: 0, y: 0, width: 10, height: 10))
+    }
+
+    @Test func reloadCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, page) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.reload(page) }
+    }
+
+    @Test func createManyCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, page) = try await cancellable()
+      let before = try await annotations.list().count
+      await expectCancelledBeforeItStarts { try await annotations.create([square(on: page)]) }
+      let after = try await annotations.list().count
+      expectNoDifference(after, before)
+    }
+
+    @Test func updateCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.update(ref, AnnotationPatch(contents: "x")) }
+    }
+
+    @Test func updateManyCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.update([ref], AnnotationPatch(contents: "x")) }
+    }
+
+    @Test func setRotationCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.setRotation(ref, degrees: 90) }
+    }
+
+    @Test func rotateByCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.rotate(ref, by: 90) }
+    }
+
+    @Test func deleteCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.delete(ref) }
+      let kept = try await annotations.get(ref)
+      #expect(kept != nil)
+    }
+
+    @Test func deleteManyCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.delete([ref]) }
+    }
+
+    // The selection sub-capability, over a selected annotation.
+
+    func selected() async throws -> (AnnotationSelectionCapability, AnnotationRef) {
+      let (annotations, ref, _) = try await cancellable()
+      try await annotations.selection.select([ref])
+      return (annotations.selection, ref)
+    }
+
+    @Test func selectionUpdateCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.update(AnnotationPropsPatch(opacity: 0.5)) }
+    }
+
+    @Test func selectionUpdateFlagsCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.updateFlags(AnnotationFlagsPatch(hidden: true)) }
+    }
+
+    @Test func selectionDeleteCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.delete() }
+      let refs = try await selection.refs()
+      #expect(!refs.isEmpty)
+    }
+
+    @Test func selectionRotateByCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.rotate(.clockwise) }
+    }
+
+    @Test func selectionResetRotationCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.resetRotation() }
+    }
+
+    @Test func selectionToggleTextFormatCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.toggle(.bold) }
+    }
+
+    @Test func selectionGroupCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.group() }
+    }
+
+    @Test func selectionUngroupCancelsWhenTheTaskIsCancelled() async throws {
+      let (selection, _) = try await selected()
+      await expectCancelledBeforeItStarts { try await selection.ungroup() }
+    }
+
+    // The drafts sub-capability.
+
+    @Test func finishCreationDraftCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.drafts.finishCreationDraft() }
+    }
+
+    @Test func setContentsCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.drafts.setContents("x", of: ref) }
+    }
+
+    @Test func endTextEditCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.drafts.endTextEdit() }
+    }
+
+    @Test func createFromSelectionCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.drafts.createFromSelection("highlight") }
+    }
+
+    @Test func armStampCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, _) = try await cancellable()
+      let source = AnnotationStampSource(bytes: try tinyPng(), mimeType: "image/png")
+      await expectCancelledBeforeItStarts { try await annotations.drafts.armStamp(source) }
+      let armed = try await annotations.drafts.hasArmedStamp()
+      expectNoDifference(armed, false)
+    }
+
+    @Test func placeStampCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, page) = try await cancellable()
+      let source = AnnotationStampSource(bytes: try tinyPng(), mimeType: "image/png")
+      await expectCancelledBeforeItStarts {
+        try await annotations.drafts.placeStamp(source, at: AnnotationStampPlacement(page: page, at: Point(x: 50, y: 50)))
+      }
+    }
+
+    @Test func createAttachmentCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, _, page) = try await cancellable()
+      let file = AnnotationAttachmentFile(bytes: try tinyPng(), name: "tiny.png")
+      await expectCancelledBeforeItStarts {
+        try await annotations.drafts.createAttachment(file, at: Point(x: 50, y: 50), on: page)
+      }
+    }
+
+    @Test func readAttachmentCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.drafts.readAttachment(ref) }
+    }
+
+    // The threads sub-capability.
+
+    @Test func replyCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.reply(to: ref, "x") }
+    }
+
+    @Test func threadSetTextCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.setText("x", of: ref) }
+    }
+
+    @Test func threadSetStatusCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.setStatus(.accepted, of: ref) }
+    }
+
+    @Test func threadSetMarkedCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.setMarked(true, ref) }
+    }
+
+    @Test func threadDeleteCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.delete(ref) }
+    }
+
+    @Test func deleteThreadCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.deleteThread(ref) }
+    }
+
+    @Test func setLinkCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts {
+        try await annotations.threads.setLink(.uri(uri: "https://example.invalid"), on: ref)
+      }
+    }
+
+    @Test func clearLinkCancelsWhenTheTaskIsCancelled() async throws {
+      let (annotations, ref, _) = try await cancellable()
+      await expectCancelledBeforeItStarts { try await annotations.threads.clearLink(ref) }
+    }
+
     @Test func createCancelsWhenTheTaskIsCancelled() async throws {
       let (viewer, document, annotations) = try await opened("report")
       let page = try await viewer.pages(of: document)[0].page
