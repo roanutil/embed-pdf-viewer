@@ -935,12 +935,13 @@ fn a_field_edit_answers_its_field_under_field_as_the_kernel_reads_it() {
 }
 
 #[test]
-fn an_effects_batch_publishes_effects_applied() {
-    // The host finishes applyEffects as `form.valueChanged`; the TypeScript
-    // engine publishes `form.effectsApplied`, which carries no `field`.
+fn an_effects_batch_hands_back_the_hosts_effects_applied() {
+    // The host publishes `form.effectsApplied` itself, as the TypeScript
+    // engine does, so the event goes out as it came.
     let call = translate("d1", "forms.applyEffects", None, &[json!([])], 31).unwrap();
-    let json = r#"{"result":{"result":{"results":[],"changedWidgets":[]},"mutationSequence":4,"event":{"type":"form.valueChanged","origin":{"kind":"local"},"results":[],"changedWidgets":[]}}}"#;
+    let json = r#"{"result":{"result":{"results":[],"changedWidgets":[]},"mutationSequence":4,"event":{"type":"form.effectsApplied","origin":{"kind":"local"},"results":[],"changedWidgets":[]}}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(decoded.value, json!({ "results": [], "changedWidgets": [] }));
     let event = decoded.event.unwrap();
     assert_eq!(event["type"], "form.effectsApplied");
     assert_eq!(event["changedWidgets"], json!([]));
@@ -1328,6 +1329,34 @@ fn the_reads_carry_their_arguments() {
     assert!(call.request.get("workingCopy").is_none());
     let call = translate("d", "document.version", None, &[], 1).unwrap();
     assert_eq!(call.request["kind"], json!("document.version"));
+}
+
+#[test]
+fn a_signing_notice_beside_the_result_is_handed_back() {
+    // `signatures.prepare` and `signatures.abort` are not mutations: their
+    // answer is the bare result, and the notice the host publishes rides in
+    // the envelope beside it.
+    let call = translate("d", "signatures.prepare", None, &[json!({})], 1).unwrap();
+    let response = HostResponse {
+        json: r#"{"result":{"signingId":"s1"},"event":{"type":"signature.prepared","signingId":"s1","field":{"kind":"objectNumber","fieldObjectNumber":5},"origin":{"kind":"local"}}}"#.into(),
+        payloads: vec![vec![0; 32]],
+    };
+    let decoded = decode(&call.decode, response).unwrap();
+    assert_eq!(decoded.value["signingId"], json!("s1"));
+    assert!(decoded.value.get("event").is_none(), "{}", decoded.value);
+    let event = decoded.event.unwrap();
+    assert_eq!(event["type"], json!("signature.prepared"));
+    assert_eq!(event["field"]["fieldObjectNumber"], json!(5));
+
+    let call = translate("d", "signatures.abort", None, &[json!("s1")], 2).unwrap();
+    let json = r#"{"result":{"status":"aborted"},"event":{"type":"signature.aborted","signingId":"s1","origin":{"kind":"local"}}}"#;
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(decoded.value, json!({ "status": "aborted" }));
+    assert_eq!(decoded.event.unwrap()["type"], json!("signature.aborted"));
+
+    // An abort that found nothing parked has no notice.
+    let decoded = decode(&call.decode, answer(r#"{"result":{"status":"unknown"}}"#)).unwrap();
+    assert!(decoded.event.is_none());
 }
 
 #[test]

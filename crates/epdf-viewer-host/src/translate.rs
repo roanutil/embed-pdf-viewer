@@ -65,10 +65,6 @@ pub enum Decode {
     /// that wrote nothing answers a bare result with no `mutationSequence`,
     /// which answers itself with no event.
     FormMutation,
-    /// `forms.applyEffects`: `FormMutation`, with the event the host
-    /// publishes as `form.valueChanged` renamed `form.effectsApplied`, as
-    /// the TypeScript engine publishes it. The batch result has no `field`.
-    FormEffects,
     /// A field edit (`createField`, `updateField`, a widget link):
     /// `FormMutation`, with the bare field the host answers put under
     /// `field` in the result and in the event, where the host spreads it
@@ -210,7 +206,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.list" => ("forms.list", Decode::Result),
         "forms.setValue" => ("forms.setValue", Decode::FormMutation),
         "forms.reset" => ("forms.reset", Decode::FormMutation),
-        "forms.applyEffects" => ("forms.applyEffects", Decode::FormEffects),
+        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::FormMutation),
         "forms.repair" => ("forms.repair", Decode::FormMutation),
@@ -796,8 +792,12 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
         return Err(Error::engine(code, format!("{code}: {message}")));
     }
+    // A notice the host publishes beside a result that is not a
+    // mutation's (`signature.prepared`, `signature.aborted`). A mutation's
+    // event rides inside its result and is taken below.
+    let notice = envelope.get_mut("event").map(Value::take);
     if let Decode::Unit = decode {
-        return Ok(Decoded { value: epdf_kernel::undefined(), event: None });
+        return Ok(Decoded { value: epdf_kernel::undefined(), event: notice });
     }
     let mut result = match envelope.get_mut("result").map(Value::take) {
         Some(Value::Object(result)) => result,
@@ -838,18 +838,12 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
             Value::Object(result)
         }
-        Decode::FormMutation | Decode::FormEffects => {
+        Decode::FormMutation => {
             if !result.contains_key("mutationSequence") {
                 return Ok(Decoded { value: Value::Object(result), event: None });
             }
             let value = take(&mut result, "result")?;
-            let mut event = result.remove("event");
-            if let Some(event) = event.as_mut()
-                && let (Decode::FormEffects, Value::Object(map)) = (decode, event)
-            {
-                map.insert("type".into(), "form.effectsApplied".into());
-            }
-            return Ok(Decoded { value, event });
+            return Ok(Decoded { value, event: result.remove("event") });
         }
         Decode::FormFieldMutation => {
             let field = take(&mut result, "result")?;
@@ -963,5 +957,5 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             Value::Object(result)
         }
     };
-    Ok(Decoded { value, event: None })
+    Ok(Decoded { value, event: notice })
 }
