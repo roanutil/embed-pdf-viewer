@@ -1404,8 +1404,9 @@ impl Host {
                 // `LocalPieceInfoService` publishes nothing: `/PieceInfo` is
                 // private application data, and the event this once sent as
                 // `metadata.updated` carried no `metadata` for the metadata
-                // plugin to read.
-                self.finish_quietly(&key, serde_json::json!({ "pieceInfo": application }))
+                // plugin to read. Nor is there a result: `WorkerHost` answers
+                // `{tag}` alone, and both calls resolve `void`.
+                self.finish_quietly(&key, serde_json::Value::Null)
             }
 
             other => {

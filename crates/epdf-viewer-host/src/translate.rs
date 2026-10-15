@@ -210,7 +210,8 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
         "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
         "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
-        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
+        // `void`, as the TypeScript resolves it, and no event to hand back.
+        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Unit),
         "pages.setName" => ("pages.setName", Decode::PageMutation),
         "pages.removeName" => ("pages.removeName", Decode::PageMutation),
         // Not `PageMutation`: a flatten answers per-page results, each with

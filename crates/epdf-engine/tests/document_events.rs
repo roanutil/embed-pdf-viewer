@@ -182,6 +182,15 @@ fn a_piece_info_write_publishes_nothing() {
     );
     assert!(written.get("event").is_none(), "{written}");
     assert_eq!(written["mutationSequence"], json!(1), "the write is still a mutation");
+    // `pieceInfo.update` and `pieceInfo.clear` resolve `void`.
+    assert_eq!(written["result"], Value::Null, "{written}");
+    assert!(written.as_object().unwrap().contains_key("result"), "{written}");
+
+    let cleared =
+        call(&mut host, json!({ "kind": "pieceInfo.clear", "docId": doc, "application": "Epdf" }));
+    assert!(cleared.get("event").is_none(), "{cleared}");
+    assert_eq!(cleared["mutationSequence"], json!(2), "{cleared}");
+    assert_eq!(cleared["result"], Value::Null, "{cleared}");
 }
 
 #[test]
