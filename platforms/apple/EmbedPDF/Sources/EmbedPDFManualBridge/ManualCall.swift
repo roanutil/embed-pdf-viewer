@@ -74,21 +74,53 @@ func manualCall<T>(
   try await awaitReply(start, read: read)
 }
 
+/// Where a cancellable call is when its task is cancelled. The C call
+/// answers its id only once it returns, and the task can be cancelled
+/// before then (or before it starts, which runs `onCancel` first). Public
+/// only so the benchmark target, which builds in Release without
+/// `@testable`, can test it.
+public enum ManualCallState: Sendable, Equatable {
+  case starting
+  case started(UInt64)
+  case cancelled
+
+  /// The task was cancelled: the id to cancel now, if the call has one.
+  /// Otherwise the call cancels itself once it has.
+  public mutating func cancel() -> UInt64? {
+    if case let .started(id) = self { return id }
+    self = .cancelled
+    return nil
+  }
+
+  /// The call answered `id`: `true` when the task was already cancelled,
+  /// so the caller cancels the call at once.
+  public mutating func start(_ id: UInt64) -> Bool {
+    if self == .cancelled { return true }
+    self = .started(id)
+    return false
+  }
+}
+
 /// `manualCall` for a call that answers a call id: the twin of
-/// `bridgedCancellable`. Cancelling the task cancels the call.
+/// `bridgedCancellable`. Cancelling the task cancels the call, also when
+/// the cancel comes before the call has its id: `epdf_cancel` then runs
+/// right after the call starts, and the kernel thread runs it after the
+/// starting job, as it runs jobs in post order.
 func manualCallCancellable<T>(
   _ start: (UnsafeMutableRawPointer) -> UInt64,
   read: @escaping (UnsafeRawPointer?) -> T
 ) async throws(ManualError) -> T {
-  let callID = OSAllocatedUnfairLock<UInt64?>(initialState: nil)
+  let state = OSAllocatedUnfairLock(initialState: ManualCallState.starting)
   do {
     return try await withTaskCancellationHandler {
       try await awaitReply({ ctx in
         let id = start(ctx)
-        callID.withLock { $0 = id }
+        if state.withLock({ $0.start(id) }) {
+          epdf_cancel(id)
+        }
       }, read: read)
     } onCancel: {
-      if let id = callID.withLock({ $0 }) {
+      if let id = state.withLock({ $0.cancel() }) {
         epdf_cancel(id)
       }
     }
