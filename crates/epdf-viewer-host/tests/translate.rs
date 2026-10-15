@@ -324,7 +324,7 @@ fn every_routed_path_is_listed() {
         "pages.extract",
         // Form's import (bytes) and widget links (a widget ref), covered by
         // `an_import_sends_its_bytes_as_a_payload` and
-        // `a_widget_link_sends_the_widgets_object_number`.
+        // `a_widget_link_sends_the_widgets_annotation_ref`.
         "forms.importData",
         "forms.attachWidget",
         "forms.detachWidget",
@@ -871,7 +871,7 @@ fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
 }
 
 #[test]
-fn a_widget_link_sends_the_widgets_object_number() {
+fn a_widget_link_sends_the_widgets_annotation_ref() {
     let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9.0,
         "page": { "kind": "objectNumber", "pageObjectNumber": 2 } });
     let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
@@ -881,8 +881,8 @@ fn a_widget_link_sends_the_widgets_object_number() {
         let call = translate("d1", path, None, &[field.clone(), widget.clone()], 27).unwrap();
         assert_eq!(
             call.request,
-            json!({ "kind": kind, "jobId": 27, "docId": "d1",
-            "ref": field, "widget": 9 })
+            json!({ "kind": kind, "jobId": 27, "docId": "d1", "ref": field,
+            "widget": { "kind": "objectNumber", "annotObjectNumber": 9, "page": page_ref(2) } })
         );
     }
 }
@@ -917,8 +917,8 @@ fn a_field_edit_answers_its_field_under_field_as_the_kernel_reads_it() {
     for path in
         ["forms.createField", "forms.updateField", "forms.attachWidget", "forms.detachWidget"]
     {
-        let call = translate("d1", path, None, &[json!({}), json!({ "annotObjectNumber": 9 })], 30)
-            .unwrap();
+        let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9, "page": page_ref(2) });
+        let call = translate("d1", path, None, &[json!({}), widget], 30).unwrap();
         let field = r#""ref":{"kind":"objectNumber","fieldObjectNumber":4},"name":"a","widgets":[{"ref":{"kind":"objectNumber","annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}}]"#;
         let json = format!(
             r#"{{"result":{{"result":{{{field}}},"mutationSequence":3,"event":{{"type":"form.fieldCreated","origin":{{"kind":"local"}},{field}}}}}}}"#

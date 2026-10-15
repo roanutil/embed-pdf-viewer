@@ -964,7 +964,7 @@ impl Host {
             }
             "forms.attachWidget" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let widget: u32 = field(body, "widget")?;
+                let widget = widget_field(body)?;
                 let on_state: Option<String> = optional(body, "onState")?;
                 let result = {
                     let d = self.document(&key)?;
@@ -983,7 +983,7 @@ impl Host {
             }
             "forms.detachWidget" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let widget: u32 = field(body, "widget")?;
+                let widget = widget_field(body)?;
                 let result = {
                     let d = self.document(&key)?;
                     f::forms::field::detach_widget(d, &reference, widget, cancel)?
@@ -1753,6 +1753,19 @@ fn pages_field(
     list.iter()
         .map(|page| Ok(crate::identity::PageRef::from_value(page, "pages")?.object_number()))
         .collect()
+}
+
+/// The widget a field link names: its `AnnotationRef`, which must be by
+/// object number (`FormMutator.widgetObjectNumber`). A name or an index
+/// cannot join a field, because the field tree holds widgets by reference.
+fn widget_field(body: &serde_json::Value) -> Result<u32, EngineError> {
+    match field(body, "widget")? {
+        crate::identity::AnnotationRef::ObjectNumber { annot, .. } => Ok(annot),
+        _ => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "widget must be addressed by object number",
+        )),
+    }
 }
 
 /// The name-tree key an embedded-file reference names.

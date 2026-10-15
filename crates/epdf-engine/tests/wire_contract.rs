@@ -98,7 +98,9 @@ fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
 /// would have read it.
 fn placeholder(name: &str) -> serde_json::Value {
     match name {
-        "widget" | "toIndex" | "destIndex" | "pageIndex" | "count" => serde_json::json!(1),
+        "toIndex" | "destIndex" | "pageIndex" | "count" => serde_json::json!(1),
+        "widget" => serde_json::json!({ "kind": "objectNumber", "page": page_ref(1),
+            "annotObjectNumber": 1 }),
         "page" => page_ref(1),
         "pages" => serde_json::json!([page_ref(1)]),
         "refs" => serde_json::json!([{ "kind": "index", "page": page_ref(1), "index": 0,
@@ -291,4 +293,24 @@ fn a_ref_to_no_page_is_not_found() {
     let missing =
         send(&mut host, serde_json::json!({ "kind": "pages.geometry", "page": page_ref(999_999) }));
     assert_eq!(missing["error"]["code"], format!("{:?}", EngineErrorCode::NotFound), "{missing}");
+}
+
+#[test]
+fn a_widget_link_names_its_widget_by_annotation_ref() {
+    // `forms.attachWidget` and `forms.detachWidget` take the widget's
+    // `AnnotationRef` (`40c96e5ab`). A bare number is the old wire, and a
+    // name or an index cannot join a field, as `FormMutator` refuses them.
+    let mut host = open();
+    let field = serde_json::json!({ "kind": "objectNumber", "fieldObjectNumber": 1 });
+    let bare = send(
+        &mut host,
+        serde_json::json!({ "kind": "forms.detachWidget", "ref": field, "widget": 9 }),
+    );
+    assert_eq!(bare["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat), "{bare}");
+    let by_name = send(
+        &mut host,
+        serde_json::json!({ "kind": "forms.detachWidget", "ref": field,
+            "widget": { "kind": "nm", "page": page_ref(1), "nm": "w" } }),
+    );
+    assert_eq!(by_name["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{by_name}");
 }

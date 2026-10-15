@@ -332,14 +332,14 @@ pub fn translate(
             vec![("ref", wire_field_ref(path, arg(0))?), ("patch", arg(1))]
         }
         "forms.attachWidget" | "forms.detachWidget" => {
+            // The widget's `AnnotationRef`, as `FormMutator` takes it; the
+            // engine refuses one that is not by object number.
             let widget = arg(1);
+            let on_state = widget.get("onState").cloned().unwrap_or(Value::Null);
             vec![
                 ("ref", wire_field_ref(path, arg(0))?),
-                (
-                    "widget",
-                    whole(path, "widget", widget.get("annotObjectNumber").unwrap_or(&Value::Null))?,
-                ),
-                ("onState", widget.get("onState").cloned().unwrap_or(Value::Null)),
+                ("widget", wire_ref(path, without(widget, "onState"))?),
+                ("onState", on_state),
             ]
         }
         "pieceInfo.read" if path == "page.pieceInfo.read" => {
