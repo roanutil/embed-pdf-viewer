@@ -314,17 +314,27 @@ impl Host {
                     &options,
                     &cancel,
                 )?;
-                if header.kind == "document.renderPageFile" {
-                    return Ok(raster_response(rendered.raster));
-                }
-                let encode: crate::features::server::RenderEncode = field(&body, "encode")?;
-                let encoded = crate::features::server::encode_raster(
-                    self.encoder.as_deref(),
-                    &rendered.raster,
-                    &encode,
-                    &cancel,
-                )?;
-                return Ok(encoded_response(encoded));
+                // The rendered index's durable identity and the file's page
+                // count ride beside the image, as `WorkerHost` answers them:
+                // a caller that asked for page zero by index learns which
+                // page that was.
+                let page = crate::identity::PageRef::new(rendered.page_object_number);
+                let page_count = rendered.page_count;
+                let (mut answer, payload) = if header.kind == "document.renderPageFile" {
+                    (raster_json(&rendered.raster), rendered.raster.rgba)
+                } else {
+                    let encode: crate::features::server::RenderEncode = field(&body, "encode")?;
+                    let encoded = crate::features::server::encode_raster(
+                        self.encoder.as_deref(),
+                        &rendered.raster,
+                        &encode,
+                        &cancel,
+                    )?;
+                    (encoded_json(&encoded), encoded.bytes)
+                };
+                answer["page"] = value(&page)?;
+                answer["pageCount"] = page_count.into();
+                return Ok(HostResponse { json: envelope(answer), payloads: vec![payload] });
             }
             // `WorkerHost.handleSignaturesFinalizeCandidate`: session-less,
             // like `document.renderPageFile`. The candidate file is the
@@ -1544,27 +1554,31 @@ struct WireAttachmentFile {
 /// scale is megabytes, and the transfer list on the other side exists for
 /// exactly this.
 fn raster_response(raster: crate::features::render::raster::PageRaster) -> HostResponse {
-    HostResponse {
-        json: envelope(serde_json::json!({
-            "width": raster.width,
-            "height": raster.height,
-            "stride": raster.stride,
-        })),
-        payloads: vec![raster.rgba],
-    }
+    HostResponse { json: envelope(raster_json(&raster)), payloads: vec![raster.rgba] }
+}
+
+/// What a raster's JSON says about the pixels in its payload.
+fn raster_json(raster: &crate::features::render::raster::PageRaster) -> serde_json::Value {
+    serde_json::json!({
+        "width": raster.width,
+        "height": raster.height,
+        "stride": raster.stride,
+    })
 }
 
 /// A response whose result is an encoded image.
 fn encoded_response(encoded: crate::features::server::EncodedImage) -> HostResponse {
-    HostResponse {
-        json: envelope(serde_json::json!({
-            "mimeType": encoded.content_type,
-            "width": encoded.width,
-            "height": encoded.height,
-            "size": encoded.bytes.len(),
-        })),
-        payloads: vec![encoded.bytes],
-    }
+    HostResponse { json: envelope(encoded_json(&encoded)), payloads: vec![encoded.bytes] }
+}
+
+/// What an encoded image's JSON says about the bytes in its payload.
+fn encoded_json(encoded: &crate::features::server::EncodedImage) -> serde_json::Value {
+    serde_json::json!({
+        "mimeType": encoded.content_type,
+        "width": encoded.width,
+        "height": encoded.height,
+        "size": encoded.bytes.len(),
+    })
 }
 
 /// A response carrying one decoded embedded file.

@@ -314,3 +314,25 @@ fn a_widget_link_names_its_widget_by_annotation_ref() {
     );
     assert_eq!(by_name["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{by_name}");
 }
+
+#[test]
+fn a_file_render_names_the_page_it_rendered() {
+    // `document.renderPageFile` addresses a page by INDEX, because there is
+    // no session to have listed it, and answers the `page: PageRef` that
+    // index turned out to be, beside the file's page count.
+    let mut host = Host::new();
+    let path = test_support::workspace_root().join(FIXTURE);
+    let response = host.call(
+        &serde_json::json!({ "kind": "document.renderPageFile", "jobId": "job-3",
+            "path": path, "password": "", "pageIndex": 0,
+            "options": { "scale": 0.1 } })
+        .to_string(),
+        Vec::new(),
+    );
+    let body: serde_json::Value = serde_json::from_str(&response.json).expect("the response");
+    assert!(body.get("error").is_none(), "{body}");
+    assert_eq!(body["result"]["page"]["kind"], "objectNumber", "{body}");
+    assert!(body["result"]["page"]["pageObjectNumber"].as_u64().is_some_and(|n| n > 0), "{body}");
+    assert!(body["result"]["pageCount"].as_u64().is_some_and(|n| n > 0), "{body}");
+    assert_eq!(response.payloads.len(), 1, "the pixels ride as the payload");
+}
