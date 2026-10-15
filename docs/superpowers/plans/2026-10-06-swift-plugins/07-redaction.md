@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` (this plan's row, cross-plan names, template, definition of done) and `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.0 and §A.3, Appendix C). Read both.
 
+Note (2026-10-15): `3baec217b` deleted `nest_refs` and `flatten_refs` once the Rust worker wire spoke `PageRef`; `redaction.apply` sends its scope's refs whole and unflattened. `a_pages_scope_goes_out_as_object_numbers` is now `a_pages_scope_goes_out_as_whole_page_refs`, and `an_annotations_scope_goes_out_with_flat_refs` (committed as `an_annotations_scope_goes_out_with_flat_whole_refs`) is now `an_annotations_scope_goes_out_with_whole_refs`.
+
 ## Global Constraints
 
 Everything in the umbrella's Global Constraints applies. The ones this plugin hits hardest:
@@ -80,7 +82,7 @@ git worktree add .claude/worktrees/swift-redaction -b research/swift-redaction r
 cd .claude/worktrees/swift-redaction
 ```
 
-Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plan 05 has merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` prints a line.
+Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plan 05 has merged: `rg -n '"page.annotations.create"' crates/epdf-viewer-host/src/translate.rs` prints a line. (This step first checked `pub fn nest_refs`, which `3baec217b` deleted.)
 
 - [x] **Step 2: Add the feature and the lifetime**
 

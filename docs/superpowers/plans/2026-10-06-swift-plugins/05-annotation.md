@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` (this plan's row, cross-plan names, shared records, template, definition of done) and `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.0 and §A.3, Appendix C). Read both.
 
+Note (2026-10-15): `3baec217b` deleted the `nest_refs` and `flatten_refs` rewrites this plan consumes, once the Rust worker wire spoke `PageRef`. `refs_are_nested_on_the_way_in_and_flattened_on_the_way_out` is now `a_ref_goes_out_nested_as_the_kernel_holds_it`, and `list_raw_all_answers_nested_refs` was removed with the rewrite it pinned.
+
 ## Global Constraints
 
 Everything in the umbrella's Global Constraints applies. The ones this plugin hits hardest:

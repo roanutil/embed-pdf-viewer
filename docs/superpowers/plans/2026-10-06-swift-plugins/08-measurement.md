@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` (the shared contract), `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.0 and §A.3, Appendix C), and the TypeScript this plan ports: `packages/engine/services/src/features/measure/` and the wire kinds at `packages/engine/core/src/wire/worker-protocol.ts:882-897`.
 
+Note (2026-10-15): two tests landed under other names. `an_acrobat_viewport_reads_with_its_measure` is `a_foreign_viewport_reads_with_its_measure` in `crates/pdfium/tests/measure.rs`, and `viewports_read_the_acrobat_scale_as_foreign` is `viewports_read_another_producers_scale_as_not_owned` in `crates/epdf-engine/tests/measure.rs`.
+
 ## Global Constraints
 
 Everything under "Global Constraints" in `00-umbrella.md` applies. The ones this plan is most likely to break:

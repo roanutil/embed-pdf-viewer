@@ -210,6 +210,10 @@ promise during thread-local teardown, after the runtime it reaches is gone: the 
 `bound::drop_all` fixed for the `KernelBound` slab in `f4a9a0844`. The table needs the same drain,
 in the same place, before the thread exits.
 
+Update (2026-10-15): `9b1a52698` added that drain. The first parked abort registers an
+`epdf_ffi::at_teardown` hook that empties `ABORTS` while the kernel thread's locals are alive
+(`crates/epdf-manual-bridge/src/lib.rs:190-201`), so this no longer blocks a hand-written path.
+
 ## Running it again
 
 Build the experimental XCFramework, then run only the benchmarks, in Release:

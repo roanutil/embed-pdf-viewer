@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` and the plan it argues from, `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Decisions, Appendix A §A.0 and §A.4, Appendix C). The plugin's own contract is `packages/plugin/page-edit/src/contract.ts`.
 
+Note (2026-10-15): `3baec217b` moved the Rust worker wire to `PageRef`, so the host sends each layout page with its `ref` and nothing adds it on the way back. `a_page_mutation_gives_every_layout_page_its_ref` is now `a_page_mutation_answers_every_layout_page_by_its_ref`.
+
 ## Global Constraints
 
 Every constraint in the umbrella's Global Constraints applies. The ones this plan meets head on:

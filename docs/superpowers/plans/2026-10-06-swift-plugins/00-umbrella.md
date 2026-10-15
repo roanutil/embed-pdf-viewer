@@ -48,6 +48,8 @@ Every constraint in `2026-10-01-swift-package.md` § Global Constraints applies 
 
 Requires and optional come from each crate's `src/lib.rs` (`.requires(...)`, `.optional(...)`). The kernel sorts plugins itself (`crates/epdf-kernel/src/plan.rs`), so `Session::build` push order doesn't matter. It does reject a config that enables a plugin without what it requires, so a plan can't ship its host step before its required plugins' host steps exist.
 
+Note (2026-10-15): `nest_refs` and `flatten_refs` (rows 04 and 06) are gone. `3baec217b` moved the Rust worker wire to `PageRef`, as `9f13cea3c` had moved the TypeScript one, so the host and the kernel spell a page and an annotation ref the same way and `translate.rs` no longer rewrites them in either direction.
+
 ## Waves
 
 A plan can start once every plan it requires has merged into the integration branch. Optional dependencies don't gate: a plan exercises an optional integration only if that plugin has already merged, and otherwise leaves a test for the later plan to add (the later plan owns it; see each plan's "Cross-plugin tests" section).
@@ -91,7 +93,7 @@ Every plan edits these. Edits are additive, one block per plugin, in plan-number
 | `crates/epdf-engine/tests/common/mod.rs` | helpers the plan's engine tests share (08, 09, 16) |
 | `crates/test-support/src/lib.rs` | one fixture constant, when a Rust test reads a fixture more than once |
 | `platforms/apple/build-xcframework.sh` | one line per fixture in `FIXTURES` (Task 0f), repo-relative, globs allowed. `Tests/*/Fixtures/` is ignored, so a file copied there by hand is never committed |
-| `platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift` | a plugin accessor lives in the plugin's own file as an `extension PDFViewer`; edit `PDFViewer.swift` itself only to add viewer-wide state (16 adds `setSigner(_:)` and `setTrust(_:)`) |
+| `platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift` | a plugin accessor lives in the plugin's own file as an `extension PDFViewer`; edit `PDFViewer.swift` itself only to add viewer-wide state (`save(_:mode:)`, say). Plan 16 planned `setSigner(_:)` and `setTrust(_:)` there; they shipped in `Plugins/Signature.swift`'s `extension PDFViewer`, beside the capability they serve |
 | `.github/workflows/plugin-rust.yml` | one line in the `uniffi` test list (Task 0 makes it a list) |
 | `platforms/apple/README.md` | one row in the plugin table (Task 0 adds the table) |
 

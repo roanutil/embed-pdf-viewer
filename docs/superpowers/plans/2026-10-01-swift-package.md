@@ -36,7 +36,7 @@ Happy-path tests don't exercise these five inputs. Each one has a test in the ta
 2. An event stream the consumer stops iterating. People expect the Rust listener to unsubscribe, not leak. Pinned in Task 1 (`cancelling_a_subscription_unsubscribes_on_the_kernel_thread`) and Task 6 (`droppingTheStreamUnsubscribes`).
 3. A document closed while Swift still holds a capability for it. People expect a typed error with code `instance-closed` on the next call, not a crash. Pinned in Task 6 (`aClosedDocumentsCapabilityThrows`).
 4. `ViewerHost` dropped without `destroy()`. People expect both threads to exit and PDFium to be released. Pinned in Task 3 (`dropping_the_host_joins_both_threads`).
-5. An encrypted PDF opened without a password. People expect a typed error they can prompt on (`DocPasswordRequired`), as the existing engine smoke test shows. Pinned in Task 3 (`a_locked_document_reports_that_it_needs_a_password`) and Task 5.
+5. An encrypted PDF opened without a password. People expect a typed error they can prompt on (`DocPasswordRequired`), as the existing engine smoke test shows. Pinned in Task 3 (`a_locked_document_reports_that_it_needs_a_password`) and Task 5. Note (2026-10-15): `a4ed2b228` changed this. An open without a password now succeeds with a `.locked` tab that `unlock` opens, as the TypeScript viewer does, and the test is `a_locked_document_opens_as_a_locked_tab`.
 
 ---
 

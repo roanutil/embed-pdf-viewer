@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`, `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.5, Appendix B row B4, Appendix C row `signatures.*`), the TypeScript wire at `packages/engine/core/src/wire/worker-protocol.ts:160-262` and `:513-522`, the DTOs at `packages/engine/core/src/signature/types.ts`, the verdict shape at `packages/core/signature/src/verdict.ts:12-47`, and `packages/engine/main/src/document/LocalDocumentSecurityService.ts` for security.
 
+Note (2026-10-15): three names changed as this plan landed. `SignatureHandle::status` answers the shared `ResourceStatus`, not a `SignatureStatus`, and a failed Keychain signing throws `operation-failed`, not `signing-failed` (`KeychainSigner.swift`). `a_field_mdp_lock_forbids_a_locked_field_change` landed as `a_field_mdp_lock_is_listed`, and `completing_after_the_document_moved_is_a_conflict` as `completing_after_the_document_moved_is_a_version_mismatch`. The locked-open test this plan says to change is now `a_locked_document_opens_as_a_locked_tab` (`a4ed2b228`).
+
 ## Global Constraints
 
 Everything under "Global Constraints" in `00-umbrella.md` applies. The ones this plan is most likely to break:

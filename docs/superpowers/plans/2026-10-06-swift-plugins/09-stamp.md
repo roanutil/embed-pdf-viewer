@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`, `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.0 and §A.3 "stamp"), and the TypeScript wire for the kinds this plan adds: `packages/engine/core/src/wire/worker-protocol.ts:650-657` (`pages.renderEncoded`), `:728-746` (`pages.setName`, `pages.removeName`), `:900-917` (`pieceInfo.*`), and `packages/engine/services/src/features/pages/PagesMutator.ts:254-300`.
 
+Note (2026-10-15): `creating_a_library_without_canonical_services_says_so` landed as `a_library_the_engine_cannot_open_fails_with_a_typed_error`, which asserts a `ViewerError::Kernel` rather than `NotImplemented`: the fake engine opens no documents, so creating the library's blank PDF fails first. `1959cedc0` renamed `persist_returns_a_stoppable_object` to `persist_returns_a_registration_that_unregisters_once` when `persist` started answering a `Registration`.
+
 ## Global Constraints
 
 Everything under "Global Constraints" in `00-umbrella.md` applies. The ones this plan is most likely to break:

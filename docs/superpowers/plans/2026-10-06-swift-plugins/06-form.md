@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` (this plan's row, cross-plan names, shared records, template, definition of done) and `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Appendix A §A.0 and §A.3, Appendix C). Read both.
 
+Note (2026-10-15): `3baec217b` deleted `nest_refs` and `flatten_refs` once the Rust worker wire spoke `PageRef`, so the form paths pass widgets and placements through as the kernel spells them. `a_form_list_gives_each_widget_its_ref_and_page` is now `a_form_list_answers_each_widget_with_its_ref_and_page`, and `a_widget_placement_goes_out_with_its_object_number` is now `a_widget_placement_goes_out_with_a_whole_page_ref`. Task 3's `dump_form_shapes` was a by-hand probe and was never committed; `dump_annotation_shapes` is in `crates/epdf-viewer-host/tests/translate.rs`.
+
 ## Global Constraints
 
 Everything in the umbrella's Global Constraints applies. The ones this plugin hits hardest:
@@ -86,7 +88,7 @@ git worktree add .claude/worktrees/swift-form -b research/swift-form research/sw
 cd .claude/worktrees/swift-form
 ```
 
-Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 05 have merged: `rg -n 'pub fn nest_refs' crates/epdf-viewer-host/src/translate.rs` and `rg -n 'interaction' crates/epdf-viewer-host/src/api.rs` both print a line.
+Fetch PDFium for `darwin-arm64`, `ios-arm64` and `ios-sim-arm64` as `platforms/apple/README.md` describes. Confirm plans 01 and 05 have merged: `rg -n '"page.annotations.create"' crates/epdf-viewer-host/src/translate.rs` and `rg -n 'interaction' crates/epdf-viewer-host/src/api.rs` both print a line. (This step first checked `pub fn nest_refs`, which `3baec217b` deleted.)
 
 - [x] **Step 2: Write the failing test**
 

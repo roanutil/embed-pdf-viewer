@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` and `docs/superpowers/plans/2026-10-01-swift-package.md` (Global Constraints, Decisions, Appendix A §A.0 and §A.2, Appendix C). Plans 01 (`01-interaction.md`, required by link) and 02 (`02-stage.md`, whose `StageRevealOptions` link's resolution carries) must be merged first.
 
+Note (2026-10-15): `3baec217b` moved the Rust worker wire to `PageRef`, so the host now spells refs as the kernel does. It deleted `nest_refs` and `flatten_refs`, and `page.annotations.list` decodes as a plain `Decode::Result`. Task 2's `a_listed_annotations_ref_and_page_arrive_nested` is now `a_listed_snapshot_arrives_as_the_host_sent_it`; `a_form_field_ref_is_not_mistaken_for_an_annotation_ref` was removed, since nothing rewrites refs any more.
+
 ## Global Constraints
 
 Everything in the umbrella's Global Constraints applies. The ones this plan meets first:
