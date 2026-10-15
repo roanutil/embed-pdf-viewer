@@ -112,6 +112,53 @@ fn opening_and_closing_are_observed() {
     assert!(seen.contains("Closed"), "{seen}");
 }
 
+/// Every document event, as sent.
+#[derive(Default)]
+struct Recorded(Mutex<Vec<DocumentEvent>>);
+impl DocumentEventListener for Recorded {
+    fn on_event(&self, event: DocumentEvent) {
+        self.0.lock().unwrap().push(event);
+    }
+}
+
+#[test]
+fn a_failed_open_announces_the_tabs_error_with_its_code() {
+    let host = started();
+    let events = Arc::new(Recorded::default());
+    let _subscription = host.subscribe_documents(events.clone());
+    let options = OpenDocumentOptions { password: Some("nope".into()), ..options() };
+    let _ = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options))
+        .unwrap_err();
+    let tab = block_on(host.documents()).unwrap().remove(0);
+    let failed = events.0.lock().unwrap().iter().find_map(|event| match event {
+        DocumentEvent::OpenFailed { document_id, error } => {
+            Some((document_id.clone(), error.clone()))
+        }
+        _ => None,
+    });
+    let (document_id, error) = failed.expect("no OpenFailed event");
+    assert_eq!(document_id, tab.id);
+    assert_eq!(Some(&error), tab.error.as_ref());
+    assert_eq!(error.code, "permission-denied", "{error:?}");
+    assert_eq!(error.capability, "documents");
+    assert!(error.message.starts_with("DocPasswordIncorrect"), "{error:?}");
+}
+
+#[test]
+fn a_locked_open_says_whether_a_password_was_given() {
+    let host = started();
+    let events = Arc::new(Recorded::default());
+    let _subscription = host.subscribe_documents(events.clone());
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
+            .unwrap();
+    let locked = events.0.lock().unwrap().clone();
+    assert!(
+        locked.contains(&DocumentEvent::Locked { document_id: doc.id, password_provided: false }),
+        "{locked:?}"
+    );
+}
+
 #[test]
 fn a_call_after_shutdown_is_closed() {
     let host = started();

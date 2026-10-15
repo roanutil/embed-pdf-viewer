@@ -1253,7 +1253,7 @@ git commit -m "Run the kernel's engine over PDFium in epdf-viewer-host"
   #[derive(uniffi::Record)] pub struct OpenDocumentOptions { #[uniffi(default = None)] pub name: Option<String>, #[uniffi(default = None)] pub password: Option<String>, #[uniffi(default = true)] pub activate: bool }
   #[derive(uniffi::Record)] pub struct DocumentInfo { pub id: String, pub name: Option<String>, pub page_count: u32 }
   #[derive(uniffi::Record)] pub struct PageInfo { pub page: epdf_ffi::PageRef, pub index: u32, pub width: f64, pub height: f64, pub rotation: u32 }
-  #[derive(uniffi::Enum)] pub enum DocumentEvent { Opened { document: DocumentInfo }, OpenFailed { document_id: String, error: String }, Locked { document_id: String }, Closed { document_id: String }, ActiveChanged { document_id: Option<String> }, PagesChanged { document_id: String } }
+  #[derive(uniffi::Enum)] pub enum DocumentEvent { Opened { document: DocumentInfo }, OpenFailed { document_id: String, error: epdf_ffi::PluginErrorInfo }, Locked { document_id: String, password_provided: bool }, Closed { document_id: String }, ActiveChanged { document_id: Option<String> }, PagesChanged { document_id: String } }
   #[uniffi::export(with_foreign)] pub trait DocumentEventListener: Send + Sync { fn on_event(&self, event: DocumentEvent); }
   #[uniffi::export(with_foreign)] pub trait ViewerDelegate: Send + Sync { fn state_changed(&self, revision: u64); fn report(&self, error: epdf_ffi::ViewerError); }
   #[derive(uniffi::Object)] pub struct ViewerHost;

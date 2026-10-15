@@ -33,6 +33,32 @@ extension BaseSuite {
       expectNoDifference(documents.first?.error?.message.hasPrefix("DocPasswordIncorrect"), true)
     }
 
+    @Test func aFailedOpenAnnouncesTheTabsErrorWithItsCode() async throws {
+      let viewer = try await started()
+      let events = viewer.documentEvents
+      _ = try? await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
+      let tab = try #require(try await viewer.documents().first)
+      for await event in events {
+        guard case let .openFailed(documentId, error) = event else { continue }
+        expectNoDifference(documentId, tab.id)
+        expectNoDifference(error, tab.error)
+        expectNoDifference(error.code, "permission-denied")
+        break
+      }
+    }
+
+    @Test func aLockedOpenSaysNoPasswordWasGiven() async throws {
+      let viewer = try await started()
+      let events = viewer.documentEvents
+      let document = try await viewer.open(Fixture.data("encrypted-hello"))
+      for await event in events {
+        guard case let .locked(documentId, passwordProvided) = event else { continue }
+        expectNoDifference(documentId, document.id)
+        expectNoDifference(passwordProvided, false)
+        break
+      }
+    }
+
     @Test func openingAndClosingAreObserved() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents

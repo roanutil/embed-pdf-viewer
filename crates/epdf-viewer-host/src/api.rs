@@ -156,11 +156,16 @@ impl From<DocStatus> for DocumentStatus {
     }
 }
 
+/// `OpenFailed.error` is the kernel's `toPluginError` of the failure, the
+/// same record the failed tab's `DocumentInfo.error` holds.
+/// `Locked.password_provided` says whether the open carried a password:
+/// false means the document wants one, true that the one given did not
+/// unlock it.
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum DocumentEvent {
     Opened { document: DocumentInfo },
-    OpenFailed { document_id: String, error: String },
-    Locked { document_id: String },
+    OpenFailed { document_id: String, error: PluginErrorInfo },
+    Locked { document_id: String, password_provided: bool },
     Closed { document_id: String },
     ActiveChanged { document_id: Option<String> },
     PagesChanged { document_id: String },
@@ -229,18 +234,29 @@ impl Lifecycle {
                 DocumentEvent::Opened { document: info.into() }
             }
             // `{documentId, error: {code, message, capability}}`
-            Lifecycle::OpenFailed => DocumentEvent::OpenFailed {
+            Lifecycle::OpenFailed => {
+                let error = payload.get("error").ok_or_else(|| {
+                    malformed(format!("an open failure without \"error\": {payload}"))
+                })?;
+                DocumentEvent::OpenFailed {
+                    document_id: id()?,
+                    error: PluginErrorInfo {
+                        code: string(error, "code", "an open failure")?,
+                        message: string(error, "message", "an open failure")?,
+                        capability: string(error, "capability", "an open failure")?,
+                    },
+                }
+            }
+            // `{documentId, passwordProvided}`
+            Lifecycle::Locked => DocumentEvent::Locked {
                 document_id: id()?,
-                error: payload
-                    .get("error")
-                    .map(|error| string(error, "message", "an open failure"))
-                    .transpose()?
+                password_provided: payload
+                    .get("passwordProvided")
+                    .and_then(Value::as_bool)
                     .ok_or_else(|| {
-                        malformed(format!("an open failure without \"error\": {payload}"))
+                        malformed(format!("a locked event without \"passwordProvided\": {payload}"))
                     })?,
             },
-            // `{documentId, passwordProvided}`
-            Lifecycle::Locked => DocumentEvent::Locked { document_id: id()? },
             // `{documentId}`
             Lifecycle::Closed => DocumentEvent::Closed { document_id: id()? },
             // `{documentId: string | null, previousDocumentId}`
