@@ -151,6 +151,17 @@ extension BaseSuite {
       }
     }
 
+    @Test(arguments: [-1..<3, 0..<(Int(UInt32.max) + 1)])
+    func aTextSelectionOutsideUInt32ThrowsInsteadOfTrapping(range: Range<Int>) async throws {
+      let (_, _, annotations) = try await opened()
+      let ref = try #require(try await annotations.list().first).annotationRef
+      await #expect {
+        try await annotations.drafts.setTextSelection(range, in: ref)
+      } throws: { error in
+        (error as? PDFError)?.code == "invalid-input"
+      }
+    }
+
     @Test func droppingTheStreamUnsubscribes() async throws {
       let (_, _, annotations) = try await opened()
       let task = Task { for await _ in annotations.events {} }

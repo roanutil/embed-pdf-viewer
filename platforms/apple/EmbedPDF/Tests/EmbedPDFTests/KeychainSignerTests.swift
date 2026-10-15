@@ -43,5 +43,39 @@ extension BaseSuite {
     @Test func aMalformedSignatureIsRefused() {
       #expect(throws: KeychainSignerError.self) { try KeychainSigner.rawECDSA(der: Data([0x30, 0x05, 0x02]), fieldSize: 32) }
     }
+
+    /// Long-form lengths that once trapped in `prefix`: eight length bytes
+    /// shift into a negative `Int`, and `0x80` is BER's indefinite length.
+    @Test(arguments: [
+      [0x30, 0x88, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff],
+      [0x30, 0xff] + [UInt8](repeating: 0xff, count: 127),
+      [0x30, 0x84, 0xff, 0xff, 0xff, 0xff, 0x02],
+      [0x30, 0x80, 0x02, 0x01, 0x01],
+      [0x30, 0x03, 0x02, 0x88, 0x80],
+    ] as [[UInt8]])
+    func aMalformedDERLengthThrowsInsteadOfTrapping(der: [UInt8]) {
+      #expect(throws: KeychainSignerError.badSignature) {
+        try KeychainSigner.rawECDSA(der: Data(der), fieldSize: 32)
+      }
+    }
+
+    @Test func aMalformedPKCS8KeyIsUnreadable() {
+      let body = Data([0x30, 0x88, 0x80, 0, 0, 0, 0, 0, 0, 0]).base64EncodedString()
+      let pem = "-----BEGIN PRIVATE KEY-----\n\(body)\n-----END PRIVATE KEY-----"
+      #expect(throws: KeychainSignerError.unreadableKey) { try KeychainSigner.privateKey(pkcs8PEM: pem) }
+    }
+
+    @Test(arguments: ["not base64 at all!", Data("not a certificate".utf8).base64EncodedString()])
+    func aBadAnchorIsAnUnreadableCertificate(body: String) {
+      let pem = "-----BEGIN CERTIFICATE-----\n\(body)\n-----END CERTIFICATE-----"
+      #expect(throws: KeychainSignerError.unreadableCertificate) { try TrustAnchors(pem: [pem]) }
+      #expect(throws: KeychainSignerError.unreadableCertificate) { try KeychainSigner.certificate(pem: pem) }
+    }
+
+    @Test func aCertificatePEMIsAnAnchor() throws {
+      let anchors = try TrustAnchors(pem: [Fixture.text("TEST-ONLY-signer", ext: "pem")])
+      expectNoDifference(anchors.certificates.count, 1)
+      expectNoDifference(anchors.certificates.first?.first, 0x30)
+    }
   }
 }

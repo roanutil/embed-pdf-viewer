@@ -73,7 +73,7 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
   /// X9.62 `SEQUENCE { INTEGER r, INTEGER s }` to `r || s`, each left-padded
   /// to `fieldSize` bytes, which is what `epdf-signature-core` expects.
   static func rawECDSA(der: Data, fieldSize: Int) throws -> Data {
-    var outer = DERReader(der)
+    var outer = DERReader(der, malformed: .badSignature)
     var sequence = try outer.take(0x30)
     let r = try sequence.take(0x02).bytes.drop { $0 == 0 }
     let s = try sequence.take(0x02).bytes.drop { $0 == 0 }
@@ -103,21 +103,23 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
 
   /// A certificate from a PEM (`-----BEGIN CERTIFICATE-----`).
   public static func certificate(pem: String) throws -> SecCertificate {
-    guard let certificate = SecCertificateCreateWithData(nil, try pemBody(pem) as CFData) else {
+    guard let certificate = SecCertificateCreateWithData(nil, try pemBody(pem, else: .unreadableCertificate) as CFData)
+    else {
       throw KeychainSignerError.unreadableCertificate
     }
     return certificate
   }
 
-  static func pemBody(_ pem: String) throws -> Data {
+  /// The base64 body of a PEM; `failure` when it isn't base64.
+  static func pemBody(_ pem: String, else failure: KeychainSignerError = .unreadableKey) throws -> Data {
     let body = pem.split(whereSeparator: \.isNewline).filter { !$0.hasPrefix("-----") }.joined()
-    guard let data = Data(base64Encoded: body) else { throw KeychainSignerError.unreadableKey }
+    guard let data = Data(base64Encoded: body) else { throw failure }
     return data
   }
 
   /// `PrivateKeyInfo { version, algorithm, OCTET STRING privateKey }`.
   static func unwrapPKCS8(_ der: Data) throws -> Data {
-    var outer = DERReader(der)
+    var outer = DERReader(der, malformed: .unreadableKey)
     var info = try outer.take(0x30)
     _ = try info.take(0x02)
     _ = try info.take(0x30)
@@ -133,24 +135,39 @@ public enum KeychainSignerError: Error, Sendable {
 /// key container uses.
 struct DERReader {
   var bytes: ArraySlice<UInt8>
+  /// What a malformed element throws: `badSignature` for a signature,
+  /// `unreadableKey` for a key container.
+  let malformed: KeychainSignerError
 
-  init(_ data: Data) { bytes = [UInt8](data)[...] }
-  init(_ slice: ArraySlice<UInt8>) { bytes = slice }
+  init(_ data: Data, malformed: KeychainSignerError) {
+    bytes = [UInt8](data)[...]
+    self.malformed = malformed
+  }
+
+  init(_ slice: ArraySlice<UInt8>, malformed: KeychainSignerError) {
+    bytes = slice
+    self.malformed = malformed
+  }
 
   /// The value of the next element, which must carry `tag`.
-  mutating func take(_ tag: UInt8) throws -> DERReader {
-    guard bytes.popFirst() == tag, let first = bytes.popFirst() else { throw KeychainSignerError.badSignature }
+  mutating func take(_ tag: UInt8) throws(KeychainSignerError) -> DERReader {
+    guard bytes.popFirst() == tag, let first = bytes.popFirst() else { throw malformed }
     var length = Int(first)
     if first & 0x80 != 0 {
+      // 0x80 alone is BER's indefinite length, which DER forbids. Past four
+      // length bytes (4 GiB) the shift below could overflow into a negative
+      // length, and no key or signature is that long.
+      let count = Int(first & 0x7f)
+      guard (1...4).contains(count) else { throw malformed }
       length = 0
-      for _ in 0..<Int(first & 0x7f) {
-        guard let b = bytes.popFirst() else { throw KeychainSignerError.badSignature }
+      for _ in 0..<count {
+        guard let b = bytes.popFirst() else { throw malformed }
         length = length << 8 | Int(b)
       }
     }
-    guard bytes.count >= length else { throw KeychainSignerError.badSignature }
+    guard bytes.count >= length else { throw malformed }
     defer { bytes = bytes.dropFirst(length) }
-    return DERReader(bytes.prefix(length))
+    return DERReader(bytes.prefix(length), malformed: malformed)
   }
 }
 
@@ -161,7 +178,10 @@ public final class TrustAnchors: SignatureTrust, Sendable {
 
   public init(der: [Data]) { certificates = der }
 
-  public init(pem: [String]) throws { certificates = try pem.map(KeychainSigner.pemBody) }
+  /// Throws `unreadableCertificate` for a PEM that isn't a certificate.
+  public init(pem: [String]) throws {
+    certificates = try pem.map { SecCertificateCopyData(try KeychainSigner.certificate(pem: $0)) as Data }
+  }
 
   public func anchors() throws -> [Data] { certificates }
 }

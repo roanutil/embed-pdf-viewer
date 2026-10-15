@@ -390,12 +390,22 @@ public struct AnnotationDraftsCapability: Sendable {
   }
 
   /// `range` is in UTF-16 code units, as `NSRange` is. `nil` clears it.
+  /// A range below zero or past `UInt32.max` throws `invalid-input`.
   public func setTextSelection(_ range: Range<Int>?, in ref: AnnotationRef) async throws(PDFError)
   {
+    var start: UInt32?
+    var end: UInt32?
+    if let range {
+      guard let lower = UInt32(exactly: range.lowerBound), let upper = UInt32(exactly: range.upperBound)
+      else {
+        throw PDFError(
+          name: "RangeError", code: "invalid-input",
+          detail: "text selection \(range) is outside 0..<\(UInt32.max)")
+      }
+      (start, end) = (lower, upper)
+    }
     try await bridged {
-      try await handle.setTextSelection(
-        annotationRef: ref, start: range.map { UInt32($0.lowerBound) },
-        end: range.map { UInt32($0.upperBound) })
+      try await handle.setTextSelection(annotationRef: ref, start: start, end: end)
     }
   }
 
