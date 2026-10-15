@@ -14,7 +14,8 @@
 //!
 //! The check is deliberately weak about SUCCESS and strict about ROUTING. An
 //! arm is exercised with a body built from the vector's own field names, and
-//! what is asserted is that the kind does not come back `NotImplemented`:
+//! what is asserted is that the kind is not refused as unknown (the
+//! dispatcher's `InvalidArg` "unknown request kind: …", as `WorkerHost`'s):
 //! whether the operation then succeeds depends on the fixture, and pinning
 //! results is what the other sixty-odd suites do. What cannot be allowed is
 //! a kind the dispatcher has never heard of.
@@ -23,6 +24,10 @@ use epdf_engine::error::EngineErrorCode;
 use epdf_engine::host::{Host, Payloads};
 
 const VECTOR: &str = "tooling/engine-conformance/vectors/wire/requests.json";
+
+/// `WorkerHost`'s refusal of a kind it has no case for, which the host
+/// matches word for word.
+const UNKNOWN_KIND: &str = "unknown request kind: ";
 const DOC_ID: &str = "doc-1";
 
 /// A document with annotations, forms, attachments and `/PieceInfo`, so most
@@ -177,9 +182,9 @@ fn every_wire_kind_routes_to_an_implementation() {
         let body: serde_json::Value =
             serde_json::from_str(&response.json).expect("every response is JSON");
         let Some(error) = body.get("error") else { continue };
-        let code = error["code"].as_str().unwrap_or("");
-        if code == format!("{:?}", EngineErrorCode::NotImplemented) {
-            unrouted.push(format!("{}: {}", case.kind, error["message"].as_str().unwrap_or("")));
+        let message = error["message"].as_str().unwrap_or("");
+        if message.starts_with(UNKNOWN_KIND) {
+            unrouted.push(format!("{}: {message}", case.kind));
         }
     }
 
@@ -196,14 +201,15 @@ fn every_wire_kind_routes_to_an_implementation() {
 fn an_unknown_kind_is_refused_rather_than_ignored() {
     // The negative half, so the check above cannot pass by routing
     // everything to the same arm. A kind that is not in the protocol has to
-    // come back as one this build does not implement.
+    // come back as the TypeScript refuses it.
     let mut host = open();
     let response = host.call(
         &serde_json::json!({ "kind": "pages.teleport", "docId": DOC_ID }).to_string(),
         Vec::new(),
     );
     let body: serde_json::Value = serde_json::from_str(&response.json).expect("the response");
-    assert_eq!(body["error"]["code"], format!("{:?}", EngineErrorCode::NotImplemented));
+    assert_eq!(body["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg));
+    assert_eq!(body["error"]["message"], format!("{UNKNOWN_KIND}pages.teleport"));
 }
 
 #[test]

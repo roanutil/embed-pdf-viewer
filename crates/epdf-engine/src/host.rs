@@ -1416,11 +1416,12 @@ impl Host {
                 self.finish_quietly(&key, serde_json::Value::Null)
             }
 
+            // `WorkerHost`'s `default:` arm, word for word.
             other => {
                 let _ = payloads;
                 Err(EngineError::with_message(
-                    EngineErrorCode::NotImplemented,
-                    format!("this build does not route '{other}'"),
+                    EngineErrorCode::InvalidArg,
+                    format!("unknown request kind: {other}"),
                 ))
             }
         }
