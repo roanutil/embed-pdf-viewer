@@ -25,7 +25,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { pageRefs } from './wire-page-refs';
+import type { PageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -97,15 +97,15 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
       { scope: ['*'] },
     );
     let extracted: Uint8Array;
-    let sourceObjectNumbers: number[];
+    let sources: PageRef[];
     try {
       const listing = await doc.pages.list();
-      sourceObjectNumbers = entry.sourcePages.map((index) => {
+      sources = entry.sourcePages.map((index) => {
         const page = listing.pages[index];
         if (!page) throw new Error(`${entry.name}: the fixture has no page ${index}`);
-        return page.ref.pageObjectNumber;
+        return page.ref;
       });
-      extracted = await doc.pages.extract(pageRefs(sourceObjectNumbers));
+      extracted = await doc.pages.extract(sources);
     } finally {
       await doc.close();
     }
@@ -127,7 +127,7 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
           text: (await handle.text.read()).text,
         });
       }
-      return { ...entry, sourceObjectNumbers, pageCount: listing.pageCount, pages };
+      return { ...entry, sources, pageCount: listing.pageCount, pages };
     } finally {
       await reopened.close();
     }

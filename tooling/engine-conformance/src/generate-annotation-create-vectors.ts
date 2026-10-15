@@ -25,7 +25,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { destinationPageRefs, flattenPageRefs } from './wire-page-refs';
+import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -589,7 +589,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 350, bottom: 640, right: 470, top: 660 },
       target: {
         kind: 'goto',
-        destination: { kind: 'xyz', pageObjectNumber: 3, left: 100, top: 700, zoom: null },
+        destination: { kind: 'xyz', page: toPageRef(3), left: 100, top: 700, zoom: null },
       },
     },
   },
@@ -599,7 +599,7 @@ const CASES: readonly CreateCase[] = [
     draft: {
       subtype: 'link',
       rect: { left: 72, bottom: 610, right: 200, top: 630 },
-      target: { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 3 } },
+      target: { kind: 'goto', destination: { kind: 'fit', page: toPageRef(3) } },
     },
   },
   {
@@ -611,7 +611,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 210, bottom: 610, right: 340, top: 630 },
       target: {
         kind: 'goto',
-        destination: { kind: 'fitH', pageObjectNumber: 3, top: 500 },
+        destination: { kind: 'fitH', page: toPageRef(3), top: 500 },
       },
     },
   },
@@ -624,7 +624,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 72, bottom: 580, right: 200, top: 600 },
       target: {
         kind: 'goto',
-        destination: { kind: 'xyz', pageObjectNumber: 3, left: null, top: 400, zoom: 2 },
+        destination: { kind: 'xyz', page: toPageRef(3), left: null, top: 400, zoom: 2 },
       },
     },
   },
@@ -637,7 +637,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 210, bottom: 580, right: 340, top: 600 },
       target: {
         kind: 'goto',
-        destination: { kind: 'fitH', pageObjectNumber: 3, top: null },
+        destination: { kind: 'fitH', page: toPageRef(3), top: null },
       },
     },
   },
@@ -650,7 +650,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 350, bottom: 580, right: 470, top: 600 },
       target: {
         kind: 'goto',
-        destination: { kind: 'fitV', pageObjectNumber: 3, left: 120 },
+        destination: { kind: 'fitV', page: toPageRef(3), left: 120 },
       },
     },
   },
@@ -663,7 +663,7 @@ const CASES: readonly CreateCase[] = [
       rect: { left: 72, bottom: 550, right: 200, top: 570 },
       target: {
         kind: 'goto',
-        destination: { kind: 'fitBV', pageObjectNumber: 3, left: 90 },
+        destination: { kind: 'fitBV', page: toPageRef(3), left: 90 },
       },
     },
   },
@@ -677,7 +677,7 @@ const CASES: readonly CreateCase[] = [
         kind: 'goto',
         destination: {
           kind: 'fitR',
-          pageObjectNumber: 3,
+          page: toPageRef(3),
           left: 50,
           bottom: 100,
           right: 400,
@@ -863,9 +863,7 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
       const page = doc.page(first.ref);
-      const draft = destinationPageRefs(
-        materialize(entry.draft, { ...(entry.resources ?? {}) }),
-      ) as never;
+      const draft = materialize(entry.draft, { ...(entry.resources ?? {}) }) as never;
       const result = await page.annotations.create(draft);
 
       // The whole created DTO minus the timestamp, plus the envelope's own
@@ -874,7 +872,7 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       return {
         ...entry,
         pageObjectNumber: first.ref.pageObjectNumber,
-        created: flattenPageRefs(created),
+        created,
         hasModified: typeof modified === 'string' && modified.length > 0,
         meta: {
           changed: result.meta.changed,

@@ -22,7 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenPageRefs, pageObjectNumbers, pageRef, pageRefs } from './wire-page-refs';
+import { toPageRef, type PageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -37,9 +37,9 @@ const FIXTURE = 'tooling/engine-conformance/fixtures/rotated_pages.pdf';
 interface MutateCase {
   readonly name: string;
   readonly covers: string;
-  readonly move?: { readonly pages: number[]; readonly destIndex: number };
-  readonly rotate?: { readonly pages: number[]; readonly rotation: number };
-  readonly delete?: { readonly pages: number[] };
+  readonly move?: { readonly pages: PageRef[]; readonly destIndex: number };
+  readonly rotate?: { readonly pages: PageRef[]; readonly rotation: number };
+  readonly delete?: { readonly pages: PageRef[] };
   /** Create blank pages. */
   readonly insertBlank?: {
     readonly size: { readonly width: number; readonly height: number };
@@ -51,7 +51,7 @@ interface MutateCase {
   /** Flatten pages, which runs against its own fixture. */
   readonly flatten?: {
     readonly fixture: string;
-    readonly pages: number[];
+    readonly pages: PageRef[];
     readonly usage: 'display' | 'print';
   };
   /**
@@ -61,15 +61,15 @@ interface MutateCase {
    */
   readonly flattenAnnotations?: {
     readonly fixture: string;
-    readonly page: number;
+    readonly page: PageRef;
     readonly nms: string[];
     readonly usage: 'display' | 'print';
-    readonly refPage?: number;
+    readonly refPage?: PageRef;
   };
   /** Export a chosen set of one page's annotation appearances as a new PDF. */
   readonly exportAppearance?: {
     readonly fixture: string;
-    readonly page: number;
+    readonly page: PageRef;
     readonly nms: string[];
   };
   readonly refused?: true;
@@ -82,36 +82,36 @@ const CASES: readonly MutateCase[] = [
     name: 'move-one-forward',
     covers:
       'One page moved to the end. The destination is a position in the POST-REMOVAL index space, which is the only frame where the answer is unambiguous.',
-    move: { pages: [3], destIndex: 3 },
+    move: { pages: [toPageRef(3)], destIndex: 3 },
   },
   {
     name: 'move-one-backward',
     covers: 'And the other way, to the front.',
-    move: { pages: [6], destIndex: 0 },
+    move: { pages: [toPageRef(6)], destIndex: 0 },
   },
   {
     name: 'move-block-preserves-caller-order',
     covers:
       'Two pages named in an order that is not their document order. They land as one contiguous block in the order GIVEN, not in the order they were in.',
-    move: { pages: [6, 4], destIndex: 0 },
+    move: { pages: [toPageRef(6), toPageRef(4)], destIndex: 0 },
   },
   {
     name: 'move-to-same-place',
     covers: 'A move that changes nothing, which is a move rather than a refusal.',
-    move: { pages: [3], destIndex: 0 },
+    move: { pages: [toPageRef(3)], destIndex: 0 },
   },
   {
     name: 'move-past-the-end-refused',
     covers:
       'A destination past the end of the post-removal list. Three pages remain when one is detached, so index 4 names nowhere.',
-    move: { pages: [3], destIndex: 4 },
+    move: { pages: [toPageRef(3)], destIndex: 4 },
     refused: true,
   },
   {
     name: 'move-duplicate-refused',
     covers:
       'The same page twice. Deduplicating would silently change what the caller asked for, and the destination would be ambiguous.',
-    move: { pages: [3, 3], destIndex: 1 },
+    move: { pages: [toPageRef(3), toPageRef(3)], destIndex: 1 },
     refused: true,
   },
   {
@@ -135,30 +135,30 @@ const CASES: readonly MutateCase[] = [
   {
     name: 'move-unknown-page-refused',
     covers: 'An object number no page has.',
-    move: { pages: [99], destIndex: 0 },
+    move: { pages: [toPageRef(99)], destIndex: 0 },
     refused: true,
   },
   {
     name: 'rotate-one',
     covers: 'A page rotated to an angle it did not have.',
-    rotate: { pages: [3], rotation: 180 },
+    rotate: { pages: [toPageRef(3)], rotation: 180 },
   },
   {
     name: 'rotate-to-zero',
     covers:
       'Back to upright, which is a rotation rather than a removal: /Rotate 0 is a value the page carries.',
-    rotate: { pages: [4], rotation: 0 },
+    rotate: { pages: [toPageRef(4)], rotation: 0 },
   },
   {
     name: 'rotate-several',
     covers: 'Several pages to one angle, which flattens four different rotations into one.',
-    rotate: { pages: [3, 4, 5, 6], rotation: 90 },
+    rotate: { pages: [toPageRef(3), toPageRef(4), toPageRef(5), toPageRef(6)], rotation: 90 },
   },
   {
     name: 'rotate-unknown-page-refused',
     covers:
       'A list naming one page that does not exist. Nothing is rotated: the whole list resolves before anything is written.',
-    rotate: { pages: [3, 99], rotation: 90 },
+    rotate: { pages: [toPageRef(3), toPageRef(99)], rotation: 90 },
     refused: true,
   },
   {
@@ -214,7 +214,7 @@ const CASES: readonly MutateCase[] = [
       'A page with annotations turned into content. Irreversible, and it is the page that changes rather than the page list.',
     flatten: {
       fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
-      pages: [3],
+      pages: [toPageRef(3)],
       usage: 'display',
     },
   },
@@ -224,7 +224,7 @@ const CASES: readonly MutateCase[] = [
       'The other usage. An annotation may carry a different stream for each, and a stamp hidden on screen that prints is what makes the distinction matter.',
     flatten: {
       fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
-      pages: [3],
+      pages: [toPageRef(3)],
       usage: 'print',
     },
   },
@@ -234,7 +234,7 @@ const CASES: readonly MutateCase[] = [
       'A page with no annotations, which is UNCHANGED rather than failed: a page with nothing to flatten is already flat.',
     flatten: {
       fixture: 'tooling/engine-conformance/fixtures/rich_metadata.pdf',
-      pages: [3],
+      pages: [toPageRef(3)],
       usage: 'display',
     },
   },
@@ -243,7 +243,7 @@ const CASES: readonly MutateCase[] = [
     covers: 'The same page twice. The second would flatten what the first already did.',
     flatten: {
       fixture: 'tooling/engine-conformance/fixtures/annotation_appearances.pdf',
-      pages: [3, 3],
+      pages: [toPageRef(3), toPageRef(3)],
       usage: 'display',
     },
     refused: true,
@@ -254,7 +254,7 @@ const CASES: readonly MutateCase[] = [
       'A chosen set of one page\'s annotations. The highlight with no appearance stream is SKIPPED rather than refused, so a caller can say "2 of 3 flattened".',
     flattenAnnotations: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square', 'a-bare-highlight', 'a-rotated-polygon'],
       usage: 'display',
     },
@@ -265,7 +265,7 @@ const CASES: readonly MutateCase[] = [
       'The other usage, over the square that prints and never shows on screen. The fork flattens it for both usages on this corpus (see FlattenUsage in pages_write.rs).',
     flattenAnnotations: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square', 'a-print-only-square', 'a-rotated-polygon'],
       usage: 'print',
     },
@@ -276,7 +276,7 @@ const CASES: readonly MutateCase[] = [
       'Every ref skipped. Nothing is applied, which is no mutation at all: no new revision and no event.',
     flattenAnnotations: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-bare-highlight'],
       usage: 'display',
     },
@@ -284,7 +284,7 @@ const CASES: readonly MutateCase[] = [
   {
     name: 'flatten-annotations-empty-refused',
     covers: 'No refs is a malformed request rather than a flatten of nothing.',
-    flattenAnnotations: { fixture: APPEARANCES, page: 3, nms: [], usage: 'display' },
+    flattenAnnotations: { fixture: APPEARANCES, page: toPageRef(3), nms: [], usage: 'display' },
     refused: true,
   },
   {
@@ -292,10 +292,10 @@ const CASES: readonly MutateCase[] = [
     covers: 'A ref that names a different page than the one asked about, refused before anything resolves.',
     flattenAnnotations: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square'],
       usage: 'display',
-      refPage: 4,
+      refPage: toPageRef(4),
     },
     refused: true,
   },
@@ -304,7 +304,7 @@ const CASES: readonly MutateCase[] = [
     covers: 'An /NM no annotation on the page carries. Nothing is flattened.',
     flattenAnnotations: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square', 'no-such-annotation'],
       usage: 'display',
     },
@@ -316,7 +316,7 @@ const CASES: readonly MutateCase[] = [
       'Two appearances as a new single-page PDF sized to the union of their /Rect. The source is untouched, so the answer is the new document\'s layout.',
     exportAppearance: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square', 'a-rotated-polygon'],
     },
   },
@@ -326,7 +326,7 @@ const CASES: readonly MutateCase[] = [
       'All or nothing: a highlight with no appearance stream refuses the whole export, since a stamp silently missing one of its parts would be worse than an error.',
     exportAppearance: {
       fixture: APPEARANCES,
-      page: 3,
+      page: toPageRef(3),
       nms: ['a-three-mode-square', 'a-bare-highlight'],
     },
     refused: true,
@@ -335,23 +335,23 @@ const CASES: readonly MutateCase[] = [
     name: 'delete-one',
     covers:
       'A page removed. Its object number is RETIRED rather than freed, so per-page state a caller kept can never attach to an unrelated future page.',
-    delete: { pages: [4] },
+    delete: { pages: [toPageRef(4)] },
   },
   {
     name: 'delete-several',
     covers: 'Several at once, which leaves the survivors in their original relative order.',
-    delete: { pages: [3, 5] },
+    delete: { pages: [toPageRef(3), toPageRef(5)] },
   },
   {
     name: 'delete-every-page-refused',
     covers: 'A document with no pages is not a document.',
-    delete: { pages: [3, 4, 5, 6] },
+    delete: { pages: [toPageRef(3), toPageRef(4), toPageRef(5), toPageRef(6)] },
     refused: true,
   },
   {
     name: 'delete-unknown-page-refused',
     covers: 'An object number no page has. Nothing is deleted.',
-    delete: { pages: [3, 99] },
+    delete: { pages: [toPageRef(3), toPageRef(99)] },
     refused: true,
   },
 ];
@@ -382,11 +382,11 @@ async function readCase(entry: MutateCase): Promise<unknown> {
     try {
       const run = async () => {
         if (entry.move) {
-          return (await doc.pages.move(pageRefs(entry.move.pages) as never, entry.move.destIndex)).layout;
+          return (await doc.pages.move(entry.move.pages, entry.move.destIndex)).layout;
         }
         if (entry.rotate) {
           return (
-            await doc.pages.rotate(pageRefs(entry.rotate.pages) as never, entry.rotate.rotation as never)
+            await doc.pages.rotate(entry.rotate.pages, entry.rotate.rotation as never)
           ).layout;
         }
         if (entry.insertBlank) {
@@ -394,25 +394,25 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             { size: entry.insertBlank.size, count: entry.insertBlank.count } as never,
             entry.insertBlank.destIndex,
           );
-          return { layout: result.layout, inserted: pageObjectNumbers(result.insertedPages) };
+          return { layout: result.layout, inserted: result.insertedPages };
         }
         if (entry.flatten) {
           const result = await doc.pages.flatten(
-            pageRefs(entry.flatten.pages) as never,
+            entry.flatten.pages,
             entry.flatten.usage,
           );
           // The whole result, not just the per-page outcomes: it echoes
           // the request back, and an engine that lost the echo would still
           // agree about what happened.
           const { meta: _meta, pages, ...rest } = result as Record<string, unknown>;
-          return { flattened: { pageObjectNumbers: pageObjectNumbers(pages), ...rest } };
+          return { flattened: { pages, ...rest } };
         }
         if (entry.flattenAnnotations) {
           const input = entry.flattenAnnotations;
-          const page = pageRef(input.page);
+          const page = input.page;
           const refs = input.nms.map((nm) => ({
             kind: 'nm' as const,
-            page: pageRef(input.refPage ?? input.page),
+            page: input.refPage ?? input.page,
             nm,
           }));
           const result = await doc.page(page).annotations.flatten!(refs as never, input.usage);
@@ -428,7 +428,7 @@ async function readCase(entry: MutateCase): Promise<unknown> {
         }
         if (entry.exportAppearance) {
           const input = entry.exportAppearance;
-          const page = pageRef(input.page);
+          const page = input.page;
           const refs = input.nms.map((nm) => ({ kind: 'nm' as const, page, nm }));
           const exported = await doc.page(page).annotations.exportAppearance!(refs as never);
           const copy = await engine.open(
@@ -447,9 +447,9 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             source.buffer as ArrayBuffer,
             entry.insert.destIndex,
           );
-          return { layout: result.layout, inserted: pageObjectNumbers(result.insertedPages) };
+          return { layout: result.layout, inserted: result.insertedPages };
         }
-        return (await doc.pages.delete(pageRefs(entry.delete!.pages) as never)).layout;
+        return (await doc.pages.delete(entry.delete!.pages)).layout;
       };
 
       if (entry.refused) {
@@ -462,7 +462,7 @@ async function readCase(entry: MutateCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      const produced = flattenPageRefs(await run()) as Record<string, unknown>;
+      const produced = (await run()) as Record<string, unknown>;
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
       if ('flattened' in produced) return { ...entry, flattened: produced.flattened };

@@ -318,11 +318,12 @@ pub enum AnnotationFlattenStatus {
 
 /// `AnnotationFlattenResult`. `meta` is `None` when nothing was applied.
 ///
-/// The page is the wire's `pageObjectNumber`, as every other result this
-/// crate answers names it.
+/// The page is the wire's `page: PageRef`, as every other result this crate
+/// answers names it.
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationFlattenResult {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub usage: FlattenUsage,
     pub results: Vec<AnnotationFlattenItem>,

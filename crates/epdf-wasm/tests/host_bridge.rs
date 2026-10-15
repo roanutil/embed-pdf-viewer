@@ -94,11 +94,8 @@ fn a_document_opens_reads_and_closes_across_the_abi() {
     // read comes back as JSON, and the close reports what it closed.
     let host = open();
 
-    let (json, payloads) = call(
-        host,
-        &serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(),
-        &[],
-    );
+    let (json, payloads) =
+        call(host, &serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(), &[]);
     let pages = json["result"]["pages"].as_array().expect("a page list");
     assert!(!pages.is_empty(), "the fixture has pages");
     assert!(payloads.is_empty(), "a JSON-only read returned payloads");
@@ -142,7 +139,7 @@ fn a_refused_operation_answers_rather_than_failing_silently() {
     let host = open();
     let (json, payloads) = call(
         host,
-        &serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": 99_999 })
+        &serde_json::json!({ "kind": "pages.text", "docId": "d", "page": { "kind": "objectNumber", "pageObjectNumber": 99_999 } })
             .to_string(),
         &[],
     );
@@ -243,11 +240,8 @@ fn two_engines_hold_separate_sessions() {
     );
     assert!(json.get("error").is_none(), "the second engine cannot open a document: {json}");
 
-    let (json, _) = call(
-        second,
-        &serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(),
-        &[],
-    );
+    let (json, _) =
+        call(second, &serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(), &[]);
     assert!(
         json["error"].is_object(),
         "the second engine could see the first engine's document: {json}",

@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { appearanceImpactOf } from '../../../packages/engine/core/src/annotation/appearance';
 import { computeMutationImpact } from '../../../packages/engine/services/src/features/annotations/internal/mutations/computeMutationImpact';
 import type { PageState } from '../../../packages/engine/core/src/revision/PageState';
+import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 import { IMPACT_CASES, MUTATION_CASES, type MutationCase } from './annotation-write-cases';
 
@@ -39,10 +40,10 @@ function pageState(
   weak: MutationCase['weakBefore'],
 ): PageState {
   return {
-    pageObjectNumber: PAGE_OBJECT_NUMBER as PageState['pageObjectNumber'],
+    page: toPageRef(PAGE_OBJECT_NUMBER),
     revision: {
       docSessionId: SESSION,
-      pageObjectNumber: PAGE_OBJECT_NUMBER as PageState['pageObjectNumber'],
+      page: toPageRef(PAGE_OBJECT_NUMBER),
       generation,
     },
     weakAnnotationState: weak as PageState['weakAnnotationState'],

@@ -66,6 +66,7 @@ impl AnnotationActions {
 pub struct AnnotationBase {
     #[serde(rename = "ref")]
     pub annotation_ref: AnnotationRef,
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     /// Position in `/Annots`, zero based. Display order, not identity.
     pub index: u32,

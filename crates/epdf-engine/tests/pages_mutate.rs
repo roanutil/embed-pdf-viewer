@@ -18,7 +18,7 @@ use epdf_engine::features::pages_write::{
     rotate_pages,
 };
 use epdf_engine::geom::PdfRotation;
-use epdf_engine::identity::{AnnotationRef, PageObjectNumber};
+use epdf_engine::identity::{AnnotationRef, PageObjectNumber, PageRef};
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
@@ -54,10 +54,10 @@ struct Case {
     refused_with: Option<String>,
     #[serde(default)]
     layout: Option<serde_json::Value>,
-    /// The object numbers an insert handed out. Absent for the operations
-    /// that add nothing.
+    /// The pages an insert handed out. Absent for the operations that add
+    /// nothing.
     #[serde(default)]
-    inserted: Option<Vec<u32>>,
+    inserted: Option<Vec<PageRef>>,
     /// Per-page flatten outcomes, for the cases that flatten.
     #[serde(default)]
     flattened: Option<serde_json::Value>,
@@ -79,22 +79,22 @@ struct Case {
 #[serde(rename_all = "camelCase")]
 struct FlattenAnnotationsInput {
     fixture: String,
-    page: u32,
+    page: PageRef,
     nms: Vec<String>,
     usage: String,
     #[serde(default)]
-    ref_page: Option<u32>,
+    ref_page: Option<PageRef>,
 }
 
 #[derive(Debug, Deserialize)]
 struct ExportAppearanceInput {
     fixture: String,
-    page: u32,
+    page: PageRef,
     nms: Vec<String>,
 }
 
-fn nm_refs(page: u32, nms: &[String]) -> Vec<AnnotationRef> {
-    let page = PageObjectNumber::new(page).expect("a page object number");
+fn nm_refs(page: PageRef, nms: &[String]) -> Vec<AnnotationRef> {
+    let page = page.object_number();
     nms.iter().map(|nm| AnnotationRef::Nm { page, nm: nm.clone() }).collect()
 }
 
@@ -113,7 +113,7 @@ fn run_annotation_case(
             "display" => FlattenUsage::Display,
             other => panic!("{}: unhandled usage {other:?}", case.name),
         };
-        let page = PageObjectNumber::new(input.page).expect("a page object number");
+        let page = input.page.object_number();
         let refs = nm_refs(input.ref_page.unwrap_or(input.page), &input.nms);
         return Some(mutator::flatten(session, page, &refs, usage, &cancel).map(|result| {
             let mut answer = serde_json::to_value(&result).expect("serialize");
@@ -128,7 +128,7 @@ fn run_annotation_case(
         }));
     }
     if let Some(input) = &case.export_appearance {
-        let page = PageObjectNumber::new(input.page).expect("a page object number");
+        let page = input.page.object_number();
         let refs = nm_refs(input.page, &input.nms);
         return Some(mutator::export_appearance(session, page, &refs, &cancel).map(|bytes| {
             let mut copy = DocumentSession::new();
@@ -150,7 +150,7 @@ struct FlattenInput {
     /// A flatten needs a page with annotations on it, which the page-order
     /// fixture has none of, so these cases name their own.
     fixture: String,
-    pages: Vec<u32>,
+    pages: Vec<PageRef>,
     usage: String,
 }
 
@@ -181,19 +181,19 @@ struct InsertInput {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct MoveInput {
-    pages: Vec<u32>,
+    pages: Vec<PageRef>,
     dest_index: u32,
 }
 
 #[derive(Debug, Deserialize)]
 struct RotateInput {
-    pages: Vec<u32>,
+    pages: Vec<PageRef>,
     rotation: u16,
 }
 
 #[derive(Debug, Deserialize)]
 struct DeleteInput {
-    pages: Vec<u32>,
+    pages: Vec<PageRef>,
 }
 
 fn load() -> VectorFile {
@@ -206,10 +206,8 @@ fn load() -> VectorFile {
     file
 }
 
-fn pages(numbers: &[u32]) -> Vec<PageObjectNumber> {
-    // A zero would be a malformed page rather than a bad request, and no
-    // case sends one; the unwrap says so rather than hiding it.
-    numbers.iter().map(|n| PageObjectNumber::new(*n).expect("a page object number")).collect()
+fn pages(refs: &[PageRef]) -> Vec<PageObjectNumber> {
+    refs.iter().map(|page| page.object_number()).collect()
 }
 
 /// Run one case against a fresh copy of the fixture.
@@ -264,7 +262,7 @@ fn run(
         )?;
         return Ok(serde_json::json!({
             "layout": result.layout,
-            "inserted": result.inserted_page_object_numbers,
+            "inserted": result.inserted_page_object_numbers.iter().copied().map(PageRef::new).collect::<Vec<_>>(),
         }));
     }
     if let Some(input) = &case.insert {
@@ -283,7 +281,7 @@ fn run(
             insert_pages_from(owned.document(), source.document(), input.dest_index, &cancel)?;
         return Ok(serde_json::json!({
             "layout": result.layout,
-            "inserted": result.inserted_page_object_numbers,
+            "inserted": result.inserted_page_object_numbers.iter().copied().map(PageRef::new).collect::<Vec<_>>(),
         }));
     }
 

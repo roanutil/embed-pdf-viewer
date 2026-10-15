@@ -21,7 +21,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenFormWidgets } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -303,8 +302,8 @@ async function readCase(entry: WriteCase): Promise<unknown> {
       const result = await run();
       return {
         ...entry,
-        field: flattenFormWidgets(result.field),
-        changedWidgets: flattenFormWidgets(result.changedWidgets),
+        field: result.field,
+        changedWidgets: result.changedWidgets,
       };
     } finally {
       await doc.close();
@@ -363,7 +362,7 @@ async function readDocumentCase(entry: DocumentCase): Promise<unknown> {
         // rather than its own export, which would compare two writers.
         payload: Array.from(payload),
         counts,
-        snapshot: flattenFormWidgets(snapshot),
+        snapshot,
       };
     } finally {
       await doc.close();

@@ -28,32 +28,32 @@ use crate::identity::PageObjectNumber;
 pub enum PdfDestination {
     /// A point and a zoom. Any of the three may retain the current value.
     Xyz {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         left: Option<f64>,
         top: Option<f64>,
         zoom: Option<f64>,
     },
     Fit {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
     },
     #[serde(rename = "fitH")]
     FitH {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         top: Option<f64>,
     },
     #[serde(rename = "fitV")]
     FitV {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         left: Option<f64>,
     },
     /// A rectangle, the one kind whose coordinates are all required.
     #[serde(rename = "fitR")]
     FitR {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         left: f64,
         bottom: f64,
@@ -63,18 +63,18 @@ pub enum PdfDestination {
     /// The page's content bounding box rather than its crop box.
     #[serde(rename = "fitB")]
     FitB {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
     },
     #[serde(rename = "fitBH")]
     FitBh {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         top: Option<f64>,
     },
     #[serde(rename = "fitBV")]
     FitBv {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         left: Option<f64>,
     },

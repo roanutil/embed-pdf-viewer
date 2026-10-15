@@ -6,12 +6,12 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, open_fixture};
+use common::{call, open_fixture, page_ref};
 
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
 
 fn nm(page: u64, nm: &str) -> Value {
-    json!({ "kind": "nm", "pageObjectNumber": page, "nm": nm })
+    json!({ "kind": "nm", "page": page_ref(page), "nm": nm })
 }
 
 #[test]
@@ -21,7 +21,7 @@ fn an_applied_flatten_publishes_annotations_flattened() {
     let answer = call(
         &mut host,
         json!({ "kind": "annotations.flatten", "docId": doc,
-        "pageObjectNumber": page, "refs": [nm(page, "a-three-mode-square")], "usage": "display" }),
+        "page": page_ref(page), "refs": [nm(page, "a-three-mode-square")], "usage": "display" }),
     );
     assert_eq!(answer["event"]["type"], json!("annotations.flattened"), "{answer}");
     assert_eq!(answer["result"]["results"][0]["status"], json!("applied"));
@@ -39,7 +39,7 @@ fn a_flatten_that_applies_nothing_is_no_mutation() {
     let answer = call(
         &mut host,
         json!({ "kind": "annotations.flatten", "docId": doc,
-        "pageObjectNumber": page, "refs": [nm(page, "a-bare-highlight")], "usage": "display" }),
+        "page": page_ref(page), "refs": [nm(page, "a-bare-highlight")], "usage": "display" }),
     );
     assert!(answer.get("event").is_none(), "{answer}");
     assert!(answer["result"]["meta"].is_null());
@@ -54,11 +54,11 @@ fn an_export_answers_a_pdf_and_leaves_the_page_alone() {
     let before = call(
         &mut host,
         json!({ "kind": "annotations.listRawPage", "docId": doc,
-        "pageObjectNumber": page }),
+        "page": page_ref(page) }),
     );
     let response = host.call(
         &json!({ "kind": "annotations.exportAppearance", "jobId": 4, "docId": doc,
-            "pageObjectNumber": page, "refs": [nm(page, "a-rotated-polygon")] })
+            "page": page_ref(page), "refs": [nm(page, "a-rotated-polygon")] })
         .to_string(),
         Vec::new(),
     );
@@ -70,7 +70,7 @@ fn an_export_answers_a_pdf_and_leaves_the_page_alone() {
     let after = call(
         &mut host,
         json!({ "kind": "annotations.listRawPage", "docId": doc,
-        "pageObjectNumber": page }),
+        "page": page_ref(page) }),
     );
     assert_eq!(before, after, "an export is a read");
 }

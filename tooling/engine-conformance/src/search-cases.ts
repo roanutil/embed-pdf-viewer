@@ -15,6 +15,8 @@
  * why the vectors carry deliberately non-BMP text.
  */
 
+import { toPageRef, type PageRef } from '../../../packages/engine/core/src/identity/PageRef';
+
 export interface RegexCase {
   /** Stable slug, and what a failure names. */
   readonly name: string;
@@ -767,7 +769,7 @@ export interface SliceCase {
     };
     readonly mode?: 'rects' | 'full';
     readonly cursor?: string;
-    readonly startPage?: number;
+    readonly startPage?: PageRef;
   };
   /** The sequence the session is on, for the cursor's staleness check. */
   readonly seq?: number;
@@ -876,7 +878,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     request: {
       query: { text: 'the' },
       cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
-      startPage: 4,
+      startPage: toPageRef(4),
     },
     seq: 7,
   },
@@ -886,7 +888,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     request: {
       query: { text: 'the' },
       cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":4,"scanned":5}',
-      startPage: 4,
+      startPage: toPageRef(4),
     },
     seq: 7,
   },

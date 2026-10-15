@@ -3,7 +3,7 @@
 
 mod common;
 
-use common::{call, call_err, open_fixture};
+use common::{call, call_err, open_fixture, page_ref};
 use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
@@ -31,7 +31,7 @@ fn rl_measure() -> Value {
 
 fn viewports(host: &mut Host, doc: &str, pon: u64) -> Vec<Value> {
     let result =
-        call(host, json!({ "kind": "measure.viewports", "docId": doc, "pageObjectNumber": pon }));
+        call(host, json!({ "kind": "measure.viewports", "docId": doc, "page": page_ref(pon) }));
     result["viewports"].as_array().expect("viewports").clone()
 }
 
@@ -62,13 +62,13 @@ fn set_scale_keeps_a_foreign_viewport() {
     let written = call(
         &mut host,
         json!({
-            "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": rl_measure()
+            "kind": "measure.setScale", "docId": doc, "page": page_ref(pon), "measure": rl_measure()
         }),
     );
     assert_eq!(
         written["result"],
         json!({
-            "pageObjectNumber": pon, "meta": { "affectedPages": [], "cacheDelta": null }
+            "page": page_ref(pon), "meta": { "affectedPages": [], "cacheDelta": null }
         })
     );
     assert_eq!(written["event"]["type"], json!("page.viewportsChanged"), "{written}");
@@ -102,7 +102,7 @@ fn set_scale_keeps_a_foreign_viewport() {
     call(
         &mut host,
         json!({
-            "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": rl_measure()
+            "kind": "measure.setScale", "docId": doc, "page": page_ref(pon), "measure": rl_measure()
         }),
     );
     let again = viewports(&mut host, &doc, pon);
@@ -117,7 +117,7 @@ fn set_scale_keeps_a_foreign_viewport() {
     // (`assertWritableMeasure(undefined)` throws): it must not clear.
     let error = call_err(
         &mut host,
-        json!({ "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon }),
+        json!({ "kind": "measure.setScale", "docId": doc, "page": page_ref(pon) }),
     );
     assert_eq!(error["code"], json!("InvalidArg"), "{error}");
     assert_eq!(viewports(&mut host, &doc, pon).len(), 2);
@@ -126,7 +126,7 @@ fn set_scale_keeps_a_foreign_viewport() {
     call(
         &mut host,
         json!({
-            "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": null
+            "kind": "measure.setScale", "docId": doc, "page": page_ref(pon), "measure": null
         }),
     );
     let cleared = viewports(&mut host, &doc, pon);
@@ -149,7 +149,7 @@ fn set_scale_refuses_an_unwritable_measure() {
         let error = call_err(
             &mut host,
             json!({
-                "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": measure
+                "kind": "measure.setScale", "docId": doc, "page": page_ref(pon), "measure": measure
             }),
         );
         assert_eq!(error["code"], json!("InvalidArg"), "{error}");
@@ -165,7 +165,7 @@ fn a_saved_scale_survives_a_reopen() {
     call(
         &mut host,
         json!({
-            "kind": "measure.setScale", "docId": doc, "pageObjectNumber": pon, "measure": rl_measure()
+            "kind": "measure.setScale", "docId": doc, "page": page_ref(pon), "measure": rl_measure()
         }),
     );
     let response = host.call(
@@ -179,7 +179,7 @@ fn a_saved_scale_survives_a_reopen() {
         .call(&json!({ "kind": "open.fatMem", "jobId": 1, "docId": "r" }).to_string(), vec![saved]);
     assert!(!open.json.contains("\"error\""), "{}", open.json);
     let pages = call(&mut reopened, json!({ "kind": "pages.list", "docId": "r" }));
-    let pon = pages["pages"][0]["pageObjectNumber"].as_u64().unwrap();
+    let pon = pages["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap();
     let after = viewports(&mut reopened, "r", pon);
     assert_eq!(after.len(), 2);
     assert_eq!(after[1]["owned"], json!(true));

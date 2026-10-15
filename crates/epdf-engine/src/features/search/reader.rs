@@ -104,7 +104,11 @@ pub struct SearchRequest {
     pub mode: SearchMode,
     /// Begin at this page and wrap, so a viewer searches from what the reader
     /// is looking at rather than from page one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "crate::identity::optional_page_ref"
+    )]
     pub start_page: Option<PageObjectNumber>,
     /// Resume a previous slice.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -126,6 +130,7 @@ pub struct SearchRequest {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchMatch {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     /// CHARACTER space, which is what geometry and selection use.
     pub char_start: u32,

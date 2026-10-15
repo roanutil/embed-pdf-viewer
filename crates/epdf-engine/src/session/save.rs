@@ -152,7 +152,8 @@ pub enum DocumentEventInit {
     #[serde(rename = "pages.named", rename_all = "camelCase")]
     PagesNamed {
         name: String,
-        page_object_number: Option<u32>,
+        #[serde(rename = "page", with = "crate::identity::optional_page_ref")]
+        page_object_number: Option<crate::identity::PageObjectNumber>,
         #[serde(flatten)]
         result: serde_json::Value,
     },

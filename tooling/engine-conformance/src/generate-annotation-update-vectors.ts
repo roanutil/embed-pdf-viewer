@@ -22,7 +22,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { destinationPageRefs, flattenPageRefs } from './wire-page-refs';
+import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -523,7 +523,7 @@ const CASES: readonly UpdateCase[] = [
     },
     patch: {
       subtype: 'link',
-      target: { kind: 'goto', destination: { kind: 'fit', pageObjectNumber: 3 } },
+      target: { kind: 'goto', destination: { kind: 'fit', page: toPageRef(3) } },
     },
   },
   {
@@ -635,18 +635,18 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
 
       const payloads = { ...(entry.resources ?? {}) };
       const created = await page.annotations.create(
-        destinationPageRefs(materialize(entry.draft, payloads)) as never,
+        materialize(entry.draft, payloads) as never,
       );
       const result = await page.annotations.update(
         created.created.ref,
-        destinationPageRefs(materialize(entry.patch, payloads)) as never,
+        materialize(entry.patch, payloads) as never,
       );
 
       const { modified, ...updated } = result.updated as Record<string, unknown>;
       return {
         ...entry,
         pageObjectNumber: first.ref.pageObjectNumber,
-        updated: flattenPageRefs(updated),
+        updated,
         hasModified: typeof modified === 'string' && modified.length > 0,
         appearance: result.appearance,
         meta: {

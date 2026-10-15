@@ -44,7 +44,8 @@ pub struct PageBoxes {
 pub struct PageLayout {
     /// Zero-based position today. Display metadata: an index is not identity.
     pub index: u32,
-    /// The durable key.
+    /// The durable key, `ref` on the wire.
+    #[serde(rename = "ref", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     /// `/PageLabel`, or absent. An empty label reads as absent.
     pub label: Option<String>,
@@ -92,12 +93,13 @@ pub struct NamedPageEntry {
 }
 
 /// What a registration resolves to (`NamedPageTarget`). A page target is
-/// flat on this wire, like every other page address.
+/// `{ kind: "page", page: PageRef }`, like every other page address.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum NamedPageTarget {
     #[serde(rename_all = "camelCase")]
     Page {
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: u32,
     },
     #[serde(rename_all = "camelCase")]

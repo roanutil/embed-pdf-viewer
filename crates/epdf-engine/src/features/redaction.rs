@@ -39,7 +39,10 @@ use crate::identity::{AnnotationRef, PageObjectNumber};
 #[serde(rename_all_fields = "camelCase")]
 pub enum RedactionScope {
     /// Every marking on each page.
-    Pages { page_object_numbers: Vec<PageObjectNumber> },
+    Pages {
+        #[serde(rename = "pages", with = "crate::identity::page_refs")]
+        page_object_numbers: Vec<PageObjectNumber>,
+    },
     /// Exactly these markings.
     Annotations { refs: Vec<AnnotationRef> },
 }
@@ -60,6 +63,7 @@ pub enum RedactionStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RedactionItem {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub status: RedactionStatus,
     /// Annotations removed ALONGSIDE the markings: popups cascading and

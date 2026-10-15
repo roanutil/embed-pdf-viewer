@@ -76,6 +76,20 @@ fn open() -> Host {
     host
 }
 
+/// The wire's `PageRef`.
+fn page_ref(page_object_number: u64) -> serde_json::Value {
+    serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": page_object_number })
+}
+
+/// Send one request to `host` and answer the whole envelope.
+fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
+    let mut request = request;
+    request["jobId"] = "job-2".into();
+    request["docId"] = DOC_ID.into();
+    let response = host.call(&request.to_string(), Vec::new());
+    serde_json::from_str(&response.json).expect("every response is JSON")
+}
+
 /// Something of roughly the right shape for a required argument.
 ///
 /// Not a valid value, and not trying to be: the operation may well refuse
@@ -84,12 +98,11 @@ fn open() -> Host {
 /// would have read it.
 fn placeholder(name: &str) -> serde_json::Value {
     match name {
-        "pageObjectNumber" | "widget" | "toIndex" | "destIndex" | "pageIndex" | "count" => {
-            serde_json::json!(1)
-        }
-        "pageObjectNumbers" => serde_json::json!([1]),
-        "refs" => serde_json::json!([{ "kind": "index", "pageObjectNumber": 1, "index": 0,
-            "revision": { "sessionId": "s", "pageObjectNumber": 1, "generation": 0 } }]),
+        "widget" | "toIndex" | "destIndex" | "pageIndex" | "count" => serde_json::json!(1),
+        "page" => page_ref(1),
+        "pages" => serde_json::json!([page_ref(1)]),
+        "refs" => serde_json::json!([{ "kind": "index", "page": page_ref(1), "index": 0,
+            "revision": { "docSessionId": "s", "page": page_ref(1), "generation": 0 } }]),
         "ref" => serde_json::json!({ "kind": "key", "key": "nothing" }),
         "rotation" => serde_json::json!(90),
         "usage" => serde_json::json!("display"),
@@ -217,4 +230,65 @@ fn a_session_operation_without_a_document_names_what_is_missing() {
         "the refusal does not say which request it was: {}",
         response.json,
     );
+}
+
+#[test]
+fn a_page_is_addressed_by_the_ref_the_listing_answered() {
+    // The round trip the wire exists for: the `ref` a `pages.list` answers is
+    // the address every per-page request takes back, unchanged. A host that
+    // unpacked the number and sent it flat would be speaking the old wire.
+    let mut host = open();
+    let listing = send(&mut host, serde_json::json!({ "kind": "pages.list" }));
+    let first = listing["result"]["pages"][0]["ref"].clone();
+    assert_eq!(first["kind"], "objectNumber", "the listing names no PageRef: {listing}");
+    assert!(first["pageObjectNumber"].as_u64().is_some_and(|n| n > 0), "{listing}");
+
+    let text = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": first }));
+    assert!(text.get("error").is_none(), "pages.text refused the listing's ref: {text}");
+
+    let annotations =
+        send(&mut host, serde_json::json!({ "kind": "annotations.listRawPage", "page": first }));
+    assert_eq!(
+        annotations["result"]["pageState"]["page"], first,
+        "the page state names its page differently from the request: {annotations}",
+    );
+
+    let rotated = send(
+        &mut host,
+        serde_json::json!({ "kind": "pages.rotate", "pages": [first], "rotation": 90 }),
+    );
+    assert!(rotated.get("error").is_none(), "pages.rotate refused the listing's ref: {rotated}");
+    let layout = &rotated["result"]["result"]["layout"]["pages"][0];
+    assert_eq!(layout["ref"], first, "the rotated page lost its identity: {rotated}");
+    assert_eq!(layout["rotation"], 90, "{rotated}");
+}
+
+#[test]
+fn a_flat_page_number_is_the_old_wire_and_is_refused() {
+    // `pageObjectNumber` beside the kind is what this host spoke before
+    // `9f13cea3c`. Read silently, it would keep a stale host working against
+    // one engine and failing against the other.
+    let mut host = open();
+    let flat = send(&mut host, serde_json::json!({ "kind": "pages.text", "pageObjectNumber": 1 }));
+    assert_eq!(flat["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat), "{flat}");
+
+    let bare = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": 1 }));
+    assert_eq!(bare["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{bare}");
+
+    let unknown = send(
+        &mut host,
+        serde_json::json!({ "kind": "pages.delete",
+            "pages": [{ "kind": "index", "pageObjectNumber": 1 }] }),
+    );
+    assert_eq!(unknown["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{unknown}");
+}
+
+#[test]
+fn a_ref_to_no_page_is_not_found() {
+    // Well formed and naming nothing: `resolvePageRef`'s `NotFound`, not a
+    // malformed request.
+    let mut host = open();
+    let missing =
+        send(&mut host, serde_json::json!({ "kind": "pages.geometry", "page": page_ref(999_999) }));
+    assert_eq!(missing["error"]["code"], format!("{:?}", EngineErrorCode::NotFound), "{missing}");
 }

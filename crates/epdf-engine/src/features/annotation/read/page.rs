@@ -45,7 +45,7 @@ pub struct AnnotationListPageSnapshot {
 ///
 /// Page order is document order here. The TypeScript documents the order as
 /// unspecified because its cloud engine serves manifest order, so a consumer
-/// that cares joins on `pageState.pageObjectNumber` rather than on position.
+/// that cares joins on `pageState.page` rather than on position.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationListSnapshot {

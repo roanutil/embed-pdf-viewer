@@ -18,7 +18,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenPageRefs } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -97,7 +96,7 @@ async function readCase(entry: MetadataCase): Promise<unknown> {
       return {
         ...entry,
         metadata: await doc.metadata.read(),
-        pages: flattenPageRefs(await doc.pages.list()),
+        pages: await doc.pages.list(),
         actions: await doc.actions.read(),
       };
     } finally {

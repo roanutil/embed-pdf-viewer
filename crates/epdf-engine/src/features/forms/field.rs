@@ -119,6 +119,7 @@ pub struct FieldOptionInput {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WidgetPlacement {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub rect: PdfRect,
     /// The appearance state this widget turns on with. Required on every

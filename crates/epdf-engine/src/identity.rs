@@ -265,20 +265,20 @@ pub enum AnnotationIdentityQuality {
 pub enum AnnotationRef {
     #[serde(rename = "objectNumber")]
     ObjectNumber {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(with = "page_ref")]
         page: PageObjectNumber,
         #[serde(rename = "annotObjectNumber")]
         annot: u32,
     },
     #[serde(rename = "nm")]
     Nm {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(with = "page_ref")]
         page: PageObjectNumber,
         nm: String,
     },
     #[serde(rename = "index")]
     Index {
-        #[serde(rename = "pageObjectNumber")]
+        #[serde(with = "page_ref")]
         page: PageObjectNumber,
         index: u32,
         revision: RevisionToken,
@@ -373,7 +373,7 @@ mod tests {
             serde_json::to_value(AnnotationRef::ObjectNumber { page, annot: 9 }).unwrap(),
             serde_json::json!({
                 "kind": "objectNumber",
-                "pageObjectNumber": 3,
+                "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
                 "annotObjectNumber": 9,
             })
         );

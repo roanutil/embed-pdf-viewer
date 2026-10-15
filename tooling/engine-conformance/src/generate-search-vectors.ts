@@ -46,7 +46,6 @@ import {
   type SliceCase,
   type SnippetCase,
 } from './search-cases';
-import { pageRef } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const vectorsRoot = join(packageRoot, 'vectors', 'search');
@@ -160,11 +159,7 @@ function runSliceCase(entry: SliceCase) {
   let cursor: { readonly ok: boolean; readonly message?: string } | undefined;
   if (entry.request.cursor !== undefined) {
     try {
-      // The case names startPage as the wire's object number; the decoder
-      // takes the public PageRef since 9f13cea3c.
-      const { startPage, ...rest } = entry.request;
-      const request = startPage === undefined ? rest : { ...rest, startPage: pageRef(startPage) };
-      decodeSearchCursor(request as never, entry.request.cursor, entry.seq ?? 0, key);
+      decodeSearchCursor(entry.request as never, entry.request.cursor, entry.seq ?? 0, key);
       cursor = { ok: true };
     } catch (error) {
       cursor = { ok: false, message: error instanceof Error ? error.message : String(error) };

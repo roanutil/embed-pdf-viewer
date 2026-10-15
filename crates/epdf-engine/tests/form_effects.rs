@@ -108,7 +108,9 @@ fn every_effects_batch_agrees_with_the_oracle() {
                 .iter()
                 .map(|w| {
                     (
-                        w["pageObjectNumber"].as_u64().expect("page") as u32,
+                        // `page: PageRef | null`; null is an unplaced widget,
+                        // which the engine's record holds as 0.
+                        w["page"]["pageObjectNumber"].as_u64().unwrap_or(0) as u32,
                         w["annotObjectNumber"].as_u64().expect("annot") as u32,
                     )
                 })

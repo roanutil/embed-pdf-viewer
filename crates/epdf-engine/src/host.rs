@@ -674,8 +674,7 @@ impl Host {
                 Ok(ok(value(&f::search::reader::search(session, &request, cancel)?)?))
             }
             "pages.extract" => {
-                let pages: Vec<crate::identity::PageObjectNumber> =
-                    field(body, "pageObjectNumbers")?;
+                let pages = pages_field(body)?;
                 let session = self.sessions.session_mut(&key)?;
                 let bytes = f::extract::extract_pages(session, &pages, cancel)?;
                 Ok(bytes_response(bytes))
@@ -996,8 +995,7 @@ impl Host {
             }
 
             "pages.move" => {
-                let pages: Vec<crate::identity::PageObjectNumber> =
-                    field(body, "pageObjectNumbers")?;
+                let pages = pages_field(body)?;
                 let destination: u32 = field(body, "destIndex")?;
                 let result = {
                     let d = self.document(&key)?;
@@ -1021,7 +1019,7 @@ impl Host {
                     &key,
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
-                        page_object_number: Some(page.get()),
+                        page_object_number: Some(page),
                         result: value(&result)?,
                     },
                 )
@@ -1042,8 +1040,7 @@ impl Host {
                 )
             }
             "pages.rotate" => {
-                let pages: Vec<crate::identity::PageObjectNumber> =
-                    field(body, "pageObjectNumbers")?;
+                let pages = pages_field(body)?;
                 let rotation: crate::geom::PdfRotation = field(body, "rotation")?;
                 let result = {
                     let d = self.document(&key)?;
@@ -1056,8 +1053,7 @@ impl Host {
                 )
             }
             "pages.delete" => {
-                let pages: Vec<crate::identity::PageObjectNumber> =
-                    field(body, "pageObjectNumbers")?;
+                let pages = pages_field(body)?;
                 let result = {
                     let d = self.document(&key)?;
                     f::pages_write::delete_pages(d, &pages, cancel)?
@@ -1075,8 +1071,7 @@ impl Host {
                 )
             }
             "pages.flatten" => {
-                let pages: Vec<crate::identity::PageObjectNumber> =
-                    field(body, "pageObjectNumbers")?;
+                let pages = pages_field(body)?;
                 let usage: f::pages_write::FlattenUsage = field(body, "usage")?;
                 let result = {
                     let owned = self.sessions.session(&key)?.document()?;
@@ -1211,14 +1206,14 @@ impl Host {
                     let page = owned.page(pon)?;
                     f::measure::set_scale(owned.document(), index, page.view(), measure, cancel)?;
                 }
-                // `PageScaleResult`, with the page spelled the host's way.
-                // A calibration changes no page pixels and no annotation
+                // `PageScaleResult`, naming the page as the request did. A
+                // calibration changes no page pixels and no annotation
                 // indices, so `meta` is empty.
                 self.finish(
                     &key,
                     crate::session::save::DocumentEventInit::PageViewportsChanged(
                         serde_json::json!({
-                            "pageObjectNumber": pon,
+                            "page": crate::identity::PageRef::new(pon),
                             "meta": { "affectedPages": [], "cacheDelta": null },
                         }),
                     ),
@@ -1732,9 +1727,32 @@ impl From<WireIdentity> for IdentityClaims {
     }
 }
 
-/// The page an operation names.
+/// The page an operation names: `page: PageRef`, resolved to the object
+/// number the session keys its records on (`DocumentSession.resolvePageRef`).
+///
+/// Absent is a malformed request, like any other missing argument; present
+/// but not a `PageRef` is `InvalidArg`. An unknown page is neither: it is
+/// `NotFound` where the page is opened.
 fn page_field(body: &serde_json::Value) -> Result<crate::identity::PageObjectNumber, EngineError> {
-    field(body, "pageObjectNumber")
+    let value = body.get("page").ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::WireFormat, "the request has no 'page'")
+    })?;
+    Ok(crate::identity::PageRef::from_value(value, "page")?.object_number())
+}
+
+/// The pages an operation names: `pages: PageRef[]`, in the caller's order.
+fn pages_field(
+    body: &serde_json::Value,
+) -> Result<Vec<crate::identity::PageObjectNumber>, EngineError> {
+    let value = body.get("pages").ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::WireFormat, "the request has no 'pages'")
+    })?;
+    let list = value.as_array().ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::InvalidArg, "'pages' is not a PageRef[]")
+    })?;
+    list.iter()
+        .map(|page| Ok(crate::identity::PageRef::from_value(page, "pages")?.object_number()))
+        .collect()
 }
 
 /// The name-tree key an embedded-file reference names.
@@ -1755,11 +1773,11 @@ fn embedded_file_key(body: &serde_json::Value) -> Result<String, EngineError> {
 
 /// Which `/PieceInfo` holder a request means.
 ///
-/// A page object number selects the page holder and its absence selects the
-/// catalog, which is the same distinction the TypeScript draws by having two
-/// services rather than a flag.
+/// A `page` selects the page holder and its absence selects the catalog,
+/// which is the same distinction the TypeScript draws by having two services
+/// rather than a flag.
 fn piece_info_holder(body: &serde_json::Value) -> Result<pdfium::PieceInfoHolder, EngineError> {
-    match body.get("pageObjectNumber") {
+    match body.get("page") {
         None | Some(serde_json::Value::Null) => Ok(pdfium::PieceInfoHolder::Catalog),
         Some(_) => Ok(pdfium::PieceInfoHolder::Page(page_field(body)?.get())),
     }

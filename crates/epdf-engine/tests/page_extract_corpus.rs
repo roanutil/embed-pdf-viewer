@@ -20,7 +20,7 @@ use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::extract::extract_pages;
 use epdf_engine::features::pages::list_pages;
 use epdf_engine::features::text::reader::read_page_text;
-use epdf_engine::identity::PageObjectNumber;
+use epdf_engine::identity::{PageObjectNumber, PageRef};
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use pdfium::{Document, Library};
@@ -44,9 +44,10 @@ struct Case {
     covers: String,
     /// Zero-based source page indices.
     source_pages: Vec<u32>,
-    /// The object numbers those indices resolved to, recorded so this runner
-    /// compares its own resolution rather than repeating it blind.
-    source_object_numbers: Vec<u32>,
+    /// The pages those indices resolved to, as the request named them,
+    /// recorded so this runner compares its own resolution rather than
+    /// repeating it blind.
+    sources: Vec<PageRef>,
     page_count: u32,
     /// The reopened document, page by page.
     pages: Vec<ExtractedPage>,
@@ -132,8 +133,8 @@ fn an_extract_reopens_as_the_document_the_typescript_engine_produced() {
         let mut source = session(case);
         let numbers = source_object_numbers(&mut source, case);
         assert_eq!(
-            numbers.iter().map(|n| n.get()).collect::<Vec<_>>(),
-            case.source_object_numbers,
+            numbers.iter().copied().map(PageRef::new).collect::<Vec<_>>(),
+            case.sources,
             "{}: the source indices resolve to different pages",
             case.name,
         );

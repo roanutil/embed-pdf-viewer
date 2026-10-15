@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::identity::PageObjectNumber;
 
 /// The token a client hands back when addressing an annotation by
-/// `(pageObjectNumber, index)`.
+/// `(page, index)`.
 ///
 /// The engine validates strict equality against its own revision store; a
 /// mismatch is [`crate::error::EngineErrorCode::InvalidReference`], never a
@@ -18,6 +18,7 @@ use crate::identity::PageObjectNumber;
 #[serde(rename_all = "camelCase")]
 pub struct RevisionToken {
     pub doc_session_id: String,
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub generation: u64,
 }
@@ -58,6 +59,7 @@ pub enum WeakAnnotationState {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageState {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub revision: RevisionToken,
     pub weak_annotation_state: WeakAnnotationState,

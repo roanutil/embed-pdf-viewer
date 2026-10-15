@@ -5,20 +5,20 @@
 //! two hops are `engine-bridge.ts` and `@embedpdf/engine`'s worker protocol;
 //! here they are this one table.
 //!
-//! A page travels as `pageObjectNumber`, not as the `page: PageRef` the
-//! current `worker-protocol.ts` spells: the host reads the former
-//! (`host.rs` `page_field`), and
-//! `tooling/engine-conformance/vectors/wire/requests.json` pins it.
+//! A page travels as the `page: PageRef` (or `pages: PageRef[]`) that
+//! `worker-protocol.ts` spells and the host reads (`host.rs` `page_field`);
+//! `tooling/engine-conformance/vectors/wire/requests.json` pins the keys. The
+//! host answers pages the same way (`PageLayout.ref`, `SearchMatch.page`, an
+//! annotation's `page`, a widget's `page` and `ref`), so the kernel reads
+//! them as they arrive.
 //!
-//! Answers are read the host's way too, which is not the TypeScript worker's:
-//! the host sends a result bare where the worker tags it (`{tag, snapshot}`),
-//! and wraps a mutation's result with its sequence and event. What decoding
-//! produces is what the plugins read, so where the host and the
-//! `engine-core` DTOs differ for a mapped kind (`PageLayout.ref`,
-//! `SearchMatch.page`, a raster's pixel format) it is filled in here, a
-//! `SearchRequest`'s `startPage` goes out as the object number the host
-//! reads, and a render request leaves its encode options behind. A shape
-//! the host did not send is an error, never a guess.
+//! Answers are read the host's way, which is not the TypeScript worker's in
+//! two respects: the host sends a result bare where the worker tags it
+//! (`{tag, snapshot}`), and wraps a mutation's result with its sequence and
+//! event. Where the host and the `engine-core` DTOs still differ for a mapped
+//! kind (a raster's pixel format, a field edit's bare field) it is filled in
+//! here, and a render request leaves its encode options behind. A shape the
+//! host did not send is an error, never a guess.
 
 use epdf_engine::host::HostResponse;
 use epdf_kernel::Error;
@@ -38,9 +38,9 @@ pub enum Decode {
     Result,
     /// One member of the result, which must be there.
     Field(&'static str),
-    /// A `PageListSnapshot`, each page given the `ref` `PageLayout` has.
+    /// A `PageListSnapshot`, which must name every page by its `ref`.
     PageList,
-    /// A `SearchSlice`, each match given the `page` `SearchMatch` has.
+    /// A `SearchSlice`, which must name every match's `page`.
     SearchSlice,
     /// A mutation: `{result, mutationSequence, event}`. Answers `result`
     /// and hands back the event to publish.
@@ -51,32 +51,19 @@ pub enum Decode {
     /// carrying the byte count.
     Raster,
     Unit,
-    /// A read whose answer carries annotation refs: the result, with every
-    /// ref nested the kernel's way.
-    Annotations,
-    /// An annotation mutation: `Mutation`, with every ref in the result and
-    /// the event nested the kernel's way.
-    AnnotationMutation,
     /// An annotation's embedded file: the result (`name`, `mimeType`,
     /// `size`), with the payload parked in the `HostTable` as `data`.
     AttachmentContent,
-    /// A redaction apply: `Mutation`, with the scope and the per-page
-    /// results of the result and the event in the kernel's spelling.
-    Redaction,
-    /// A page mutation: `Mutation`, with `ref` added to every layout page of
-    /// the result and the event (the kernel's page registry and the
-    /// page-edit plugin read `ref`), and the host's
-    /// `insertedPageObjectNumbers` given as `insertedPages` refs.
+    /// A page mutation: `Mutation`, whose result and event must carry a
+    /// layout that names every page by its `ref` (the kernel's page registry
+    /// and the page-edit plugin read it).
     PageMutation,
     /// A byte payload (an extracted PDF), parked in the `HostTable` and
     /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
     HostBytes,
-    /// A form read: every widget given the `ref` and `page` the kernel
-    /// reads, every other page reference nested as `Annotations` does.
-    Forms,
-    /// A form mutation: `Forms` over the inner result and its event. A
-    /// `forms.applyEffects` batch that wrote nothing answers a bare result
-    /// with no `mutationSequence`; that answers itself with no event.
+    /// A form mutation: `Mutation`, except that a `forms.applyEffects` batch
+    /// that wrote nothing answers a bare result with no `mutationSequence`,
+    /// which answers itself with no event.
     FormMutation,
     /// `forms.applyEffects`: `FormMutation`, with the event the host
     /// publishes as `form.valueChanged` renamed `form.effectsApplied`, as
@@ -91,10 +78,6 @@ pub enum Decode {
     /// Bytes in the first payload, put back into the result as `bytes`
     /// (`{"$bytes": base64}`), as the form plugin reads an export.
     ExportBytes,
-    /// A scale write: `Mutation`, with the `PageScaleResult`'s page and the
-    /// `page.viewportsChanged` event's nested as `page: PageRef`, which is
-    /// what the measurement plugin's viewport sync reads.
-    MeasureMutation,
     /// `pages.renderEncoded`: width, height and type in the result, the
     /// encoded bytes as the payload, answered as the `PageImage` a local
     /// engine gives the stamp plugin (`source.kind == "bytes"`).
@@ -208,15 +191,15 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
-        "page.annotations.list" => ("annotations.listRawPage", Decode::Annotations),
-        "annotations.listRawAll" => ("annotations.listRawAll", Decode::Annotations),
-        "page.annotations.create" => ("annotations.create", Decode::AnnotationMutation),
-        "page.annotations.update" => ("annotations.update", Decode::AnnotationMutation),
-        "page.annotations.delete" => ("annotations.delete", Decode::AnnotationMutation),
+        "page.annotations.list" => ("annotations.listRawPage", Decode::Result),
+        "annotations.listRawAll" => ("annotations.listRawAll", Decode::Result),
+        "page.annotations.create" => ("annotations.create", Decode::Mutation),
+        "page.annotations.update" => ("annotations.update", Decode::Mutation),
+        "page.annotations.delete" => ("annotations.delete", Decode::Mutation),
         "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
-        "redaction.apply" => ("redaction.apply", Decode::Redaction),
+        "redaction.apply" => ("redaction.apply", Decode::Mutation),
         "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
-        "page.measure.setScale" => ("measure.setScale", Decode::MeasureMutation),
+        "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -224,7 +207,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
-        "forms.list" => ("forms.list", Decode::Forms),
+        "forms.list" => ("forms.list", Decode::Result),
         "forms.setValue" => ("forms.setValue", Decode::FormMutation),
         "forms.reset" => ("forms.reset", Decode::FormMutation),
         "forms.applyEffects" => ("forms.applyEffects", Decode::FormEffects),
@@ -240,9 +223,9 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
         "pages.setName" => ("pages.setName", Decode::PageMutation),
         "pages.removeName" => ("pages.removeName", Decode::PageMutation),
-        // `AnnotationMutation` for its `nest_refs`: each per-page result's
-        // `pageObjectNumber` arrives as the `page` the stamp plugin reads.
-        "pages.flatten" => ("pages.flatten", Decode::AnnotationMutation),
+        // Not `PageMutation`: a flatten answers per-page results, each with
+        // the `page` the stamp plugin reads, and no layout.
+        "pages.flatten" => ("pages.flatten", Decode::Mutation),
         "download" => ("document.saveBuffer", Decode::HostBytes),
         "signatures.list" => ("signatures.list", Decode::Result),
         "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
@@ -269,7 +252,7 @@ pub fn translate(
         coded("unsupported", format!("[epdf-viewer-host] the native engine has no \"{path}\" yet"))
     })?;
     let page = || {
-        pon.map(Value::from).ok_or_else(|| {
+        pon.map(|pon| PageRef::new(pon).to_json()).ok_or_else(|| {
             coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
         })
     };
@@ -277,14 +260,14 @@ pub fn translate(
     let mut payloads = Vec::new();
     let extra: Vec<(&str, Value)> = match kind {
         "metadata.update" => vec![("patch", arg(0))],
-        "pages.text" | "pages.geometry" => vec![("pageObjectNumber", page()?)],
-        "pages.render" => vec![("pageObjectNumber", page()?), ("options", render_options(arg(0)))],
+        "pages.text" | "pages.geometry" => vec![("page", page()?)],
+        "pages.render" => vec![("page", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
-        "annotations.listRawPage" => vec![("pageObjectNumber", page()?)],
+        "annotations.listRawPage" => vec![("page", page()?)],
         "annotations.create" => {
             let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
             let draft = wire_refs_in(path, draft)?;
-            vec![("pageObjectNumber", page()?), ("draft", draft), ("resources", resources)]
+            vec![("page", page()?), ("draft", draft), ("resources", resources)]
         }
         "annotations.update" => {
             let (patch, resources) = normalize_binary(arg(1), &mut payloads)?;
@@ -293,22 +276,20 @@ pub fn translate(
         }
         "annotations.delete" => vec![("ref", wire_ref(path, arg(0))?)],
         "annotations.readFile" => {
-            vec![("pageObjectNumber", page()?), ("ref", wire_ref(path, arg(0))?)]
+            vec![("page", page()?), ("ref", wire_ref(path, arg(0))?)]
         }
         "redaction.apply" => vec![("scope", redaction_scope_out(path, arg(0))?)],
-        "measure.viewports" => vec![("pageObjectNumber", page()?)],
-        "measure.setScale" => vec![("pageObjectNumber", page()?)],
+        "measure.viewports" => vec![("page", page()?)],
+        "measure.setScale" => vec![("page", page()?)],
         "pages.move" => vec![
-            ("pageObjectNumbers", object_numbers(path, &arg(0))?),
+            ("pages", page_refs(path, &arg(0))?),
             ("destIndex", whole(path, "destIndex", &arg(1))?),
         ],
         "pages.rotate" => vec![
-            ("pageObjectNumbers", object_numbers(path, &arg(0))?),
+            ("pages", page_refs(path, &arg(0))?),
             ("rotation", whole(path, "rotation", &arg(1))?),
         ],
-        "pages.delete" | "pages.extract" => {
-            vec![("pageObjectNumbers", object_numbers(path, &arg(0))?)]
-        }
+        "pages.delete" | "pages.extract" => vec![("pages", page_refs(path, &arg(0))?)],
         "pages.insertBlank" => {
             let spec = arg(0);
             vec![
@@ -344,7 +325,7 @@ pub fn translate(
         }
         "forms.createField" => {
             let mut draft = arg(0);
-            flatten_placements(&mut draft);
+            whole_placements(path, &mut draft)?;
             vec![("draft", draft)]
         }
         "forms.updateField" => {
@@ -362,31 +343,27 @@ pub fn translate(
             ]
         }
         "pieceInfo.read" if path == "page.pieceInfo.read" => {
-            vec![("pageObjectNumber", page()?), ("application", arg(0))]
+            vec![("page", page()?), ("application", arg(0))]
         }
         "pieceInfo.read" => vec![("application", arg(0))],
         "pieceInfo.update" if path == "page.pieceInfo.update" => {
-            vec![("pageObjectNumber", page()?), ("application", arg(0)), ("patch", arg(1))]
+            vec![("page", page()?), ("application", arg(0)), ("patch", arg(1))]
         }
         "pieceInfo.update" => vec![("application", arg(0)), ("patch", arg(1))],
         "pages.setName" => {
             let input = arg(0);
-            let pon = input
-                .get("page")
-                .and_then(PageRef::from_json)
-                .map(|p| Value::from(p.page_object_number))
-                .ok_or_else(|| {
-                    coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
-                })?;
+            let page = input.get("page").and_then(PageRef::from_json).ok_or_else(|| {
+                coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
+            })?;
             vec![
                 ("name", input.get("name").cloned().unwrap_or(Value::Null)),
-                ("pageObjectNumber", pon),
+                ("page", page.to_json()),
                 ("replace", input.get("replace").cloned().unwrap_or(Value::Null)),
             ]
         }
         "pages.removeName" => vec![("name", arg(0).get("name").cloned().unwrap_or(Value::Null))],
         "pages.flatten" => {
-            vec![("pageObjectNumbers", object_numbers(path, &arg(0))?), ("usage", arg(1))]
+            vec![("pages", page_refs(path, &arg(0))?), ("usage", arg(1))]
         }
         "document.saveBuffer" => vec![("mode", "full".into())],
         "signatures.list" => {
@@ -487,7 +464,7 @@ pub fn translate_encoded_render(
         "kind": "pages.renderEncoded",
         "jobId": job,
         "docId": doc,
-        "pageObjectNumber": page,
+        "page": PageRef::new(page).to_json(),
         "options": render_options(options),
         "encode": { "format": "png" },
     });
@@ -547,19 +524,20 @@ fn whole_at(path: &str, value: &mut Value, pointer: &str) -> Result<(), Error> {
     Ok(())
 }
 
-/// `[PageRef]` as the host's `[pageObjectNumber]`.
-fn object_numbers(path: &str, refs: &Value) -> Result<Value, Error> {
+/// One `PageRef`, re-spelled so its object number is the whole integer the
+/// host's serde parses (the kernel's numbers are JavaScript numbers).
+fn page_ref(path: &str, value: &Value) -> Result<Value, Error> {
+    PageRef::from_json(value).map(PageRef::to_json).ok_or_else(|| {
+        coded("invalid-input", format!("[epdf-viewer-host] {path}: not a PageRef: {value}"))
+    })
+}
+
+/// `PageRef[]`, each re-spelled as `page_ref` does.
+fn page_refs(path: &str, refs: &Value) -> Result<Value, Error> {
     let refs = refs.as_array().ok_or_else(|| {
         coded("invalid-input", format!("[epdf-viewer-host] {path} takes a list of pages: {refs}"))
     })?;
-    refs.iter()
-        .map(|r| {
-            PageRef::from_json(r).map(|p| Value::from(p.page_object_number)).ok_or_else(|| {
-                coded("invalid-input", format!("[epdf-viewer-host] {path}: not a PageRef: {r}"))
-            })
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map(Value::Array)
+    refs.iter().map(|r| page_ref(path, r)).collect::<Result<Vec<_>, _>>().map(Value::Array)
 }
 
 /// A PDF given as `Bytes` JSON: `{"$bytes": base64}` from the caller, or
@@ -570,19 +548,13 @@ fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
     })
 }
 
-/// A `SearchRequest` the host reads: `startPage` is a `PageObjectNumber`
-/// there, where the plugin sends a `PageRef`. The rest goes as it is.
+/// A `SearchRequest` as the plugin sends it, its `startPage` a `PageRef`
+/// with a whole object number. The rest goes as it is.
 fn search_request(mut request: Value) -> Result<Value, Error> {
-    let Some(start) = request.get_mut("startPage") else { return Ok(request) };
-    if start.is_object() {
-        let pon = PageRef::from_json(start).ok_or_else(|| {
-            coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] search.query's startPage is not a PageRef: {start}"),
-            )
-        })?;
-        *start = pon.page_object_number.into();
-    }
+    let Some(start) = request.get_mut("startPage").filter(|s| !s.is_null()) else {
+        return Ok(request);
+    };
+    *start = page_ref("search.query's startPage", start)?;
     Ok(request)
 }
 
@@ -602,107 +574,25 @@ fn malformed(what: String) -> Error {
     Error::new(format!("[epdf-viewer-host] the host answered {what}"))
 }
 
-/// The `page: PageRef` a host page object (a page, a search match) lacks,
-/// from its `pageObjectNumber`.
-fn add_page_ref(object: &mut Value, key: &str, what: &str) -> Result<(), Error> {
-    let pon = object
-        .get("pageObjectNumber")
-        .and_then(Value::as_u64)
-        .and_then(|n| u32::try_from(n).ok())
-        .ok_or_else(|| malformed(format!("{what} without a pageObjectNumber: {object}")))?;
-    match object {
-        Value::Object(map) => {
-            map.insert(key.into(), PageRef::new(pon).to_json());
-            Ok(())
-        }
-        other => Err(malformed(format!("{what} that is not an object: {other}"))),
-    }
-}
-
-/// A `PageRef` itself, `{kind: "objectNumber", pageObjectNumber}`, which
-/// both spellings share.
-fn is_page_ref(map: &Map<String, Value>) -> bool {
-    map.len() == 2
-        && map.get("kind").and_then(Value::as_str) == Some("objectNumber")
-        && map.get("pageObjectNumber").is_some_and(Value::is_u64)
-}
-
-fn page_number(value: Option<&Value>) -> Option<u32> {
-    value.and_then(Value::as_u64).and_then(|n| u32::try_from(n).ok())
-}
-
-/// Every page `value` names, kernel spelling to host spelling: a
-/// `page: PageRef` member (an annotation ref's, a destination's, a revision
-/// token's, a DTO's) becomes `pageObjectNumber`. A `PageRef` itself keeps
-/// its spelling.
-pub fn flatten_refs(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            let nested = match map.get("page") {
-                Some(Value::Object(page)) if is_page_ref(page) => {
-                    page_number(page.get("pageObjectNumber"))
-                }
-                _ => None,
-            };
-            if let Some(pon) = nested
-                && !is_page_ref(map)
-            {
-                map.remove("page");
-                map.insert("pageObjectNumber".into(), pon.into());
-            }
-            map.values_mut().for_each(flatten_refs);
-        }
-        Value::Array(items) => items.iter_mut().for_each(flatten_refs),
-        _ => {}
-    }
-}
-
-/// Every page `value` names, host spelling to kernel spelling. The host
-/// spells a page as `pageObjectNumber` wherever the kernel's vectors spell
-/// `page: PageRef`: an annotation ref, a destination (in a link's target and
-/// in its action tree), a DTO, a page state and its revision token. A bare
-/// numeric `page` becomes a `PageRef` too. A `PageRef` itself keeps its
-/// spelling.
-pub fn nest_refs(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            if !is_page_ref(map)
-                && let Some(pon) = page_number(map.get("pageObjectNumber"))
-            {
-                map.remove("pageObjectNumber");
-                map.insert("page".into(), PageRef::new(pon).to_json());
-            }
-            if let Some(pon) = page_number(map.get("page")) {
-                map.insert("page".into(), PageRef::new(pon).to_json());
-            }
-            map.values_mut().for_each(nest_refs);
-        }
-        Value::Array(items) => items.iter_mut().for_each(nest_refs),
-        _ => {}
-    }
-}
-
-/// An annotation ref the host's way: flat, and with its JavaScript numbers
-/// (`annotObjectNumber`, `index`, a revision's `generation`, each sent as
-/// `17.0`) as the whole integers the host's serde parses.
+/// An annotation ref with its JavaScript numbers (`annotObjectNumber`,
+/// `index`, a revision's `generation`, its pages' `pageObjectNumber`, each
+/// sent as `17.0`) as the whole integers the host's serde parses.
 fn wire_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    flatten_refs(&mut target);
     whole_refs(path, &mut target)?;
     Ok(target)
 }
 
-/// A draft or patch the host's way: every ref inside it (a reply's
-/// `inReplyTo`, a link's `goto` destination) flat and whole, as
-/// `wire_ref` makes the call's own ref. Other members keep their numbers.
+/// A draft or patch with every ref inside it (a reply's `inReplyTo`, a
+/// link's `goto` destination) whole, as `wire_ref` makes the call's own ref.
+/// Other members keep their numbers.
 fn wire_refs_in(path: &str, mut value: Value) -> Result<Value, Error> {
-    flatten_refs(&mut value);
     whole_refs(path, &mut value)?;
     Ok(value)
 }
 
 /// The JavaScript numbers of every annotation ref (an object whose `kind`
-/// is `objectNumber`, `nm` or `index`, beside a `pageObjectNumber`) and
-/// of its revision token, as whole integers.
+/// is `objectNumber`, `nm` or `index`, beside a `page`), of its revision
+/// token, and of every `PageRef`, as whole integers.
 fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
     fn whole_keys(path: &str, map: &mut Map<String, Value>, keys: &[&str]) -> Result<(), Error> {
         for key in keys {
@@ -715,14 +605,17 @@ fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
     }
     match value {
         Value::Object(map) => {
-            let is_ref = matches!(
-                map.get("kind").and_then(Value::as_str),
-                Some("objectNumber" | "nm" | "index")
-            ) && map.contains_key("pageObjectNumber");
+            let kind = map.get("kind").and_then(Value::as_str).map(str::to_owned);
+            let kind = kind.as_deref();
+            if kind == Some("objectNumber") && map.contains_key("pageObjectNumber") {
+                whole_keys(path, map, &["pageObjectNumber"])?;
+            }
+            let is_ref =
+                matches!(kind, Some("objectNumber" | "nm" | "index")) && map.contains_key("page");
             if is_ref {
-                whole_keys(path, map, &["annotObjectNumber", "index", "pageObjectNumber"])?;
+                whole_keys(path, map, &["annotObjectNumber", "index"])?;
                 if let Some(Value::Object(revision)) = map.get_mut("revision") {
-                    whole_keys(path, revision, &["generation", "pageObjectNumber"])?;
+                    whole_keys(path, revision, &["generation"])?;
                 }
             }
             for member in map.values_mut() {
@@ -769,53 +662,24 @@ fn whole_field_refs(path: &str, value: &mut Value) -> Result<(), Error> {
     Ok(())
 }
 
-/// A form widget the host spells `{annotObjectNumber, pageObjectNumber}`,
-/// given the `ref` and `page` the plugin reads. A toggle widget's
-/// `onState`, `exportValue` and `checked` stay beside them.
-pub fn nest_widgets(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            let widget = map.contains_key("annotObjectNumber")
-                && !map.contains_key("kind")
-                && !map.contains_key("ref");
-            if widget
-                && let (Some(annot), Some(pon)) = (
-                    map.get("annotObjectNumber").and_then(Value::as_u64),
-                    page_number(map.get("pageObjectNumber")),
-                )
-            {
-                map.remove("pageObjectNumber");
-                let page = PageRef::new(pon).to_json();
-                map.insert("page".into(), page.clone());
-                map.insert(
-                    "ref".into(),
-                    serde_json::json!({ "kind": "objectNumber", "page": page, "annotObjectNumber": annot }),
-                );
-            }
-            map.values_mut().for_each(nest_widgets);
+/// A field draft's widget placements, each `page: PageRef` with the whole
+/// object number `WidgetPlacement` parses.
+fn whole_placements(path: &str, draft: &mut Value) -> Result<(), Error> {
+    let whole_page = |placement: &mut Value| -> Result<(), Error> {
+        if let Some(page) = placement.get_mut("page") {
+            *page = page_ref(path, page)?;
         }
-        Value::Array(items) => items.iter_mut().for_each(nest_widgets),
-        _ => {}
-    }
-}
-
-/// A field draft's widget placements: `page: PageRef` out as
-/// `pageObjectNumber`, which `WidgetPlacement` reads.
-fn flatten_placements(draft: &mut Value) {
-    let flatten = |placement: &mut Value| {
-        if let Value::Object(map) = placement
-            && let Some(pon) = map.get("page").and_then(|p| p.get("pageObjectNumber")).cloned()
-        {
-            map.remove("page");
-            map.insert("pageObjectNumber".into(), pon);
-        }
+        Ok(())
     };
     if let Some(widget) = draft.get_mut("widget") {
-        flatten(widget);
+        whole_page(widget)?;
     }
     if let Some(Value::Array(widgets)) = draft.get_mut("widgets") {
-        widgets.iter_mut().for_each(flatten);
+        for widget in widgets {
+            whole_page(widget)?;
+        }
     }
+    Ok(())
 }
 
 /// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
@@ -890,14 +754,13 @@ fn take_binary(
 }
 
 /// The kernel's apply scope as the host's `RedactionScope` reads it:
-/// `{kind: "pages", pages: [PageRef]}` becomes `pageObjectNumbers`, and an
-/// annotations scope's refs go flat and whole.
+/// `{kind: "pages", pages: [PageRef]}` with whole object numbers, or an
+/// annotations scope whose refs go whole.
 fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
     match scope.get("kind").and_then(Value::as_str) {
         Some("pages") => {
             let pages = scope.get("pages").cloned().unwrap_or(Value::Null);
-            let numbers = object_numbers(path, &pages)?;
-            Ok(serde_json::json!({ "kind": "pages", "pageObjectNumbers": numbers }))
+            Ok(serde_json::json!({ "kind": "pages", "pages": page_refs(path, &pages)? }))
         }
         Some("annotations") => wire_refs_in(path, scope),
         _ => Err(coded(
@@ -907,72 +770,21 @@ fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
     }
 }
 
-/// A host `RedactionApplyResult` (or the `redaction.applied` event, which
-/// spreads one) in the kernel's spelling: the scope's `pageObjectNumbers`
-/// as `pages: [PageRef]`, and every `pageObjectNumber` (a result's, a
-/// ref's) as `page: PageRef`.
-fn redaction_result_in(result: &mut Value, what: &str) -> Result<(), Error> {
-    if let Some(scope) = result.get_mut("scope").and_then(Value::as_object_mut)
-        && let Some(numbers) = scope.remove("pageObjectNumbers")
-    {
-        let pages = numbers
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|n| {
-                page_number(Some(n))
-                    .map(|n| PageRef::new(n).to_json())
-                    .ok_or_else(|| malformed(format!("{what} naming a page that is not one: {n}")))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        scope.insert("pages".into(), Value::Array(pages));
+/// That `object[key]` is a `PageRef`, as the kernel's page registry, the
+/// search plugin and the page-edit plugin read it.
+fn require_page_ref(object: &Value, key: &str, what: &str) -> Result<(), Error> {
+    match object.get(key) {
+        Some(page) if PageRef::from_json(page).is_some() => Ok(()),
+        _ => Err(malformed(format!("{what} without a PageRef \"{key}\": {object}"))),
     }
-    nest_refs(result);
-    Ok(())
 }
 
-/// `ref` on every page of `object.layout.pages`, which must be there.
-fn add_layout_refs(object: &mut Value, what: &str) -> Result<(), Error> {
-    let Some(Value::Array(pages)) = object.get_mut("layout").and_then(|l| l.get_mut("pages"))
-    else {
+/// That `object.layout.pages` is there, each page named by its `ref`.
+fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
+    let Some(Value::Array(pages)) = object.get("layout").and_then(|l| l.get("pages")) else {
         return Err(malformed(format!("{what} without a layout")));
     };
-    for page in pages {
-        add_page_ref(page, "ref", "a layout page")?;
-    }
-    if let Some(layout) = object.get_mut("layout") {
-        nest_named_pages(layout);
-    }
-    Ok(())
-}
-
-/// A `pages.named` event's page, `page: PageRef | null` as the TypeScript
-/// publishes it, where the host spells `pageObjectNumber`.
-fn named_page_in(event: &mut Value) {
-    if event.get("type").and_then(Value::as_str) != Some("pages.named") {
-        return;
-    }
-    if let Value::Object(map) = event {
-        let page = page_number(map.remove("pageObjectNumber").as_ref())
-            .map_or(Value::Null, |pon| PageRef::new(pon).to_json());
-        map.insert("page".into(), page);
-    }
-}
-
-/// A page list's `namedPages`, each page target's `pageObjectNumber` as
-/// the `page: PageRef` `NamedPageTarget` has. Templates and dangling
-/// entries keep their spelling.
-fn nest_named_pages(list: &mut Value) {
-    let Some(Value::Array(named)) = list.get_mut("namedPages") else { return };
-    for target in named.iter_mut().filter_map(|n| n.get_mut("target")) {
-        if let Value::Object(map) = target
-            && map.get("kind").and_then(Value::as_str) == Some("page")
-            && let Some(pon) = page_number(map.get("pageObjectNumber"))
-        {
-            map.remove("pageObjectNumber");
-            map.insert("page".into(), PageRef::new(pon).to_json());
-        }
-    }
+    pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a layout page"))
 }
 
 /// Read a host response into what the call's caller expects.
@@ -1003,38 +815,18 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         Decode::Result | Decode::OptionalResult => Value::Object(result),
         Decode::Field(name) => take(&mut result, name)?,
         Decode::PageList => {
-            let Some(Value::Array(pages)) = result.get_mut("pages") else {
+            let Some(Value::Array(pages)) = result.get("pages") else {
                 return Err(malformed("a page list without \"pages\"".into()));
             };
-            for page in pages {
-                add_page_ref(page, "ref", "a page")?;
-            }
-            let mut list = Value::Object(result);
-            nest_named_pages(&mut list);
-            list
-        }
-        Decode::SearchSlice => {
-            let Some(Value::Array(matches)) = result.get_mut("matches") else {
-                return Err(malformed("a search slice without \"matches\"".into()));
-            };
-            for hit in matches {
-                add_page_ref(hit, "page", "a search match")?;
-            }
+            pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a page"))?;
             Value::Object(result)
         }
-        Decode::Annotations => {
-            let mut value = Value::Object(result);
-            nest_refs(&mut value);
-            value
-        }
-        Decode::AnnotationMutation | Decode::MeasureMutation => {
-            let mut value = take(&mut result, "result")?;
-            nest_refs(&mut value);
-            let mut event = result.remove("event");
-            if let Some(event) = event.as_mut() {
-                nest_refs(event);
-            }
-            return Ok(Decoded { value, event });
+        Decode::SearchSlice => {
+            let Some(Value::Array(matches)) = result.get("matches") else {
+                return Err(malformed("a search slice without \"matches\"".into()));
+            };
+            matches.iter().try_for_each(|hit| require_page_ref(hit, "page", "a search match"))?;
+            Value::Object(result)
         }
         Decode::AttachmentContent => {
             let bytes = response
@@ -1046,36 +838,21 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
             Value::Object(result)
         }
-        Decode::Forms => {
-            let mut value = Value::Object(result);
-            nest_widgets(&mut value);
-            nest_refs(&mut value);
-            value
-        }
         Decode::FormMutation | Decode::FormEffects => {
             if !result.contains_key("mutationSequence") {
-                let mut value = Value::Object(result);
-                nest_widgets(&mut value);
-                nest_refs(&mut value);
-                return Ok(Decoded { value, event: None });
+                return Ok(Decoded { value: Value::Object(result), event: None });
             }
-            let mut value = take(&mut result, "result")?;
-            nest_widgets(&mut value);
-            nest_refs(&mut value);
+            let value = take(&mut result, "result")?;
             let mut event = result.remove("event");
-            if let Some(event) = event.as_mut() {
-                nest_widgets(event);
-                nest_refs(event);
-                if let (Decode::FormEffects, Value::Object(map)) = (decode, event) {
-                    map.insert("type".into(), "form.effectsApplied".into());
-                }
+            if let Some(event) = event.as_mut()
+                && let (Decode::FormEffects, Value::Object(map)) = (decode, event)
+            {
+                map.insert("type".into(), "form.effectsApplied".into());
             }
             return Ok(Decoded { value, event });
         }
         Decode::FormFieldMutation => {
-            let mut field = take(&mut result, "result")?;
-            nest_widgets(&mut field);
-            nest_refs(&mut field);
+            let field = take(&mut result, "result")?;
             let event = match result.remove("event") {
                 Some(Value::Object(mut spread)) => {
                     let mut event = Map::new();
@@ -1084,10 +861,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                             event.insert(key.into(), value);
                         }
                     }
-                    let mut field = Value::Object(spread);
-                    nest_widgets(&mut field);
-                    nest_refs(&mut field);
-                    event.insert("field".into(), field);
+                    event.insert("field".into(), Value::Object(spread));
                     Some(Value::Object(event))
                 }
                 other => other,
@@ -1103,40 +877,16 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             result.insert("bytes".into(), epdf_kernel::bytes::Bytes(bytes).to_json());
             Value::Object(result)
         }
-        Decode::Redaction => {
-            let mut value = take(&mut result, "result")?;
-            redaction_result_in(&mut value, "a redaction result")?;
-            let mut event = result.remove("event");
-            if let Some(event) = event.as_mut().filter(|e| e.is_object()) {
-                redaction_result_in(event, "a redaction event")?;
-            }
-            return Ok(Decoded { value, event });
-        }
         Decode::Mutation => {
             let value = take(&mut result, "result")?;
             return Ok(Decoded { value, event: result.remove("event") });
         }
         Decode::PageMutation => {
-            let mut value = take(&mut result, "result")?;
-            add_layout_refs(&mut value, "a page mutation's result")?;
-            if let Some(pons) = value.get("insertedPageObjectNumbers").and_then(Value::as_array) {
-                let refs = pons
-                    .iter()
-                    .map(|n| {
-                        n.as_u64()
-                            .and_then(|n| u32::try_from(n).ok())
-                            .map(|n| PageRef::new(n).to_json())
-                            .ok_or_else(|| {
-                                malformed(format!("an inserted page that is not a number: {n}"))
-                            })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                value["insertedPages"] = Value::Array(refs);
-            }
-            let mut event = result.remove("event");
-            if let Some(event) = event.as_mut() {
-                add_layout_refs(event, "a page event")?;
-                named_page_in(event);
+            let value = take(&mut result, "result")?;
+            require_layout_refs(&value, "a page mutation's result")?;
+            let event = result.remove("event");
+            if let Some(event) = event.as_ref() {
+                require_layout_refs(event, "a page event")?;
             }
             return Ok(Decoded { value, event });
         }

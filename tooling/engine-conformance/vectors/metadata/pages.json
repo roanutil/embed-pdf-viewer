@@ -11,7 +11,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -47,7 +50,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 2,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 2
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -72,7 +78,10 @@
           },
           {
             "index": 1,
-            "pageObjectNumber": 43,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 43
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -97,7 +106,10 @@
           },
           {
             "index": 2,
-            "pageObjectNumber": 104,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 104
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -122,7 +134,10 @@
           },
           {
             "index": 3,
-            "pageObjectNumber": 110,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 110
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -147,7 +162,10 @@
           },
           {
             "index": 4,
-            "pageObjectNumber": 116,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 116
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -172,7 +190,10 @@
           },
           {
             "index": 5,
-            "pageObjectNumber": 122,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 122
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -197,7 +218,10 @@
           },
           {
             "index": 6,
-            "pageObjectNumber": 156,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 156
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -222,7 +246,10 @@
           },
           {
             "index": 7,
-            "pageObjectNumber": 193,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 193
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -247,7 +274,10 @@
           },
           {
             "index": 8,
-            "pageObjectNumber": 196,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 196
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -272,7 +302,10 @@
           },
           {
             "index": 9,
-            "pageObjectNumber": 202,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 202
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -297,7 +330,10 @@
           },
           {
             "index": 10,
-            "pageObjectNumber": 217,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 217
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -322,7 +358,10 @@
           },
           {
             "index": 11,
-            "pageObjectNumber": 787,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 787
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -347,7 +386,10 @@
           },
           {
             "index": 12,
-            "pageObjectNumber": 790,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 790
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -372,7 +414,10 @@
           },
           {
             "index": 13,
-            "pageObjectNumber": 966,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 966
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -408,7 +453,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 80,
@@ -444,7 +492,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -480,7 +531,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -505,7 +559,10 @@
           },
           {
             "index": 1,
-            "pageObjectNumber": 4,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 4
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -530,7 +587,10 @@
           },
           {
             "index": 2,
-            "pageObjectNumber": 5,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 5
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -555,7 +615,10 @@
           },
           {
             "index": 3,
-            "pageObjectNumber": 6,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 6
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -591,7 +654,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -639,7 +705,10 @@
                   "subtype": "GoTo",
                   "destination": {
                     "kind": "xyz",
-                    "pageObjectNumber": 4,
+                    "page": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 4
+                    },
                     "left": 100,
                     "top": 200,
                     "zoom": null
@@ -654,7 +723,10 @@
           },
           {
             "index": 1,
-            "pageObjectNumber": 4,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 4
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -691,7 +763,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,

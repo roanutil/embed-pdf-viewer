@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, open_fixture};
+use common::{call, open_fixture, page_ref};
 
 const REPORT: &str = "pdfium-multiplatform-prototype/fixtures/report.pdf";
 
@@ -29,9 +29,9 @@ fn a_set_name_is_in_the_next_page_list() {
     let (doc, pon) = open_fixture(&mut host, REPORT);
     let set = call(
         &mut host,
-        json!({ "kind": "pages.setName", "docId": doc, "name": "approved=Approved", "pageObjectNumber": pon }),
+        json!({ "kind": "pages.setName", "docId": doc, "name": "approved=Approved", "page": page_ref(pon) }),
     );
-    let named = json!([{ "name": "approved=Approved", "target": { "kind": "page", "pageObjectNumber": pon } }]);
+    let named = json!([{ "name": "approved=Approved", "target": { "kind": "page", "page": page_ref(pon) } }]);
     assert_eq!(set["result"]["layout"]["namedPages"], named);
     let list = call(&mut host, json!({ "kind": "pages.list", "docId": doc }));
     assert_eq!(list["namedPages"], named);
@@ -42,21 +42,21 @@ fn a_name_change_publishes_pages_named() {
     let mut host = Host::new();
     let (doc, pon) = open_fixture(&mut host, REPORT);
     let response = host.call(
-        &json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "a=A", "pageObjectNumber": pon })
+        &json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "a=A", "page": page_ref(pon) })
             .to_string(),
         Vec::new(),
     );
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(envelope["result"]["event"]["type"], json!("pages.named"), "{}", envelope["error"]);
     assert_eq!(envelope["result"]["event"]["name"], json!("a=A"));
-    assert_eq!(envelope["result"]["event"]["pageObjectNumber"], json!(pon));
+    assert_eq!(envelope["result"]["event"]["page"], page_ref(pon));
     let response = host.call(
         &json!({ "kind": "pages.removeName", "jobId": 2, "docId": doc, "name": "a=A" }).to_string(),
         Vec::new(),
     );
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(envelope["result"]["event"]["type"], json!("pages.named"), "{}", envelope["error"]);
-    assert_eq!(envelope["result"]["event"]["pageObjectNumber"], Value::Null);
+    assert_eq!(envelope["result"]["event"]["page"], Value::Null);
     assert_eq!(envelope["result"]["result"]["layout"]["namedPages"], json!([]));
 }
 
@@ -75,7 +75,7 @@ fn removing_a_missing_name_is_not_found() {
 fn an_empty_name_is_invalid() {
     let mut host = Host::new();
     let (doc, pon) = open_fixture(&mut host, REPORT);
-    let set = json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "", "pageObjectNumber": pon });
+    let set = json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "", "page": page_ref(pon) });
     assert_eq!(error_code(&mut host, set), json!("InvalidArg"));
     let remove = json!({ "kind": "pages.removeName", "jobId": 2, "docId": doc, "name": "" });
     assert_eq!(error_code(&mut host, remove), json!("InvalidArg"));
@@ -85,7 +85,7 @@ fn an_empty_name_is_invalid() {
 fn an_unknown_page_is_not_found() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, REPORT);
-    let set = json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "a=A", "pageObjectNumber": 999_999 });
+    let set = json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "a=A", "page": page_ref(999_999u64) });
     assert_eq!(error_code(&mut host, set), json!("NotFound"));
 }
 
@@ -95,11 +95,11 @@ fn replace_moves_a_name() {
     let (doc, pon) = open_fixture(&mut host, REPORT);
     call(
         &mut host,
-        json!({ "kind": "pages.setName", "docId": doc, "name": "a=A", "pageObjectNumber": pon }),
+        json!({ "kind": "pages.setName", "docId": doc, "name": "a=A", "page": page_ref(pon) }),
     );
     call(
         &mut host,
-        json!({ "kind": "pages.setName", "docId": doc, "name": "a=B", "pageObjectNumber": pon, "replace": "a=A" }),
+        json!({ "kind": "pages.setName", "docId": doc, "name": "a=B", "page": page_ref(pon), "replace": "a=A" }),
     );
     let list = call(&mut host, json!({ "kind": "pages.list", "docId": doc }));
     assert_eq!(list["namedPages"].as_array().unwrap().len(), 1);

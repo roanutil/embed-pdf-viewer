@@ -274,6 +274,7 @@ pub struct PageInsertResult {
     /// The new pages, in the order they landed. Their object numbers are
     /// fresh and are resolved from the list AFTER the insert: they do not
     /// exist before it and cannot be predicted.
+    #[serde(rename = "insertedPages", with = "crate::identity::page_refs")]
     pub inserted_page_object_numbers: Vec<PageObjectNumber>,
     pub layout: PageListSnapshot,
 }
@@ -436,6 +437,7 @@ pub enum FlattenStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FlattenItem {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub status: FlattenStatus,
     /// Why, for a failure. Carried per page rather than thrown, because a
@@ -451,6 +453,7 @@ pub struct FlattenItem {
 pub struct FlattenResult {
     /// The request as it was made, in order. Kept so an event replay can
     /// see what was asked for and not only what happened.
+    #[serde(rename = "pages", with = "crate::identity::page_refs")]
     pub page_object_numbers: Vec<PageObjectNumber>,
     pub usage: FlattenUsage,
     pub results: Vec<FlattenItem>,

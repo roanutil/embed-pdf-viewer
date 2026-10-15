@@ -21,7 +21,11 @@ fn engine() -> Arc<PdfEngine> {
     PdfEngine::new()
 }
 
-fn call(engine: &PdfEngine, request: serde_json::Value, payloads: Vec<Vec<u8>>) -> serde_json::Value {
+fn call(
+    engine: &PdfEngine,
+    request: serde_json::Value,
+    payloads: Vec<Vec<u8>>,
+) -> serde_json::Value {
     let response = engine
         .call(PdfRequest { json: request.to_string(), payloads })
         .expect("the engine thread answered");
@@ -94,7 +98,7 @@ fn a_refused_operation_answers_rather_than_raising() {
     open(&engine);
     let json = call(
         &engine,
-        serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": 99_999 }),
+        serde_json::json!({ "kind": "pages.text", "docId": "d", "page": { "kind": "objectNumber", "pageObjectNumber": 99_999 } }),
         Vec::new(),
     );
     assert!(json["error"]["code"].is_string(), "a refusal carried no code: {json}");
@@ -107,9 +111,8 @@ fn the_wire_and_the_typed_methods_see_the_same_documents() {
     // to the wire must not find itself with two sets of open documents, and
     // a separate host per surface is exactly how that would happen.
     let engine = engine();
-    let document = engine
-        .open(test_support::fixture(FIXTURE), None)
-        .expect("the typed surface opens it");
+    let document =
+        engine.open(test_support::fixture(FIXTURE), None).expect("the typed surface opens it");
     let typed = document.pages().expect("the typed page list");
 
     open(&engine);

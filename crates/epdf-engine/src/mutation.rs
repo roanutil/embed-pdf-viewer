@@ -29,6 +29,7 @@ pub enum RefetchReason {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageCacheDelta {
+    #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub cache: CachePins,
 }
@@ -110,10 +111,10 @@ mod tests {
             serde_json::to_value(&meta).unwrap(),
             serde_json::json!({
                 "affectedPages": [{
-                    "pageObjectNumber": 3,
+                    "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
                     "revision": {
                         "docSessionId": "session-1",
-                        "pageObjectNumber": 3,
+                        "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
                         "generation": 2,
                     },
                     "weakAnnotationState": { "kind": "known", "hasAnyWeakAnnotations": false },

@@ -19,10 +19,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import type { PageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 import { CORPUS, type CorpusCase, type CorpusOperation } from './corpus';
 import { quantizeDeep } from './quantize';
-import { pageRef } from './wire-page-refs';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -121,7 +121,7 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
           emitted.push({
             index: page.index,
             pageObjectNumber: page.ref.pageObjectNumber,
-            snapshot: quantizeDeep(await readOperation(doc, operation, page.ref.pageObjectNumber)),
+            snapshot: quantizeDeep(await readOperation(doc, operation, page.ref)),
           });
         }
         files.set(operation, {
@@ -145,13 +145,13 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
 async function readOperation(
   doc: Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>,
   operation: CorpusOperation,
-  pageObjectNumber: number,
+  page: PageRef,
 ): Promise<unknown> {
   switch (operation) {
     case 'pages.geometry':
-      return await doc.page(pageRef(pageObjectNumber)).geometry.read();
+      return await doc.page(page).geometry.read();
     case 'pages.text':
-      return await doc.page(pageRef(pageObjectNumber)).text.read();
+      return await doc.page(page).text.read();
     default: {
       // Exhaustiveness: adding an operation to CorpusOperation must not
       // silently emit nothing.

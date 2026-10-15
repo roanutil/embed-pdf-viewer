@@ -105,7 +105,11 @@ check('a refused operation returns rather than throwing', () => {
   const engine = new Engine();
   engine.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
   const response = engine.call(
-    JSON.stringify({ kind: 'pages.text', docId: 'd', pageObjectNumber: 99999 }),
+    JSON.stringify({
+      kind: 'pages.text',
+      docId: 'd',
+      page: { kind: 'objectNumber', pageObjectNumber: 99999 },
+    }),
     [],
   );
   assert.ok(JSON.parse(response.json).error.code, response.json);

@@ -168,11 +168,35 @@ impl FormValueEntry {
 }
 
 /// Where a widget is.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+///
+/// The raw facts the form model reports, `0` for a direct widget or an
+/// unplaced one. On the wire it is `FormWidget` (`formWidget()` in
+/// `core/src/identity/FormFieldRef.ts`): the page a `PageRef` or `null`, and
+/// the widget's annotation address computed beside them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FormWidgetRef {
     pub annot_object_number: u32,
     pub page_object_number: u32,
+}
+
+impl Serialize for FormWidgetRef {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        crate::features::signature::types::FormWidget::new(
+            self.annot_object_number,
+            self.page_object_number,
+        )
+        .serialize(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for FormWidgetRef {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let widget = crate::features::signature::types::FormWidget::deserialize(d)?;
+        Ok(Self {
+            annot_object_number: widget.annot_object_number,
+            page_object_number: widget.page.map_or(0, |page| page.object_number().get()),
+        })
+    }
 }
 
 /// A checkbox or radio widget, which always carries its appearance-state

@@ -19,7 +19,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenPageRefs, pageRef, pageRefs } from './wire-page-refs';
+import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -30,7 +30,7 @@ const SCHEMA_VERSION = 1;
 
 /** Three redaction markings on one page, alongside every other kind. */
 const FIXTURE = 'tooling/engine-conformance/fixtures/annotation_kinds.pdf';
-const PAGE = 3;
+const PAGE = toPageRef(3);
 
 interface RedactionCase {
   readonly name: string;
@@ -44,7 +44,7 @@ const CASES: readonly RedactionCase[] = [
     name: 'whole-page',
     covers:
       'Every marking on a page. The collateral count is what went with them, not how many markings there were.',
-    scope: { kind: 'pages', pageObjectNumbers: [PAGE] },
+    scope: { kind: 'pages', pages: [PAGE] },
   },
   {
     name: 'one-marking-by-name',
@@ -52,7 +52,7 @@ const CASES: readonly RedactionCase[] = [
       'One marking, addressed durably. The other two survive, which is what separates this from the page scope.',
     scope: {
       kind: 'annotations',
-      refs: [{ kind: 'nm', pageObjectNumber: PAGE, nm: 'a-text-redaction' }],
+      refs: [{ kind: 'nm', page: PAGE, nm: 'a-text-redaction' }],
     },
   },
   {
@@ -62,8 +62,8 @@ const CASES: readonly RedactionCase[] = [
     scope: {
       kind: 'annotations',
       refs: [
-        { kind: 'nm', pageObjectNumber: PAGE, nm: 'a-text-redaction' },
-        { kind: 'nm', pageObjectNumber: PAGE, nm: 'an-area-redaction' },
+        { kind: 'nm', page: PAGE, nm: 'a-text-redaction' },
+        { kind: 'nm', page: PAGE, nm: 'an-area-redaction' },
       ],
     },
   },
@@ -71,12 +71,12 @@ const CASES: readonly RedactionCase[] = [
     name: 'page-with-no-markings',
     covers:
       'A page with nothing to redact, which is UNCHANGED rather than failed. PDFium answers a page with no markings the same way it answers a failure, so the engine looks first.',
-    scope: { kind: 'pages', pageObjectNumbers: [PAGE] },
+    scope: { kind: 'pages', pages: [PAGE] },
   },
   {
     name: 'no-pages-refused',
     covers: 'An empty scope names nothing to redact.',
-    scope: { kind: 'pages', pageObjectNumbers: [] },
+    scope: { kind: 'pages', pages: [] },
     refused: true,
   },
   {
@@ -88,7 +88,7 @@ const CASES: readonly RedactionCase[] = [
   {
     name: 'duplicate-page-refused',
     covers: 'The same page twice. The second would redact what the first already did.',
-    scope: { kind: 'pages', pageObjectNumbers: [PAGE, PAGE] },
+    scope: { kind: 'pages', pages: [PAGE, PAGE] },
     refused: true,
   },
   {
@@ -97,7 +97,7 @@ const CASES: readonly RedactionCase[] = [
       'A reference to an annotation that is not a marking. The WHOLE call is refused, not just that page: a caller that named a highlight has confused two annotations.',
     scope: {
       kind: 'annotations',
-      refs: [{ kind: 'nm', pageObjectNumber: PAGE, nm: 'an-approved-stamp' }],
+      refs: [{ kind: 'nm', page: PAGE, nm: 'an-approved-stamp' }],
     },
     refused: true,
   },
@@ -108,8 +108,8 @@ const CASES: readonly RedactionCase[] = [
     scope: {
       kind: 'annotations',
       refs: [
-        { kind: 'index', pageObjectNumber: PAGE, index: 0, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
-        { kind: 'index', pageObjectNumber: PAGE, index: 1, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
+        { kind: 'index', page: PAGE, index: 0, revision: { docSessionId: 'x', page: PAGE, generation: 0 } },
+        { kind: 'index', page: PAGE, index: 1, revision: { docSessionId: 'x', page: PAGE, generation: 0 } },
       ],
     },
     refused: true,
@@ -117,39 +117,12 @@ const CASES: readonly RedactionCase[] = [
   {
     name: 'unknown-page-refused',
     covers: 'A page no document has.',
-    scope: { kind: 'pages', pageObjectNumbers: [999] },
+    scope: { kind: 'pages', pages: [toPageRef(999)] },
     refused: true,
   },
 ];
 
 /** The fixture with its three markings stripped, for the unchanged case. */
-/**
- * A case's scope is written in the wire's shape, which is what the vector
- * pins; the public API takes PageRefs (`9f13cea3c`), so convert going in.
- */
-function publicScope(scope: Record<string, unknown>): unknown {
-  if (scope.kind === 'pages') {
-    return { kind: 'pages', pages: pageRefs(scope.pageObjectNumbers as number[]) };
-  }
-  const refs = scope.refs as Record<string, unknown>[];
-  return {
-    kind: scope.kind,
-    refs: refs.map(({ pageObjectNumber, revision, ...ref }) => ({
-      ...ref,
-      page: pageRef(pageObjectNumber as number),
-      ...(revision === undefined
-        ? {}
-        : {
-            revision: {
-              docSessionId: (revision as { docSessionId: string }).docSessionId,
-              page: pageRef((revision as { pageObjectNumber: number }).pageObjectNumber),
-              generation: (revision as { generation: number }).generation,
-            },
-          }),
-    })),
-  };
-}
-
 function needsStrippedFixture(entry: RedactionCase): boolean {
   return entry.name === 'page-with-no-markings';
 }
@@ -173,9 +146,9 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
     try {
       if (needsStrippedFixture(entry)) {
         // Apply everything first, so the second apply has nothing left.
-        await doc.redaction.apply({ kind: 'pages', pages: [pageRef(PAGE)] } as never);
+        await doc.redaction.apply({ kind: 'pages', pages: [PAGE] } as never);
       }
-      const run = () => doc.redaction.apply(publicScope(entry.scope) as never);
+      const run = () => doc.redaction.apply(entry.scope as never);
       if (entry.refused) {
         let code: string | null = null;
         try {
@@ -189,7 +162,7 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       const result = (await run()) as Record<string, unknown>;
       // What is left on the page afterwards, which is how a caller sees
       // that the markings went and the rest did not.
-      const page = doc.page(pageRef(PAGE) as never);
+      const page = doc.page(PAGE);
       const remaining = (await page.annotations.list()).annotations.map(
         (annotation: { subtype: string; nm: string | null }) => ({
           subtype: annotation.subtype,
@@ -198,7 +171,7 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       );
       return {
         ...entry,
-        results: flattenPageRefs(result.results),
+        results: result.results,
         removedAnnotationCount: result.removedAnnotationCount,
         remaining,
       };

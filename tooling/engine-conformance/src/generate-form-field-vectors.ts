@@ -19,7 +19,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
-import { flattenFormWidgets, pageRef } from './wire-page-refs';
+import { toPageRef } from '../../../packages/engine/core/src/identity/PageRef';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -31,7 +31,7 @@ const SCHEMA_VERSION = 1;
 const FIXTURE = 'tooling/engine-conformance/fixtures/form_fields.pdf';
 
 /** The fixture's only page. */
-const PAGE = 3;
+const PAGE = toPageRef(3);
 
 interface FieldCase {
   readonly name: string;
@@ -70,7 +70,7 @@ const CASES: readonly FieldCase[] = [
       mappingName: 'more_export',
       defaultValue: 'nothing yet',
       maxLength: 200,
-      widget: { pageObjectNumber: PAGE, rect: { left: 72, bottom: 300, right: 300, top: 340 } },
+      widget: { page: PAGE, rect: { left: 72, bottom: 300, right: 300, top: 340 } },
     },
   },
   {
@@ -80,7 +80,7 @@ const CASES: readonly FieldCase[] = [
     draft: {
       family: 'checkbox',
       name: 'new.box',
-      widget: { pageObjectNumber: PAGE, rect: { left: 72, bottom: 260, right: 92, top: 280 } },
+      widget: { page: PAGE, rect: { left: 72, bottom: 260, right: 92, top: 280 } },
     },
   },
   {
@@ -93,12 +93,12 @@ const CASES: readonly FieldCase[] = [
       noToggleToOff: true,
       widgets: [
         {
-          pageObjectNumber: PAGE,
+          page: PAGE,
           rect: { left: 72, bottom: 220, right: 92, top: 240 },
           onState: 'Cyan',
         },
         {
-          pageObjectNumber: PAGE,
+          page: PAGE,
           rect: { left: 102, bottom: 220, right: 122, top: 240 },
           onState: 'Magenta',
         },
@@ -116,7 +116,7 @@ const CASES: readonly FieldCase[] = [
         { label: 'Small', value: 'S' },
         { label: 'Large', value: 'L' },
       ],
-      widget: { pageObjectNumber: PAGE, rect: { left: 320, bottom: 300, right: 500, top: 330 } },
+      widget: { page: PAGE, rect: { left: 320, bottom: 300, right: 500, top: 330 } },
     },
   },
   {
@@ -132,7 +132,7 @@ const CASES: readonly FieldCase[] = [
         { label: 'Irish', value: 'ga' },
       ],
       widget: {
-          pageObjectNumber: PAGE,
+          page: PAGE,
           rect: { left: 320, bottom: 200, right: 500, top: 280 },
           appearance: {
             color: { r: 40, g: 40, b: 40 },
@@ -186,7 +186,7 @@ const CASES: readonly FieldCase[] = [
     draft: {
       family: 'radio',
       name: 'new.bad',
-      widgets: [{ pageObjectNumber: PAGE, rect: { left: 72, bottom: 180, right: 92, top: 200 } }],
+      widgets: [{ page: PAGE, rect: { left: 72, bottom: 180, right: 92, top: 200 } }],
     },
     refused: true,
   },
@@ -291,25 +291,9 @@ const CASES: readonly FieldCase[] = [
   },
 ];
 
-/** A recorded widget placement, which names its page by object number, as the API's `page`. */
-function placementIn(placement: Record<string, unknown>): Record<string, unknown> {
-  const { pageObjectNumber, ...rest } = placement;
-  return { ...rest, page: pageRef(pageObjectNumber as number) };
-}
-
-/** A recorded draft with its widget placements converted for the public API. */
-function draftIn(draft: Record<string, unknown>): Record<string, unknown> {
-  const out = { ...draft };
-  if (draft.widget) out.widget = placementIn(draft.widget as Record<string, unknown>);
-  if (draft.widgets) {
-    out.widgets = (draft.widgets as Record<string, unknown>[]).map(placementIn);
-  }
-  return out;
-}
-
 /** The widget a case names, as the `AnnotationRef` attach and detach take. */
 function widgetRefIn(annotObjectNumber: number) {
-  return { kind: 'objectNumber' as const, page: pageRef(PAGE), annotObjectNumber };
+  return { kind: 'objectNumber' as const, page: PAGE, annotObjectNumber };
 }
 
 async function readCase(entry: FieldCase): Promise<unknown> {
@@ -331,7 +315,7 @@ async function readCase(entry: FieldCase): Promise<unknown> {
     try {
       const run = async () => {
         if (entry.draft) {
-          return { field: (await doc.forms.createField(draftIn(entry.draft) as never)).field };
+          return { field: (await doc.forms.createField(entry.draft as never)).field };
         }
         if (entry.patchOf) {
           return {
@@ -380,7 +364,7 @@ async function readCase(entry: FieldCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      return { ...entry, result: flattenFormWidgets(await run()) };
+      return { ...entry, result: await run() };
     } finally {
       await doc.close();
     }

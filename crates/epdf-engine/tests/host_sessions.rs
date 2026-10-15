@@ -229,24 +229,24 @@ fn a_page_edit_reaches_the_page_reads() {
         }),
         Vec::new(),
     );
-    let new_page = inserted["result"]["result"]["insertedPageObjectNumbers"][0].clone();
-    assert!(new_page.is_u64(), "no inserted page: {inserted}");
+    let new_page = inserted["result"]["result"]["insertedPages"][0].clone();
+    assert!(new_page["pageObjectNumber"].is_u64(), "no inserted page: {inserted}");
     let text = call(
         &mut host,
-        serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": new_page }),
+        serde_json::json!({ "kind": "pages.text", "docId": "d", "page": new_page }),
         Vec::new(),
     );
     assert!(text.get("error").is_none(), "the inserted page is unknown to reads: {text}");
 
     let deleted = call(
         &mut host,
-        serde_json::json!({ "kind": "pages.delete", "docId": "d", "pageObjectNumbers": [new_page] }),
+        serde_json::json!({ "kind": "pages.delete", "docId": "d", "pages": [new_page] }),
         Vec::new(),
     );
     assert!(deleted.get("error").is_none(), "{deleted}");
     let text = call(
         &mut host,
-        serde_json::json!({ "kind": "pages.text", "docId": "d", "pageObjectNumber": new_page }),
+        serde_json::json!({ "kind": "pages.text", "docId": "d", "page": new_page }),
         Vec::new(),
     );
     assert_eq!(text["error"]["code"], "NotFound", "a deleted page still reads: {text}");

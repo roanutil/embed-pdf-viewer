@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{sig_call, sig_open_fixture};
+use common::{page_ref, sig_call, sig_open_fixture};
 
 const FIX: &str = "packages/engine/main/test/fixtures";
 
@@ -20,7 +20,7 @@ fn analyze(host: &mut Host, doc: &str, index: u32, until: &str) -> Value {
 fn add_square(host: &mut Host, doc: &str, pon: u32) {
     sig_call(
         host,
-        json!({ "kind": "annotations.create", "docId": doc, "pageObjectNumber": pon,
+        json!({ "kind": "annotations.create", "docId": doc, "page": page_ref(pon),
                 "draft": { "subtype": "square",
                            "rect": { "left": 10.0, "bottom": 10.0, "right": 50.0, "top": 50.0 } } }),
     );
@@ -125,7 +125,7 @@ fn an_edit_after_an_approval_is_judged_forbidden() {
     let (doc, pon) = sig_open_fixture(&mut host, &format!("{FIX}/signed_two_approvals.pdf"));
     sig_call(
         &mut host,
-        json!({ "kind": "pages.rotate", "docId": doc, "pageObjectNumbers": [pon], "rotation": 90 }),
+        json!({ "kind": "pages.rotate", "docId": doc, "pages": [page_ref(pon)], "rotation": 90 }),
     );
     let analysis = analyze(&mut host, &doc, 1, "working-copy");
     assert_eq!(analysis["current"]["primary"]["verdict"], json!("forbidden"), "{analysis}");

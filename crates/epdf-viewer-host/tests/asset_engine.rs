@@ -26,7 +26,7 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
             let doc = doc.as_ref().ok().cloned().unwrap();
             doc.clone().call("pages.list", None, vec![]).on_settle(move |list| {
                 let list = list.as_ref().unwrap().clone();
-                let pon = list["pages"][0]["pageObjectNumber"].as_u64().unwrap() as u32;
+                let pon = list["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap() as u32;
                 let options =
                     json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });
                 doc.call("page.render.image", Some(pon), vec![options]).on_settle(move |image| {
@@ -61,7 +61,8 @@ fn the_document_engine_still_answers_raw_pixels() {
         engine.open(input, None).on_settle(move |doc| {
             let doc = doc.as_ref().ok().cloned().unwrap();
             doc.clone().call("pages.list", None, vec![]).on_settle(move |list| {
-                let pon = list.as_ref().unwrap()["pages"][0]["pageObjectNumber"].as_u64().unwrap();
+                let pon =
+                    list.as_ref().unwrap()["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap();
                 let options = json!({ "viewport": { "kind": "width", "width": 64 } });
                 doc.call("page.render.image", Some(pon as u32), vec![options]).on_settle(
                     move |image| {

@@ -21,7 +21,7 @@ use epdf_engine::features::search::cursor::{decode_search_cursor, search_query_k
 use epdf_engine::features::search::matcher::SearchQuery;
 use epdf_engine::features::search::reader::{SearchMode, SearchRequest};
 use epdf_engine::features::search::validate_search_query;
-use epdf_engine::identity::PageObjectNumber;
+use epdf_engine::identity::{PageObjectNumber, PageRef};
 
 const VECTOR: &str = "tooling/engine-conformance/vectors/search/slice-protocol.json";
 
@@ -116,9 +116,9 @@ fn every_slice_protocol_case_agrees_with_the_oracle() {
         let Some(expected) = case.get("cursor") else { continue };
         checked_cursors += 1;
         let cursor = case["request"]["cursor"].as_str().expect("cursor");
-        let start_page = case["request"]["startPage"]
-            .as_u64()
-            .map(|n| PageObjectNumber::new(n as u32).expect("a page object number"));
+        let start_page = case["request"]
+            .get("startPage")
+            .map(|page| PageRef::from_value(page, "startPage").expect("a PageRef").object_number());
         let seq = case["seq"].as_u64().unwrap_or(0);
         let key = case["key"].as_str().expect("key");
 
@@ -152,7 +152,7 @@ fn a_request_decodes_from_the_shape_the_wire_sends() {
     let request: SearchRequest = serde_json::from_value(serde_json::json!({
         "query": { "text": "the", "matchCase": true },
         "mode": "rects",
-        "startPage": 4,
+        "startPage": { "kind": "objectNumber", "pageObjectNumber": 4 },
         "skip": 9,
         "budget": { "maxPages": 3, "maxMatches": 7 },
     }))
