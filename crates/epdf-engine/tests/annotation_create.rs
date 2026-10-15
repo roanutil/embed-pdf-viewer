@@ -660,7 +660,7 @@ fn a_created_annotation_survives_a_save_and_reopen() {
         .expect("create");
     }
 
-    let saved = save_to_buffer(&session, SaveMode::Full, &CancelToken::never()).expect("save");
+    let saved = save_to_buffer(&session, SaveMode::Rewrite, &CancelToken::never()).expect("save");
 
     let mut reopened = DocumentSession::new();
     reopened.open_with(saved, None, SessionAuthority::unrestricted()).expect("reopen");

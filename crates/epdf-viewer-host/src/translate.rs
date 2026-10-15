@@ -458,16 +458,15 @@ pub fn translate_encoded_render(
     Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
-/// `download`'s `{mode}` as the host's `SaveMode`. The kernel speaks
-/// TypeScript's `PdfSaveMode` (`incremental` or `rewrite`); the host calls a
-/// rewrite `full`. No options, or no mode, stays the full rewrite the
-/// plugins' own downloads (the stamp libraries) have always written.
+/// `download`'s `{mode}` as the host's `SaveMode`, TypeScript's `PdfSaveMode`
+/// (`incremental` or `rewrite`) on both sides. No options, or no mode, stays
+/// the rewrite the plugins' own downloads (the stamp libraries) have always
+/// written.
 fn save_mode(path: &str, options: &Value) -> Result<Value, Error> {
     match options.get("mode").filter(|m| !m.is_null() && !epdf_kernel::is_undefined(m)) {
-        None => Ok("full".into()),
+        None => Ok("rewrite".into()),
         Some(mode) => match mode.as_str() {
-            Some("incremental") => Ok("incremental".into()),
-            Some("rewrite") => Ok("full".into()),
+            Some(mode @ ("incremental" | "rewrite")) => Ok(mode.into()),
             _ => Err(coded(
                 "invalid-input",
                 format!("[epdf-viewer-host] {path}'s mode is not incremental or rewrite: {mode}"),

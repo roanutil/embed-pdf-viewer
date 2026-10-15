@@ -39,14 +39,14 @@ pub enum SaveMode {
     /// Rewrite the whole file. Smaller to keep and slower to produce, and the
     /// history goes with it.
     #[default]
-    Full,
+    Rewrite,
 }
 
 impl SaveMode {
     fn native(self) -> PdfSaveMode {
         match self {
             Self::Incremental => PdfSaveMode::Incremental,
-            Self::Full => PdfSaveMode::Full,
+            Self::Rewrite => PdfSaveMode::Full,
         }
     }
 }
@@ -138,7 +138,7 @@ mod tests {
             serde_json::to_value(SaveMode::Incremental).unwrap(),
             serde_json::json!("incremental"),
         );
-        assert_eq!(serde_json::to_value(SaveMode::Full).unwrap(), serde_json::json!("full"));
-        assert_eq!(SaveMode::default(), SaveMode::Full);
+        assert_eq!(serde_json::to_value(SaveMode::Rewrite).unwrap(), serde_json::json!("rewrite"));
+        assert_eq!(SaveMode::default(), SaveMode::Rewrite);
     }
 }

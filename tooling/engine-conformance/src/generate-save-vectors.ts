@@ -134,7 +134,7 @@ async function readCase(entry: SaveCase): Promise<unknown> {
     const original = await describe(engine, `save:${entry.name}:original`, bytes, entry.password);
 
     const modes: Record<string, Reopened> = {};
-    for (const mode of ['incremental', 'full'] as const) {
+    for (const mode of ['incremental', 'rewrite'] as const) {
       const doc = await engine.open(
         { kind: 'bytes', id: `save:${entry.name}:${mode}`, bytes, password: entry.password },
         { scope: ['*'] },

@@ -1213,7 +1213,7 @@ fn a_download_saves_the_whole_file_into_the_host_table() {
     let call = translate("doc-1", "download", None, &[], 1).unwrap();
     assert_eq!(
         call.request,
-        json!({ "kind": "document.saveBuffer", "jobId": 1, "docId": "doc-1", "mode": "full" })
+        json!({ "kind": "document.saveBuffer", "jobId": 1, "docId": "doc-1", "mode": "rewrite" })
     );
     let response =
         HostResponse { json: r#"{"result":{"size":3}}"#.into(), payloads: vec![vec![1, 2, 3]] };
@@ -1223,14 +1223,14 @@ fn a_download_saves_the_whole_file_into_the_host_table() {
 }
 
 #[test]
-fn a_download_carries_the_kernels_save_mode_in_the_hosts_spelling() {
+fn a_download_carries_the_kernels_save_mode() {
     let mode = |options: Value| {
         translate("doc-1", "download", None, &[options], 1).map(|call| call.request["mode"].clone())
     };
     assert_eq!(mode(json!({ "mode": "incremental" })).unwrap(), json!("incremental"));
-    assert_eq!(mode(json!({ "mode": "rewrite" })).unwrap(), json!("full"));
-    assert_eq!(mode(json!({})).unwrap(), json!("full"));
-    assert_eq!(mode(json!({ "mode": { "$undefined": true } })).unwrap(), json!("full"));
+    assert_eq!(mode(json!({ "mode": "rewrite" })).unwrap(), json!("rewrite"));
+    assert_eq!(mode(json!({})).unwrap(), json!("rewrite"));
+    assert_eq!(mode(json!({ "mode": { "$undefined": true } })).unwrap(), json!("rewrite"));
     let error = mode(json!({ "mode": "sideways" })).unwrap_err();
     assert_eq!(error.code(), Some("invalid-input"));
 }

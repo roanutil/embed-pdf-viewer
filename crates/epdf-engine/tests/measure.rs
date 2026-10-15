@@ -169,7 +169,7 @@ fn a_saved_scale_survives_a_reopen() {
         }),
     );
     let response = host.call(
-        &json!({ "kind": "document.saveBuffer", "jobId": 9, "docId": doc, "mode": "full" })
+        &json!({ "kind": "document.saveBuffer", "jobId": 9, "docId": doc, "mode": "rewrite" })
             .to_string(),
         Vec::new(),
     );

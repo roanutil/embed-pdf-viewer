@@ -151,7 +151,7 @@ fn cancelled() -> CancelToken {
 fn mode_of(name: &str) -> SaveMode {
     match name {
         "incremental" => SaveMode::Incremental,
-        "full" => SaveMode::Full,
+        "rewrite" => SaveMode::Rewrite,
         other => panic!("the vector names a save mode {other} this runner does not map"),
     }
 }
@@ -214,7 +214,7 @@ fn a_save_changes_nothing_about_the_open_session() {
     let state_before =
         session.page_state(PageObjectNumber::new(before[0]).unwrap()).expect("page state");
 
-    let bytes = save_to_buffer(&session, SaveMode::Full, &CancelToken::never()).expect("save");
+    let bytes = save_to_buffer(&session, SaveMode::Rewrite, &CancelToken::never()).expect("save");
     assert!(!bytes.is_empty());
 
     let after: Vec<u32> = session
@@ -242,8 +242,9 @@ fn the_two_modes_produce_different_files_that_mean_the_same_thing() {
     let incremental =
         save_to_buffer(&session(fixture(case), None), SaveMode::Incremental, &CancelToken::never())
             .expect("incremental");
-    let full = save_to_buffer(&session(fixture(case), None), SaveMode::Full, &CancelToken::never())
-        .expect("full");
+    let full =
+        save_to_buffer(&session(fixture(case), None), SaveMode::Rewrite, &CancelToken::never())
+            .expect("full");
 
     assert_ne!(incremental, full, "the two modes produced identical bytes");
     // And an incremental save really is the original plus a revision: it
@@ -267,7 +268,7 @@ fn an_encrypted_document_saves_to_one_that_needs_the_same_password() {
     let case = file.cases.iter().find(|c| c.name == "encrypted").expect("the encrypted case");
     let bytes = save_to_buffer(
         &session(fixture(case), Some("user".to_owned())),
-        SaveMode::Full,
+        SaveMode::Rewrite,
         &CancelToken::never(),
     )
     .expect("save");
@@ -309,7 +310,7 @@ fn saving_a_closed_session_is_refused() {
     let mut session = session(fixture(case), None);
     session.close();
 
-    let refused = save_to_buffer(&session, SaveMode::Full, &CancelToken::never())
+    let refused = save_to_buffer(&session, SaveMode::Rewrite, &CancelToken::never())
         .expect_err("a closed session has nothing to save");
     assert!(refused.is(EngineErrorCode::DocNotOpen));
 }
@@ -320,7 +321,7 @@ fn a_cancelled_save_reports_aborted() {
     let case = file.cases.iter().find(|c| c.name == "rotated").expect("rotated");
     let session = session(fixture(case), None);
 
-    let refused = save_to_buffer(&session, SaveMode::Full, &cancelled())
+    let refused = save_to_buffer(&session, SaveMode::Rewrite, &cancelled())
         .expect_err("cancelled before the write");
     assert!(refused.is(EngineErrorCode::Aborted));
 }
