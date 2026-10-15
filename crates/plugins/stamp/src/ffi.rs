@@ -583,8 +583,8 @@ impl StampHandle {
             .await
     }
 
-    /// Import a library PDF. Returns the new library's id. `InvalidArg` for
-    /// bytes that aren't a PDF.
+    /// Import a library PDF. Returns the new library's id. `invalid-input`
+    /// (the engine's `InvalidArg`) for bytes that aren't a PDF.
     pub async fn import_library(
         &self,
         bytes: Vec<u8>,
@@ -629,8 +629,10 @@ impl StampHandle {
         input: StampAddAssetInput,
         cancel: Arc<CancelToken>,
     ) -> Result<String, ViewerError> {
-        let created = self
-            .cap
+        // The plugin says `NotImplemented` when the document's engine can't
+        // export appearances, which through this host is always the case;
+        // it crosses as `unsupported`, as every engine code is mapped.
+        self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
@@ -647,17 +649,7 @@ impl StampHandle {
                 },
                 |id| id,
             )
-            .await;
-        // The plugin says `NotImplemented` when the document's engine can't
-        // export appearances; through this host that is always the case.
-        created.map_err(|error| match error {
-            ViewerError::Kernel { name, code, detail }
-                if code.as_deref() == Some("NotImplemented") =>
-            {
-                ViewerError::Kernel { name, code: Some("unsupported".into()), detail }
-            }
-            other => other,
-        })
+            .await
     }
 
     pub async fn update_asset(

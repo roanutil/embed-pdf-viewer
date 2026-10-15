@@ -171,6 +171,19 @@ pub mod code {
     pub const INSTANCE_CLOSED: &str = "instance-closed";
     pub const OPERATION_CANCELLED: &str = "operation-cancelled";
     pub const OPERATION_FAILED: &str = "operation-failed";
+
+    /// Every `PluginErrorCode`.
+    pub const ALL: [&str; 9] = [
+        PERMISSION_DENIED,
+        UNSUPPORTED,
+        NOT_FOUND,
+        NOT_READY,
+        INVALID_INPUT,
+        CONFLICT,
+        INSTANCE_CLOSED,
+        OPERATION_CANCELLED,
+        OPERATION_FAILED,
+    ];
 }
 
 /// `new PluginError(code, capability, message, {cause, details})`. The own
@@ -242,6 +255,27 @@ fn engine_code(code: &str) -> Option<&'static str> {
         | "SigningVersionMismatch" => code::CONFLICT,
         _ => return None,
     })
+}
+
+/// The `PluginErrorCode` of `error` as a plugin-level caller sees it: the
+/// code `to_plugin_error` gives it, without building the error. A code that
+/// already is one is kept, and an engine code on any error maps as an
+/// `EngineError`'s does, so a host that raised `NotFound` itself still
+/// answers `not-found`.
+pub fn plugin_code_of(error: &Error) -> &'static str {
+    let own = error.code();
+    if let Some(known) = own.and_then(|c| code::ALL.into_iter().find(|k| *k == c)) {
+        return known;
+    }
+    match error.class {
+        ErrorClass::PermissionDenied => return code::PERMISSION_DENIED,
+        ErrorClass::Cancelled => return code::OPERATION_CANCELLED,
+        ErrorClass::Plugin | ErrorClass::Plain => {}
+    }
+    if error.name == "AbortError" {
+        return code::OPERATION_CANCELLED;
+    }
+    own.and_then(engine_code).unwrap_or(code::OPERATION_FAILED)
 }
 
 /// `toPluginError(capability, error)`: the one boundary mapping from what an

@@ -167,6 +167,50 @@ fn kernel_code(error: &ViewerError) -> Option<&str> {
 }
 
 #[test]
+fn a_wrong_password_is_permission_denied_with_the_engine_code_in_the_detail() {
+    let host = started();
+    let wrong = OpenDocumentOptions { password: Some("nope".into()), ..options() };
+    let error = block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), wrong))
+        .unwrap_err();
+    assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
+    assert!(format!("{error}").contains("DocPasswordIncorrect"), "{error}");
+    let locked =
+        block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
+            .unwrap();
+    let error = block_on(host.unlock_document(locked.id, "nope".into())).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
+}
+
+#[test]
+fn pages_of_an_unknown_document_are_not_found() {
+    let host = started();
+    let error = block_on(host.pages("nope".into())).unwrap_err();
+    match &error {
+        ViewerError::Kernel { name, code, .. } => {
+            assert_eq!((name.as_str(), code.as_deref()), ("PluginError", Some("not-found")));
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_capability_refusal_says_why_in_the_plugin_vocabulary() {
+    let host = with(ViewerConfig { metadata: true, ..Default::default() });
+    let unknown = block_on(host.metadata("nope".into())).map(|_| ()).unwrap_err();
+    assert_eq!(kernel_code(&unknown), Some("not-found"), "{unknown:?}");
+    let locked =
+        block_on(host.open_document(test_support::fixture(test_support::ENCRYPTED), options()))
+            .unwrap();
+    let error = block_on(host.metadata(locked.id.clone())).map(|_| ()).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("not-ready"), "{error:?}");
+    let error = block_on(host.search(locked.id)).map(|_| ()).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("unsupported"), "{error:?}");
+    block_on(host.destroy()).unwrap();
+    let error = block_on(host.metadata("nope".into())).map(|_| ()).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("instance-closed"), "{error:?}");
+}
+
+#[test]
 fn save_answers_the_whole_file_in_either_mode_and_it_reopens() {
     let host = started();
     let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
@@ -448,8 +492,9 @@ fn without_its_config_the_render_plugin_is_not_installed() {
 #[test]
 fn the_features_fixture_opens() {
     let host = started();
-    let doc = block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
-        .unwrap();
+    let doc =
+        block_on(host.open_document(test_support::fixture(test_support::FEATURES), options()))
+            .unwrap();
     assert_eq!(doc.page_count, 3);
 }
 
@@ -1557,14 +1602,15 @@ fn a_plain_pdf_imports_one_asset_per_page() {
 }
 
 #[test]
-fn importing_bytes_that_are_not_a_pdf_is_invalid_arg() {
+fn importing_bytes_that_are_not_a_pdf_is_invalid_input() {
     let host = with_stamp();
     let stamp = block_on(host.stamp()).unwrap();
     let png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
     let error =
         block_on(stamp.import_library(png, Default::default(), CancelToken::new())).unwrap_err();
     match error {
-        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("InvalidArg")),
+        // The engine's `InvalidArg`, as `toPluginError` codes it.
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("invalid-input")),
         other => panic!("{other:?}"),
     }
     assert!(block_on(stamp.libraries(None)).unwrap().is_empty());
@@ -1609,7 +1655,8 @@ fn an_authored_mark_needs_an_appearance_export_the_native_engine_lacks() {
         ..Default::default()
     };
     match block_on(stamp.create_asset(input, CancelToken::new())).unwrap_err() {
-        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("NotImplemented")),
+        // The engine's `NotImplemented`.
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("unsupported")),
         other => panic!("{other:?}"),
     }
 }
@@ -1680,9 +1727,10 @@ fn placing_into_a_closed_document_fails_and_clears_its_arming() {
     .unwrap_err();
     match error {
         // The kernel's plain error for a token on a document it no longer
-        // has, as the TypeScript kernel throws it: no code.
+        // has, as the TypeScript kernel throws it, which `toPluginError`
+        // makes `operation-failed`.
         ViewerError::Kernel { name, code, detail } => {
-            assert_eq!((name.as_str(), code), ("Error", None));
+            assert_eq!((name.as_str(), code.as_deref()), ("Error", Some("operation-failed")));
             assert!(detail.contains("no document"), "{detail}");
         }
         other => panic!("{other:?}"),

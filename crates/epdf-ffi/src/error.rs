@@ -9,13 +9,24 @@ pub enum ViewerError {
     Closed,
 }
 
+/// The one code beyond `PluginErrorCode`: a value this boundary could not
+/// decode or convert (a kernel record missing a field, an index past
+/// `u32`). It marks a bug in the bindings, never a caller's mistake.
+pub const INVALID_STATE: &str = "invalid-state";
+
+/// Every code that crosses is a `PluginErrorCode` (`errors.ts`), the one
+/// vocabulary a plugin-level caller sees, or [`INVALID_STATE`]: an engine
+/// code (`NotFound`, `DocPasswordIncorrect`) becomes what `toPluginError`
+/// makes it, and an error without a code `operation-failed`. `name` and
+/// `detail` are kept, so an engine error from the wire still leads its
+/// detail with its engine code.
 impl From<epdf_kernel::Error> for ViewerError {
     fn from(error: epdf_kernel::Error) -> Self {
-        ViewerError::Kernel {
-            code: error.code().map(String::from),
-            name: error.name,
-            detail: error.message,
-        }
+        let code = match error.code() {
+            Some(INVALID_STATE) => INVALID_STATE,
+            _ => epdf_kernel::error::plugin_code_of(&error),
+        };
+        ViewerError::Kernel { code: Some(code.into()), name: error.name, detail: error.message }
     }
 }
 

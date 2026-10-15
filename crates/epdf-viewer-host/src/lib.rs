@@ -28,8 +28,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
-use epdf_kernel::error::to_plugin_error;
-use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_kernel::error::{code, plugin_error, to_plugin_error};
+use epdf_kernel::{Error, Kernel, KernelStatus, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_annotation::ffi::AnnotationHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
@@ -68,6 +68,35 @@ fn reporter(kernel: &Kernel) -> Rc<dyn Fn(&Error)> {
         if let Some(store) = store.upgrade() {
             store.report(error);
         }
+    })
+}
+
+/// `kernel.capability(token, document_id)`, its refusal coded for a
+/// plugin-level caller. The kernel refuses with a plain error, as the
+/// TypeScript kernel does; here an unknown document is `not-found`, one
+/// that is not open yet (loading, locked, failed, closing) is `not-ready`,
+/// and a plugin the config left out is `unsupported`.
+fn capability<C: Clone + 'static>(
+    kernel: &Kernel,
+    token: &epdf_kernel::Token<C>,
+    document_id: Option<&str>,
+) -> Result<C, Error> {
+    kernel.capability(token, document_id).map_err(|error| {
+        let documents = kernel.documents();
+        let refusal = match document_id {
+            _ if matches!(
+                kernel.status(),
+                KernelStatus::Failed | KernelStatus::Destroying | KernelStatus::Destroyed
+            ) =>
+            {
+                code::INSTANCE_CLOSED
+            }
+            _ if !kernel.provides(token.any()) => code::UNSUPPORTED,
+            Some(id) if !documents.has(id) => code::NOT_FOUND,
+            Some(_) => code::NOT_READY,
+            None => return error,
+        };
+        plugin_error(refusal, token.name(), error.message, None, None)
     })
 }
 
@@ -249,8 +278,13 @@ impl ViewerHost {
         self.call(move |s| {
             let documents = s.kernel.documents();
             if !documents.has(&document_id) {
-                return Err(Error::new(format!("[epdf-viewer-host] no document {document_id}"))
-                    .with("code", "NotFound"));
+                return Err(plugin_error(
+                    code::NOT_FOUND,
+                    "documents",
+                    format!("[epdf-viewer-host] no document {document_id}"),
+                    None,
+                    None,
+                ));
             }
             decode_pages(&documents.list_pages(Some(&document_id)))
         })
@@ -328,7 +362,7 @@ impl ViewerHost {
     pub async fn metadata(&self, document_id: String) -> Result<Arc<MetadataHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_metadata::METADATA, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_metadata::METADATA, Some(&document_id))?;
             Ok(MetadataHandle::new(cap, post))
         })
         .await
@@ -339,7 +373,7 @@ impl ViewerHost {
     pub async fn search(&self, document_id: String) -> Result<Arc<SearchHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_search::SEARCH, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_search::SEARCH, Some(&document_id))?;
             Ok(SearchHandle::new(cap, post))
         })
         .await
@@ -351,7 +385,7 @@ impl ViewerHost {
     pub async fn render(&self, document_id: String) -> Result<Arc<RenderHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_render::RENDER, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_render::RENDER, Some(&document_id))?;
             Ok(RenderHandle::new(cap, post, Rc::new(HostTable::get)))
         })
         .await
@@ -366,7 +400,7 @@ impl ViewerHost {
         let post = self.post.clone();
         self.call(move |s| {
             let cap =
-                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id))?;
+                capability(&s.kernel, &epdf_plugin_interaction::INTERACTION, Some(&document_id))?;
             Ok(InteractionHandle::new(cap, post, reporter(&s.kernel)))
         })
         .await
@@ -376,7 +410,7 @@ impl ViewerHost {
     pub async fn feedback(&self) -> Result<Arc<FeedbackHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_interaction::FEEDBACK, None)?;
+            let cap = capability(&s.kernel, &epdf_plugin_interaction::FEEDBACK, None)?;
             Ok(FeedbackHandle::new(cap, post))
         })
         .await
@@ -386,9 +420,10 @@ impl ViewerHost {
     pub async fn stage(&self, document_id: String) -> Result<Arc<StageHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_stage::STAGE, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_stage::STAGE, Some(&document_id))?;
             let hub =
-                s.kernel.capability(&epdf_plugin_interaction::INTERACTION, Some(&document_id)).ok();
+                capability(&s.kernel, &epdf_plugin_interaction::INTERACTION, Some(&document_id))
+                    .ok();
             Ok(StageHandle::with_hub(cap, hub, post, reporter(&s.kernel)))
         })
         .await
@@ -402,7 +437,7 @@ impl ViewerHost {
     ) -> Result<Arc<SelectionHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_selection::SELECTION, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_selection::SELECTION, Some(&document_id))?;
             Ok(SelectionHandle::new(cap, post))
         })
         .await
@@ -413,7 +448,7 @@ impl ViewerHost {
     pub async fn link(&self, document_id: String) -> Result<Arc<LinkHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_link::LINK, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_link::LINK, Some(&document_id))?;
             Ok(LinkHandle::with_report(cap, post, reporter(&s.kernel)))
         })
         .await
@@ -429,7 +464,7 @@ impl ViewerHost {
         let post = self.post.clone();
         self.call(move |s| {
             let cap =
-                s.kernel.capability(&epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
+                capability(&s.kernel, &epdf_plugin_annotation::ANNOTATION, Some(&document_id))?;
             Ok(AnnotationHandle::new(cap, post))
         })
         .await
@@ -441,7 +476,7 @@ impl ViewerHost {
     pub async fn form(&self, document_id: String) -> Result<Arc<FormHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_form::FORM, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_form::FORM, Some(&document_id))?;
             Ok(FormHandle::new(cap, post))
         })
         .await
@@ -456,7 +491,7 @@ impl ViewerHost {
     ) -> Result<Arc<RedactionHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_redaction::REDACTION, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_redaction::REDACTION, Some(&document_id))?;
             Ok(RedactionHandle::new(cap, post))
         })
         .await
@@ -472,7 +507,7 @@ impl ViewerHost {
         let post = self.post.clone();
         self.call(move |s| {
             let cap =
-                s.kernel.capability(&epdf_plugin_measurement::MEASUREMENT, Some(&document_id))?;
+                capability(&s.kernel, &epdf_plugin_measurement::MEASUREMENT, Some(&document_id))?;
             Ok(MeasurementHandle::new(cap, post))
         })
         .await
@@ -483,7 +518,7 @@ impl ViewerHost {
     pub async fn stamp(&self) -> Result<Arc<StampHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_stamp::STAMP, None)?;
+            let cap = capability(&s.kernel, &epdf_plugin_stamp::STAMP, None)?;
             Ok(StampHandle::new(cap, post))
         })
         .await
@@ -494,7 +529,7 @@ impl ViewerHost {
     pub async fn page_edit(&self, document_id: String) -> Result<Arc<PageEditHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_page_edit::PAGE_EDIT, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_page_edit::PAGE_EDIT, Some(&document_id))?;
             Ok(PageEditHandle::new(cap, post))
         })
         .await
@@ -506,7 +541,7 @@ impl ViewerHost {
     pub async fn view_manager(&self) -> Result<Arc<ViewManagerHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_view_manager::VIEW_MANAGER, None)?;
+            let cap = capability(&s.kernel, &epdf_plugin_view_manager::VIEW_MANAGER, None)?;
             Ok(ViewManagerHandle::new(cap, post))
         })
         .await
@@ -517,7 +552,7 @@ impl ViewerHost {
     pub async fn shell(&self, document_id: String) -> Result<Arc<ShellHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_shell::SHELL, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_shell::SHELL, Some(&document_id))?;
             Ok(ShellHandle::new(cap, post))
         })
         .await
@@ -528,7 +563,7 @@ impl ViewerHost {
     pub async fn i18n(&self) -> Result<Arc<I18nHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_i18n::I18N, None)?;
+            let cap = capability(&s.kernel, &epdf_plugin_i18n::I18N, None)?;
             Ok(I18nHandle::new(cap, post))
         })
         .await
@@ -538,7 +573,7 @@ impl ViewerHost {
     pub async fn commands(&self) -> Result<Arc<CommandsHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_commands::COMMANDS, None)?;
+            let cap = capability(&s.kernel, &epdf_plugin_commands::COMMANDS, None)?;
             Ok(CommandsHandle::new(cap, post))
         })
         .await
@@ -548,7 +583,7 @@ impl ViewerHost {
     pub async fn actions(&self, document_id: String) -> Result<Arc<ActionsHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_actions::ACTIONS, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_actions::ACTIONS, Some(&document_id))?;
             Ok(ActionsHandle::new(cap, post))
         })
         .await
@@ -563,7 +598,7 @@ impl ViewerHost {
     ) -> Result<Arc<SignatureHandle>, ViewerError> {
         let post = self.post.clone();
         self.call(move |s| {
-            let cap = s.kernel.capability(&epdf_plugin_signature::SIGNATURE, Some(&document_id))?;
+            let cap = capability(&s.kernel, &epdf_plugin_signature::SIGNATURE, Some(&document_id))?;
             Ok(SignatureHandle::new(cap, post))
         })
         .await

@@ -46,6 +46,29 @@ fn a_kernel_error_keeps_its_code() {
 }
 
 #[test]
+fn an_engine_code_crosses_as_its_plugin_code() {
+    let (_thread, bound) = bound();
+    let code = |error: epdf_kernel::Error| match block_on(
+        bound.call(move |_| -> Result<(), _> { Err(error) }),
+    ) {
+        Err(ViewerError::Kernel { code, .. }) => code,
+        other => panic!("{other:?}"),
+    };
+    let engine = |c: &str| epdf_kernel::Error::engine(c, format!("{c}: gone"));
+    assert_eq!(code(engine("NotFound")).as_deref(), Some("not-found"));
+    assert_eq!(code(engine("DocPasswordIncorrect")).as_deref(), Some("permission-denied"));
+    assert_eq!(code(engine("InvalidArg")).as_deref(), Some("invalid-input"));
+    assert_eq!(code(engine("Unknown")).as_deref(), Some("operation-failed"));
+    assert_eq!(code(epdf_kernel::Error::new("no code")).as_deref(), Some("operation-failed"));
+    let undecodable = epdf_kernel::Error::named("InvalidState", "x").with("code", "invalid-state");
+    assert_eq!(code(undecodable).as_deref(), Some("invalid-state"));
+    assert_eq!(
+        code(epdf_kernel::Error::permission_denied("doc.download", None)).as_deref(),
+        Some("permission-denied")
+    );
+}
+
+#[test]
 fn a_promise_resolves_through_the_future() {
     let (_thread, bound) = bound();
     let n = block_on(bound.call_promise(|_| Ok(Promise::resolved(7u32)), |n| n * 6)).unwrap();

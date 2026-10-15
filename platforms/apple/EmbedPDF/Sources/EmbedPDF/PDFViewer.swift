@@ -48,8 +48,9 @@ public final class PDFViewer: Sendable {
   }
 
   /// Unlock a document that opened `.locked` (password-protected and opened
-  /// without one). Throws `DocPasswordIncorrect` for a wrong password; the
-  /// tab stays locked.
+  /// without one). Throws `permission-denied` for a wrong password (the
+  /// detail begins with the engine's `DocPasswordIncorrect`); the tab stays
+  /// locked.
   public func unlock(_ document: PDFDocument, password: String) async throws(PDFError) {
     try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
   }
@@ -62,6 +63,7 @@ public final class PDFViewer: Sendable {
     try await bridged { try await host.documents() }
   }
 
+  /// Throws `not-found` for a document the viewer doesn't have.
   public func pages(of document: PDFDocument) async throws(PDFError) -> [PageInfo] {
     try await measured("pages") { () async throws(PDFError) in
       try await bridged { try await host.pages(documentId: document.id) }

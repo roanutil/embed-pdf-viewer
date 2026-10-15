@@ -104,7 +104,7 @@ fn arming_an_unknown_asset_is_refused() {
     let error =
         block_on(stamp.arm_asset(document_id.clone(), "nope".into(), None, CancelToken::new()))
             .unwrap_err();
-    assert_eq!(code(&error), Some("NotFound"), "{error:?}");
+    assert_eq!(code(&error), Some("not-found"), "{error:?}");
     assert!(block_on(stamp.armed_asset(document_id)).unwrap().is_none());
 }
 
@@ -114,7 +114,7 @@ fn importing_non_pdf_bytes_is_refused() {
     let png = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDR".to_vec();
     let error =
         block_on(stamp.import_library(png, Default::default(), CancelToken::new())).unwrap_err();
-    assert_eq!(code(&error), Some("InvalidArg"), "{error:?}");
+    assert_eq!(code(&error), Some("invalid-input"), "{error:?}");
     assert!(block_on(stamp.libraries(None)).unwrap().is_empty());
 }
 

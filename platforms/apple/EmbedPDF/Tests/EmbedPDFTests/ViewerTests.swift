@@ -47,6 +47,49 @@ extension BaseSuite {
       }
     }
 
+    @Test func aWrongPasswordIsPermissionDenied() async throws {
+      let viewer = try await started()
+      await #expect {
+        _ = try await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
+      } throws: { error in
+        let error = error as? PDFError
+        return error?.code == "permission-denied" && error?.detail.hasPrefix("DocPasswordIncorrect") == true
+      }
+      let locked = try await viewer.open(Fixture.data("encrypted-hello"))
+      await #expect {
+        try await viewer.unlock(locked, password: "nope")
+      } throws: { error in
+        (error as? PDFError)?.code == "permission-denied"
+      }
+    }
+
+    @Test func pagesOfAClosedDocumentAreNotFound() async throws {
+      let viewer = try await started()
+      let document = try await viewer.open(Fixture.data("report"))
+      try await viewer.close(document)
+      await #expect {
+        _ = try await viewer.pages(of: document)
+      } throws: { error in
+        (error as? PDFError)?.code == "not-found"
+      }
+    }
+
+    @Test func aCapabilityOfALockedDocumentIsNotReady() async throws {
+      let viewer = try PDFViewer(ViewerConfig(metadata: true))
+      try await viewer.start()
+      let locked = try await viewer.open(Fixture.data("encrypted-hello"))
+      await #expect {
+        _ = try await viewer.metadata(for: locked)
+      } throws: { error in
+        (error as? PDFError)?.code == "not-ready"
+      }
+      await #expect {
+        _ = try await viewer.search(in: locked)
+      } throws: { error in
+        (error as? PDFError)?.code == "unsupported"
+      }
+    }
+
     @Test func aLockedOpenSaysNoPasswordWasGiven() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents

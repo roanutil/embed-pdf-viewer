@@ -1310,6 +1310,12 @@ impl Kernel {
         self.0.status.get()
     }
 
+    /// Whether a plugin in this kernel's config provides `token`, for a
+    /// document or the workspace.
+    pub fn provides(&self, token: &AnyToken) -> bool {
+        self.0.workspace_capability(token).is_some() || self.0.plan.provider_of(token).is_some()
+    }
+
     /// `kernel.capability(token, documentId?)`.
     pub fn capability_any(
         &self,

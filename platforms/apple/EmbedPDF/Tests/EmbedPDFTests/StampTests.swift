@@ -58,7 +58,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stamps.importLibrary(png)
       } throws: { error in
-        (error as? PDFError)?.code == "InvalidArg"
+        (error as? PDFError)?.code == "invalid-input"
       }
       let count = try await stamps.libraries().count
       expectNoDifference(count, 0)

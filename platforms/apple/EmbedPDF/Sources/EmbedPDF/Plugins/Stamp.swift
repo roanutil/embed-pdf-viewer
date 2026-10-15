@@ -115,8 +115,8 @@ public struct StampCapability: Sendable {
   }
 
   /// Returns the library's id. A PDF without a `/Names /Pages` registry
-  /// imports one asset per page. Throws `InvalidArg` for bytes that aren't
-  /// a PDF.
+  /// imports one asset per page. Throws `invalid-input` for bytes that
+  /// aren't a PDF.
   public func importLibrary(_ data: Data, options: StampImportOptions = StampImportOptions())
     async throws(PDFError) -> String
   {

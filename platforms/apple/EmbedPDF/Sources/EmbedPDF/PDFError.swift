@@ -1,6 +1,34 @@
 internal import EmbedPDFBindings
 import Foundation
 
+/// What every viewer and capability call throws.
+///
+/// `code` is one of the kernel's nine plugin error codes, the
+/// `PluginErrorCode` vocabulary of the TypeScript kernel's `toPluginError`:
+///
+/// - `permission-denied`: the scope, the document's permissions or its
+///   password refused it (a wrong `unlock` password is this).
+/// - `unsupported`: the plugin isn't in the `ViewerConfig`, or the engine
+///   can't do it.
+/// - `not-found`: no such document, page, annotation or other resource.
+/// - `not-ready`: the document is still loading, is locked, or failed.
+/// - `invalid-input`: an argument, or bytes that aren't a PDF.
+/// - `conflict`: the document changed under the call.
+/// - `instance-closed`: the document closed or the viewer shut down.
+/// - `operation-cancelled`: the task was cancelled.
+/// - `operation-failed`: anything else.
+///
+/// One more code is the bindings' own: `invalid-state`, a value that didn't
+/// survive the trip across the boundary (a record the kernel answered
+/// without a field, a count past `UInt32`, a raster Core Graphics refused).
+/// It is a bug to report, not something a caller did.
+///
+/// An engine's own code (`NotFound`, `DocPasswordIncorrect`) never appears
+/// here: it maps as `toPluginError` maps it, and a wire error's `detail`
+/// still begins with it. `name` says what raised the error (`PluginError`,
+/// `EngineError`, `AbortError`, or a foreign error's type), and is for
+/// logging rather than matching. `code` is optional only so a handler can
+/// build one without a code; nothing the viewer throws leaves it `nil`.
 public struct PDFError: Error, Sendable, Equatable {
   public let name: String
   public let code: String?
@@ -24,8 +52,10 @@ public struct PDFError: Error, Sendable, Equatable {
       self.init(error)
     } else if let error = error as? PDFError {
       self = error
+    } else if error is CancellationError {
+      self = PDFError(name: "AbortError", code: "operation-cancelled", detail: "operation cancelled")
     } else {
-      self = PDFError(name: "Error", code: nil, detail: "\(error)")
+      self = PDFError(name: String(describing: type(of: error)), code: "operation-failed", detail: readable(error))
     }
   }
 
