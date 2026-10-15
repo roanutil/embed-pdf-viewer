@@ -440,11 +440,12 @@ pub struct FlattenItem {
     #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub status: FlattenStatus,
-    /// Why, for a failure. Carried per page rather than thrown, because a
-    /// batch that flattened four pages and failed on the fifth has done
-    /// something the caller needs to know about.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    /// Why, for a failure: a `SerializedEngineError`, as `PagesFlattener`
+    /// writes it with `serializeError`. Carried per page rather than thrown,
+    /// because a batch that flattened four pages and failed on the fifth has
+    /// done something the caller needs to know about.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<serde_json::Value>,
 }
 
 /// What a flatten batch did.
@@ -484,6 +485,18 @@ impl FlattenUsage {
             Self::Print => pdfium::FlattenUsage::Print,
         }
     }
+}
+
+/// A failed page's `error`: the `SerializedEngineError` `PagesFlattener`
+/// writes, with its messages, under `Unknown`.
+fn flatten_failure(outcome: pdfium::FlattenOutcome) -> serde_json::Value {
+    let message = match outcome {
+        pdfium::FlattenOutcome::Unknown(code) => {
+            format!("native page flatten returned unexpected code {code}")
+        }
+        _ => String::from("native page flatten failed after preflight"),
+    };
+    EngineError::with_message(EngineErrorCode::Unknown, message).to_wire()
 }
 
 /// Turn a page's annotations into page content.
@@ -549,12 +562,7 @@ pub fn flatten_pages<P: crate::access::PageAccess>(
                 FlattenItem {
                     page_object_number: *page_object_number,
                     status: FlattenStatus::Failed,
-                    error: Some(match outcome {
-                        pdfium::FlattenOutcome::Failed => {
-                            String::from("PDFium refused the flatten after the page resolved")
-                        }
-                        other => format!("PDFium answered the flatten with {other:?}"),
-                    }),
+                    error: Some(flatten_failure(outcome)),
                 }
             }
         };
@@ -562,4 +570,22 @@ pub fn flatten_pages<P: crate::access::PageAccess>(
     }
 
     Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_failed_flatten_carries_a_serialized_engine_error() {
+        assert_eq!(
+            flatten_failure(pdfium::FlattenOutcome::Failed),
+            serde_json::json!({ "name": "EngineError", "code": "Unknown",
+                                "message": "native page flatten failed after preflight" }),
+        );
+        assert_eq!(
+            flatten_failure(pdfium::FlattenOutcome::Unknown(7))["message"],
+            "native page flatten returned unexpected code 7",
+        );
+    }
 }

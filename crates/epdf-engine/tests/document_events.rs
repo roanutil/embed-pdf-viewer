@@ -486,3 +486,24 @@ fn on_page(host: &mut Host, doc: &str) -> Vec<u64> {
         .filter_map(|a| a["ref"]["annotObjectNumber"].as_u64())
         .collect()
 }
+
+/// A failed page as `PagesFlattener` and `RedactionApplier` answer it: the
+/// `error` is a `SerializedEngineError`, not a message.
+#[test]
+fn a_failed_page_carries_a_serialized_engine_error() {
+    use epdf_engine::features::{pages_write::FlattenResult, redaction::RedactionApplyResult};
+    let error = json!({ "name": "EngineError", "code": "Unknown",
+                        "message": "native page flatten failed after preflight" });
+    let flattened = json!({ "pages": [page_ref(3u64)], "usage": "display",
+        "results": [{ "page": page_ref(3u64), "status": "failed", "error": error }] });
+    let read: FlattenResult = serde_json::from_value(flattened.clone()).expect("a TS flatten");
+    assert_eq!(serde_json::to_value(&read).unwrap(), flattened);
+
+    let redacted = json!({ "scope": { "kind": "pages", "pages": [page_ref(3u64)] },
+        "results": [{ "page": page_ref(3u64), "status": "failed", "removedAnnotationCount": 0,
+                      "error": error }],
+        "removedAnnotationCount": 0 });
+    let read: RedactionApplyResult =
+        serde_json::from_value(redacted.clone()).expect("a TS redaction");
+    assert_eq!(serde_json::to_value(&read).unwrap(), redacted);
+}

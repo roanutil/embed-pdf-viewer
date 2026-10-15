@@ -69,8 +69,10 @@ pub struct RedactionItem {
     /// Annotations removed ALONGSIDE the markings: popups cascading and
     /// widgets detaching. Not a count of the markings themselves.
     pub removed_annotation_count: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    /// Why, for a failure: a `SerializedEngineError`, as `RedactionApplier`
+    /// writes it with `serializeError`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<serde_json::Value>,
 }
 
 /// What a whole apply did.
@@ -159,7 +161,7 @@ pub fn apply<P: PageAccess>(
                     page_object_number: *page_object_number,
                     status: RedactionStatus::Failed,
                     removed_annotation_count: 0,
-                    error: Some(error.to_string()),
+                    error: Some(error.to_wire()),
                 });
             }
         }
