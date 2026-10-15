@@ -349,6 +349,27 @@ impl NativeDocumentState {
         state
     }
 
+    /// `LocalDocumentHandle.download`'s guards: the scope must grant
+    /// `doc.download`, and a signed document refuses a rewrite, which would
+    /// void every signature.
+    fn may_download(&self, options: Option<&Value>) -> Result<(), Error> {
+        let authority = self.authority.borrow();
+        if self.locked.get() || !authority.allows(DocCapability::DocDownload) {
+            return Err(Error::permission_denied("doc.download", None));
+        }
+        let rewrite = options
+            .and_then(|o| o.get("mode"))
+            .and_then(Value::as_str)
+            .is_some_and(|mode| mode == "rewrite");
+        if rewrite && authority.protection().is_some() {
+            return Err(Error::engine(
+                "ProtectedDocument",
+                "the document is signed: a rewrite save would void every signature (use an incremental save)",
+            ));
+        }
+        Ok(())
+    }
+
     /// Adopt the document's signature protection (`ScopeGuard.setProtection`):
     /// what it forbids, no scope grants. `null` or unreadable is none.
     fn take_protection(&self, protection: &Value) {
@@ -394,6 +415,11 @@ impl DocumentHandle for NativeDocument {
         if path == "close" {
             LAYOUTS.with(|l| l.borrow_mut().remove(&self.id));
             STATES.with(|s| s.borrow_mut().remove(&self.id));
+        }
+        if path == "download"
+            && let Err(error) = self.state.may_download(args.first())
+        {
+            return Promise::rejected(error);
         }
         if self.inner.encoded_renders && path == "page.render.image" {
             return self.inner.send(&self.id, |job| {

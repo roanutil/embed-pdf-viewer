@@ -123,6 +123,27 @@ pub struct OpenDocumentOptions {
     pub activate: bool,
 }
 
+/// How `ViewerHost::save` writes the file: TypeScript's `PdfSaveMode`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum SaveMode {
+    /// Append the edits as a new revision after the original bytes, which
+    /// stay untouched. Keeps every signature valid.
+    Incremental,
+    /// Write a fresh file. Smaller, and drops the revision history; a signed
+    /// document refuses it.
+    Rewrite,
+}
+
+impl SaveMode {
+    /// The kernel's `{mode}` value.
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            SaveMode::Incremental => "incremental",
+            SaveMode::Rewrite => "rewrite",
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct DocumentInfo {
     pub id: String,

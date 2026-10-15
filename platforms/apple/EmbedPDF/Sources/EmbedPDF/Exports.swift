@@ -12,3 +12,4 @@ public typealias TextQuad = EmbedPDFBindings.TextQuad
 public typealias PluginErrorInfo = EmbedPDFBindings.PluginErrorInfo
 public typealias HostError = EmbedPDFBindings.HostError
 public typealias DocumentEvent = EmbedPDFBindings.DocumentEvent
+public typealias SaveMode = EmbedPDFBindings.SaveMode

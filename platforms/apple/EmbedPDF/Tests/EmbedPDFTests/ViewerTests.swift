@@ -59,6 +59,39 @@ extension BaseSuite {
       }
     }
 
+    @Test func aSavedDocumentReopensInEitherMode() async throws {
+      let viewer = try await started()
+      let original = try Fixture.data("report")
+      let document = try await viewer.open(original)
+      let incremental = try await viewer.save(document)
+      expectNoDifference(incremental.prefix(original.count), original)
+      let rewritten = try await viewer.save(document, mode: .rewrite)
+      for bytes in [incremental, rewritten] {
+        let again = try await viewer.open(bytes)
+        expectNoDifference(again.pageCount, 14)
+      }
+    }
+
+    @Test func aSignedDocumentRefusesARewriteSave() async throws {
+      let viewer = try await started()
+      let document = try await viewer.open(Fixture.data("signed_two_approvals"))
+      await #expect {
+        _ = try await viewer.save(document, mode: .rewrite)
+      } throws: { error in
+        (error as? PDFError)?.code == "permission-denied"
+      }
+      _ = try await viewer.save(document, mode: .incremental)
+    }
+
+    @Test func saveCancelsWhenTheTaskIsCancelled() async throws {
+      let viewer = try await started()
+      let document = try await viewer.open(Fixture.data("report"))
+      let task = Task { try await viewer.save(document, mode: .rewrite) }
+      task.cancel()
+      do { _ = try await task.value } catch { expectNoDifference((error as? PDFError)?.code, "operation-cancelled") }
+      _ = try await viewer.save(document)
+    }
+
     @Test func openingAndClosingAreObserved() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents

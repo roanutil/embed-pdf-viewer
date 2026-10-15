@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use epdf_plugin_metadata::ffi::MetadataPatch;
-use epdf_viewer_host::{DocumentStatus, ViewerConfig, ViewerHost};
+use epdf_viewer_host::{DocumentStatus, SaveMode, ViewerConfig, ViewerHost};
 use futures::executor::block_on;
 
 mod common;
@@ -49,4 +49,29 @@ fn the_default_scope_allows_everything() {
     let host = started(ViewerConfig { metadata: true, ..Default::default() });
     let doc = block_on(host.open_document(fixture(test_support::REPORT), options())).unwrap();
     assert!(block_on(block_on(host.metadata(doc.id)).unwrap().can_edit()).unwrap());
+}
+
+#[test]
+fn a_scope_without_doc_download_refuses_a_save() {
+    let host = started(ViewerConfig {
+        scope: Some(vec!["doc.open".into(), "doc.render".into()]),
+        ..Default::default()
+    });
+    let doc = block_on(host.open_document(fixture(test_support::REPORT), options())).unwrap();
+    let refused = block_on(host.save(doc.id, SaveMode::Incremental, epdf_ffi::CancelToken::new()));
+    match refused {
+        Err(epdf_ffi::ViewerError::Kernel { code, .. }) => {
+            assert_eq!(code.as_deref(), Some("permission-denied"))
+        }
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn a_locked_document_refuses_a_save() {
+    let host = started(ViewerConfig::default());
+    let doc = block_on(host.open_document(fixture(test_support::ENCRYPTED), options())).unwrap();
+    assert_eq!(doc.status, DocumentStatus::Locked);
+    let refused = block_on(host.save(doc.id, SaveMode::Incremental, epdf_ffi::CancelToken::new()));
+    assert!(refused.is_err(), "{refused:?}");
 }

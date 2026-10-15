@@ -27,7 +27,8 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
+use epdf_ffi::{CancelToken, KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
+use epdf_kernel::error::to_plugin_error;
 use epdf_kernel::{Error, Kernel, OpenOptions, OpenSource, Promise, Unsubscribe};
 use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_annotation::ffi::AnnotationHandle;
@@ -52,7 +53,7 @@ use serde_json::{Map, Value, json};
 
 pub use api::{
     DocumentEvent, DocumentEventListener, DocumentInfo, DocumentStatus, OpenDocumentOptions,
-    PageInfo, ViewerConfig, ViewerDelegate,
+    PageInfo, SaveMode, ViewerConfig, ViewerDelegate,
 };
 use api::{Lifecycle, decode_pages};
 use host_table::HostTable;
@@ -112,6 +113,25 @@ impl ViewerHost {
         // No thread, or a thread already stopping: the job, and with it the
         // slot, is dropped, and `reply` answers `Closed`.
         self.fire(move |s| slot.start(f(s).map_err(ViewerError::from)));
+        reply
+    }
+
+    /// `call_promise`, also aborted by `token`: `KernelBound`'s
+    /// `call_promise_cancellable` for the host's own exports.
+    fn call_promise_cancellable<U: Clone + Send + 'static>(
+        &self,
+        token: Arc<CancelToken>,
+        f: impl FnOnce(&mut Session) -> Result<Promise<U>, Error> + Send + 'static,
+    ) -> impl Future<Output = Result<U, ViewerError>> + Send {
+        let (slot, reply) = PromiseSlot::pending(self.post.clone(), |value: U| value);
+        slot.abort_on(&token);
+        self.fire(move |s| {
+            if token.is_cancelled() {
+                slot.start(Err(ViewerError::cancelled()));
+            } else {
+                slot.start(f(s).map_err(ViewerError::from));
+            }
+        });
         reply
     }
 
@@ -233,6 +253,38 @@ impl ViewerHost {
                     .with("code", "NotFound"));
             }
             decode_pages(&documents.list_pages(Some(&document_id)))
+        })
+        .await
+    }
+
+    /// The complete document as PDF bytes: `documents.save(id, {mode})`.
+    /// Needs `doc.download` in `ViewerConfig.scope`. A signed document
+    /// refuses `Rewrite` (`permission-denied`), since a rewrite voids every
+    /// signature. Errors carry the kernel's `toPluginError` codes;
+    /// cancelling `cancel` aborts the engine's save (`operation-cancelled`).
+    pub async fn save(
+        &self,
+        document_id: String,
+        mode: SaveMode,
+        cancel: Arc<CancelToken>,
+    ) -> Result<Vec<u8>, ViewerError> {
+        self.call_promise_cancellable(cancel, move |s| {
+            let saved = s.kernel.documents().save(Some(&document_id), Some(mode.as_str().into()));
+            let aborter = saved.clone();
+            Ok(Promise::spawn(async move {
+                match saved.await {
+                    // `download` answers `{"$hostBytes": id}` (`Decode::HostBytes`).
+                    Ok(value) => value
+                        .get("$hostBytes")
+                        .and_then(Value::as_u64)
+                        .and_then(HostTable::take)
+                        .ok_or_else(|| {
+                            Error::new(format!("[epdf-viewer-host] a save answered {value}"))
+                        }),
+                    Err(error) => Err(to_plugin_error("documents", &error)),
+                }
+            })
+            .with_abort(move |reason| aborter.abort(reason)))
         })
         .await
     }

@@ -1223,6 +1223,19 @@ fn a_download_saves_the_whole_file_into_the_host_table() {
 }
 
 #[test]
+fn a_download_carries_the_kernels_save_mode_in_the_hosts_spelling() {
+    let mode = |options: Value| {
+        translate("doc-1", "download", None, &[options], 1).map(|call| call.request["mode"].clone())
+    };
+    assert_eq!(mode(json!({ "mode": "incremental" })).unwrap(), json!("incremental"));
+    assert_eq!(mode(json!({ "mode": "rewrite" })).unwrap(), json!("full"));
+    assert_eq!(mode(json!({})).unwrap(), json!("full"));
+    assert_eq!(mode(json!({ "mode": { "$undefined": true } })).unwrap(), json!("full"));
+    let error = mode(json!({ "mode": "sideways" })).unwrap_err();
+    assert_eq!(error.code(), Some("invalid-input"));
+}
+
+#[test]
 fn an_encoded_render_asks_for_png_and_answers_bytes() {
     use epdf_viewer_host::translate::translate_encoded_render;
     let options = json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });

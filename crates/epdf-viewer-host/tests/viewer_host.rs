@@ -16,8 +16,8 @@ use epdf_plugin_render::ffi::{RenderConfig, RenderPageOptions, RenderPixelFormat
 use epdf_plugin_search::ffi::{SearchConfig, SearchQuery, SearchResultStatus, SearchStatus};
 use epdf_plugin_shell::ffi::ShellOpenOptions;
 use epdf_viewer_host::{
-    DocumentEvent, DocumentEventListener, DocumentStatus, OpenDocumentOptions, ViewerConfig,
-    ViewerDelegate, ViewerHost,
+    DocumentEvent, DocumentEventListener, DocumentStatus, OpenDocumentOptions, SaveMode,
+    ViewerConfig, ViewerDelegate, ViewerHost,
 };
 use futures::FutureExt;
 use futures::executor::block_on;
@@ -157,6 +157,70 @@ fn a_locked_open_says_whether_a_password_was_given() {
         locked.contains(&DocumentEvent::Locked { document_id: doc.id, password_provided: false }),
         "{locked:?}"
     );
+}
+
+fn kernel_code(error: &ViewerError) -> Option<&str> {
+    match error {
+        ViewerError::Kernel { code, .. } => code.as_deref(),
+        ViewerError::Closed => None,
+    }
+}
+
+#[test]
+fn save_answers_the_whole_file_in_either_mode_and_it_reopens() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    for mode in [SaveMode::Incremental, SaveMode::Rewrite] {
+        let bytes = block_on(host.save(doc.id.clone(), mode, CancelToken::new())).unwrap();
+        assert!(bytes.starts_with(b"%PDF"), "{mode:?}");
+        let again = block_on(host.open_document(bytes, options())).unwrap();
+        assert_eq!(again.page_count, 14, "{mode:?}");
+    }
+    assert_eq!(block_on(host.host_table_entries()).unwrap(), 0, "a save left its bytes behind");
+}
+
+#[test]
+fn an_incremental_save_keeps_the_original_bytes_as_its_prefix() {
+    let host = started();
+    let original = test_support::fixture(test_support::REPORT);
+    let doc = block_on(host.open_document(original.clone(), options())).unwrap();
+    let bytes = block_on(host.save(doc.id, SaveMode::Incremental, CancelToken::new())).unwrap();
+    assert!(bytes.starts_with(&original), "an incremental save rewrote the original bytes");
+}
+
+#[test]
+fn save_cancels_when_its_token_is_cancelled() {
+    let host = started();
+    let doc = block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+        .unwrap();
+    let token = CancelToken::new();
+    token.cancel();
+    let error = block_on(host.save(doc.id.clone(), SaveMode::Rewrite, token)).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("operation-cancelled"), "{error:?}");
+    // The host still saves afterwards.
+    assert!(block_on(host.save(doc.id, SaveMode::Rewrite, CancelToken::new())).is_ok());
+}
+
+#[test]
+fn a_signed_document_refuses_a_rewrite_save_but_not_an_incremental_one() {
+    let host = started();
+    let signed =
+        test_support::fixture("packages/engine/main/test/fixtures/signed_two_approvals.pdf");
+    let doc = block_on(host.open_document(signed.clone(), options())).unwrap();
+    let error =
+        block_on(host.save(doc.id.clone(), SaveMode::Rewrite, CancelToken::new())).unwrap_err();
+    assert_eq!(kernel_code(&error), Some("permission-denied"), "{error:?}");
+    let bytes = block_on(host.save(doc.id, SaveMode::Incremental, CancelToken::new())).unwrap();
+    assert!(bytes.starts_with(&signed));
+}
+
+#[test]
+fn saving_an_unknown_document_fails() {
+    let host = started();
+    let error =
+        block_on(host.save("nope".into(), SaveMode::Incremental, CancelToken::new())).unwrap_err();
+    assert!(format!("{error:?}").contains("no document to save"), "{error:?}");
 }
 
 #[test]

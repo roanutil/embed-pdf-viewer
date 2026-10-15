@@ -30,6 +30,17 @@ extension BaseSuite {
       expectNoDifference(got2, false)
     }
 
+    @Test func aNarrowScopeCannotSave() async throws {
+      let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.render"]))
+      try await viewer.start()
+      let document = try await viewer.open(Fixture.data("report"))
+      await #expect {
+        _ = try await viewer.save(document)
+      } throws: { error in
+        (error as? PDFError)?.code == "permission-denied"
+      }
+    }
+
     @Test func aNarrowScopeCannotEditMetadata() async throws {
       let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.render"], metadata: true))
       try await viewer.start()

@@ -68,6 +68,20 @@ public final class PDFViewer: Sendable {
     }
   }
 
+  /// The complete document as PDF bytes, for the app to write wherever it
+  /// keeps files. `.incremental` (the default) appends the edits after the
+  /// original bytes and keeps every signature valid; `.rewrite` writes a
+  /// fresh, smaller file without the revision history, and a signed
+  /// document refuses it with `permission-denied`. Needs `doc.download` in
+  /// `ViewerConfig.scope`. Cancelling the task throws `operation-cancelled`.
+  public func save(_ document: PDFDocument, mode: SaveMode = .incremental) async throws(PDFError) -> Data {
+    try await measured("save") { () async throws(PDFError) in
+      try await bridgedCancellable { token in
+        try await host.save(documentId: document.id, mode: mode, cancel: token)
+      }
+    }
+  }
+
   public var documentEvents: AsyncStream<DocumentEvent> {
     registry.stream { host.subscribeDocuments(listener: $0) }
   }
