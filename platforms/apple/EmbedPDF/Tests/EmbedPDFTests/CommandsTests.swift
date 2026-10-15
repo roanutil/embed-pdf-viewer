@@ -30,6 +30,22 @@ extension BaseSuite {
       }
     }
 
+    @Test func argsThatAreNotUTF8AreInvalidInput() async throws {
+      let (_, commands) = try await started()
+      let ran = LockIsolated(false)
+      let handler = CommandHandler(run: { _ in ran.withValue { $0 = true } })
+      _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
+      // A lone continuation byte inside a JSON string: `String(decoding:)`
+      // would have made it U+FFFD and run the command.
+      let args = Data(#"{"name":""#.utf8) + Data([0x80]) + Data(#""}"#.utf8)
+      await #expect {
+        _ = try await commands.execute("doc:save", args: args)
+      } throws: { error in
+        (error as? PDFError)?.code == "invalid-input"
+      }
+      expectNoDifference(ran.value, false)
+    }
+
     @Test func aThrowingCommandFails() async throws {
       let (_, commands) = try await started()
       struct Full: Error {}

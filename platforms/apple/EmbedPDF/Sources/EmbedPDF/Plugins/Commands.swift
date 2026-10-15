@@ -174,7 +174,15 @@ public struct CommandsCapability: Sendable {
   public func execute(_ id: String, document: PDFDocument? = nil, args: Data? = nil)
     async throws(PDFError) -> CommandExecuteResult
   {
-    let json = args.map { String(decoding: $0, as: UTF8.self) }
+    // `String(decoding:)` would replace bad bytes with U+FFFD and pass
+    // whatever JSON that leaves; `String(bytes:encoding:)` refuses them.
+    var json: String?
+    if let args {
+      guard let text = String(bytes: args, encoding: .utf8) else {
+        throw PDFError(name: "EncodingError", code: "invalid-input", detail: "args are not valid UTF-8")
+      }
+      json = text
+    }
     return try await bridged { try await handle.execute(id: id, documentId: document?.id, argsJson: json) }
   }
 
