@@ -33,7 +33,7 @@ use super::reader::{
 };
 use super::types::{
     BaseVersionInfo, DigestAlgorithm, DocumentProtection, DocumentVersionRef, FieldLockAction,
-    FieldLockSpec, FormWidget, SignatureCoverage, SignatureDto, SignatureKind, WirePageRef,
+    FieldLockSpec, FormWidget, SignatureCoverage, SignatureDto, SignatureKind,
 };
 
 const DEFAULT_CONTENTS_SIZE: u64 = 8192;
@@ -260,7 +260,7 @@ fn bake_widget_appearance(
     pdf: &[u8],
     page_index: i32,
 ) -> Result<(), EngineError> {
-    let Some(WirePageRef::ObjectNumber { page_object_number }) = widget.page else {
+    let Some(page) = widget.page else {
         return Err(EngineError::with_message(
             EngineErrorCode::NotFound,
             "the widget page could not be loaded",
@@ -272,25 +272,30 @@ fn bake_widget_appearance(
             "the appearance PDF could not be opened",
         )
     })?;
-    doc.bake_widget_appearance(page_object_number, widget.annot_object_number, &artwork, page_index)
-        .map_err(|step| match step {
-            "page" => EngineError::with_message(
-                EngineErrorCode::NotFound,
-                "the widget page could not be loaded",
-            ),
-            "widget" => EngineError::with_message(
-                EngineErrorCode::NotFound,
-                "the signature widget could not be loaded",
-            ),
-            "draw" => EngineError::with_message(
-                EngineErrorCode::InvalidArg,
-                "the appearance page could not be drawn into the widget",
-            ),
-            _ => EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "the appearance page could not be fitted into the widget",
-            ),
-        })
+    doc.bake_widget_appearance(
+        page.object_number().get(),
+        widget.annot_object_number,
+        &artwork,
+        page_index,
+    )
+    .map_err(|step| match step {
+        "page" => EngineError::with_message(
+            EngineErrorCode::NotFound,
+            "the widget page could not be loaded",
+        ),
+        "widget" => EngineError::with_message(
+            EngineErrorCode::NotFound,
+            "the signature widget could not be loaded",
+        ),
+        "draw" => EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the appearance page could not be drawn into the widget",
+        ),
+        _ => EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "the appearance page could not be fitted into the widget",
+        ),
+    })
 }
 
 /// `SignatureMutator.prepare`. Answers the prepared record and its digest.

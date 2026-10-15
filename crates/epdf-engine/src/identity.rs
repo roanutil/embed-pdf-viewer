@@ -43,6 +43,140 @@ impl std::fmt::Display for PageObjectNumber {
     }
 }
 
+/// How the wire addresses a page: `PageRef` in `core/src/identity/PageRef.ts`,
+/// `{ kind: "objectNumber", pageObjectNumber }`.
+///
+/// One kind on purpose, as in the TypeScript: a page without an object number
+/// is refused at open and a display index is never an identity. The tag stays
+/// so that a kind this build does not know is refused rather than read as an
+/// object number, which is what `PageRefSchema` does on the validated
+/// surfaces.
+///
+/// The engine's own records keep [`PageObjectNumber`] and spell it as a
+/// `PageRef` only on the wire, through [`page_ref`], [`page_refs`] and
+/// [`optional_page_ref`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub enum PageRef {
+    #[serde(rename = "objectNumber", rename_all = "camelCase")]
+    ObjectNumber { page_object_number: PageObjectNumber },
+}
+
+impl PageRef {
+    /// `toPageRef`.
+    pub fn new(page: PageObjectNumber) -> Self {
+        Self::ObjectNumber { page_object_number: page }
+    }
+
+    /// The object number the ref resolves to, which is what the session keys
+    /// every page record on (`DocumentSession.resolvePageRef`).
+    pub fn object_number(self) -> PageObjectNumber {
+        match self {
+            Self::ObjectNumber { page_object_number } => page_object_number,
+        }
+    }
+
+    /// `PageRef` decoded from a request argument.
+    ///
+    /// A present but malformed ref (an unknown `kind`, a missing or
+    /// non-integer `pageObjectNumber`) is `InvalidArg`, as `PageRefSchema`
+    /// answers it on the validated surfaces. An unknown object number is
+    /// not decided here: it resolves to `NotFound` where the page is opened,
+    /// as `resolvePageRef` answers it.
+    pub fn from_value(value: &serde_json::Value, name: &str) -> Result<Self, EngineError> {
+        Self::deserialize(value).map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("'{name}' is not a PageRef: {e}"),
+            )
+        })
+    }
+}
+
+impl From<PageObjectNumber> for PageRef {
+    fn from(page: PageObjectNumber) -> Self {
+        Self::new(page)
+    }
+}
+
+/// A page number an engine record holds and the wire spells as a `PageRef`.
+///
+/// Implemented for [`PageObjectNumber`] and for the bare `u32` some readers
+/// carry straight from PDFium, so that a record keeps its own type and only
+/// its wire spelling changes.
+pub trait WirePage: Copy {
+    fn to_page_ref(self) -> PageRef;
+    fn from_page_ref(page: PageRef) -> Self;
+}
+
+impl WirePage for PageObjectNumber {
+    fn to_page_ref(self) -> PageRef {
+        PageRef::new(self)
+    }
+    fn from_page_ref(page: PageRef) -> Self {
+        page.object_number()
+    }
+}
+
+impl WirePage for u32 {
+    fn to_page_ref(self) -> PageRef {
+        PageRef::new(PageObjectNumber(self))
+    }
+    fn from_page_ref(page: PageRef) -> Self {
+        page.object_number().get()
+    }
+}
+
+/// `#[serde(with)]` for one page the wire spells as a `PageRef`.
+pub mod page_ref {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::{PageRef, WirePage};
+
+    pub fn serialize<T: WirePage, S: Serializer>(page: &T, s: S) -> Result<S::Ok, S::Error> {
+        page.to_page_ref().serialize(s)
+    }
+
+    pub fn deserialize<'de, T: WirePage, D: Deserializer<'de>>(d: D) -> Result<T, D::Error> {
+        Ok(T::from_page_ref(PageRef::deserialize(d)?))
+    }
+}
+
+/// `#[serde(with)]` for a list of pages the wire spells as `PageRef[]`.
+pub mod page_refs {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    use super::{PageRef, WirePage};
+
+    pub fn serialize<T: WirePage, S: Serializer>(pages: &[T], s: S) -> Result<S::Ok, S::Error> {
+        s.collect_seq(pages.iter().map(|page| page.to_page_ref()))
+    }
+
+    pub fn deserialize<'de, T: WirePage, D: Deserializer<'de>>(d: D) -> Result<Vec<T>, D::Error> {
+        Ok(Vec::<PageRef>::deserialize(d)?.into_iter().map(T::from_page_ref).collect())
+    }
+}
+
+/// `#[serde(with)]` for a page that may be absent: `PageRef | null`.
+pub mod optional_page_ref {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    use super::{PageRef, WirePage};
+
+    pub fn serialize<T: WirePage, S: Serializer>(
+        page: &Option<T>,
+        s: S,
+    ) -> Result<S::Ok, S::Error> {
+        page.map(T::to_page_ref).serialize(s)
+    }
+
+    pub fn deserialize<'de, T: WirePage, D: Deserializer<'de>>(
+        d: D,
+    ) -> Result<Option<T>, D::Error> {
+        Ok(Option::<PageRef>::deserialize(d)?.map(T::from_page_ref))
+    }
+}
+
 /// The two durable ways to address an annotation across reads.
 ///
 /// `ObjectNumber` is `EPDFAnnot_GetObjectNumber`, `> 0` for indirect objects,
@@ -243,5 +377,30 @@ mod tests {
                 "annotObjectNumber": 9,
             })
         );
+    }
+
+    #[test]
+    fn a_page_ref_is_the_one_tagged_kind() {
+        let page = PageObjectNumber::new(12).unwrap();
+        let wire = serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": 12 });
+        assert_eq!(serde_json::to_value(PageRef::new(page)).unwrap(), wire);
+        assert_eq!(PageRef::from_value(&wire, "page").unwrap().object_number(), page);
+    }
+
+    #[test]
+    fn a_malformed_page_ref_is_an_invalid_argument() {
+        // `PageRefSchema` refuses all of these; a dispatcher that read the
+        // number out of an unknown kind would address a page the caller never
+        // named.
+        for bad in [
+            serde_json::json!({ "kind": "index", "pageObjectNumber": 1 }),
+            serde_json::json!({ "kind": "objectNumber" }),
+            serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": "3" }),
+            serde_json::json!({ "pageObjectNumber": 3 }),
+            serde_json::json!(3),
+        ] {
+            let err = PageRef::from_value(&bad, "page").unwrap_err();
+            assert!(err.is(EngineErrorCode::InvalidArg), "{bad} answered {err:?}");
+        }
     }
 }

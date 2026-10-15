@@ -5,6 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::features::forms::snapshot::FormFieldRef;
+use crate::identity::{PageRef, WirePage};
 
 /// `SignedDocumentPolicy`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -116,20 +117,12 @@ pub struct SignatureSeedValue {
     pub unsupported_required: bool,
 }
 
-/// A `PageRef`, `{kind: "objectNumber", pageObjectNumber}`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "kind")]
-pub enum WirePageRef {
-    #[serde(rename = "objectNumber", rename_all = "camelCase")]
-    ObjectNumber { page_object_number: u32 },
-}
-
 /// An `AnnotationRef` by object number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum WireAnnotationRef {
     #[serde(rename = "objectNumber", rename_all = "camelCase")]
-    ObjectNumber { page: WirePageRef, annot_object_number: u32 },
+    ObjectNumber { page: PageRef, annot_object_number: u32 },
 }
 
 /// `FormWidget`, the shape `formWidget(annotObjectNumber, page)` builds.
@@ -139,14 +132,13 @@ pub struct FormWidget {
     #[serde(rename = "ref")]
     pub reference: Option<WireAnnotationRef>,
     pub annot_object_number: u32,
-    pub page: Option<WirePageRef>,
+    pub page: Option<PageRef>,
 }
 
 impl FormWidget {
     /// `formWidget(annotObjectNumber, widgetPageRef(pageObjectNumber))`.
     pub fn new(annot_object_number: u32, page_object_number: u32) -> FormWidget {
-        let page =
-            (page_object_number > 0).then_some(WirePageRef::ObjectNumber { page_object_number });
+        let page = (page_object_number > 0).then(|| page_object_number.to_page_ref());
         FormWidget {
             reference: match page {
                 Some(page) if annot_object_number > 0 => {
