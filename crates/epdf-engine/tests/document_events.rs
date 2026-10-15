@@ -233,11 +233,22 @@ fn an_effects_batch_publishes_form_effects_applied() {
     assert_eq!(applied["event"]["type"], json!("form.effectsApplied"), "{applied}");
     assert_result_rides(&applied);
 
-    // The same value again writes nothing: no mutation, no event.
+    let sequence = applied["mutationSequence"].clone();
+    assert!(sequence.is_u64(), "{applied}");
+
+    // The same value again writes nothing: no mutation, no event. The answer
+    // is still `{result, mutationSequence}`, as `pages.flatten`'s and
+    // `redaction.apply`'s no-ops are: `WorkerHost` packs `{tag, result}` for
+    // all three, with or without `finishMutation`.
     let again =
         call(&mut host, json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }));
     assert!(again.get("event").is_none(), "{again}");
-    assert!(again["meta"].is_null(), "{again}");
+    assert_eq!(again["result"]["results"][0]["status"], json!("unchanged"), "{again}");
+    assert!(again["result"].get("meta").is_some_and(Value::is_null), "{again}");
+    assert_eq!(again["mutationSequence"], sequence, "{again}");
+    let mut keys: Vec<&str> = again.as_object().unwrap().keys().map(String::as_str).collect();
+    keys.sort_unstable();
+    assert_eq!(keys, ["mutationSequence", "result"], "{again}");
 }
 
 #[test]

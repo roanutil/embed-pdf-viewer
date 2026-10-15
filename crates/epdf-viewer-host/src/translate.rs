@@ -61,10 +61,6 @@ pub enum Decode {
     /// A byte payload (an extracted PDF), parked in the `HostTable` and
     /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
     HostBytes,
-    /// A form mutation: `Mutation`, except that a `forms.applyEffects` batch
-    /// that wrote nothing answers a bare result with no `mutationSequence`,
-    /// which answers itself with no event.
-    FormMutation,
     /// Bytes in the first payload, put back into the result as `bytes`
     /// (`{"$bytes": base64}`), as the form plugin reads an export.
     ExportBytes,
@@ -198,17 +194,17 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
         "forms.list" => ("forms.list", Decode::Result),
-        "forms.setValue" => ("forms.setValue", Decode::FormMutation),
-        "forms.reset" => ("forms.reset", Decode::FormMutation),
-        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
+        "forms.setValue" => ("forms.setValue", Decode::Mutation),
+        "forms.reset" => ("forms.reset", Decode::Mutation),
+        "forms.applyEffects" => ("forms.applyEffects", Decode::Mutation),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
-        "forms.importData" => ("forms.import", Decode::FormMutation),
-        "forms.repair" => ("forms.repair", Decode::FormMutation),
-        "forms.createField" => ("forms.createField", Decode::FormMutation),
-        "forms.updateField" => ("forms.updateField", Decode::FormMutation),
-        "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
-        "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
-        "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
+        "forms.importData" => ("forms.import", Decode::Mutation),
+        "forms.repair" => ("forms.repair", Decode::Mutation),
+        "forms.createField" => ("forms.createField", Decode::Mutation),
+        "forms.updateField" => ("forms.updateField", Decode::Mutation),
+        "forms.deleteField" => ("forms.deleteField", Decode::Mutation),
+        "forms.attachWidget" => ("forms.attachWidget", Decode::Mutation),
+        "forms.detachWidget" => ("forms.detachWidget", Decode::Mutation),
         "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
         // `void`, as the TypeScript resolves it, and no event to hand back.
         "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Unit),
@@ -227,7 +223,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "signatures.complete" => ("signatures.complete", Decode::Mutation),
         "signatures.abort" => ("signatures.abort", Decode::Result),
         "document.version" => ("document.version", Decode::Result),
-        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::FormMutation),
+        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
         _ => return None,
     })
 }
@@ -832,13 +828,6 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             result
                 .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
             Value::Object(result)
-        }
-        Decode::FormMutation => {
-            if !result.contains_key("mutationSequence") {
-                return Ok(Decoded { value: Value::Object(result), event: None });
-            }
-            let value = take(&mut result, "result")?;
-            return Ok(Decoded { value, event: result.remove("event") });
         }
         Decode::ExportBytes => {
             let bytes = response

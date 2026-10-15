@@ -958,8 +958,15 @@ impl Host {
                 // the applier's own answer to "did anything land", and
                 // finalizing an all-no-op run would bump the version and
                 // invalidate every cache for a script that changed nothing.
+                // `WorkerHost.handleFormsApplyEffects` still answers it as
+                // `{tag, result}`, the shape `finishMutation` answers, so it
+                // goes out as `pages.flatten`'s and `redaction.apply`'s do.
                 if result.meta.is_none() {
-                    return Ok(ok(value(&result)?));
+                    let session = self.sessions.session(&key)?;
+                    return Ok(ok(serde_json::json!({
+                        "result": value(&result)?,
+                        "mutationSequence": session.mutation_sequence(),
+                    })));
                 }
                 // `FormsEffectsApplier` notes the mutation once per effect
                 // that applied or failed, before re-reading its fields.

@@ -849,7 +849,7 @@ fn a_repair_reads_bake_appearances_from_its_options() {
     let call =
         translate("d1", "forms.repair", None, &[json!({ "bakeAppearances": true })], 25).unwrap();
     assert_eq!(call.request["bakeAppearances"], true);
-    assert!(matches!(call.decode, Decode::FormMutation));
+    assert!(matches!(call.decode, Decode::Mutation));
 }
 
 #[test]
@@ -867,7 +867,7 @@ fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
         json!({ "kind": "forms.reset", "jobId": 26, "docId": "d1",
         "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 } })
     );
-    assert!(matches!(call.decode, Decode::FormMutation));
+    assert!(matches!(call.decode, Decode::Mutation));
 }
 
 #[test]
@@ -888,10 +888,13 @@ fn a_widget_link_sends_the_widgets_annotation_ref() {
 }
 
 #[test]
-fn a_form_mutation_without_a_sequence_answers_the_bare_result() {
+fn an_effects_batch_that_wrote_nothing_answers_its_result_and_no_event() {
+    // The host answers a no-op batch `{result, mutationSequence}` with no
+    // event, as it answers a no-op `pages.flatten` or `redaction.apply`.
     let call = translate("d1", "forms.applyEffects", None, &[json!([])], 28).unwrap();
-    let decoded = decode(&call.decode, answer(r#"{"result":{"results":[]}}"#)).unwrap();
-    assert_eq!(decoded.value, json!({ "results": [] }));
+    let json = r#"{"result":{"result":{"results":[],"changedWidgets":[],"meta":null},"mutationSequence":3}}"#;
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(decoded.value, json!({ "results": [], "changedWidgets": [], "meta": null }));
     assert!(decoded.event.is_none());
 }
 
