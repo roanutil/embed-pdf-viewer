@@ -63,6 +63,12 @@ struct Envelope<'a> {
     result: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<&'a EngineError>,
+    /// A notice an answer publishes beside a result that is not a
+    /// mutation's (`signature.prepared`, `signature.aborted`). A mutation's
+    /// event rides inside its result instead, as `{result,
+    /// mutationSequence, event}`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    event: Option<serde_json::Value>,
 }
 
 /// The fields every request shares.
@@ -212,13 +218,17 @@ impl Host {
         match self.route(request, payloads) {
             Ok(response) => response,
             Err(error) => HostResponse {
-                json: serde_json::to_string(&Envelope { result: None, error: Some(&error) })
-                    .unwrap_or_else(|_| {
-                        // A serializer that cannot write an error has left
-                        // the host with nothing to report, so this is the
-                        // one place that hand-builds JSON.
-                        String::from(r#"{"error":{"code":"Unknown","message":"unserializable"}}"#)
-                    }),
+                json: serde_json::to_string(&Envelope {
+                    result: None,
+                    error: Some(&error),
+                    event: None,
+                })
+                .unwrap_or_else(|_| {
+                    // A serializer that cannot write an error has left
+                    // the host with nothing to report, so this is the
+                    // one place that hand-builds JSON.
+                    String::from(r#"{"error":{"code":"Unknown","message":"unserializable"}}"#)
+                }),
                 payloads: Vec::new(),
             },
         }
@@ -468,7 +478,14 @@ impl Host {
                 let signing_id = self.ids.next_uuid_v4();
                 let (prepared, digest) =
                     f::signature::mutator::prepare(session, &input, appearance, signing_id)?;
-                Ok(HostResponse { json: envelope(value(&prepared)?), payloads: vec![digest] })
+                let prepared = value(&prepared)?;
+                // `LocalDocumentSignaturesService.prepare` publishes the
+                // parked candidate: its id and the field the call named.
+                let notice = crate::session::save::DocumentEventInit::SignaturePrepared {
+                    signing_id: prepared["signingId"].as_str().unwrap_or_default().to_owned(),
+                    field: value(&input.field)?,
+                };
+                self.answer_with_notice(&key, prepared, notice, vec![digest])
             }
             "signatures.complete" => {
                 let input: f::signature::mutator::SignatureCompleteInput = field(body, "input")?;
@@ -495,7 +512,15 @@ impl Host {
                 let signing_id = string_field(body, "signingId")?;
                 let session = self.sessions.session(&key)?;
                 session.require(DocCapability::DocSign)?;
-                Ok(ok(value(&f::signature::mutator::abort(session, &signing_id))?))
+                let result = value(&f::signature::mutator::abort(session, &signing_id))?;
+                // `LocalDocumentSignaturesService.abort` publishes only an
+                // abort that happened, not one that found nothing parked.
+                if result["status"] != "aborted" {
+                    return Ok(ok(result));
+                }
+                let notice =
+                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
+                self.answer_with_notice(&key, result, notice, Vec::new())
             }
             "forms.setSignatureAppearance" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
@@ -756,7 +781,9 @@ impl Host {
                 };
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::MetadataUpdated(value(&result)?),
+                    crate::session::save::DocumentEventInit::MetadataUpdated(with_local_cache(
+                        value(&result)?,
+                    )),
                 )
             }
             "annotations.create" => {
@@ -778,7 +805,10 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::AnnotationCreated(value(&result)?),
+                    crate::session::save::DocumentEventInit::AnnotationCreated {
+                        page_object_number: page,
+                        result: value(&result)?,
+                    },
                 )
             }
             "annotations.update" => {
@@ -796,9 +826,14 @@ impl Host {
                     self.ids.as_ref(),
                     cancel,
                 )?;
+                // `LocalPageAnnotationsService` publishes the page it was
+                // asked through, which is the page the ref names.
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::AnnotationUpdated(value(&result)?),
+                    crate::session::save::DocumentEventInit::AnnotationUpdated {
+                        page_object_number: annotation_ref.page(),
+                        result: value(&result)?,
+                    },
                 )
             }
             "annotations.delete" => {
@@ -810,7 +845,10 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::AnnotationDeleted(value(&result)?),
+                    crate::session::save::DocumentEventInit::AnnotationDeleted {
+                        page_object_number: annotation_ref.page(),
+                        result: value(&result)?,
+                    },
                 )
             }
             "annotations.move" => {
@@ -827,7 +865,10 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::AnnotationMoved(value(&result)?),
+                    crate::session::save::DocumentEventInit::AnnotationMoved {
+                        page_object_number: page,
+                        result: value(&result)?,
+                    },
                 )
             }
 
@@ -908,7 +949,7 @@ impl Host {
                 }
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormValueChanged(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormEffectsApplied(value(&result)?),
                 )
             }
             "forms.import" => {
@@ -1014,7 +1055,11 @@ impl Host {
                 self.refresh_pages(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PagesMoved(value(&result)?),
+                    crate::session::save::DocumentEventInit::PagesMoved {
+                        page_object_numbers: pages,
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
                 )
             }
             "pages.setName" => {
@@ -1030,7 +1075,7 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: Some(page),
-                        result: value(&result)?,
+                        result: with_local_cache(value(&result)?),
                     },
                 )
             }
@@ -1045,7 +1090,7 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: None,
-                        result: value(&result)?,
+                        result: with_local_cache(value(&result)?),
                     },
                 )
             }
@@ -1059,7 +1104,11 @@ impl Host {
                 self.refresh_pages(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PagesRotated(value(&result)?),
+                    crate::session::save::DocumentEventInit::PagesRotated {
+                        page_object_numbers: pages,
+                        rotation,
+                        result: with_local_cache(value(&result)?),
+                    },
                 )
             }
             "pages.delete" => {
@@ -1077,7 +1126,10 @@ impl Host {
                 self.refresh_pages(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PagesDeleted(value(&result)?),
+                    crate::session::save::DocumentEventInit::PagesDeleted {
+                        page_object_numbers: pages,
+                        result: with_local_cache(value(&result)?),
+                    },
                 )
             }
             "pages.flatten" => {
@@ -1093,15 +1145,25 @@ impl Host {
                         cancel,
                     )?
                 };
-                // Flatten turns annotations into content, so every flattened
-                // page's index space is gone.
-                for page in &pages {
-                    self.sessions.session_mut(&key)?.bump_revision(*page)?;
-                }
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesFlattened(value(&result)?),
-                )
+                // `PagesFlattener.flatten`: a page that was applied or failed
+                // changed (its annotations are content now, or partly so),
+                // and only those are re-pinned. Nothing changed is no
+                // mutation: `meta: null`, no event, no artifact.
+                let changed: Vec<_> = result
+                    .results
+                    .iter()
+                    .filter(|r| {
+                        matches!(
+                            r.status,
+                            f::pages_write::FlattenStatus::Applied
+                                | f::pages_write::FlattenStatus::Failed
+                        )
+                    })
+                    .map(|r| r.page_object_number)
+                    .collect();
+                self.finish_rewrite(&key, value(&result)?, &changed, |result| {
+                    crate::session::save::DocumentEventInit::PagesFlattened(result)
+                })
             }
             "pages.insertBlank" => {
                 let size: crate::geom::PdfSize = field(body, "size")?;
@@ -1121,7 +1183,10 @@ impl Host {
                 self.refresh_pages(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PagesInserted(value(&result)?),
+                    crate::session::save::DocumentEventInit::PagesInserted {
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
                 )
             }
             "pages.insert" => {
@@ -1145,7 +1210,10 @@ impl Host {
                 self.refresh_pages(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PagesInserted(value(&result)?),
+                    crate::session::save::DocumentEventInit::PagesInserted {
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
                 )
             }
             "redaction.apply" => {
@@ -1154,15 +1222,24 @@ impl Host {
                     let owned = self.sessions.session(&key)?.document()?;
                     f::redaction::apply(owned.document(), |page| owned.page(page), &scope, cancel)?
                 };
-                // Applying a redaction removes the marking and whatever went
-                // with it, so every touched page's indices moved.
-                for page in result.results.iter().map(|r| r.page_object_number) {
-                    self.sessions.session_mut(&key)?.bump_revision(page)?;
-                }
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::RedactionApplied(value(&result)?),
-                )
+                // `RedactionApplier.apply`: applying removes the marking and
+                // whatever went with it, so a page that was applied or failed
+                // is re-pinned. Nothing changed is no mutation.
+                let changed: Vec<_> = result
+                    .results
+                    .iter()
+                    .filter(|r| {
+                        matches!(
+                            r.status,
+                            f::redaction::RedactionStatus::Applied
+                                | f::redaction::RedactionStatus::Failed
+                        )
+                    })
+                    .map(|r| r.page_object_number)
+                    .collect();
+                self.finish_rewrite(&key, value(&result)?, &changed, |result| {
+                    crate::session::save::DocumentEventInit::RedactionApplied(result)
+                })
             }
 
             "attachments.create" => {
@@ -1181,7 +1258,9 @@ impl Host {
                 };
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::AttachmentCreated(value(&result)?),
+                    crate::session::save::DocumentEventInit::AttachmentCreated(with_local_cache(
+                        value(&result)?,
+                    )),
                 )
             }
             "attachments.delete" => {
@@ -1192,8 +1271,10 @@ impl Host {
                 }
                 self.finish(
                     &key,
+                    // `AttachmentDeleteResult`: the ref the call named.
                     crate::session::save::DocumentEventInit::AttachmentDeleted(serde_json::json!({
-                        "key": name,
+                        "deleted": { "kind": "key", "key": name },
+                        "cache": null,
                     })),
                 )
             }
@@ -1247,15 +1328,11 @@ impl Host {
                         cancel,
                     )?;
                 }
-                // `/PieceInfo` is private application data rather than page
-                // content, so it publishes as a metadata change: no annotation
-                // moved and no page was rebuilt.
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::MetadataUpdated(serde_json::json!({
-                        "pieceInfo": application,
-                    })),
-                )
+                // `LocalPieceInfoService` publishes nothing: `/PieceInfo` is
+                // private application data, and the event this once sent as
+                // `metadata.updated` carried no `metadata` for the metadata
+                // plugin to read.
+                self.finish_quietly(&key, serde_json::json!({ "pieceInfo": application }))
             }
 
             other => {
@@ -1291,7 +1368,7 @@ impl Host {
         key: &SessionKey,
         event: crate::session::save::DocumentEventInit,
     ) -> Result<HostResponse, EngineError> {
-        let result = event.result().clone();
+        let result = event.result().cloned().unwrap_or(serde_json::Value::Null);
         self.finish_with(key, event, result)
     }
 
@@ -1303,11 +1380,86 @@ impl Host {
         event: crate::session::save::DocumentEventInit,
         result: serde_json::Value,
     ) -> Result<HostResponse, EngineError> {
+        let family = event.family();
+        self.finalize(key, family, Some(event), result)
+    }
+
+    /// [`Host::finish`] for a mutation the TypeScript publishes no event
+    /// for (`pieceInfo.update`, `pieceInfo.clear`): the sequence still
+    /// bumps and a layer still persists, but nobody is told.
+    fn finish_quietly(
+        &mut self,
+        key: &SessionKey,
+        result: serde_json::Value,
+    ) -> Result<HostResponse, EngineError> {
+        self.finalize(key, crate::session::save::MutationFamily::Ordinary, None, result)
+    }
+
+    fn finalize(
+        &mut self,
+        key: &SessionKey,
+        family: crate::session::save::MutationFamily,
+        event: Option<crate::session::save::DocumentEventInit>,
+        result: serde_json::Value,
+    ) -> Result<HostResponse, EngineError> {
         use crate::session::save;
 
         let session = self.sessions.session(key)?;
-        let finished = save::finish_mutation(session, event.family(), &CancelToken::never())?;
-        let published = save::publish(
+        let finished = save::finish_mutation(session, family, &CancelToken::never())?;
+        let mut answer = serde_json::json!({
+            "result": result,
+            "mutationSequence": finished.mutation_sequence,
+        });
+        if let Some(event) = event {
+            answer["event"] = serde_json::to_value(self.stamp(key, event)?).map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::WireFormat,
+                    format!("the event could not be serialized: {e}"),
+                )
+            })?;
+        }
+        let json = envelope(answer);
+        Ok(HostResponse { json, payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default() })
+    }
+
+    /// Finish a content rewrite (`pages.flatten`, `redaction.apply`) whose
+    /// result carries `meta`, as `WorkerHost.handlePagesFlatten` answers
+    /// it: `null` with no finalization and no event when no page changed,
+    /// otherwise the changed pages settled and the event published.
+    fn finish_rewrite(
+        &mut self,
+        key: &SessionKey,
+        mut result: serde_json::Value,
+        changed: &[crate::identity::PageObjectNumber],
+        event: impl FnOnce(serde_json::Value) -> crate::session::save::DocumentEventInit,
+    ) -> Result<HostResponse, EngineError> {
+        if changed.is_empty() {
+            result["meta"] = serde_json::Value::Null;
+            let session = self.sessions.session(key)?;
+            return Ok(ok(serde_json::json!({
+                "result": result,
+                "mutationSequence": session.mutation_sequence(),
+            })));
+        }
+        let meta = crate::features::annotation::write::mutator::settle_rewritten_pages(
+            self.sessions.session_mut(key)?,
+            changed,
+        )?;
+        result["meta"] = value(&meta)?;
+        self.finish(key, event(result))
+    }
+
+    /// Stamp `event` as this engine's own: a local origin under the
+    /// session's id, at the clock's now.
+    fn stamp(
+        &self,
+        key: &SessionKey,
+        event: crate::session::save::DocumentEventInit,
+    ) -> Result<crate::session::save::DocumentEvent, EngineError> {
+        use crate::session::save;
+
+        let session = self.sessions.session(key)?;
+        Ok(save::publish(
             event,
             save::EventOrigin {
                 kind: save::OriginKind::Local,
@@ -1316,14 +1468,26 @@ impl Host {
                 ts: self.clock.now().epoch_millis,
                 server_id: None,
             },
-        );
+        ))
+    }
 
-        let json = envelope(serde_json::json!({
-            "result": result,
-            "mutationSequence": finished.mutation_sequence,
-            "event": published,
-        }));
-        Ok(HostResponse { json, payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default() })
+    /// Answer `result` with a notice beside it in the envelope: the
+    /// signing notices, which follow a call that is not a mutation.
+    fn answer_with_notice(
+        &self,
+        key: &SessionKey,
+        result: serde_json::Value,
+        notice: crate::session::save::DocumentEventInit,
+        payloads: Vec<Vec<u8>>,
+    ) -> Result<HostResponse, EngineError> {
+        let event = value(&self.stamp(key, notice)?)?;
+        let json = serde_json::to_string(&Envelope {
+            result: Some(result),
+            error: None,
+            event: Some(event),
+        })
+        .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#));
+        Ok(HostResponse { json, payloads })
     }
 
     /// Re-read the page registry after the page list changed.
@@ -1518,10 +1682,20 @@ impl Host {
 /// A successful response with no payloads, which is most of them.
 fn ok(result: serde_json::Value) -> HostResponse {
     HostResponse {
-        json: serde_json::to_string(&Envelope { result: Some(result), error: None })
+        json: serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
             .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#)),
         payloads: Vec::new(),
     }
+}
+
+/// A page-structure, metadata or attachment result as a local engine
+/// answers it: `cache: null`, the cloud's coherence pins that a local engine
+/// never has (`PageMoveResult.cache`, `MetadataUpdateResult.cache`, ...).
+fn with_local_cache(mut result: serde_json::Value) -> serde_json::Value {
+    if let Some(object) = result.as_object_mut() {
+        object.entry("cache").or_insert(serde_json::Value::Null);
+    }
+    result
 }
 
 /// Serialize an operation's result into the envelope's `result`.
@@ -1611,7 +1785,7 @@ fn bytes_response(bytes: Vec<u8>) -> HostResponse {
 }
 
 fn envelope(result: serde_json::Value) -> String {
-    serde_json::to_string(&Envelope { result: Some(result), error: None })
+    serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
         .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#))
 }
 

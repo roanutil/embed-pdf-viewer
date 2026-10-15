@@ -9,6 +9,7 @@ use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
 use epdf_engine::features::annotation::write::create::create_annotation;
 use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
+use epdf_engine::geom::PdfRotation;
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -17,6 +18,10 @@ use epdf_engine::session::save::{
 };
 
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/rich_metadata.pdf";
+
+fn page(n: u32) -> PageObjectNumber {
+    PageObjectNumber::new(n).expect("a page object number")
+}
 
 fn open() -> DocumentSession {
     let bytes = std::fs::read(test_support::workspace_root().join(FIXTURE))
@@ -66,8 +71,21 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
     // are not, and getting one wrong is a stale cache nobody notices.
     let nothing = serde_json::Value::Null;
     for (event, expected) in [
-        (DocumentEventInit::AnnotationCreated(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::PagesMoved(nothing.clone()), MutationFamily::Ordinary),
+        (
+            DocumentEventInit::AnnotationCreated {
+                page_object_number: page(3),
+                result: serde_json::json!({}),
+            },
+            MutationFamily::Ordinary,
+        ),
+        (
+            DocumentEventInit::PagesMoved {
+                page_object_numbers: vec![page(3)],
+                dest_index: 0,
+                result: serde_json::json!({}),
+            },
+            MutationFamily::Ordinary,
+        ),
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::AttachmentCreated(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::SelfSequenced),
@@ -75,6 +93,7 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
         (DocumentEventInit::FormValueChanged(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::FormFieldCreated(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::FormWidgetDetached(nothing.clone()), MutationFamily::SelfSequenced),
+        (DocumentEventInit::FormEffectsApplied(nothing.clone()), MutationFamily::SelfSequenced),
     ] {
         assert_eq!(event.family(), expected, "{}", event.type_name());
     }
@@ -87,16 +106,31 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     // it sent. Every variant is listed, so a new one cannot be added
     // without deciding both.
     let nothing = serde_json::Value::Null;
+    let empty = || serde_json::json!({});
     let every: Vec<DocumentEventInit> = vec![
-        DocumentEventInit::AnnotationCreated(nothing.clone()),
-        DocumentEventInit::AnnotationUpdated(nothing.clone()),
-        DocumentEventInit::AnnotationDeleted(nothing.clone()),
-        DocumentEventInit::AnnotationMoved(nothing.clone()),
-        DocumentEventInit::PagesMoved(nothing.clone()),
-        DocumentEventInit::PagesRotated(nothing.clone()),
-        DocumentEventInit::PagesDeleted(nothing.clone()),
-        DocumentEventInit::PagesInserted(nothing.clone()),
+        DocumentEventInit::AnnotationCreated { page_object_number: page(3), result: empty() },
+        DocumentEventInit::AnnotationUpdated { page_object_number: page(3), result: empty() },
+        DocumentEventInit::AnnotationDeleted { page_object_number: page(3), result: empty() },
+        DocumentEventInit::AnnotationMoved { page_object_number: page(3), result: empty() },
+        DocumentEventInit::AnnotationsFlattened(nothing.clone()),
+        DocumentEventInit::PagesMoved {
+            page_object_numbers: vec![page(3)],
+            dest_index: 0,
+            result: empty(),
+        },
+        DocumentEventInit::PagesRotated {
+            page_object_numbers: vec![page(3)],
+            rotation: PdfRotation::Clockwise90,
+            result: empty(),
+        },
+        DocumentEventInit::PagesDeleted { page_object_numbers: vec![page(3)], result: empty() },
+        DocumentEventInit::PagesInserted { dest_index: None, result: empty() },
         DocumentEventInit::PagesFlattened(nothing.clone()),
+        DocumentEventInit::PagesNamed {
+            name: String::from("cover"),
+            page_object_number: None,
+            result: empty(),
+        },
         DocumentEventInit::RedactionApplied(nothing.clone()),
         DocumentEventInit::MetadataUpdated(nothing.clone()),
         DocumentEventInit::AttachmentCreated(nothing.clone()),
@@ -108,11 +142,19 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         DocumentEventInit::FormFieldUpdated(nothing.clone()),
         DocumentEventInit::FormFieldDeleted(nothing.clone()),
         DocumentEventInit::FormWidgetAttached(nothing.clone()),
-        DocumentEventInit::FormWidgetDetached(nothing),
+        DocumentEventInit::FormWidgetDetached(nothing.clone()),
+        DocumentEventInit::FormEffectsApplied(nothing.clone()),
+        DocumentEventInit::PageViewportsChanged(nothing.clone()),
+        DocumentEventInit::SignaturePrepared { signing_id: String::from("s"), field: empty() },
+        DocumentEventInit::SignatureCompleted(nothing),
+        DocumentEventInit::SignatureAborted { signing_id: String::from("s") },
     ];
-    // The TypeScript union has twenty-one mutation events; `stream.desynced`
-    // is a transport notice that never comes from a mutation path.
-    assert_eq!(every.len(), 21, "the event list and the TypeScript union disagree");
+    // The TypeScript union (`core/src/events/DocumentEvent.ts`) has thirty
+    // members. Two are not here: `stream.desynced` is a transport notice no
+    // engine publishes locally, and `document.versioned` follows
+    // `signature.completed` from `epdf-viewer-host`'s publisher, because a
+    // host answer carries one event.
+    assert_eq!(every.len(), 28, "the event list and the TypeScript union disagree");
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");
@@ -164,7 +206,7 @@ fn an_event_carries_its_result_verbatim() {
 
     let result = serde_json::to_value(&created).expect("serialize");
     let event = publish(
-        DocumentEventInit::AnnotationCreated(result.clone()),
+        DocumentEventInit::AnnotationCreated { page_object_number: page, result: result.clone() },
         EventOrigin {
             kind: OriginKind::Local,
             session_id: String::from("engine-1"),

@@ -46,8 +46,8 @@ use super::context::AnnotationWriteContext;
 use super::create::{AnnotationCreateResult, create_annotation};
 use super::delete::{AnnotationDeleteResult, WidgetAttachment, delete_annotation};
 use super::draft::{AnnotationActor, AnnotationDraft};
-use super::patch::AnnotationPatch;
 use super::move_::{AnnotationMoveResult, move_annotations};
+use super::patch::AnnotationPatch;
 use super::resolve::resolve_annotation;
 use super::update::{AnnotationUpdateResult, update_annotation};
 
@@ -114,10 +114,7 @@ fn scan_weak(
 /// Resolved per call rather than cached, because a page insert or a reorder
 /// moves it and the writers address `/Annots` through a loaded page whose
 /// index is the one the document has now.
-fn page_index_of(
-    document: &pdfium::Document,
-    page: PageObjectNumber,
-) -> Result<u32, EngineError> {
+fn page_index_of(document: &pdfium::Document, page: PageObjectNumber) -> Result<u32, EngineError> {
     (0..document.page_count())
         .find(|index| document.page_object_number_by_index(*index) == page.get())
         .ok_or_else(|| {
@@ -445,6 +442,31 @@ pub fn flatten(
         cache_delta: None,
     };
     Ok(AnnotationFlattenResult { page_object_number, usage, results, meta: Some(meta) })
+}
+
+/// The bookkeeping `PagesFlattener` and `RedactionApplier` perform once
+/// their pages are written: one sequence bump, each changed page's revision
+/// bumped and its weak-annotation state re-read (a failed re-read is
+/// ignored, as the TypeScript ignores it), and the `MutationMeta` naming
+/// the pages in the order given.
+///
+/// `pages` is what the write CHANGED (applied or failed), not what it was
+/// asked for. A page left unchanged keeps its revision, so a ref a caller
+/// holds into it stays good.
+pub fn settle_rewritten_pages(
+    session: &mut DocumentSession,
+    pages: &[PageObjectNumber],
+) -> Result<MutationMeta, EngineError> {
+    session.note_mutation();
+    for page in pages {
+        session.bump_revision(*page)?;
+        if let Ok(has_weak) = scan_weak(session, *page) {
+            let _ = session.record_weak_flag(*page, has_weak);
+        }
+    }
+    let affected_pages =
+        pages.iter().map(|page| session.page_state(*page)).collect::<Result<_, _>>()?;
+    Ok(MutationMeta { affected_pages, cache_delta: None })
 }
 
 /// `AnnotationFlattener.exportAppearance`: a chosen set of one page's

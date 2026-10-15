@@ -33,6 +33,7 @@ use serde::{Deserialize, Serialize};
 use super::document::DocumentSession;
 use crate::error::EngineError;
 use crate::features::save::{LayerArtifactKind, save_layer_to_buffer};
+use crate::identity::PageObjectNumber;
 
 /// What kind of mutation just finished.
 ///
@@ -122,28 +123,84 @@ pub enum OriginKind {
 /// returned, so a consumer that acted on the return value and a consumer
 /// that acted on the event acted on the same thing. That is why each
 /// variant carries its own result type rather than a summary.
+///
+/// Some events add what the CALL named beside the result, as the
+/// TypeScript's `packages/engine/main` services publish them: the page an
+/// annotation write addressed, the pages a page-structure write took, a
+/// move's insertion point, a rotation. Those are the struct variants, with
+/// the result flattened beside the added fields.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum DocumentEventInit {
+    /// `LocalPageAnnotationsService.create`: the page the write addressed.
     #[serde(rename = "annotation.created")]
-    AnnotationCreated(serde_json::Value),
+    AnnotationCreated {
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
+        page_object_number: PageObjectNumber,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "annotation.updated")]
-    AnnotationUpdated(serde_json::Value),
+    AnnotationUpdated {
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
+        page_object_number: PageObjectNumber,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "annotation.deleted")]
-    AnnotationDeleted(serde_json::Value),
+    AnnotationDeleted {
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
+        page_object_number: PageObjectNumber,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "annotation.moved")]
-    AnnotationMoved(serde_json::Value),
+    AnnotationMoved {
+        #[serde(rename = "page", with = "crate::identity::page_ref")]
+        page_object_number: PageObjectNumber,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     /// `annotations.flatten`, published only when something was applied.
     #[serde(rename = "annotations.flattened")]
     AnnotationsFlattened(serde_json::Value),
-    #[serde(rename = "pages.moved")]
-    PagesMoved(serde_json::Value),
+    /// `LocalDocumentPagesService.move`: the moved block, in the caller's
+    /// order, and the insertion point it named.
+    #[serde(rename = "pages.moved", rename_all = "camelCase")]
+    PagesMoved {
+        #[serde(rename = "pages", with = "crate::identity::page_refs")]
+        page_object_numbers: Vec<PageObjectNumber>,
+        dest_index: u32,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
     #[serde(rename = "pages.rotated")]
-    PagesRotated(serde_json::Value),
+    PagesRotated {
+        #[serde(rename = "pages", with = "crate::identity::page_refs")]
+        page_object_numbers: Vec<PageObjectNumber>,
+        rotation: crate::geom::PdfRotation,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
+    /// The RETIRED pages, which the surviving layout cannot say.
     #[serde(rename = "pages.deleted")]
-    PagesDeleted(serde_json::Value),
-    #[serde(rename = "pages.inserted")]
-    PagesInserted(serde_json::Value),
+    PagesDeleted {
+        #[serde(rename = "pages", with = "crate::identity::page_refs")]
+        page_object_numbers: Vec<PageObjectNumber>,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
+    /// The insertion point the call named. Absent when it named none, as
+    /// the TypeScript's `destIndex: undefined` leaves it off the wire.
+    #[serde(rename = "pages.inserted", rename_all = "camelCase")]
+    PagesInserted {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        dest_index: Option<u32>,
+        #[serde(flatten)]
+        result: serde_json::Value,
+    },
+    /// `pages.flatten`, published only when a page was applied or failed
+    /// (`meta` is not null).
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
     /// `pages.setName` and `pages.removeName`. The event names the key and
@@ -157,6 +214,7 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
+    /// `redaction.apply`, published only when `meta` is not null.
     #[serde(rename = "redaction.applied")]
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
@@ -181,34 +239,40 @@ pub enum DocumentEventInit {
     FormWidgetAttached(serde_json::Value),
     #[serde(rename = "form.widgetDetached")]
     FormWidgetDetached(serde_json::Value),
+    /// `forms.applyEffects`, published only when the batch wrote something
+    /// (`meta` is not null).
+    #[serde(rename = "form.effectsApplied")]
+    FormEffectsApplied(serde_json::Value),
     /// `measure.setScale`. The TypeScript publishes it from
     /// `LocalPageMeasureService` rather than the worker, with the same
     /// `PageScaleResult` the call answers.
     #[serde(rename = "page.viewportsChanged")]
     PageViewportsChanged(serde_json::Value),
+    /// A signing candidate was parked: the document is read-only until it
+    /// completes or aborts. A notice rather than a mutation result, so it
+    /// carries what the call named and no result.
+    #[serde(rename = "signature.prepared", rename_all = "camelCase")]
+    SignaturePrepared { signing_id: String, field: serde_json::Value },
     /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
     #[serde(rename = "signature.completed")]
     SignatureCompleted(serde_json::Value),
+    /// A parked signing was aborted (`status: "aborted"` only). A notice,
+    /// with no result.
+    #[serde(rename = "signature.aborted", rename_all = "camelCase")]
+    SignatureAborted { signing_id: String },
 }
 
 impl DocumentEventInit {
-    /// The operation's result, unchanged.
+    /// The operation's result, unchanged. `None` for the signing notices,
+    /// which carry what the call named rather than a result.
     ///
-    /// Every variant carries one and they all carry it the same way, which
-    /// is the invariant the event stream rests on: a consumer that acted on
-    /// the operation's return value and one that acted on its event acted on
-    /// the same thing.
-    pub fn result(&self) -> &serde_json::Value {
+    /// Every mutation variant carries one and they all carry it the same
+    /// way, which is the invariant the event stream rests on: a consumer
+    /// that acted on the operation's return value and one that acted on its
+    /// event acted on the same thing.
+    pub fn result(&self) -> Option<&serde_json::Value> {
         match self {
-            Self::AnnotationCreated(v)
-            | Self::AnnotationUpdated(v)
-            | Self::AnnotationDeleted(v)
-            | Self::AnnotationMoved(v)
-            | Self::AnnotationsFlattened(v)
-            | Self::PagesMoved(v)
-            | Self::PagesRotated(v)
-            | Self::PagesDeleted(v)
-            | Self::PagesInserted(v)
+            Self::AnnotationsFlattened(v)
             | Self::PagesFlattened(v)
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
@@ -222,24 +286,34 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
             | Self::FormWidgetDetached(v)
+            | Self::FormEffectsApplied(v)
             | Self::PageViewportsChanged(v)
-            | Self::SignatureCompleted(v) => v,
-            Self::PagesNamed { result, .. } => result,
+            | Self::SignatureCompleted(v) => Some(v),
+            Self::AnnotationCreated { result, .. }
+            | Self::AnnotationUpdated { result, .. }
+            | Self::AnnotationDeleted { result, .. }
+            | Self::AnnotationMoved { result, .. }
+            | Self::PagesMoved { result, .. }
+            | Self::PagesRotated { result, .. }
+            | Self::PagesDeleted { result, .. }
+            | Self::PagesInserted { result, .. }
+            | Self::PagesNamed { result, .. } => Some(result),
+            Self::SignaturePrepared { .. } | Self::SignatureAborted { .. } => None,
         }
     }
 
     /// The wire `type`, which is also the tag a consumer switches on.
     pub fn type_name(&self) -> &'static str {
         match self {
-            Self::AnnotationCreated(_) => "annotation.created",
-            Self::AnnotationUpdated(_) => "annotation.updated",
-            Self::AnnotationDeleted(_) => "annotation.deleted",
-            Self::AnnotationMoved(_) => "annotation.moved",
+            Self::AnnotationCreated { .. } => "annotation.created",
+            Self::AnnotationUpdated { .. } => "annotation.updated",
+            Self::AnnotationDeleted { .. } => "annotation.deleted",
+            Self::AnnotationMoved { .. } => "annotation.moved",
             Self::AnnotationsFlattened(_) => "annotations.flattened",
-            Self::PagesMoved(_) => "pages.moved",
-            Self::PagesRotated(_) => "pages.rotated",
-            Self::PagesDeleted(_) => "pages.deleted",
-            Self::PagesInserted(_) => "pages.inserted",
+            Self::PagesMoved { .. } => "pages.moved",
+            Self::PagesRotated { .. } => "pages.rotated",
+            Self::PagesDeleted { .. } => "pages.deleted",
+            Self::PagesInserted { .. } => "pages.inserted",
             Self::PagesFlattened(_) => "pages.flattened",
             Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
@@ -254,15 +328,20 @@ impl DocumentEventInit {
             Self::FormFieldDeleted(_) => "form.fieldDeleted",
             Self::FormWidgetAttached(_) => "form.widgetAttached",
             Self::FormWidgetDetached(_) => "form.widgetDetached",
+            Self::FormEffectsApplied(_) => "form.effectsApplied",
             Self::PageViewportsChanged(_) => "page.viewportsChanged",
+            Self::SignaturePrepared { .. } => "signature.prepared",
             Self::SignatureCompleted(_) => "signature.completed",
+            Self::SignatureAborted { .. } => "signature.aborted",
         }
     }
 
     /// Which family the mutation behind this event belongs to.
     ///
     /// Derived from the event rather than passed alongside it, so a caller
-    /// cannot finalize a form write as an ordinary one.
+    /// cannot finalize a form write as an ordinary one. The signing notices
+    /// are not mutations and are never finalized; they answer `Ordinary`
+    /// only so the question has an answer.
     pub fn family(&self) -> MutationFamily {
         match self {
             Self::PagesFlattened(_)
@@ -275,6 +354,7 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(_)
             | Self::FormWidgetAttached(_)
             | Self::FormWidgetDetached(_)
+            | Self::FormEffectsApplied(_)
             // The install already advanced the sequence.
             | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,
