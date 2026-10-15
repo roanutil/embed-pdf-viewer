@@ -246,6 +246,12 @@ that runs it on the iOS simulator. `every_plugin_builds_together` in
 The cost is in the archive. `libepdf_viewer_host.a` for
 `aarch64-apple-ios-sim` release was 94,029,176 bytes before the first plugin
 and is 216,589,976 bytes with all twenty; B5 owns trimming it.
+Re-measured on 2026-10-15 after the Swift review fixes: 218,818,352 bytes
+(same slice, release profile). The `libEmbedPDFFFI.a` that
+`build-xcframework.sh` packs from it is about the same size now, 218,826,528
+bytes for the simulator; until `9c0e38d66` the script merged
+`libembedpdf.a` into it a second time, though rustc already bundles PDFium
+into the Rust archive, and it was 238,628,784.
 
 ## Where the Rust core actually runs
 

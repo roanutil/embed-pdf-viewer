@@ -2592,6 +2592,7 @@ fn every_plugin_builds_together() {
     block_on(host.page_edit(doc.clone())).unwrap();
     block_on(host.view_manager()).unwrap();
     block_on(host.shell(doc.clone())).unwrap();
+    block_on(host.i18n()).unwrap();
     block_on(host.commands()).unwrap();
     block_on(host.actions(doc.clone())).unwrap();
     let s = block_on(host.signature(doc.clone())).unwrap();
