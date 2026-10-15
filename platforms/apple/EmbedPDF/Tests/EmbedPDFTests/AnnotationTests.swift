@@ -162,6 +162,38 @@ extension BaseSuite {
       }
     }
 
+    @Test func statusIsAResourceStatus() async throws {
+      let (_, _, annotations) = try await opened()
+      // `opened` refreshes during the open's own hydration, which runs once
+      // more after it: wait for that run's resync, as the hydration test does.
+      let events = annotations.events
+      if try await annotations.status() == .loading {
+        for await event in events {
+          if case .resynced = event { break }
+        }
+      }
+      let status = try await annotations.status()
+      expectNoDifference(status, .ready)
+    }
+
+    @Test func aSubCapabilityHeldAloneKeepsTheViewerAndReleasesIt() async throws {
+      weak var released: PDFViewer?
+      do {
+        var tools: AnnotationToolsCapability?
+        do {
+          let (viewer, _, annotations) = try await opened()
+          released = viewer
+          tools = annotations.tools
+        }
+        // Only `tools` holds the viewer now: it still answers.
+        #expect(released != nil)
+        let listed = try await tools?.tools() ?? []
+        #expect(!listed.isEmpty)
+        tools = nil
+      }
+      #expect(released == nil)
+    }
+
     @Test func droppingTheStreamUnsubscribes() async throws {
       let (_, _, annotations) = try await opened()
       let task = Task { for await _ in annotations.events {} }

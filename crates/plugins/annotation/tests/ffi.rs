@@ -4,7 +4,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{
-    AnnotationPropsPatch, AnnotationRef, CancelToken, KernelThread, PageRef, Rect, ViewerError,
+    AnnotationPropsPatch, AnnotationRef, CancelToken, KernelThread, PageRef, Rect, ResourceStatus,
+    ViewerError,
 };
 use epdf_plugin_annotation::ffi::{
     AnnotationEvent, AnnotationEventListener, AnnotationFilter, AnnotationHandle,
@@ -134,6 +135,7 @@ fn hydration_reads_every_annotation_as_a_typed_record() {
     let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
     block_on(annotations.refresh(token())).unwrap();
     assert_eq!(block_on(annotations.hydration()).unwrap(), AnnotationHydration::Complete);
+    assert_eq!(block_on(annotations.status()).unwrap(), ResourceStatus::Ready);
     let all = block_on(annotations.list(None)).unwrap();
     assert_eq!(all.len(), 1);
     assert_eq!(all[0].annotation_ref, obj(5));

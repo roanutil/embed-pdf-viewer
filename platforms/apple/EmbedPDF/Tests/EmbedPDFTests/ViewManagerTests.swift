@@ -24,24 +24,44 @@ extension BaseSuite {
       let (viewer, _, manager) = try await opened()
       let colors = try await viewer.open(Fixture.data("colors"))
       let events = manager.events
-      let pane = try await manager.splitPane(showing: colors.id)
+      let pane = try await manager.splitPane(showing: colors)
       for await event in events {
         guard case let .documentMoved(event) = event else { continue }
         expectNoDifference(event, DocumentMovedEvent(documentId: colors.id, fromPaneId: "pane-1", toPaneId: pane))
         break
       }
-      let holder = try await manager.pane(holding: colors.id)
+      let holder = try await manager.pane(holding: colors)
       expectNoDifference(holder, pane)
     }
 
     @Test func closingADocumentTakesItOutOfItsPane() async throws {
       let (viewer, document, manager) = try await opened()
       let colors = try await viewer.open(Fixture.data("colors"))
-      try await manager.setActiveDocument(document.id, in: "pane-1")
+      try await manager.setActiveDocument(document, in: "pane-1")
       try await viewer.close(document)
       let pane = try await manager.pane("pane-1")
       expectNoDifference(pane?.documentIds, [colors.id])
       expectNoDifference(pane?.activeDocumentId, colors.id)
+    }
+
+    @Test func documentsMoveBetweenPanesAsPDFDocuments() async throws {
+      let (viewer, document, manager) = try await opened()
+      let colors = try await viewer.open(Fixture.data("colors"))
+      let pane = try await manager.createPane(documents: [colors])
+      try await manager.addDocument(document, to: pane, at: 0)
+      var info = try await manager.pane(pane)
+      expectNoDifference(info?.documentIds, [document.id, colors.id])
+      try await manager.moveDocument(colors, within: pane, to: 0)
+      try await manager.setActiveDocument(colors, in: pane)
+      info = try await manager.pane(pane)
+      expectNoDifference(info?.documentIds, [colors.id, document.id])
+      expectNoDifference(info?.activeDocumentId, colors.id)
+      try await manager.moveDocument(document, from: pane, to: "pane-1")
+      let holder = try await manager.pane(holding: document)
+      expectNoDifference(holder, "pane-1")
+      try await manager.removeDocument(colors, from: pane)
+      let removed = try await manager.pane(holding: colors)
+      expectNoDifference(removed, nil)
     }
 
     @Test func anIndexPastTheEndAppends() async throws {

@@ -26,11 +26,18 @@ extension BaseSuite {
       let (viewer, document, edit) = try await opened()
       let first = try await viewer.pages(of: document)[0].page
       // An index in the post-removal space: 13 pages remain once the first
-      // is detached. `.end` sends the full page count (14), which the engine
-      // refuses, in TypeScript as here (`controller.ts` `move`).
+      // is detached.
       let layout = try await edit.movePages([first], to: .index(index: 13))
       expectNoDifference(layout.pages.last?.page, first)
       expectNoDifference(layout.pages.map(\.index), Array(0..<14))
+    }
+
+    @Test func endMovesTheBlockLast() async throws {
+      let (viewer, document, edit) = try await opened()
+      let pages = try await viewer.pages(of: document).map(\.page)
+      let layout = try await edit.movePages([pages[0], pages[1]], to: .end)
+      expectNoDifference(Array(layout.pages.map(\.page).suffix(2)), [pages[0], pages[1]])
+      expectNoDifference(layout.pages.count, 14)
     }
 
     @Test func deletingEveryPageThrowsAndKeepsThePages() async throws {

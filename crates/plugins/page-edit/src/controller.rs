@@ -316,6 +316,32 @@ impl PageEditCapability {
         })
     }
 
+    /// `move_pages` to the end, as Swift's `.end` means it. The engine
+    /// counts its destination in the pages left once the moved ones are
+    /// detached, so TypeScript's `move(pages, 'end')`, which sends the full
+    /// page count, is always refused; this sends that count less the pages
+    /// moving, read from the registry when the queued edit runs.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn move_pages_to_end(&self, pages: Vec<PageRef>) -> Promise<Value> {
+        self.enqueue(move |this| {
+            let doc = this.require_doc()?;
+            Ok(Self::engine(
+                move || {
+                    let mut moving: Vec<u32> = pages
+                        .iter()
+                        .filter(|page| this.entry_of(**page).is_some())
+                        .map(|page| page.page_object_number)
+                        .collect();
+                    moving.sort_unstable();
+                    moving.dedup();
+                    let dest = this.registry().len().saturating_sub(moving.len()) as f64;
+                    Ok(doc.call("pages.move", None, vec![refs_json(&pages), js_number(dest)]))
+                },
+                false,
+            ))
+        })
+    }
+
     /// Delete pages. The engine rejects deleting every page.
     pub fn delete(&self, pages: Vec<PageRef>) -> Promise<Value> {
         self.enqueue(move |this| {

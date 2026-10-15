@@ -38,10 +38,12 @@ public struct PageEditCapability: Sendable {
     }
   }
 
-  /// Reorder pages as a contiguous block at `placement`. An index counts
-  /// the pages left once the moved ones are detached, so `.end` and an
-  /// `.after` past them are refused with `invalid-input`, as they are in
-  /// the TypeScript plugin.
+  /// Reorder pages as a contiguous block at `placement`. `.end` puts the
+  /// block last. An index counts the pages left once the moved ones are
+  /// detached, as the engine does, so an `.index` or an `.after` past them
+  /// is refused with `invalid-input`, as it is in the TypeScript plugin.
+  /// (That plugin's `'end'` sends the full page count and is refused too;
+  /// here it works.)
   public func movePages(_ pages: [PageRef], to placement: PageEditPlacement) async throws(PDFError)
     -> PageEditLayout
   {

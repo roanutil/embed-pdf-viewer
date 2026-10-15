@@ -20,6 +20,19 @@ extension BaseSuite {
       expectNoDifference(links.count, 2)
     }
 
+    @Test func aBareTargetIsLabelled() async throws {
+      let (_, _, link, page) = try await opened()
+      let uri = try await link.label(for: PdfLinkTarget.uri(uri: "https://example.invalid/x"))
+      expectNoDifference(uri, "https://example.invalid/x")
+      let named = try await link.label(for: PdfLinkTarget.named(name: "NextPage"))
+      expectNoDifference(named, "NextPage")
+      // The same label a listed link gets for its own target.
+      let listed = try #require(try await link.links(on: page).first)
+      let byLink = try await link.label(for: listed)
+      let byTarget = try await link.label(for: listed.target)
+      expectNoDifference(byTarget, byLink)
+    }
+
     @Test func aURILinkIsReportedToTheApp() async throws {
       let (_, _, link, page) = try await opened()
       let events = link.events

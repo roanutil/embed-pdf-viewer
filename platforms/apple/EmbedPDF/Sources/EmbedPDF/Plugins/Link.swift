@@ -72,6 +72,12 @@ public struct LinkCapability: Sendable {
     try await bridged { try await handle.label(input: .link(page: link.page, id: link.id)) }
   }
 
+  /// A label for a target that isn't a link on a page (an annotation's
+  /// link, an outline entry): the URL, `Go to destination`, ...
+  public func label(for target: PdfLinkTarget) async throws(PDFError) -> String {
+    try await bridged { try await handle.label(input: .target(target: target)) }
+  }
+
   public func isNavigationEngaged() async throws(PDFError) -> Bool {
     try await bridged { try await handle.isNavigationEngaged() }
   }

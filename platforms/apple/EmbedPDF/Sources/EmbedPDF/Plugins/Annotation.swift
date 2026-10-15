@@ -67,24 +67,29 @@ public struct AnnotationCapability: Sendable {
   let handle: AnnotationHandle
   let viewer: PDFViewer
 
+  // Each sub-capability keeps the viewer alive, as this one does, so one
+  // held on its own still answers. Nothing the viewer owns holds a
+  // capability, so this makes no cycle; a handler the kernel keeps (a file
+  // picker) that captures one does, as it would capturing this one.
+
   /// Select, group, rotate and restyle the selected annotations.
   public var selection: AnnotationSelectionCapability {
-    AnnotationSelectionCapability(handle: handle.selection())
+    AnnotationSelectionCapability(handle: handle.selection(), viewer: viewer)
   }
 
   /// The authoring tools, their defaults and the snap settings.
   public var tools: AnnotationToolsCapability {
-    AnnotationToolsCapability(handle: handle.tools())
+    AnnotationToolsCapability(handle: handle.tools(), viewer: viewer)
   }
 
   /// Creation drafts, text editing, markup from text, stamps and placement.
   public var drafts: AnnotationDraftsCapability {
-    AnnotationDraftsCapability(handle: handle.drafts())
+    AnnotationDraftsCapability(handle: handle.drafts(), viewer: viewer)
   }
 
   /// Comment threads and the links attached to annotations.
   public var threads: AnnotationThreadsCapability {
-    AnnotationThreadsCapability(handle: handle.threads())
+    AnnotationThreadsCapability(handle: handle.threads(), viewer: viewer)
   }
 
   public func get(_ ref: AnnotationRef) async throws(PDFError) -> Annotation? {
@@ -104,8 +109,9 @@ public struct AnnotationCapability: Sendable {
     try await bridged { try await handle.hitTestAt(page: page, point: point) }
   }
 
-  /// `"loading"`, `"ready"`, `"forbidden"` or `"error"`.
-  public func status() async throws(PDFError) -> String {
+  /// `.loading`, then `.ready` once hydration completed, or `.forbidden`
+  /// or `.error`. Never `.idle`: hydration starts with the document.
+  public func status() async throws(PDFError) -> ResourceStatus {
     try await bridged { try await handle.status() }
   }
 
@@ -210,6 +216,7 @@ public struct AnnotationCapability: Sendable {
 
 public struct AnnotationSelectionCapability: Sendable {
   let handle: AnnotationSelectionHandle
+  let viewer: PDFViewer
 
   public func select(_ refs: [AnnotationRef], adding: Bool = false) async throws(PDFError) {
     try await bridged { try await handle.select(refs: refs, add: adding) }
@@ -287,6 +294,7 @@ public struct AnnotationSelectionCapability: Sendable {
 
 public struct AnnotationToolsCapability: Sendable {
   let handle: AnnotationToolsHandle
+  let viewer: PDFViewer
 
   /// Activate one through `InteractionCapability.activateTool(_:)`.
   public func tools() async throws(PDFError) -> [AnnotationTool] {
@@ -321,6 +329,7 @@ public struct AnnotationToolsCapability: Sendable {
 
 public struct AnnotationDraftsCapability: Sendable {
   let handle: AnnotationDraftsHandle
+  let viewer: PDFViewer
 
   public func creationDraft() async throws(PDFError) -> CreationDraftAnchor? {
     try await bridged { try await handle.creationDraft() }
@@ -560,6 +569,7 @@ public struct AnnotationDraftsCapability: Sendable {
 
 public struct AnnotationThreadsCapability: Sendable {
   let handle: AnnotationThreadsHandle
+  let viewer: PDFViewer
 
   public func threads() async throws(PDFError) -> [AnnotationCommentThread] {
     try await bridged { try await handle.threads() }

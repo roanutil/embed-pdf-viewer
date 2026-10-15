@@ -239,7 +239,10 @@ impl PageEditHandle {
             .await?
     }
 
-    /// Reorder pages as a contiguous block at `placement` (`move`).
+    /// Reorder pages as a contiguous block at `placement` (`move`). An
+    /// index counts the pages left once the moved ones are detached, as the
+    /// engine does; `End` puts the block last, where TypeScript's `'end'`
+    /// sends an index the engine refuses.
     pub async fn move_pages(
         &self,
         pages: Vec<PageRef>,
@@ -249,7 +252,13 @@ impl PageEditHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.move_pages(refs(pages), Some(placement.into()))),
+                move |c| {
+                    let c = open(c)?;
+                    Ok(match placement {
+                        PageEditPlacement::End => c.move_pages_to_end(refs(pages)),
+                        placement => c.move_pages(refs(pages), Some(placement.into())),
+                    })
+                },
                 decode_layout,
             )
             .await?

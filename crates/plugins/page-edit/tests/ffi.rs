@@ -190,6 +190,30 @@ fn extract_answers_the_pdf_bytes() {
     assert_eq!(block_on(edit.extract(vec![P10], token())).unwrap(), b"%PDF-".to_vec());
 }
 
+/// The destination `pages.move` was sent for `pages` moved to `End`.
+fn end_destination(pages: Vec<PageRef>) -> f64 {
+    let (sent_tx, sent) = std::sync::mpsc::channel::<f64>();
+    let (_thread, edit) = handle_over(move || {
+        spec(json!("*")).respond("pages.move", move |args| {
+            sent_tx.send(args[1].as_f64().unwrap()).unwrap();
+            let pages = json!([page(11, 0, 0), page(12, 1, 0), page(10, 2, 0)]);
+            Ok(Reply::value(json!({ "layout": { "pageCount": 3, "pages": pages }, "cache": null })))
+        })
+    });
+    block_on(edit.move_pages(pages, PageEditPlacement::End, token())).unwrap();
+    sent.recv().unwrap()
+}
+
+#[test]
+fn end_moves_the_block_after_the_pages_left_behind() {
+    // Three pages: the engine counts the destination once the moved pages
+    // are detached, so one page moving lands at 2, not at 3 (refused).
+    assert_eq!(end_destination(vec![P10]), 2.0);
+    // A page named twice moves once; an unknown page doesn't count.
+    let unknown = PageRef { page_object_number: 99 };
+    assert_eq!(end_destination(vec![P10, P10, P11, unknown]), 1.0);
+}
+
 #[test]
 fn a_layout_the_record_cannot_hold_is_invalid_state() {
     let (_thread, edit) = handle_over(|| {

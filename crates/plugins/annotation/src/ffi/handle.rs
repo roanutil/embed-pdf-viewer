@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use epdf_ffi::{
-    AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Point, Subscription, ViewerError,
+    AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Point, ResourceStatus,
+    Subscription, ViewerError,
 };
 use epdf_kernel::Unsubscribe;
 
@@ -101,10 +102,21 @@ impl AnnotationHandle {
             .await
     }
 
-    /// `"loading"`, `"ready"`, `"forbidden"` or `"error"`, as the plugin
-    /// reports its whole-document state.
-    pub async fn status(&self) -> Result<String, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_status().to_string())).await
+    /// `getStatus()`, the `ResourceStatus` metadata, form and signature
+    /// report: `Loading`, `Ready` once hydration completed, `Forbidden` or
+    /// `Error`. Annotation hydration starts with the document, so it is
+    /// never `Idle`.
+    pub async fn status(&self) -> Result<ResourceStatus, ViewerError> {
+        self.cap
+            .call(|c| {
+                Ok(match open(c)?.get_status() {
+                    "ready" => ResourceStatus::Ready,
+                    "forbidden" => ResourceStatus::Forbidden,
+                    "error" => ResourceStatus::Error,
+                    _ => ResourceStatus::Loading,
+                })
+            })
+            .await
     }
 
     pub async fn hydration(&self) -> Result<AnnotationHydration, ViewerError> {
