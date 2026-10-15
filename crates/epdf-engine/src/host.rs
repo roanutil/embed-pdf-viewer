@@ -267,27 +267,35 @@ impl Host {
             // Fonts belong to the library, not to a document, so these five
             // route before a session is resolved. A document id on one of
             // them would be a lie about the scope of the change.
+            //
+            // `WorkerHost.handleFontsRegister`: the bytes are payload 0, and
+            // `italic` is the C API's number (-1 infer, 0, 1), not a bool.
+            // The answer is the key and what the runtime resolved for it;
+            // the native id never leaves.
             "fonts.register" => {
                 let key = string_field(&body, "fontKey")?;
                 let fonts = self.fonts()?;
                 let description = pdfium::FontDescription {
                     family_name: string_field(&body, "familyName")?,
                     weight: field(&body, "weight")?,
-                    italic: field(&body, "italic")?,
+                    italic: crate::features::fonts::italic_from_wire(field(&body, "italic")?),
                 };
                 let data = payload(&payloads, 0, "the font file")?;
-                let id = fonts.register(key.clone(), &description, data)?;
-                serde_json::json!({ "fontKey": key, "registered": id.raw() })
+                fonts.register(key.clone(), &description, data)?;
+                let identity = fonts.identity_info(&key)?;
+                serde_json::json!({ "fontKey": key, "identity": identity })
             }
+            // `fonts.addFallback`, `fonts.clearFallbacks` and `fonts.clear`
+            // answer nothing but their tag, which this wire spells as a null
+            // result (as `document.setFontSettings` does).
             "fonts.addFallback" => {
                 let key = string_field(&body, "fontKey")?;
-                let fonts = self.fonts()?;
-                fonts.add_fallback(&key)?;
-                serde_json::json!({ "fallbacks": fonts.fallback_order() })
+                self.fonts()?.add_fallback(&key)?;
+                serde_json::Value::Null
             }
             "fonts.clearFallbacks" => {
                 self.fonts()?.clear_fallbacks();
-                serde_json::json!({ "fallbacks": [] })
+                serde_json::Value::Null
             }
             // `WorkerHost.handleFontsAuthorizeEditing`.
             "fonts.authorizeEditing" => {
@@ -297,7 +305,7 @@ impl Host {
             }
             "fonts.clear" => {
                 self.fonts()?.clear();
-                serde_json::json!({ "registered": 0 })
+                serde_json::Value::Null
             }
             // Both take a path and no session: the point of a probe is to
             // decide whether opening is worth attempting at all.

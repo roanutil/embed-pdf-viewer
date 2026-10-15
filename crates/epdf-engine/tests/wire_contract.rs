@@ -121,7 +121,7 @@ fn placeholder(name: &str) -> serde_json::Value {
         "effects" => serde_json::json!([]),
         "encode" => serde_json::json!({ "format": "png" }),
         "weight" => serde_json::json!(400),
-        "italic" => serde_json::json!(false),
+        "italic" => serde_json::json!(-1),
         "path" | "basePath" => serde_json::json!("/nonexistent/for-this-check.pdf"),
         _ => serde_json::json!("x"),
     }

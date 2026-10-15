@@ -231,6 +231,14 @@ impl FontRegistry {
         bytes: &[u8],
     ) -> Result<FontId, EngineError> {
         let key = key.into();
+        // `FontRegistrar.register` refuses empty bytes before the runtime
+        // sees them, with a message of its own.
+        if bytes.is_empty() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("empty font data: {key}"),
+            ));
+        }
         let id = pdfium::register_memory_font(description, bytes)
             .map_err(|e| registration_failed(&key, None, e))?;
         remember_identity(&key, id, description);
@@ -280,7 +288,7 @@ impl FontRegistry {
         pdfium::add_fallback_font(id).map_err(|_| {
             EngineError::with_message(
                 EngineErrorCode::InvalidArg,
-                format!("could not add {key} to the fallback chain"),
+                format!("addFallback failed: {key}"),
             )
         })?;
         self.fallback_order.push(key.to_string());
@@ -330,6 +338,20 @@ impl FontRegistry {
         IDENTITIES.with(|all| {
             all.borrow().iter().find(|(k, _)| k == key).map(|(_, identity)| identity.clone())
         })
+    }
+
+    /// The identity and licence the runtime resolved for a key: what
+    /// `fonts.register` answers. Ports `FontRegistrar.describe`, which
+    /// refuses an unknown key with `InvalidArg`.
+    pub fn identity_info(&self, key: &str) -> Result<FontIdentityInfo, EngineError> {
+        let id = self.id_for(key)?;
+        let identity = self.describe(key).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("font not registered on this thread: {key}"),
+            )
+        })?;
+        Ok(FontIdentityInfo::new(identity, pdfium::font_licence(id)))
     }
 
     /// The application asserts a licence permitting editing with a font.
@@ -395,6 +417,9 @@ impl Drop for FontRegistry {
     }
 }
 
+/// `FontRegistrar`'s refusal, worded as it words it when the runtime
+/// answers no id. Any other failure (a family name with a NUL, a file that
+/// will not open) has no TypeScript counterpart and keeps its own detail.
 fn registration_failed(
     key: &str,
     path: Option<&std::path::Path>,
@@ -404,10 +429,25 @@ fn registration_failed(
         Some(path) => format!("{key} ({})", path.display()),
         None => key.to_string(),
     };
-    EngineError::with_message(
-        EngineErrorCode::InvalidArg,
-        format!("font registration failed for {where_}: {error}"),
-    )
+    let message = match error {
+        PdfiumError::FontRegistration => {
+            format!("font registration failed (unloadable or no glyphs): {where_}")
+        }
+        other => format!("font registration failed for {where_}: {other}"),
+    };
+    EngineError::with_message(EngineErrorCode::InvalidArg, message)
+}
+
+/// The wire's `italic`: `-1` infers from the file, `0` and `1` say. Any
+/// other number infers too, because the fork's `NormalizeItalic` treats
+/// everything but `0` and `1` as "infer" and the TypeScript passes the
+/// number straight through.
+pub fn italic_from_wire(code: i32) -> Option<bool> {
+    match code {
+        0 => Some(false),
+        1 => Some(true),
+        _ => None,
+    }
 }
 
 /// `WorkerHost.handleDocumentSetFontSettings`: per-document font and
