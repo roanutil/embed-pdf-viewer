@@ -227,7 +227,7 @@ impl Host {
                     // A serializer that cannot write an error has left
                     // the host with nothing to report, so this is the
                     // one place that hand-builds JSON.
-                    String::from(r#"{"error":{"code":"Unknown","message":"unserializable"}}"#)
+                    String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"unserializable"}}"#)
                 }),
                 payloads: Vec::new(),
             },
@@ -1568,7 +1568,9 @@ impl Host {
             error: None,
             event: Some(event),
         })
-        .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#));
+        .unwrap_or_else(|_| {
+            String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#)
+        });
         Ok(HostResponse { json, payloads })
     }
 
@@ -1765,7 +1767,11 @@ impl Host {
 fn ok(result: serde_json::Value) -> HostResponse {
     HostResponse {
         json: serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
-            .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#)),
+            .unwrap_or_else(|_| {
+                String::from(
+                    r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#,
+                )
+            }),
         payloads: Vec::new(),
     }
 }
@@ -1890,7 +1896,9 @@ fn bytes_response(bytes: Vec<u8>) -> HostResponse {
 
 fn envelope(result: serde_json::Value) -> String {
     serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
-        .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#))
+        .unwrap_or_else(|_| {
+            String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#)
+        })
 }
 
 fn form_model_missing() -> EngineError {

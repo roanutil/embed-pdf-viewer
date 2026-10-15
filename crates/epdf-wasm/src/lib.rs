@@ -71,7 +71,7 @@ fn hand_off<T: serde::Serialize>(envelope: &Envelope<T>, out_len: *mut u32) -> *
     // An envelope that will not serialize is a bug in this crate, not a
     // document problem, so it reports as one rather than as a PDF error.
     let json = serde_json::to_vec(envelope).unwrap_or_else(|e| {
-        format!(r#"{{"error":{{"code":"Unknown","message":"envelope encode failed: {e}"}}}}"#)
+        format!(r#"{{"error":{{"name":"EngineError","code":"Unknown","message":"envelope encode failed: {e}"}}}}"#)
             .into_bytes()
     });
     let mut boxed = json.into_boxed_slice();
@@ -246,7 +246,7 @@ pub unsafe extern "C" fn epdf_host_call(
 fn refusal(message: &str) -> Vec<u8> {
     epdf_engine::host::frame::pack(&epdf_engine::host::HostResponse {
         json: serde_json::json!({
-            "error": { "code": "WireFormat", "message": message },
+            "error": EngineError::with_message(EngineErrorCode::WireFormat, message),
         })
         .to_string(),
         payloads: Vec::new(),
@@ -302,6 +302,7 @@ mod tests {
         let mut len = 0u32;
         let value = take(unsafe { epdf_page_geometry(std::ptr::null_mut(), &mut len) }, len);
         assert_eq!(value["error"]["code"], "InvalidArg");
+        assert_eq!(value["error"]["name"], "EngineError");
         assert!(value.get("result").is_none(), "an error envelope carries no result");
     }
 

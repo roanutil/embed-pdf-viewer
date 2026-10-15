@@ -219,6 +219,24 @@ fn a_request_that_is_not_json_is_a_wire_error_rather_than_a_panic() {
 }
 
 #[test]
+fn a_refusal_carries_the_serialized_engine_error_and_nothing_else() {
+    // `WorkerHost` rejects with `serializeError(err)`: `{name: "EngineError",
+    // code, message, details?}` and no `cause`. The `name` is what
+    // `EngineError.is` sniffs once the value has lost its prototype.
+    let mut host = open();
+    let missing =
+        send(&mut host, serde_json::json!({ "kind": "pages.geometry", "page": page_ref(999_999) }));
+    let error = missing["error"].as_object().expect("an error object");
+    let mut keys: Vec<&str> = error.keys().map(String::as_str).collect();
+    keys.sort_unstable();
+    assert_eq!(keys, ["code", "message", "name"], "{missing}");
+    assert_eq!(missing["error"]["name"], "EngineError", "{missing}");
+    assert_eq!(missing["error"]["code"], "NotFound", "{missing}");
+    assert!(missing["error"]["message"].is_string(), "{missing}");
+    assert!(missing.get("result").is_none(), "a refusal carried a result: {missing}");
+}
+
+#[test]
 fn a_session_operation_without_a_document_names_what_is_missing() {
     // Reported rather than defaulted. An engine that picked "the only open
     // session" would work in every test and fail the moment a host opened

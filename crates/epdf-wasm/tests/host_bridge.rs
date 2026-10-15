@@ -158,6 +158,7 @@ fn a_null_engine_is_refused_rather_than_dereferenced() {
         &[],
     );
     assert_eq!(json["error"]["code"], "WireFormat");
+    assert_eq!(json["error"]["name"], "EngineError", "{json}");
 }
 
 #[test]

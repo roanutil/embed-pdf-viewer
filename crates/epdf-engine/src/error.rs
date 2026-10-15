@@ -144,7 +144,11 @@ impl std::fmt::Display for EngineErrorCode {
 /// `details?: Record<string, unknown>`. A typed detail enum per code is the
 /// later shape; matching that now would change the wire before anything reads
 /// it.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+///
+/// Serializes as [`EngineError::to_wire`], `{name: "EngineError", code,
+/// message, details?}`, which is what `serializeError` puts in a TypeScript
+/// `reject` envelope. Deserializing ignores `name`.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct EngineError {
     pub code: EngineErrorCode,
     pub message: String,
@@ -185,6 +189,20 @@ impl EngineError {
             map.insert("details".into(), details.clone());
         }
         serde_json::Value::Object(map)
+    }
+}
+
+impl Serialize for EngineError {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("name", "EngineError")?;
+        map.serialize_entry("code", &self.code)?;
+        map.serialize_entry("message", &self.message)?;
+        if let Some(details) = &self.details {
+            map.serialize_entry("details", details)?;
+        }
+        map.end()
     }
 }
 
@@ -268,5 +286,21 @@ mod tests {
 
         let detailed = plain.clone().with_details(serde_json::json!({ "pageIndex": 4 }));
         assert_eq!(detailed.to_wire()["details"], serde_json::json!({ "pageIndex": 4 }));
+    }
+
+    /// `serializeError` (`EngineError.ts`): `{name: "EngineError", code,
+    /// message, details?}`, with no `cause`. Serde writes the same object as
+    /// `to_wire`, so a response envelope's `error` has the TypeScript shape.
+    #[test]
+    fn serde_writes_the_serialized_engine_error_shape() {
+        let plain = EngineError::with_message(EngineErrorCode::NotFound, "no such page");
+        assert_eq!(
+            serde_json::to_string(&plain).unwrap(),
+            r#"{"name":"EngineError","code":"NotFound","message":"no such page"}"#
+        );
+        let detailed = plain.with_details(serde_json::json!({ "pageIndex": 4 }));
+        assert_eq!(serde_json::to_value(&detailed).unwrap(), detailed.to_wire());
+        let back: EngineError = serde_json::from_value(detailed.to_wire()).unwrap();
+        assert_eq!(back, detailed);
     }
 }

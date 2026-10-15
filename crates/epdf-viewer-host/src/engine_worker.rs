@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
 use epdf_engine::dispatch::OwnerThread;
+use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::host::{Host, HostResponse};
 
 type Reply = Box<dyn FnOnce(HostResponse) + Send>;
@@ -138,7 +139,7 @@ impl EngineWorker {
 fn shut_down() -> HostResponse {
     HostResponse {
         json: serde_json::json!({
-            "error": { "code": "DocNotOpen", "message": "the engine is shut down" }
+            "error": EngineError::with_message(EngineErrorCode::DocNotOpen, "the engine is shut down")
         })
         .to_string(),
         payloads: Vec::new(),
