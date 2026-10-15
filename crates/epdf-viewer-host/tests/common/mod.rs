@@ -1,6 +1,8 @@
 //! Helpers more than one host test file shares.
 #![allow(dead_code)]
 
+use std::sync::Arc;
+
 use epdf_ffi::ViewerError;
 use epdf_viewer_host::{OpenDocumentOptions, ViewerDelegate};
 
@@ -58,19 +60,58 @@ impl epdf_plugin_signature::ffi::SignatureSigner for TestSigner {
     fn digest(&self) -> epdf_plugin_signature::ffi::SignatureDigest {
         epdf_plugin_signature::ffi::SignatureDigest::Sha256
     }
-    fn sign(&self, message: Vec<u8>) -> Result<Vec<u8>, ViewerError> {
-        use sha2::Digest as _;
+    fn sign(
+        &self,
+        message: Vec<u8>,
+        completion: Arc<epdf_plugin_signature::ffi::SignatureSignCompletion>,
+    ) {
         if self.fail {
-            return Err(ViewerError::Kernel {
+            return completion.fail_with(epdf_ffi::HostFailure {
                 name: "UserCancelled".into(),
                 code: Some("operation-cancelled".into()),
                 detail: "the user cancelled".into(),
             });
         }
-        Ok(self
-            .key
-            .sign(rsa::Pkcs1v15Sign::new::<sha2::Sha256>(), &sha2::Sha256::digest(&message))
-            .unwrap())
+        completion.finish(self.raw_signature(&message))
+    }
+}
+
+impl TestSigner {
+    /// PKCS#1 v1.5 over SHA-256 of `message`, as `sign` answers.
+    pub fn raw_signature(&self, message: &[u8]) -> Vec<u8> {
+        use sha2::Digest as _;
+        self.key
+            .sign(rsa::Pkcs1v15Sign::new::<sha2::Sha256>(), &sha2::Sha256::digest(message))
+            .unwrap()
+    }
+}
+
+/// A `TestSigner` that holds each `sign` call, the way a Keychain prompt
+/// waiting on the user does, until the test answers it.
+pub struct HeldSigner {
+    pub signer: TestSigner,
+    pub held: std::sync::mpsc::Sender<(
+        Vec<u8>,
+        Arc<epdf_plugin_signature::ffi::SignatureSignCompletion>,
+    )>,
+}
+
+impl epdf_plugin_signature::ffi::SignatureSigner for HeldSigner {
+    fn certificate_chain(&self) -> Result<Vec<Vec<u8>>, ViewerError> {
+        self.signer.certificate_chain()
+    }
+    fn algorithm(&self) -> epdf_plugin_signature::ffi::SignatureKeyAlgorithm {
+        self.signer.algorithm()
+    }
+    fn digest(&self) -> epdf_plugin_signature::ffi::SignatureDigest {
+        self.signer.digest()
+    }
+    fn sign(
+        &self,
+        message: Vec<u8>,
+        completion: Arc<epdf_plugin_signature::ffi::SignatureSignCompletion>,
+    ) {
+        self.held.send((message, completion)).unwrap();
     }
 }
 

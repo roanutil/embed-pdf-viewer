@@ -17,7 +17,7 @@ Everything under "Global Constraints" in `00-umbrella.md` applies. The ones this
 - `uniffi` is pinned at `=0.32.0`.
 - UniFFI names are unique across the workspace. Records here start with `Signature` or `Document`.
 - No `serde_json::Value` across the boundary. Every engine DTO decodes into a mirror; a DTO that doesn't decode is `invalid-state`.
-- PDFium never crosses threads. A Swift signer is called from the kernel thread and must not block on the main actor.
+- PDFium never crosses threads. A Swift signer is called from the kernel thread and must not block it at all. `sign` was first written as a synchronous call, which put a Keychain item's Face ID or passcode prompt on the kernel thread and stalled every other call until it closed; it now returns at once and answers through a `SignatureSignCompletion` (`finish(signature)`, `fail(detail)`, `fail_with(failure: HostFailure)`), and `KeychainSigner` signs on a global queue.
 - An ECDSA `SignatureSigner` answers `r || s`, as `epdf-signature-core` expects (`crates/plugins/signature-core/src/cms.rs:124-125`), not X9.62 DER. The Swift signer converts.
 - `signature` requires `form` (`crates/plugins/signature/src/lib.rs:31`). This plan starts after plan 06 merges (Wave D).
 - The fork headers this plan binds (`epdf_signature.h`, `epdf_checkpoint.h`, `epdf_digest.h`) aren't in the 2026-08-30 PDFium slices.
@@ -1677,7 +1677,7 @@ git commit -m "Export the signature plugin's reads and validation through uniffi
 - Modify: `crates/plugins/signature/src/ffi/mod.rs`, `crates/plugins/signature/tests/ffi.rs`
 
 **Interfaces:**
-- Produces: foreign traits `SignatureSigner` and `SignatureTrust`; enums `SignatureKeyAlgorithm { RsaPkcs1, RsaPss, Ecdsa }`, `SignatureDigest { Sha256, Sha384, Sha512 }`; records `SignatureMark`, `SignatureSignInput`, `SignaturePrepareInput`, `SignatureAttribution`, `SignaturePrepared`, `SignaturePlaceTarget`, `SignaturePlaceResult`, `SignatureCompletion`; adapters `ports::signer_port(Arc<dyn SignatureSigner>) -> SignerPort` and `ports::trust_port(Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort>`, used by Task 9.
+- Produces: foreign traits `SignatureSigner` and `SignatureTrust`; enums `SignatureKeyAlgorithm { RsaPkcs1, RsaPss, Ecdsa }`, `SignatureDigest { Sha256, Sha384, Sha512 }`; records `SignatureMark`, `SignatureSignInput`, `SignaturePrepareInput`, `SignatureAttribution`, `SignaturePrepared`, `SignaturePlaceTarget`, `SignaturePlaceResult`, `SignatureCompletion`; adapters `ports::signer_port(Arc<dyn SignatureSigner>, KernelPost) -> SignerPort` (the post arrived with the asynchronous `sign`, which settles back on the kernel thread) and `ports::trust_port(Arc<dyn SignatureTrust>) -> Rc<dyn TrustPort>`, used by Task 9.
 
 - [x] **Step 1: Write the failing tests**
 

@@ -36,9 +36,22 @@ public final class KeychainSigner: SignatureSigner, @unchecked Sendable {
   public func algorithm() -> SignatureKeyAlgorithm { keyAlgorithm }
   public func digest() -> SignatureDigest { .sha256 }
 
-  /// Called on the kernel thread. A Keychain item with an access control
-  /// shows its prompt from here; a cancelled prompt throws
-  /// `operation-cancelled`.
+  /// Called on the kernel thread, and returns at once: the signing, and any
+  /// Face ID or passcode prompt a Keychain item's access control raises,
+  /// runs on a global queue, so the viewer keeps serving other calls while
+  /// the prompt is up. A cancelled prompt fails with `operation-cancelled`.
+  public func sign(message: Data, completion: SignatureSignCompletion) {
+    DispatchQueue.global(qos: .userInitiated).async { [self] in
+      do {
+        completion.finish(signature: try sign(message: message))
+      } catch {
+        completion.fail(error)
+      }
+    }
+  }
+
+  /// Sign `message` on the calling thread, which waits for any prompt the
+  /// key raises. A cancelled prompt throws `operation-cancelled`.
   public func sign(message: Data) throws -> Data {
     let algorithm: SecKeyAlgorithm =
       keyAlgorithm == .ecdsa ? .ecdsaSignatureMessageX962SHA256 : .rsaSignatureMessagePKCS1v15SHA256

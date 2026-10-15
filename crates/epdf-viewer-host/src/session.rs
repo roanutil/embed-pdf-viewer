@@ -168,7 +168,12 @@ impl Session {
         }
         if let Some(signature) = config.signature {
             let SignatureSlots { signer, trust } = signature_slots;
-            plugins.push(epdf_plugin_signature::ffi::host_plugin(signature, signer, trust));
+            plugins.push(epdf_plugin_signature::ffi::host_plugin(
+                signature,
+                signer,
+                trust,
+                post.clone(),
+            ));
         }
         let kernel = match Kernel::new(engine, plugins, options) {
             Ok(kernel) => kernel,

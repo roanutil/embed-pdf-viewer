@@ -15,7 +15,10 @@ use epdf_kernel::bytes::Bytes;
 use epdf_kernel::error::{code, plugin_error};
 use serde_json::{Value, json};
 
-pub use ports::{SignatureDigest, SignatureKeyAlgorithm, SignatureSigner, SignatureTrust};
+pub use ports::{
+    SignatureDigest, SignatureKeyAlgorithm, SignatureSignCompletion, SignatureSigner,
+    SignatureTrust,
+};
 pub use records::*;
 
 use crate::SignatureCapability;
@@ -77,6 +80,7 @@ pub fn host_plugin(
     config: SignatureConfig,
     signer: ports::SignatureSignerSlot,
     trust: ports::SignatureTrustSlot,
+    post: KernelPost,
 ) -> epdf_kernel::AnyPlugin {
     let slot = signer.clone();
     let resolve: std::rc::Rc<
@@ -84,7 +88,7 @@ pub fn host_plugin(
     > = std::rc::Rc::new(move || {
         let current = slot.lock().unwrap().clone();
         match current {
-            Some(signer) => match ports::signer_port(signer) {
+            Some(signer) => match ports::signer_port(signer, post.clone()) {
                 Ok(port) => epdf_kernel::rt::Promise::resolved(port),
                 Err(error) => epdf_kernel::rt::Promise::rejected(error),
             },
@@ -336,12 +340,15 @@ impl SignatureHandle {
         signer: Option<Arc<dyn SignatureSigner>>,
         cancel: Arc<CancelToken>,
     ) -> Result<SignatureCompletion, ViewerError> {
+        let post = self.post.clone();
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let signer =
-                        signer.map(ports::signer_port).transpose()?.map(crate::SignerSource::Port);
+                    let signer = signer
+                        .map(|signer| ports::signer_port(signer, post))
+                        .transpose()?
+                        .map(crate::SignerSource::Port);
                     Ok(open(c)?.sign(input.into_core(signer)))
                 },
                 |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),

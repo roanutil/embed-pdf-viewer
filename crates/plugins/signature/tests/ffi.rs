@@ -267,7 +267,8 @@ fn closing_the_document_ends_its_subscriptions() {
 // ── signing (Task 8) ─────────────────────────────────────────────────────────
 
 use epdf_plugin_signature::ffi::{
-    SignatureDigest, SignatureKeyAlgorithm, SignatureMark, SignatureSignInput, SignatureSigner,
+    SignatureDigest, SignatureKeyAlgorithm, SignatureMark, SignatureSignCompletion,
+    SignatureSignInput, SignatureSigner,
 };
 use rsa::pkcs8::DecodePrivateKey;
 use rsa::{Pkcs1v15Sign, RsaPrivateKey};
@@ -314,18 +315,19 @@ impl SignatureSigner for TestSigner {
     fn digest(&self) -> SignatureDigest {
         SignatureDigest::Sha256
     }
-    fn sign(&self, message: Vec<u8>) -> Result<Vec<u8>, ViewerError> {
+    fn sign(&self, message: Vec<u8>, completion: Arc<SignatureSignCompletion>) {
         if self.fail {
-            return Err(ViewerError::Kernel {
+            return completion.fail_with(epdf_ffi::HostFailure {
                 name: "UserCancelled".into(),
                 code: Some("operation-cancelled".into()),
                 detail: "the user cancelled".into(),
             });
         }
-        Ok(self
-            .key
-            .sign(Pkcs1v15Sign::new::<sha2::Sha256>(), &sha2::Sha256::digest(&message))
-            .unwrap())
+        completion.finish(
+            self.key
+                .sign(Pkcs1v15Sign::new::<sha2::Sha256>(), &sha2::Sha256::digest(&message))
+                .unwrap(),
+        )
     }
 }
 

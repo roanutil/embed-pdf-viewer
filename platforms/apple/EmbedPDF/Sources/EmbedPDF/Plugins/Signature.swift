@@ -45,12 +45,22 @@ public typealias SignaturePlaceTarget = EmbedPDFBindings.SignaturePlaceTarget
 public typealias SignaturePlaceResult = EmbedPDFBindings.SignaturePlaceResult
 public typealias SignatureEvent = EmbedPDFBindings.SignatureEvent
 public typealias SignatureSigner = EmbedPDFBindings.SignatureSigner
+public typealias SignatureSignCompletion = EmbedPDFBindings.SignatureSignCompletion
 public typealias SignatureTrust = EmbedPDFBindings.SignatureTrust
 public typealias SignatureKeyAlgorithm = EmbedPDFBindings.SignatureKeyAlgorithm
 public typealias SignatureDigest = EmbedPDFBindings.SignatureDigest
-/// What a `SignatureSigner` or `SignatureTrust` throws: `.Kernel(name:code:detail:)`
-/// with a kernel code (`operation-cancelled` for a cancelled prompt).
+/// What a `SignatureSigner`'s synchronous members or a `SignatureTrust`
+/// throws: `.Kernel(name:code:detail:)` with a kernel code.
 public typealias ViewerError = EmbedPDFBindings.ViewerError
+
+extension SignatureSignCompletion {
+  /// Fail the signing with `error`, keeping its code (see
+  /// `HostFailure.init(_:)`): a cancelled prompt's `operation-cancelled`
+  /// is what `sign` throws.
+  public func fail(_ error: any Error) {
+    failWith(failure: HostFailure(error))
+  }
+}
 
 /// A document's signature fields: reading, validating, signing and filling
 /// them. Get one with `PDFViewer.signatures(for:)`; the viewer needs

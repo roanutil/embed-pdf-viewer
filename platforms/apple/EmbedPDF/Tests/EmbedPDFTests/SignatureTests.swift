@@ -180,6 +180,33 @@ extension BaseSuite {
       }
     }
 
+    @Test func aPendingSignatureDoesNotBlockTheViewer() async throws {
+      let (viewer, document, signatures) = try await opened("unsigned_sigfield", signer: false)
+      let (held, continuation) = AsyncStream<(Data, SignatureSignCompletion)>.makeStream()
+      let keychain = try KeychainSignerTests.testSigner()
+      viewer.setSigner(HeldSigner(keychain, held: continuation))
+      let field = try await unsignedField(signatures)
+      let signing = Task { try await signatures.sign(SignatureSignInput(field: field)) }
+      var iterator = held.makeAsyncIterator()
+      let (message, completion) = try #require(await iterator.next())
+      // The signer has not answered, and the viewer still serves calls.
+      let pages = try await viewer.pages(of: document)
+      expectNoDifference(pages.count, 1)
+      let status = try await signatures.status()
+      expectNoDifference(status, .ready)
+      completion.finish(signature: try keychain.sign(message: message))
+      let done = try await signing.value
+      expectNoDifference(done.signature.signed, true)
+    }
+
+    @Test func aSignerNamedByTheCallSigns() async throws {
+      let signer = try KeychainSignerTests.testSigner()
+      let (_, _, signatures) = try await opened("unsigned_sigfield")
+      let field = try await unsignedField(signatures)
+      let done = try await signatures.sign(SignatureSignInput(field: field), with: signer)
+      expectNoDifference(done.status, .completed)
+    }
+
     @Test func droppingTheStreamUnsubscribes() async throws {
       let (_, _, signatures) = try await opened("signed_two_approvals")
       let task = Task { for await _ in signatures.events {} }
@@ -281,7 +308,26 @@ final class CancellingSigner: SignatureSigner, Sendable {
   }
   func algorithm() -> SignatureKeyAlgorithm { .rsaPkcs1 }
   func digest() -> SignatureDigest { .sha256 }
-  func sign(message: Data) throws -> Data {
-    throw ViewerError.Kernel(name: "UserCancelled", code: "operation-cancelled", detail: "the user cancelled")
+  func sign(message: Data, completion: SignatureSignCompletion) {
+    completion.fail(PDFError(name: "UserCancelled", code: "operation-cancelled", detail: "the user cancelled"))
+  }
+}
+
+/// A signer that holds each signing, as a prompt waiting on the user does,
+/// until the test answers it.
+final class HeldSigner: SignatureSigner, Sendable {
+  let signer: KeychainSigner
+  let held: AsyncStream<(Data, SignatureSignCompletion)>.Continuation
+
+  init(_ signer: KeychainSigner, held: AsyncStream<(Data, SignatureSignCompletion)>.Continuation) {
+    self.signer = signer
+    self.held = held
+  }
+
+  func certificateChain() throws -> [Data] { try signer.certificateChain() }
+  func algorithm() -> SignatureKeyAlgorithm { signer.algorithm() }
+  func digest() -> SignatureDigest { signer.digest() }
+  func sign(message: Data, completion: SignatureSignCompletion) {
+    held.yield((message, completion))
   }
 }

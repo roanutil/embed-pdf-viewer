@@ -1,14 +1,18 @@
 //! The host ports, implemented in Swift: a key that signs, and the anchors
-//! validation trusts. Both are called on the kernel thread, synchronously.
+//! validation trusts. Both are called on the kernel thread. `sign` answers
+//! later through a completion, from any thread, because a Keychain key can
+//! raise a Face ID or passcode prompt and the kernel thread must not wait on
+//! it (`epdf_ffi::foreign`); the rest answer at once.
 //!
-//! They throw `ViewerError` rather than the shared `HostError` so a signer
-//! can say why it failed in the kernel's codes: a cancelled biometric
-//! prompt is `operation-cancelled`, and `sign` fails with exactly that.
+//! The synchronous members throw `ViewerError` rather than the shared
+//! `HostError`, and the completion fails with a `HostFailure`, so a signer
+//! can say why it failed in the kernel's codes: a cancelled biometric prompt
+//! is `operation-cancelled`, and `sign` fails with exactly that.
 
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::ViewerError;
+use epdf_ffi::{ForeignSettle, HostFailure, KernelPost, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
 use epdf_signature_core::cms::{RawAlgorithm, RawSigner};
@@ -43,12 +47,45 @@ impl SignatureDigest {
 /// (leaf first, DER). `sign` gets the DER of the CMS signed attributes and
 /// hashes it itself with `digest`. An ECDSA key answers `r || s`, each
 /// padded to the curve's size, not X9.62 DER.
+///
+/// Every member is called on the kernel thread. `sign` must return at once
+/// and answer through `completion`, from any thread: the kernel keeps
+/// serving other calls while a signature is pending.
 #[uniffi::export(with_foreign)]
 pub trait SignatureSigner: Send + Sync {
     fn certificate_chain(&self) -> Result<Vec<Vec<u8>>, ViewerError>;
     fn algorithm(&self) -> SignatureKeyAlgorithm;
     fn digest(&self) -> SignatureDigest;
-    fn sign(&self, message: Vec<u8>) -> Result<Vec<u8>, ViewerError>;
+    fn sign(&self, message: Vec<u8>, completion: Arc<SignatureSignCompletion>);
+}
+
+/// The answer to one `SignatureSigner::sign`. The first call wins; dropping
+/// it unanswered fails the signing with `operation-failed`, and the signing
+/// leaves nothing pending either way.
+#[derive(uniffi::Object)]
+pub struct SignatureSignCompletion {
+    settle: ForeignSettle<Vec<u8>>,
+}
+
+#[uniffi::export]
+impl SignatureSignCompletion {
+    /// The raw signature: PKCS#1 v1.5 or PSS bytes, or ECDSA `r || s`.
+    pub fn finish(&self, signature: Vec<u8>) {
+        self.settle.settle(move || Ok(signature));
+    }
+
+    pub fn fail(&self, detail: String) {
+        self.settle.settle(move || {
+            Err(Error::named("SigningError", detail)
+                .with("code", epdf_kernel::error::code::OPERATION_FAILED))
+        });
+    }
+
+    /// Fail with the thrown error's name and code: a cancelled prompt is
+    /// `operation-cancelled`, and `sign` fails with exactly that.
+    pub fn fail_with(&self, failure: HostFailure) {
+        self.settle.fail(failure, "signature");
+    }
 }
 
 /// Trust anchors, DER. An empty list means every verdict tops out at
@@ -79,8 +116,12 @@ pub fn kernel_error(error: ViewerError) -> Error {
 }
 
 /// The plugin's `SignerPort` over a Swift signer. The chain is read once
-/// per signing, when the plugin resolves the port.
-pub fn signer_port(signer: Arc<dyn SignatureSigner>) -> Result<SignerPort, Error> {
+/// per signing, when the plugin resolves the port. On the kernel thread;
+/// `post` carries the signer's answer back there.
+pub fn signer_port(
+    signer: Arc<dyn SignatureSigner>,
+    post: KernelPost,
+) -> Result<SignerPort, Error> {
     let certificate_chain = signer.certificate_chain().map_err(kernel_error)?;
     let algorithm = match signer.algorithm() {
         SignatureKeyAlgorithm::RsaPkcs1 => RawAlgorithm::RsaPkcs1,
@@ -96,9 +137,13 @@ pub fn signer_port(signer: Arc<dyn SignatureSigner>) -> Result<SignerPort, Error
         certificate_chain,
         algorithm,
         hash,
-        sign: Rc::new(move |message| match signer.sign(message) {
-            Ok(signature) => Promise::resolved(signature),
-            Err(error) => Promise::rejected(kernel_error(error)),
+        sign: Rc::new(move |message| {
+            let (promise, resolver) = Promise::pending();
+            let completion = Arc::new(SignatureSignCompletion {
+                settle: ForeignSettle::new(resolver, post.clone(), "a SignatureSigner completion"),
+            });
+            signer.sign(message, completion);
+            promise
         }),
     }))
 }

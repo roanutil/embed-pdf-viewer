@@ -2294,6 +2294,55 @@ fn a_throwing_signer_leaves_nothing_pending_over_pdfium() {
 }
 
 #[test]
+fn a_pending_signature_does_not_block_the_kernel_thread() {
+    let host = signature_host();
+    let (held, signing) = mpsc::channel();
+    host.set_signature_signer(Some(Arc::new(common::HeldSigner {
+        signer: common::TestSigner::load(false),
+        held,
+    })));
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let s = block_on(host.signature(doc.clone())).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    let signed = {
+        let s = s.clone();
+        std::thread::spawn(move || block_on(s.sign(sign_input(field), None, CancelToken::new())))
+    };
+    let (message, completion) = signing.recv_timeout(Duration::from_secs(5)).unwrap();
+    // The signer has not answered, and the kernel still serves other calls.
+    assert_eq!(block_on(host.pages(doc)).unwrap().len(), 1);
+    assert!(!signed.is_finished(), "the signing finished without its signature");
+    let signature = common::TestSigner::load(false).raw_signature(&message);
+    std::thread::spawn(move || completion.finish(signature)).join().unwrap();
+    let done = signed.join().unwrap().unwrap();
+    assert!(done.signature.signed);
+    assert_eq!(block_on(s.pending()).unwrap(), None);
+}
+
+#[test]
+fn a_signer_completion_dropped_unanswered_fails_the_signing() {
+    let host = signature_host();
+    let (held, signing) = mpsc::channel();
+    host.set_signature_signer(Some(Arc::new(common::HeldSigner {
+        signer: common::TestSigner::load(false),
+        held,
+    })));
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    let signed = {
+        let s = s.clone();
+        std::thread::spawn(move || block_on(s.sign(sign_input(field), None, CancelToken::new())))
+    };
+    drop(signing.recv_timeout(Duration::from_secs(5)).unwrap());
+    let error = signed.join().unwrap().unwrap_err();
+    assert!(format!("{error:?}").contains("operation-failed"), "{error:?}");
+    assert_eq!(block_on(s.pending()).unwrap(), None);
+}
+
+#[test]
 fn can_sign_follows_the_host_signer() {
     let host = signature_host();
     let doc = open_signing(&host, "unsigned_sigfield.pdf");
