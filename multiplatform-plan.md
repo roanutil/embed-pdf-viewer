@@ -480,7 +480,7 @@ bridge spike over `annotations.create`; lifecycle, buffer, coordinate and
 cancellation contracts specified, with invariants exercised by the spikes; DTO
 codegen proven on `MetadataPatch` (three-state `Keep | Clear | Set(T)`,
 serialization/validation vectors on each host; operation parity lands in G14);
-operation matrix for all 65 `WorkerRequest` request kinds; corpus schema and
+operation matrix for all 84 `WorkerRequest` request kinds; corpus schema and
 geometry runner in `tooling/engine-conformance/`;
 `.github/workflows/engine-conformance.yml` wired; end-to-end baselines recorded;
 native `text` and readback rows, viewer allocation, and cold-start reruns;
