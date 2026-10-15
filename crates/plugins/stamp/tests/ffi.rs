@@ -194,11 +194,12 @@ fn a_store_that_throws_fails_the_restore_with_its_error() {
 }
 
 #[test]
-fn persist_returns_a_stoppable_object() {
+fn persist_returns_a_registration_that_unregisters_once() {
     let (thread, stamp, _) = handle();
-    let persistence = stamp.persist(Arc::new(Store::default()), Vec::new(), None);
-    persistence.stop();
-    persistence.stop();
+    let registration =
+        block_on(stamp.persist(Arc::new(Store::default()), Vec::new(), None)).unwrap();
+    registration.unregister();
+    registration.unregister();
     block_on(thread.call(|_| ())).unwrap();
 }
 

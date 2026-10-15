@@ -128,16 +128,44 @@ extension BaseSuite {
       let store = try FileStampLibraryStore(directory: directory)
       do {
         let (_, stamps) = try await started()
-        let persistence = stamps.persist(to: store, debounce: .zero)
+        let persistence = try await stamps.persist(to: store, debounce: .zero)
         _ = try await stamps.importLibrary(Fixture.data("stamps"))
         try await Task.sleep(for: .milliseconds(200))
-        persistence.stop()
+        persistence.unregister()
       }
       let (_, again) = try await started()
       let restored = try await again.restore(from: store)
       expectNoDifference(restored.count, 1)
       let assets = try await again.assets(StampAssetFilter(libraryId: restored.first))
       #expect(!assets.isEmpty)
+    }
+
+    @Test func aDroppedPersistRegistrationKeepsWriting() async throws {
+      let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+      defer { try? FileManager.default.removeItem(at: directory) }
+      let store = try FileStampLibraryStore(directory: directory)
+      let (_, stamps) = try await started()
+      _ = try await stamps.persist(to: store, debounce: .zero)
+      _ = try await stamps.importLibrary(Fixture.data("stamps"))
+      var written: [StoredStampLibrary] = []
+      for _ in 0..<50 where written.isEmpty {
+        try await Task.sleep(for: .milliseconds(20))
+        written = try store.list()
+      }
+      expectNoDifference(written.count, 1)
+    }
+
+    @Test func aDestroyedViewersPersistThrows() async throws {
+      let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+      defer { try? FileManager.default.removeItem(at: directory) }
+      let store = try FileStampLibraryStore(directory: directory)
+      let (viewer, stamps) = try await started()
+      try await viewer.destroy()
+      await #expect {
+        _ = try await stamps.persist(to: store)
+      } throws: { error in
+        (error as? PDFError)?.code == "instance-closed"
+      }
     }
 
     @Test func aStoreThatThrowsFailsTheRestore() async throws {

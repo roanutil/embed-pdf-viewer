@@ -7,12 +7,12 @@
 //! `invalid-state`.
 
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use epdf_annotation_core as ac;
 use epdf_ffi::{
-    AnnotationRef, CancelToken, HostError, KernelBound, KernelPost, PageRef, Point, Size,
-    Subscription, ViewerError,
+    AnnotationRef, CancelToken, HostError, KernelBound, KernelPost, PageRef, Point,
+    RegistrationHandle, Size, Subscription, ViewerError,
 };
 use epdf_kernel::bytes::Bytes;
 use epdf_kernel::rt::Promise;
@@ -441,22 +441,6 @@ impl CoreStore for ForeignStore {
     }
 }
 
-/// A running `persist`. `stop` is idempotent; it flushes pending writes.
-#[derive(uniffi::Object)]
-pub struct StampPersistence {
-    stop: Mutex<Option<Box<dyn FnOnce() + Send>>>,
-}
-
-#[uniffi::export]
-impl StampPersistence {
-    pub fn stop(&self) {
-        let stop = self.stop.lock().unwrap().take();
-        if let Some(stop) = stop {
-            stop();
-        }
-    }
-}
-
 // ── the handle ──────────────────────────────────────────────────────────────
 
 #[derive(uniffi::Object)]
@@ -837,26 +821,27 @@ impl StampHandle {
     }
 
     /// Write each changed library to `store`, debounced (`None` is 250 ms),
-    /// except the ids in `except`. Runs until `stop`.
-    pub fn persist(
+    /// except the ids in `except`. Runs until `unregister`, which flushes
+    /// pending writes, or until the viewer is destroyed. Dropping the
+    /// handle keeps it running, as every `RegistrationHandle` does.
+    pub async fn persist(
         &self,
         store: Arc<dyn StampLibraryStore>,
         except: Vec<String>,
         debounce_ms: Option<f64>,
-    ) -> Arc<StampPersistence> {
-        let (subscription, slot) = Subscription::pending(self.post.clone());
-        self.cap.fire(move |c| {
-            let stop = persist_stamp_libraries(
-                c,
-                Rc::new(ForeignStore(store)),
-                PersistOptions { except, debounce_ms },
-                None,
-            );
-            slot.fill(Unsubscribe::new(move || stop()));
-        });
-        Arc::new(StampPersistence {
-            stop: Mutex::new(Some(Box::new(move || subscription.cancel()))),
-        })
+    ) -> Result<Arc<RegistrationHandle>, ViewerError> {
+        let post = self.post.clone();
+        self.cap
+            .call(move |c| {
+                let stop = persist_stamp_libraries(
+                    c,
+                    Rc::new(ForeignStore(store)),
+                    PersistOptions { except, debounce_ms },
+                    None,
+                );
+                Ok(RegistrationHandle::new(post, move || stop()))
+            })
+            .await
     }
 
     /// Every hook in one registration.

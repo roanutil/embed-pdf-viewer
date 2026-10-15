@@ -1394,6 +1394,58 @@ fn stamps_pdf() -> Vec<u8> {
         .unwrap()
 }
 
+/// A store in memory, for persistence over a real engine.
+#[derive(Default)]
+struct MemoryStampStore(Mutex<Vec<epdf_plugin_stamp::ffi::StoredStampLibrary>>);
+
+impl epdf_plugin_stamp::ffi::StampLibraryStore for MemoryStampStore {
+    fn list(&self) -> Result<Vec<epdf_plugin_stamp::ffi::StoredStampLibrary>, epdf_ffi::HostError> {
+        Ok(self.0.lock().unwrap().clone())
+    }
+    fn put(&self, id: String, bytes: Vec<u8>) -> Result<(), epdf_ffi::HostError> {
+        let mut rows = self.0.lock().unwrap();
+        rows.retain(|r| r.id != id);
+        rows.push(epdf_plugin_stamp::ffi::StoredStampLibrary { id, bytes });
+        Ok(())
+    }
+    fn delete(&self, id: String) -> Result<(), epdf_ffi::HostError> {
+        self.0.lock().unwrap().retain(|r| r.id != id);
+        Ok(())
+    }
+}
+
+/// Wait up to two seconds for `store` to hold `rows` libraries.
+fn stored(store: &MemoryStampStore, rows: usize) -> usize {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    loop {
+        let n = store.0.lock().unwrap().len();
+        if n == rows || Instant::now() > deadline {
+            return n;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+
+#[test]
+fn a_dropped_persist_registration_keeps_writing_until_unregistered() {
+    let host = with_stamp();
+    let stamp = block_on(host.stamp()).unwrap();
+    let store = Arc::new(MemoryStampStore::default());
+    let registration = block_on(stamp.persist(store.clone(), Vec::new(), Some(0.0))).unwrap();
+    let unregister = {
+        let registration = registration.clone();
+        move || registration.unregister()
+    };
+    // The bug this pins: the old `StampPersistence` stopped when dropped.
+    drop(registration);
+    block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new())).unwrap();
+    assert_eq!(stored(&store, 1), 1, "a dropped registration stopped persisting");
+    unregister();
+    block_on(stamp.import_library(stamps_pdf(), Default::default(), CancelToken::new())).unwrap();
+    assert_eq!(block_on(stamp.libraries(None)).unwrap().len(), 2);
+    assert_eq!(stored(&store, 2), 1, "an unregistered persist kept writing");
+}
+
 #[test]
 fn a_stamp_library_imports_and_places_over_pdfium() {
     let host = with_stamp();

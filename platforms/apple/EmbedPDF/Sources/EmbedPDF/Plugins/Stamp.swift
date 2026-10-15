@@ -21,7 +21,6 @@ public typealias StampLibraryChangeReason = EmbedPDFBindings.StampLibraryChangeR
 public typealias StampEvent = EmbedPDFBindings.StampEvent
 public typealias StoredStampLibrary = EmbedPDFBindings.StoredStampLibrary
 public typealias StampLibraryStore = EmbedPDFBindings.StampLibraryStore
-public typealias StampPersistence = EmbedPDFBindings.StampPersistence
 
 /// A stamp preview: the encoded bytes and, decoded once, the image.
 public struct StampPreview: @unchecked Sendable {
@@ -212,12 +211,17 @@ public struct StampCapability: Sendable {
   }
 
   /// Writes each changed library to `store` once changes stop for
-  /// `debounce` (250 ms when `nil`), until `stop()`, which flushes.
+  /// `debounce` (250 ms when `nil`), until `unregister()`, which flushes
+  /// pending writes. Dropping the registration keeps it writing, as every
+  /// `Registration` does; it stops when the viewer is destroyed.
   public func persist(to store: some StampLibraryStore, except: [String] = [], debounce: Duration? = nil)
-    -> StampPersistence
+    async throws(PDFError) -> Registration
   {
     let ms = debounce.map { Double($0.components.seconds) * 1000 + Double($0.components.attoseconds) / 1e15 }
-    return handle.persist(store: store, except: except, debounceMs: ms)
+    let handle = handle
+    return Registration(handle: try await bridged {
+      try await handle.persist(store: store, except: except, debounceMs: ms)
+    })
   }
 
   /// Library, asset and arming changes. Finishes when the viewer is
