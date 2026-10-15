@@ -39,6 +39,10 @@ OUT="$ROOT/platforms/apple/EmbedPDF"
 BUILD="$ROOT/platforms/apple/.build"
 LIB_ROOT="$ROOT/packages/engine/runtime/build/libpdfium"
 PROFILE="${PROFILE:-release}"
+# Where cargo puts what it builds: CARGO_TARGET_DIR, a config's
+# build.target-dir, or $ROOT/target. `cargo metadata` resolves all three.
+TARGET_DIR="$(cd "$ROOT" && cargo metadata --format-version 1 --no-deps \
+  | sed -E 's/.*"target_directory":"([^"]*)".*/\1/')"
 
 # The manual bridge links into epdf-viewer-host's own staticlib (one copy of
 # the kernel thread's statics for both bridges), so the flag is only cargo
@@ -56,6 +60,13 @@ SLICES=(
 
 rm -rf "$BUILD"
 mkdir -p "$BUILD"
+
+# The external symbols an archive defines, sorted. nm can't read every
+# member (the device slice's Rust objects carry bitcode from a newer LLVM
+# than Xcode's) and exits 1 for those; what it does list is enough here.
+defined_symbols() {
+  { nm -gUj "$1" 2>/dev/null || true; } | grep -v -e ':$' -e '^$' | sort -u
+}
 
 for slice in "${SLICES[@]}"; do
   rust="${slice%%:*}"
@@ -75,12 +86,30 @@ for slice in "${SLICES[@]}"; do
     ${FEATURES[@]+"${FEATURES[@]}"})
 
   # One archive per slice, because `xcodebuild -create-xcframework` takes one
-  # `-library` per platform. libtool merges rather than concatenates, which is
-  # what keeps the duplicate-symbol check honest.
+  # `-library` per platform. pdfium-sys links libembedpdf as
+  # `static=embedpdf`, which rustc bundles into the staticlib, so the Rust
+  # archive already holds PDFium; merging libembedpdf.a again would add a
+  # second copy of every member. It is merged only when the Rust archive
+  # lacks PDFium's entry point (a build that links it `-bundle`).
   mkdir -p "$BUILD/$fork"
-  libtool -static -o "$BUILD/$fork/libEmbedPDFFFI.a" \
-    "$ROOT/target/$rust/$PROFILE/libepdf_viewer_host.a" \
-    "$LIB_ROOT/$fork/lib/libembedpdf.a" 2>/dev/null
+  host="$TARGET_DIR/$rust/$PROFILE/libepdf_viewer_host.a"
+  inputs=("$host")
+  # grep reads to the end (no -q), so nm never dies of SIGPIPE under pipefail.
+  if ! defined_symbols "$host" | grep -x '_FPDF_InitLibraryWithConfig' >/dev/null; then
+    inputs+=("$LIB_ROOT/$fork/lib/libembedpdf.a")
+    # libtool -static keeps a symbol two inputs both define without a word,
+    # and the app's linker then takes whichever member it reaches first.
+    # Refuse that here rather than ship two definitions.
+    dupes="$(comm -12 <(defined_symbols "${inputs[0]}") <(defined_symbols "${inputs[1]}"))"
+    if [[ -n "$dupes" ]]; then
+      echo "symbols defined in both $rust archives:" >&2
+      echo "$dupes" | head -20 >&2
+      exit 1
+    fi
+  fi
+  # Rust's empty codegen units have no symbols, and libtool warns once per
+  # member (about 76 lines); anything else it says is shown.
+  libtool -static -no_warning_for_no_symbols -o "$BUILD/$fork/libEmbedPDFFFI.a" "${inputs[@]}"
 done
 
 # The headers every slice shares. Generated from the built library rather than
@@ -92,8 +121,8 @@ echo "generating bindings"
 (cd "$ROOT" && cargo build -p uniffi-bindgen)
 rm -rf "$BUILD/generated" "$BUILD/headers"
 mkdir -p "$BUILD/generated" "$BUILD/headers"
-"$ROOT/target/debug/uniffi-bindgen" generate \
-  --library "$ROOT/target/aarch64-apple-ios-sim/$PROFILE/libepdf_viewer_host.a" \
+"$TARGET_DIR/debug/uniffi-bindgen" generate \
+  --library "$TARGET_DIR/aarch64-apple-ios-sim/$PROFILE/libepdf_viewer_host.a" \
   --language swift --out-dir "$BUILD/generated"
 
 # One *FFI.h and one *FFI.modulemap per crate. xcframework wants a single
