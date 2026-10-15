@@ -24,6 +24,23 @@ extension BaseSuite {
       expectNoDifference(try surface.props(as: StyleProps.self), StyleProps(annotationId: "a1", page: 3))
     }
 
+    @Test func aNeverOpenedSurfaceIsNil() async throws {
+      let (_, _, shell) = try await opened()
+      let surface = try await shell.surface("thumbnails")
+      expectNoDifference(surface, nil)
+    }
+
+    /// `surfaces[id]` on the TypeScript plugin's plain object finds an
+    /// `Object.prototype` member, so these ids are found, closed and bare.
+    @Test(arguments: ["constructor", "toString"])
+    func anObjectPrototypeNameIsFoundClosed(id: String) async throws {
+      let (_, _, shell) = try await opened()
+      let surface = try await shell.surface(id)
+      expectNoDifference(surface, ShellSurface(id: id, open: false, exclusive: nil, propsJson: nil))
+      let isOpen = try await shell.isOpen(id)
+      expectNoDifference(isOpen, false)
+    }
+
     @Test func propsThatAreNotAnObjectThrow() async throws {
       let (_, _, shell) = try await opened()
       await #expect {

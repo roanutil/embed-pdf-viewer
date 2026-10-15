@@ -22,7 +22,10 @@ public struct ShellCapability: Sendable {
     try await bridged { try await handle.isOpen(id: id) }
   }
 
-  /// `nil` for a surface never opened.
+  /// `nil` for a surface never opened. The TypeScript plugin keeps
+  /// surfaces in a plain object and reads `surfaces[id]`, so an id naming
+  /// an `Object.prototype` member (`"constructor"`, `"toString"`) is found
+  /// there; it is found here too, closed, with no tag or props.
   public func surface(_ id: String) async throws(PDFError) -> ShellSurface? {
     try await bridged { try await handle.surface(id: id) }
   }
