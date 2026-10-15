@@ -63,7 +63,7 @@ extension BaseSuite {
     }
 
     @Test func pagesFromAnotherOpenDocumentInsert() async throws {
-      let (viewer, document, edit) = try await opened()
+      let (viewer, _, edit) = try await opened()
       let other = try await viewer.open(Fixture.data("colors"))
       let source = try await viewer.pages(of: other).map(\.page)
       let insertion = try await edit.insert(source, from: other, at: .index(index: 0))

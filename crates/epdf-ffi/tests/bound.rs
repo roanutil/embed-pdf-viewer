@@ -59,8 +59,15 @@ fn dropping_a_promise_future_aborts_the_promise() {
     let flag = aborted.clone();
     let mut future = Box::pin(bound.call_promise(
         move |_| {
-            let (promise, _resolver) = Promise::<u32>::pending();
-            Ok(promise.with_abort(move |_| flag.store(true, Ordering::SeqCst)))
+            // The abort holds the resolver. Dropped here instead, it would
+            // abandon the promise, which drops the slot's sender: a future
+            // first polled after the job ran would answer `Closed`, disarm,
+            // and leave nothing for the drop to abort.
+            let (promise, resolver) = Promise::<u32>::pending();
+            Ok(promise.with_abort(move |_| {
+                let _ = &resolver;
+                flag.store(true, Ordering::SeqCst);
+            }))
         },
         |n| n,
     ));

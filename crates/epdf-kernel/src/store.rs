@@ -196,10 +196,10 @@ impl SliceLease {
     /// [`json`](Self::json) as text, rebuilt only when the state changed.
     fn text(&self) -> Rc<str> {
         let state = self.read();
-        if let Some((cached, text)) = &*self.0.text.borrow() {
-            if Rc::ptr_eq(cached, &state) {
-                return text.clone();
-            }
+        if let Some((cached, text)) = &*self.0.text.borrow()
+            && Rc::ptr_eq(cached, &state)
+        {
+            return text.clone();
         }
         let written = self.0.to_text.as_ref().and_then(|to_text| to_text(state.as_ref()));
         let text: Rc<str> = match written {
@@ -412,10 +412,10 @@ impl Store {
     /// cached whole while the revision holds.
     pub fn state_text(&self) -> Rc<str> {
         let revision = self.revision.get();
-        if let Some((cached, text)) = &*self.state_text.borrow() {
-            if *cached == revision {
-                return text.clone();
-            }
+        if let Some((cached, text)) = &*self.state_text.borrow()
+            && *cached == revision
+        {
+            return text.clone();
         }
         let core_text = self.core_text();
         let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
@@ -440,10 +440,10 @@ impl Store {
     /// Core as canonical JSON text, rebuilt only when core changed.
     pub fn core_text(&self) -> Rc<str> {
         let core = self.core();
-        if let Some((cached, text)) = &*self.core_text.borrow() {
-            if Rc::ptr_eq(cached, &core) {
-                return text.clone();
-            }
+        if let Some((cached, text)) = &*self.core_text.borrow()
+            && Rc::ptr_eq(cached, &core)
+        {
+            return text.clone();
         }
         let text: Rc<str> = crate::js::to_value(&*core).to_string().into();
         *self.core_text.borrow_mut() = Some((core, text.clone()));
