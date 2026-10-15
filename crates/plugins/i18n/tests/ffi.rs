@@ -73,7 +73,7 @@ fn an_empty_key_segment_is_refused() {
 
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::KernelThread;
+use epdf_ffi::{HostFailure, KernelThread};
 use epdf_plugin_i18n::ffi::{
     I18nConfig, I18nEvent, I18nEventListener, I18nHandle, I18nParam, LocaleLoadCompletion,
     LocaleLoader,
@@ -96,6 +96,7 @@ impl I18nEventListener for Events {
 enum Answer {
     Pack,
     Fail,
+    Cancelled,
     Drop,
     Twice,
     Hold,
@@ -119,6 +120,11 @@ impl LocaleLoader for Loader {
         match self.answer {
             Answer::Pack => completion.finish(pack(&code, &[("hello", "Hola")])),
             Answer::Fail => completion.fail("offline".into()),
+            Answer::Cancelled => completion.fail_with(HostFailure {
+                name: "AbortError".into(),
+                code: Some("operation-cancelled".into()),
+                detail: "operation cancelled".into(),
+            }),
             Answer::Drop => drop(completion),
             Answer::Twice => {
                 completion.finish(pack(&code, &[("hello", "Hola")]));
@@ -208,6 +214,22 @@ fn a_failed_load_rejects_and_reports() {
     let seen = events.0.lock().unwrap();
     assert!(
         matches!(seen.last(), Some(I18nEvent::LocaleLoadFailed { event }) if event.locale == "es" && event.error.message.contains("offline")),
+        "{seen:?}"
+    );
+}
+
+#[test]
+fn a_failure_with_a_code_keeps_it_in_the_load_failed_event() {
+    let (_thread, i18n) = handle(config(Some(Loader::new(Answer::Cancelled))));
+    let events = Arc::new(Events::default());
+    let _sub = i18n.subscribe(events.clone());
+    // The switch itself rejects `operation-failed` with the cause in its
+    // details, as `sync/loaders.ts` does; the event carries the cause.
+    let error = block_on(i18n.set_locale("es".into())).unwrap_err();
+    assert_eq!(code(&error), Some("operation-failed"), "{error:?}");
+    let seen = events.0.lock().unwrap();
+    assert!(
+        matches!(seen.last(), Some(I18nEvent::LocaleLoadFailed { event }) if event.error.code == "operation-cancelled"),
         "{seen:?}"
     );
 }

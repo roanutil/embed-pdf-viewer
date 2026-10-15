@@ -98,6 +98,14 @@ extension PDFViewer {
   }
 }
 
+extension LocaleLoadCompletion {
+  /// Fail the load with `error`, keeping its code (see
+  /// `HostFailure.init(_:)`) in `.localeLoadFailed`.
+  public func fail(_ error: any Error) {
+    failWith(failure: HostFailure(error))
+  }
+}
+
 /// Serves lazy packs from `<code>.json` files in a bundle, in the web's
 /// locale file shape. Reads off the kernel thread.
 public final class BundleLocaleLoader: LocaleLoader, @unchecked Sendable {
@@ -120,7 +128,7 @@ public final class BundleLocaleLoader: LocaleLoader, @unchecked Sendable {
         let json = try String(contentsOf: url, encoding: .utf8)
         completion.finish(pack: try LocalePack.decode(json: json))
       } catch {
-        completion.fail(detail: "\(error)")
+        completion.fail(error)
       }
     }
   }

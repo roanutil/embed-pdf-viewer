@@ -128,7 +128,7 @@ Two rules for `ViewerConfig` fields. `ViewerConfig` derives `Debug`, and a forei
 
 Task 0 adds, before any plugin plan:
 
-- `ForeignSettle<T>` and `HostError` (`foreign.rs`, Task 0c): a completion a foreign implementation answers from any thread, and the one error type every foreign trait method throws. `From<UnexpectedUniFFICallbackError>` exists for both `HostError` and `ViewerError`.
+- `ForeignSettle<T>` and `HostError` (`foreign.rs`, Task 0c): a completion a foreign implementation answers from any thread, and the one error type every foreign trait method throws. `HostFailure` (name, code, detail) came later: every completion's `fail_with` takes it so a Swift error keeps its kernel code, and Swift builds one from any error with `HostFailure(error)`. `From<UnexpectedUniFFICallbackError>` exists for both `HostError` and `ViewerError`.
 - `RegistrationHandle` (`registration.rs`, Task 0c): what every `register_*`/`set_*` member answers (interaction, i18n, commands, actions). Swift wraps it as `Registration` (Task 0f).
 - `mirror_enum!` and `to_u32` (`mirror.rs`, Task 0c), and `Clone` on `KernelBound` (Task 0c), for sub-handles that share one capability.
 - `PageInfo` and `page::{decode_page, decode_pages}` (`page.rs`, Task 0d): the one page record. `ViewerHost::pages`, page edit's results and stage's page reads all return it.

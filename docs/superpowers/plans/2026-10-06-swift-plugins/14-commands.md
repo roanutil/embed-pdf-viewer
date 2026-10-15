@@ -81,7 +81,7 @@ commands has optional `i18n` and `shell` (`crates/plugins/commands/src/lib.rs`).
 
 **Interfaces:**
 - Consumes: `epdf_ffi::{ForeignSettle, HostError, KernelPost, PluginErrorInfo, RegistrationHandle, ViewerError}` (umbrella Task 0c adds `ForeignSettle`, `HostError` and `RegistrationHandle`).
-- Produces: `CommandDefinition` record, `CommandHook { Run, Enabled, Active, Visible, IconAccent }`, `CommandPanel { id, exclusive }`, `CommandContext { command_id, document_id, args_json }`, `CommandRunner` foreign trait (`run`, `derive`, `icon_accent`), `CommandCompletion` object (`finish()`, `fail(detail)`), and `fn into_def(self, post: KernelPost) -> Result<CommandDef, Error>` on `CommandDefinition`.
+- Produces: `CommandDefinition` record, `CommandHook { Run, Enabled, Active, Visible, IconAccent }`, `CommandPanel { id, exclusive }`, `CommandContext { command_id, document_id, args_json }`, `CommandRunner` foreign trait (`run`, `derive`, `icon_accent`), `CommandCompletion` object (`finish()`, `fail(detail)`, and `fail_with(failure: HostFailure)`, added after the review so a thrown `PDFError` keeps its code), and `fn into_def(self, post: KernelPost) -> Result<CommandDef, Error>` on `CommandDefinition`.
 
 - [x] **Step 1: Create the worktree**
 

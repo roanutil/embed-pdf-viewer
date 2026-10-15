@@ -6,7 +6,9 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use epdf_ffi::{ForeignSettle, HostError, KernelPost, RegistrationHandle, ViewerError};
+use epdf_ffi::{
+    ForeignSettle, HostError, HostFailure, KernelPost, RegistrationHandle, ViewerError,
+};
 use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
 use serde_json::Value;
@@ -225,6 +227,12 @@ impl DocumentVerbCompletion {
         self.settle.settle(move || {
             Err(Error::new(detail).with("code", epdf_kernel::error::code::OPERATION_FAILED))
         });
+    }
+
+    /// Fail with the thrown error's name and code, which the verb's
+    /// rejection keeps.
+    pub fn fail_with(&self, failure: HostFailure) {
+        self.settle.fail(failure, "actions");
     }
 }
 

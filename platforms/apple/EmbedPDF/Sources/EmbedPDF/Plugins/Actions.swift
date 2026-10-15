@@ -82,6 +82,13 @@ extension ActionsConfig {
   }
 }
 
+extension DocumentVerbCompletion {
+  /// Fail the verb with `error`, keeping its code (see `HostFailure.init(_:)`).
+  public func fail(_ error: any Error) {
+    failWith(failure: HostFailure(error))
+  }
+}
+
 final class ClosureDocumentVerb: DocumentVerbOperation, Sendable {
   let body: @Sendable () async throws -> Void
 
@@ -96,7 +103,7 @@ final class ClosureDocumentVerb: DocumentVerbOperation, Sendable {
         try await body()
         completion.finish()
       } catch {
-        completion.fail(detail: "\(error)")
+        completion.fail(error)
       }
     }
   }

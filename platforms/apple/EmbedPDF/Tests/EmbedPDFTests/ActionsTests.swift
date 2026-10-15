@@ -68,6 +68,17 @@ extension BaseSuite {
       expectNoDifference(ran.types, ["save"])
     }
 
+    @Test func aDocumentVerbsThrownPDFErrorKeepsItsCode() async throws {
+      let (_, _, actions) = try await opened()
+      await #expect {
+        try await actions.runDocumentVerb(.save) {
+          throw PDFError(name: "PluginError", code: "permission-denied", detail: "no doc.download")
+        }
+      } throws: { error in
+        (error as? PDFError)?.code == "permission-denied" && (error as? PDFError)?.detail == "no doc.download"
+      }
+    }
+
     @Test func aClosedDocumentsCapabilityThrows() async throws {
       let (viewer, document, actions) = try await opened()
       try await viewer.close(document)

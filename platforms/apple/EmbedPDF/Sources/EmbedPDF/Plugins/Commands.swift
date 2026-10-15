@@ -69,7 +69,7 @@ public final class CommandHandler: CommandRunner, Sendable {
         try await runBody(context)
         completion.finish()
       } catch {
-        completion.fail(detail: "\(error)")
+        completion.fail(error)
       }
     }
   }
@@ -85,6 +85,15 @@ public final class CommandHandler: CommandRunner, Sendable {
 
   public func iconAccent(context: CommandContext) throws -> IconAccent? {
     accent?(context)
+  }
+}
+
+extension CommandCompletion {
+  /// Fail the command with `error`, keeping its code (see
+  /// `HostFailure.init(_:)`): `execute` throws it and `.executionFailed`
+  /// reports it.
+  public func fail(_ error: any Error) {
+    failWith(failure: HostFailure(error))
   }
 }
 

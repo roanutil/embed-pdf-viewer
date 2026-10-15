@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{HostError, KernelThread, ViewerError};
+use epdf_ffi::{HostError, HostFailure, KernelThread, ViewerError};
 use epdf_plugin_commands::IconAccent;
 use epdf_plugin_commands::ffi::{
     CommandCompletion, CommandContext, CommandDefinition, CommandHook, CommandRunner,
@@ -21,6 +21,9 @@ fn code(error: &ViewerError) -> Option<&str> {
 enum Run {
     Finish,
     Fail,
+    /// `fail_with` a `permission-denied`, as a Swift handler rethrowing a
+    /// capability's `PDFError` does.
+    Denied,
     Drop,
 }
 
@@ -42,6 +45,11 @@ impl CommandRunner for Runner {
         match self.run {
             Run::Finish => completion.finish(),
             Run::Fail => completion.fail("disk full".into()),
+            Run::Denied => completion.fail_with(HostFailure {
+                name: "PluginError".into(),
+                code: Some("permission-denied".into()),
+                detail: "no doc.annotate".into(),
+            }),
             Run::Drop => drop(completion),
         }
     }
@@ -172,6 +180,24 @@ fn a_failing_command_rejects_and_reports() {
     let seen = events.0.lock().unwrap();
     assert!(
         matches!(seen.last(), Some(CommandsEvent::ExecutionFailed { event }) if event.error.message.contains("disk full")),
+        "{seen:?}"
+    );
+}
+
+#[test]
+fn a_failure_with_a_code_keeps_it_through_execute_and_the_event() {
+    let (_thread, commands) = handle();
+    let events = Arc::new(Events::default());
+    let _sub = commands.subscribe(events.clone());
+    let runner = Runner::new(Run::Denied, Ok(true));
+    block_on(commands.register_command(definition("doc:save", Some(runner), run_hooks()), false))
+        .unwrap();
+    let error = block_on(commands.execute("doc:save".into(), None, None)).unwrap_err();
+    assert_eq!(code(&error), Some("permission-denied"), "{error:?}");
+    assert!(format!("{error:?}").contains("no doc.annotate"), "{error:?}");
+    let seen = events.0.lock().unwrap();
+    assert!(
+        matches!(seen.last(), Some(CommandsEvent::ExecutionFailed { event }) if event.error.code == "permission-denied" && event.error.message == "no doc.annotate"),
         "{seen:?}"
     );
 }

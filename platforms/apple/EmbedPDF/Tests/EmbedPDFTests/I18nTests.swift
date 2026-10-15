@@ -49,6 +49,29 @@ extension BaseSuite {
       expectNoDifference(locales.map(\.code), ["en", "es"])
     }
 
+    @Test func aLoaderFailureKeepsItsCodeInTheEvent() async throws {
+      final class Refusing: LocaleLoader, Sendable {
+        func load(code: String, completion: LocaleLoadCompletion) {
+          completion.fail(PDFError(name: "PluginError", code: "permission-denied", detail: "offline policy"))
+        }
+      }
+      let viewer = try PDFViewer(
+        ViewerConfig(
+          i18n: I18nConfig(locale: "en", locales: [Self.english], lazyLocales: ["es"], loader: Refusing())
+        )
+      )
+      try await viewer.start()
+      let i18n = try await viewer.i18n()
+      let events = i18n.events
+      await #expect(throws: PDFError.self) { try await i18n.setLocale("es") }
+      for await event in events {
+        guard case let .localeLoadFailed(event) = event else { continue }
+        expectNoDifference(event.error.code, "permission-denied")
+        expectNoDifference(event.error.message, "offline policy")
+        break
+      }
+    }
+
     @Test func aMissingPackFailsTheSwitch() async throws {
       let (_, i18n) = try await started(subdirectory: "Nowhere")
       await #expect {

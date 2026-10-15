@@ -42,6 +42,65 @@ extension BaseSuite {
       }
     }
 
+    @Test func aThrownPDFErrorKeepsItsCode() async throws {
+      let (_, commands) = try await started()
+      let handler = CommandHandler(run: { _ in
+        throw PDFError(name: "PluginError", code: "permission-denied", detail: "no doc.annotate")
+      })
+      _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
+      let events = commands.events
+      await #expect {
+        _ = try await commands.execute("doc:save")
+      } throws: { error in
+        (error as? PDFError)?.code == "permission-denied" && (error as? PDFError)?.detail == "no doc.annotate"
+      }
+      for await event in events {
+        guard case let .executionFailed(event) = event else { continue }
+        expectNoDifference(event.error.code, "permission-denied")
+        expectNoDifference(event.error.message, "no doc.annotate")
+        break
+      }
+    }
+
+    @Test func aCancelledRunIsOperationCancelled() async throws {
+      let (_, commands) = try await started()
+      let handler = CommandHandler(run: { _ in throw CancellationError() })
+      _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
+      await #expect {
+        _ = try await commands.execute("doc:save")
+      } throws: { error in
+        (error as? PDFError)?.code == "operation-cancelled"
+      }
+    }
+
+    @Test func anUncodedErrorIsOperationFailedWithItsDescription() async throws {
+      let (_, commands) = try await started()
+      struct DiskFull: LocalizedError {
+        let bytes = 512
+        var errorDescription: String? { "the disk is full" }
+      }
+      let handler = CommandHandler(run: { _ in throw DiskFull() })
+      _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
+      await #expect {
+        _ = try await commands.execute("doc:save")
+      } throws: { error in
+        (error as? PDFError)?.code == "operation-failed" && (error as? PDFError)?.detail == "the disk is full"
+      }
+    }
+
+    @Test func anUncodedErrorWithoutADescriptionIsNotDumped() async throws {
+      let (_, commands) = try await started()
+      struct Full: Error { let bytes = 512 }
+      let handler = CommandHandler(run: { _ in throw Full() })
+      _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
+      await #expect {
+        _ = try await commands.execute("doc:save")
+      } throws: { error in
+        guard let error = error as? PDFError else { return false }
+        return error.code == "operation-failed" && !error.detail.contains("bytes: 512")
+      }
+    }
+
     @Test func aDerivationGatesExecution() async throws {
       let (_, commands) = try await started()
       let handler = CommandHandler(run: { _ in }, enabled: { _ in false })

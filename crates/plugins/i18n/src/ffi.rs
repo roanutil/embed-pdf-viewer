@@ -12,8 +12,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use epdf_ffi::{
-    ForeignSettle, KernelBound, KernelPost, PluginErrorInfo, RegistrationHandle, Subscription,
-    ViewerError,
+    ForeignSettle, HostFailure, KernelBound, KernelPost, PluginErrorInfo, RegistrationHandle,
+    Subscription, ViewerError,
 };
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
@@ -239,6 +239,13 @@ impl LocaleLoadCompletion {
 
     pub fn fail(&self, detail: String) {
         self.settle.settle(move || Err(Error::new(detail).with("code", code::OPERATION_FAILED)));
+    }
+
+    /// Fail with the thrown error's name and code. `LocaleLoadFailed`
+    /// reports that code; the switch rejects `operation-failed` with it as
+    /// the cause, as the TypeScript loader does.
+    pub fn fail_with(&self, failure: HostFailure) {
+        self.settle.fail(failure, "i18n");
     }
 }
 

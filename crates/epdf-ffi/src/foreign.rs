@@ -9,7 +9,7 @@
 use std::sync::Mutex;
 
 use epdf_kernel::Error;
-use epdf_kernel::error::code;
+use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Resolver;
 
 use crate::{KernelBound, KernelPost, ViewerError};
@@ -33,6 +33,37 @@ impl<T: Clone + 'static> ForeignSettle<T> {
         if let Some(bound) = bound {
             bound.fire(move |resolver| resolver.settle(make()));
         }
+    }
+}
+
+impl<T: Clone + 'static> ForeignSettle<T> {
+    /// From any thread: reject with `failure`, as `capability`'s error.
+    pub fn fail(&self, failure: HostFailure, capability: &'static str) {
+        self.settle(move || Err(failure.into_error(capability)));
+    }
+}
+
+/// Why a foreign implementation failed, as a completion's `fail_with`
+/// carries it: the thrown error's name, its kernel code when it has one
+/// (`operation-cancelled` for a cancelled task, `permission-denied` from a
+/// capability it called), and its message. `None` is `operation-failed`.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct HostFailure {
+    pub name: String,
+    #[uniffi(default = None)]
+    pub code: Option<String>,
+    pub detail: String,
+}
+
+impl HostFailure {
+    /// The kernel's error for it: a plugin error of `capability` with the
+    /// failure's code, so `toPluginError` passes it through unchanged, under
+    /// the failure's own name.
+    pub fn into_error(self, capability: &str) -> Error {
+        let code = self.code.unwrap_or_else(|| code::OPERATION_FAILED.into());
+        let mut error = plugin_error(&code, capability, self.detail, None, None);
+        error.name = self.name;
+        error
     }
 }
 

@@ -1,4 +1,5 @@
 internal import EmbedPDFBindings
+import Foundation
 
 public struct PDFError: Error, Sendable, Equatable {
   public let name: String
@@ -28,11 +29,23 @@ public struct PDFError: Error, Sendable, Equatable {
     }
   }
 
-  init(name: String, code: String?, detail: String) {
+  /// For a handler or port that fails with a kernel code of its own, such
+  /// as `permission-denied`. The completion it fails passes the code on.
+  public init(name: String, code: String?, detail: String) {
     self.name = name
     self.code = code
     self.detail = detail
   }
+}
+
+/// A message for an error nobody gave a code: never a struct dump.
+func readable(_ error: any Error) -> String {
+  if let described = (error as? LocalizedError)?.errorDescription { return described }
+  // On the metatype: a value cast to `CustomStringConvertible` always
+  // succeeds, through its bridge to `NSError`.
+  let type = type(of: error)
+  if !(type is NSError.Type), type is any CustomStringConvertible.Type { return String(describing: error) }
+  return (error as NSError).localizedDescription
 }
 
 func bridged<T>(_ body: () async throws -> T) async throws(PDFError) -> T {

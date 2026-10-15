@@ -28,7 +28,7 @@ pub use annotation::{AnnotationRef, AnnotationRevisionToken, PdfDestination, Pdf
 pub use bound::{KernelBound, PromiseSlot, at_teardown};
 pub use cancel::CancelToken;
 pub use error::{PluginErrorInfo, ViewerError};
-pub use foreign::{ForeignSettle, HostError};
+pub use foreign::{ForeignSettle, HostError, HostFailure};
 pub use form::{FormFieldFamily, FormFieldRef};
 pub use geometry::{PageRef, Point, Rect, Size, TextQuad};
 pub use input::{

@@ -70,3 +70,44 @@ fn a_callback_error_keeps_its_reason() {
         other => panic!("{other:?}"),
     }
 }
+
+#[test]
+fn a_host_failure_keeps_its_name_and_code_through_to_plugin_error() {
+    let failure = epdf_ffi::HostFailure {
+        name: "AbortError".into(),
+        code: Some("operation-cancelled".into()),
+        detail: "operation cancelled".into(),
+    };
+    let error = failure.into_error("commands");
+    assert_eq!(error.name, "AbortError");
+    let mapped = epdf_kernel::error::to_plugin_error("commands", &error);
+    assert_eq!(mapped.code(), Some("operation-cancelled"));
+    assert_eq!(mapped.message, "operation cancelled");
+}
+
+#[test]
+fn a_host_failure_without_a_code_is_operation_failed() {
+    let failure =
+        epdf_ffi::HostFailure { name: "Error".into(), code: None, detail: "disk full".into() };
+    let error = epdf_kernel::error::to_plugin_error("i18n", &failure.into_error("i18n"));
+    assert_eq!(error.code(), Some("operation-failed"));
+    assert_eq!(error.message, "disk full");
+}
+
+#[test]
+fn a_failed_settle_rejects_with_the_failures_code() {
+    let thread = thread();
+    let (promise, settle) = pending(&thread);
+    settle.fail(
+        epdf_ffi::HostFailure {
+            name: "PluginError".into(),
+            code: Some("permission-denied".into()),
+            detail: "no".into(),
+        },
+        "a test",
+    );
+    match wait(&promise).unwrap_err() {
+        ViewerError::Kernel { code, .. } => assert_eq!(code.as_deref(), Some("permission-denied")),
+        other => panic!("{other:?}"),
+    }
+}

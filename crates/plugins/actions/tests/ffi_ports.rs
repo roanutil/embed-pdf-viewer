@@ -3,7 +3,7 @@
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{HostError, KernelThread};
+use epdf_ffi::{HostError, HostFailure, KernelThread, ViewerError};
 use epdf_kernel::rt::Promise;
 use epdf_plugin_actions::ffi::ports::{
     ActionAlertOptions, ActionExecutor, ActionExecutorCompletion, ActionSubmitHandler,
@@ -324,4 +324,30 @@ fn a_document_verb_runs_its_operation_between_the_will_and_did_trees() {
     let failing = Arc::new(Save(Mutex::new(0), true));
     let error = block_on(actions.run_document_verb(DocumentVerb::Save, failing)).unwrap_err();
     assert!(format!("{error}").contains("read-only"), "{error}");
+}
+
+struct DeniedSave;
+
+impl DocumentVerbOperation for DeniedSave {
+    fn run(&self, completion: Arc<DocumentVerbCompletion>) {
+        completion.fail_with(HostFailure {
+            name: "PluginError".into(),
+            code: Some("permission-denied".into()),
+            detail: "no doc.download".into(),
+        });
+    }
+}
+
+#[test]
+fn a_document_verb_failure_keeps_its_code() {
+    let (_thread, actions) = handle();
+    let error =
+        block_on(actions.run_document_verb(DocumentVerb::Save, Arc::new(DeniedSave))).unwrap_err();
+    match error {
+        ViewerError::Kernel { name, code, detail } => {
+            assert_eq!(code.as_deref(), Some("permission-denied"), "{detail}");
+            assert_eq!((name.as_str(), detail.as_str()), ("PluginError", "no doc.download"));
+        }
+        other => panic!("{other:?}"),
+    }
 }
