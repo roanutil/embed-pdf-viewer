@@ -1057,7 +1057,7 @@ impl Host {
                     ) else {
                         continue;
                     };
-                    f::annotation::write::mutator::delete(
+                    f::annotation::write::mutator::delete_unnoted(
                         self.sessions.session_mut(&key)?,
                         &crate::identity::AnnotationRef::ObjectNumber {
                             page,

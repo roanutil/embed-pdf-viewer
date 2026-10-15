@@ -477,6 +477,10 @@ fn a_field_delete_removes_its_widgets_and_names_them() {
     let removed: Vec<_> = removed.iter().map(|w| w["annotObjectNumber"].clone()).collect();
     assert_eq!(removed, vec![json!(7), json!(8)], "{deleted}");
     assert!(deleted["result"].get("detachedWidgets").is_none(), "{deleted}");
+    // `FormMutator.deleteField`'s bump and the one after the cascade: the
+    // widget deletes add none, as `AnnotationMutator.delete` leaves the
+    // bump to `finishMutation`.
+    assert_eq!(last, 2, "{deleted}");
 
     let after = on_page(&mut host, &doc);
     assert!(!after.contains(&7) && !after.contains(&8), "the widgets are still there: {after:?}");

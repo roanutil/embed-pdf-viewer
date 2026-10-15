@@ -223,6 +223,19 @@ pub fn delete(
     annotation_ref: &AnnotationRef,
     cancel: &CancelToken,
 ) -> Result<AnnotationDeleteResult, EngineError> {
+    let result = delete_unnoted(session, annotation_ref, cancel)?;
+    session.note_mutation();
+    Ok(result)
+}
+
+/// [`delete`] without noting the mutation, for a caller that notes it once
+/// for a whole cascade: `AnnotationMutator.delete` leaves the bump to
+/// `finishMutation`, so `forms.deleteField`'s widget deletes add none.
+pub(crate) fn delete_unnoted(
+    session: &mut DocumentSession,
+    annotation_ref: &AnnotationRef,
+    cancel: &CancelToken,
+) -> Result<AnnotationDeleteResult, EngineError> {
     cancel.check()?;
     let page_object_number = annotation_ref.page();
     ensure_weak_state(session, page_object_number)?;
@@ -245,7 +258,6 @@ pub fn delete(
     session.record_weak_flag(page_object_number, has_weak)?;
     let after = session.page_state(page_object_number)?;
     result.meta.affected_pages = vec![after];
-    session.note_mutation();
     Ok(result)
 }
 
