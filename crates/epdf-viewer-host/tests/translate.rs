@@ -910,27 +910,28 @@ fn a_form_mutation_answers_the_widgets_of_its_result_and_event() {
 }
 
 #[test]
-fn a_field_edit_answers_its_field_under_field_as_the_kernel_reads_it() {
-    // The host answers createField, updateField and the widget links with
-    // the bare field, and spreads it into the event beside `type`; the
-    // plugin reads `field` from both, as the TypeScript engine sends them.
+fn a_field_edit_answers_its_result_and_event_as_the_host_sent_them() {
+    // The host answers createField, updateField and the widget links as
+    // the TypeScript engine does, `{field, meta}`, and spreads that into the
+    // event beside `type`, so both go out as they came.
     for path in
         ["forms.createField", "forms.updateField", "forms.attachWidget", "forms.detachWidget"]
     {
         let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9, "page": page_ref(2) });
         let call = translate("d1", path, None, &[json!({}), widget], 30).unwrap();
-        let field = r#""ref":{"kind":"objectNumber","fieldObjectNumber":4},"name":"a","widgets":[{"ref":{"kind":"objectNumber","annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}}]"#;
+        let field = r#""field":{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"name":"a","widgets":[{"ref":{"kind":"objectNumber","annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}}]},"meta":{"affectedPages":[],"cacheDelta":null}"#;
         let json = format!(
             r#"{{"result":{{"result":{{{field}}},"mutationSequence":3,"event":{{"type":"form.fieldCreated","origin":{{"kind":"local"}},{field}}}}}}}"#
         );
         let decoded = decode(&call.decode, answer(&json)).unwrap();
         assert_eq!(decoded.value["field"]["name"], "a", "{path}");
         assert_eq!(decoded.value["field"]["widgets"][0]["ref"]["annotObjectNumber"], 9, "{path}");
+        assert_eq!(decoded.value["meta"], json!({ "affectedPages": [], "cacheDelta": null }));
         let event = decoded.event.unwrap();
         assert_eq!(event["type"], "form.fieldCreated");
         assert_eq!(event["origin"], json!({ "kind": "local" }));
         assert_eq!(event["field"]["name"], "a", "{path}");
-        assert!(event.get("name").is_none(), "{path}");
+        assert_eq!(event["meta"], json!({ "affectedPages": [], "cacheDelta": null }));
     }
 }
 

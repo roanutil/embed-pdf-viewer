@@ -926,9 +926,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::write::set_value(d, &reference, &form_value, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormValueChanged(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormValueChanged(with_empty_meta(
+                        value(&result)?,
+                    )),
                 )
             }
             "forms.reset" => {
@@ -937,9 +940,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::write::reset(d, &reference, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormValueChanged(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormValueChanged(with_empty_meta(
+                        value(&result)?,
+                    )),
                 )
             }
             "forms.applyEffects" => {
@@ -954,6 +960,17 @@ impl Host {
                 // invalidate every cache for a script that changed nothing.
                 if result.meta.is_none() {
                     return Ok(ok(value(&result)?));
+                }
+                // `FormsEffectsApplier` notes the mutation once per effect
+                // that applied or failed, before re-reading its fields.
+                for _ in result.results.iter().filter(|r| {
+                    matches!(
+                        r.status,
+                        f::forms::effects::FormEffectStatus::Applied
+                            | f::forms::effects::FormEffectStatus::Failed
+                    )
+                }) {
+                    self.note_form_write(&key)?;
                 }
                 self.finish(
                     &key,
@@ -970,9 +987,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::write::import_data(d, data, format.map(|f| f.native()), cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormImported(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormImported(with_empty_meta(value(
+                        &result,
+                    )?)),
                 )
             }
             "forms.repair" => {
@@ -981,9 +1001,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::write::repair(d, bake, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormRepaired(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormRepaired(with_empty_meta(value(
+                        &result,
+                    )?)),
                 )
             }
             "forms.createField" => {
@@ -993,9 +1016,12 @@ impl Host {
                     let source = f::forms::field::OwnedPageWidgets::new(owned);
                     f::forms::field::create_field(owned.document(), &source, &draft, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormFieldCreated(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormFieldCreated(field_result(
+                        &result,
+                    )?),
                 )
             }
             "forms.updateField" => {
@@ -1005,9 +1031,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::field::update_field(d, &reference, &patch, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormFieldUpdated(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormFieldUpdated(field_result(
+                        &result,
+                    )?),
                 )
             }
             "forms.deleteField" => {
@@ -1016,9 +1045,39 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::field::delete_field(d, &reference, cancel)?
                 };
+                self.note_form_write(&key)?;
+                // `WorkerHost.handleFormsDeleteField`: the field let its
+                // widgets go, and the annotation plane deletes them, so the
+                // page's `/Annots` and revision move in one place. A widget
+                // with no ref (direct, or on no page) has nothing to delete.
+                for widget in &result.detached_widgets {
+                    let (Ok(page), true) = (
+                        crate::identity::PageObjectNumber::new(widget.page_object_number),
+                        widget.annot_object_number > 0,
+                    ) else {
+                        continue;
+                    };
+                    f::annotation::write::mutator::delete(
+                        self.sessions.session_mut(&key)?,
+                        &crate::identity::AnnotationRef::ObjectNumber {
+                            page,
+                            annot: widget.annot_object_number,
+                        },
+                        cancel,
+                    )?;
+                }
+                // The deletes above wrote `/Annots` after the field's own
+                // note, so note again, as the TypeScript does.
+                self.note_form_write(&key)?;
+                // `FormFieldDeleteResult`: the widgets are `removedWidgets`,
+                // which the render plugin reads to repaint their pages.
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormFieldDeleted(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormFieldDeleted(serde_json::json!({
+                        "deletedFieldObjectNumber": result.deleted_field_object_number,
+                        "removedWidgets": value(&result.detached_widgets)?,
+                        "meta": empty_meta(),
+                    })),
                 )
             }
             "forms.attachWidget" => {
@@ -1035,9 +1094,12 @@ impl Host {
                         cancel,
                     )?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormWidgetAttached(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormWidgetAttached(field_result(
+                        &result,
+                    )?),
                 )
             }
             "forms.detachWidget" => {
@@ -1047,9 +1109,12 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::field::detach_widget(d, &reference, widget, cancel)?
                 };
+                self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormWidgetDetached(value(&result)?),
+                    crate::session::save::DocumentEventInit::FormWidgetDetached(field_result(
+                        &result,
+                    )?),
                 )
             }
 
@@ -1313,7 +1378,7 @@ impl Host {
                     crate::session::save::DocumentEventInit::PageViewportsChanged(
                         serde_json::json!({
                             "page": crate::identity::PageRef::new(pon),
-                            "meta": { "affectedPages": [], "cacheDelta": null },
+                            "meta": empty_meta(),
                         }),
                     ),
                 )
@@ -1390,6 +1455,14 @@ impl Host {
     ) -> Result<HostResponse, EngineError> {
         let family = event.family();
         self.finalize(key, family, Some(event), result)
+    }
+
+    /// `session.noteMutation()` as `FormMutator` and `FormsEffectsApplier`
+    /// call it after a write lands: the form writers are `SelfSequenced`,
+    /// so the finish does not bump for them.
+    fn note_form_write(&self, key: &SessionKey) -> Result<(), EngineError> {
+        self.sessions.session(key)?.note_mutation();
+        Ok(())
     }
 
     /// [`Host::finish`] for a mutation the TypeScript publishes no event
@@ -1694,6 +1767,28 @@ fn ok(result: serde_json::Value) -> HostResponse {
             .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown"}}"#)),
         payloads: Vec::new(),
     }
+}
+
+/// `EMPTY_FORM_META` (`WorkerHost`) and `EMPTY_META` (`FormMutator`): a
+/// write with no page pins, on a local engine with no cache delta.
+fn empty_meta() -> serde_json::Value {
+    serde_json::json!({ "affectedPages": [], "cacheDelta": null })
+}
+
+/// A form write's result as the TypeScript answers it: with `meta`.
+fn with_empty_meta(mut result: serde_json::Value) -> serde_json::Value {
+    if let Some(object) = result.as_object_mut() {
+        object.insert("meta".into(), empty_meta());
+    }
+    result
+}
+
+/// A field edit's result (`FormFieldCreateResult`, `FormFieldUpdateResult`,
+/// `FormWidgetLinkResult`): the field read back, and `meta`.
+fn field_result(
+    field: &crate::features::forms::snapshot::FormFieldDto,
+) -> Result<serde_json::Value, EngineError> {
+    Ok(serde_json::json!({ "field": value(field)?, "meta": empty_meta() }))
 }
 
 /// A page-structure, metadata or attachment result as a local engine
