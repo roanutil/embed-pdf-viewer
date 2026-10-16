@@ -135,7 +135,7 @@ impl From<crate::AnnotationGeometry> for AnnotationGeometry {
 
 /// The page-space record every read returns.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct Annotation {
+pub struct AnnotationRecord {
     pub annotation_ref: AnnotationRef,
     pub page: PageRef,
     pub subtype: String,
@@ -154,7 +154,7 @@ pub struct Annotation {
     pub can_delete: bool,
 }
 
-impl TryFrom<crate::Annotation> for Annotation {
+impl TryFrom<crate::Annotation> for AnnotationRecord {
     type Error = Error;
 
     fn try_from(a: crate::Annotation) -> Result<Self, Error> {
@@ -167,7 +167,7 @@ impl TryFrom<crate::Annotation> for Annotation {
             Value::Null => None,
             other => Some(ref_out(decode(other)?)?),
         };
-        Ok(Annotation {
+        Ok(AnnotationRecord {
             annotation_ref: ref_out(a.ref_)?,
             page: a.page.into(),
             subtype: a.subtype,
@@ -187,8 +187,10 @@ impl TryFrom<crate::Annotation> for Annotation {
     }
 }
 
-pub(crate) fn annotations_out(list: Vec<crate::Annotation>) -> Result<Vec<Annotation>, Error> {
-    list.into_iter().map(Annotation::try_from).collect()
+pub(crate) fn annotations_out(
+    list: Vec<crate::Annotation>,
+) -> Result<Vec<AnnotationRecord>, Error> {
+    list.into_iter().map(AnnotationRecord::try_from).collect()
 }
 
 /// A geometry write. `rotation: None` keeps the current rotation.
@@ -550,7 +552,7 @@ impl From<AnnotationConfig> for crate::AnnotationConfig {
 pub struct AnnotationChangedEvent {
     pub annotation_ref: AnnotationRef,
     pub page: PageRef,
-    pub annotation: Option<Annotation>,
+    pub annotation: Option<AnnotationRecord>,
 }
 
 impl TryFrom<&crate::AnnotationChangedEvent> for AnnotationChangedEvent {
@@ -560,7 +562,7 @@ impl TryFrom<&crate::AnnotationChangedEvent> for AnnotationChangedEvent {
         Ok(AnnotationChangedEvent {
             annotation_ref: ref_out(e.ref_.clone())?,
             page: e.page.into(),
-            annotation: e.annotation.clone().map(Annotation::try_from).transpose()?,
+            annotation: e.annotation.clone().map(AnnotationRecord::try_from).transpose()?,
         })
     }
 }

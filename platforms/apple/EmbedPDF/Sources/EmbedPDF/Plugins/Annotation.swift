@@ -16,7 +16,12 @@ public typealias AnnotationTextAlign = EmbedPDFBindings.AnnotationTextAlign
 public typealias AnnotationBorder = EmbedPDFBindings.AnnotationBorder
 public typealias AnnotationCallout = EmbedPDFBindings.AnnotationCallout
 public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
-public typealias Annotation = EmbedPDFBindings.Annotation
+public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
+/// The pre-rename name of `AnnotationRecord`, kept for one release. It
+/// collides with MapKit's SwiftUI `Annotation` (iOS 17) in any file that
+/// imports EmbedPDF, SwiftUI and MapKit.
+@available(*, deprecated, renamed: "AnnotationRecord")
+public typealias Annotation = AnnotationRecord
 public typealias AnnotationGeometry = EmbedPDFBindings.AnnotationGeometry
 public typealias AnnotationGeometryPatch = EmbedPDFBindings.AnnotationGeometryPatch
 public typealias AnnotationPatch = EmbedPDFBindings.AnnotationPatch
@@ -92,15 +97,15 @@ public struct AnnotationCapability: Sendable {
     AnnotationThreadsCapability(handle: handle.threads(), viewer: viewer)
   }
 
-  public func get(_ ref: AnnotationRef) async throws(PDFError) -> Annotation? {
+  public func get(_ ref: AnnotationRef) async throws(PDFError) -> AnnotationRecord? {
     try await bridged { try await handle.get(annotationRef: ref) }
   }
 
-  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [Annotation] {
+  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [AnnotationRecord] {
     try await bridged { try await handle.list(filter: filter) }
   }
 
-  public func selected() async throws(PDFError) -> [Annotation] {
+  public func selected() async throws(PDFError) -> [AnnotationRecord] {
     try await bridged { try await handle.selected() }
   }
 

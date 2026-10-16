@@ -7,11 +7,11 @@ use epdf_ffi::{
 use epdf_kernel::Unsubscribe;
 
 use super::{
-    Annotation, AnnotationBatchResult, AnnotationChangedEvent, AnnotationCreateBatchResult,
+    AnnotationBatchResult, AnnotationChangedEvent, AnnotationCreateBatchResult,
     AnnotationCreateFailure, AnnotationDeletedEvent, AnnotationEvent, AnnotationEventListener,
-    AnnotationFilter, AnnotationHydration, AnnotationPatch, AnnotationResyncedPages,
-    AnnotationThreadChange, CreateAnnotationInput, annotations_out, open, plugin_error_info,
-    ref_out, refs_out,
+    AnnotationFilter, AnnotationHydration, AnnotationPatch, AnnotationRecord,
+    AnnotationResyncedPages, AnnotationThreadChange, CreateAnnotationInput, annotations_out, open,
+    plugin_error_info, ref_out, refs_out,
 };
 use crate::AnnotationCapability;
 
@@ -67,10 +67,10 @@ impl AnnotationHandle {
     pub async fn get(
         &self,
         annotation_ref: AnnotationRef,
-    ) -> Result<Option<Annotation>, ViewerError> {
+    ) -> Result<Option<AnnotationRecord>, ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.get(&annotation_ref.into()).map(Annotation::try_from).transpose()
+                open(c)?.get(&annotation_ref.into()).map(AnnotationRecord::try_from).transpose()
             })
             .await
     }
@@ -78,7 +78,7 @@ impl AnnotationHandle {
     pub async fn list(
         &self,
         filter: Option<AnnotationFilter>,
-    ) -> Result<Vec<Annotation>, ViewerError> {
+    ) -> Result<Vec<AnnotationRecord>, ViewerError> {
         self.cap
             .call(move |c| {
                 let filter = filter.map(crate::AnnotationFilter::from);
@@ -87,7 +87,7 @@ impl AnnotationHandle {
             .await
     }
 
-    pub async fn selected(&self) -> Result<Vec<Annotation>, ViewerError> {
+    pub async fn selected(&self) -> Result<Vec<AnnotationRecord>, ViewerError> {
         self.cap.call(|c| annotations_out(open(c)?.list_selected())).await
     }
 

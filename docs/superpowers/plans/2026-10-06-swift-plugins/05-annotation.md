@@ -1,5 +1,7 @@
 # Annotation Plugin Swift Wrapper Implementation Plan
 
+> Note (2026-10-16): the record this plan calls `Annotation` (Rust `ffi::Annotation`, Swift `typealias Annotation`) is now `AnnotationRecord`, because MapKit's SwiftUI `Annotation` (iOS 17) made unqualified `Annotation` ambiguous in any file importing both. Swift keeps `Annotation` as a deprecated typealias for one release. The plan below is left as written.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Export `epdf-plugin-annotation` through UniFFI as `AnnotationHandle` and four sub-handles, wire it into `ViewerHost` over the native engine's `page.annotations.*` and `annotations.listRawAll` paths, and wrap it in Swift as `AnnotationCapability`.

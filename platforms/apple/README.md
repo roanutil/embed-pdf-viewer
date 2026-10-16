@@ -167,6 +167,14 @@ context". `PDFDocument` is still there as a deprecated typealias for one
 release. The deprecated alias collides exactly as before: it keeps old code
 compiling only in files that don't import PDFKit.
 
+The annotation read record is `AnnotationRecord` for the same reason. It was
+`Annotation`, and MapKit's SwiftUI overlay (iOS 17) declares a generic
+`Annotation` view, so a file importing EmbedPDF, SwiftUI and MapKit could not
+write `[Annotation]`. This one was renamed at the source,
+`crates/plugins/annotation/src/ffi/mod.rs`, so the generated Swift and Kotlin
+both say `AnnotationRecord`. The deprecated `Annotation` alias has the same
+limit as `PDFDocument`.
+
 ## The demo app
 
 `EmbedPDFDemo/` is a small SwiftUI app over the package. It opens `report.pdf` on launch,
