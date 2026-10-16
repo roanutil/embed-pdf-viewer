@@ -39,7 +39,7 @@ public final class PDFViewer: Sendable {
     finishStreams()
   }
 
-  public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> PDFDocument {
+  public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> DocumentInfo {
     try await measured("open") { () async throws(PDFError) in
       try await bridged {
         try await host.openDocument(bytes: data, options: OpenDocumentOptions(name: name, password: password, activate: true))
@@ -51,20 +51,20 @@ public final class PDFViewer: Sendable {
   /// without one). Throws `permission-denied` for a wrong password (the
   /// detail begins with the engine's `DocPasswordIncorrect`); the tab stays
   /// locked.
-  public func unlock(_ document: PDFDocument, password: String) async throws(PDFError) {
+  public func unlock(_ document: DocumentInfo, password: String) async throws(PDFError) {
     try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
   }
 
-  public func close(_ document: PDFDocument) async throws(PDFError) {
+  public func close(_ document: DocumentInfo) async throws(PDFError) {
     try await bridged { try await host.closeDocument(documentId: document.id) }
   }
 
-  public func documents() async throws(PDFError) -> [PDFDocument] {
+  public func documents() async throws(PDFError) -> [DocumentInfo] {
     try await bridged { try await host.documents() }
   }
 
   /// Throws `not-found` for a document the viewer doesn't have.
-  public func pages(of document: PDFDocument) async throws(PDFError) -> [PageInfo] {
+  public func pages(of document: DocumentInfo) async throws(PDFError) -> [PageInfo] {
     try await measured("pages") { () async throws(PDFError) in
       try await bridged { try await host.pages(documentId: document.id) }
     }
@@ -76,7 +76,7 @@ public final class PDFViewer: Sendable {
   /// fresh, smaller file without the revision history, and a signed
   /// document refuses it with `permission-denied`. Needs `doc.download` in
   /// `ViewerConfig.scope`. Cancelling the task throws `operation-cancelled`.
-  public func save(_ document: PDFDocument, mode: SaveMode = .incremental) async throws(PDFError) -> Data {
+  public func save(_ document: DocumentInfo, mode: SaveMode = .incremental) async throws(PDFError) -> Data {
     try await measured("save") { () async throws(PDFError) in
       try await bridgedCancellable { token in
         try await host.save(documentId: document.id, mode: mode, cancel: token)

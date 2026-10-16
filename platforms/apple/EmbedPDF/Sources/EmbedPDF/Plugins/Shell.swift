@@ -141,7 +141,7 @@ extension EventRelay: ShellEventListener where Event == ShellEvent {
 }
 
 extension PDFViewer {
-  public func shell(for document: PDFDocument) async throws(PDFError) -> ShellCapability {
+  public func shell(for document: DocumentInfo) async throws(PDFError) -> ShellCapability {
     let handle = try await bridged { try await host.shell(documentId: document.id) }
     return ShellCapability(handle: handle, viewer: self)
   }

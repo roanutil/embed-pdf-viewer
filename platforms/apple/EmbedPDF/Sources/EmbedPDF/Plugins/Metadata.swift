@@ -57,7 +57,7 @@ extension EventRelay: MetadataEventListener where Event == MetadataEvent {
 }
 
 extension PDFViewer {
-  public func metadata(for document: PDFDocument) async throws(PDFError) -> MetadataCapability {
+  public func metadata(for document: DocumentInfo) async throws(PDFError) -> MetadataCapability {
     let handle = try await bridged { try await host.metadata(documentId: document.id) }
     return MetadataCapability(handle: handle, viewer: self)
   }

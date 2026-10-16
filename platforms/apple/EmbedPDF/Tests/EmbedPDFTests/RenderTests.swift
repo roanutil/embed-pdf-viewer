@@ -5,7 +5,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct RenderTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, PageRef, RenderCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, PageRef, RenderCapability) {
       let viewer = try PDFViewer(ViewerConfig(render: RenderConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("colors"))

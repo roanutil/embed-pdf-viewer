@@ -26,7 +26,7 @@ final class TinyPngPicker: AnnotationFilePicker, @unchecked Sendable {
 extension BaseSuite {
   @Suite struct AnnotationTests {
     func opened(_ fixture: String = "annotation_kinds") async throws
-      -> (PDFViewer, PDFDocument, AnnotationCapability)
+      -> (PDFViewer, DocumentInfo, AnnotationCapability)
     {
       let viewer = try PDFViewer(ViewerConfig(interaction: true, annotation: AnnotationConfig()))
       try await viewer.start()

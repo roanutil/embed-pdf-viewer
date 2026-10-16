@@ -4,7 +4,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct LinkTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, LinkCapability, PageRef) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, LinkCapability, PageRef) {
       let viewer = try PDFViewer(ViewerConfig(interaction: true, link: true))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("features"))

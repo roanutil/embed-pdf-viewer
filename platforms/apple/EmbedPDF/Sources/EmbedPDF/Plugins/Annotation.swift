@@ -656,7 +656,7 @@ extension EventRelay: AnnotationEventListener where Event == AnnotationEvent {
 }
 
 extension PDFViewer {
-  public func annotations(for document: PDFDocument) async throws(PDFError) -> AnnotationCapability
+  public func annotations(for document: DocumentInfo) async throws(PDFError) -> AnnotationCapability
   {
     let handle = try await bridged { try await host.annotation(documentId: document.id) }
     return AnnotationCapability(handle: handle, viewer: self)

@@ -119,7 +119,7 @@ func drawnPixel(_ image: CGImage, x: Int, y: Int) -> [UInt8] {
 /// A viewer with search and render over `fixture`, and both bridges' handles.
 struct Opened {
   let viewer: PDFViewer
-  let document: PDFDocument
+  let document: DocumentInfo
   let pages: [PageInfo]
   let search: SearchCapability
   let render: RenderCapability

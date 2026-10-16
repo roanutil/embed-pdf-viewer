@@ -7,7 +7,7 @@ import Observation
 @Observable
 final class DocumentModel {
   struct Opened {
-    let document: PDFDocument
+    let document: DocumentInfo
     let pages: [PageInfo]
     let render: RenderCapability
     let search: SearchModel

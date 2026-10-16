@@ -1,5 +1,7 @@
 # EmbedPDF Swift Package Implementation Plan
 
+> Note (2026-10-16): the public Swift name `PDFDocument` used below is now `DocumentInfo`, the bindings' own name, because `PDFDocument` collides with PDFKit. `PDFDocument` stays as a deprecated typealias for one release. This plan's text is the record of what was built and is left as written.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Ship a Swift package, `platforms/apple/EmbedPDF`, that runs the Rust kernel and plugin crates over the Rust PDFium engine on iOS, with typed UniFFI exports per plugin and a thin Swift facade on top.

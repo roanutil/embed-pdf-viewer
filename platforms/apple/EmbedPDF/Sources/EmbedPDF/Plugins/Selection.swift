@@ -166,7 +166,7 @@ extension EventRelay: SelectionEventListener where Event == SelectionEvent {
 }
 
 extension PDFViewer {
-  public func selection(for document: PDFDocument) async throws(PDFError) -> SelectionCapability {
+  public func selection(for document: DocumentInfo) async throws(PDFError) -> SelectionCapability {
     let handle = try await bridged { try await host.selection(documentId: document.id) }
     return SelectionCapability(handle: handle, viewer: self)
   }

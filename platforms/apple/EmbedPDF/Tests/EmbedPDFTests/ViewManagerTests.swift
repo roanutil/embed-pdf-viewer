@@ -4,7 +4,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct ViewManagerTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, ViewManagerCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, ViewManagerCapability) {
       let viewer = try PDFViewer(ViewerConfig(viewManager: true))
       try await viewer.start()
       let manager = try await viewer.viewManager()
@@ -44,7 +44,7 @@ extension BaseSuite {
       expectNoDifference(pane?.activeDocumentId, colors.id)
     }
 
-    @Test func documentsMoveBetweenPanesAsPDFDocuments() async throws {
+    @Test func documentsMoveBetweenPanesAsDocumentInfos() async throws {
       let (viewer, document, manager) = try await opened()
       let colors = try await viewer.open(Fixture.data("colors"))
       let pane = try await manager.createPane(documents: [colors])

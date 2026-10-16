@@ -205,7 +205,7 @@ extension EventRelay: FormEventListener where Event == FormEvent {
 }
 
 extension PDFViewer {
-  public func form(for document: PDFDocument) async throws(PDFError) -> FormCapability {
+  public func form(for document: DocumentInfo) async throws(PDFError) -> FormCapability {
     let handle = try await bridged { try await host.form(documentId: document.id) }
     return FormCapability(handle: handle, viewer: self)
   }

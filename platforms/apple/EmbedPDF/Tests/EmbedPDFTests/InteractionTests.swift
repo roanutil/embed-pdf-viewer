@@ -45,7 +45,7 @@ func sample(_ phase: PointerPhase, page: PageRef, x: Double = 10) -> PointerSamp
 
 extension BaseSuite {
   @Suite struct InteractionTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, InteractionCapability, PageRef) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, InteractionCapability, PageRef) {
       let viewer = try PDFViewer(ViewerConfig(interaction: true))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

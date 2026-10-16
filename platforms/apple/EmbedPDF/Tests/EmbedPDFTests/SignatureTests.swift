@@ -6,7 +6,7 @@ import Testing
 extension BaseSuite {
   @Suite struct SignatureTests {
     func opened(_ fixture: String, signer: Bool = true) async throws
-      -> (PDFViewer, PDFDocument, SignatureCapability)
+      -> (PDFViewer, DocumentInfo, SignatureCapability)
     {
       let viewer = try PDFViewer(
         ViewerConfig(interaction: true, annotation: AnnotationConfig(), form: FormConfig(), signature: SignatureConfig()))

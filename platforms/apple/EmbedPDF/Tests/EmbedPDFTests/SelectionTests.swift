@@ -4,7 +4,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct SelectionTests {
-    func opened(search: Bool = false) async throws -> (PDFViewer, PDFDocument, SelectionCapability, PageRef) {
+    func opened(search: Bool = false) async throws -> (PDFViewer, DocumentInfo, SelectionCapability, PageRef) {
       let viewer = try PDFViewer(
         ViewerConfig(search: search ? SearchConfig() : nil, interaction: true, selection: true))
       try await viewer.start()

@@ -14,7 +14,7 @@ public final class ManualRender: @unchecked Sendable {
     self.viewer = viewer
   }
 
-  public static func open(_ viewer: PDFViewer, _ document: PDFDocument) async throws(ManualError)
+  public static func open(_ viewer: PDFViewer, _ document: DocumentInfo) async throws(ManualError)
     -> ManualRender
   {
     let kernel = viewer.experimentalKernelToken

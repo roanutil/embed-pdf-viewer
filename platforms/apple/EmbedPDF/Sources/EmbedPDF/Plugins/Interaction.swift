@@ -143,7 +143,7 @@ extension EventRelay: InteractionEventListener where Event == InteractionEvent {
 }
 
 extension PDFViewer {
-  public func interaction(for document: PDFDocument) async throws(PDFError) -> InteractionCapability {
+  public func interaction(for document: DocumentInfo) async throws(PDFError) -> InteractionCapability {
     let handle = try await bridged { try await host.interaction(documentId: document.id) }
     return InteractionCapability(handle: handle, viewer: self)
   }

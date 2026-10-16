@@ -73,7 +73,7 @@ public struct PageEditCapability: Sendable {
   }
 
   /// Pages of another open document.
-  public func insert(_ pages: [PageRef], from document: PDFDocument, at placement: PageEditPlacement? = nil)
+  public func insert(_ pages: [PageRef], from document: DocumentInfo, at placement: PageEditPlacement? = nil)
     async throws(PDFError) -> PageEditInsertion
   {
     try await bridgedCancellable { token in
@@ -98,7 +98,7 @@ public struct PageEditCapability: Sendable {
 }
 
 extension PDFViewer {
-  public func pageEdit(for document: PDFDocument) async throws(PDFError) -> PageEditCapability {
+  public func pageEdit(for document: DocumentInfo) async throws(PDFError) -> PageEditCapability {
     let handle = try await bridged { try await host.pageEdit(documentId: document.id) }
     return PageEditCapability(handle: handle, viewer: self)
   }

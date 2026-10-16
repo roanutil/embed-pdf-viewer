@@ -1,7 +1,11 @@
 public import EmbedPDFBindings
 
 public typealias ViewerConfig = EmbedPDFBindings.ViewerConfig
-public typealias PDFDocument = EmbedPDFBindings.DocumentInfo
+public typealias DocumentInfo = EmbedPDFBindings.DocumentInfo
+/// The pre-rename name of `DocumentInfo`, kept for one release. It collided
+/// with PDFKit's `PDFDocument` in any file that imports both modules.
+@available(*, deprecated, renamed: "DocumentInfo")
+public typealias PDFDocument = DocumentInfo
 public typealias DocumentStatus = EmbedPDFBindings.DocumentStatus
 public typealias PageInfo = EmbedPDFBindings.PageInfo
 public typealias PageRef = EmbedPDFBindings.PageRef

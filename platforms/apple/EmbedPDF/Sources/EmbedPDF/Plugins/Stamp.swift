@@ -93,7 +93,7 @@ public struct StampCapability: Sendable {
   }
 
   /// Whether `document` (the active document when `nil`) can take a stamp.
-  public func canPlace(in document: PDFDocument? = nil) async throws(PDFError) -> Bool {
+  public func canPlace(in document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
     try await bridged { try await handle.canPlace(documentId: document?.id) }
   }
 
@@ -137,7 +137,7 @@ public struct StampCapability: Sendable {
   /// Throws `unsupported`: the native engine can't export annotation
   /// appearances yet.
   public func createAsset(
-    from annotations: [AnnotationRef], in document: PDFDocument, on page: PageRef,
+    from annotations: [AnnotationRef], in document: DocumentInfo, on page: PageRef,
     input: StampAddAssetInput = StampAddAssetInput()
   ) async throws(PDFError) -> String {
     try await bridgedCancellable { token in
@@ -166,7 +166,7 @@ public struct StampCapability: Sendable {
   }
 
   /// The next tap in `document` places the asset.
-  public func arm(_ assetId: String, in document: PDFDocument, targetWidth: Double? = nil) async throws(PDFError) {
+  public func arm(_ assetId: String, in document: DocumentInfo, targetWidth: Double? = nil) async throws(PDFError) {
     try await bridgedCancellable { token in
       try await handle.armAsset(documentId: document.id, assetId: assetId, targetWidth: targetWidth, cancel: token)
     }
@@ -174,7 +174,7 @@ public struct StampCapability: Sendable {
 
   /// Place the asset at `point` (page space) and return the annotation.
   public func place(
-    _ assetId: String, in document: PDFDocument, on page: PageRef, at point: Point,
+    _ assetId: String, in document: DocumentInfo, on page: PageRef, at point: Point,
     targetWidth: Double? = nil, rotation: Double? = nil
   ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
@@ -186,7 +186,7 @@ public struct StampCapability: Sendable {
 
   /// The same placement on every page (`nil`) or those listed.
   public func place(
-    _ assetId: String, in document: PDFDocument, onPages pages: [PageRef]?, at point: Point,
+    _ assetId: String, in document: DocumentInfo, onPages pages: [PageRef]?, at point: Point,
     targetWidth: Double? = nil, rotation: Double? = nil
   ) async throws(PDFError) -> StampBatchResult {
     try await bridgedCancellable { token in
@@ -196,11 +196,11 @@ public struct StampCapability: Sendable {
     }
   }
 
-  public func disarm(in document: PDFDocument) async throws(PDFError) {
+  public func disarm(in document: DocumentInfo) async throws(PDFError) {
     try await bridged { try await handle.disarm(documentId: document.id) }
   }
 
-  public func armedAsset(in document: PDFDocument) async throws(PDFError) -> StampAsset? {
+  public func armedAsset(in document: DocumentInfo) async throws(PDFError) -> StampAsset? {
     try await bridged { try await handle.armedAsset(documentId: document.id) }
   }
 

@@ -5,7 +5,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct RedactionTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, RedactionCapability, SearchCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, RedactionCapability, SearchCapability) {
       let viewer = try PDFViewer(
         ViewerConfig(
           search: SearchConfig(), interaction: true, annotation: AnnotationConfig(),

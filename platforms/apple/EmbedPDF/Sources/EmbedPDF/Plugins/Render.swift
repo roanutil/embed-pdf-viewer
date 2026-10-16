@@ -220,7 +220,7 @@ extension EventRelay: RenderEventListener where Event == RenderEvent {
 }
 
 extension PDFViewer {
-  public func render(in document: PDFDocument) async throws(PDFError) -> RenderCapability {
+  public func render(in document: DocumentInfo) async throws(PDFError) -> RenderCapability {
     let handle = try await bridged { try await host.render(documentId: document.id) }
     return RenderCapability(handle: handle, viewer: self)
   }

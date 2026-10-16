@@ -4,7 +4,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct SearchTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, SearchCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, SearchCapability) {
       let viewer = try PDFViewer(ViewerConfig(search: SearchConfig()))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

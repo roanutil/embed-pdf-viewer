@@ -5,7 +5,7 @@ import Testing
 extension BaseSuite {
   @Suite struct MeasurementTests {
     func opened(_ fixture: String = "report") async throws
-      -> (PDFViewer, PDFDocument, MeasurementCapability, PageRef)
+      -> (PDFViewer, DocumentInfo, MeasurementCapability, PageRef)
     {
       let viewer = try PDFViewer(
         ViewerConfig(interaction: true, annotation: AnnotationConfig(), measurement: MeasurementConfig()))

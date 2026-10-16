@@ -5,7 +5,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct PageEditTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, PageEditCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, PageEditCapability) {
       let viewer = try PDFViewer(ViewerConfig(pageEdit: true))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

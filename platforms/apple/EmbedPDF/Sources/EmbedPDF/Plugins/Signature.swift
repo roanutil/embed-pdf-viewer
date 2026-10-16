@@ -253,7 +253,7 @@ extension EventRelay: SignatureEventListener where Event == SignatureEvent {
 }
 
 extension PDFViewer {
-  public func signatures(for document: PDFDocument) async throws(PDFError) -> SignatureCapability {
+  public func signatures(for document: DocumentInfo) async throws(PDFError) -> SignatureCapability {
     let handle = try await bridged { try await host.signature(documentId: document.id) }
     return SignatureCapability(handle: handle, viewer: self)
   }

@@ -12,7 +12,7 @@ extension BaseSuite {
   @Suite struct StageTests {
     let instant = StageGoToOptions(behavior: .instant)
 
-    func opened(frames: Bool = false) async throws -> (PDFViewer, PDFDocument, StageCapability) {
+    func opened(frames: Bool = false) async throws -> (PDFViewer, DocumentInfo, StageCapability) {
       let viewer = try PDFViewer(ViewerConfig(stage: StageConfig(frames: frames)))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

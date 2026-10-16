@@ -189,7 +189,7 @@ extension EventRelay: MeasurementEventListener where Event == MeasurementEvent {
 }
 
 extension PDFViewer {
-  public func measurement(for document: PDFDocument) async throws(PDFError) -> MeasurementCapability {
+  public func measurement(for document: DocumentInfo) async throws(PDFError) -> MeasurementCapability {
     let handle = try await bridged { try await host.measurement(documentId: document.id) }
     return MeasurementCapability(handle: handle, viewer: self)
   }

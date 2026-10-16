@@ -5,7 +5,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct ActionsTests {
-    func opened(_ fixture: String = "document_actions") async throws -> (PDFViewer, PDFDocument, ActionsCapability) {
+    func opened(_ fixture: String = "document_actions") async throws -> (PDFViewer, DocumentInfo, ActionsCapability) {
       let viewer = try PDFViewer(ViewerConfig(actions: ActionsConfig(openSequence: .off)))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data(fixture))

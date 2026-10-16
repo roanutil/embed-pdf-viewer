@@ -149,7 +149,7 @@ the right trade here and worth knowing before adding a variant.
 in `Exports.swift`, and Swift rejects that over an `internal import`: with
 `internal import EmbedPDFBindings` the compiler reports "type alias cannot be
 declared public because its underlying type uses an internal type", and a public
-signature in `PDFViewer.swift` that uses an alias reports "'PDFDocument' aliases
+signature in `PDFViewer.swift` that uses an alias reports "'DocumentInfo' aliases
 'EmbedPDFBindings.DocumentInfo' and cannot be used here because
 'EmbedPDFBindings' was not imported publicly". So `Exports.swift` and
 `PDFViewer.swift` use `public import EmbedPDFBindings`, and every other file
@@ -159,6 +159,13 @@ The cost is that the generated objects (`ViewerHost`, each plugin's handle)
 become visible to clients that go looking for them. The supported API is
 `PDFViewer` and the capabilities; anything else from the bindings module is
 unsupported and can change with every regeneration.
+
+The document record is `DocumentInfo`, the name the bindings give it. It was
+`PDFDocument` until 2026-10-16, which PDFKit also declares, so any file that
+imported both modules got "'PDFDocument' is ambiguous for type lookup in this
+context". `PDFDocument` is still there as a deprecated typealias for one
+release. The deprecated alias collides exactly as before: it keeps old code
+compiling only in files that don't import PDFKit.
 
 ## The demo app
 

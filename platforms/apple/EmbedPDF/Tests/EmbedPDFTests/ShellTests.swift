@@ -9,7 +9,7 @@ extension BaseSuite {
       var page: Int
     }
 
-    func opened() async throws -> (PDFViewer, PDFDocument, ShellCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, ShellCapability) {
       let viewer = try PDFViewer(ViewerConfig(shell: true))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

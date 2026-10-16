@@ -4,7 +4,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct MetadataTests {
-    func opened() async throws -> (PDFViewer, PDFDocument, MetadataCapability) {
+    func opened() async throws -> (PDFViewer, DocumentInfo, MetadataCapability) {
       let viewer = try PDFViewer(ViewerConfig(metadata: true))
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))

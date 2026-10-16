@@ -15,7 +15,7 @@ public final class ManualSearch: @unchecked Sendable {
     self.viewer = viewer
   }
 
-  public static func open(_ viewer: PDFViewer, _ document: PDFDocument) async throws(ManualError)
+  public static func open(_ viewer: PDFViewer, _ document: DocumentInfo) async throws(ManualError)
     -> ManualSearch
   {
     let kernel = viewer.experimentalKernelToken

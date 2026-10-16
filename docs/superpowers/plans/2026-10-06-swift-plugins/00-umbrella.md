@@ -1,5 +1,7 @@
 # Swift Wrappers for the Remaining Plugins: Umbrella Plan
 
+> Note (2026-10-16): the plugin plans in this directory write `PDFDocument` in capability accessors; the package now spells it `DocumentInfo` (PDFKit declares `PDFDocument`). `PDFDocument` remains as a deprecated typealias for one release. The plans are left as written.
+
 > **For agentic workers:** This plan coordinates sixteen per-plugin plans in this directory. Run Tasks 0a to 0f once, then execute each plugin plan with superpowers:subagent-driven-development (recommended) or superpowers:executing-plans, in its own worktree, in the order the Waves section gives. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Give every plugin crate that `2026-10-01-swift-package.md` left unexported a typed UniFFI handle, a `ViewerHost` accessor and a Swift capability in `platforms/apple/EmbedPDF`, one plugin per plan.

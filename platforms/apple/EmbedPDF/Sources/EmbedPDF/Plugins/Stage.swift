@@ -181,7 +181,7 @@ extension EventRelay: StageEventListener where Event == StageEvent {
 }
 
 extension PDFViewer {
-  public func stage(for document: PDFDocument) async throws(PDFError) -> StageCapability {
+  public func stage(for document: DocumentInfo) async throws(PDFError) -> StageCapability {
     let handle = try await bridged { try await host.stage(documentId: document.id) }
     return StageCapability(handle: handle, viewer: self)
   }

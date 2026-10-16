@@ -110,7 +110,7 @@ extension EventRelay: LinkEventListener where Event == LinkEvent {
 }
 
 extension PDFViewer {
-  public func link(for document: PDFDocument) async throws(PDFError) -> LinkCapability {
+  public func link(for document: DocumentInfo) async throws(PDFError) -> LinkCapability {
     let handle = try await bridged { try await host.link(documentId: document.id) }
     return LinkCapability(handle: handle, viewer: self)
   }

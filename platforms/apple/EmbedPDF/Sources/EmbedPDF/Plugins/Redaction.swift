@@ -121,7 +121,7 @@ extension EventRelay: RedactionEventListener where Event == RedactionEvent {
 }
 
 extension PDFViewer {
-  public func redaction(for document: PDFDocument) async throws(PDFError) -> RedactionCapability {
+  public func redaction(for document: DocumentInfo) async throws(PDFError) -> RedactionCapability {
     let handle = try await bridged { try await host.redaction(documentId: document.id) }
     return RedactionCapability(handle: handle, viewer: self)
   }

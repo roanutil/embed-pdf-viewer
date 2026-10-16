@@ -11,7 +11,7 @@ public typealias ViewManagerEvent = EmbedPDFBindings.ViewManagerEvent
 /// `PDFViewer.viewManager()`; the viewer needs
 /// `ViewerConfig(viewManager: true)`. One capability for the whole viewer.
 /// It keeps the viewer alive, and after `destroy` every call throws
-/// `instance-closed`. Documents are `PDFDocument`s, as every other
+/// `instance-closed`. Documents are `DocumentInfo`s, as every other
 /// capability takes them; panes are the ids `panes()` lists. No member
 /// throws for an id it doesn't know, as on the web. An unknown pane is
 /// ignored. `setFocusedPane`, `createPane`, `splitPane` and `addDocument`
@@ -40,12 +40,12 @@ public struct ViewManagerCapability: Sendable {
   }
 
   /// The pane that holds the document, if any.
-  public func pane(holding document: PDFDocument) async throws(PDFError) -> String? {
+  public func pane(holding document: DocumentInfo) async throws(PDFError) -> String? {
     try await bridged { try await handle.paneOfDocument(documentId: document.id) }
   }
 
   /// A new pane, focused. Each document moves in from wherever it was.
-  public func createPane(documents: [PDFDocument] = []) async throws(PDFError) -> String {
+  public func createPane(documents: [DocumentInfo] = []) async throws(PDFError) -> String {
     try await bridged { try await handle.createPane(documentIds: documents.map(\.id)) }
   }
 
@@ -64,27 +64,27 @@ public struct ViewManagerCapability: Sendable {
   }
 
   /// A new pane showing the document.
-  public func splitPane(showing document: PDFDocument) async throws(PDFError) -> String {
+  public func splitPane(showing document: DocumentInfo) async throws(PDFError) -> String {
     try await bridged { try await handle.splitPane(documentId: document.id) }
   }
 
-  public func setActiveDocument(_ document: PDFDocument?, in paneId: String) async throws(PDFError) {
+  public func setActiveDocument(_ document: DocumentInfo?, in paneId: String) async throws(PDFError) {
     try await bridged { try await handle.setActiveDocument(paneId: paneId, documentId: document?.id) }
   }
 
   /// A document another pane holds moves. `nil` appends.
-  public func addDocument(_ document: PDFDocument, to paneId: String, at index: UInt32? = nil)
+  public func addDocument(_ document: DocumentInfo, to paneId: String, at index: UInt32? = nil)
     async throws(PDFError)
   {
     try await bridged { try await handle.addDocument(paneId: paneId, documentId: document.id, index: index) }
   }
 
-  public func removeDocument(_ document: PDFDocument, from paneId: String) async throws(PDFError) {
+  public func removeDocument(_ document: DocumentInfo, from paneId: String) async throws(PDFError) {
     try await bridged { try await handle.removeDocument(paneId: paneId, documentId: document.id) }
   }
 
   /// Reorder a tab inside its pane.
-  public func moveDocument(_ document: PDFDocument, within paneId: String, to index: UInt32)
+  public func moveDocument(_ document: DocumentInfo, within paneId: String, to index: UInt32)
     async throws(PDFError)
   {
     try await bridged {
@@ -94,7 +94,7 @@ public struct ViewManagerCapability: Sendable {
 
   /// Drag a tab into another pane, where it becomes active.
   public func moveDocument(
-    _ document: PDFDocument, from source: String, to destination: String, at index: UInt32? = nil
+    _ document: DocumentInfo, from source: String, to destination: String, at index: UInt32? = nil
   ) async throws(PDFError) {
     try await bridged {
       try await handle.moveDocumentBetween(

@@ -320,6 +320,10 @@ success, partial failure. An `AbortError` is never evidence of rollback.
   separate cancel-by-job-ID channel and wire each facade to it; dropping the
   await must not drop the owner’s mutation-finalization or resource-cleanup
   work.
+
+  Note (2026-10-16): the Swift package names this type `DocumentInfo`;
+  `PDFDocument` collides with PDFKit and is kept only as a deprecated alias.
+
 - Synchronous `document.page(at:)` creates a lightweight handle from loaded
   identity metadata; any engine work is `async` / `suspend`.
 - Errors: typed `PDFError` and sealed `PdfException`, carrying

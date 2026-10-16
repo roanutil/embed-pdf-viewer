@@ -5,7 +5,7 @@ import Testing
 
 extension BaseSuite {
   @Suite struct FormTests {
-    func opened(_ fixture: String = "form_fields") async throws -> (PDFViewer, PDFDocument, FormCapability) {
+    func opened(_ fixture: String = "form_fields") async throws -> (PDFViewer, DocumentInfo, FormCapability) {
       let viewer = try PDFViewer(
         ViewerConfig(interaction: true, form: FormConfig(validation: FormValidation.none)))
       try await viewer.start()

@@ -152,15 +152,15 @@ public struct CommandsCapability: Sendable {
     try await bridged { try await handle.commandIds() }
   }
 
-  public func resolve(_ id: String, document: PDFDocument? = nil) async throws(PDFError) -> ResolvedCommand? {
+  public func resolve(_ id: String, document: DocumentInfo? = nil) async throws(PDFError) -> ResolvedCommand? {
     try await bridged { try await handle.resolveCommand(id: id, documentId: document?.id) }
   }
 
-  public func commands(document: PDFDocument? = nil) async throws(PDFError) -> [ResolvedCommand] {
+  public func commands(document: DocumentInfo? = nil) async throws(PDFError) -> [ResolvedCommand] {
     try await bridged { try await handle.commands(documentId: document?.id) }
   }
 
-  public func search(_ query: String, document: PDFDocument? = nil) async throws(PDFError) -> [ResolvedCommand] {
+  public func search(_ query: String, document: DocumentInfo? = nil) async throws(PDFError) -> [ResolvedCommand] {
     try await bridged { try await handle.searchCommands(query: query, documentId: document?.id) }
   }
 
@@ -171,7 +171,7 @@ public struct CommandsCapability: Sendable {
   /// `args` is JSON, handed back to the command's `run` and to the
   /// `executed` event. Throws `invalid-input` when it isn't valid UTF-8
   /// JSON. Cancelling the task doesn't cancel the command.
-  public func execute(_ id: String, document: PDFDocument? = nil, args: Data? = nil)
+  public func execute(_ id: String, document: DocumentInfo? = nil, args: Data? = nil)
     async throws(PDFError) -> CommandExecuteResult
   {
     // `String(decoding:)` would replace bad bytes with U+FFFD and pass
@@ -186,7 +186,7 @@ public struct CommandsCapability: Sendable {
     return try await bridged { try await handle.execute(id: id, documentId: document?.id, argsJson: json) }
   }
 
-  public func canExecute(_ id: String, document: PDFDocument? = nil) async throws(PDFError) -> Bool {
+  public func canExecute(_ id: String, document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
     try await bridged { try await handle.canExecute(id: id, documentId: document?.id) }
   }
 

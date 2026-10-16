@@ -204,7 +204,7 @@ extension EventRelay: ActionsEventListener where Event == ActionsEvent {
 }
 
 extension PDFViewer {
-  public func actions(for document: PDFDocument) async throws(PDFError) -> ActionsCapability {
+  public func actions(for document: DocumentInfo) async throws(PDFError) -> ActionsCapability {
     let handle = try await bridged { try await host.actions(documentId: document.id) }
     return ActionsCapability(handle: handle, viewer: self)
   }

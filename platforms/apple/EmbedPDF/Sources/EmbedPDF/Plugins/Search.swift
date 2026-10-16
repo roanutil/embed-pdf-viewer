@@ -155,7 +155,7 @@ extension EventRelay: SearchEventListener where Event == SearchEvent {
 }
 
 extension PDFViewer {
-  public func search(in document: PDFDocument) async throws(PDFError) -> SearchCapability {
+  public func search(in document: DocumentInfo) async throws(PDFError) -> SearchCapability {
     let handle = try await bridged { try await host.search(documentId: document.id) }
     return SearchCapability(handle: handle, viewer: self)
   }
