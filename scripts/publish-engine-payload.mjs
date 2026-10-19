@@ -168,7 +168,7 @@ if (dryRun) {
   console.log(`\n--dry-run: would run gh ${args.map((a) => JSON.stringify(a)).join(' ')}`);
   console.log(`payload left at ${out}`);
 } else {
-  run('gh', args, { stdio: 'inherit' });
+  execFileSync('gh', args, { cwd: repo, stdio: 'inherit' });
   rmSync(out, { recursive: true, force: true });
 }
 // The local payload now matches the release, so fetch-payload.sh keeps it.
