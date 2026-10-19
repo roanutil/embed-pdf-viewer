@@ -127,7 +127,11 @@ if git merge-base --is-ancestor "$VIEWER_TARGET" HEAD; then
     die "$BRANCH pins runtime ${PINNED:0:9} but $SUB is at ${RUNTIME_NEW:0:9}; commit the pointer if that's intended"
 else
   echo "· merging upstream main ${VIEWER_TARGET:0:9} into $BRANCH"
-  git merge -q --no-commit --no-ff \
+  # Without the commit-graph: git 2.56.0's merge-ort dies with "invalid commit
+  # position. commit-graph is likely corrupt" when it opens runtime-src to
+  # merge the pointer and that checkout borrows objects through alternates,
+  # though `git commit-graph verify` passes in both repositories.
+  git -c core.commitGraph=false merge -q --no-commit --no-ff \
     -m "Merge embedpdf/embed-pdf-viewer main into $BRANCH" "$VIEWER_TARGET" || true
   [[ -f "$(git rev-parse --git-path MERGE_HEAD)" ]] ||
     die "git merge stopped before merging; see its output above"
