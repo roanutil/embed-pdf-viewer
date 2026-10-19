@@ -59,7 +59,7 @@ if (!status.startsWith(' ')) {
   console.error(
     `runtime-src isn't checked out at ${sha.slice(0, 9)}. From the repo root:\n` +
       `  git submodule init packages/engine/runtime/runtime-src\n` +
-      `  git -C packages/engine/runtime/runtime-src fetch https://github.com/${RELEASE_REPO}.git ${sha}\n` +
+      `  git config submodule.packages/engine/runtime/runtime-src.url https://github.com/${RELEASE_REPO}.git\n` +
       `  git submodule update packages/engine/runtime/runtime-src`,
   );
   process.exit(1);
