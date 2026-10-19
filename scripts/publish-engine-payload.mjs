@@ -53,7 +53,11 @@ if (dirty) {
 
 // buildFork clones the fork from the runtime-src checkout. Its commit may exist
 // only on the fork, which `git submodule update` won't fetch from upstream.
-const status = run('git', ['submodule', 'status', 'packages/engine/runtime/runtime-src']);
+// Untrimmed: the status's first column is a space when the commit matches.
+const status = execFileSync('git', ['submodule', 'status', 'packages/engine/runtime/runtime-src'], {
+  cwd: repo,
+  encoding: 'utf8',
+});
 if (!status.startsWith(' ')) {
   const sha = status.slice(1).split(' ')[0];
   console.error(
