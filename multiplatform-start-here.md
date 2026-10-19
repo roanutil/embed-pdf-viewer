@@ -30,13 +30,15 @@ viewer on the Rust kernel. Alongside the eval README's prerequisites you'll need
 (Binaryen), which `crates/epdf-web/scripts/build.sh` runs on the kernel and the README doesn't
 list.
 
-The hard part is PDFium. `pnpm --filter @embedpdf/engine-runtime fetch:payload` looks for a
-published payload named after a hash of the runtime's build inputs, and this branch changes
-those inputs (`e1b4027f945241e7` at the time of writing), so there's nothing to fetch. You either
-build the payload with the Rust core yourself, which needs the PDFium fork's toolchain
-(`perf-compare/scripts/build-arm.mjs`, `buildFork` and `linkRustCore`, is a recipe that works), or
-copy `packages/engine/runtime/dist/` and `packages/engine/runtime/npm/wasm32/lib/` from a checkout
-that has one. We'd like this to be one command, and it isn't yet.
+PDFium is one command. `pnpm --filter @embedpdf/engine-runtime fetch:payload` downloads the
+wasm32 payload, with the Rust core linked in, from a `runtime-payloads-<hash>` release on
+[`roanutil/embed-pdf-runtime`](https://github.com/roanutil/embed-pdf-runtime/releases). The hash
+covers the Rust crates `epdf-wasm` links as well as the runtime's own build inputs
+(`ef318e5cb82aac78` at the time of writing), so a checkout only fetches the payload its sources
+produce. The cost is that every change reaching the payload needs a publish before anyone can
+fetch it. Until then `fetch:payload` fails and names the missing release. To publish, run
+`node scripts/publish-engine-payload.mjs` with `PERF_WORK_DIR` pointing at a `perf-compare/.work`
+that has the PDFium fork built. Without that it starts a fork build that takes hours.
 
 ## Performance against `main`
 
