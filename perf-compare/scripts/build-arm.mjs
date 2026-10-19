@@ -76,7 +76,7 @@ function seedDeps(src) {
 // publishes wasm32-eh yet (engine-runtime-build.json marks it pending), and
 // the Rust core calls fork functions newer than the published wasm32 archive,
 // so the Rust-core recipes can't use a published archive. Cached by commit.
-function buildFork(dir) {
+export function buildFork(dir) {
   const [, , sha] = git(['ls-tree', 'HEAD', RUNTIME_SRC], dir).split(/\s+/);
   const root = path.join(workDir(), 'fork', sha);
   const src = path.join(root, 'runtime-src');
@@ -143,7 +143,7 @@ function buildFork(dir) {
 // the one buildFork made: the steps of packages/engine/runtime/scripts/
 // build-target.sh after its fetch, with PDF_RUNTIME_TARGET=wasm32-eh, as
 // tooling/engine-conformance/README.md documents for the Rust core.
-function linkRustCore(dir, fork) {
+export function linkRustCore(dir, fork) {
   const runtime = path.join(dir, 'packages/engine/runtime');
   const libDir = path.join(runtime, 'build/libpdfium', FORK_TARGET);
   rmSync(libDir, { recursive: true, force: true });
