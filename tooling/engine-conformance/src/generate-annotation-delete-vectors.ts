@@ -51,36 +51,46 @@ const CASES: readonly DeleteCase[] = [
       'The ordinary case: an indirect annotation addressed by its object number. Two replies point at it, so this also shows what a delete does NOT clean up.',
     target: { kind: 'objectNumber', nm: 'the-anchor' },
   },
-  {
-    name: 'by-nm',
-    covers:
-      'A direct annotation with an /NM, which has no object number at all. Its only address is its name.',
-    target: { kind: 'nm', nm: 'direct-but-named' },
-  },
-  {
-    name: 'by-index-onto-a-durable-annotation',
-    covers:
-      'An index reference that lands on an annotation with an object number. The reported id is the one it turned out to have, not the one it was asked for.',
-    target: { kind: 'index', index: 0 },
-  },
-  {
-    name: 'by-index-onto-a-weak-annotation',
-    covers:
-      'An index reference onto the annotation with no object number and no /NM. Nothing durable to report, so the result is null and the caller learns it must re-read.',
-    target: { kind: 'index', index: 3 },
-  },
-  {
-    name: 'by-index-onto-an-empty-nm',
-    covers:
-      'The annotation whose /NM is present and empty. An empty name is not an identity, so this is null too rather than a name two annotations could share.',
-    target: { kind: 'index', index: 4 },
-  },
-  {
-    name: 'the-last-annotation',
-    covers:
-      'Deleting the final entry, which shifts nothing. The envelope still reports a refetch, because the page had weak annotations and an old snapshot can hold an index from before they were strengthened.',
-    target: { kind: 'index', index: 8 },
-  },
+  // Upstream removed the `nm` and `index` annotation refs in bc0057f3a
+  // ("Remove NM and implement BaseID"). Every annotation now has one name for
+  // life: its object number, or for one born inline in the uploaded file, its
+  // `baseIndex` (its position in that page's original /Annots). The cases
+  // below are each about one of the removed ref kinds (an NM address, an index
+  // that resolves to whatever sits there, a null id for a weak annotation,
+  // the refetch envelope), so they stay here, commented out. Each still names
+  // a real annotation, reachable by its own ref: `direct-but-named` is
+  // baseIndex 2, index 0 is object 5, index 3 is baseIndex 3, index 4 is
+  // baseIndex 4 and index 8 is object 10.
+  // {
+  //   name: 'by-nm',
+  //   covers:
+  //     'A direct annotation with an /NM, which has no object number at all. Its only address is its name.',
+  //   target: { kind: 'nm', nm: 'direct-but-named' },
+  // },
+  // {
+  //   name: 'by-index-onto-a-durable-annotation',
+  //   covers:
+  //     'An index reference that lands on an annotation with an object number. The reported id is the one it turned out to have, not the one it was asked for.',
+  //   target: { kind: 'index', index: 0 },
+  // },
+  // {
+  //   name: 'by-index-onto-a-weak-annotation',
+  //   covers:
+  //     'An index reference onto the annotation with no object number and no /NM. Nothing durable to report, so the result is null and the caller learns it must re-read.',
+  //   target: { kind: 'index', index: 3 },
+  // },
+  // {
+  //   name: 'by-index-onto-an-empty-nm',
+  //   covers:
+  //     'The annotation whose /NM is present and empty. An empty name is not an identity, so this is null too rather than a name two annotations could share.',
+  //   target: { kind: 'index', index: 4 },
+  // },
+  // {
+  //   name: 'the-last-annotation',
+  //   covers:
+  //     'Deleting the final entry, which shifts nothing. The envelope still reports a refetch, because the page had weak annotations and an old snapshot can hold an index from before they were strengthened.',
+  //   target: { kind: 'index', index: 8 },
+  // },
 ];
 
 async function readCase(entry: DeleteCase): Promise<unknown> {
@@ -103,14 +113,17 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const pon = first.pageObjectNumber;
-      const before = await doc.annotations.listRaw(pon);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up);
+      // a page's own list is `page(ref).annotations.list()` since 83f6598d2
+      // ("Engine API v3, round 3a").
+      const pon = first.ref.objectNumber;
+      const page = doc.page(first.ref);
+      const before = await page.annotations.list();
 
       // Resolve the case's description of its target into a real ref.
       let ref;
       if (entry.target.kind === 'index') {
-        ref = { kind: 'index' as const, pageObjectNumber: pon, index: entry.target.index,
-          revision: before.pageState.revision };
+        throw new Error(`${entry.name}: index refs were removed upstream (bc0057f3a)`);
       } else {
         const found = before.annotations.find((a) => a.nm === (entry.target as { nm: string }).nm);
         if (!found) throw new Error(`${entry.name}: no annotation named ${JSON.stringify(entry.target)}`);
@@ -122,19 +135,19 @@ async function readCase(entry: DeleteCase): Promise<unknown> {
         }
       }
 
-      const page = doc.page(pon);
-      const result = await page.annotations.delete(ref as never);
-      const after = await doc.annotations.listRaw(pon);
+      const result = await page.annotations.delete(ref);
+      const after = await page.annotations.list();
 
+      // The result is `{ meta }` since 83f6598d2; what went is `meta.changed`
+      // (`deletedAnnotationsOf`), so `deleted` is gone. Annotation names no
+      // longer change, so `weakRefsInvalidated` and `shouldRefetch` went in
+      // bc0057f3a.
       return {
         ...entry,
         pageObjectNumber: pon,
         ref,
-        deleted: result.deleted,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
         /** What is left, in order. `null` for an annotation with no /NM. */
         remaining: after.annotations.map((a) => a.nm),

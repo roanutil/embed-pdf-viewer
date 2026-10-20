@@ -19,7 +19,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import {
+  createLocalEngine,
+  type AnnotationPosition,
+} from '../../../packages/engine/main/src/index';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -113,32 +116,52 @@ async function readCase(entry: MoveCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const pon = first.pageObjectNumber;
-      const before = await doc.annotations.listRaw(pon);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up);
+      // a page's own list is `page(ref).annotations.list()` since 83f6598d2
+      // ("Engine API v3, round 3a").
+      const pon = first.ref.objectNumber;
+      const page = doc.page(first.ref);
+      const before = await page.annotations.list();
 
-      const refs = entry.from.map((index) => ({
-        kind: 'index' as const,
-        pageObjectNumber: pon,
-        index,
-        revision: before.pageState.revision,
-      }));
+      // `move(refs, toIndex)` became `reorder(refs, position)` in 1233d1349
+      // ("Read and write widgets through the form"): every move names a
+      // neighbour instead of an index, and index refs went in bc0057f3a
+      // ("Remove NM and implement BaseID"). The cases keep their indices and
+      // are translated here. `from` picks the annotations at those positions
+      // by their own refs. `toIndex` is a slot in the list with the moved
+      // ones taken out, so it is `'start'`, `'end'`, or before the annotation
+      // that sits there, which is where `reorderedList` puts the block.
+      const at = (index: number) => {
+        const annotation = before.annotations[index];
+        if (!annotation) throw new Error(`${entry.name}: no annotation at ${index}`);
+        return annotation;
+      };
+      const moving = entry.from.map(at);
+      const refs = moving.map((annotation) => annotation.ref);
+      const staying = before.annotations.filter((annotation) => !moving.includes(annotation));
+      const position: AnnotationPosition =
+        entry.toIndex === 0
+          ? 'start'
+          : entry.toIndex === staying.length
+            ? 'end'
+            : { before: staying[entry.toIndex]!.ref };
 
-      const page = doc.page(pon);
-      const result = await page.annotations.move(refs as never, entry.toIndex);
-      const after = await doc.annotations.listRaw(pon);
+      const result = await page.annotations.reorder(refs, position);
+      const after = await page.annotations.list();
 
+      // The result reports the page's whole new order as refs (`order`)
+      // rather than the moved rows, so `movedOrder` and `movedIndices` are
+      // gone (`index` left the rows in 1233d1349); so are
+      // `weakRefsInvalidated` and `shouldRefetch` (bc0057f3a).
       return {
         ...entry,
         pageObjectNumber: pon,
         /** What was there, in order, so the case is readable on its own. */
         beforeOrder: before.annotations.map((a) => a.nm),
         afterOrder: after.annotations.map((a) => a.nm),
-        movedOrder: result.moved.map((a) => a.nm),
-        movedIndices: result.moved.map((a) => a.index),
+        order: result.order,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
       };
     } finally {
