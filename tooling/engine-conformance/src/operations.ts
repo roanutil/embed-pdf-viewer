@@ -179,6 +179,34 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'routed',
   },
 
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'document.version',
+    group: 'G3',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'objectNumbers.reserve',
+    group: 'G3',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+    note: "A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it.",
+  },
+  {
+    kind: 'pages.workingSet',
+    group: 'G3',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+    note: 'Never answers: the worker takes it on arrival, even mid-render, and jobId only names the message. Not one of the four control frames.',
+  },
+
   // --- G4. Render and fonts. Fonts are engine-level and move as one unit,
   // independently of which backend owns a document.
   {
@@ -222,6 +250,25 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'routed',
+  },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'fonts.authorizeEditing',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'document.setFontSettings',
+    group: 'G4',
+    stage: 'A',
+    phase: 1,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+    note: 'Per-document font and text-layout settings, a session effect.',
   },
 
   // --- G5. Text and search.
@@ -271,33 +318,62 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'ported',
   },
 
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'outline.read',
+    group: 'G6',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'metadata.readCustom',
+    group: 'G6',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'measure.viewports',
+    group: 'G6',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+
   // --- G7. Annotation reads. Rust never creates or retains the form model;
   // TypeScript lends the pointer.
-  {
-    kind: 'annotations.listRawAll',
-    group: 'G7',
-    stage: 'A',
-    phase: 2,
-    cancellation: 'cooperative',
-    rustStatus: 'ported',
-  },
-  {
-    kind: 'annotations.listRawPage',
-    group: 'G7',
-    stage: 'A',
-    phase: 2,
-    cancellation: 'cooperative',
-    rustStatus: 'ported',
-  },
-  {
-    kind: 'annotations.listFullPage',
-    group: 'G7',
-    stage: 'A',
-    phase: 2,
-    cancellation: 'cooperative',
-    rustStatus: 'ported',
-    note: 'Reaches the cached form model through joinWidgetField.ts:23, so it carries a repeated-read benchmark against that cache.',
-  },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.list (a10ed2659 and the Engine API v3 rounds).
+  // {
+  //   kind: 'annotations.listRawAll',
+  //   group: 'G7',
+  //   stage: 'A',
+  //   phase: 2,
+  //   cancellation: 'cooperative',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.list.
+  // {
+  //   kind: 'annotations.listRawPage',
+  //   group: 'G7',
+  //   stage: 'A',
+  //   phase: 2,
+  //   cancellation: 'cooperative',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.list.
+  // {
+  //   kind: 'annotations.listFullPage',
+  //   group: 'G7',
+  //   stage: 'A',
+  //   phase: 2,
+  //   cancellation: 'cooperative',
+  //   rustStatus: 'ported',
+  //   note: 'Reaches the cached form model through joinWidgetField.ts:23, so it carries a repeated-read benchmark against that cache.',
+  // },
   {
     kind: 'annotations.renderAppearances',
     group: 'G7',
@@ -305,6 +381,26 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'non-preemptible',
     rustStatus: 'ported',
+  },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'annotations.list',
+    group: 'G7',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+    note: 'Replaces annotations.listRawAll, listRawPage and listFullPage.',
+  },
+  {
+    kind: 'annotations.readAppearance',
+    group: 'G7',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+    note: "An annotation's appearance as a one-page PDF (bytes).",
   },
 
   // --- G8. Files, forms reads, piece info.
@@ -367,6 +463,17 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'routed',
   },
 
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'annotations.export',
+    group: 'G8',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+    note: 'Annotations and their resources as one bundle; a snapshot, like forms.export.',
+  },
+
   // --- G9. Page extract. Rust owns a scratch document end to end and closes
   // it before returning; it never takes ownership of the session's.
   {
@@ -377,6 +484,17 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'cooperative',
     rustStatus: 'ported',
     note: 'Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing".',
+  },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'annotations.exportAppearance',
+    group: 'G9',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+    note: 'Flattens chosen annotation appearances into a new single-page PDF; a snapshot, like pages.extract.',
   },
 
   // --- G10. Session authority and save. Stage B.
@@ -431,13 +549,51 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'after-first-write',
     rustStatus: 'ported',
   },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.reorder (and the reorder op of document.apply).
+  // {
+  //   kind: 'annotations.move',
+  //   group: 'G11',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
   {
-    kind: 'annotations.move',
+    kind: 'annotations.import',
     group: 'G11',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'ported',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'annotations.reorder',
+    group: 'G11',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'Replaces annotations.move.',
+  },
+  {
+    kind: 'document.apply',
+    group: 'G11',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds.',
+  },
+  {
+    kind: 'document.applyChanges',
+    group: 'G11',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: "A server request's changes as one job, each in its own layer transaction.",
   },
 
   // --- G12. Forms writes.
@@ -457,14 +613,15 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'after-first-write',
     rustStatus: 'ported',
   },
-  {
-    kind: 'forms.applyEffects',
-    group: 'G12',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'ported',
-  },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: removed upstream in 98e5c270c ("applyEffects removed").
+  // {
+  //   kind: 'forms.applyEffects',
+  //   group: 'G12',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
   {
     kind: 'forms.import',
     group: 'G12',
@@ -505,14 +662,15 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'after-first-write',
     rustStatus: 'ported',
   },
-  {
-    kind: 'forms.attachWidget',
-    group: 'G12',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'ported',
-  },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by forms.addWidget.
+  // {
+  //   kind: 'forms.attachWidget',
+  //   group: 'G12',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
   {
     kind: 'forms.detachWidget',
     group: 'G12',
@@ -522,49 +680,113 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'ported',
   },
 
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'forms.addWidget',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'Replaces forms.attachWidget.',
+  },
+  {
+    kind: 'forms.updateWidget',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'forms.deleteWidget',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'forms.reorderWidgets',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'forms.reorderCalculations',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'forms.importValues',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'forms.setSignatureAppearance',
+    group: 'G12',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+
   // --- G13. Page assembly and redaction.
-  {
-    kind: 'pages.rotate',
-    group: 'G13',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'ported',
-  },
-  {
-    kind: 'pages.move',
-    group: 'G13',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'ported',
-    note: 'Page identity must survive reorder within the same live document.',
-  },
-  {
-    kind: 'pages.delete',
-    group: 'G13',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'ported',
-  },
-  {
-    kind: 'pages.insertBlank',
-    group: 'G13',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'routed',
-  },
-  {
-    kind: 'pages.insert',
-    group: 'G13',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'routed',
-    note: 'Source retention lives on one owner (PagesInserter.ts:77, session.retainUntilClose). A source document handle never crosses owners.',
-  },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now a pages.rotate op inside document.apply (Change.ts), not its own kind.
+  // {
+  //   kind: 'pages.rotate',
+  //   group: 'G13',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now a pages.reorder op inside document.apply.
+  // {
+  //   kind: 'pages.move',
+  //   group: 'G13',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  //   note: 'Page identity must survive reorder within the same live document.',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now a pages.delete op inside document.apply.
+  // {
+  //   kind: 'pages.delete',
+  //   group: 'G13',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now a pages.insertBlank op inside document.apply.
+  // {
+  //   kind: 'pages.insertBlank',
+  //   group: 'G13',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'routed',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now a pages.insert op inside document.apply.
+  // {
+  //   kind: 'pages.insert',
+  //   group: 'G13',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'routed',
+  //   note: 'Source retention lives on one owner (PagesInserter.ts:77, session.retainUntilClose). A source document handle never crosses owners.',
+  // },
   {
     kind: 'pages.flatten',
     group: 'G13',
@@ -580,6 +802,33 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+  },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'annotations.flatten',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'A content write, like pages.flatten.',
+  },
+  {
+    kind: 'pages.setName',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'pages.removeName',
+    group: 'G13',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
   },
 
   // --- G14. Remaining mutators.
@@ -600,29 +849,59 @@ export const OPERATIONS: readonly OperationRow[] = [
     cancellation: 'after-first-write',
     rustStatus: 'ported',
   },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by pieceInfo.delete.
+  // {
+  //   kind: 'pieceInfo.clear',
+  //   group: 'G14',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now an attachments.create op inside document.apply.
+  // {
+  //   kind: 'attachments.create',
+  //   group: 'G14',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+  // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: now an attachments.delete op inside document.apply.
+  // {
+  //   kind: 'attachments.delete',
+  //   group: 'G14',
+  //   stage: 'C',
+  //   phase: 4,
+  //   cancellation: 'after-first-write',
+  //   rustStatus: 'ported',
+  // },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
   {
-    kind: 'pieceInfo.clear',
+    kind: 'metadata.updateCustom',
     group: 'G14',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'ported',
+    rustStatus: 'planned',
   },
   {
-    kind: 'attachments.create',
+    kind: 'pieceInfo.delete',
     group: 'G14',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'ported',
+    rustStatus: 'planned',
+    note: 'Replaces pieceInfo.clear.',
   },
   {
-    kind: 'attachments.delete',
+    kind: 'measure.setScale',
     group: 'G14',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'ported',
+    rustStatus: 'planned',
   },
 
   // --- G15. Server and file surfaces. Browser and local workers keep
@@ -659,5 +938,84 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
+  },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  {
+    kind: 'signatures.list',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+    note: 'No port group in multiplatform-port-order.md covers signing yet; parked in G15 until the port order assigns one.',
+  },
+  {
+    kind: 'signatures.analyze',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'signatures.contents',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'signatures.digest',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'signatures.revisionBytes',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'cooperative',
+    rustStatus: 'planned',
+  },
+  {
+    kind: 'signatures.prepare',
+    group: 'G15',
+    stage: 'B',
+    phase: 5,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'A snapshot, like the saves.',
+  },
+  {
+    kind: 'signatures.complete',
+    group: 'G15',
+    stage: 'C',
+    phase: 5,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'A content write.',
+  },
+  {
+    kind: 'signatures.cancel',
+    group: 'G15',
+    stage: 'A',
+    phase: 5,
+    cancellation: 'queued-only',
+    rustStatus: 'planned',
+    note: 'A session effect.',
+  },
+  {
+    kind: 'signatures.finalizeCandidate',
+    group: 'G15',
+    stage: 'C',
+    phase: 5,
+    cancellation: 'after-first-write',
+    rustStatus: 'planned',
+    note: 'Session-less: patches a signing candidate file in place and verifies it.',
   },
 ];
