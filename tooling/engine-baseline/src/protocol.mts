@@ -64,9 +64,12 @@ export function rotate<T>(arms: readonly T[], round: number): T[] {
  * of every snapshot and returning it to a caller that prints it keeps the work
  * real. Section 9 calls this "consumed results".
  */
-export function consume(snapshot: { runs: { charStart: number; glyphs: unknown[] }[] }): number {
+export function consume(snapshot: {
+  runs: readonly { start: number; glyphs: unknown[] }[];
+}): number {
   let total = 0;
-  for (const run of snapshot.runs) total += run.charStart + run.glyphs.length;
+  // `start` was `charStart` before upstream's a10ed2659.
+  for (const run of snapshot.runs) total += run.start + run.glyphs.length;
   return total;
 }
 
