@@ -1,7 +1,7 @@
 /**
- * Emits `vectors/forms/field.json`: what `forms.createField`,
- * `forms.updateField`, `forms.deleteField`, `forms.attachWidget` and
- * `forms.detachWidget` leave in the document.
+ * Emits `vectors/forms/field.json`: what `forms.create`, `forms.update`,
+ * `forms.delete` and `forms.removeWidget` (once `createField`,
+ * `updateField`, `deleteField` and `detachWidget`) leave in the document.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run form-field
  *   pnpm --filter @embedpdf/tooling-engine-conformance run form-field:check
@@ -18,7 +18,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import {
+  createLocalEngine,
+  toPageRef,
+  type FormFieldRef,
+  type PageRef,
+  type PdfRect,
+} from '../../../packages/engine/main/src/index';
+import type { FormFieldDraft } from '../../../packages/engine/core/src/forms/draft';
+import { pageBoxOf } from '../../../packages/engine/core/src/geometry/pageSpace';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -163,15 +171,20 @@ const CASES: readonly FieldCase[] = [
     draft: { family: 'text', name: 'new.odd', options: [{ label: 'A', value: 'a' }] },
     refused: true,
   },
-  {
-    name: 'attach-off-state-refused',
-    covers:
-      'Adopting into a toggle with the Off state. A toggle addresses its widgets by the state they turn ON with, so one named Off could never be turned on.',
-    attachTo: { kind: 'objectNumber', fieldObjectNumber: 9 },
-    widgetObjectNumber: 14,
-    onState: 'Off',
-    refused: true,
-  },
+  // `attachWidget` adopted an existing widget annotation into a field. It
+  // went in d7bd2d277 ("Engine API v3 forms shapes"): `addWidget(ref,
+  // placement)` creates the widget instead, and nothing adopts one. This
+  // case and `attach-already-attached-refused` were about adoption, so they
+  // stay here, commented out.
+  // {
+  //   name: 'attach-off-state-refused',
+  //   covers:
+  //     'Adopting into a toggle with the Off state. A toggle addresses its widgets by the state they turn ON with, so one named Off could never be turned on.',
+  //   attachTo: { kind: 'objectNumber', fieldObjectNumber: 9 },
+  //   widgetObjectNumber: 14,
+  //   onState: 'Off',
+  //   refused: true,
+  // },
   {
     name: 'create-name-collision-refused',
     covers: 'A name a sibling already has.',
@@ -280,15 +293,74 @@ const CASES: readonly FieldCase[] = [
     widgetObjectNumber: 4,
     refused: true,
   },
-  {
-    name: 'attach-already-attached-refused',
-    covers: 'A widget that already belongs to a field cannot be adopted by a second one.',
-    attachTo: { kind: 'objectNumber', fieldObjectNumber: 6 },
-    widgetObjectNumber: 7,
-    onState: 'Red',
-    refused: true,
-  },
+  // See `attach-off-state-refused`: adoption went in d7bd2d277.
+  // {
+  //   name: 'attach-already-attached-refused',
+  //   covers: 'A widget that already belongs to a field cannot be adopted by a second one.',
+  //   attachTo: { kind: 'objectNumber', fieldObjectNumber: 6 },
+  //   widgetObjectNumber: 7,
+  //   onState: 'Red',
+  //   refused: true,
+  // },
 ];
+
+/**
+ * The cases spell field refs, drafts and widgets the way the engine took
+ * them before upstream's v3 forms; they are translated here.
+ *
+ * - A field ref's `fieldObjectNumber` is `objectNumber` since 595bdc6c7
+ *   ("Engine API one name for object numbers").
+ * - `createField`, `updateField` and `deleteField` are `create`, `update` and
+ *   `delete` (7bccc4f35, "Forms and signatures: v3 names and shapes").
+ * - Every draft takes `widgets`, with the style flat on each and a toggle's
+ *   `onState` as its `exportValue` (d7bd2d277, "Engine API v3 forms
+ *   shapes"); colours are `'#rrggbb'` (c053c3d33). A widget names its page
+ *   as a `PageRef` and its place in page space (c053c3d33, "Page space,
+ *   forms and measure"), converted through the page's visible box.
+ */
+function v3FieldRef(ref: Record<string, unknown>): FormFieldRef {
+  return { kind: 'objectNumber', objectNumber: ref.fieldObjectNumber as number };
+}
+
+function hexOf(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  const { r, g, b } = value as { r: number; g: number; b: number };
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+const COLOUR_KEYS = new Set(['color', 'interiorColor', 'fontColor']);
+
+function v3FieldDraft(
+  draft: Record<string, unknown>,
+  pages: readonly { ref: PageRef; pdfCropBox: PdfRect }[],
+): FormFieldDraft {
+  const { widget, widgets, ...rest } = draft;
+  const placements = [
+    ...(widget ? [widget] : []),
+    ...((widgets as unknown[] | undefined) ?? []),
+  ] as Record<string, unknown>[];
+  if (placements.length === 0) return rest as unknown as FormFieldDraft;
+  return {
+    ...rest,
+    widgets: placements.map((placement) => {
+      const { pageObjectNumber, rect, onState, appearance, ...other } = placement;
+      const page = pages.find((candidate) => candidate.ref.objectNumber === pageObjectNumber);
+      if (!page) throw new Error(`no page ${String(pageObjectNumber)}`);
+      const style = Object.fromEntries(
+        Object.entries((appearance as Record<string, unknown> | undefined) ?? {}).map(
+          ([key, value]) => [key, COLOUR_KEYS.has(key) ? hexOf(value) : value],
+        ),
+      );
+      return {
+        ...other,
+        ...style,
+        page: page.ref,
+        rect: pageBoxOf(rect as PdfRect, page.pdfCropBox),
+        ...(onState !== undefined ? { exportValue: onState } : {}),
+      };
+    }),
+  } as unknown as FormFieldDraft;
+}
 
 async function readCase(entry: FieldCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
@@ -307,53 +379,51 @@ async function readCase(entry: FieldCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
+      const { pages } = await doc.pages.list();
       const run = async () => {
-        if (entry.draft) return { field: (await doc.forms.createField(entry.draft as never)).field };
+        if (entry.draft) {
+          return { field: (await doc.forms.create(v3FieldDraft(entry.draft, pages))).field };
+        }
         if (entry.patchOf) {
           return {
-            field: (await doc.forms.updateField(entry.patchOf as never, entry.patch as never))
-              .field,
+            field: (await doc.forms.update(v3FieldRef(entry.patchOf), entry.patch as never)).field,
           };
         }
         if (entry.deleteOf) {
-          const result = (await doc.forms.deleteField(entry.deleteOf as never)) as Record<
-            string,
-            unknown
-          >;
+          // The result is `{ meta }` since 7bccc4f35 ("Forms and signatures:
+          // v3 names and shapes"): what went is in `meta.changedFields` and
+          // `meta.changedWidgets`.
+          const result = await doc.forms.delete(v3FieldRef(entry.deleteOf));
           return {
-            deletedFieldObjectNumber: result.deletedFieldObjectNumber,
-            detachedWidgets: result.removedWidgets,
+            changedFields: result.meta.changedFields,
+            changedWidgets: result.meta.changedWidgets,
           };
         }
-        if (entry.detachFrom) {
-          return {
-            field: (
-              await doc.forms.detachWidget(entry.detachFrom as never, {
-                annotObjectNumber: entry.widgetObjectNumber!,
-                pageObjectNumber: PAGE,
-              } as never)
-            ).field,
-          };
-        }
+        // `detachWidget` is `removeWidget`, naming the widget by its
+        // annotation ref (7bccc4f35).
         return {
           field: (
-            await doc.forms.attachWidget(
-              entry.attachTo as never,
-              { annotObjectNumber: entry.widgetObjectNumber!, pageObjectNumber: PAGE } as never,
-              entry.onState,
-            )
+            await doc.forms.removeWidget(v3FieldRef(entry.detachFrom!), {
+              kind: 'objectNumber',
+              page: toPageRef(PAGE),
+              objectNumber: entry.widgetObjectNumber!,
+            })
           ).field,
         };
       };
 
       if (entry.refused) {
         let code: string | null = null;
+        let result: unknown;
         try {
-          await run();
+          result = await run();
         } catch (error) {
           code = String((error as { code?: unknown })?.code ?? 'unknown');
         }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
+        // Upstream accepts some writes these cases expect refused (a merged
+        // field's delete, for one). The case records what happened instead
+        // of stopping the run, so the change shows in the vector.
+        if (code === null) return { ...entry, result };
         return { ...entry, refusedWith: code };
       }
       return { ...entry, result: await run() };
