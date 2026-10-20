@@ -17,7 +17,6 @@ process.env.TZ = 'UTC';
 const suitesDir = join(dirname(fileURLToPath(import.meta.url)), 'suites');
 const rows: [string, string, string][] = [];
 const log = console.log;
-const error = console.error;
 
 // Import every module before emitting any: scenario suites register the
 // factories other suites name, as generate.ts relies on.
@@ -35,16 +34,12 @@ for (const file of (await readdir(suitesDir)).filter((f) => f.endsWith('.ts')).s
 }
 for (const suite of loaded) {
   process.exitCode = 0;
-  console.log = () => {};
-  console.error = () => {};
+  // Console untouched: scenario suites capture console output into vectors.
   try {
-    await emit([suite], 'check');
+    await emit([suite], 'check', suite.file);
     rows.push([process.exitCode ? 'stale' : 'unchanged', suite.file, '']);
   } catch (e) {
     rows.push(['throws', suite.file, String((e as Error).message).split('\n')[0]]);
-  } finally {
-    console.log = log;
-    console.error = error;
   }
 }
 process.exitCode = 0;
