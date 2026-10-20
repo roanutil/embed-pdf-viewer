@@ -254,19 +254,16 @@ impl Annotation<'_> {
 
     /// `/CA`, as 0..=1.
     ///
-    /// The native value is 0..=255 and the division is exact only at the
-    /// ends, so a round trip through this is lossy by a fraction of a level.
-    /// It is still the right path: it is the same number
-    /// `EPDFAnnot_GenerateAppearance` composites with, and a raw `/CA` read
-    /// is not.
+    /// The fork reads `/CA` as stored, clamped to 0..=1, and 1 when absent:
+    /// the same number `EPDFAnnot_GenerateAppearance` composites with, which
+    /// a raw `/CA` read is not. It used to hand back a byte; it is an `f32`
+    /// now, widened here the way the TypeScript's `readF32` widens it, so
+    /// both sides produce the same JSON number.
     pub fn opacity(&self) -> Option<f64> {
-        let mut alpha = 0u32;
-        // SAFETY: the handle is live and `alpha` is a valid out-parameter.
-        let ok = unsafe { pdfium_sys::EPDFAnnot_GetOpacity(self.handle, &raw mut alpha) };
-        // In f64 because the wire value is, and 128/255 is 0.5019607843137255
-        // there against 0.50196081 through an f32. The two are not the same
-        // JSON number and the vector comparison is exact.
-        (ok != 0).then(|| f64::from(alpha as u8) / 255.0)
+        let mut opacity = 0f32;
+        // SAFETY: the handle is live and `opacity` is a valid out-parameter.
+        let ok = unsafe { pdfium_sys::EPDFAnnot_GetOpacity(self.handle, &raw mut opacity) };
+        (ok != 0).then(|| f64::from(opacity))
     }
 
     /// The effective border style and width.

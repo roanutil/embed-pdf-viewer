@@ -44,16 +44,20 @@ impl ChangedWidgets {
 
 /// Which kind of control `create_field` makes.
 ///
-/// `EPDF_FORMFIELD_FAMILY_*`. A push button and a signature are missing
-/// deliberately: the fork's creator does not make them, and a family this
-/// layer could name but not create would be a promise the call cannot keep.
+/// `EPDF_FORMFIELD_FAMILY_*`. Unknown is missing deliberately: the fork's
+/// creator does not make it, and a family this layer could name but not
+/// create would be a promise the call cannot keep. At this pin the creator
+/// makes push buttons too (their caption is the widgets' `/MK /CA`), and
+/// signatures, created unsigned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CreatableFieldFamily {
+    Pushbutton = 1,
     Checkbox = 2,
     Radio = 3,
     Text = 4,
     Combobox = 5,
     Listbox = 6,
+    Signature = 7,
 }
 
 /// What a field deletion detached.
@@ -63,16 +67,42 @@ pub struct DetachedWidgets {
     pub total: usize,
 }
 
-/// What an import applied and what it did not.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct FormImportCounts {
-    /// Fields the payload named.
-    pub fields_total: u32,
-    /// Fields it named that the document has and that took the value.
-    pub fields_applied: u32,
-    /// Fields it named that the document does not have, or that refused.
-    pub fields_skipped: u32,
-    pub widgets_changed: u32,
+/// What a value writer writes, in the shapes `EPDFForm_GetFieldValueKind`
+/// reads.
+///
+/// `EPDF_FORM_VALUE_NONE`, `_SCALAR` and `_ARRAY`. The writers decide
+/// nothing: no cut to `/MaxLen`, no sibling widgets, no option order. The
+/// caller works out what the field holds and writes exactly that.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FieldValueWrite<'a> {
+    /// The field holds no value of its own. The key is removed or, when a
+    /// parent field holds one, an empty value shadows it.
+    None,
+    /// One value: a text string, or a toggle's state name as UTF-8.
+    Scalar(&'a str),
+    /// Any number of values: a multi-select list box only.
+    Array(&'a [String]),
+}
+
+impl FieldValueWrite<'_> {
+    /// `EPDF_FORM_VALUE_*`.
+    fn kind(self) -> i32 {
+        match self {
+            Self::None => 0,
+            Self::Scalar(_) => 1,
+            Self::Array(_) => 2,
+        }
+    }
+
+    /// The values as NUL-terminated UTF-16, one per entry.
+    fn encode(self) -> Vec<Vec<u16>> {
+        let encode = |value: &str| value.encode_utf16().chain(std::iter::once(0)).collect();
+        match self {
+            Self::None => Vec::new(),
+            Self::Scalar(value) => vec![encode(value)],
+            Self::Array(values) => values.iter().map(|value| encode(value)).collect(),
+        }
+    }
 }
 
 /// What a repair pass found and fixed.
@@ -93,48 +123,6 @@ pub struct FormRepairReport {
 }
 
 impl Document {
-    /// Apply an FDF payload.
-    pub fn import_fdf(&self, bytes: &[u8]) -> Option<FormImportCounts> {
-        // SAFETY: the handle is live and the buffer outlives the call.
-        self.import_with(|result| unsafe {
-            pdfium_sys::EPDFForm_ImportFDF(
-                self.as_raw(),
-                bytes.as_ptr().cast(),
-                bytes.len() as std::os::raw::c_ulong,
-                result,
-            )
-        })
-    }
-
-    /// Apply an XFDF payload.
-    pub fn import_xfdf(&self, bytes: &[u8]) -> Option<FormImportCounts> {
-        // SAFETY: as above.
-        self.import_with(|result| unsafe {
-            pdfium_sys::EPDFForm_ImportXFDF(
-                self.as_raw(),
-                bytes.as_ptr().cast(),
-                bytes.len() as std::os::raw::c_ulong,
-                result,
-            )
-        })
-    }
-
-    fn import_with(
-        &self,
-        call: impl FnOnce(*mut pdfium_sys::EPDF_FORM_IMPORT_RESULT) -> i32,
-    ) -> Option<FormImportCounts> {
-        let mut result = pdfium_sys::EPDF_FORM_IMPORT_RESULT::default();
-        if call(&raw mut result) == 0 {
-            return None;
-        }
-        Some(FormImportCounts {
-            fields_total: result.fields_total,
-            fields_applied: result.fields_applied,
-            fields_skipped: result.fields_skipped,
-            widgets_changed: result.widgets_changed,
-        })
-    }
-
     /// Relink a form whose `/AcroForm` and pages disagree.
     ///
     /// `bake_appearances` also draws a stream for every widget, which is
@@ -172,7 +160,9 @@ impl Document {
         let name: Vec<u16> = full_name.encode_utf16().chain(std::iter::once(0)).collect();
         // SAFETY: the handle is live and the name outlives the call.
         let object_number = unsafe {
-            pdfium_sys::EPDFForm_CreateField(self.as_raw(), family as i32, name.as_ptr())
+            // Zero is "the next free object number"; a chosen number needs a
+            // layer transaction, which this layer does not open.
+            pdfium_sys::EPDFForm_CreateField(self.as_raw(), family as i32, name.as_ptr(), 0)
         };
         (object_number > 0).then_some(object_number)
     }
@@ -195,6 +185,9 @@ impl Document {
                 field_object_number,
                 widget_object_number,
                 state.as_ptr(),
+                // Zero: a merged field split by the adoption gives its old
+                // widget the next free object number.
+                0,
             ) != 0
         })
     }
@@ -323,45 +316,98 @@ impl Document {
         }
     }
 
-    /// `/DV`.
-    pub fn set_field_default_values(&self, field_object_number: u32, values: &[String]) -> bool {
-        let encoded: Vec<Vec<u16>> = values
-            .iter()
-            .map(|value| value.encode_utf16().chain(std::iter::once(0)).collect())
-            .collect();
-        let pointers: Vec<*const u16> = encoded.iter().map(|value| value.as_ptr()).collect();
-        // SAFETY: as above.
+    /// `/V`, written as given.
+    ///
+    /// Drops `/RV` and copies `/V` onto the field's twin controls in other
+    /// planes. Draws nothing: [`Document::redraw_field_widgets`] makes a text
+    /// or choice field's new picture, and [`Document::set_field_widgets_checked`]
+    /// is a toggle's. Refused for a field that is not terminal, or an
+    /// [`FieldValueWrite::Array`] on anything but a list box.
+    pub fn set_field_value(&self, field_object_number: u32, value: FieldValueWrite<'_>) -> bool {
+        self.write_field_value(pdfium_sys::EPDFForm_SetFieldValue, field_object_number, value)
+    }
+
+    /// `/DV`, written the way [`Document::set_field_value`] writes `/V`.
+    ///
+    /// [`FieldValueWrite::None`] is how a default is removed now; the
+    /// dedicated remove call is gone from the fork.
+    pub fn set_field_default_value(
+        &self,
+        field_object_number: u32,
+        value: FieldValueWrite<'_>,
+    ) -> bool {
+        self.write_field_value(
+            pdfium_sys::EPDFForm_SetFieldDefaultValue,
+            field_object_number,
+            value,
+        )
+    }
+
+    fn write_field_value(
+        &self,
+        writer: unsafe extern "C" fn(
+            pdfium_sys::FPDF_DOCUMENT,
+            u32,
+            i32,
+            *const pdfium_sys::FPDF_WIDESTRING,
+            std::os::raw::c_ulong,
+        ) -> i32,
+        field_object_number: u32,
+        value: FieldValueWrite<'_>,
+    ) -> bool {
+        let encoded = value.encode();
+        let pointers: Vec<pdfium_sys::FPDF_WIDESTRING> =
+            encoded.iter().map(|value| value.as_ptr()).collect();
+        let values = if pointers.is_empty() { std::ptr::null() } else { pointers.as_ptr() };
+        // SAFETY: the handle is live, the pointer array is as long as the
+        // count, and both it and every string outlive the call.
         unsafe {
-            pdfium_sys::EPDFForm_SetFieldDefaultValues(
+            writer(
                 self.as_raw(),
                 field_object_number,
-                pointers.as_ptr().cast(),
+                value.kind(),
+                values,
                 pointers.len() as std::os::raw::c_ulong,
             ) != 0
         }
     }
 
-    /// Remove `/DV`, which is not the same as setting it to nothing.
-    pub fn remove_field_default_value(&self, field_object_number: u32) -> bool {
-        // SAFETY: the handle is live.
+    /// `/I` on a combo box or list box: the selected options' positions in
+    /// `/Opt`, as given. Empty says none.
+    pub fn set_field_selected_indices(&self, field_object_number: u32, indices: &[i32]) -> bool {
+        let pointer = if indices.is_empty() { std::ptr::null() } else { indices.as_ptr() };
+        // SAFETY: the handle is live and the slice outlives the call.
         unsafe {
-            pdfium_sys::EPDFForm_RemoveFieldDefaultValue(self.as_raw(), field_object_number) != 0
+            pdfium_sys::EPDFForm_SetFieldSelectedIndices(
+                self.as_raw(),
+                field_object_number,
+                pointer,
+                indices.len() as std::os::raw::c_ulong,
+            ) != 0
         }
     }
 
-    /// `/V` on a text field.
-    pub fn set_field_text_value(
+    /// Turn a checkbox's or radio group's widgets on or off, one entry per
+    /// widget in the model's widget order.
+    ///
+    /// The visual half of a toggle write: a widget on gets its own on-state
+    /// as `/AS`, a widget off gets `/Off`. `/V` is
+    /// [`Document::set_field_value`]'s to write. Refused when the field is
+    /// not a toggle or the slice is not its widget count.
+    pub fn set_field_widgets_checked(
         &self,
         field_object_number: u32,
-        value: &str,
+        checked: &[bool],
     ) -> Option<ChangedWidgets> {
-        let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
-        // SAFETY: the handle is live and the string outlives the call.
+        let checked: Vec<pdfium_sys::FPDF_BOOL> = checked.iter().map(|&on| i32::from(on)).collect();
+        let pointer = if checked.is_empty() { std::ptr::null() } else { checked.as_ptr() };
+        // SAFETY: the handle is live and the array outlives the call.
         self.with_changed_widgets(|buffer, capacity, count| unsafe {
-            pdfium_sys::EPDFForm_SetTextValue(
+            pdfium_sys::EPDFForm_SetFieldWidgetsChecked(
                 self.as_raw(),
                 field_object_number,
-                value.as_ptr(),
+                pointer,
+                checked.len() as std::os::raw::c_ulong,
                 buffer,
                 capacity,
                 count,
@@ -369,53 +415,14 @@ impl Document {
         })
     }
 
-    /// `/V` on a checkbox or a radio group.
-    ///
-    /// An EMPTY state clears the group, which is the C API's null and is why
-    /// this takes a `&str` rather than an `Option`: "off" is a state a file
-    /// can name, and the empty string is the absence of one.
-    pub fn set_field_toggle(
-        &self,
-        field_object_number: u32,
-        on_state: &str,
-    ) -> Result<Option<ChangedWidgets>, PdfiumError> {
-        let state =
-            CString::new(on_state).map_err(|_| PdfiumError::InvalidArgument("toggle state"))?;
-        // SAFETY: the handle is live and the string outlives the call.
-        Ok(self.with_changed_widgets(|buffer, capacity, count| unsafe {
-            pdfium_sys::EPDFForm_SetToggle(
-                self.as_raw(),
-                field_object_number,
-                state.as_ptr(),
-                buffer,
-                capacity,
-                count,
-            )
-        }))
-    }
-
-    /// `/V` on a combo box or a list box.
-    ///
-    /// A list takes several; a combo box takes one. Which is legal is the
-    /// field's business and PDFium's, not this layer's.
-    pub fn set_field_choice_values(
-        &self,
-        field_object_number: u32,
-        values: &[String],
-    ) -> Option<ChangedWidgets> {
-        let encoded: Vec<Vec<u16>> = values
-            .iter()
-            .map(|value| value.encode_utf16().chain(std::iter::once(0)).collect())
-            .collect();
-        let pointers: Vec<*const u16> = encoded.iter().map(|value| value.as_ptr()).collect();
-        // SAFETY: the handle is live, and both the strings and the pointer
-        // array outlive the call.
+    /// Draw a new `/AP` for every widget of a text field, combo box or list
+    /// box from what the field holds, and report them all as changed.
+    pub fn redraw_field_widgets(&self, field_object_number: u32) -> Option<ChangedWidgets> {
+        // SAFETY: the handle is live.
         self.with_changed_widgets(|buffer, capacity, count| unsafe {
-            pdfium_sys::EPDFForm_SetChoiceValues(
+            pdfium_sys::EPDFForm_RedrawFieldWidgets(
                 self.as_raw(),
                 field_object_number,
-                pointers.as_ptr().cast(),
-                pointers.len() as std::os::raw::c_ulong,
                 buffer,
                 capacity,
                 count,
@@ -472,29 +479,10 @@ impl Document {
         })
     }
 
-    /// Put a field back to its `/DV`.
-    ///
-    /// Not the same as writing an empty value: a field with a default goes
-    /// back to it, and one without goes empty. The distinction belongs to
-    /// PDFium because `/DV` is where it lives.
-    pub fn reset_field(&self, field_object_number: u32) -> Option<ChangedWidgets> {
-        // SAFETY: the handle is live.
-        self.with_changed_widgets(|buffer, capacity, count| unsafe {
-            pdfium_sys::EPDFForm_ResetField(
-                self.as_raw(),
-                field_object_number,
-                buffer,
-                capacity,
-                count,
-            )
-        })
-    }
-
     /// Run a write with the changed-widgets out-parameters wired up.
     ///
-    /// `None` is PDFium refusing the write, which it does for a value the
-    /// field cannot hold: an unknown toggle state, a string past `/MaxLen`,
-    /// a choice that is not one of the options.
+    /// `None` is PDFium refusing the write: a field of the wrong family, or
+    /// an argument that does not fit it.
     fn with_changed_widgets(
         &self,
         call: impl FnOnce(*mut u32, std::os::raw::c_ulong, *mut std::os::raw::c_ulong) -> i32,

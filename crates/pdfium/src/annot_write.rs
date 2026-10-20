@@ -168,13 +168,14 @@ impl Annotation<'_> {
 
     /// `/CA`, from a 0..=1 opacity.
     ///
-    /// The rounding is here rather than at the call site because the native
-    /// entry point takes a byte and every caller would otherwise repeat it,
-    /// which is how two callers end up rounding differently.
+    /// The fork stores the value as given (1 removes `/CA`) and refuses one
+    /// outside 0..=1. The clamp is kept here so a caller that used to pass an
+    /// out-of-range opacity still gets the nearest legal one, as it did when
+    /// the native call took a byte.
     pub fn set_opacity(&self, opacity: f64) -> bool {
-        let alpha = (opacity * 255.0).round().clamp(0.0, 255.0) as u32;
+        let opacity = opacity.clamp(0.0, 1.0) as f32;
         // SAFETY: the handle is live.
-        unsafe { pdfium_sys::EPDFAnnot_SetOpacity(self.as_raw(), alpha) != 0 }
+        unsafe { pdfium_sys::EPDFAnnot_SetOpacity(self.as_raw(), opacity) != 0 }
     }
 
     /// The raw `/F` word.
@@ -419,15 +420,6 @@ impl Annotation<'_> {
     pub fn clear_border_effect(&self) -> bool {
         // SAFETY: the handle is live.
         unsafe { pdfium_sys::EPDFAnnot_ClearBorderEffect(self.as_raw()) != 0 }
-    }
-
-    /// `/RD`, in the `[left, bottom, right, top]` order PDFium takes.
-    pub fn set_rectangle_differences(&self, left: f32, bottom: f32, right: f32, top: f32) -> bool {
-        // SAFETY: the handle is live.
-        unsafe {
-            pdfium_sys::EPDFAnnot_SetRectangleDifferences(self.as_raw(), left, bottom, right, top)
-                != 0
-        }
     }
 
     /// Remove `/RD`.

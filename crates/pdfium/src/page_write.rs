@@ -82,7 +82,14 @@ impl crate::PageView<'_> {
         let mut removed = 0u32;
         // SAFETY: the page handle is live and `removed` is a valid
         // out-parameter.
-        let ok = unsafe { pdfium_sys::EPDFPage_ApplyRedactions(self.as_raw(), &raw mut removed) };
+        let ok = unsafe {
+            pdfium_sys::EPDFPage_ApplyRedactions(
+                self.as_raw(),
+                std::ptr::null(),
+                0,
+                &raw mut removed,
+            )
+        };
         (ok != 0).then_some(removed)
     }
 
@@ -91,13 +98,33 @@ impl crate::PageView<'_> {
     /// The count is COLLATERAL: annotations other than the marking that
     /// went with it, which is popups cascading and widgets detaching.
     pub fn apply_redaction(&self, annotation: &crate::Annotation<'_>) -> Option<u32> {
+        self.apply_redaction_marks(std::slice::from_ref(annotation))
+    }
+
+    /// Apply these markings together, in one pass.
+    ///
+    /// `EPDFPage_ApplyRedactions` with explicit marks: their regions are
+    /// applied at once, so each image under them is read and written once.
+    /// `None` is PDFium's false: a mark that is not a redaction of this page,
+    /// nothing to apply, or a failure. An empty slice is refused here rather
+    /// than passed through, because the native call reads an empty list as
+    /// "every marking on the page".
+    pub fn apply_redaction_marks(&self, marks: &[crate::Annotation<'_>]) -> Option<u32> {
+        if marks.is_empty() {
+            return None;
+        }
+        let handles: Vec<pdfium_sys::FPDF_ANNOTATION> =
+            marks.iter().map(|annotation| annotation.as_raw()).collect();
+        let count = i32::try_from(handles.len()).ok()?;
         let mut removed = 0u32;
-        // SAFETY: both handles are live and `removed` is a valid
-        // out-parameter.
+        // SAFETY: the page handle and every annotation handle are live, the
+        // handle array is `count` long and outlives the call, and `removed`
+        // is a valid out-parameter.
         let ok = unsafe {
-            pdfium_sys::EPDFAnnot_ApplyRedaction(
+            pdfium_sys::EPDFPage_ApplyRedactions(
                 self.as_raw(),
-                annotation.as_raw(),
+                handles.as_ptr(),
+                count,
                 &raw mut removed,
             )
         };

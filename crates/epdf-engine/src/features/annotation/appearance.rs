@@ -310,15 +310,25 @@ fn render_one(
         }
     }
 
+    if strip_rotation {
+        // re-port (Task 8): EPDF_RenderAnnotBitmapUnrotated now takes the turn
+        // (degrees and unrotated box) from the caller; port upstream's
+        // readAnnotationTurn and pass it as a pdfium::AppearanceTurn.
+        return Err(EngineError::with_message(
+            EngineErrorCode::NotImplemented,
+            "unrotated appearance render is not ported to the runtime 1461b0c51 API",
+        ));
+    }
     let matrix = display_rect_to_device_matrix(display_rect, options.rotation, width, height);
     let bitmap = view
         .render_annotation_rgba_with_matrix(
             annotation,
             mode,
+            None,
             width,
             height,
             matrix.to_array(),
-            strip_rotation,
+            None,
         )
         .map_err(|e| {
             EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())

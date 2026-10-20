@@ -58,13 +58,13 @@ pub use fonts::{
 };
 pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
 pub use form_write::{
-    FieldDisplay,
-    ChangedWidgets, CreatableFieldFamily, DetachedWidgets, FormImportCounts, FormRepairReport,
+    ChangedWidgets, CreatableFieldFamily, DetachedWidgets, FieldDisplay, FieldValueWrite,
+    FormRepairReport,
 };
 pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
-pub use page::{Page, PageView, SharedPage};
+pub use page::{AppearanceTurn, Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
 pub use page_write::{FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};
