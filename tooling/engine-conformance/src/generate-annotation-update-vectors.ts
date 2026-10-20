@@ -85,6 +85,8 @@ interface UpdateCase {
   readonly draftResources?: Resources;
   /** Bytes the update carries beside the patch, by role. */
   readonly patchResources?: Resources;
+  /** The engine refuses this patch; the case records the error code. */
+  readonly refused?: true;
 }
 
 /** A case's resources as the bytes the write option takes. */
@@ -224,6 +226,9 @@ const CASES: readonly UpdateCase[] = [
       vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],
     },
     patch: { subtype: 'polygon', vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }] },
+    // Refused since 404b79b3e ("Engine API v3 drawing details": too few
+    // points to draw is InvalidArg); the case records the refusal code.
+    refused: true,
   },
   {
     name: 'polygon-clear-cloudy',
@@ -642,17 +647,12 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
           resourcesOf(entry.patchResources),
         );
       } catch (error) {
-        // A patch upstream now refuses records the refusal, so the change
-        // shows in the vector instead of stopping the run.
-        const code = (error as { code?: unknown })?.code;
-        if (code === undefined) throw error;
-        return {
-          ...entry,
-          pageObjectNumber: first.ref.objectNumber,
-          refusedWith: String(code),
-          message: error instanceof Error ? error.message : String(error),
-        };
+        // Only the code is recorded: the engines word refusals differently.
+        if (!entry.refused) throw error;
+        const code = String((error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, pageObjectNumber: first.ref.objectNumber, refusedWith: code };
       }
+      if (entry.refused) throw new Error(`${entry.name}: expected a refusal`);
 
       // The results name the annotation `annotation` and the timestamp
       // `modifiedAt` since 83f6598d2 and fd175ba50; `weakRefsInvalidated` and

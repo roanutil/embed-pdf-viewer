@@ -81,6 +81,8 @@ interface CreateCase {
    * to rebuild.
    */
   readonly resources?: Readonly<Partial<Record<AnnotationResourceRole, readonly number[]>>>;
+  /** The engine refuses this draft; the case records the error code. */
+  readonly refused?: true;
 }
 
 /** A case's resources as the bytes the write option takes. */
@@ -177,6 +179,9 @@ const CASES: readonly CreateCase[] = [
       box: { x: 300, y: 332, width: 100, height: 60 },
       cloudyIntensity: 0,
     },
+    // Refused since c78997346 declared a cloudy intensity positive; the
+    // case records the refusal code.
+    refused: true,
   },
   {
     name: 'square-rotated',
@@ -264,6 +269,9 @@ const CASES: readonly CreateCase[] = [
       vertices: [{ x: 450, y: 342 }, { x: 560, y: 342 }, { x: 505, y: 252 }],
       cloudyIntensity: 0,
     },
+    // Refused since c78997346 declared a cloudy intensity positive; the
+    // case records the refusal code.
+    refused: true,
   },
   {
     name: 'polyline-zero-rotation',
@@ -810,18 +818,12 @@ async function readCase(entry: CreateCase): Promise<unknown> {
           resourcesOf(entry.resources),
         );
       } catch (error) {
-        // Upstream refuses some drafts it used to write (a zero cloudy
-        // intensity, for one, since c78997346 declared it positive). The
-        // case records the refusal so the change shows in the vector.
-        const code = (error as { code?: unknown })?.code;
-        if (code === undefined) throw error;
-        return {
-          ...entry,
-          pageObjectNumber: first.ref.objectNumber,
-          refusedWith: String(code),
-          message: error instanceof Error ? error.message : String(error),
-        };
+        // Only the code is recorded: the engines word refusals differently.
+        if (!entry.refused) throw error;
+        const code = String((error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, pageObjectNumber: first.ref.objectNumber, refusedWith: code };
       }
+      if (entry.refused) throw new Error(`${entry.name}: expected a refusal`);
 
       // The whole created DTO minus the timestamp. The result names it
       // `annotation` and the timestamp `modifiedAt` since 83f6598d2 and
