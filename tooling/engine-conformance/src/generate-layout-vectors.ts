@@ -24,13 +24,10 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type {
-  PageGeometryRun,
-  PageGeometrySnapshot,
-} from '../../../packages/engine/core/src/dto/PageGeometrySnapshot';
-import type { PdfPoint, PdfQuad, PdfRect } from '../../../packages/engine/core/src/geometry/primitives';
-import type { PdfCoordinates } from '../../../packages/engine/core/src/pageSpace/coordinates';
-import { createPdfTextLayout } from '../../../packages/engine/core/src/text/layout';
+import type { PageGeometrySnapshot } from '../../../packages/engine/core/src/dto/PageGeometrySnapshot';
+import type { PageQuad } from '../../../packages/engine/core/src/geometry/pageSpace';
+import type { PdfPoint } from '../../../packages/engine/core/src/geometry/primitives';
+import { createTextLayout, mirroredRun } from '../../../packages/engine/core/src/pageSpace/text';
 import type { TextRange } from '../../../packages/engine/core/src/text/TextRange';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -38,7 +35,7 @@ const vectorsRoot = join(packageRoot, 'vectors', 'text');
 const geometryRoot = join(packageRoot, 'vectors', 'pages.geometry');
 
 /** Bump when the envelope changes shape. The Rust runner asserts it. */
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /**
  * How many glyphs a page contributes probes for.
@@ -83,97 +80,33 @@ function quantizeDeep(value: unknown): unknown {
 
 /*
  * Upstream reshaped the layout in a10ed2659 ("Engine API v3, round 3b: text
- * and search") and 00d2c8760 ("Quads: one shape"). The free functions
- * (`buildPageTextLayout`, `textGlyphAt`, `expandTextRangeTo*`,
- * `textSegmentsForRange`, `textGlyphQuad`) are internal now; the way in is
- * `createPdfTextLayout(snapshot)`, a `TextLayout` in the file's coordinates
- * whose methods are those same functions. The geometry DTO renamed its
- * fields (`charStart` to `start`, `looseBox`/`looseQuad` to `loose`,
- * `tightBox`/`tightQuad` to `tight`, flag bits to `space`/`empty`) and quads
- * name their corners. The adapters below translate at the edges, so the
- * input vectors and this file's output keep their shape.
+ * and search") and 00d2c8760 ("Quads: one shape"), and moved text geometry
+ * to page space in 3bad82c8d ("Page space, text and search"). The committed
+ * geometry vectors are what `page.text.layout()` answers, page space with
+ * y down, so they go to `createTextLayout` (`core/src/pageSpace/text.ts`),
+ * the page-space layout that call returns. It runs `createPdfTextLayout` on
+ * the runs mirrored top to bottom and flips each answer back. Quads keep
+ * their corner names and segment rects are page boxes (`x, y, width,
+ * height`), so the vectors are page space too.
  */
-
-type LegacyQuad = { p1: PdfPoint; p2: PdfPoint; p3: PdfPoint; p4: PdfPoint };
-
-/** The committed geometry vectors' bit flags (old `PageGeometryGlyph.flags`). */
-const LEGACY_FLAG_SPACE = 1;
-const LEGACY_FLAG_EMPTY = 2;
-
-/**
- * `p1..p4` were upper-start, upper-end, lower-start, lower-end in the
- * glyph's own frame (old `PageGeometrySnapshot.ts`), which is exactly
- * `upperLeft, upperRight, lowerLeft, lowerRight` now.
- */
-function namedQuad(q: LegacyQuad): PdfQuad {
-  return { upperLeft: q.p1, upperRight: q.p2, lowerLeft: q.p3, lowerRight: q.p4 };
-}
-
-function legacyQuad(q: PdfQuad): LegacyQuad {
-  return { p1: q.upperLeft, p2: q.upperRight, p3: q.lowerLeft, p4: q.lowerRight };
-}
-
-function glyphFlags(flags: number): { space?: true; empty?: true } {
-  return {
-    ...(flags & LEGACY_FLAG_SPACE ? { space: true as const } : {}),
-    ...(flags & LEGACY_FLAG_EMPTY ? { empty: true as const } : {}),
-  };
-}
-
-/**
- * A committed geometry snapshot in the current DTO shape. A run that already
- * has `start` is the new shape and passes through, so this keeps working once
- * the geometry vectors are regenerated.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function currentSnapshot(raw: { runs: any[] }): PageGeometrySnapshot<PdfCoordinates> {
-  const runs = raw.runs.map((run): PageGeometryRun<PdfCoordinates> => {
-    if ('start' in run) return run;
-    const base = { rect: run.rect as PdfRect, start: run.charStart as number };
-    const fontSize = run.fontSize === undefined ? {} : { fontSize: run.fontSize as number };
-    if ('rotation' in run) {
-      return {
-        ...base,
-        rotation: run.rotation,
-        ascentFlip: run.ascentFlip,
-        ...fontSize,
-        glyphs: run.glyphs.map(
-          (g: { looseQuad: LegacyQuad; tightQuad?: LegacyQuad; flags: number }) => ({
-            loose: namedQuad(g.looseQuad),
-            ...(g.tightQuad ? { tight: namedQuad(g.tightQuad) } : {}),
-            ...glyphFlags(g.flags),
-          }),
-        ),
-      };
-    }
-    return {
-      ...base,
-      ...fontSize,
-      glyphs: run.glyphs.map((g: { looseBox: PdfRect; tightBox?: PdfRect; flags: number }) => ({
-        loose: g.looseBox,
-        ...(g.tightBox ? { tight: g.tightBox } : {}),
-        ...glyphFlags(g.flags),
-      })),
-    };
-  });
-  return { runs };
-}
 
 /**
  * How many orientation frames the layout builds. `TextLayout` does not
  * expose its frames, and the vectors carry the count, so this repeats the
  * frame keying of the internal `frameForRun` in `core/src/text/layout.ts`:
  * frame 0 for upright text, then one per (baseline direction, ascent
- * handedness) of each rotated run's first non-empty glyph.
+ * handedness) of each rotated run's first non-empty glyph. The layout keys
+ * frames on the y-up runs, so this reads them through upstream's
+ * `mirroredRun`, the same flip `createTextLayout` applies.
  */
 const FRAME_DOT_TOLERANCE = Math.cos(0.0087);
 const EDGE_EPSILON = 1e-6;
 
-function frameCountOf(snapshot: PageGeometrySnapshot<PdfCoordinates>): number {
+function frameCountOf(snapshot: PageGeometrySnapshot): number {
   const frames: { baseline: PdfPoint; ascent: PdfPoint }[] = [
     { baseline: { x: 1, y: 0 }, ascent: { x: 0, y: 1 } },
   ];
-  for (const run of snapshot.runs) {
+  for (const run of snapshot.runs.map(mirroredRun)) {
     if (!('rotation' in run)) continue;
     const seed = run.glyphs.find((g) => !g.empty);
     if (!seed) continue;
@@ -202,19 +135,39 @@ function inclusive(range: TextRange | null, glyph: number): [number, number] {
   return range === null ? [glyph, glyph] : [range.start, range.start + range.count - 1];
 }
 
-function runPage(raw: { runs: unknown[] }) {
-  const snapshot = currentSnapshot(raw as { runs: never[] });
-  const layout = createPdfTextLayout(snapshot);
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const isPoint = (value: unknown): boolean =>
+  !!value &&
+  typeof value === 'object' &&
+  isFiniteNumber((value as { x?: unknown }).x) &&
+  isFiniteNumber((value as { y?: unknown }).y);
+
+const isQuad = (value: PageQuad): boolean =>
+  isPoint(value.upperLeft) &&
+  isPoint(value.upperRight) &&
+  isPoint(value.lowerLeft) &&
+  isPoint(value.lowerRight);
+
+function runPage(raw: { runs: unknown[] }, where: string) {
+  const snapshot = raw as PageGeometrySnapshot;
+  const layout = createTextLayout(snapshot);
   const glyphCount = layout.charCount;
   const probes = probeIndices(glyphCount);
-  const glyphQuad = (glyph: number): LegacyQuad | null => {
-    const quad = layout.charQuad(glyph);
-    return quad ? legacyQuad(quad) : null;
-  };
   const wordOf = (glyph: number) => inclusive(layout.wordAt(glyph), glyph);
   const lineOf = (glyph: number) => inclusive(layout.lineAt(glyph), glyph);
 
-  return {
+  const quads = probes.map((glyph) => layout.charQuad(glyph));
+  // A layout fed the wrong space reads `undefined` corners: every quad comes
+  // out without numbers and every probe at NaN, and the vector still writes.
+  // Refuse that instead of recording it.
+  const broken = quads.filter((quad) => quad !== null && !isQuad(quad));
+  if (broken.length > 0) {
+    throw new Error(`${where}: ${broken.length} glyph quads have no finite corners`);
+  }
+
+  const result = {
     glyphCount,
     frameCount: frameCountOf(snapshot),
     // The layout builds one run per snapshot run.
@@ -222,12 +175,13 @@ function runPage(raw: { runs: unknown[] }) {
     /**
      * Per-glyph: its quad, and the word and line it belongs to.
      *
-     * `expandTextRangeTo*` return INCLUSIVE `[from, to]` pairs, unlike
-     * everything else here, which is half-open. The counts below convert.
+     * `wordAt`/`lineAt` ranges are recorded as INCLUSIVE `[from, to]` pairs,
+     * unlike everything else here, which is half-open. The counts below
+     * convert.
      */
-    glyphs: probes.map((glyph) => ({
+    glyphs: probes.map((glyph, i) => ({
       glyph,
-      quad: quantizeDeep(glyphQuad(glyph)),
+      quad: quantizeDeep(quads[i]),
       word: wordOf(glyph),
       line: lineOf(glyph),
     })),
@@ -239,19 +193,13 @@ function runPage(raw: { runs: unknown[] }) {
     segments: probes.flatMap((glyph) => {
       const [wordStart, wordEnd] = wordOf(glyph);
       const [lineStart, lineEnd] = lineOf(glyph);
-      // `+ 1` because the expansions are inclusive and
-      // `textSegmentsForRange` takes a count.
       return [
         { start: glyph, count: 1 },
         { start: wordStart, count: wordEnd - wordStart + 1 },
         { start: lineStart, count: lineEnd - lineStart + 1 },
       ].map((range) => ({
         ...range,
-        segments: quantizeDeep(
-          layout
-            .segments(range)
-            .map((segment) => ({ ...segment, quad: legacyQuad(segment.quad) })),
-        ),
+        segments: quantizeDeep(layout.segments(range)),
       }));
     }),
     /**
@@ -259,19 +207,19 @@ function runPage(raw: { runs: unknown[] }) {
      * glyph, plus a point well outside the page, which must return nothing.
      */
     hits: [
-      ...probes.flatMap((glyph) => {
-        const quad = glyphQuad(glyph);
+      ...quads.flatMap((quad) => {
         if (!quad) return [];
-        const cx = q((quad.p1.x + quad.p4.x) / 2);
-        const cy = q((quad.p1.y + quad.p4.y) / 2);
+        const cx = q((quad.upperLeft.x + quad.lowerRight.x) / 2);
+        const cy = q((quad.upperLeft.y + quad.lowerRight.y) / 2);
         // The centre, where the tight and loose boxes both contain the point,
         // plus two near the loose box's corners, where they do not. Hit
         // testing prefers the TIGHT box, and mutation testing found that
-        // untested when every probe sat in the middle of a glyph.
-        const lx = q(Math.min(quad.p1.x, quad.p3.x));
-        const ly = q(Math.min(quad.p3.y, quad.p4.y));
-        const hx = q(Math.max(quad.p2.x, quad.p4.x));
-        const hy = q(Math.max(quad.p1.y, quad.p2.y));
+        // untested when every probe sat in the middle of a glyph. Page space
+        // runs y down, so the low corner is the largest y of the lower edge.
+        const lx = q(Math.min(quad.upperLeft.x, quad.lowerLeft.x));
+        const ly = q(Math.max(quad.lowerLeft.y, quad.lowerRight.y));
+        const hx = q(Math.max(quad.upperRight.x, quad.lowerRight.x));
+        const hy = q(Math.min(quad.upperLeft.y, quad.upperRight.y));
         return [
           { x: cx, y: cy },
           { x: lx, y: ly },
@@ -281,6 +229,15 @@ function runPage(raw: { runs: unknown[] }) {
       { x: -10_000, y: -10_000, glyph: layout.charAt({ x: -10_000, y: -10_000 }) },
     ],
   };
+
+  const probeHits = result.hits.slice(0, -1);
+  if (probeHits.some((hit) => !isFiniteNumber(hit.x) || !isFiniteNumber(hit.y))) {
+    throw new Error(`${where}: a hit probe has no finite position`);
+  }
+  if (probeHits.length > 0 && probeHits.every((hit) => hit.glyph === null)) {
+    throw new Error(`${where}: no hit probe landed on a glyph`);
+  }
+  return result;
 }
 
 async function main(): Promise<void> {
@@ -296,7 +253,7 @@ async function main(): Promise<void> {
       covers: parsed.covers,
       pages: parsed.pages.map((page: { index: number; snapshot: { runs: unknown[] } }) => ({
         index: page.index,
-        layout: runPage(page.snapshot),
+        layout: runPage(page.snapshot, `${parsed.case} page ${page.index}`),
       })),
     });
   }
