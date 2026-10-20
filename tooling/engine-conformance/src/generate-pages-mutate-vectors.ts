@@ -21,11 +21,12 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createLocalEngine,
   toPageRef,
   type PageRef,
   type PdfRotation,
 } from '../../../packages/engine/main/src/index';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -269,13 +270,11 @@ async function readCase(entry: MutateCase): Promise<unknown> {
   const bytes = new Uint8Array(
     await readFile(join(repoRoot, entry.flatten?.fixture ?? FIXTURE)),
   );
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -344,23 +343,23 @@ async function readCase(entry: MutateCase): Promise<unknown> {
         return (await doc.pages.delete(refs(entry.delete!.pages))).layout;
       };
 
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(run);
       if (entry.refused) {
-        let code: string | null = null;
-        try {
-          await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code };
       }
-      const produced = (await run()) as Record<string, unknown>;
+      if (!sent.ok) throw sent.error;
+      const produced = sent.value as Record<string, unknown>;
+      const request = sent.request;
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
-      if ('flattened' in produced) return { ...entry, flattened: produced.flattened };
+      if ('flattened' in produced) return { ...entry, request, flattened: produced.flattened };
       return 'layout' in produced
-        ? { ...entry, layout: produced.layout, inserted: produced.inserted }
-        : { ...entry, layout: produced };
+        ? { ...entry, request, layout: produced.layout, inserted: produced.inserted }
+        : { ...entry, request, layout: produced };
     } finally {
       await doc.close();
     }

@@ -19,10 +19,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  createLocalEngine,
-  type AnnotationPosition,
-} from '../../../packages/engine/main/src/index';
+import type { AnnotationPosition } from '../../../packages/engine/main/src/index';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -98,13 +97,11 @@ const CASES: readonly MoveCase[] = [
 
 async function readCase(entry: MoveCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -146,7 +143,11 @@ async function readCase(entry: MoveCase): Promise<unknown> {
             ? 'end'
             : { before: staying[entry.toIndex]!.ref };
 
-      const result = await page.annotations.reorder(refs, position);
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(() => page.annotations.reorder(refs, position));
+      if (!sent.ok) throw sent.error;
+      const result = sent.value;
       const after = await page.annotations.list();
 
       // The result reports the page's whole new order as refs (`order`)
@@ -156,6 +157,7 @@ async function readCase(entry: MoveCase): Promise<unknown> {
       return {
         ...entry,
         pageObjectNumber: pon,
+        request: sent.request,
         /** What was there, in order, so the case is readable on its own. */
         beforeOrder: before.annotations.map((a) => a.nm),
         afterOrder: after.annotations.map((a) => a.nm),

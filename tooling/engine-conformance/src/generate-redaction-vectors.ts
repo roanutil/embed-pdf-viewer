@@ -19,12 +19,14 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createLocalEngine,
+  type createLocalEngine,
   toPageRef,
   type Annotation,
   type AnnotationRef,
 } from '../../../packages/engine/main/src/index';
 import type { RedactionApplyScope } from '../../../packages/engine/core/src/mutation/RedactionApplyResult';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -172,13 +174,11 @@ async function v3Scope(
 
 async function readCase(entry: RedactionCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -193,17 +193,16 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       }
       const scope = await v3Scope(doc, entry.scope);
       const run = () => doc.redaction.apply(scope);
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(run);
       if (entry.refused) {
-        let code: string | null = null;
-        try {
-          await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code };
       }
-      const result = await run();
+      if (!sent.ok) throw sent.error;
+      const result = sent.value;
       // What is left on the page afterwards, which is how a caller sees
       // that the markings went and the rest did not.
       const page = doc.page(toPageRef(PAGE));
@@ -215,6 +214,7 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
       );
       return {
         ...entry,
+        request: sent.request,
         results: result.results,
         removedAnnotationCount: result.removedAnnotationCount,
         remaining,

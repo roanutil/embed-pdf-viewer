@@ -6,8 +6,9 @@
  *
  * It is `createLocalEngine` with one difference: the transport between the
  * engine's queue and the in-thread `WorkerHost` copies each request before
- * passing it on. `capture(run)` returns the write requests (`effect:
- * 'write'`) sent while `run` was in flight. Calls are awaited one at a time
+ * passing it on. `capture(run)` returns the write requests (`effect` one of
+ * `write`, `contentWrite` and `runtimeWrite`) sent while `run` was in
+ * flight. Calls are awaited one at a time
  * in every generator, so nothing else is in flight then.
  *
  * Two fields of a request are the session's own counters rather than the
@@ -53,6 +54,8 @@ function plain(value: unknown): unknown {
   );
 }
 
+const WRITES = new Set(['write', 'contentWrite', 'runtimeWrite']);
+
 type RuntimeOptions = Parameters<typeof createInlineTransport>[0];
 
 export function createRecordingEngine(runtime: RuntimeOptions = {}): RecordingEngine {
@@ -61,7 +64,7 @@ export function createRecordingEngine(runtime: RuntimeOptions = {}): RecordingEn
   const transport: Transport = {
     send(pack) {
       const request = pack.payload as WorkerRequest & { effect?: string };
-      if (recording && request.effect === 'write') recording.push(plain(request));
+      if (recording && WRITES.has(request.effect ?? '')) recording.push(plain(request));
       inner.send(pack);
     },
     start: () => inner.start(),
