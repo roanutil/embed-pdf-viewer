@@ -21,11 +21,11 @@
  * change the engine refuses records the error code; nothing of it was
  * written. The opId is fixed per case so the answer is the same on every run.
  *
- * The effects cases that were about the per-effect status vocabulary
+ * Every effects case runs. Some were about the per-effect status vocabulary
  * (`unchanged` against `applied`, a rejection or a no-op letting the rest of
- * the batch run, an all-no-op batch writing nothing) have no counterpart: a
- * change has no per-op status and stops at the first refusal. They stay
- * below, commented out.
+ * the batch run), which a change doesn't have: it answers one item per op
+ * and is refused whole at the first refusal. Their covers keep the old
+ * argument; what is recorded is what `doc.apply` does with the same ops.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -64,52 +64,53 @@ const CASES: readonly ApplyCase[] = [
     covers: 'The simplest batch. One effect, one write, one changed widget.',
     ops: [{ type: 'forms.setValue', field: TEXT, value: { value: 'Ada' } }],
   },
-  // The per-effect status vocabulary is gone with `forms.applyEffects`
-  // (98e5c270c): a change answers one item per op with no `unchanged` or
-  // `rejected`, and the first refusal refuses the whole change. These cases
-  // were about that vocabulary, so they stay here, commented out.
-  // {
-  //   name: 'writing-the-same-value-is-unchanged',
-  //   covers:
-  //     'Written once then written again. The second is a no-op, and reporting it as applied would bump the version for a script that changed nothing.',
-  //   effects: [
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada' } },
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada' } },
-  //   ],
-  // },
-  // {
-  //   name: 'a-later-effect-sees-the-earlier-one',
-  //   covers:
-  //     'Ordered, not batched. The second effect writes the value the first already wrote, so it can only be unchanged if the applier re-read between them.',
-  //   effects: [
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Grace' } },
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Grace' } },
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada' } },
-  //   ],
-  // },
-  // {
-  //   name: 'a-rejection-does-not-stop-the-batch',
-  //   covers:
-  //     'Preflight refused the first and nothing was written for it, so the second still runs. Only a failed write stops a batch.',
-  //   effects: [
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'toggle', state: 'Yes' } },
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada' } },
-  //   ],
-  // },
+  // The next three were about the per-effect status vocabulary, which went
+  // with `forms.applyEffects` (98e5c270c): a change answers one item per op,
+  // all of them or none. What `doc.apply` does with the same ops is what is
+  // recorded now.
+  {
+    name: 'writing-the-same-value-is-unchanged',
+    covers:
+      'Written once then written again. The second is a no-op, and reporting it as applied would bump the version for a script that changed nothing.',
+    ops: [
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada' } },
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada' } },
+    ],
+  },
+  {
+    name: 'a-later-effect-sees-the-earlier-one',
+    covers:
+      'Ordered, not batched. The second effect writes the value the first already wrote, so it can only be unchanged if the applier re-read between them.',
+    ops: [
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Grace' } },
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Grace' } },
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada' } },
+    ],
+  },
+  {
+    name: 'a-rejection-does-not-stop-the-batch',
+    covers:
+      'Preflight refused the first and nothing was written for it, so the second still runs. Only a failed write stops a batch.',
+    // The old effect was a toggle state on a text field; a toggle is
+    // `{ checked }` in v3.
+    ops: [
+      { type: 'forms.setValue', field: TEXT, value: { checked: true } },
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada' } },
+    ],
+  },
   {
     name: 'an-unknown-field-is-rejected',
     covers: 'Resolution happens in preflight, so a missing field never reaches a write.',
     ops: [{ type: 'forms.setValue', field: MISSING, value: { value: 'x' } }],
   },
-  // A checkbox's value is `{ checked }` since d7bd2d277: a write can't name
-  // a state any more, so a state no widget offers can't be sent. This case
-  // stays here, commented out.
-  // {
-  //   name: 'a-toggle-state-no-widget-offers-is-rejected',
-  //   covers:
-  //     'Validated against the widgets rather than left to the engine: a state nobody offers would be written and then read back as nothing.',
-  //   effects: [{ kind: 'setValue', ref: CHECKBOX, value: { type: 'toggle', state: 'Maybe' } }],
-  // },
+  {
+    name: 'a-toggle-state-no-widget-offers-is-rejected',
+    covers:
+      'Validated against the widgets rather than left to the engine: a state nobody offers would be written and then read back as nothing.',
+    // A checkbox takes `{ value }` by export value as well as `{ checked }`
+    // (`core/src/forms/write.ts`, `toggleStateOf`).
+    ops: [{ type: 'forms.setValue', field: CHECKBOX, value: { value: 'Maybe' } }],
+  },
   {
     name: 'a-choice-outside-the-options-is-rejected',
     covers: 'A list box holds only its own options; anything else is unreachable through the widget.',
@@ -143,17 +144,15 @@ const CASES: readonly ApplyCase[] = [
       'The fixture ships this field holding a value that is not its /DV, so a plain reset has work to do.',
     ops: [{ type: 'forms.reset', fields: [TEXT] }],
   },
-  // See the first commented-out group: the second reset's `unchanged` was
-  // the subject.
-  // {
-  //   name: 'resetting-twice-is-unchanged-the-second-time',
-  //   covers:
-  //     'The no-op case for a reset, reached by resetting first: the value now equals the default and there is nothing to put back.',
-  //   effects: [
-  //     { kind: 'reset', refs: [TEXT] },
-  //     { kind: 'reset', refs: [TEXT] },
-  //   ],
-  // },
+  {
+    name: 'resetting-twice-is-unchanged-the-second-time',
+    covers:
+      'The no-op case for a reset, reached by resetting first: the value now equals the default and there is nothing to put back.',
+    ops: [
+      { type: 'forms.reset', fields: [TEXT] },
+      { type: 'forms.reset', fields: [TEXT] },
+    ],
+  },
   {
     name: 'reset-takes-several-fields-at-once',
     covers: 'A reset button names a list, which is why this effect is the only plural one.',
@@ -208,27 +207,27 @@ const CASES: readonly ApplyCase[] = [
       'One write, two changed widgets: the one turning on and the one turning off. A caller redrawing only what changed needs both.',
     ops: [{ type: 'forms.setValue', field: RADIO, value: { value: 'Red' } }],
   },
-  // See the first commented-out group: these were about a batch writing
-  // nothing, and running on, when some effects are no-ops or refused.
-  // {
-  //   name: 'an-all-no-op-batch-produces-no-meta',
-  //   covers:
-  //     'Nothing was written, so there is no artifact, no event and no version bump. This is the common outcome for a recompute-everything script: one effect the field already satisfies, one the document cannot satisfy at all.',
-  //   effects: [
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada Lovelace' } },
-  //     { kind: 'setValue', ref: MISSING, value: { type: 'text', value: 'x' } },
-  //   ],
-  // },
-  // {
-  //   name: 'a-no-op-in-the-middle-does-not-stop-the-batch',
-  //   covers:
-  //     'Only a FAILED write stops a batch. Unchanged and rejected both let the rest run, which is what keeps a recompute-everything script from being truncated by its own no-ops.',
-  //   effects: [
-  //     { kind: 'setValue', ref: TEXT, value: { type: 'text', value: 'Ada Lovelace' } },
-  //     { kind: 'setValue', ref: MISSING, value: { type: 'text', value: 'x' } },
-  //     { kind: 'setValue', ref: NOTES, value: { type: 'text', value: 'note' } },
-  //   ],
-  // },
+  // The last two were about a batch running on past no-ops and refusals.
+  // A change is all or none, so what is recorded is that refusal.
+  {
+    name: 'an-all-no-op-batch-produces-no-meta',
+    covers:
+      'Nothing was written, so there is no artifact, no event and no version bump. This is the common outcome for a recompute-everything script: one effect the field already satisfies, one the document cannot satisfy at all.',
+    ops: [
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada Lovelace' } },
+      { type: 'forms.setValue', field: MISSING, value: { value: 'x' } },
+    ],
+  },
+  {
+    name: 'a-no-op-in-the-middle-does-not-stop-the-batch',
+    covers:
+      'Only a FAILED write stops a batch. Unchanged and rejected both let the rest run, which is what keeps a recompute-everything script from being truncated by its own no-ops.',
+    ops: [
+      { type: 'forms.setValue', field: TEXT, value: { value: 'Ada Lovelace' } },
+      { type: 'forms.setValue', field: MISSING, value: { value: 'x' } },
+      { type: 'forms.setValue', field: NOTES, value: { value: 'note' } },
+    ],
+  },
 ];
 
 async function runCase(entry: ApplyCase): Promise<unknown> {

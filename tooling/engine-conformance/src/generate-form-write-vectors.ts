@@ -26,6 +26,8 @@ import {
 } from '../../../packages/engine/main/src/index';
 import type { FormFieldValue } from '../../../packages/engine/core/src/forms/value';
 
+import { createRecordingEngine } from './recording-engine';
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'forms');
@@ -304,8 +306,13 @@ async function familyOf(doc: OpenedDocument, ref: FormFieldRef): Promise<string 
 
 function v3Value(value: Record<string, unknown>, family: string | null): FormFieldValue {
   switch (value.type) {
+    // A checkbox and a radio take their state as `{ value }`, the export
+    // value, which the engine resolves against the widgets' on-states
+    // (`toggleStateOf` in `core/src/forms/write.ts`); a null clears. Any
+    // other family is sent a toggle as `{ checked }`, which is what a
+    // toggle means there and what it refuses.
     case 'toggle':
-      return family === 'radio'
+      return family === 'radio' || family === 'checkbox'
         ? { value: value.state as string | null }
         : { checked: value.state !== null };
     case 'choice':
@@ -319,13 +326,11 @@ function v3Value(value: Record<string, unknown>, family: string | null): FormFie
 
 async function readCase(entry: WriteCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -338,28 +343,28 @@ async function readCase(entry: WriteCase): Promise<unknown> {
       const value = entry.value
         ? v3Value(entry.value, await familyOf(doc, ref))
         : undefined;
-      const run = () =>
-        value ? doc.forms.setValue(ref, value) : doc.forms.reset(ref);
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(async () =>
+        value ? await doc.forms.setValue(ref, value) : await doc.forms.reset(ref),
+      );
       if (entry.refused) {
         // The MESSAGE is not recorded, only the code: the two engines word
         // their refusals differently and a comparison of prose would pin
         // the wording rather than the behaviour.
-        let code: string | null = null;
-        try {
-          await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code };
       }
-      const result = await run();
+      if (!sent.ok) throw sent.error;
+      const result = sent.value;
       // The changed widgets are `meta.changedWidgets` since 7bccc4f35
       // ("Forms and signatures: v3 names and shapes"). A reset returns the
       // fields it changed, and none for a field already at its default,
       // since d7bd2d277; the field as it stands afterwards is read back.
       return {
         ...entry,
+        request: sent.request,
         field: 'field' in result ? result.field : await doc.forms.get(ref),
         changedWidgets: result.meta.changedWidgets,
       };
