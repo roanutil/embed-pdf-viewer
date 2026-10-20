@@ -26,6 +26,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
 
+import { frameOf, normalizeWriteStamps, v3Draft } from './annotation-v3-writes';
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
@@ -59,27 +61,6 @@ interface CreateCase {
    * beside it as a number array for the Rust runner to rebuild.
    */
   readonly resources?: Readonly<Record<string, readonly number[]>>;
-}
-
-/**
- * Turn every `{ resource: key }` in a draft into the inline bytes the public
- * API takes. The recorded draft keeps the key: that is what the Rust engine
- * parses, and its own write context carries the same payloads.
- */
-function materialize(value: unknown, resources: Record<string, readonly number[]>): unknown {
-  if (Array.isArray(value)) return value.map((entry) => materialize(entry, resources));
-  if (value === null || typeof value !== 'object') return value;
-  const entries = Object.entries(value as Record<string, unknown>);
-  const ref = entries.find(([key]) => key === 'resource');
-  if (ref && typeof ref[1] === 'string') {
-    const bytes = resources[ref[1]];
-    if (!bytes) throw new Error(`no payload for resource '${ref[1]}'`);
-    return Object.fromEntries([
-      ['data', Uint8Array.from(bytes)],
-      ...entries.filter(([key]) => key !== 'resource'),
-    ]);
-  }
-  return Object.fromEntries(entries.map(([key, entry]) => [key, materialize(entry, resources)]));
 }
 
 const CASES: readonly CreateCase[] = [
@@ -744,74 +725,80 @@ const CASES: readonly CreateCase[] = [
       rotation: 30,
     },
   },
-  {
-    name: 'widget-bare',
-    covers:
-      'An inert widget with only a rect. Every entry it does not name is left off, because an unwritten entry is what the FIELD supplies when one adopts the widget, and a default stamped now would override it.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 72, bottom: 250, right: 240, top: 274 },
-    },
-  },
-  {
-    name: 'widget-styled',
-    covers:
-      'The whole widget-plane surface. The colours are /MK rather than /C and /IC, so a writer that used the ordinary colour path leaves a widget whose border and background no reader reports.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 260, bottom: 250, right: 440, top: 274 },
-      color: { r: 30, g: 30, b: 120 },
-      interiorColor: { r: 245, g: 245, b: 230 },
-      strokeWidth: 2,
-      borderStyle: 'beveled',
-      fontFamily: 'times-roman',
-      fontSize: 11,
-      fontColor: { r: 20, g: 20, b: 20 },
-      textAlign: 'center',
-    },
-  },
-  {
-    name: 'widget-autosize-text',
-    covers:
-      'A /DA size of zero, which for a form control means auto-size to the box. Naming one member of the triple supplies the other two, because /DA is a single string.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 72, bottom: 210, right: 240, top: 240 },
-      fontSize: 0,
-    },
-  },
-  {
-    name: 'widget-width-only',
-    covers:
-      'A border width with no style. /BS is one call taking both, so naming either has to supply the other; saying nothing leaves the entry off.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 72, bottom: 170, right: 240, top: 200 },
-      strokeWidth: 3,
-    },
-  },
-  {
-    name: 'widget-font-default',
-    covers:
-      'A /DA size with no family, so the default family is what lands. The other two members of the triple are supplied because /DA is a single string.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 260, bottom: 170, right: 440, top: 200 },
-      fontSize: 14,
-    },
-  },
-  {
-    name: 'widget-cleared-colours',
-    covers:
-      'An explicit no-colour on both /MK entries, which is a widget that draws no border and has a transparent background. Different from not saying, though not on a new annotation.',
-    draft: {
-      subtype: 'widget',
-      rect: { left: 260, bottom: 210, right: 440, top: 240 },
-      color: null,
-      interiorColor: null,
-      borderStyle: 'dashed',
-    },
-  },
+  // `annotations.create` refuses a widget since 1233d1349 ("Read and write
+  // widgets through the form"): a widget is written through the form, by
+  // `doc.forms.addWidget` onto a field (or `forms.create` with the field),
+  // and an inert widget with no field can no longer be made. These six
+  // cases created bare widgets through the annotation verb, so they stay
+  // here, commented out.
+  // {
+  //   name: 'widget-bare',
+  //   covers:
+  //     'An inert widget with only a rect. Every entry it does not name is left off, because an unwritten entry is what the FIELD supplies when one adopts the widget, and a default stamped now would override it.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 72, bottom: 250, right: 240, top: 274 },
+  //   },
+  // },
+  // {
+  //   name: 'widget-styled',
+  //   covers:
+  //     'The whole widget-plane surface. The colours are /MK rather than /C and /IC, so a writer that used the ordinary colour path leaves a widget whose border and background no reader reports.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 260, bottom: 250, right: 440, top: 274 },
+  //     color: { r: 30, g: 30, b: 120 },
+  //     interiorColor: { r: 245, g: 245, b: 230 },
+  //     strokeWidth: 2,
+  //     borderStyle: 'beveled',
+  //     fontFamily: 'times-roman',
+  //     fontSize: 11,
+  //     fontColor: { r: 20, g: 20, b: 20 },
+  //     textAlign: 'center',
+  //   },
+  // },
+  // {
+  //   name: 'widget-autosize-text',
+  //   covers:
+  //     'A /DA size of zero, which for a form control means auto-size to the box. Naming one member of the triple supplies the other two, because /DA is a single string.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 72, bottom: 210, right: 240, top: 240 },
+  //     fontSize: 0,
+  //   },
+  // },
+  // {
+  //   name: 'widget-width-only',
+  //   covers:
+  //     'A border width with no style. /BS is one call taking both, so naming either has to supply the other; saying nothing leaves the entry off.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 72, bottom: 170, right: 240, top: 200 },
+  //     strokeWidth: 3,
+  //   },
+  // },
+  // {
+  //   name: 'widget-font-default',
+  //   covers:
+  //     'A /DA size with no family, so the default family is what lands. The other two members of the triple are supplied because /DA is a single string.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 260, bottom: 170, right: 440, top: 200 },
+  //     fontSize: 14,
+  //   },
+  // },
+  // {
+  //   name: 'widget-cleared-colours',
+  //   covers:
+  //     'An explicit no-colour on both /MK entries, which is a widget that draws no border and has a transparent background. Different from not saying, though not on a new annotation.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: { left: 260, bottom: 210, right: 440, top: 240 },
+  //     color: null,
+  //     interiorColor: null,
+  //     borderStyle: 'dashed',
+  //   },
+  // },
   {
     name: 'highlight-cleared-strings',
     covers:
@@ -861,22 +848,44 @@ async function readCase(entry: CreateCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
-      const draft = materialize(entry.draft, { ...(entry.resources ?? {}) }) as never;
-      const result = await page.annotations.create(draft);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
+      // The draft keeps its old spelling and is translated on the way in;
+      // see `annotation-v3-writes.ts`.
+      const page = doc.page(first.ref);
+      const { write, resources } = v3Draft(
+        entry.draft,
+        entry.resources ?? {},
+        frameOf(listing.pages),
+      );
+      let result;
+      try {
+        result = await page.annotations.create(write, resources ? { resources } : {});
+      } catch (error) {
+        // Upstream refuses some drafts it used to write (a zero cloudy
+        // intensity, for one, since c78997346 declared it positive). The
+        // case records the refusal so the change shows in the vector.
+        const code = (error as { code?: unknown })?.code;
+        if (code === undefined) throw error;
+        return {
+          ...entry,
+          pageObjectNumber: first.ref.objectNumber,
+          refusedWith: String(code),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
 
-      // The whole created DTO minus the timestamp, plus the envelope's own
-      // conclusions, which are what the impact classifier decided.
-      const { modified, ...created } = result.created as Record<string, unknown>;
+      // The whole created DTO minus the timestamp. The result names it
+      // `annotation` and the timestamp `modifiedAt` since 83f6598d2 and
+      // fd175ba50; `weakRefsInvalidated` and `shouldRefetch` went in
+      // bc0057f3a ("Remove NM and implement BaseID").
+      const { modifiedAt, ...created } = result.annotation as unknown as Record<string, unknown>;
       return {
         ...entry,
-        pageObjectNumber: first.pageObjectNumber,
+        pageObjectNumber: first.ref.objectNumber,
         created,
-        hasModified: typeof modified === 'string' && modified.length > 0,
+        hasModified: typeof modifiedAt === 'string' && modifiedAt.length > 0,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
       };
     } finally {
@@ -892,7 +901,8 @@ async function readCase(entry: CreateCase): Promise<unknown> {
  * for the same reason `modified` is dropped: PDFium stamps it from the clock
  * when the attachment's bytes are written, so the two engines record
  * different instants for the same file. Its PRESENCE is what matters, and
- * the Rust runner asserts that.
+ * the Rust runner asserts that. `normalizeWriteStamps` does the same for
+ * what a v3 create stamps.
  */
 function normalizeSessionIds(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeSessionIds);
@@ -901,6 +911,8 @@ function normalizeSessionIds(value: unknown): unknown {
     Object.entries(value as Record<string, unknown>).map(([key, entry]) => {
       if (key === 'docSessionId') return [key, '<session>'];
       if (key === 'creationDate' && typeof entry === 'string') return [key, '<stamped>'];
+      const stamped = normalizeWriteStamps(key, entry);
+      if (stamped !== undefined) return [key, stamped];
       return [key, normalizeSessionIds(entry)];
     }),
   );

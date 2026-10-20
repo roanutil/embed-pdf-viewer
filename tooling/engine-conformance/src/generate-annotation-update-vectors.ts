@@ -23,6 +23,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createLocalEngine } from '../../../packages/engine/main/src/index';
 
+import { frameOf, normalizeWriteStamps, v3Draft, v3Patch } from './annotation-v3-writes';
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
 const vectorsRoot = join(packageRoot, 'vectors', 'annotation');
@@ -74,23 +76,6 @@ interface UpdateCase {
   readonly patch: Record<string, unknown>;
   /** Payloads the draft or the patch names by key. See the create generator. */
   readonly resources?: Readonly<Record<string, readonly number[]>>;
-}
-
-/** See `generate-annotation-create-vectors.ts`. */
-function materialize(value: unknown, resources: Record<string, readonly number[]>): unknown {
-  if (Array.isArray(value)) return value.map((entry) => materialize(entry, resources));
-  if (value === null || typeof value !== 'object') return value;
-  const entries = Object.entries(value as Record<string, unknown>);
-  const ref = entries.find(([key]) => key === 'resource');
-  if (ref && typeof ref[1] === 'string') {
-    const bytes = resources[ref[1]];
-    if (!bytes) throw new Error(`no payload for resource '${ref[1]}'`);
-    return Object.fromEntries([
-      ['data', Uint8Array.from(bytes)],
-      ...entries.filter(([key]) => key !== 'resource'),
-    ]);
-  }
-  return Object.fromEntries(entries.map(([key, entry]) => [key, materialize(entry, resources)]));
 }
 
 /** A tiny 4x2 PNG, for the stamp cases. */
@@ -370,16 +355,20 @@ const CASES: readonly UpdateCase[] = [
     draft: { subtype: 'text', rect: NOTE_RECT },
     patch: { subtype: 'text', icon: 'help', color: { r: 0, g: 160, b: 255 } },
   },
-  {
-    name: 'caret-clear-rect-differences',
-    covers: 'A tri-state clear of the inset of the drawn caret from its box.',
-    draft: {
-      subtype: 'caret',
-      rect: CARET_RECT,
-      rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
-    },
-    patch: { subtype: 'caret', rectDifferences: null },
-  },
+  // `rectDifferences` is gone from every kind since 2bdc74fbf ("round 5b:
+  // clockwise rotation, box and the engine's rect"): a box kind's shape is
+  // its `box`, and the engine draws inside it. This case was only about
+  // clearing that inset, so it stays here, commented out.
+  // {
+  //   name: 'caret-clear-rect-differences',
+  //   covers: 'A tri-state clear of the inset of the drawn caret from its box.',
+  //   draft: {
+  //     subtype: 'caret',
+  //     rect: CARET_RECT,
+  //     rectDifferences: { left: 2, bottom: 3, right: 4, top: 5 },
+  //   },
+  //   patch: { subtype: 'caret', rectDifferences: null },
+  // },
   {
     name: 'caret-rotate-existing-box',
     covers:
@@ -572,32 +561,37 @@ const CASES: readonly UpdateCase[] = [
     },
     patch: { subtype: 'stamp', source: { resource: 'r1' }, fit: 'fill' },
   },
-  {
-    name: 'widget-restyle',
-    covers:
-      'The widget plane, patched. The colours are /MK, and a clear is an explicit no-colour rather than the absence a create leaves.',
-    draft: {
-      subtype: 'widget',
-      rect: WIDGET_RECT,
-      color: { r: 30, g: 30, b: 120 },
-      interiorColor: { r: 245, g: 245, b: 230 },
-      strokeWidth: 2,
-    },
-    patch: { subtype: 'widget', interiorColor: null, strokeWidth: 4 },
-  },
-  {
-    name: 'widget-font-size-only',
-    covers:
-      'A /DA size with no family, over a widget that HAS one. Unlike free text, the other two members are defaulted rather than read: one writer serves this and the forms placement path, so a widget style is a whole description and the times-roman goes away.',
-    draft: {
-      subtype: 'widget',
-      rect: WIDGET_RECT,
-      fontFamily: 'times-roman',
-      fontSize: 11,
-      fontColor: { r: 20, g: 20, b: 20 },
-    },
-    patch: { subtype: 'widget', fontSize: 16 },
-  },
+  // The annotation verbs refuse a widget since 1233d1349 ("Read and write
+  // widgets through the form"): a widget is created onto a field through
+  // the form and restyled by `doc.forms.updateWidget`. These two cases made
+  // and patched a bare widget through the annotation verbs, so they stay
+  // here, commented out.
+  // {
+  //   name: 'widget-restyle',
+  //   covers:
+  //     'The widget plane, patched. The colours are /MK, and a clear is an explicit no-colour rather than the absence a create leaves.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: WIDGET_RECT,
+  //     color: { r: 30, g: 30, b: 120 },
+  //     interiorColor: { r: 245, g: 245, b: 230 },
+  //     strokeWidth: 2,
+  //   },
+  //   patch: { subtype: 'widget', interiorColor: null, strokeWidth: 4 },
+  // },
+  // {
+  //   name: 'widget-font-size-only',
+  //   covers:
+  //     'A /DA size with no family, over a widget that HAS one. Unlike free text, the other two members are defaulted rather than read: one writer serves this and the forms placement path, so a widget style is a whole description and the times-roman goes away.',
+  //   draft: {
+  //     subtype: 'widget',
+  //     rect: WIDGET_RECT,
+  //     fontFamily: 'times-roman',
+  //     fontSize: 11,
+  //     fontColor: { r: 20, g: 20, b: 20 },
+  //   },
+  //   patch: { subtype: 'widget', fontSize: 16 },
+  // },
   {
     name: 'ink-intent',
     covers: 'The only /IT ink carries, set after creation.',
@@ -630,28 +624,51 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       const listing = await doc.pages.list();
       const first = listing.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
-      const page = doc.page(first.pageObjectNumber);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
+      // The draft and the patch keep their old spelling and are translated on
+      // the way in; see `annotation-v3-writes.ts`.
+      const page = doc.page(first.ref);
+      const payloads = entry.resources ?? {};
+      const frame = frameOf(listing.pages);
 
-      const payloads = { ...(entry.resources ?? {}) };
+      const draft = v3Draft(entry.draft, payloads, frame);
       const created = await page.annotations.create(
-        materialize(entry.draft, payloads) as never,
+        draft.write,
+        draft.resources ? { resources: draft.resources } : {},
       );
-      const result = await page.annotations.update(
-        created.created.ref,
-        materialize(entry.patch, payloads) as never,
-      );
+      const patch = v3Patch(entry.patch, payloads, frame);
+      let result;
+      try {
+        result = await page.annotations.update(
+          created.annotation.ref,
+          patch.write,
+          patch.resources ? { resources: patch.resources } : {},
+        );
+      } catch (error) {
+        // A patch upstream now refuses records the refusal, so the change
+        // shows in the vector instead of stopping the run.
+        const code = (error as { code?: unknown })?.code;
+        if (code === undefined) throw error;
+        return {
+          ...entry,
+          pageObjectNumber: first.ref.objectNumber,
+          refusedWith: String(code),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
 
-      const { modified, ...updated } = result.updated as Record<string, unknown>;
+      // The results name the annotation `annotation` and the timestamp
+      // `modifiedAt` since 83f6598d2 and fd175ba50; `weakRefsInvalidated` and
+      // `shouldRefetch` went in bc0057f3a ("Remove NM and implement BaseID").
+      const { modifiedAt, ...updated } = result.annotation as unknown as Record<string, unknown>;
       return {
         ...entry,
-        pageObjectNumber: first.pageObjectNumber,
+        pageObjectNumber: first.ref.objectNumber,
         updated,
-        hasModified: typeof modified === 'string' && modified.length > 0,
+        hasModified: typeof modifiedAt === 'string' && modifiedAt.length > 0,
         appearance: result.appearance,
         meta: {
           changed: result.meta.changed,
-          weakRefsInvalidated: result.meta.weakRefsInvalidated,
-          shouldRefetch: result.meta.shouldRefetch,
         },
       };
     } finally {
@@ -676,7 +693,9 @@ function normalizeSessionIds(value: unknown): unknown {
           // Rust runner instead.
           key === 'creationDate' && typeof entry === 'string'
           ? [key, '<stamped>']
-          : [key, normalizeSessionIds(entry)],
+          : normalizeWriteStamps(key, entry) !== undefined
+            ? [key, normalizeWriteStamps(key, entry)]
+            : [key, normalizeSessionIds(entry)],
     ),
   );
 }

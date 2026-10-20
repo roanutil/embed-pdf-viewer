@@ -1,5 +1,5 @@
 /**
- * Emits `vectors/annotation/write.json`: the two pure decisions G11's
+ * Emits `vectors/annotation/write.json`: the pure appearance decision G11's
  * mutators rest on.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run annotation-write
@@ -7,12 +7,12 @@
  *
  * `crates/epdf-engine/tests/annotation_write.rs` replays it.
  *
- * Both are pure and both are silent when wrong, which is why they are pinned
- * before the mutators that use them. A wrong appearance verdict either
- * destroys an appearance stream a foreign producer wrote, which cannot be
- * recomputed, or keeps a stale one that no longer matches the dictionary. A
- * wrong impact verdict either makes every client re-read after every edit or
- * lets one keep dereferencing an index that now points somewhere else.
+ * It is pure and silent when wrong, which is why it is pinned before the
+ * mutators that use it. A wrong appearance verdict either destroys an
+ * appearance stream a foreign producer wrote, which cannot be recomputed, or
+ * keeps a stale one that no longer matches the dictionary. There used to be
+ * a second decision, the mutation impact; it went upstream with weak refs
+ * (see below).
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
