@@ -1,16 +1,24 @@
 #!/usr/bin/env bash
 # Merges upstream into the Rust port: the runtime fork first, then this branch.
 #
-#   scripts/sync-upstream.sh [--push]
+#   scripts/sync-upstream.sh [--push] [--from <url> <branch> | --from <local-branch>]
+#
+# By default the source is upstream viewer main. --from picks another one. A
+# value containing "://" is a URL, and the branch after it is fetched from
+# there. Anything else is a local branch of this repository, used as it is with
+# no fetch and no branch argument. The runtime step works the same for any
+# source: if the fork branch already contains the runtime commit the source
+# pins, it does nothing.
 #
 # Upstream bumps the runtime-src pointer in most merges, and this branch pins
 # a commit on the runtime fork instead, so a plain `git merge` conflicts on it
 # nearly every time. The resolution is always the same, so this does it:
 #
-#   1. Fetch upstream viewer main and read the runtime commit it pins.
+#   1. Fetch the source (upstream viewer main) and read the runtime commit it
+#      pins.
 #   2. Merge that runtime commit into the fork's long-lived branch, inside the
 #      runtime-src checkout. The fork stays upstream plus one build commit.
-#   3. Merge upstream viewer main into the current branch, with runtime-src
+#   3. Merge the source into the current branch, with runtime-src
 #      resolved to the fork merge from step 2 and .gitmodules kept as ours.
 #   4. With --push, push the fork branch, then this branch to private-fork.
 #      Without it nothing leaves the machine.
@@ -32,14 +40,45 @@ VIEWER_REMOTE=private-fork
 SUB=packages/engine/runtime/runtime-src
 
 PUSH=0
-case "${1:-}" in
-  --push) PUSH=1 ;;
-  "") ;;
-  *)
-    echo "usage: $0 [--push]" >&2
-    exit 1
-    ;;
-esac
+FROM_URL="$UPSTREAM_VIEWER"
+FROM_BRANCH=main
+FROM_LOCAL=0
+usage() {
+  echo "usage: $0 [--push] [--from <url> <branch> | --from <local-branch>]" >&2
+  exit 1
+}
+while (($#)); do
+  case "$1" in
+    --push)
+      PUSH=1
+      shift
+      ;;
+    --from)
+      [[ $# -ge 2 ]] || usage
+      if [[ "$2" == *://* ]]; then
+        [[ $# -ge 3 ]] || usage
+        FROM_URL="$2"
+        FROM_BRANCH="$3"
+        shift 3
+      else
+        FROM_LOCAL=1
+        FROM_BRANCH="$2"
+        shift 2
+      fi
+      ;;
+    *) usage ;;
+  esac
+done
+if ((FROM_LOCAL)); then
+  SOURCE_NAME="$FROM_BRANCH"
+  MERGE_MSG_SOURCE="$FROM_BRANCH"
+elif [[ "$FROM_URL" == "$UPSTREAM_VIEWER" ]]; then
+  SOURCE_NAME="upstream $FROM_BRANCH"
+  MERGE_MSG_SOURCE="embedpdf/embed-pdf-viewer $FROM_BRANCH"
+else
+  SOURCE_NAME="$FROM_BRANCH from $FROM_URL"
+  MERGE_MSG_SOURCE="$FROM_BRANCH"
+fi
 
 die() {
   echo "✖ $*" >&2
@@ -64,13 +103,18 @@ case "$(git submodule status "$SUB" | cut -c1)" in
     ;;
 esac
 
-# 1. Upstream viewer, and the runtime commit it pins.
-echo "· fetching $UPSTREAM_VIEWER main"
-git fetch -q "$UPSTREAM_VIEWER" main
-VIEWER_TARGET="$(git rev-parse FETCH_HEAD)"
+# 1. The source viewer, and the runtime commit it pins.
+if ((FROM_LOCAL)); then
+  VIEWER_TARGET="$(git rev-parse -q --verify "refs/heads/$FROM_BRANCH^{commit}")" ||
+    die "no local branch $FROM_BRANCH"
+else
+  echo "· fetching $FROM_URL $FROM_BRANCH"
+  git fetch -q "$FROM_URL" "$FROM_BRANCH"
+  VIEWER_TARGET="$(git rev-parse FETCH_HEAD)"
+fi
 RUNTIME_TARGET="$(git ls-tree "$VIEWER_TARGET" "$SUB" | awk '{print $3}')"
 PINNED="$(git ls-tree HEAD "$SUB" | awk '{print $3}')"
-echo "  upstream main ${VIEWER_TARGET:0:9} pins runtime ${RUNTIME_TARGET:0:9}"
+echo "  $SOURCE_NAME ${VIEWER_TARGET:0:9} pins runtime ${RUNTIME_TARGET:0:9}"
 
 # 2. The fork branch, inside runtime-src.
 (
@@ -122,17 +166,17 @@ RUNTIME_NEW="$(git -C "$SUB" rev-parse HEAD)"
 
 # 3. Upstream viewer into this branch.
 if git merge-base --is-ancestor "$VIEWER_TARGET" HEAD; then
-  echo "✓ $BRANCH already has upstream main ${VIEWER_TARGET:0:9}"
+  echo "✓ $BRANCH already has $SOURCE_NAME ${VIEWER_TARGET:0:9}"
   [[ "$PINNED" == "$RUNTIME_NEW" ]] ||
     die "$BRANCH pins runtime ${PINNED:0:9} but $SUB is at ${RUNTIME_NEW:0:9}; commit the pointer if that's intended"
 else
-  echo "· merging upstream main ${VIEWER_TARGET:0:9} into $BRANCH"
+  echo "· merging $SOURCE_NAME ${VIEWER_TARGET:0:9} into $BRANCH"
   # Without the commit-graph: git 2.56.0's merge-ort dies with "invalid commit
   # position. commit-graph is likely corrupt" when it opens runtime-src to
   # merge the pointer and that checkout borrows objects through alternates,
   # though `git commit-graph verify` passes in both repositories.
   git -c core.commitGraph=false merge -q --no-commit --no-ff \
-    -m "Merge embedpdf/embed-pdf-viewer main into $BRANCH" "$VIEWER_TARGET" || true
+    -m "Merge $MERGE_MSG_SOURCE into $BRANCH" "$VIEWER_TARGET" || true
   [[ -f "$(git rev-parse --git-path MERGE_HEAD)" ]] ||
     die "git merge stopped before merging; see its output above"
   # Always the fork merge, conflict or not: upstream's pointer names a commit
