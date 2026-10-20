@@ -18,7 +18,7 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { createLocalEngine, type PageRef } from '../../../packages/engine/main/src/index';
 
 import { CORPUS, type CorpusCase, type CorpusOperation } from './corpus';
 import { quantizeDeep } from './quantize';
@@ -99,9 +99,11 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
 
   const files = new Map<CorpusOperation, VectorFile>();
   try {
+    // The password moved to `OpenOptions` in 09c24496f ("Engine API v3,
+    // round 2").
     const doc = await engine.open(
-      { kind: 'bytes', id: `conformance:${entry.name}`, bytes, password: entry.password },
-      { scope: ['*'] },
+      { kind: 'bytes', id: `conformance:${entry.name}`, bytes },
+      { scope: ['*'], password: entry.password },
     );
     try {
       const { pages } = await doc.pages.list();
@@ -119,8 +121,8 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
         for (const page of wanted) {
           emitted.push({
             index: page.index,
-            pageObjectNumber: page.pageObjectNumber,
-            snapshot: quantizeDeep(await readOperation(doc, operation, page.pageObjectNumber)),
+            pageObjectNumber: page.ref.objectNumber,
+            snapshot: quantizeDeep(await readOperation(doc, operation, page.ref)),
           });
         }
         files.set(operation, {
@@ -144,13 +146,20 @@ async function readCase(entry: CorpusCase): Promise<Map<CorpusOperation, VectorF
 async function readOperation(
   doc: Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>,
   operation: CorpusOperation,
-  pageObjectNumber: number,
+  page: PageRef,
 ): Promise<unknown> {
+  // Pages are addressed by `PageRef` (9f13cea3c, which predates this
+  // catch-up) and `text.read` is `text.get` since 83f6598d2 ("Engine API v3,
+  // round 3a"). `geometry.read()` went in
+  // a10ed2659 ("round 3b: text and search"): `text.layout()` sends the same
+  // `pages.geometry` request and keeps the answer's runs as `runs`, so
+  // `{ runs }` is the snapshot the worker returned. Its runs are in page
+  // space since 3bad82c8d ("Page space, text and search").
   switch (operation) {
     case 'pages.geometry':
-      return await doc.page(pageObjectNumber).geometry.read();
+      return { runs: (await doc.page(page).text.layout()).runs };
     case 'pages.text':
-      return await doc.page(pageObjectNumber).text.read();
+      return await doc.page(page).text.get();
     default: {
       // Exhaustiveness: adding an operation to CorpusOperation must not
       // silently emit nothing.

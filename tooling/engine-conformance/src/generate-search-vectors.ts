@@ -24,6 +24,7 @@ import {
   matchLiteral,
 } from '../../../packages/engine/core/src/search/literal';
 import { buildSnippet } from '../../../packages/engine/core/src/search/snippet';
+import type { SearchRequest } from '../../../packages/engine/core/src/search/types';
 import {
   matchRegex,
   validateSearchQuery,
@@ -53,9 +54,14 @@ const vectorsRoot = join(packageRoot, 'vectors', 'search');
 /** Bump when either envelope changes shape. The Rust runner asserts it. */
 const SCHEMA_VERSION = 1;
 
+/**
+ * A match as the engine returns it. `{ start, length }` became the shared
+ * `TextRange { start, count }` in a10ed2659 ("Engine API v3, round 3b: text
+ * and search"); the vectors carry the engine's own shape.
+ */
 interface MatchRange {
   readonly start: number;
-  readonly length: number;
+  readonly count: number;
 }
 
 interface RegexResult extends RegexCase {
@@ -81,7 +87,7 @@ interface FoldResult extends FoldCase {
   readonly ranges: readonly {
     readonly start: number;
     readonly length: number;
-    readonly original: { readonly start: number; readonly length: number };
+    readonly original: MatchRange;
   }[];
 }
 
@@ -122,7 +128,7 @@ function runSnippetCase(entry: SnippetCase) {
     ...entry,
     snippet: buildSnippet(
       entry.text,
-      { start: entry.matchStart, length: entry.matchLength },
+      { start: entry.matchStart, count: entry.matchLength },
       entry.context,
     ),
   };
@@ -133,7 +139,11 @@ function runFoldCase(entry: FoldCase): FoldResult {
     keepCase: entry.keepCase,
     keepMarks: entry.keepMarks,
   });
-  const ranges: FoldResult['ranges'] = [];
+  const ranges: {
+    start: number;
+    length: number;
+    original: MatchRange;
+  }[] = [];
   for (let start = 0; start < folded.folded.length; start++) {
     for (let length = 1; start + length <= folded.folded.length; length++) {
       ranges.push({ start, length, original: toOriginalRange(folded, start, length) });
@@ -154,12 +164,25 @@ function runSliceCase(entry: SliceCase) {
   const query = entry.request.query;
   const mode = entry.request.mode ?? 'full';
   const validation = validateSearchQuery(query);
-  const key = searchQueryKey(query, mode);
+  // a10ed2659 ("round 3b: text and search") flattened the request: the query's
+  // fields sit on it directly, `mode: 'full' | 'rects'` became `snippets`
+  // (full is the one with snippets), and `startPage` became `from`, a
+  // `PageRef`. The cases keep the old request and are translated here.
+  const snippets = mode === 'full';
+  const key = searchQueryKey(query, snippets);
+  const request: SearchRequest = {
+    ...query,
+    snippets,
+    ...(entry.request.cursor === undefined ? {} : { cursor: entry.request.cursor }),
+    ...(entry.request.startPage === undefined
+      ? {}
+      : { from: { kind: 'objectNumber', objectNumber: entry.request.startPage } }),
+  };
 
   let cursor: { readonly ok: boolean; readonly message?: string } | undefined;
   if (entry.request.cursor !== undefined) {
     try {
-      decodeSearchCursor(entry.request, entry.request.cursor, entry.seq ?? 0, key);
+      decodeSearchCursor(request, entry.request.cursor, entry.seq ?? 0, key);
       cursor = { ok: true };
     } catch (error) {
       cursor = { ok: false, message: error instanceof Error ? error.message : String(error) };
