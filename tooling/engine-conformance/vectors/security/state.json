@@ -438,7 +438,7 @@
         "canFillForms": true,
         "canModifyForms": true,
         "canModifyPages": true,
-        "canAssemble": false
+        "canAssemble": true
       }
     },
     {
