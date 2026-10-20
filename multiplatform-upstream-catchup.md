@@ -85,6 +85,8 @@ Made on 2026-10-20.
 
 All work lands on two integration branches, so `research/multi-platform-rust-core-impl` and this branch move only when the user approves the final merge: `research/catchup-impl` (off impl, worktree `.claude/worktrees/catchup-impl`) and `research/catchup-plugins` (off this branch at the plan's commit, worktree `.claude/worktrees/catchup-plugins`). Pushes wait for the user's go-ahead; nothing in a task pushes.
 
+**Reordered on 2026-10-21 (controller ruling, see the ledger):** this branch carries 36 `crates/epdf-engine` commits (10,813 insertions, 19 wire kinds) that impl lacks, so the engine re-port runs here, not on impl. Order: Tasks 1 to 6 on `research/catchup-impl`, then Task 10, then Task 7 again against this branch, then Tasks 8 and 9 here, then 11 onwards. `research/catchup-impl` stops at Task 6.
+
 The re-port tasks (8, 13) are too large to write out before the vectors exist. Tasks 7 and 12 end by appending numbered tasks for them to this file, one per crate or feature family, each with the vector files it must replay.
 
 ### Task 1: Sync script takes a source branch
