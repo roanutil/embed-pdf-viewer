@@ -33,6 +33,7 @@ export function createDocumentEvents(
     | 'documentPrint'
     | 'printLatch'
     | 'settings'
+    | 'policy'
   >,
   {
     ensureOpenSequenceBeforeDocEvent,
@@ -46,6 +47,7 @@ export function createDocumentEvents(
   const { allowsPrint } = services.authority;
   const { documentPrint } = services;
   const printLatch = services.printLatch;
+  const currentPolicy = services.policy.current;
 
   /**
    * Run one catalog lifecycle tree inside the current queue operation, shared
@@ -109,6 +111,18 @@ export function createDocumentEvents(
     uiContext: { origin: ActionOrigin; phase: 'boot' | 'user' } | undefined,
     diagnose: (diagnostic: ActionDiagnostic) => void,
   ): Promise<{ status: ActionNodeStatus; detail?: string }> => {
+    // A script's print() is not a dispatched node, so the print row has not
+    // been consulted yet; the dispatch path (no uiContext) already was.
+    if (uiContext) {
+      const decision = currentPolicy().print[uiContext.origin];
+      if (decision === 'block' || decision === 'report') {
+        diagnose({
+          code: 'blocked',
+          message: `print: policy '${decision}' for origin '${uiContext.origin}'`,
+        });
+        return { status: 'blocked', detail: `policy '${decision}'` };
+      }
+    }
     if (printLatch.active) {
       diagnose({
         code: 'reentrant-print',
