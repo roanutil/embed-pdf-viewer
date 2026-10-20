@@ -1,6 +1,7 @@
 /**
- * Emits `vectors/pages/mutate.json`: what `pages.move`, `pages.rotate` and
- * `pages.delete` leave in the document.
+ * Emits `vectors/pages/mutate.json`: what `pages.reorder` (once
+ * `pages.move`), `pages.rotate`, `pages.delete`, the inserts and
+ * `pages.flatten` leave in the document.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate:check
@@ -19,7 +20,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import {
+  createLocalEngine,
+  toPageRef,
+  type PageRef,
+  type PdfRotation,
+} from '../../../packages/engine/main/src/index';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -77,13 +83,18 @@ const CASES: readonly MutateCase[] = [
     covers: 'A move that changes nothing, which is a move rather than a refusal.',
     move: { pages: [3], destIndex: 0 },
   },
-  {
-    name: 'move-past-the-end-refused',
-    covers:
-      'A destination past the end of the post-removal list. Three pages remain when one is detached, so index 4 names nowhere.',
-    move: { pages: [3], destIndex: 4 },
-    refused: true,
-  },
+  // Every move and insert names a neighbour (`{ before }`, `{ after }`,
+  // `'start'` or `'end'`) instead of an index since 1233d1349 ("Read and
+  // write widgets through the form"), so an index past the end can no
+  // longer be written. This case and `insert-blank-past-the-end-refused`
+  // were about refusing one; they stay here, commented out.
+  // {
+  //   name: 'move-past-the-end-refused',
+  //   covers:
+  //     'A destination past the end of the post-removal list. Three pages remain when one is detached, so index 4 names nowhere.',
+  //   move: { pages: [3], destIndex: 4 },
+  //   refused: true,
+  // },
   {
     name: 'move-duplicate-refused',
     covers:
@@ -167,13 +178,15 @@ const CASES: readonly MutateCase[] = [
     insertBlank: { size: { width: 612, height: 792 }, count: 101 },
     refused: true,
   },
-  {
-    name: 'insert-blank-past-the-end-refused',
-    covers:
-      'A destination past the end. PDFium would CLAMP this to an append, and the guard is what keeps that leniency out of the contract.',
-    insertBlank: { size: { width: 612, height: 792 }, destIndex: 5 },
-    refused: true,
-  },
+  // See `move-past-the-end-refused`: a position is a neighbour now
+  // (1233d1349), and none is past the end.
+  // {
+  //   name: 'insert-blank-past-the-end-refused',
+  //   covers:
+  //     'A destination past the end. PDFium would CLAMP this to an append, and the guard is what keeps that leniency out of the contract.',
+  //   insertBlank: { size: { width: 612, height: 792 }, destIndex: 5 },
+  //   refused: true,
+  // },
   {
     name: 'insert-document',
     covers:
@@ -271,42 +284,64 @@ async function readCase(entry: MutateCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
+      // The cases name pages by object number and places by index. Pages
+      // are `PageRef`s (9f13cea3c, before this catch-up), and since
+      // 1233d1349 ("Read and write widgets through the form") `pages.move`
+      // is `pages.reorder` and every place is a neighbour: `'start'`,
+      // `'end'` or `{ before }` the page there. A move's index counts the
+      // pages left once the moved ones are out, as `reorderedList` does; an
+      // insert's counts the pages as they are.
+      const order = (await doc.pages.list()).pages.map((page) => page.ref);
+      const refs = (pages: readonly number[]): PageRef[] => pages.map(toPageRef);
+      const positionIn = (list: readonly PageRef[], index: number | undefined) =>
+        index === undefined
+          ? undefined
+          : index === 0
+            ? ('start' as const)
+            : index === list.length
+              ? ('end' as const)
+              : { before: list[index]! };
       const run = async () => {
         if (entry.move) {
-          return (await doc.pages.move(entry.move.pages as never, entry.move.destIndex)).layout;
+          const moving = new Set(entry.move.pages);
+          const staying = order.filter((ref) => !moving.has(ref.objectNumber));
+          const position = positionIn(staying, entry.move.destIndex)!;
+          return (await doc.pages.reorder(refs(entry.move.pages), position)).layout;
         }
         if (entry.rotate) {
           return (
-            await doc.pages.rotate(entry.rotate.pages as never, entry.rotate.rotation as never)
+            await doc.pages.rotate(refs(entry.rotate.pages), entry.rotate.rotation as PdfRotation)
           ).layout;
         }
+        // The insert results name the new pages as refs, `insertedPages`,
+        // since a9434c0e2 ("Documents: v3 result shapes").
         if (entry.insertBlank) {
           const result = await doc.pages.insertBlank(
-            { size: entry.insertBlank.size, count: entry.insertBlank.count } as never,
-            entry.insertBlank.destIndex,
+            { size: entry.insertBlank.size, count: entry.insertBlank.count },
+            positionIn(order, entry.insertBlank.destIndex),
           );
-          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+          return { layout: result.layout, inserted: result.insertedPages };
         }
         if (entry.flatten) {
-          const result = await doc.pages.flatten(
-            entry.flatten.pages as never,
-            entry.flatten.usage,
-          );
+          // The usage is an option since a9434c0e2.
+          const result = await doc.pages.flatten(refs(entry.flatten.pages), {
+            usage: entry.flatten.usage,
+          });
           // The whole result, not just the per-page outcomes: it echoes
           // the request back, and an engine that lost the echo would still
           // agree about what happened.
-          const { meta: _meta, ...flattened } = result as Record<string, unknown>;
+          const { meta: _meta, ...flattened } = result;
           return { flattened };
         }
         if (entry.insert) {
           const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
           const result = await doc.pages.insert(
             source.buffer as ArrayBuffer,
-            entry.insert.destIndex,
+            positionIn(order, entry.insert.destIndex),
           );
-          return { layout: result.layout, inserted: result.insertedPageObjectNumbers };
+          return { layout: result.layout, inserted: result.insertedPages };
         }
-        return (await doc.pages.delete(entry.delete!.pages as never)).layout;
+        return (await doc.pages.delete(refs(entry.delete!.pages))).layout;
       };
 
       if (entry.refused) {
