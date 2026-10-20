@@ -174,7 +174,7 @@ function cursorText(cursor: string | SliceCursor): string {
   const state = {
     v: 1,
     seq: cursor.seq,
-    key: searchQueryKey(cursor.mintedFor.query, (cursor.mintedFor.mode ?? 'full') === 'full'),
+    key: searchQueryKey(cursor.mintedFor.query, snippetsOf(cursor.mintedFor.mode)),
     start: cursor.start,
     scanned: cursor.scanned,
   } satisfies SearchCursorState;
@@ -187,17 +187,25 @@ function cursorText(cursor: string | SliceCursor): string {
 
 const KEY_MISMATCH = 'search cursor belongs to a different query';
 
+/**
+ * Whether a case's mode asks for snippets. a10ed2659 ("round 3b: text and
+ * search") replaced `mode: 'full' | 'rects'` with `snippets`, and full is
+ * the one with snippets. An absent mode is full.
+ */
+function snippetsOf(mode: 'rects' | 'full' | undefined): boolean {
+  return (mode ?? 'full') === 'full';
+}
+
 function runSliceCase(entry: SliceCase) {
   const query = entry.request.query;
   const cursorString =
     entry.request.cursor === undefined ? undefined : cursorText(entry.request.cursor);
-  const mode = entry.request.mode ?? 'full';
   const validation = validateSearchQuery(query);
   // a10ed2659 ("round 3b: text and search") flattened the request: the query's
-  // fields sit on it directly, `mode: 'full' | 'rects'` became `snippets`
-  // (full is the one with snippets), and `startPage` became `from`, a
-  // `PageRef`. The cases keep the old request and are translated here.
-  const snippets = mode === 'full';
+  // fields sit on it directly, the mode became `snippets`, and `startPage`
+  // became `from`, a `PageRef`. The cases keep the old request and are
+  // translated here; the vector records both.
+  const snippets = snippetsOf(entry.request.mode);
   const key = searchQueryKey(query, snippets);
   const request: SearchRequest = {
     ...query,
@@ -230,13 +238,17 @@ function runSliceCase(entry: SliceCase) {
     }
   }
 
-  const { keyMismatch: _keyMismatch, ...recorded } = entry;
+  // `case` is the case as written, in the pre-a10ed2659 spelling, with a
+  // minted cursor encoded. `request` is the SearchRequest actually built and
+  // checked, which is what a replay sends.
+  const { keyMismatch: _keyMismatch, request: literal, ...recorded } = entry;
   return {
     ...recorded,
-    request: {
-      ...entry.request,
+    case: {
+      ...literal,
       ...(cursorString === undefined ? {} : { cursor: cursorString }),
     },
+    request,
     valid: validation.ok,
     ...(validation.ok ? {} : { issue: validation.issue, message: validation.message }),
     key,
