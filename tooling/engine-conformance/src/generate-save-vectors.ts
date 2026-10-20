@@ -89,23 +89,31 @@ async function describe(
   bytes: Uint8Array,
   password: string | undefined,
 ): Promise<Reopened> {
-  const doc = await engine.open({ kind: 'bytes', id, bytes, password }, { scope: ['*'] });
+  // The password moved to `OpenOptions` in 09c24496f ("Engine API v3, round
+  // 2"). `metadata.read`, `text.read` and `annotations.listRawAll` became
+  // `metadata.get`, `text.get` and `annotations.list` in 83f6598d2 ("Engine
+  // API v3, round 3a"); the list is flat, each annotation naming its page.
+  // Pages are addressed by `PageRef` (`page.ref`) rather than a bare object
+  // number since the same round.
+  const doc = await engine.open({ kind: 'bytes', id, bytes }, { scope: ['*'], password });
   try {
     const listing = await doc.pages.list();
-    const metadata = await doc.metadata.read();
-    const annotations = await doc.annotations.listRawAll();
-    const byPage = new Map(
-      annotations.pages.map((p) => [p.pageState.pageObjectNumber, p.annotations.length]),
-    );
+    const metadata = await doc.metadata.get();
+    const annotations = await doc.annotations.list();
+    const byPage = new Map<number, number>();
+    for (const annotation of annotations.annotations) {
+      const key = annotation.page.objectNumber;
+      byPage.set(key, (byPage.get(key) ?? 0) + 1);
+    }
     const pages = [];
     for (const page of listing.pages) {
-      const handle = doc.page(page.pageObjectNumber);
+      const handle = doc.page(page.ref);
       pages.push({
         width: page.size.width,
         height: page.size.height,
         rotation: page.rotation,
-        text: (await handle.text.read()).text,
-        annotationCount: byPage.get(page.pageObjectNumber) ?? 0,
+        text: (await handle.text.get()).text,
+        annotationCount: byPage.get(page.ref.objectNumber) ?? 0,
       });
     }
     return {
@@ -136,12 +144,16 @@ async function readCase(entry: SaveCase): Promise<unknown> {
     const modes: Record<string, Reopened> = {};
     for (const mode of ['incremental', 'full'] as const) {
       const doc = await engine.open(
-        { kind: 'bytes', id: `save:${entry.name}:${mode}`, bytes, password: entry.password },
-        { scope: ['*'] },
+        { kind: 'bytes', id: `save:${entry.name}:${mode}`, bytes },
+        { scope: ['*'], password: entry.password },
       );
       let saved: Uint8Array;
       try {
-        saved = await doc.download({ mode });
+        // `PdfSaveMode` spells the full save `'rewrite'`, and did before this
+        // catch-up too: `'full'` only ever worked because every mode other
+        // than `'incremental'` saves non-incrementally (`pdfSaveModeFlags`).
+        // The vector keeps its `full` key.
+        saved = await doc.download({ mode: mode === 'full' ? 'rewrite' : mode });
       } finally {
         await doc.close();
       }

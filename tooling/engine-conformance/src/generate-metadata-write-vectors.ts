@@ -132,6 +132,41 @@ const CASES: readonly UpdateCase[] = [
   },
 ];
 
+type OpenedDocument = Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>;
+
+/**
+ * Sends a case's patch the way the engine now takes it. The cases keep their
+ * old spelling, translated here:
+ *
+ * - `created` and `modified` are `createdAt` and `modifiedAt` since
+ *   fd175ba50 ("One date type IsoDateTime").
+ * - `custom` is no longer part of `metadata.update`: the Info dict's other
+ *   keys are `metadata.custom`, written by `metadata.custom.update`, since
+ *   a4b8259f7 ("Custom metadata keys are an object of their own").
+ *
+ * The result folds the custom keys back under `custom`, where the vector has
+ * always carried them, re-read after the write so a case that only touches
+ * one side still records both.
+ */
+async function update(
+  doc: OpenedDocument,
+  patch: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const { custom, created, modified, ...standard } = patch;
+  const metadataPatch: Record<string, unknown> = { ...standard };
+  if (created !== undefined) metadataPatch.createdAt = created;
+  if (modified !== undefined) metadataPatch.modifiedAt = modified;
+  // A patch of nothing but custom keys sends no standard-field write, as
+  // `metadata.update` would have changed none.
+  if (Object.keys(metadataPatch).length > 0 || custom === undefined) {
+    await doc.metadata.update(metadataPatch as never);
+  }
+  if (custom !== undefined) {
+    await doc.metadata.custom.update(custom as Record<string, string | null>);
+  }
+  return { ...(await doc.metadata.get()), custom: await doc.metadata.custom.get() };
+}
+
 async function readCase(entry: UpdateCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
   const engine = createLocalEngine({
@@ -149,7 +184,7 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
-      const run = () => doc.metadata.update(entry.patch as never);
+      const run = () => update(doc, entry.patch);
       if (entry.refused) {
         let code: string | null = null;
         try {
@@ -160,8 +195,17 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      const result = (await run()) as Record<string, unknown>;
-      return { ...entry, metadata: result.metadata };
+      try {
+        return { ...entry, metadata: await run() };
+      } catch (error) {
+        // `metadata.custom.update` refuses a key that names a standard field
+        // or is not a PDF name, where `metadata.update` used to skip it
+        // (a4b8259f7). Those cases now record the refusal, so the change
+        // shows in the vector instead of stopping the run.
+        const code = (error as { code?: unknown })?.code;
+        if (code === undefined) throw error;
+        return { ...entry, refusedWith: String(code) };
+      }
     } finally {
       await doc.close();
     }
