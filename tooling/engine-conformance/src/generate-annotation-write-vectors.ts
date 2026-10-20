@@ -19,6 +19,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { appearanceImpactOf } from '../../../packages/engine/core/src/annotation/appearance';
+import { pdfResolveRectCommand } from '../../../packages/engine/core/src/annotation/resolve/rectCommand';
 // `computeMutationImpact` and `revision/PageState` were deleted upstream in
 // bc0057f3a ("Remove NM and implement BaseID"). Annotation names no longer
 // change, so there are no weak index refs, no `weakRefsInvalidated` and no
@@ -87,10 +88,18 @@ function serialize(): string {
   ).replace(/\n}$/, ',');
   const section = (label: string, entries: readonly unknown[]): string =>
     `  ${JSON.stringify(label)}: [\n${entries.map((e) => `    ${JSON.stringify(e)}`).join(',\n')}\n  ]`;
-  const impacts = IMPACT_CASES.map((entry) => ({
-    ...entry,
-    impact: appearanceImpactOf(entry.current as never, entry.patch as never),
-  }));
+  // The update resolves a drawn kind's patch `rect` into its shape before it
+  // classifies (`pdfResolveRectCommand`, 9d8ebf857); this does the same, and
+  // records the resolved patch where that changed it.
+  const impacts = IMPACT_CASES.map((entry) => {
+    const resolved = pdfResolveRectCommand(entry.current as never, entry.patch as never);
+    const changed = JSON.stringify(resolved) !== JSON.stringify(entry.patch);
+    return {
+      ...entry,
+      ...(changed ? { resolvedPatch: resolved } : {}),
+      impact: appearanceImpactOf(entry.current as never, resolved),
+    };
+  });
   return `${head}\n${[
     section('appearance', impacts),
     // section('mutations', MUTATION_CASES.map(runMutationCase)),

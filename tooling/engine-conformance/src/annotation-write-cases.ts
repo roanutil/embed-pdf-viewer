@@ -38,9 +38,13 @@ export interface ImpactCase {
  *   The angles are kept as written: the classifier only compares them
  *   modulo 360, and what these cases pin is that arithmetic.
  *
- * Three cases moved a `rect` the engine now owns apart from the geometry it
- * is derived from. That can't be written any more, so they are commented out
- * below with the reason.
+ * Three cases move the `rect` of a drawn kind apart from its shape. The
+ * engine treats such a rect as a command since 9d8ebf857 ("a rect is a
+ * command from every door"): before it classifies, `pdfResolveRectCommand`
+ * turns the rect into the shape moved there, so the classifier never sees a
+ * rect apart from its shape. The generator runs that same step first and
+ * records the patch it produced as `resolvedPatch` when it differs; for
+ * every other case it changes nothing.
  *
  * The coordinates are PDF space: `appearanceImpactOf` reads the file's
  * coordinates, as the worker's update does.
@@ -162,23 +166,25 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     current: { subtype: 'highlight', quadPoints: QUADS },
     patch: { subtype: 'highlight', quadPoints: SHIFTED_QUADS },
   },
-  // A text markup's rect is the engine's, derived from its quads, since
-  // 6153c181e: a write can't move it apart from them. These two cases were
-  // about exactly that, so they stay here, commented out.
-  // {
-  //   name: 'markup-quads-left-behind',
-  //   covers:
-  //     'The rect moved and the quads did not. The dictionary would desync from the pixels, so this is not a translation however much it looks like one.',
-  //   current: { subtype: 'highlight', rect: RECT, quadPoints: QUADS },
-  //   patch: { subtype: 'highlight', rect: SHIFTED, quadPoints: QUADS },
-  // },
-  // {
-  //   name: 'markup-rect-only',
-  //   covers:
-  //     'The rect moved and the quads were not mentioned. They are still on the annotation, unshifted, so the geometry is inconsistent and this regenerates.',
-  //   current: { subtype: 'highlight', rect: RECT, quadPoints: QUADS },
-  //   patch: { subtype: 'highlight', rect: SHIFTED },
-  // },
+  // Since 9d8ebf857 the engine resolves the rect into the shape before
+  // classifying: a new rect moves the quads there. A rect sent with the
+  // quads it read back moves them too (the unchanged quads drop out), so the
+  // dictionary can no longer desync from the pixels the way these two cases
+  // described; what they record now is that move.
+  {
+    name: 'markup-quads-left-behind',
+    covers:
+      'The rect moved and the quads did not. The dictionary would desync from the pixels, so this is not a translation however much it looks like one.',
+    current: { subtype: 'highlight', rect: RECT, quadPoints: QUADS },
+    patch: { subtype: 'highlight', rect: SHIFTED, quadPoints: QUADS },
+  },
+  {
+    name: 'markup-rect-only',
+    covers:
+      'The rect moved and the quads were not mentioned. They are still on the annotation, unshifted, so the geometry is inconsistent and this regenerates.',
+    current: { subtype: 'highlight', rect: RECT, quadPoints: QUADS },
+    patch: { subtype: 'highlight', rect: SHIFTED },
+  },
   {
     name: 'vertices-ride-along',
     covers: 'A polygon whose vertices move with the rect.',
@@ -256,17 +262,17 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     current: { subtype: 'square', box: RECT, rotation: 30 },
     patch: { subtype: 'square', box: SHIFTED, rotation: 30 },
   },
-  // A box kind's `rect` is the engine's since 2bdc74fbf, the upright box
-  // around its turned `box`, and `unrotatedRect` is gone: the two can no
-  // longer be moved apart. This case was about that, so it stays here,
-  // commented out.
-  // {
-  //   name: 'unrotated-rect-left-behind',
-  //   covers:
-  //     'The rect moved and the logical box did not. Preserved-yet-unshifted geometry fails the congruence check.',
-  //   current: { subtype: 'square', rect: RECT, rotation: 30, unrotatedRect: RECT },
-  //   patch: { subtype: 'square', rect: SHIFTED },
-  // },
+  // A box kind's `rect` is the upright box around its turned `box` since
+  // 2bdc74fbf, and `unrotatedRect` is gone. A patch rect is resolved into the
+  // box moved there (9d8ebf857), so the box can't be left behind; what is
+  // recorded is that move.
+  {
+    name: 'unrotated-rect-left-behind',
+    covers:
+      'The rect moved and the logical box did not. Preserved-yet-unshifted geometry fails the congruence check.',
+    current: { subtype: 'square', rect: RECT, box: RECT, rotation: 30 },
+    patch: { subtype: 'square', rect: SHIFTED },
+  },
   {
     name: 'style-change',
     covers: 'A colour. Not geometry, so it re-bakes however little else moved.',
