@@ -16,7 +16,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { MetadataPatchSchema } from '../../../packages/engine/core/src/wire/schemas';
+import {
+  CustomMetadataPatchSchema,
+  MetadataPatchSchema,
+} from '../../../packages/engine/core/src/wire/schemas';
 
 import { SCHEMA_CASES, type SchemaCase, type SchemaName } from './schema-cases';
 
@@ -42,6 +45,12 @@ const VALIDATORS: Record<SchemaName, (input: unknown) => { valid: boolean; parse
     const result = MetadataPatchSchema.safeParse(input);
     // JSON round-trip so an undefined-valued key from zod does not reach the
     // file as a key at all, which is what the wire would do anyway.
+    return result.success
+      ? { valid: true, parsed: JSON.parse(JSON.stringify(result.data)) as unknown }
+      : { valid: false };
+  },
+  CustomMetadataPatch: (input) => {
+    const result = CustomMetadataPatchSchema.safeParse(input);
     return result.success
       ? { valid: true, parsed: JSON.parse(JSON.stringify(result.data)) as unknown }
       : { valid: false };
