@@ -9,8 +9,5 @@
     "lib": ["ES2022", "DOM", "WebWorker"],
     "types": ["node"]
   },
-  "include": [
-    "src/**/*.ts",
-    "../../packages/engine/main/src/types/inline-transport.d.ts"
-  ]
+  "include": ["src/**/*.ts", "../../packages/engine/main/src/types/inline-transport.d.ts"]
 }
