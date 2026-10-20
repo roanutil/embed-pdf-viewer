@@ -161,8 +161,8 @@ and `packages/engine/services/src/features/changes/` for the change queue the wr
 ## Forms (`features/forms/`)
 
 `forms/effects.json` (removed). `forms.applyEffects` went in 98e5c270c. Its 23 cases live on in
-`forms/apply.json`. `crates/epdf-engine/tests/form_effects.rs` and `crates/pdfium/src/form_write.rs`
-still name the old path.
+`forms/apply.json`. `crates/epdf-engine/tests/form_effects.rs` (line 30) still names the old
+path.
 
 `forms/apply.json` (new, generator `form-apply`, our 6017f8d90 and 6754e3263). Same 23 case names
 as `effects.json`, but the cases are `doc.apply` ops (`forms.setValue`, `forms.reset`,
@@ -202,10 +202,13 @@ and `packages/engine/services/src/features/changes/ChangeApplier.ts` for `doc.ap
 ## Files (`features/files/`)
 
 `files/attachments.json` (changed). Items carry a `ref` instead of `key` (a9434c0e2), and
-`creationDate` becomes `createdAt` with a new `modifiedAt` (fd175ba50). Fields that were absent
+`creationDate` becomes `createdAt` with a new `modifiedAt` (fd175ba50). The value changes format
+too: the old field passed the raw PDF date through (`D:20240401090000Z`), and `createdAt` is ISO
+8601 (`2024-04-01T09:00:00Z`), converted by `pdfDateToIso` (fd175ba50). Fields that were absent
 are now present as `null` (bd4976e4e).
 
-`files/piece-info.json` (changed). `lastModified` becomes `modifiedAt` (fd175ba50).
+`files/piece-info.json` (changed). `lastModified` becomes `modifiedAt`, and the value loses its
+milliseconds: `2024-05-01T12:00:00.000Z` is `2024-05-01T12:00:00Z` (fd175ba50).
 
 `files/write.json` (changed). Same 16 cases. A listing is `{attachments: [...]}` rather than a bare
 array (a9434c0e2); created entries carry `ref`, `createdAt`, `modifiedAt` and a `description`; a
@@ -218,11 +221,20 @@ Upstream reference: `packages/engine/core/src/dto/Attachment.ts`, `PieceInfo.ts`
 
 ## Metadata (`features/metadata.rs`, `features/metadata_write.rs`)
 
-`metadata/read.json` (changed). `created`/`modified` become `createdAt`/`modifiedAt` (fd175ba50).
+`metadata/read.json` (changed). `created`/`modified` become `createdAt`/`modifiedAt`, and the
+values keep the offset the PDF date was written with instead of normalizing to UTC with
+milliseconds: `rich` reads `2024-01-15T09:30:00+01:00` for `2024-01-15T08:30:00.000Z` and
+`2024-02-20T12:00:00Z` for `2024-02-20T12:00:00.000Z`, and `report` reads
+`2009-04-01T16:39:25-07:00` for `2009-04-01T23:39:25.000Z` (fd175ba50, `pdfDateToIso` in
+`packages/engine/services/src/shared/pdf-date.ts`). The instants are the same; only the spelling
+moved, so a Rust comparison has to keep the offset rather than normalize.
 Custom keys still appear under `custom` because the generator folds `metadata.custom.get()` back in
 (our 1b8c92a3f); upstream reads them separately since a4b8259f7.
 
-`metadata/update.json` (changed). The date rename, a `request` field, and three cases now refused
+`metadata/update.json` (changed). The date rename with the same format change: the 13 entries
+that read `2024-01-15T08:30:00.000Z` now read `2024-01-15T09:30:00+01:00`, `modifiedAt` drops
+`.000`, and the dates a case writes come back without milliseconds (`2021-03-04T05:06:07Z` for
+`2021-03-04T05:06:07.000Z`) (fd175ba50). Also a `request` field, and three cases now refused
 with `InvalidArg`: `custom-key-shadowing-a-standard-one`, `custom-key-with-a-slash` and
 `custom-key-outside-ascii` (a4b8259f7). One case reads `title: ""` where it read `null`.
 
@@ -301,7 +313,17 @@ Quads are page-space `PageQuad`s with named corners (`upperLeft` ... `lowerRight
 `left/bottom/right/top`, and hit probes are page-space points. The glyph, run and frame counts
 follow the geometry: `embedded-orientations` has 69 glyphs and 9 runs (80 and 11 before) and
 `font-size-zero` has none, both from the PDFium changes above. `frameCount` is unchanged at 4,
-because frames are keyed on the y-up runs through upstream's `mirroredRun`. The Rust layout has to
+because frames are keyed on the y-up runs through upstream's `mirroredRun`.
+
+Some layout answers moved with the geometry, not with the layout code, so they are not layout bugs
+to chase. On `report` page 0, glyph 211's line went from `[156, 253]` to `[197, 211]`, the word
+range `(207, 6)` now draws as 2 segments instead of 1, and `(197, 15)` is a new line range. On
+`report` page 4, glyph 3715's line went from `[3659, 3736]` to `[3661, 3736]`. The line grouping
+reads the loose boxes, which PDFium now bounds by `/FontBBox` (`runtime-src` 2558d5d97), so
+shorter boxes split or join lines differently; that cause is likely, not proven. On
+`embedded-orientations`, the probe glyphs shifted with the two dropped runs, and the centre probe
+of glyph 11 now hits glyph 12. On `non-identity-text`, the centre probe of glyph 1 hits glyph 0,
+as it did before. The Rust layout has to
 take page-space runs, or mirror them the way `createTextLayout` does.
 
 `text/charmap.json` (unchanged).
@@ -324,7 +346,8 @@ records came out the same.
 `redaction/apply.json` (changed). 10 cases become 9: `batched-index-refs-refused` went with index
 refs (bc0057f3a). Each case carries its `request` with the v3 scope, `{pages}` or `{annotations}`
 of refs (a9434c0e2). Results name pages by `page` ref. `remaining` loses the two widgets
-(37 to 35, 36 to 34), so its order shifts (1233d1349).
+(`one-marking-by-name` 38 to 36, `two-markings-by-name` 37 to 35, `whole-page` and
+`page-with-no-markings` 36 to 34), so its order shifts (1233d1349).
 
 Upstream reference: `packages/engine/services/src/features/redaction/RedactionApplier.ts`,
 `packages/engine/core/src/mutation/RedactionApplyResult.ts`.
@@ -337,10 +360,14 @@ Upstream reference: `packages/engine/services/src/features/redaction/RedactionAp
 `search/snippet.json` (changed). A snippet is `{before, match, after}` instead of
 `{text, matchStart, matchLength}` (a10ed2659).
 
-`search/slice-protocol.json` (changed). Keys gained the `ignoreWhitespace` field and spell the mode
-`snippets` or `matches` instead of `full` or `rects` (a10ed2659). The cursor cases send a cursor
-minted with that key (our 26887941a), and `request.cursor` holds the exact string sent. All five
-reach the check they are about again: `cursor-resumes-its-own-query` and
+`search/slice-protocol.json` (changed). Keys spell the mode `snippets` or `matches` instead of
+`full` or `rects` (a10ed2659). They also carry the `ignoreWhitespace` flag, but that predates the
+range (f082bf3e4, before the merge base): the old vector was cut before it and was already stale
+there. Each case now records `request`, the flattened `SearchRequest` actually built and checked
+(query fields at top level, `snippets`, `from` as a `PageRef`, the cursor string), and `case`, the
+case as written in the pre-a10ed2659 spelling (our 0963cacd3). Rust replays `request`. The six
+cases that carry a well-formed cursor send one minted with the current key (our 26887941a). The
+five about the cursor checks reach the check they are about again: `cursor-resumes-its-own-query` and
 `cursor-beside-the-matching-start-page-is-allowed` accept, `cursor-from-another-query-is-refused`
 stops at the key, `cursor-from-before-a-mutation-is-refused` at the sequence, and
 `cursor-beside-a-conflicting-start-page-is-refused` at the start page, whose message is now
@@ -466,7 +493,13 @@ them (1233d1349). That one change moves `save/roundtrip.json`, `redaction/apply.
 `annotation/read.json`, `annotation/appearances.json` and the widget cases in create and update.
 
 Dates. One `IsoDateTime` type and the `createdAt`/`modifiedAt` names everywhere (fd175ba50):
-annotations, attachments, piece info, metadata, form fields and the schema vector.
+annotations, attachments, piece info, metadata, form fields and the schema vector. The value format
+changed with the names. A PDF date reads through `pdfDateToIso` as ISO 8601 with the offset the
+file wrote (`+01:00` stays `+01:00`, `Z` or a zero offset is `Z`, no offset stays none) and no
+milliseconds. Before, metadata normalized to UTC with `.000`, piece info carried `.000`, and
+attachments passed the raw `D:` string through. A write takes ISO or a `Date` and stores the
+offset given. The Rust readers need the same formatter, and every replay that compares dates
+needs the offset kept, not normalized.
 
 The PDFium runtime. The `runtime-src` submodule moved from `f5ca81379` to `1461b0c51`. That
 accounts for the text and geometry value changes (trailing spaces, dropped degenerate and
