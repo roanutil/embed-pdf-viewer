@@ -19,7 +19,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  createLocalEngine,
   toPageRef,
   type FormFieldRef,
   type PageRef,
@@ -27,6 +26,8 @@ import {
 } from '../../../packages/engine/main/src/index';
 import type { FormFieldDraft } from '../../../packages/engine/core/src/forms/draft';
 import { pageBoxOf } from '../../../packages/engine/core/src/geometry/pageSpace';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -272,7 +273,9 @@ const CASES: readonly FieldCase[] = [
     covers:
       'A MERGED field/widget dictionary, which is the ordinary AcroForm shape. The field goes and the same object is then asked to go as an annotation, and the annotation plane refuses to delete a widget. Recorded as the refusal it is rather than worked around.',
     deleteOf: { kind: 'objectNumber', fieldObjectNumber: 5 },
-    refused: true,
+    // Upstream deletes a merged field now, field and widget in one change
+    // (60602f579, "Forms and signatures: behaviour fixes"). The case keeps
+    // its name and records what the delete leaves.
   },
   {
     name: 'delete-radio-group',
@@ -364,13 +367,11 @@ function v3FieldDraft(
 
 async function readCase(entry: FieldCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -412,21 +413,16 @@ async function readCase(entry: FieldCase): Promise<unknown> {
         };
       };
 
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(run);
       if (entry.refused) {
-        let code: string | null = null;
-        let result: unknown;
-        try {
-          result = await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        // Upstream accepts some writes these cases expect refused (a merged
-        // field's delete, for one). The case records what happened instead
-        // of stopping the run, so the change shows in the vector.
-        if (code === null) return { ...entry, result };
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code };
       }
-      return { ...entry, result: await run() };
+      if (!sent.ok) throw sent.error;
+      return { ...entry, request: sent.request, result: sent.value };
     } finally {
       await doc.close();
     }
