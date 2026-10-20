@@ -18,7 +18,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import {
+  createLocalEngine,
+  toPageRef,
+  type Annotation,
+  type AnnotationRef,
+} from '../../../packages/engine/main/src/index';
+import type { RedactionApplyScope } from '../../../packages/engine/core/src/mutation/RedactionApplyResult';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -100,19 +106,23 @@ const CASES: readonly RedactionCase[] = [
     },
     refused: true,
   },
-  {
-    name: 'batched-index-refs-refused',
-    covers:
-      'Two positional references on one page. Applying the first shifts the second, so by the time it resolves it names something else.',
-    scope: {
-      kind: 'annotations',
-      refs: [
-        { kind: 'index', pageObjectNumber: PAGE, index: 0, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
-        { kind: 'index', pageObjectNumber: PAGE, index: 1, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
-      ],
-    },
-    refused: true,
-  },
+  // Index refs went in bc0057f3a ("Remove NM and implement BaseID"): every
+  // annotation's ref is its name for life, so no ref shifts when another
+  // is applied. This case was about refusing two positional refs, so it
+  // stays here, commented out.
+  // {
+  //   name: 'batched-index-refs-refused',
+  //   covers:
+  //     'Two positional references on one page. Applying the first shifts the second, so by the time it resolves it names something else.',
+  //   scope: {
+  //     kind: 'annotations',
+  //     refs: [
+  //       { kind: 'index', pageObjectNumber: PAGE, index: 0, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
+  //       { kind: 'index', pageObjectNumber: PAGE, index: 1, revision: { docSessionId: 'x', pageObjectNumber: PAGE, generation: 0 } },
+  //     ],
+  //   },
+  //   refused: true,
+  // },
   {
     name: 'unknown-page-refused',
     covers: 'A page no document has.',
@@ -124,6 +134,40 @@ const CASES: readonly RedactionCase[] = [
 /** The fixture with its three markings stripped, for the unchanged case. */
 function needsStrippedFixture(entry: RedactionCase): boolean {
   return entry.name === 'page-with-no-markings';
+}
+
+type OpenedDocument = Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>;
+
+/**
+ * A case's scope as `redaction.apply` takes it. The cases keep the old
+ * spelling and are translated here. The scope lost its `kind` and names
+ * pages and annotations by ref (`{ pages }` or `{ annotations }`) since
+ * a9434c0e2 ("Documents: v3 result shapes, attachments, redaction,
+ * security"). The `nm` ref went in bc0057f3a ("Remove NM and implement
+ * BaseID"): a case that names a marking by its /NM gets that annotation's
+ * own ref from the page's listing, which is the durable address it meant.
+ */
+async function v3Scope(
+  doc: OpenedDocument,
+  scope: Record<string, unknown>,
+): Promise<RedactionApplyScope> {
+  if (scope.kind === 'pages') {
+    return { pages: (scope.pageObjectNumbers as number[]).map(toPageRef) };
+  }
+  const refs = scope.refs as { pageObjectNumber: number; nm: string }[];
+  const listed = new Map<number, Annotation[]>();
+  const annotations: AnnotationRef[] = [];
+  for (const ref of refs) {
+    let onPage = listed.get(ref.pageObjectNumber);
+    if (!onPage) {
+      onPage = (await doc.page(toPageRef(ref.pageObjectNumber)).annotations.list()).annotations;
+      listed.set(ref.pageObjectNumber, onPage);
+    }
+    const found = onPage.find((annotation) => annotation.nm === ref.nm);
+    if (!found) throw new Error(`no annotation named ${ref.nm} on page ${ref.pageObjectNumber}`);
+    annotations.push(found.ref);
+  }
+  return { annotations };
 }
 
 async function readCase(entry: RedactionCase): Promise<unknown> {
@@ -145,9 +189,10 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
     try {
       if (needsStrippedFixture(entry)) {
         // Apply everything first, so the second apply has nothing left.
-        await doc.redaction.apply({ kind: 'pages', pageObjectNumbers: [PAGE] } as never);
+        await doc.redaction.apply({ pages: [toPageRef(PAGE)] });
       }
-      const run = () => doc.redaction.apply(entry.scope as never);
+      const scope = await v3Scope(doc, entry.scope);
+      const run = () => doc.redaction.apply(scope);
       if (entry.refused) {
         let code: string | null = null;
         try {
@@ -158,12 +203,12 @@ async function readCase(entry: RedactionCase): Promise<unknown> {
         if (code === null) throw new Error(`${entry.name}: expected a refusal`);
         return { ...entry, refusedWith: code };
       }
-      const result = (await run()) as Record<string, unknown>;
+      const result = await run();
       // What is left on the page afterwards, which is how a caller sees
       // that the markings went and the rest did not.
-      const page = doc.page(PAGE as never);
+      const page = doc.page(toPageRef(PAGE));
       const remaining = (await page.annotations.list()).annotations.map(
-        (annotation: { subtype: string; nm: string | null }) => ({
+        (annotation) => ({
           subtype: annotation.subtype,
           nm: annotation.nm,
         }),
