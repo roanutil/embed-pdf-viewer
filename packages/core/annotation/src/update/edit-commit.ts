@@ -11,10 +11,11 @@ import { MIN_SIZE } from '../rect';
 import { shapeOf, styleOf, withShape, withValues } from '../record';
 import type { Effect, Model } from '../types';
 import { commitViewGesture, geomEqual } from './changes';
-import { rotateDraftDelta } from './edit';
+import { editDraftLost, rotateDraftDelta } from './edit';
 
 export function editUp(model: Model): [Model, Effect[]] {
   const draft = model.draft!;
+  if (editDraftLost(model, draft)) return [{ ...model, draft: null }, []];
   if (draft.kind === 'leader') {
     const record = model.byId[draft.id];
     const measure = record && measurementOf(record.annotation);

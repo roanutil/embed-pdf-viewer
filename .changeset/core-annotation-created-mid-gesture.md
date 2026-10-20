@@ -2,4 +2,4 @@
 '@embedpdf/core-annotation': patch
 ---
 
-A move, resize, caption or leader drag that starts before the engine confirms a new annotation now carries over to the annotation's permanent id when the confirmation arrives. Previously the next pointer move threw. A drag whose annotation has disappeared now ends the gesture instead of throwing.
+A move, resize, caption or leader drag whose annotation goes mid-gesture (another session deletes it, or the engine refuses its create) now ends with nothing written. Before, the next pointer move or release threw. `computeMoveSnap` skips an id with no record instead of throwing.
