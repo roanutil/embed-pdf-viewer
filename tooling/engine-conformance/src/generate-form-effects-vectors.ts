@@ -257,24 +257,30 @@ async function runCase(entry: EffectsCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
-      const result = await doc.forms.applyEffects(entry.effects as never);
-      return {
-        ...entry,
-        // The error MESSAGES are not recorded, only the codes: the two
-        // engines word their refusals differently and a comparison of prose
-        // would pin the wording rather than the behaviour.
-        results: result.results.map((item) => ({
-          index: item.index,
-          status: item.status,
-          fields: item.fields.map((dto) => field(dto as never)),
-          changedWidgets: item.changedWidgets,
-          ...(item.error ? { errorCode: String(item.error.code ?? 'unknown') } : {}),
-        })),
-        changedWidgets: result.changedWidgets,
-        // Only whether there is one. Its contents are a cloud concern and
-        // empty on a local engine.
-        wrote: result.meta !== null,
-      };
+      // `forms.applyEffects` was removed upstream in 98e5c270c ("Forms engine
+      // round: prediction helpers, widget looks, field rights; applyEffects
+      // removed"): a script run's effects are one `doc.apply` change now, all
+      // of them or none, with no per-effect status. The call stays here,
+      // commented out, until it is decided what this generator becomes.
+      throw new Error(`${entry.name}: forms.applyEffects was removed upstream (98e5c270c)`);
+      // const result = await doc.forms.applyEffects(entry.effects as never);
+      // return {
+      //   ...entry,
+      //   // The error MESSAGES are not recorded, only the codes: the two
+      //   // engines word their refusals differently and a comparison of prose
+      //   // would pin the wording rather than the behaviour.
+      //   results: result.results.map((item) => ({
+      //     index: item.index,
+      //     status: item.status,
+      //     fields: item.fields.map((dto) => field(dto as never)),
+      //     changedWidgets: item.changedWidgets,
+      //     ...(item.error ? { errorCode: String(item.error.code ?? 'unknown') } : {}),
+      //   })),
+      //   changedWidgets: result.changedWidgets,
+      //   // Only whether there is one. Its contents are a cloud concern and
+      //   // empty on a local engine.
+      //   wrote: result.meta !== null,
+      // };
     } finally {
       await doc.close();
     }
@@ -324,6 +330,15 @@ async function main(): Promise<void> {
     if (names.has(entry.name)) throw new Error(`duplicate case name ${entry.name}`);
     names.add(entry.name);
   }
+
+  // Nothing to run: see `runCase`. The vector is left as it is, and the
+  // check says why rather than failing on a missing method.
+  process.stdout.write(
+    '  REMOVED forms/effects.json: forms.applyEffects went upstream in 98e5c270c;\n' +
+      '          a script run\'s effects are one doc.apply change now.\n',
+  );
+  process.exitCode = 1;
+  return;
 
   const cases: unknown[] = [];
   for (const entry of CASES) {
