@@ -26,6 +26,7 @@ import {
 } from '../../../packages/engine/core/src/auth/scope/resolver';
 import type {
   DocCapability,
+  Identity,
   PdfBits,
 } from '../../../packages/engine/core/src/auth/scope/types';
 
@@ -86,8 +87,23 @@ function runParseCase(entry: ParseCase): ParseResult {
   }
 }
 
+/**
+ * The cases spell identity as the old snake-case `IdentityClaims`
+ * (`user_id`, `group_id`, `groups`). Upstream folded that into the camel-case
+ * session `Identity` in c78997346 ("one session identity"); `groups` has no
+ * counterpart there and no filter reads it. The vectors echo the case's own
+ * spelling, so the translation happens here.
+ */
+function identityOf(entry: ResolveCase): Identity {
+  const claims = entry.identity ?? {};
+  return {
+    ...(claims.user_id !== undefined ? { userId: claims.user_id } : {}),
+    ...(claims.group_id !== undefined ? { groupId: claims.group_id } : {}),
+  };
+}
+
 function runResolveCase(entry: ResolveCase): ResolveResult {
-  const identity = entry.identity ?? {};
+  const identity = identityOf(entry);
   const results = entry.bits.map((name): PerBitsResult => {
     const declared = BITS_BY_NAME.get(name);
     if (!declared) throw new Error(`resolve case ${entry.name} names unknown bits ${name}`);
@@ -104,7 +120,10 @@ function runResolveCase(entry: ResolveCase): ResolveResult {
     }));
     const setGroup = entry.setGroup?.map((probe) => ({
       probe: `${probe.newGroupId}<-${probe.callerDefaultGroupId ?? '-'}`,
-      allowed: checkSetGroup(probe.newGroupId, probe.callerDefaultGroupId, entry.scope, bits),
+      // Upstream generalized set-group to an entity in 4b2cdb395 ("Field
+      // groups") and dropped the unused bits argument. The old check was
+      // annotations-only, so these probes are the 'annotations' entity.
+      allowed: checkSetGroup('annotations', probe.newGroupId, probe.callerDefaultGroupId, entry.scope),
     }));
 
     return { bits: name, expanded, granted, ...(collab && { collab }), ...(setGroup && { setGroup }) };
