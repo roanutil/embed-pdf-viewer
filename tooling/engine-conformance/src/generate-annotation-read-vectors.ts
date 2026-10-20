@@ -98,13 +98,17 @@ async function readCase(entry: ReadCase): Promise<unknown> {
       // per-page `pageState` went with the snapshot types. The vector keeps
       // one entry per page, in the list's page order. Widgets left the
       // annotation list for `forms.list()` in 1233d1349 ("Read and write
-      // widgets through the form").
+      // widgets through the form"); they are read from there and follow each
+      // page's other annotations, so the vector still covers every /Annots
+      // entry (no longer in /Annots order).
       const list = await doc.annotations.list();
+      const { widgets } = await doc.forms.list();
+      const onPage = (page: { objectNumber: number }) =>
+        (annotation: { page: { objectNumber: number } | null }) =>
+          annotation.page?.objectNumber === page.objectNumber;
       const pages = list.pages.map((page) => ({
         page,
-        annotations: list.annotations.filter(
-          (annotation) => annotation.page.objectNumber === page.objectNumber,
-        ),
+        annotations: [...list.annotations.filter(onPage(page)), ...widgets.filter(onPage(page))],
       }));
       return { ...entry, pages };
     } finally {
