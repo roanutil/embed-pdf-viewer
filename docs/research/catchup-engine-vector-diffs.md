@@ -3,7 +3,7 @@
 This is the input for the Rust re-port (catch-up Task 7). It compares every file under
 `tooling/engine-conformance/vectors/` at `0044ea9b9` (the last commit before regeneration, where
 the vectors were still the pre-catch-up ones) with the regenerated set committed in
-`34c9a6331..31ea2feeb`. Upstream is `b456ee4fd`, merged into `research/catchup-impl` at
+`34c9a6331..31ea2feeb` and the generator fixes in `ea6b5a115..016af6547` (fix round 1). Upstream is `b456ee4fd`, merged into `research/catchup-impl` at
 `5097f5547`; the merge base is `2516e2786`. Commit hashes below are upstream commits in
 `2516e2786..b456ee4fd` unless they are named as ours.
 
@@ -13,40 +13,37 @@ committed set. The Rust tests are expected to fail against these vectors until T
 ## Totals
 
 Of the 50 files that existed before, 10 are unchanged, 39 changed and 1 was removed
-(`forms/effects.json`). One file is new (`forms/apply.json`). The tree holds 50 files after the
-change.
+(`forms/effects.json`). Two files are new (`forms/apply.json`, `schema/CustomMetadataPatch.json`).
+The tree holds 51 files after the change.
 
 Unchanged: `actions/submit-flags.json`, `actions/types.json`, `pages.geometry/colors.json`,
 `pages.text/colors.json`, `pages.text/non-identity-text.json`, `pages.text/report.json`,
 `pages.text/reverse-and-gapped-text.json`, `render/geometry.json`, `scope/parse.json`,
 `text/charmap.json`.
 
-## Read this first: three vectors that need a generator fix before Task 8 uses them
+## Generator fixes in this round
 
-These regenerated cleanly and pass their checks, but what they record is not what the cases were
-written to test. The task forbade generator changes beyond the `covers` text, so they are committed
-as the generators produce them.
+The first regeneration left three vectors that recorded something other than what their cases were
+written to test. Fix round 1 changed the generators so they do again.
 
-`text/layout.json` is broken. `generate-layout-vectors.ts` reads its input from the committed
-`pages.geometry/*.json` and feeds it to `createPdfTextLayout`, which takes PDF coordinates
-(`PdfRect` with `left/bottom/right/top`). The regenerated geometry vectors are in page space
-(`{x, y, width, height}`), and `currentSnapshot` passes any run that already has `start` straight
-through. The layout then reads `undefined` corners: 57 glyph quads come out as
-`{"p1": {}, "p2": {}, ...}`, 203 hit probes have `"x": null` (NaN), and segment lists are empty.
-Before regeneration `layout:check` reported `ok`, because the old geometry vectors were PDF space.
-The fix is in the generator: convert page space back to PDF space with the page's visible box, or
-call the page-space `createTextLayout` that 3bad82c8d added and record page-space output. Either
-way `crates/epdf-engine/tests/text_layout.rs` also reads the geometry vectors (line 366), so the
-choice decides what the Rust layout consumes.
+`text/layout.json` (our ea6b5a115). The geometry vectors are page space, and the generator fed them
+to `createPdfTextLayout`, which reads PDF rects, so the layout came out with empty quads and NaN hit
+probes. It now uses `createTextLayout` (`packages/engine/core/src/pageSpace/text.ts`), the layout
+`page.text.layout()` returns, which mirrors the runs with `mirroredRun`, runs the PDF layout, and
+flips each answer back. The vector is page space and its envelope is `schemaVersion: 2`. A page
+whose quads or probe positions are not finite now stops the generator.
 
-`search/slice-protocol.json` lost its cursor coverage. The five cursor cases in
-`src/search-cases.ts` (line 838 and neighbours) carry a hand-written cursor whose key is the old
-`["l","the",0,0,0,"full"]`. Upstream's key is now `["l","the",0,0,0,0,"snippets"]` (a10ed2659),
-so all five answer "search cursor belongs to a different query". `cursor-resumes-its-own-query`
-and `cursor-beside-the-matching-start-page-is-allowed` no longer accept, and the mutation and
-start-page refusals are never reached. The case literals need the new key.
+`search/slice-protocol.json` (our 26887941a). The cursor cases carried a hand-written key in the
+pre-a10ed2659 format. They now give the cursor's state and the query it was minted for, and the
+generator derives the key with upstream's `searchQueryKey` and encodes it with
+`encodeSearchCursor`. A minted cursor that stops at the key check fails the generator unless the
+case is about a foreign query.
 
-`schema/MetadataPatch.json` tests a different thing now. See the schema section below.
+`schema/MetadataPatch.json` and `schema/CustomMetadataPatch.json` (our f08cb61cf). See the schema
+section.
+
+Our 016af6547 corrected `covers` text that upstream behaviour had made false, in `forms/apply.json`
+and `scope/resolve.json`. Case names stay as they were so the Rust replays keep their keys.
 
 ## How the families map
 
@@ -67,7 +64,7 @@ start-page refusals are never reached. The case literals need the new key.
 | `features/search/` | `search/*.json` | `tests/search_dialect.rs`, `tests/search_slice_protocol.rs` |
 | `features/security/` | `security/state.json` | `tests/security_state.rs` |
 | `auth/scope/` (not under `features/`) | `scope/*.json` | `tests/scope_conformance.rs` |
-| `dto.rs` | `schema/MetadataPatch.json` | `tests/schema_parity.rs` |
+| `dto.rs` | `schema/MetadataPatch.json`, `schema/CustomMetadataPatch.json` | `tests/schema_parity.rs` (checks `MetadataPatch` only; nothing replays `CustomMetadataPatch` yet) |
 | `host.rs` | `wire/requests.json` | `tests/wire_contract.rs` |
 
 ## Annotation (`features/annotation/`)
@@ -172,10 +169,11 @@ as `effects.json`, but the cases are `doc.apply` ops (`forms.setValue`, `forms.r
 `forms.setDisplay`) and the answer is one change, all or none. A case that used to report a
 per-effect `rejected` status is now a whole-change refusal (`refusedWith`). Two reset cases that
 were rejected now apply as an item with no changed fields: `a-push-button-cannot-be-reset` and
-`reset-with-no-fields-is-rejected`. Two cases whose `covers` text promised that a no-op or a
-rejection lets the batch continue, `an-all-no-op-batch-produces-no-meta` and
-`a-no-op-in-the-middle-does-not-stop-the-batch`, now refuse with `NotFound` because one op names
-the missing field 9999; their `covers` text is now wrong and was left alone.
+`reset-with-no-fields-is-rejected`. `a-rejection-does-not-stop-the-batch`,
+`an-all-no-op-batch-produces-no-meta` and `a-no-op-in-the-middle-does-not-stop-the-batch` now
+refuse whole (`InvalidArg`, `NotFound`, `NotFound`): one op fails, so nothing in the change lands.
+These five keep their old names, and their `covers` text says what upstream does now (our
+016af6547).
 
 `forms/field.json` (changed). 25 cases become 23: `attach-already-attached-refused` and
 `attach-off-state-refused` went with `attachWidget` (d7bd2d277). Each case carries the `request`
@@ -297,7 +295,14 @@ line, which matches PDFium's `CPDF_TextPage: Ignore non-finite page objects` (`r
 PDFium changes on the text side: `" Degenerate"` and the zero-size `"A"` are no longer extracted.
 The other four `pages.text` files are unchanged.
 
-`text/layout.json` (changed, broken). See the top of this document.
+`text/layout.json` (changed, generator fixed in our ea6b5a115). Envelope `schemaVersion` 1 to 2.
+Quads are page-space `PageQuad`s with named corners (`upperLeft` ... `lowerRight`) instead of
+`p1..p4` in PDF space, segment rects are page boxes (`{x, y, width, height}`) instead of
+`left/bottom/right/top`, and hit probes are page-space points. The glyph, run and frame counts
+follow the geometry: `embedded-orientations` has 69 glyphs and 9 runs (80 and 11 before) and
+`font-size-zero` has none, both from the PDFium changes above. `frameCount` is unchanged at 4,
+because frames are keyed on the y-up runs through upstream's `mirroredRun`. The Rust layout has to
+take page-space runs, or mirror them the way `createTextLayout` does.
 
 `text/charmap.json` (unchanged).
 
@@ -332,9 +337,14 @@ Upstream reference: `packages/engine/services/src/features/redaction/RedactionAp
 `search/snippet.json` (changed). A snippet is `{before, match, after}` instead of
 `{text, matchStart, matchLength}` (a10ed2659).
 
-`search/slice-protocol.json` (changed, cursor coverage lost). Keys gained a field and spell the
-mode `snippets` or `matches` instead of `full` or `rects` (a10ed2659). The cursor cases are
-covered at the top of this document.
+`search/slice-protocol.json` (changed). Keys gained the `ignoreWhitespace` field and spell the mode
+`snippets` or `matches` instead of `full` or `rects` (a10ed2659). The cursor cases send a cursor
+minted with that key (our 26887941a), and `request.cursor` holds the exact string sent. All five
+reach the check they are about again: `cursor-resumes-its-own-query` and
+`cursor-beside-the-matching-start-page-is-allowed` accept, `cursor-from-another-query-is-refused`
+stops at the key, `cursor-from-before-a-mutation-is-refused` at the sequence, and
+`cursor-beside-a-conflicting-start-page-is-refused` at the start page, whose message is now
+"`from` conflicts with the cursor" (the request field is `from`, a `PageRef`, since a10ed2659).
 
 Upstream reference: `packages/engine/core/src/search/` (`fold.ts`, `literal.ts`, `regex.ts`,
 `snippet.ts`, `matcher.ts`, `types.ts`, `epoch.ts`) and
@@ -344,29 +354,39 @@ Upstream reference: `packages/engine/core/src/search/` (`fold.ts`, `literal.ts`,
 
 `security/state.json` (changed). One value: the `annotate-and-modify` advisory (bits 4 and 6) now
 says `canAssemble: true`. Upstream grants page assembly with bit 4 or 11, as Acrobat Pro does
-(5443a5649, `materializePdfPermissions`). That is the whole reason `security:check` differed.
+(5443a5649, `materializePdfPermissions`). That is the whole reason `security:check` differed, and it is upstream behaviour, recorded as it
+is; the generator and its cases are unchanged.
 
 `scope/resolve.json` (changed). Expansions gain capabilities in three groups. `doc.text.select` and
 `doc.text.search` appear wherever text copy did (a10ed2659, 5443a5649). `pdf.permissions` grants
 `doc.forms.fill` and `doc.pages.assemble` on more bit sets (5443a5649). `doc.sign` and
 `doc.outline.modify` join the expansions (4b2cdb395 and 67ccb76dc). Two collab probes flip to
 allowed: a `group=finance` filter now matches a finance target whether or not the caller belongs
-to finance, because 4b2cdb395 dropped the membership test from `filterMatches`. The case named
-`group-filter-needs-membership` now records the opposite of its name.
+to finance, because 4b2cdb395 dropped the membership test from `filterMatches`. This is upstream
+behaviour. The case keeps the name `group-filter-needs-membership`, and its `covers` text now says
+the rule changed (our 016af6547).
 
 `scope/parse.json` (unchanged).
 
-`schema/MetadataPatch.json` (changed). Eight cases flip from `valid: true` to `valid: false`. The
-three `custom-*` cases fail because `custom` left `MetadataPatch` for its own object and schema
-(a4b8259f7). The five `created-*` cases fail because the field is now `createdAt` (fd175ba50) and
-the schema is `.strict()`, so `created` is an unknown key. That is the whole reason
-`schema:check` differed. The vector is correct for upstream's zod, but it no longer tests date
-parsing or custom keys at all: the cases in `src/schema-cases.ts` still use the old names. They
-should be rewritten to `createdAt`/`modifiedAt`, and the custom cases moved to a
-`CustomMetadataPatch` vector, before Task 8 ports `dto.rs`.
+`schema/MetadataPatch.json` (changed, cases rewritten in our f08cb61cf). The first regeneration
+flipped eight cases to `valid: false` for the wrong reason: three `custom-*` cases sent a field
+that left `MetadataPatch` for its own patch (a4b8259f7), and five `created-*` cases sent `created`,
+which the `.strict()` schema refuses as an unknown key since the field became `createdAt`
+(fd175ba50). The date cases now send `createdAt` and `modifiedAt` under their old names, and test
+dates again. Against the old vector, `created-offset` flips to valid, because `IsoDateTimeSchema`
+is `datetime({ offset: true, local: true })` (fd175ba50); its `covers` text says so. Three cases are
+new: `created-without-offset` (valid, the `local: true` form), `created-pre-v3-spelling` (invalid,
+`created` is an unknown key) and `custom-is-its-own-patch` (invalid, `custom` is an unknown key).
+The four `custom-*` cases are removed from this file.
+
+`schema/CustomMetadataPatch.json` (new). The four `custom-*` cases, sent as the patch itself
+(`CustomMetadataPatchSchema`, a record of string to string-or-null, a4b8259f7). `custom-empty`,
+`custom-per-key-three-state` and `custom-empty-key` are valid; `custom-null` is not. The Rust side
+needs a `CustomMetadataPatch` type in `dto.rs` and a `check::<CustomMetadataPatch>` in
+`tests/schema_parity.rs`.
 
 Upstream reference: `packages/engine/core/src/auth/scope/` (`resolver.ts`, `pdf-bits.ts`,
-`types.ts`), `packages/engine/core/src/wire/schemas.ts`,
+`types.ts`), `packages/engine/core/src/wire/schemas.ts`, `packages/engine/core/src/dto/IsoDateTime.schema.ts`,
 `packages/engine/services/src/features/security/`.
 
 ## Wire (`host.rs`)
