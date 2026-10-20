@@ -185,6 +185,7 @@ async function readCase(entry: FilesCase): Promise<unknown> {
     );
     try {
       const listing = await doc.pages.list();
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
       const firstPage = listing.pages[0]!.ref;
 
       const run = async () => {
@@ -192,17 +193,19 @@ async function readCase(entry: FilesCase): Promise<unknown> {
           const holder = entry.pieceInfo.onPage
             ? doc.page(firstPage).pieceInfo
             : doc.pieceInfo;
+          // `clear`, `applications` and `read` are `delete`, `list` and `get`
+          // since 83f6598d2 ("Engine API v3, round 3a").
           if (entry.pieceInfo.clear) {
-            await holder.clear(entry.pieceInfo.application);
+            await holder.delete(entry.pieceInfo.application);
           } else {
             await holder.update(entry.pieceInfo.application, entry.pieceInfo.patch as never);
           }
           // The whole holder afterwards, plus the list of applications:
           // a clear removes one from the list and a patch may add one.
           return {
-            applications: await holder.applications(),
+            applications: await holder.list(),
             read: entry.pieceInfo.application
-              ? await holder.read(entry.pieceInfo.application)
+              ? await holder.get(entry.pieceInfo.application)
               : null,
           };
         }
@@ -214,9 +217,11 @@ async function readCase(entry: FilesCase): Promise<unknown> {
             mimeType: attachment.create.mimeType,
             description: attachment.create.description,
           } as never);
-          return { created: created.created, listed: await doc.attachments.list() };
+          // The result is `{ attachment, meta }` since a9434c0e2 ("Documents:
+          // v3 result shapes").
+          return { created: created.attachment, listed: await doc.attachments.list() };
         }
-        await doc.attachments.delete({ kind: 'key', key: attachment.deleteKey! } as never);
+        await doc.attachments.delete({ kind: 'key', key: attachment.deleteKey! });
         return { listed: await doc.attachments.list() };
       };
 
@@ -239,13 +244,19 @@ async function readCase(entry: FilesCase): Promise<unknown> {
   }
 }
 
-/** `/LastModified` and an attachment's creation date are clock-stamped. */
+/**
+ * `/LastModified` and an attachment's creation date are clock-stamped. Their
+ * keys are `modifiedAt` and `createdAt` (they were `lastModified` and
+ * `creationDate`) since fd175ba50 ("One date type IsoDateTime").
+ */
+const STAMPED_KEYS = new Set(['modifiedAt', 'createdAt']);
+
 function normalizeStamps(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(normalizeStamps);
   if (value === null || typeof value !== 'object') return value;
   return Object.fromEntries(
     Object.entries(value as Record<string, unknown>).map(([key, entry]) =>
-      (key === 'lastModified' || key === 'creationDate') && typeof entry === 'string'
+      STAMPED_KEYS.has(key) && typeof entry === 'string'
         ? [key, '<stamped>']
         : [key, normalizeStamps(entry)],
     ),

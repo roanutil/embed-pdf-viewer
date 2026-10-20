@@ -138,3 +138,36 @@ fn closing_a_document_leaves_the_library_usable() {
         assert!(doc.page_count() > 0);
     }
 }
+
+#[test]
+fn page_size_by_index_matches_the_loaded_page_and_refuses_past_the_end() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    let (width, height) = doc.page_size_by_index(0).expect("page 0 has a size");
+    let page = doc.page(0).expect("load page 0");
+    assert!((width - page.width()).abs() < 0.01, "{width} vs {}", page.width());
+    assert!((height - page.height()).abs() < 0.01, "{height} vs {}", page.height());
+    assert_eq!(doc.page_size_by_index(doc.page_count()), None);
+}
+
+#[test]
+fn an_unrotated_page_reads_zero_quarter_turns() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    assert_eq!(doc.page_rotate_by_index(0), Some(0));
+    assert_eq!(doc.page_rotation_quarter_turns(0), 0);
+    assert_eq!(doc.page_rotate_by_index(doc.page_count()), None);
+}
+
+#[test]
+fn applying_no_redaction_marks_is_refused_rather_than_applying_all() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    let page = doc.page(0).expect("load page 0");
+    let before = page.annotation_count();
+    assert_eq!(page.apply_redaction_marks(&[]), None);
+    assert_eq!(page.annotation_count(), before);
+}

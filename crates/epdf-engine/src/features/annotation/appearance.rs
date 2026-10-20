@@ -254,6 +254,15 @@ fn render_one(
     strip_rotation: bool,
     subtype_code: i32,
 ) -> Result<Option<PageRaster>, EngineError> {
+    if strip_rotation {
+        // re-port (Task 8): EPDF_RenderAnnotBitmapUnrotated now takes the turn
+        // (degrees and unrotated box) from the caller; port upstream's
+        // readAnnotationTurn and pass it as a pdfium::AppearanceTurn. Until
+        // then a turned box annotation is skipped, like one with no stream
+        // for the mode: the result has no per-annotation skip record, and
+        // failing the page would hide every other appearance on it.
+        return Ok(None);
+    }
     if !annotation.has_appearance_stream(mode) {
         // THE WIDGET FALLBACK IS UNREACHABLE, HERE AND IN THE TYPESCRIPT.
         //
@@ -315,10 +324,11 @@ fn render_one(
         .render_annotation_rgba_with_matrix(
             annotation,
             mode,
+            None,
             width,
             height,
             matrix.to_array(),
-            strip_rotation,
+            None,
         )
         .map_err(|e| {
             EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())

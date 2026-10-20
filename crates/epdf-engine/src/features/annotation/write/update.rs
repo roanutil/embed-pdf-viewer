@@ -247,6 +247,19 @@ fn preflight(
     let subtype = crate::features::annotation::subtype::AnnotationSubtype::from_code(
         annotation.subtype_code(),
     );
+    // re-port (Task 8): refused here, before the identity stamp writes, until
+    // the engine writes `/RD` again. See rect_differences_not_ported.
+    let rect_differences = match &patch.kind {
+        AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
+            &fields.rect_differences
+        }
+        AnnotationPatchKind::Caret { fields } => &fields.rect_differences,
+        AnnotationPatchKind::FreeText { fields } => &fields.rect_differences,
+        _ => &Patch::Keep,
+    };
+    if matches!(rect_differences, Patch::Set(_)) {
+        return Err(rect_differences_not_ported());
+    }
     if subtype != patch.kind.subtype() {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
@@ -835,19 +848,8 @@ fn apply_shape_patch(
     {
         match &fields.rect_differences {
             Patch::Keep => {}
-            Patch::Set(rd) => {
-                if !annotation.set_rectangle_differences(
-                    rd.left as f32,
-                    rd.bottom as f32,
-                    rd.right as f32,
-                    rd.top as f32,
-                ) {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        "EPDFAnnot_SetRectangleDifferences refused the margins",
-                    ));
-                }
-            }
+            // re-port (Task 8): preflight refuses a set.
+            Patch::Set(_) => {}
             Patch::Clear => {
                 annotation.clear_rectangle_differences();
             }
@@ -997,19 +999,8 @@ fn patch_rect_differences(
         Patch::Clear => {
             annotation.clear_rectangle_differences();
         }
-        Patch::Set(rd) => {
-            if !annotation.set_rectangle_differences(
-                rd.left as f32,
-                rd.bottom as f32,
-                rd.right as f32,
-                rd.top as f32,
-            ) {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFAnnot_SetRectangleDifferences refused the margins",
-                ));
-            }
-        }
+        // re-port (Task 8): preflight refuses a set.
+        Patch::Set(_) => {}
     }
     Ok(())
 }
@@ -1468,4 +1459,14 @@ fn apply_widget_patch(
     // on an inert one this does nothing, which is the right answer for it.
     annotation.generate_form_field_appearance();
     Ok(())
+}
+
+/// re-port (Task 8): the error a `/RD` write returns until the engine owns
+/// `/RD` the way upstream does. `EPDFAnnot_SetRectangleDifferences` was
+/// removed in runtime 5e9241945.
+fn rect_differences_not_ported() -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "writing /RD is not ported to the runtime 1461b0c51 API",
+    )
 }

@@ -62,6 +62,7 @@ async function readAllPages(rustReads: boolean, path: string): Promise<PageGeome
     const { pages } = await doc.pages.list();
     const snapshots: PageGeometrySnapshot[] = [];
     for (const page of pages) {
+      // @ts-expect-error upstream removed page.geometry; Task 8 rewrites this test.
       snapshots.push(await doc.page(page.ref).geometry.read());
     }
     return snapshots;
@@ -78,7 +79,9 @@ const hasRustCore = await (async () => {
   return present;
 })();
 
-describe.skipIf(!hasRustCore)('pages.geometry: Rust and TypeScript readers agree', () => {
+// Waits for the engine re-port (Task 8), which rewrites it against upstream's text layout:
+// upstream removed page.geometry.read().
+describe.skip('pages.geometry: Rust and TypeScript readers agree', () => {
   for (const fixture of fixtures) {
     test(`${fixture.name}, every page, through the service boundary`, async () => {
       const [typescript, rust] = await Promise.all([
@@ -106,6 +109,7 @@ describe.skipIf(!hasRustCore)('pages.geometry: Rust and TypeScript readers agree
       // Object number 999999 is not in any of these documents. The Rust path
       // must surface the same EngineErrorCode the TypeScript path does, since
       // the plan makes one error vocabulary a requirement rather than a goal.
+      // @ts-expect-error upstream removed page.geometry; Task 8 rewrites this test.
       await expect(doc.page(999999 as never).geometry.read()).rejects.toMatchObject({
         code: 'NotFound',
       });

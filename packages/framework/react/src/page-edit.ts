@@ -1,20 +1,30 @@
-import { PageEditToken, type PageEditCapability } from '@embedpdf/plugin-page-edit';
-import { useCapability } from './runtime';
-
 /**
- * The page-edit capability, bound to the surrounding `DocumentScope`.
+ * The React surface for @embedpdf/plugin-page-edit: the capability and the
+ * state declared once in `pageEditState`. The plugin turns a page relative to
+ * its rotation and resolves positions, so this file is binding only:
  *
- * Thin idiomatic wrapper over `PageEditToken` — the relative→absolute rotation
- * and page addressing live in the plugin, so this hook (and its Vue/Svelte/
- * Angular siblings) is pure binding sugar with no logic to drift.
- *
- *   const editor = usePageEditor();
- *   editor.rotateBy(page.ref, 90);
- *   if (editor.canEdit()) { … }
+ *   const pageEdit = usePageEdit();
+ *   const { selected, canEdit } = usePageEditState();
+ *   await pageEdit.rotateBy(selected, 90);
  */
 
 // One-line-per-feature: registration travels with the UI.
 export * from '@embedpdf/plugin-page-edit';
-export function usePageEditor(): PageEditCapability {
+import { PageEditToken, pageEditState, type PageEditCapability } from '@embedpdf/plugin-page-edit';
+import { useCapability } from './runtime';
+import { stateHook } from './state';
+
+/**
+ * The page edits of the surrounding `<DocumentScope>`'s document, else the
+ * active one. Outside a document, every method throws `not-ready`.
+ */
+export function usePageEdit(): PageEditCapability {
   return useCapability(PageEditToken);
 }
+
+/**
+ * The page edits' state: the selected pages and whether you may edit and copy
+ * pages (the page's State table, declared once in `pageEditState`). Takes a
+ * selector, and re-renders only when what it returns changes.
+ */
+export const usePageEditState = stateHook(pageEditState);

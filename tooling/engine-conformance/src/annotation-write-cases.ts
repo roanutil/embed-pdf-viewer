@@ -1,10 +1,10 @@
 /**
- * The cases `generate-annotation-write-vectors.ts` runs through the two pure
- * mutation classifiers.
+ * The cases `generate-annotation-write-vectors.ts` runs through the pure
+ * appearance classifier, and the mutation-impact cases it no longer runs.
  *
  * Kept apart from the generator, like `scope-cases.ts`, because these are the
  * thing under review: the generator is twenty lines of plumbing and this is
- * the argument about what the classifiers should say.
+ * the argument about what the classifier should say.
  */
 
 /** One `appearanceImpactOf` case. */
@@ -18,6 +18,37 @@ export interface ImpactCase {
   readonly patch: Record<string, unknown>;
 }
 
+/*
+ * The cases are in the v3 annotation shape, ported from the pre-v3 one so
+ * each describes the same annotation and the same edit (Task 4b):
+ *
+ * - Square, circle, caret and free text take their shape as `box`, the old
+ *   `rect` (or `unrotatedRect` where the case had one); their `rect` is the
+ *   engine's and no case writes it (2bdc74fbf, "round 5b: clockwise
+ *   rotation, box and the engine's rect"). So is the `rect` of a text
+ *   markup, polygon, polyline, line and ink annotation (6153c181e, "upright
+ *   points, icons at their corner, the engine's rect"), which these cases
+ *   used to move alongside the points: the points alone move now. Text,
+ *   link, redact and unsupported annotations keep `rect` as their data.
+ * - Flags are top-level booleans (c78997346), a reply is `reply: { to, type
+ *   }` where it was a `replyType` (c78997346), colours are `'#rrggbb'`
+ *   (c053c3d33) and quad corners are `upperLeft` to `lowerRight`, the old
+ *   `p1` to `p4` in order (00d2c8760).
+ * - Rotation is degrees clockwise where it was counterclockwise (2bdc74fbf).
+ *   The angles are kept as written: the classifier only compares them
+ *   modulo 360, and what these cases pin is that arithmetic.
+ *
+ * Three cases move the `rect` of a drawn kind apart from its shape. The
+ * engine treats such a rect as a command since 9d8ebf857 ("a rect is a
+ * command from every door"): before it classifies, `pdfResolveRectCommand`
+ * turns the rect into the shape moved there, so the classifier never sees a
+ * rect apart from its shape. The generator runs that same step first and
+ * records the patch it produced as `resolvedPatch` when it differs; for
+ * every other case it changes nothing.
+ *
+ * The coordinates are PDF space: `appearanceImpactOf` reads the file's
+ * coordinates, as the worker's update does.
+ */
 const RECT = { left: 10, bottom: 20, right: 110, top: 70 };
 const SHIFTED = { left: 40, bottom: 5, right: 140, top: 55 };
 
@@ -26,20 +57,32 @@ const shift = <T extends Record<string, number>>(point: T): T =>
   ({ ...point, x: point.x + 30, y: point.y - 15 }) as T;
 
 const QUADS = [
-  { p1: { x: 10, y: 70 }, p2: { x: 110, y: 70 }, p3: { x: 10, y: 20 }, p4: { x: 110, y: 20 } },
+  {
+    upperLeft: { x: 10, y: 70 },
+    upperRight: { x: 110, y: 70 },
+    lowerLeft: { x: 10, y: 20 },
+    lowerRight: { x: 110, y: 20 },
+  },
 ];
 const SHIFTED_QUADS = QUADS.map((q) => ({
-  p1: shift(q.p1),
-  p2: shift(q.p2),
-  p3: shift(q.p3),
-  p4: shift(q.p4),
+  upperLeft: shift(q.upperLeft),
+  upperRight: shift(q.upperRight),
+  lowerLeft: shift(q.lowerLeft),
+  lowerRight: shift(q.lowerRight),
 }));
+
+/** The annotation a reply in these cases points at. Only its presence matters. */
+const REPLY_TARGET = {
+  kind: 'objectNumber',
+  page: { kind: 'objectNumber', objectNumber: 3 },
+  objectNumber: 5,
+};
 
 export const IMPACT_CASES: readonly ImpactCase[] = [
   {
     name: 'empty-patch',
     covers: 'A patch with nothing in it. Never touch /AP.',
-    current: { subtype: 'square', rect: RECT },
+    current: { subtype: 'square', box: RECT },
     patch: { subtype: 'square' },
   },
   {
@@ -49,18 +92,19 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     current: {
       subtype: 'text',
       rect: RECT,
-      flags: { print: true },
+      print: true,
       state: 'accepted',
       subject: 'old',
     },
     patch: {
       subtype: 'text',
-      flags: { print: false, hidden: true },
+      print: false,
+      hidden: true,
       state: 'rejected',
       stateModel: 'review',
       subject: 'new',
       groupId: 'team-2',
-      replyType: 'group',
+      reply: { to: REPLY_TARGET, type: 'group' },
     },
   },
   {
@@ -69,15 +113,15 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
       'A client that sends the whole object back unchanged. Value-diffing is what stops that being a re-bake, and a classifier keyed on which keys are present would regenerate.',
     current: {
       subtype: 'square',
-      rect: RECT,
-      color: { r: 255, g: 0, b: 0 },
+      box: RECT,
+      color: '#ff0000',
       strokeWidth: 2,
       interiorColor: null,
     },
     patch: {
       subtype: 'square',
-      rect: { ...RECT },
-      color: { r: 255, g: 0, b: 0 },
+      box: { ...RECT },
+      color: '#ff0000',
       strokeWidth: 2,
       interiorColor: null,
     },
@@ -86,42 +130,47 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     name: 'no-op-within-epsilon',
     covers:
       'A rect that came back through an f32 round trip. A thousandth of a point is below anything visible and above the drift, so this is still inert.',
-    current: { subtype: 'square', rect: RECT },
-    patch: { subtype: 'square', rect: { left: 10.0001, bottom: 20, right: 110, top: 70 } },
+    current: { subtype: 'square', box: RECT },
+    patch: { subtype: 'square', box: { left: 10.0001, bottom: 20, right: 110, top: 70 } },
   },
   {
     name: 'clearing-an-explicitly-null-entry',
     covers:
       'A tri-state clear of something the DTO already reports as null. Nothing changed.',
-    current: { subtype: 'square', rect: RECT, interiorColor: null },
+    current: { subtype: 'square', box: RECT, interiorColor: null },
     patch: { subtype: 'square', interiorColor: null },
   },
   {
     name: 'clearing-an-entry-the-dto-omits',
     covers:
       'A tri-state clear of a key the DTO does not carry AT ALL. Absent and null both mean the entry is not there, and a comparison that told them apart would re-bake for a write that changes nothing. The case above cannot catch that, because there both sides are null.',
-    current: { subtype: 'square', rect: RECT },
+    current: { subtype: 'square', box: RECT },
     patch: { subtype: 'square', dashArray: null },
   },
   {
     name: 'rect-translation',
     covers: 'The ordinary move: same size, new place, nothing else to carry.',
-    current: { subtype: 'caret', rect: RECT },
-    patch: { subtype: 'caret', rect: SHIFTED },
+    current: { subtype: 'caret', box: RECT },
+    patch: { subtype: 'caret', box: SHIFTED },
   },
   {
     name: 'resize-is-not-a-translation',
     covers:
       'A rect that changed size. The pixels would be scaled rather than shifted, so /AP has to be re-baked.',
-    current: { subtype: 'caret', rect: RECT },
-    patch: { subtype: 'caret', rect: { left: 10, bottom: 20, right: 200, top: 70 } },
+    current: { subtype: 'caret', box: RECT },
+    patch: { subtype: 'caret', box: { left: 10, bottom: 20, right: 200, top: 70 } },
   },
   {
     name: 'markup-quads-ride-along',
     covers: 'A text markup whose quads move with the rect by the same delta.',
-    current: { subtype: 'highlight', rect: RECT, quadPoints: QUADS },
-    patch: { subtype: 'highlight', rect: SHIFTED, quadPoints: SHIFTED_QUADS },
+    current: { subtype: 'highlight', quadPoints: QUADS },
+    patch: { subtype: 'highlight', quadPoints: SHIFTED_QUADS },
   },
+  // Since 9d8ebf857 the engine resolves the rect into the shape before
+  // classifying: a new rect moves the quads there. A rect sent with the
+  // quads it read back moves them too (the unchanged quads drop out), so the
+  // dictionary can no longer desync from the pixels the way these two cases
+  // described; what they record now is that move.
   {
     name: 'markup-quads-left-behind',
     covers:
@@ -141,7 +190,6 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     covers: 'A polygon whose vertices move with the rect.',
     current: {
       subtype: 'polygon',
-      rect: RECT,
       vertices: [
         { x: 10, y: 20 },
         { x: 110, y: 20 },
@@ -150,7 +198,6 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     },
     patch: {
       subtype: 'polygon',
-      rect: SHIFTED,
       vertices: [
         { x: 40, y: 5 },
         { x: 140, y: 5 },
@@ -163,7 +210,6 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     covers: 'A nested array: the ink list is a list of point lists.',
     current: {
       subtype: 'ink',
-      rect: RECT,
       inkList: [
         [
           { x: 10, y: 20 },
@@ -173,7 +219,6 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     },
     patch: {
       subtype: 'ink',
-      rect: SHIFTED,
       inkList: [
         [
           { x: 40, y: 5 },
@@ -185,68 +230,72 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
   {
     name: 'ink-advisory-rotation',
     covers:
-      'A vertex kind whose rotation scalar changed. It never drives the generator, so it is inert even though nothing else changed.',
-    current: { subtype: 'ink', rect: RECT, rotation: 30, inkList: [[{ x: 10, y: 20 }]] },
+      'A vertex kind whose rotation scalar changed. Since 6153c181e the points are stored upright and the rotation turns them about the middle of their box when the appearance is drawn, so it regenerates even though nothing else changed.',
+    current: { subtype: 'ink', rotation: 30, inkList: [[{ x: 10, y: 20 }]] },
     patch: { subtype: 'ink', rotation: 45 },
   },
   {
     name: 'box-rotation-changed',
     covers:
       'A box kind whose rotation changed along with a move. The pixels rotate, so this is not a rigid translation.',
-    current: { subtype: 'square', rect: RECT, rotation: 0 },
-    patch: { subtype: 'square', rect: SHIFTED, rotation: 30 },
+    current: { subtype: 'square', box: RECT, rotation: 0 },
+    patch: { subtype: 'square', box: SHIFTED, rotation: 30 },
   },
   {
     name: 'box-rotation-preserved-by-omission',
     covers:
       'A box kind with a rotation the patch does not mention. Omitted preserves, so the after-state matches and the move is rigid.',
-    current: { subtype: 'square', rect: RECT, rotation: 30, unrotatedRect: RECT },
-    patch: { subtype: 'square', rect: SHIFTED, unrotatedRect: SHIFTED },
+    current: { subtype: 'square', box: RECT, rotation: 30 },
+    patch: { subtype: 'square', box: SHIFTED },
   },
   {
     name: 'box-rotation-respelled',
     covers:
       'A rotation written as 390 against a current 30. Those are the same angle and this still REGENERATES, because `rotation` is not in the subtype\'s translatable-geometry list: it lands in the touched set before the normalization inside the rigid-translation check can be reached. The normalization only ever runs for a rotation the patch omits or repeats verbatim.',
-    current: { subtype: 'square', rect: RECT, rotation: 30, unrotatedRect: RECT },
-    patch: { subtype: 'square', rect: SHIFTED, rotation: 390, unrotatedRect: SHIFTED },
+    current: { subtype: 'square', box: RECT, rotation: 30 },
+    patch: { subtype: 'square', box: SHIFTED, rotation: 390 },
   },
   {
     name: 'box-rotation-repeated-verbatim',
     covers:
       'The same move with the rotation repeated exactly. Value-diffing drops it before the touched set, so the move is rigid, which is the case that reaches the normalization at all.',
-    current: { subtype: 'square', rect: RECT, rotation: 30, unrotatedRect: RECT },
-    patch: { subtype: 'square', rect: SHIFTED, rotation: 30, unrotatedRect: SHIFTED },
+    current: { subtype: 'square', box: RECT, rotation: 30 },
+    patch: { subtype: 'square', box: SHIFTED, rotation: 30 },
   },
+  // A box kind's `rect` is the upright box around its turned `box` since
+  // 2bdc74fbf, and `unrotatedRect` is gone. A patch rect is resolved into the
+  // box moved there (9d8ebf857), so the box can't be left behind; what is
+  // recorded is that move.
   {
     name: 'unrotated-rect-left-behind',
     covers:
       'The rect moved and the logical box did not. Preserved-yet-unshifted geometry fails the congruence check.',
-    current: { subtype: 'square', rect: RECT, rotation: 30, unrotatedRect: RECT },
+    current: { subtype: 'square', rect: RECT, box: RECT, rotation: 30 },
     patch: { subtype: 'square', rect: SHIFTED },
   },
   {
     name: 'style-change',
     covers: 'A colour. Not geometry, so it re-bakes however little else moved.',
-    current: { subtype: 'square', rect: RECT, color: { r: 255, g: 0, b: 0 } },
-    patch: { subtype: 'square', color: { r: 0, g: 0, b: 255 } },
+    current: { subtype: 'square', box: RECT, color: '#ff0000' },
+    patch: { subtype: 'square', color: '#0000ff' },
   },
   {
     name: 'contents-on-a-shape',
     covers:
       "A shape's contents is popup note text and is never painted, so editing the comment must not destroy the appearance.",
-    current: { subtype: 'square', rect: RECT, contents: 'old note' },
+    current: { subtype: 'square', box: RECT, contents: 'old note' },
     patch: { subtype: 'square', contents: 'new note' },
   },
   {
     name: 'contents-on-free-text',
     covers: 'The same key on a kind whose /AP paints it. Here it re-bakes.',
-    current: { subtype: 'free-text', rect: RECT, contents: 'old' },
+    current: { subtype: 'free-text', box: RECT, contents: 'old' },
     patch: { subtype: 'free-text', contents: 'new' },
   },
   {
     name: 'unknown-key',
     covers: 'A key from a newer client. Conservative by default.',
-    current: { subtype: 'square', rect: RECT },
+    current: { subtype: 'square', box: RECT },
     patch: { subtype: 'square', somethingNew: 42 },
   },
   {
@@ -259,8 +308,8 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     name: 'subtype-mismatch',
     covers:
       'A patch for a different subtype than the annotation. Nothing about the geometry can be reasoned about across that.',
-    current: { subtype: 'square', rect: RECT },
-    patch: { subtype: 'circle', rect: SHIFTED },
+    current: { subtype: 'square', box: RECT },
+    patch: { subtype: 'circle', box: SHIFTED },
   },
   {
     name: 'link-move',
@@ -274,7 +323,7 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     covers: "A free text's leader line moves with its box.",
     current: {
       subtype: 'free-text',
-      rect: RECT,
+      box: RECT,
       calloutLine: [
         { x: 0, y: 0 },
         { x: 10, y: 20 },
@@ -282,7 +331,7 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     },
     patch: {
       subtype: 'free-text',
-      rect: SHIFTED,
+      box: SHIFTED,
       calloutLine: [
         { x: 30, y: -15 },
         { x: 40, y: 5 },
@@ -293,26 +342,29 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     name: 'geometry-appearing',
     covers:
       'A move that also adds geometry the annotation did not have. Something appeared, so nothing was merely translated.',
-    current: { subtype: 'polygon', rect: RECT },
-    patch: { subtype: 'polygon', rect: SHIFTED, vertices: [{ x: 40, y: 5 }] },
+    current: { subtype: 'polygon' },
+    patch: { subtype: 'polygon', vertices: [{ x: 40, y: 5 }] },
   },
   {
     name: 'line-points-ride-along',
     covers: 'A line annotation whose two endpoints move with the rect.',
     current: {
       subtype: 'line',
-      rect: RECT,
       linePoints: { start: { x: 10, y: 20 }, end: { x: 110, y: 70 } },
     },
     patch: {
       subtype: 'line',
-      rect: SHIFTED,
       linePoints: { start: { x: 40, y: 5 }, end: { x: 140, y: 55 } },
     },
   },
 ];
 
-/** One `computeMutationImpact` case. */
+/**
+ * One `computeMutationImpact` case. The generator no longer runs these:
+ * upstream deleted `computeMutationImpact` with weak annotation refs in
+ * bc0057f3a, so the question each case asks has no answer in the engine.
+ * Kept for the record and for Task 5's decision on the Rust side.
+ */
 export interface MutationCase {
   readonly name: string;
   readonly covers: string;

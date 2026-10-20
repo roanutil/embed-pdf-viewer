@@ -1,14 +1,25 @@
-use std::ffi::c_void;
+use std::ffi::{CString, c_void};
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use crate::{Bitmap, Document, PdfiumError, TextPage};
+use crate::{Bitmap, Document, PdfiumError, RectF, TextPage};
 
 /// Emit RGBA byte order rather than PDFium's native BGRA.
 const FPDF_REVERSE_BYTE_ORDER: i32 = 0x10;
 /// Draw annotation appearances along with the page content.
 const FPDF_RENDER_ANNOT: i32 = 0x01;
+
+/// The turn an appearance render takes back out.
+///
+/// The arguments `EPDF_RenderAnnotBitmapUnrotated` takes since runtime
+/// 5e9241945: `degrees` counterclockwise (the PDF convention), about the
+/// middle of `unrotated_box`, in page space before turning.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AppearanceTurn {
+    pub degrees: f32,
+    pub unrotated_box: RectF,
+}
 
 /// A page this layer may read but does not own.
 ///
@@ -159,21 +170,34 @@ impl<'a> PageView<'a> {
     /// the page's resource space, so PDFium needs the page to resolve what it
     /// references, even though nothing of the page's own content is drawn.
     ///
-    /// `strip_rotation` picks between two entry points rather than changing
-    /// the matrix. `EPDF_RenderAnnotBitmapUnrotated` draws the form content
-    /// WITHOUT the `/Matrix` rotation and maps it onto the target rect, which
-    /// is what lets a consumer re-apply the angle as a view transform and
-    /// never re-render on rotate. It is correct only where the rotation
-    /// demonstrably lives in that matrix; the engine decides that, not this.
+    /// `state` is `None` to draw the state `/AS` selects, or the name of one
+    /// state of the mode's appearance subdictionary, drawn whatever `/AS`
+    /// says. A mode whose entry is a single stream, or a state it lacks,
+    /// draws nothing.
+    ///
+    /// `turn` picks between two entry points rather than changing the
+    /// matrix. With one, `EPDF_RenderAnnotBitmapUnrotated` draws the
+    /// appearance as the page shows it and then turned back by
+    /// `turn.degrees` about the middle of `turn.unrotated_box`, which is what
+    /// lets a consumer re-apply the angle as a view transform and never
+    /// re-render on rotate. The fork no longer finds the turn itself
+    /// (runtime 5e9241945): the caller reads it and passes it in.
+    #[allow(clippy::too_many_arguments)]
     pub fn render_annotation_rgba_with_matrix(
         &self,
         annotation: &crate::Annotation<'_>,
         mode: crate::AppearanceMode,
+        state: Option<&str>,
         width: u32,
         height: u32,
         matrix: [f64; 6],
-        strip_rotation: bool,
+        turn: Option<AppearanceTurn>,
     ) -> Result<Bitmap, PdfiumError> {
+        let state = state
+            .map(CString::new)
+            .transpose()
+            .map_err(|_| PdfiumError::InvalidArgument("appearance state"))?;
+        let state_ptr = state.as_ref().map_or(std::ptr::null(), |state| state.as_ptr());
         let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
         let mut pixels = Vec::new();
         pixels.try_reserve_exact(len).map_err(|_| PdfiumError::OutOfMemory)?;
@@ -204,17 +228,29 @@ impl<'a> PageView<'a> {
         };
 
         // SAFETY: the bitmap, page and annotation handles are all live, and
-        // the matrix outlives the call.
+        // the matrix outlives the call. `state_ptr` is null or points into
+        // `state`, a NUL-terminated CString that lives to the end of this
+        // function. `&unrotated_box` is a local that lives across the one
+        // call it is passed to.
         let ok = unsafe {
             // Transparent, not white: an appearance composites over page
             // content that this bitmap does not contain.
             pdfium_sys::FPDFBitmap_FillRect(bitmap, 0, 0, native_width, native_height, 0x0000_0000);
-            let drawn = if strip_rotation {
+            let drawn = if let Some(turn) = turn {
+                let unrotated_box = pdfium_sys::FS_RECTF {
+                    left: turn.unrotated_box.left,
+                    top: turn.unrotated_box.top,
+                    right: turn.unrotated_box.right,
+                    bottom: turn.unrotated_box.bottom,
+                };
                 pdfium_sys::EPDF_RenderAnnotBitmapUnrotated(
                     bitmap,
                     self.handle,
                     annotation.as_raw(),
                     mode as i32,
+                    state_ptr,
+                    turn.degrees,
+                    &unrotated_box,
                     &fs_matrix,
                     FPDF_REVERSE_BYTE_ORDER,
                 )
@@ -224,6 +260,7 @@ impl<'a> PageView<'a> {
                     self.handle,
                     annotation.as_raw(),
                     mode as i32,
+                    state_ptr,
                     &fs_matrix,
                     FPDF_REVERSE_BYTE_ORDER,
                 )

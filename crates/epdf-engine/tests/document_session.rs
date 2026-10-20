@@ -8,7 +8,7 @@
 //! The rest is here.
 //!
 //! The written contract these assert against is
-//! `.agents/skills/embedpdf-conventions/references/engine-lifecycle.md`.
+//! `docs/conventions/engine-lifecycle.md`.
 
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::identity::PageObjectNumber;

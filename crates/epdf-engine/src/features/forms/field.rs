@@ -271,6 +271,11 @@ pub fn create_field(
 ) -> Result<FormFieldDto, EngineError> {
     cancel.check()?;
     preflight_draft(draft)?;
+    if draft.default_value.is_some() {
+        // re-port (Task 8): refused before the field exists. See
+        // default_value_not_ported.
+        return Err(default_value_not_ported());
+    }
 
     let field_object_number =
         document.create_field(draft.family.native(), &draft.name).ok_or_else(|| {
@@ -290,12 +295,6 @@ pub fn create_field(
     }
     if !draft.options.is_empty() {
         write_options(document, field_object_number, &draft.options)?;
-    }
-    if let Some(default_value) = draft.default_value.as_ref()
-        && !document
-            .set_field_default_values(field_object_number, std::slice::from_ref(default_value))
-    {
-        return Err(refused("the default value"));
     }
     if let Some(max_length) = draft.max_length
         && !document.set_field_max_length(field_object_number, max_length)
@@ -361,6 +360,11 @@ pub fn update_field(
             format!("a {:?} patch cannot be applied to a {family:?} field", patch.family),
         ));
     }
+    if !matches!(patch.default_value, Patch::Keep) {
+        // re-port (Task 8): refused before the rename writes. See
+        // default_value_not_ported.
+        return Err(default_value_not_ported());
+    }
     drop(model);
     cancel.check()?;
 
@@ -391,19 +395,6 @@ pub fn update_field(
                     EngineErrorCode::InvalidArg,
                     "the maximum length is below the length of the value already there",
                 ));
-            }
-        }
-    }
-    match &patch.default_value {
-        Patch::Keep => {}
-        Patch::Clear => {
-            if !document.remove_field_default_value(object_number) {
-                return Err(refused("removing the default value"));
-            }
-        }
-        Patch::Set(value) => {
-            if !document.set_field_default_values(object_number, std::slice::from_ref(value)) {
-                return Err(refused("the default value"));
             }
         }
     }
@@ -680,4 +671,17 @@ pub fn create_widget_on(
         ));
     }
     Ok(object_number)
+}
+
+/// re-port (Task 8): the error a `/DV` write returns until it is ported.
+/// `EPDFForm_SetFieldDefaultValues` and `EPDFForm_RemoveFieldDefaultValue`
+/// are gone (runtime 69e229992); `pdfium::Document::set_field_default_value`
+/// writes `/DV` as given, without the old option validation, and its
+/// `FieldValueWrite::None` shadows an inherited default rather than exposing
+/// it. Port upstream's fieldValues.ts and FormMutator.ts.
+fn default_value_not_ported() -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "writing a form field's default value is not ported to the runtime 1461b0c51 API",
+    )
 }

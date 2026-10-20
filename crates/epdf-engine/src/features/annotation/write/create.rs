@@ -189,6 +189,19 @@ fn preflight(
     draft: &AnnotationDraft,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
+    // re-port (Task 8): refused here, before the annotation exists, until the
+    // engine writes `/RD` again. See rect_differences_not_ported.
+    let rect_differences = match &draft.kind {
+        AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
+            fields.rect_differences.as_set().is_some()
+        }
+        AnnotationDraftKind::Caret { fields } => fields.rect_differences.as_set().is_some(),
+        AnnotationDraftKind::FreeText { fields } => fields.rect_differences.as_set().is_some(),
+        _ => false,
+    };
+    if rect_differences {
+        return Err(rect_differences_not_ported());
+    }
     match &draft.kind {
         AnnotationDraftKind::Highlight { fields }
         | AnnotationDraftKind::Underline { fields }
@@ -631,19 +644,7 @@ fn apply_caret(
     if let Some(intent) = fields.intent {
         write(annotation.set_intent(intent.name()), "/IT")?;
     }
-    if let Some(rd) = fields.rect_differences.as_set().copied()
-        && !annotation.set_rectangle_differences(
-            rd.left as f32,
-            rd.bottom as f32,
-            rd.right as f32,
-            rd.top as f32,
-        )
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetRectangleDifferences refused the margins",
-        ));
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
     Ok(())
 }
 
@@ -802,20 +803,7 @@ fn apply_free_text(
         ));
     }
     write(annotation.set_intent(fields.intent.name()), "/IT")?;
-
-    if let Some(rd) = fields.rect_differences.as_set().copied()
-        && !annotation.set_rectangle_differences(
-            rd.left as f32,
-            rd.bottom as f32,
-            rd.right as f32,
-            rd.top as f32,
-        )
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetRectangleDifferences refused the margins",
-        ));
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
 
     if let Some(callout) = fields.callout_line.as_ref() {
         let points: Vec<pdfium::PointF> = match callout {
@@ -1691,19 +1679,7 @@ fn apply_shape(
             "EPDFAnnot_SetBorderEffect refused the intensity",
         ));
     }
-    if let Some(rd) = fields.rect_differences.as_set().copied()
-        && !annotation.set_rectangle_differences(
-            rd.left as f32,
-            rd.bottom as f32,
-            rd.right as f32,
-            rd.top as f32,
-        )
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAnnot_SetRectangleDifferences refused the margins",
-        ));
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
     Ok(())
 }
 
@@ -1853,4 +1829,14 @@ fn page_index_of(document: &pdfium::Document, page: PageObjectNumber) -> Result<
                 format!("no page with object number {}", page.get()),
             )
         })
+}
+
+/// re-port (Task 8): the error a `/RD` write returns until the engine owns
+/// `/RD` the way upstream does. `EPDFAnnot_SetRectangleDifferences` was
+/// removed in runtime 5e9241945.
+fn rect_differences_not_ported() -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "writing /RD is not ported to the runtime 1461b0c51 API",
+    )
 }

@@ -70,8 +70,8 @@
     "files-write:check": "tsx --conditions=development src/generate-files-write-vectors.ts --check",
     "wire": "tsx --conditions=development src/generate-wire-vectors.ts",
     "wire:check": "tsx --conditions=development src/generate-wire-vectors.ts --check",
-    "form-effects": "tsx --conditions=development src/generate-form-effects-vectors.ts",
-    "form-effects:check": "tsx --conditions=development src/generate-form-effects-vectors.ts --check"
+    "form-apply": "tsx --conditions=development src/generate-form-apply-vectors.ts",
+    "form-apply:check": "tsx --conditions=development src/generate-form-apply-vectors.ts --check"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",

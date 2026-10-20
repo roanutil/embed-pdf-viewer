@@ -303,7 +303,7 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
   {
     name: 'group-filter-needs-membership',
     covers:
-      'group=X matches only when the caller is in X, so a token cannot reach a group it does not belong to.',
+      'Named for the rule before 4b2cdb395. group=X now matches a target in group X whether or not the caller belongs to X: membership is no longer part of the filter.',
     scope: ['annotations:update:group=finance'],
     bits: ['none'],
     identity: SELF,

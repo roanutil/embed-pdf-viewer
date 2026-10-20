@@ -223,38 +223,15 @@ pub fn set_value(
     drop(model);
     cancel.check()?;
 
-    let changed = match value {
-        FormFieldValue::Text { value } => document.set_field_text_value(object_number, value),
-        // An absent state is the empty string, which is the C API's null and
-        // clears the group.
-        //
-        // Not observable on this fixture: PDFium writes `/V /Off` for an
-        // empty state on a checkbox, which is the same entry naming `Off`
-        // produces, so `checkbox-off` records the same value either way.
-        // The empty string is still what this sends, because the two mean
-        // different things to the API even where they agree in the file:
-        // one says "no state" and the other names one.
-        FormFieldValue::Toggle { state } => document
-            .set_field_toggle(object_number, state.as_deref().unwrap_or(""))
-            .map_err(|e| {
-                EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    format!("the toggle state is not a name a PDF can hold: {e}"),
-                )
-            })?,
-        FormFieldValue::Choice { values } => {
-            document.set_field_choice_values(object_number, values)
-        }
-    }
-    .ok_or_else(|| {
-        EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "the form field refused the value: an unknown toggle state, a string past \
-             its maximum length, or a choice that is not one of its options",
-        )
-    })?;
-
-    read_back(document, object_number, &changed, cancel)
+    // re-port (Task 8): EPDFForm_SetTextValue, SetToggle and SetChoiceValues
+    // are gone (runtime 69e229992). Port upstream's fieldValues.ts:
+    // EPDFForm_SetFieldValue, then EPDFForm_SetFieldWidgetsChecked for a
+    // toggle or EPDFForm_RedrawFieldWidgets otherwise, then read_back.
+    let _ = object_number;
+    Err(EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "setting a form field's value is not ported to the runtime 1461b0c51 API",
+    ))
 }
 
 /// Put a field back to its default value.
@@ -271,10 +248,14 @@ pub fn reset(
     drop(model);
     cancel.check()?;
 
-    let changed = document.reset_field(object_number).ok_or_else(|| {
-        EngineError::with_message(EngineErrorCode::InvalidArg, "the form field cannot be reset")
-    })?;
-    read_back(document, object_number, &changed, cancel)
+    // re-port (Task 8): EPDFForm_ResetField is gone (runtime 69e229992). Port
+    // upstream's reset: write /DV back as the value through
+    // EPDFForm_SetFieldValue and redraw, then read_back.
+    let _ = object_number;
+    Err(EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "resetting a form field is not ported to the runtime 1461b0c51 API",
+    ))
 }
 
 /// Load a model, or say the document has no form machinery at all.
@@ -313,6 +294,8 @@ pub(super) fn read_field_back(
 /// what supplies it, and it also drops any number that is no longer one of
 /// the field's widgets, which is the honest answer for a reference that
 /// cannot be resolved.
+// re-port (Task 8): unused until set_value and reset are ported back onto it.
+#[allow(dead_code)]
 fn read_back(
     document: &Document,
     object_number: u32,
@@ -386,29 +369,15 @@ pub fn import_data(
         ));
     }
     let format = format.unwrap_or_else(|| sniff_format(bytes));
-    let counts = match format {
-        pdfium::FormDataFormat::Fdf => document.import_fdf(bytes),
-        pdfium::FormDataFormat::Xfdf => document.import_xfdf(bytes),
-    }
-    .ok_or_else(|| {
-        EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            match format {
-                pdfium::FormDataFormat::Fdf => "the payload is not valid FDF",
-                pdfium::FormDataFormat::Xfdf => "the payload is not valid XFDF",
-            },
-        )
-    })?;
-
-    cancel.check()?;
-    let model = load_model(document)?;
-    Ok(FormImportResult {
-        fields_total: counts.fields_total,
-        fields_applied: counts.fields_applied,
-        fields_skipped: counts.fields_skipped,
-        widgets_changed: counts.widgets_changed,
-        snapshot: super::snapshot::read_form_snapshot(&model, cancel)?,
-    })
+    // re-port (Task 8): EPDFForm_ImportFDF and EPDFForm_ImportXFDF were
+    // removed upstream (runtime 69e229992; the viewer replaced FDF/XFDF import
+    // with form bundles in 7f0b73a3c). Decide whether this operation goes or
+    // is rebuilt on the value writers.
+    let _ = document;
+    Err(EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        format!("{format:?} form data import was removed in the runtime 1461b0c51 API"),
+    ))
 }
 
 /// Which parser the bytes want.

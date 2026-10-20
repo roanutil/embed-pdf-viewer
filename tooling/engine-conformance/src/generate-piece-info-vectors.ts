@@ -71,6 +71,7 @@ async function readCase(entry: PieceInfoCase): Promise<unknown> {
       const pages = await doc.pages.list();
       const first = pages.pages[0];
       if (!first) throw new Error(`${entry.name}: the fixture has no pages`);
+      // Pages are addressed by `PageRef` (9f13cea3c, before this catch-up).
       const page = doc.page(first.ref);
 
       const catalog = doc.pieceInfo;
@@ -85,13 +86,15 @@ async function readCase(entry: PieceInfoCase): Promise<unknown> {
         ['page', pageInfo],
       ] as const) {
         const snapshots: Record<string, unknown> = {};
+        // `read` and `applications` are `get` and `list` since 83f6598d2
+        // ("Engine API v3, round 3a").
         for (const application of entry.applications) {
-          snapshots[application] = await service.read(application);
+          snapshots[application] = await service.get(application);
         }
-        holders[label] = { applications: await service.applications(), snapshots };
+        holders[label] = { applications: await service.list(), snapshots };
       }
 
-      return { ...entry, pageObjectNumber: first.ref.pageObjectNumber, holders };
+      return { ...entry, pageObjectNumber: first.ref.objectNumber, holders };
     } finally {
       await doc.close();
     }

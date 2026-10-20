@@ -1,4 +1,8 @@
-import type { PageGeometrySnapshot, PageObjectNumber } from '@embedpdf/engine-core/runtime';
+import type {
+  PageGeometrySnapshot,
+  PageObjectNumber,
+  PdfCoordinates,
+} from '@embedpdf/engine-core/runtime';
 import { EngineError, EngineErrorCode } from '@embedpdf/engine-core/runtime';
 import type { PdfRuntimeModule, PdfRuntimeRustCore } from '@embedpdf/engine-runtime';
 
@@ -48,7 +52,10 @@ export class RustPageGeometryReader {
     return runtime.rust !== undefined;
   }
 
-  read(pageObjectNumber: PageObjectNumber, signal: AbortSignal): PageGeometrySnapshot {
+  read(
+    pageObjectNumber: PageObjectNumber,
+    signal: AbortSignal,
+  ): PageGeometrySnapshot<PdfCoordinates> {
     throwIfAborted(signal);
     const pool = this.session.pagePool();
     const pagePtr = pool.acquire(pageObjectNumber);
@@ -59,7 +66,7 @@ export class RustPageGeometryReader {
       // the Rust side is a single synchronous call, so it is the
       // non-preemptible case from the cancellation contract, same as a render.
       const envelope = JSON.parse(this.core.pageGeometry(pagePtr)) as {
-        result?: PageGeometrySnapshot;
+        result?: PageGeometrySnapshot<PdfCoordinates>;
         error?: { code: EngineErrorCode; message: string; details?: Record<string, unknown> };
       };
 

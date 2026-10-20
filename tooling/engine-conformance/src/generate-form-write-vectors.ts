@@ -20,7 +20,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import {
+  createLocalEngine,
+  type FormFieldRef,
+} from '../../../packages/engine/main/src/index';
+import type { FormFieldValue } from '../../../packages/engine/core/src/forms/value';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -47,72 +53,77 @@ interface DocumentCase {
 }
 
 const DOCUMENT_CASES: readonly DocumentCase[] = [
-  {
-    name: 'import-fdf-roundtrip',
-    covers:
-      'A document importing its own export. Every field is named and every value already matches, so nothing is skipped and the counts say the payload was understood.',
-    importOf: 'fdf',
-    declareFormat: true,
-  },
-  {
-    name: 'import-xfdf-roundtrip',
-    covers: 'The same through the other serialization.',
-    importOf: 'xfdf',
-    declareFormat: true,
-  },
-  {
-    name: 'import-fdf-sniffed',
-    covers:
-      'The same payload with no declared format. FDF is a PDF-shaped file and XFDF is XML, so the first byte that is not whitespace decides, and a declaration that disagreed with the bytes would send the payload to the wrong parser.',
-    importOf: 'fdf',
-  },
-  {
-    name: 'import-xfdf-sniffed',
-    covers: 'And the XML one, which the same byte tells apart.',
-    importOf: 'xfdf',
-  },
-  {
-    name: 'import-xfdf-changes-values',
-    covers:
-      'A payload that actually changes something, naming one field the document has and one it does not. The second is SKIPPED rather than failing: an export from one form legitimately names fields another lacks.',
-    importText:
-      '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
-      '<field name="billing.name"><value>Imported Name</value></field>' +
-      '<field name="nobody.here"><value>ignored</value></field>' +
-      '</fields></xfdf>',
-    importOf: 'xfdf',
-    declareFormat: true,
-  },
-  {
-    name: 'import-xfdf-with-bom-sniffed',
-    covers:
-      'An XFDF payload behind a UTF-8 byte-order mark, which an exporter may write. The sniffer skips it; one that stopped at the first byte would send XML to the FDF parser.',
-    importText:
-      '\uFEFF<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
-      '<field name="billing.name"><value>Behind A Mark</value></field>' +
-      '</fields></xfdf>',
-  },
-  {
-    name: 'import-format-disagrees-refused',
-    covers:
-      'XFDF bytes declared as FDF. The declaration wins over the sniffer, which is what makes a wrong declaration visible: the payload goes to the parser the caller named and that parser says no.',
-    importText:
-      '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
-      '<field name="billing.name"><value>Mislabelled</value></field>' +
-      '</fields></xfdf>',
-    importOf: 'fdf',
-    declareFormat: true,
-    refused: true,
-  },
-  {
-    name: 'import-garbage-refused',
-    covers: 'Bytes that are neither. The sniffer sends them to the FDF parser, which says so.',
-    importText: 'this is not a form payload',
-    refused: true,
-  },
+  // FDF and XFDF interchange went in 7f0b73a3c ("Form bundles replace
+  // FDF/XFDF"): `forms.exportData` and `forms.importData` are gone, and a
+  // form travels as a `FormBundle` through `forms.export`, `forms.import`
+  // and `forms.importValues`. Every case below imported FDF or XFDF bytes,
+  // so they stay here, commented out.
+  // {
+  //   name: 'import-fdf-roundtrip',
+  //   covers:
+  //     'A document importing its own export. Every field is named and every value already matches, so nothing is skipped and the counts say the payload was understood.',
+  //   importOf: 'fdf',
+  //   declareFormat: true,
+  // },
+  // {
+  //   name: 'import-xfdf-roundtrip',
+  //   covers: 'The same through the other serialization.',
+  //   importOf: 'xfdf',
+  //   declareFormat: true,
+  // },
+  // {
+  //   name: 'import-fdf-sniffed',
+  //   covers:
+  //     'The same payload with no declared format. FDF is a PDF-shaped file and XFDF is XML, so the first byte that is not whitespace decides, and a declaration that disagreed with the bytes would send the payload to the wrong parser.',
+  //   importOf: 'fdf',
+  // },
+  // {
+  //   name: 'import-xfdf-sniffed',
+  //   covers: 'And the XML one, which the same byte tells apart.',
+  //   importOf: 'xfdf',
+  // },
+  // {
+  //   name: 'import-xfdf-changes-values',
+  //   covers:
+  //     'A payload that actually changes something, naming one field the document has and one it does not. The second is SKIPPED rather than failing: an export from one form legitimately names fields another lacks.',
+  //   importText:
+  //     '<?xml version="1.0" encoding="UTF-8"?>\n' +
+  //     '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+  //     '<field name="billing.name"><value>Imported Name</value></field>' +
+  //     '<field name="nobody.here"><value>ignored</value></field>' +
+  //     '</fields></xfdf>',
+  //   importOf: 'xfdf',
+  //   declareFormat: true,
+  // },
+  // {
+  //   name: 'import-xfdf-with-bom-sniffed',
+  //   covers:
+  //     'An XFDF payload behind a UTF-8 byte-order mark, which an exporter may write. The sniffer skips it; one that stopped at the first byte would send XML to the FDF parser.',
+  //   importText:
+  //     '\uFEFF<?xml version="1.0" encoding="UTF-8"?>\n' +
+  //     '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+  //     '<field name="billing.name"><value>Behind A Mark</value></field>' +
+  //     '</fields></xfdf>',
+  // },
+  // {
+  //   name: 'import-format-disagrees-refused',
+  //   covers:
+  //     'XFDF bytes declared as FDF. The declaration wins over the sniffer, which is what makes a wrong declaration visible: the payload goes to the parser the caller named and that parser says no.',
+  //   importText:
+  //     '<?xml version="1.0" encoding="UTF-8"?>\n' +
+  //     '<xfdf xmlns="http://ns.adobe.com/xfdf/"><fields>' +
+  //     '<field name="billing.name"><value>Mislabelled</value></field>' +
+  //     '</fields></xfdf>',
+  //   importOf: 'fdf',
+  //   declareFormat: true,
+  //   refused: true,
+  // },
+  // {
+  //   name: 'import-garbage-refused',
+  //   covers: 'Bytes that are neither. The sniffer sends them to the FDF parser, which says so.',
+  //   importText: 'this is not a form payload',
+  //   refused: true,
+  // },
   {
     name: 'repair-plain',
     covers:
@@ -265,15 +276,61 @@ const CASES: readonly WriteCase[] = [
   },
 ];
 
+type OpenedDocument = Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>;
+
+/**
+ * The cases spell refs and values the way the engine took them before
+ * upstream's v3 forms; they are translated here. A field ref's
+ * `fieldObjectNumber` is `objectNumber` since 595bdc6c7 ("Engine API one
+ * name for object numbers"). `setValue` takes what a read returns since
+ * d7bd2d277 ("Engine API v3 forms shapes"): `{ value }` for text, combo box
+ * and radio, `{ checked }` for a checkbox and `{ selectedValues }` for a
+ * list box. Which one depends on the field's family, so it is read first; a
+ * field the form doesn't have is translated by the value's own type.
+ */
+function v3FieldRef(ref: Record<string, unknown>): FormFieldRef {
+  return ref.kind === 'fqn'
+    ? { kind: 'fqn', name: ref.name as string }
+    : { kind: 'objectNumber', objectNumber: ref.fieldObjectNumber as number };
+}
+
+async function familyOf(doc: OpenedDocument, ref: FormFieldRef): Promise<string | null> {
+  const { fields } = await doc.forms.list();
+  const field = fields.find((candidate) =>
+    ref.kind === 'fqn'
+      ? candidate.name === ref.name
+      : candidate.ref.kind === 'objectNumber' && candidate.ref.objectNumber === ref.objectNumber,
+  );
+  return field?.family ?? null;
+}
+
+function v3Value(value: Record<string, unknown>, family: string | null): FormFieldValue {
+  switch (value.type) {
+    // A checkbox and a radio take their state as `{ value }`, the export
+    // value, which the engine resolves against the widgets' on-states
+    // (`toggleStateOf` in `core/src/forms/write.ts`); a null clears. Any
+    // other family is sent a toggle as `{ checked }`, which is what a
+    // toggle means there and what it refuses.
+    case 'toggle':
+      return family === 'radio' || family === 'checkbox'
+        ? { value: value.state as string | null }
+        : { checked: value.state !== null };
+    case 'choice':
+      return family === 'combobox'
+        ? { value: (value.values as string[])[0] ?? null }
+        : { selectedValues: value.values as string[] };
+    default:
+      return { value: value.value as string | null };
+  }
+}
+
 async function readCase(entry: WriteCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -282,28 +339,34 @@ async function readCase(entry: WriteCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
-      const run = () =>
-        entry.value
-          ? doc.forms.setValue(entry.ref as never, entry.value as never)
-          : doc.forms.reset(entry.ref as never);
+      const ref = v3FieldRef(entry.ref);
+      const value = entry.value
+        ? v3Value(entry.value, await familyOf(doc, ref))
+        : undefined;
+      // `request` is the wire request the case's old spelling became, which
+      // the Rust runner replays (see `recording-engine.ts`).
+      const sent = await capture(async () =>
+        value ? await doc.forms.setValue(ref, value) : await doc.forms.reset(ref),
+      );
       if (entry.refused) {
         // The MESSAGE is not recorded, only the code: the two engines word
         // their refusals differently and a comparison of prose would pin
         // the wording rather than the behaviour.
-        let code: string | null = null;
-        try {
-          await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code };
       }
-      const result = await run();
+      if (!sent.ok) throw sent.error;
+      const result = sent.value;
+      // The changed widgets are `meta.changedWidgets` since 7bccc4f35
+      // ("Forms and signatures: v3 names and shapes"). A reset returns the
+      // fields it changed, and none for a field already at its default,
+      // since d7bd2d277; the field as it stands afterwards is read back.
       return {
         ...entry,
-        field: result.field,
-        changedWidgets: result.changedWidgets,
+        request: sent.request,
+        field: 'field' in result ? result.field : await doc.forms.get(ref),
+        changedWidgets: result.meta.changedWidgets,
       };
     } finally {
       await doc.close();
@@ -332,38 +395,43 @@ async function readDocumentCase(entry: DocumentCase): Promise<unknown> {
     try {
       if (entry.repair) {
         const result = await doc.forms.repair(entry.repair);
-        const { meta: _meta, ...report } = result as Record<string, unknown>;
+        const { meta: _meta, ...report } = result;
         return { ...entry, report };
       }
-
-      // The payload is either literal text or this document's own export,
-      // which is what makes the round-trip cases a round trip.
-      const payload = entry.importText
-        ? new TextEncoder().encode(entry.importText)
-        : (await doc.forms.exportData(entry.importOf)).bytes;
-      if (entry.refused) {
-        let code: string | null = null;
-        try {
-          await doc.forms.importData(payload.buffer as ArrayBuffer, entry.importOf);
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code, payload: Array.from(payload) };
-      }
-      const result = await doc.forms.importData(
-        payload.buffer as ArrayBuffer,
-        entry.declareFormat ? entry.importOf : undefined,
-      );
-      const { meta: _meta, snapshot, ...counts } = result as Record<string, unknown>;
-      return {
-        ...entry,
-        // The payload is recorded so the Rust runner imports the SAME bytes
-        // rather than its own export, which would compare two writers.
-        payload: Array.from(payload),
-        counts,
-        snapshot,
-      };
+      throw new Error(`${entry.name}: FDF and XFDF imports were removed upstream (7f0b73a3c)`);
+      /*
+       * The import path, kept for the commented-out import cases above.
+       * `exportData` and `importData` went in 7f0b73a3c.
+       *
+       * // The payload is either literal text or this document's own export,
+       * // which is what makes the round-trip cases a round trip.
+       * const payload = entry.importText
+       *   ? new TextEncoder().encode(entry.importText)
+       *   : (await doc.forms.exportData(entry.importOf)).bytes;
+       * if (entry.refused) {
+       *   let code: string | null = null;
+       *   try {
+       *     await doc.forms.importData(payload.buffer as ArrayBuffer, entry.importOf);
+       *   } catch (error) {
+       *     code = String((error as { code?: unknown })?.code ?? 'unknown');
+       *   }
+       *   if (code === null) throw new Error(`${entry.name}: expected a refusal`);
+       *   return { ...entry, refusedWith: code, payload: Array.from(payload) };
+       * }
+       * const result = await doc.forms.importData(
+       *   payload.buffer as ArrayBuffer,
+       *   entry.declareFormat ? entry.importOf : undefined,
+       * );
+       * const { meta: _meta, snapshot, ...counts } = result as Record<string, unknown>;
+       * return {
+       *   ...entry,
+       *   // The payload is recorded so the Rust runner imports the SAME bytes
+       *   // rather than its own export, which would compare two writers.
+       *   payload: Array.from(payload),
+       *   counts,
+       *   snapshot,
+       * };
+       */
     } finally {
       await doc.close();
     }

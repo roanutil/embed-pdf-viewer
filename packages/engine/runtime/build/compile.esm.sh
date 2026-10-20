@@ -78,15 +78,30 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 # integration. emcc 4.0.0, which the wasm32-eh build needs, turns it on by
 # default; emsdk 3.1.72 has it off.
 # args: <out-file> <environment> [extra flags...]
+#
+# -O3 here is the link-time optimization level: only with it does Emscripten run
+# wasm-opt over the whole module (the library's own -O2 compile does not). It
+# changes no floating-point semantics: there is no fast-math, and scalar wasm has
+# no fused multiply-add.
+#
+# MAXIMUM_MEMORY=4GB lets the heap grow to all that wasm32 can address, where
+# Emscripten stops at 2 GB by default. One heap holds every document a worker has
+# open, so several large drawings no longer run out at 2 GB. Addresses at or above
+# 2 GB reach JS as negative i32s: Emscripten's glue reads them unsigned when built
+# with this flag, and so does the runtime (`toPtr` in src/wasm/wasm-runtime.ts).
+# Browsers that cap memory lower (iOS kills a tab at 1.3–1.8 GB) behave exactly as
+# they do with a 2 GB maximum.
 link() {
   local out="$1" environment="$2"
   shift 2
   em++ "$LIB_DIR/lib/libembedpdf.a" \
     "${RUST_INPUTS[@]+"${RUST_INPUTS[@]}"}" \
+    -O3 \
     -sENVIRONMENT="$environment" \
     -sMODULARIZE=1 \
     -sWASM=1 \
     -sALLOW_MEMORY_GROWTH=1 \
+    -sMAXIMUM_MEMORY=4GB \
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=createPdfRuntimeWasm \
     -sWASM_BIGINT=0 \

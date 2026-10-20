@@ -324,6 +324,16 @@ fn preflight_inner(
     effect: &FormEffect,
     budget: &mut ActionReadBudgetTracker,
 ) -> Result<(Vec<u32>, Vec<FormFieldDto>), EngineError> {
+    // re-port (Task 8): value and reset writes go through EPDFForm_SetFieldValue,
+    // EPDFForm_SetFieldWidgetsChecked and EPDFForm_RedrawFieldWidgets now; port
+    // upstream's fieldValues.ts and FormMutator.ts. Rejected here, before any
+    // write, so a batch never reaches apply_native with one.
+    if matches!(effect, FormEffect::Reset { .. } | FormEffect::SetValue { .. }) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::NotImplemented,
+            "form value and reset effects are not ported to the runtime 1461b0c51 API",
+        ));
+    }
     let refs: Vec<&FormFieldRef> = match effect {
         FormEffect::Reset { refs } => refs.iter().collect(),
         FormEffect::SetValue { field_ref, .. }
@@ -488,40 +498,15 @@ fn apply_native(
     field_object_numbers: &[u32],
 ) -> Written {
     match effect {
-        FormEffect::Reset { .. } => {
-            // Each field separately, and a failure stops the rest: a reset
-            // of ten fields that fails on the fourth has reset three, and
-            // pressing on would widen the indeterminate window for nothing.
-            let mut changed = Vec::new();
-            for object_number in field_object_numbers {
-                match document.reset_field(*object_number) {
-                    Some(widgets) => changed.extend(widgets.object_numbers),
-                    None => return Written { ok: false, changed },
-                }
-            }
-            Written { ok: true, changed }
+        // re-port (Task 8): preflight_inner rejects both before a write.
+        FormEffect::Reset { .. } | FormEffect::SetValue { .. } => {
+            Written { ok: false, changed: Vec::new() }
         }
         FormEffect::SetDisplay { display, .. } => {
             native(document.set_field_display(field_object_numbers[0], display.native()))
         }
         FormEffect::SetAppearanceText { text, .. } => {
             native(document.set_field_appearance_text(field_object_numbers[0], text))
-        }
-        FormEffect::SetValue { value, .. } => {
-            let object_number = field_object_numbers[0];
-            match value {
-                FormFieldValue::Text { value } => {
-                    native(document.set_field_text_value(object_number, value))
-                }
-                FormFieldValue::Toggle { state } => native(
-                    document
-                        .set_field_toggle(object_number, state.as_deref().unwrap_or(""))
-                        .unwrap_or(None),
-                ),
-                FormFieldValue::Choice { values } => {
-                    native(document.set_field_choice_values(object_number, values))
-                }
-            }
         }
     }
 }
