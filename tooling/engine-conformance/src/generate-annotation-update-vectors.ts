@@ -277,7 +277,7 @@ const CASES: readonly UpdateCase[] = [
   {
     name: 'polygon-clear-rotation',
     covers:
-      'The advisory scalar, removed. A vertex kind carries an angle and no logical box, so clearing it is the whole of un-rotating one.',
+      'The rotation scalar, removed. A vertex kind carries an angle and no logical box; since 6153c181e the angle turns the upright points when the appearance is drawn, so clearing it is the whole of un-rotating one and regenerates the appearance.',
     draft: {
       subtype: 'polygon',
       vertices: [{ x: 300, y: 492 }, { x: 420, y: 492 }, { x: 360, y: 412 }],

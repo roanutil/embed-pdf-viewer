@@ -230,7 +230,7 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
   {
     name: 'ink-advisory-rotation',
     covers:
-      'A vertex kind whose rotation scalar changed. It never drives the generator, so it is inert even though nothing else changed.',
+      'A vertex kind whose rotation scalar changed. Since 6153c181e the points are stored upright and the rotation turns them about the middle of their box when the appearance is drawn, so it regenerates even though nothing else changed.',
     current: { subtype: 'ink', rotation: 30, inkList: [[{ x: 10, y: 20 }]] },
     patch: { subtype: 'ink', rotation: 45 },
   },

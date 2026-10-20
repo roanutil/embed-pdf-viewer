@@ -286,7 +286,7 @@ const CASES: readonly CreateCase[] = [
   {
     name: 'ink-advisory-rotation',
     covers:
-      'A rotation scalar on a vertex kind. The strokes are already rotated, so this records the angle and never drives the generator; it also never carries a logical box, which is what separates it from the shape family.',
+      'A rotation scalar on a vertex kind. Since 6153c181e the strokes are stored upright and the generator turns them by this angle about the middle of their box; it never carries a logical box, which is what separates it from the shape family.',
     draft: { subtype: 'ink', inkList: [[{ x: 72, y: 692 }, { x: 240, y: 612 }]], rotation: 315 },
   },
   {
@@ -351,7 +351,7 @@ const CASES: readonly CreateCase[] = [
   {
     name: 'caret-rotated',
     covers:
-      'A caret is a BOX kind, so its rotation is the pair and not the lone advisory scalar the vertex families carry.',
+      'A caret is a BOX kind, so its rotation is the pair and not the lone scalar the vertex families carry.',
     draft: { subtype: 'caret', box: { x: 155, y: 227, width: 20, height: 30 }, rotation: 270 },
   },
   {
