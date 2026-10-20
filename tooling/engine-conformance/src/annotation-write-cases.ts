@@ -312,7 +312,12 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
   },
 ];
 
-/** One `computeMutationImpact` case. */
+/**
+ * One `computeMutationImpact` case. The generator no longer runs these:
+ * upstream deleted `computeMutationImpact` with weak annotation refs in
+ * bc0057f3a, so the question each case asks has no answer in the engine.
+ * Kept for the record and for Task 5's decision on the Rust side.
+ */
 export interface MutationCase {
   readonly name: string;
   readonly covers: string;
