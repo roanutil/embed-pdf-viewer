@@ -26,7 +26,8 @@ export interface ImpactCase {
  *   `rect` (or `unrotatedRect` where the case had one); their `rect` is the
  *   engine's and no case writes it (2bdc74fbf, "round 5b: clockwise
  *   rotation, box and the engine's rect"). So is the `rect` of a text
- *   markup, polygon, polyline, line and ink annotation, which these cases
+ *   markup, polygon, polyline, line and ink annotation (6153c181e, "upright
+ *   points, icons at their corner, the engine's rect"), which these cases
  *   used to move alongside the points: the points alone move now. Text,
  *   link, redact and unsupported annotations keep `rect` as their data.
  * - Flags are top-level booleans (c78997346), a reply is `reply: { to, type
@@ -162,7 +163,7 @@ export const IMPACT_CASES: readonly ImpactCase[] = [
     patch: { subtype: 'highlight', quadPoints: SHIFTED_QUADS },
   },
   // A text markup's rect is the engine's, derived from its quads, since
-  // 2bdc74fbf: a write can't move it apart from them. These two cases were
+  // 6153c181e: a write can't move it apart from them. These two cases were
   // about exactly that, so they stay here, commented out.
   // {
   //   name: 'markup-quads-left-behind',

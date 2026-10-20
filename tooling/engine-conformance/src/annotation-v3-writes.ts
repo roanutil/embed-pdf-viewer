@@ -15,11 +15,15 @@
  *   annotation shape per kind, declared once").
  * - Square, circle, caret, free text and stamp take their shape as `box`
  *   (the old `unrotatedRect`, or the old `rect` when there was none) and
- *   `rotation`. Their `rect` is the engine's, and so is every text markup,
- *   polygon, polyline, line and ink annotation's: a write that names one is
- *   refused. `rectDifferences` is gone. `rotation` is degrees clockwise
- *   where it was the file's counterclockwise angle. All of this is
- *   2bdc74fbf ("round 5b: clockwise rotation, box and the engine's rect").
+ *   `rotation`; their `rect` is the engine's, `rectDifferences` is gone, and
+ *   `rotation` is degrees clockwise where it was the file's counterclockwise
+ *   angle (2bdc74fbf, "round 5b: clockwise rotation, box and the engine's
+ *   rect"). Every text markup, polygon, polyline, line and ink annotation's
+ *   `rect` is the engine's too (6153c181e, "upright points, icons at their
+ *   corner, the engine's rect"): a write that names one is refused. The same
+ *   commit made a vertex kind's points upright, turned by its `rotation`, so
+ *   a case that gives points as drawn and a rotation beside them describes a
+ *   differently drawn annotation now; those cases are left as written.
  * - A stamp's image and an attachment's file travel beside the data, as the
  *   `appearance` and `file` resources of the write's options, instead of
  *   inside it (11a1259d9, "Annotation bytes travel beside the data").
