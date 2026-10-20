@@ -153,7 +153,10 @@ echo "  $SOURCE_NAME ${VIEWER_TARGET:0:9} pins runtime ${RUNTIME_TARGET:0:9}"
   else
     echo "· merging runtime ${RUNTIME_TARGET:0:9} into $FORK_BRANCH"
     # By SHA: the commit upstream viewer pins can be on any upstream branch.
-    git fetch -q "$UPSTREAM_RUNTIME" "$RUNTIME_TARGET"
+    # A local source branch may pin a fork commit that upstream never had,
+    # so skip the fetch when the commit is already here.
+    git cat-file -e "$RUNTIME_TARGET^{commit}" 2>/dev/null ||
+      git fetch -q "$UPSTREAM_RUNTIME" "$RUNTIME_TARGET"
     if ! git merge -q --no-edit \
       -m "Merge embedpdf/runtime ${RUNTIME_TARGET:0:9} into $FORK_BRANCH" "$RUNTIME_TARGET"; then
       die "runtime merge conflicts in $SUB:
