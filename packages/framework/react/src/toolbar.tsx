@@ -583,24 +583,12 @@ export function Toolbar({
   const documentId = useDocumentId();
   const vertical = orientation === 'vertical';
 
-  // Command state is derived-on-read, so each change re-resolves the commands
-  // the last render read, and renders again only when one of them differs
-  // (resolvedCommandsEqual, as useStripView does). Most changes (a scroll
-  // step, a tile landing) move no command, and a render here is every
-  // button twice over, live and in the measuring layer.
+  // Command state is derived-on-read; re-render on the kernel's change stream
+  // so labels/active/visible (and thus the hidden layer's measurements) stay
+  // live. The toolbar is small — a per-action render is the simple, correct
+  // baseline.
   const [, force] = useReducer((x: number) => x + 1, 0);
-  const lastRead = useRef(new Map<string, ResolvedCommand | null>());
-  const readAgain = useRef<(id: string) => ResolvedCommand | null>(() => null);
-  readAgain.current = (id) => commands.resolveCommand(id, documentId ?? undefined);
-  useEffect(
-    () =>
-      kernel.subscribe(() => {
-        for (const [id, before] of lastRead.current) {
-          if (!resolvedCommandsEqual(before, readAgain.current(id))) return force();
-        }
-      }),
-    [kernel],
-  );
+  useEffect(() => kernel.subscribe(force), [kernel]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerLength, setContainerLength] = useState(0);
@@ -637,19 +625,8 @@ export function Toolbar({
   // Any render can add, remove or disable an item, so the tab stop is checked after each one.
   useLayoutEffect(() => roving.current?.refresh());
 
-  // What this render read, for the change check above; reads after it
-  // commits (event handlers) aren't recorded.
-  const readThisRender = new Map<string, ResolvedCommand | null>();
-  const rendering = { current: true };
-  useLayoutEffect(() => {
-    rendering.current = false;
-    lastRead.current = readThisRender;
-  });
-  const resolveCmd = (id: string): ResolvedCommand | null => {
-    const resolved = commands.resolveCommand(id, documentId ?? undefined);
-    if (rendering.current) readThisRender.set(id, resolved);
-    return resolved;
-  };
+  const resolveCmd = (id: string): ResolvedCommand | null =>
+    commands.resolveCommand(id, documentId ?? undefined);
   const executeCmd = (id: string) =>
     void commands.execute(id, { documentId: documentId ?? undefined });
 
