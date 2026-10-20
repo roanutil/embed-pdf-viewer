@@ -105,7 +105,6 @@ link() {
     -sALLOW_TABLE_GROWTH=1 \
     -sEXPORT_NAME=createPdfRuntimeWasm \
     -sWASM_BIGINT=0 \
-    -O2 \
     -sASSERTIONS=1 \
     -sEXPORTED_RUNTIME_METHODS="$(cat "$GEN_DIR/exported-runtime-methods.txt")" \
     -sEXPORTED_FUNCTIONS="$(cat "$GEN_DIR/exported-functions.txt")$RUST_EXPORTS" \
