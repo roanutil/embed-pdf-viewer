@@ -7,7 +7,7 @@
 //!
 //! The written contract, clause by clause with what implements each one and
 //! what is still owed, is
-//! `.agents/skills/embedpdf-conventions/references/engine-lifecycle.md`.
+//! `docs/conventions/engine-lifecycle.md`.
 //! What is here is the minimum Phase 1's smoke apps need: a thread that owns
 //! PDFium state and runs closures on it, and a close that drains. Bounded
 //! queues, admission budgets and the reserved control route are G3 and are not

@@ -99,7 +99,7 @@ Every phase inherits these.
    engine fails rather than resolving against new state. Raw pointers never appear in a consumer API.
 5. PDFium handles never cross threads. Native builds set `EMBEDPDF_TLS_GLOBALS=true` and each
    engine owns one dedicated OS thread. `wasm32` targets leave it off because each instance has its
-   own linear memory. Contract: `.agents/skills/embedpdf-conventions/references/runtime-confinement.md`.
+   own linear memory. Contract: `docs/conventions/runtime-confinement.md`.
 6. Two text index spaces, both carried. CHARACTER space is PDFium's character list (geometry,
    hit-testing, selection, `PageTextSnapshot.charCount`). TEXT space is UTF-16 code-unit offsets
    into the extracted string (search, slicing). `PageTextSnapshot.charMap` encodes the two
@@ -268,7 +268,7 @@ failure. An `AbortError` is never evidence of rollback.
 - Cleanup distinguishes "rejects new work and schedules disposal" from "all native resources
   released"; each helper documents which. Android `AutoCloseable` must not block the UI thread.
   Scoped helpers await document cleanup before engine cleanup on success, error and cancellation.
-- Capability twins from `.agents/skills/embedpdf-conventions/references/permissions.md` exposed as
+- Capability twins from `docs/conventions/permissions.md` exposed as
   platform APIs. Native UI reads the answer; engine and server enforcement stay authoritative.
   Unsupported mobile features report unsupported, never a silent no-op.
 - Returned `CGImage` / `Bitmap` own or retain pixels independently of the closed document.

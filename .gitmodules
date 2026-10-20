@@ -1,4 +1,4 @@
 [submodule "packages/engine/runtime/runtime-src"]
 	path = packages/engine/runtime/runtime-src
-	url = https://github.com/embedpdf/runtime.git
-	branch = embedpdf/main
+	url = https://github.com/roanutil/embed-pdf-runtime.git
+	branch = research/multi-platform-rust-core

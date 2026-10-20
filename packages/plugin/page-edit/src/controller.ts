@@ -1,162 +1,364 @@
 /**
- * The page-edit controller. Stateless: it turns the engine handle's page
- * service into a ref-addressed edit capability. The relative→absolute rotation
- * and the placement→index resolution live here — once — instead of in every
- * framework adapter's click handler.
+ * The page-edit controller: page edits that take refs or indexes, and the
+ * page selection. Turning a page relative to its own rotation, and fixing a
+ * position's page, live here once instead of in every app's click handler.
+ *
+ * A verb refuses before anything starts (permission, pages, position), then
+ * stages its edit as one change on the document's queue (`ctx.changes`): one
+ * step of the history, sent after everything staged before it. The page list
+ * shows it once the engine answers; nothing predicts pages yet.
  */
-import { createSerialQueue, PluginError, toPluginError } from '@embedpdf/core';
+import { memo, PluginError, toPluginError, DocumentsToken } from '@embedpdf/core';
 import type {
+  ChangeLabel,
   DocCapability,
-  DocumentHandle,
-  PageInsertResult,
+  OperationOptions,
+  PageLayout,
+  PagePosition,
   PageRef,
-  PageRotateResult,
-  PageRotation,
+  PdfRotation,
   PdfSize,
+  PendingChange,
   PluginContext,
+  PredictedOp,
 } from '@embedpdf/core';
 
-import type { PageEditCapability, PagePlacement } from './contract';
+import type { PageEditCapability, PageEditInsertResult } from './contract';
+import { selected, type PageEditState } from './model';
 
-/** PDF bit 11 (ASSEMBLE = insert/rotate/delete pages). The engine enforces it too. */
-const ASSEMBLE_CAPABILITY: DocCapability = 'doc.pages.assemble';
+/** Inserting, rotating and deleting pages (PDF permission bit 4 or 11). The engine enforces it too. */
+const ASSEMBLE: DocCapability = 'doc.pages.assemble';
+/** Copying pages out of a document is a partial download. The engine enforces it too. */
+const DOWNLOAD: DocCapability = 'doc.download';
 
-export function createPageEditController(ctx: PluginContext<unknown>): PageEditCapability {
-  /** Read-modify-write verbs serialize per document. */
-  const enqueue = createSerialQueue();
+/** The size of a blank page when the document has no page to match: Letter, in points. */
+const LETTER_SIZE: PdfSize = { width: 612, height: 792 };
 
-  const requireDoc = (): DocumentHandle => {
-    const doc = ctx.doc;
-    if (!doc) throw new PluginError('not-ready', 'page-edit', 'no document bound');
-    return doc;
-  };
-  const engine = async <T>(work: () => Promise<T>): Promise<T> => {
+const NO_PAGES: readonly PageRef[] = Object.freeze([]);
+const NO_LAYOUTS: readonly PageLayout[] = Object.freeze([]);
+
+/** A page op, as a verb stages it. */
+type PageOp = Extract<PredictedOp, { type: `pages.${string}` }>;
+
+/** What a change is called in history and refusals. */
+type PageVerb = 'rotate' | 'reorder' | 'delete' | 'insertBlank' | 'insert' | 'duplicate';
+
+export function createPageEditController(ctx: PluginContext<PageEditState>) {
+  /** Engine calls outside the guarded `ctx.doc` (another document, a scratch document) map their errors here. */
+  const mapErrors = async <T>(work: () => Promise<T>): Promise<T> => {
     try {
       return await work();
     } catch (error) {
       throw toPluginError('page-edit', error);
     }
   };
-  const registry = () => ctx.document()?.pages ?? [];
-  const entryOf = (page: PageRef) =>
-    registry().find((p) => p.ref.pageObjectNumber === page.pageObjectNumber);
-  const requireEntry = (page: PageRef) => {
-    const entry = entryOf(page);
-    if (!entry) {
-      throw new PluginError('not-found', 'page-edit', `no page ${page.pageObjectNumber}`);
-    }
-    return entry;
+  const registry = (): readonly PageLayout[] => ctx.document()?.pages ?? NO_LAYOUTS;
+  const noPages = () => new PluginError('invalid-input', 'page-edit', 'no pages given');
+
+  /**
+   * A verb's pages as refs, checked when it is called: an index names the
+   * page at that position now, which is the page the user clicked.
+   */
+  const refsOf = (pages: readonly (PageRef | number)[]): PageRef[] => {
+    if (pages.length === 0) throw noPages();
+    return pages.map((page) => ctx.pageOf(page).ref);
   };
 
-  /** A placement → the engine's index wire, from the registry at call time. */
-  const resolvePlacement = (placement: PagePlacement | undefined) => {
-    if (!placement || placement === 'end') return { destIndex: undefined, anchor: undefined };
-    if ('index' in placement) return { destIndex: placement.index, anchor: undefined };
-    const anchor = requireEntry('after' in placement ? placement.after : placement.before);
-    return { destIndex: 'after' in placement ? anchor.index + 1 : anchor.index, anchor };
+  /** A position, its page checked when the verb is called, like the verb's own pages. Default `'end'`. */
+  const positionOf = (position: PagePosition | undefined): PagePosition => {
+    if (!position || position === 'start' || position === 'end') return position ?? 'end';
+    if ('after' in position) return { after: ctx.pageOf(position.after).ref };
+    return { before: ctx.pageOf(position.before).ref };
   };
-  /** Default blank-page size: the insertion point's predecessor, else the last page, else US Letter. */
-  const neighbourSize = (destIndex: number | undefined): PdfSize => {
+  /**
+   * Default blank-page size: the page the position names, else the page the
+   * new ones go next to (the first or the last), else Letter.
+   */
+  const sizeAt = (position: PagePosition): PdfSize => {
+    if (typeof position === 'object') {
+      return ctx.pageOf('after' in position ? position.after : position.before).size;
+    }
     const pages = registry();
-    if (pages.length === 0) return { width: 612, height: 792 };
-    if (destIndex === undefined) return pages[pages.length - 1].size;
-    return pages[Math.max(0, Math.min(destIndex - 1, pages.length - 1))].size;
+    if (pages.length === 0) return LETTER_SIZE;
+    return (position === 'start' ? pages[0] : pages[pages.length - 1]).size;
   };
-  const insertAt = (
-    doc: DocumentHandle,
+
+  /* ── the selection ─────────────────────────────────────────────────────── */
+
+  const getSelected = memo(
+    () => [registry(), ctx.state.get().selected] as const,
+    (pages, refs) => {
+      if (refs.length === 0) return NO_PAGES;
+      const present = new Set(pages.map((page) => page.ref.objectNumber));
+      return refs.filter((ref) => present.has(ref.objectNumber));
+    },
+  );
+  const select = (pages: readonly (PageRef | number)[]): void => {
+    const refs = pages.flatMap((page) => {
+      const found = ctx.getPage(page);
+      return found ? [found.ref] : [];
+    });
+    ctx.state.update(selected, refs);
+  };
+
+  /* ── writes ────────────────────────────────────────────────────────────── */
+
+  /** Refuse before anything starts: without the right, or once the caller cancelled. */
+  const refuse = (
+    permission: DocCapability,
+    operation: string,
+    options: OperationOptions | undefined,
+  ): void => {
+    ctx.assertAllowed(permission, operation);
+    if (options?.signal?.aborted) {
+      throw new PluginError('operation-cancelled', 'page-edit', `${operation} was cancelled`);
+    }
+  };
+
+  /**
+   * Stage one user action: one change, one step of the history. Its label
+   * counts the pages it acts on, when the verb knows how many.
+   */
+  const stageChange = (
+    verb: PageVerb,
+    count: number | null,
+    ops: readonly PageOp[],
+    undo?: readonly PageOp[],
+  ): PendingChange => {
+    const label: ChangeLabel =
+      count === null ? { key: `pages.${verb}` } : { key: `pages.${verb}`, count };
+    return ctx.changes.stage({ label, ops, ...(undo ? { undo } : {}) });
+  };
+
+  /** The engine's answer to a staged change: its first item. */
+  const answer = async (change: PendingChange, options: OperationOptions | undefined) => {
+    try {
+      const result = await ctx.cancellable(options?.signal, change.result);
+      return result.items[0]!;
+    } catch (error) {
+      throw toPluginError('page-edit', error);
+    }
+  };
+
+  /** What an insert's answer names: the new pages. */
+  const inserted = async (
+    change: PendingChange,
+    options: OperationOptions | undefined,
+  ): Promise<PageEditInsertResult> => {
+    const item = await answer(change, options);
+    return { pages: 'insertedPages' in item ? item.insertedPages : NO_PAGES };
+  };
+
+  /**
+   * A page's rotation once this session's changes on their way apply: the
+   * last rotation one of them gives it, else the page's own. What a turn
+   * starts from, so two quick quarter turns are a half turn.
+   */
+  const rotationOf = (ref: PageRef): PdfRotation => {
+    let rotation = ctx.pageOf(ref).rotation;
+    for (const change of ctx.changes.pending()) {
+      for (const op of change.shows) {
+        if (op.type !== 'pages.rotate') continue;
+        if (op.pages.some((page) => page.objectNumber === ref.objectNumber)) {
+          rotation = op.rotation;
+        }
+      }
+    }
+    return rotation;
+  };
+
+  /**
+   * Rotate pages as one change: one op per rotation they end up with. What
+   * undoing it looks like is each page turned back, so a turn right after an
+   * undo starts from where the undo leaves the page.
+   */
+  const rotate = (refs: readonly PageRef[], rotationAfter: (ref: PageRef) => PdfRotation) => {
+    const after = new Map<PdfRotation, PageRef[]>();
+    const before = new Map<PdfRotation, PageRef[]>();
+    for (const ref of refs) {
+      const add = (groups: Map<PdfRotation, PageRef[]>, rotation: PdfRotation) =>
+        groups.set(rotation, [...(groups.get(rotation) ?? []), ref]);
+      add(before, rotationOf(ref));
+      add(after, rotationAfter(ref));
+    }
+    const opsOf = (groups: Map<PdfRotation, PageRef[]>): PageOp[] =>
+      [...groups].map(([rotation, pages]) => ({ type: 'pages.rotate', pages, rotation }));
+    return stageChange('rotate', refs.length, opsOf(after), opsOf(before));
+  };
+
+  /**
+   * The pages as they show: every change on its way sent and answered first,
+   * so a copy holds the edits made before it.
+   */
+  const settled = async (options: OperationOptions | undefined): Promise<void> => {
+    ctx.changes.sendHolds();
+    await ctx.cancellable(options?.signal, ctx.changes.whenSettled());
+  };
+
+  /** Copy pages of this document out, as they show. */
+  const extractShown = async (
+    refs: readonly PageRef[],
+    options: OperationOptions | undefined,
+  ): Promise<Uint8Array> => {
+    await settled(options);
+    return ctx.cancellable(options?.signal, ctx.doc.pages.extract([...refs]));
+  };
+
+  /** Stage the insert of a PDF's pages; resolves the new pages. */
+  const insertBytes = (
+    verb: 'insert' | 'duplicate',
+    count: number | null,
     bytes: Uint8Array | ArrayBuffer,
-    placement: PagePlacement | undefined,
-  ): Promise<PageInsertResult> =>
-    engine(() => doc.pages.insert(bytes, resolvePlacement(placement).destIndex));
+    position: PagePosition,
+    options: OperationOptions | undefined,
+  ): Promise<PageEditInsertResult> => {
+    const source = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    const change = stageChange(verb, count, [{ type: 'pages.insert', source, position }]);
+    return inserted(change, options);
+  };
+
+  /** Some pages of a PDF: open the bytes beside the document and extract them. */
+  const pagesOfBytes = async (
+    bytes: Uint8Array | ArrayBuffer,
+    pageIndexes: readonly number[],
+    signal: AbortSignal | undefined,
+  ): Promise<Uint8Array> => {
+    const source = await mapErrors(() =>
+      ctx.engine.open(
+        {
+          kind: 'bytes',
+          id: `page-edit-source-${Date.now().toString(36)}`,
+          bytes: new Uint8Array(bytes),
+        },
+        { scope: ['*'] },
+      ),
+    );
+    try {
+      const layout = await mapErrors(() => ctx.cancellable(signal, source.pages.list()));
+      const refs = pageIndexes.map((index) => {
+        const page = layout.pages[index];
+        if (!page) {
+          throw new PluginError('not-found', 'page-edit', `the PDF has no page ${index}`);
+        }
+        return page.ref;
+      });
+      return await mapErrors(() => ctx.cancellable(signal, source.pages.extract(refs)));
+    } finally {
+      await source.close();
+    }
+  };
 
   const api: PageEditCapability = {
-    // Wildcard-aware predicate (mirrors the engine's own enforcement) — NOT an
-    // `effectiveScope.includes(...)` enumeration, which would drop the `*` grant.
-    canEdit: () => ctx.doc?.security.allows(ASSEMBLE_CAPABILITY) ?? false,
+    canEdit: () => ctx.allows(ASSEMBLE),
+    canExtract: () => ctx.allows(DOWNLOAD),
 
-    rotateBy: (pages, delta) =>
-      enqueue(async () => {
-        const doc = requireDoc();
-        // Group by the resulting absolute rotation: the engine wire is one
-        // value per call. Wrap to [0, 360) — the double-mod keeps -90 from 0 at 270.
-        const groups = new Map<PageRotation, PageRef[]>();
-        for (const page of pages) {
-          const next = ((((requireEntry(page).rotation + delta) % 360) + 360) %
-            360) as PageRotation;
-          groups.set(next, [...(groups.get(next) ?? []), page]);
+    getSelected,
+    select,
+
+    rotateBy: async (pages, delta, options) => {
+      refuse(ASSEMBLE, 'pageEdit.rotateBy', options);
+      const refs = refsOf(pages);
+      // The double modulo keeps -90 from 0 at 270.
+      const change = rotate(
+        refs,
+        (ref) => ((((rotationOf(ref) + delta) % 360) + 360) % 360) as PdfRotation,
+      );
+      await answer(change, options);
+    },
+
+    setRotation: async (pages, rotation, options) => {
+      refuse(ASSEMBLE, 'pageEdit.setRotation', options);
+      const change = rotate(refsOf(pages), () => rotation);
+      await answer(change, options);
+    },
+
+    reorder: async (pages, position, options) => {
+      refuse(ASSEMBLE, 'pageEdit.reorder', options);
+      const refs = refsOf(pages);
+      const change = stageChange('reorder', refs.length, [
+        { type: 'pages.reorder', pages: refs, position: positionOf(position) },
+      ]);
+      await answer(change, options);
+    },
+
+    delete: async (pages, options) => {
+      refuse(ASSEMBLE, 'pageEdit.delete', options);
+      const refs = refsOf(pages);
+      const deleting = new Set(refs.map((ref) => ref.objectNumber));
+      if (registry().every((page) => deleting.has(page.ref.objectNumber))) {
+        throw new PluginError('invalid-input', 'page-edit', 'a document keeps at least one page');
+      }
+      const change = stageChange('delete', refs.length, [{ type: 'pages.delete', pages: refs }]);
+      await answer(change, options);
+    },
+
+    insertBlank: async (options = {}) => {
+      refuse(ASSEMBLE, 'pageEdit.insertBlank', options);
+      const position = positionOf(options.position);
+      const count = options.count ?? 1;
+      const size = options.size ?? sizeAt(position);
+      const change = stageChange('insertBlank', count, [
+        { type: 'pages.insertBlank', spec: { size, count }, position },
+      ]);
+      return inserted(change, options);
+    },
+
+    insertFromBytes: async (bytes, options = {}) => {
+      refuse(ASSEMBLE, 'pageEdit.insertFromBytes', options);
+      const position = positionOf(options.position);
+      const { pageIndexes, signal } = options;
+      if (pageIndexes?.length === 0) throw noPages();
+      const source = pageIndexes ? await pagesOfBytes(bytes, pageIndexes, signal) : bytes;
+      return insertBytes('insert', pageIndexes?.length ?? null, source, position, options);
+    },
+
+    insertFromDocument: async (documentId, pages, options = {}) => {
+      refuse(ASSEMBLE, 'pageEdit.insertFromDocument', options);
+      if (pages.length === 0) throw noPages();
+      const other = ctx.documentHandle(documentId);
+      if (!other) {
+        throw new PluginError('not-found', 'page-edit', `document '${documentId}' is not open`);
+      }
+      // The pages are the other document's, so its page list resolves them.
+      const otherPages = ctx.get(DocumentsToken).listPages(documentId);
+      const refs = pages.map((page) => {
+        const found =
+          typeof page === 'number'
+            ? otherPages[page]
+            : otherPages.find((candidate) => candidate.ref.objectNumber === page.objectNumber);
+        if (!found) {
+          throw new PluginError(
+            'not-found',
+            'page-edit',
+            `document '${documentId}' has no such page`,
+          );
         }
-        let result: PageRotateResult | null = null;
-        for (const [rotation, group] of groups) {
-          result = await engine(() => doc.pages.rotate(group, rotation));
-        }
-        if (!result) throw new PluginError('invalid-input', 'page-edit', 'no pages given');
-        return result;
-      }),
-    setRotation: (pages, rotation) =>
-      enqueue(() => engine(() => requireDoc().pages.rotate([...pages], rotation))),
-    move: (pages, placement) =>
-      enqueue(() => {
-        const doc = requireDoc();
-        const { destIndex } = resolvePlacement(placement);
-        return engine(() => doc.pages.move([...pages], destIndex ?? registry().length));
-      }),
-    delete: (pages) => enqueue(() => engine(() => requireDoc().pages.delete([...pages]))),
-    insertBlank: (options = {}) =>
-      enqueue(() => {
-        const doc = requireDoc();
-        const { destIndex, anchor } = resolvePlacement(options.placement);
-        // A ref placement matches the anchor the user is looking at; everything
-        // else matches the neighbour the new page will follow.
-        const size = options.size ?? anchor?.size ?? neighbourSize(destIndex);
-        return engine(() => doc.pages.insertBlank({ size, count: options.count }, destIndex));
-      }),
-    insertFromBytes: (bytes, options = {}) =>
-      enqueue(async () => {
-        const doc = requireDoc();
-        if (!options.pageIndexes) return insertAt(doc, bytes, options.placement);
-        // A subset: open the bytes beside the document, extract, insert.
-        const source = await engine(() =>
-          ctx.engine.open(
-            {
-              kind: 'bytes',
-              id: `page-edit-source-${Date.now().toString(36)}`,
-              bytes: new Uint8Array(bytes),
-            },
-            { scope: ['*'] },
-          ),
-        );
-        try {
-          const layout = await engine(() => source.pages.list());
-          const refs = options.pageIndexes!.map((index) => {
-            const page = layout.pages[index];
-            if (!page)
-              throw new PluginError('not-found', 'page-edit', `the PDF has no page ${index}`);
-            return page.ref;
-          });
-          const subset = await engine(() => source.pages.extract(refs));
-          return await insertAt(doc, subset, options.placement);
-        } finally {
-          await source.close();
-        }
-      }),
-    insertFromDocument: (documentId, pages, options = {}) =>
-      enqueue(async () => {
-        const doc = requireDoc();
-        const other = ctx.documentHandle(documentId);
-        if (!other)
-          throw new PluginError('not-found', 'page-edit', `document '${documentId}' is not open`);
-        const bytes = await engine(() => other.pages.extract([...pages]));
-        return insertAt(doc, bytes, options.placement);
-      }),
-    duplicate: (pages, options = {}) =>
-      enqueue(async () => {
-        const doc = requireDoc();
-        const last = pages[pages.length - 1];
-        if (!last) throw new PluginError('invalid-input', 'page-edit', 'no pages given');
-        const bytes = await engine(() => doc.pages.extract([...pages]));
-        return insertAt(doc, bytes, options.placement ?? { after: last });
-      }),
-    extract: (pages) => engine(() => requireDoc().pages.extract([...pages])),
+        return found.ref;
+      });
+      const position = positionOf(options.position);
+      // The other document's session decides whether its pages may be copied
+      // out: the engine refuses `doc.download` there with the permission named.
+      const bytes = await mapErrors(() =>
+        ctx.cancellable(options.signal, other.pages.extract(refs)),
+      );
+      return insertBytes('insert', refs.length, bytes, position, options);
+    },
+
+    duplicate: async (pages, options = {}) => {
+      refuse(ASSEMBLE, 'pageEdit.duplicate', options);
+      ctx.assertAllowed(DOWNLOAD, 'pageEdit.duplicate');
+      const refs = refsOf(pages);
+      const position = options.position
+        ? positionOf(options.position)
+        : { after: refs[refs.length - 1]! };
+      const bytes = await extractShown(refs, options);
+      return insertBytes('duplicate', refs.length, bytes, position, options);
+    },
+
+    extract: async (pages, options) => {
+      refuse(DOWNLOAD, 'pageEdit.extract', options);
+      return extractShown(refsOf(pages), options);
+    },
   };
-  return api;
+  return { api };
 }

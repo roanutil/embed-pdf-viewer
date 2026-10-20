@@ -48,7 +48,7 @@ internal detail of the runtime binding, not part of any consumer API.
 PDFium handles never cross threads. Native builds set `EMBEDPDF_TLS_GLOBALS=true` and each engine
 owns one dedicated OS thread; `wasm32` and `wasm32-eh` leave it off because each instance isolates
 its globals in its own linear memory. This is the contract in
-`.agents/skills/embedpdf-conventions/references/runtime-confinement.md`, and the prototype's
+`docs/conventions/runtime-confinement.md`, and the prototype's
 `crates/epdf-ops/src/dispatch/{threaded,inline}.rs` is the two-target implementation of it.
 
 A page has two text index spaces, and the port carries both.
@@ -79,7 +79,7 @@ JS, WASM and native artifacts are detected rather than misread.
 
 Rust source lives in a Cargo workspace at the repository root (`Cargo.toml`, `crates/`), and native
 SDK sources under `platforms/apple/` and `platforms/android/`. Neither tree is in the npm namespace,
-which needs one line added to `.agents/skills/embedpdf-conventions/references/naming.md` alongside
+which needs one line added to `docs/conventions/naming.md` alongside
 the existing carve-outs for `examples/` and `tooling/`.
 
 Each phase gets its own plan under `docs/superpowers/plans/` with checkbox steps, written before that
@@ -337,7 +337,7 @@ the obvious one. The wait ends; the work does not. This has to be documented per
 than implied.
 
 After the first write: bookkeeping completes. Per
-`.agents/skills/embedpdf-conventions/references/engine-services.md`, these mutations are not
+`docs/conventions/engine-services.md`, these mutations are not
 rollback-atomic, so a late cancellation must not introduce a throw path that pretends no write
 occurred. Ordered batches report the current item `failed`, the rest `skipped`, and finalize changed
 or indeterminate state.
@@ -429,7 +429,7 @@ stricter rule, no decision of any kind in a facade file, is not followable and w
 choices into Rust.
 
 Feature availability rides the existing capability twins from
-`.agents/skills/embedpdf-conventions/references/permissions.md`, exposed as natural platform APIs.
+`docs/conventions/permissions.md`, exposed as natural platform APIs.
 Native UI reads the capability's answer instead of reinterpreting scope strings, engine and server
 enforcement stay authoritative, and an unsupported mobile feature reports unsupported rather than
 silently succeeding.
