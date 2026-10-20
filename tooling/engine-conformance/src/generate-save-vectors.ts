@@ -93,8 +93,8 @@ async function describe(
   // 2"). `metadata.read`, `text.read` and `annotations.listRawAll` became
   // `metadata.get`, `text.get` and `annotations.list` in 83f6598d2 ("Engine
   // API v3, round 3a"); the list is flat, each annotation naming its page.
-  // Pages are addressed by `PageRef` (`page.ref`) rather than a bare object
-  // number since the same round.
+  // Pages are addressed by `PageRef` (`page.ref`), as they already were
+  // before this catch-up (9f13cea3c, "Address pages by PageRef everywhere").
   const doc = await engine.open({ kind: 'bytes', id, bytes }, { scope: ['*'], password });
   try {
     const listing = await doc.pages.list();
