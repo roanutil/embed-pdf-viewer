@@ -22,7 +22,7 @@
 ## Review focus
 
 - A vector file that regenerates byte-identical is not proof its crate is right: check the suite still exercises the code that moved (the annotation model is the likely case).
-- H3's crash path: a gesture whose annotation disappears mid-drag. Upstream's new model has no guard there yet.
+- H3's crash path: a gesture whose annotation disappears mid-drag. Upstream's store closes it with `forget`; the Rust port must do the same.
 - Payload hash drift: every Rust change that reaches `epdf-wasm` needs a published payload before a fresh clone works.
 - Kept divergences can silently become convergent or get lost in a re-port; re-check each against the list after its crate is ported.
 - Engine wire kinds: upstream grew the request union from 84 to 89 kinds, and a Rust engine that answers an unknown kind with a generic error passes vectors that never send it.
@@ -77,7 +77,7 @@ It can't land alone. Between `7c7b600b1` and `1d23fe9e9` the public headers lose
 
 Made on 2026-10-20.
 
-1. **H3** (`046d47578`): re-apply it. After the merge, `reconcile`'s temp-id rename reaches the draft in upstream's `update/edit.ts` and `update/edit-commit.ts`, and the edit gesture's reads of a missing annotation clear the draft instead of throwing. The Rust re-port carries the same guards, and the `core/annotation-update` vector case (create, pointer down, Created, move, up) stays.
+1. **H3** (`046d47578`): re-apply it. *Superseded in Task 10 (controller ruling, 2026-10-21): upstream's annotation store commits `forget` synchronously when a record leaves the view, which clears the draft (`packages/plugin/annotation/src/services/store.ts:487-492`, `packages/core/annotation/src/update/session.ts:65-80`), and new records keep their object-number id, so the crash H3 fixed cannot happen upstream. No TS change; Task 13's annotation port mirrors `forget`.* After the merge, `reconcile`'s temp-id rename reaches the draft in upstream's `update/edit.ts` and `update/edit-commit.ts`, and the edit gesture's reads of a missing annotation clear the draft instead of throwing. The Rust re-port carries the same guards, and the `core/annotation-update` vector case (create, pointer down, Created, move, up) stays.
 2. **M14** (`0bef57fe5`): follow upstream where it is stricter, drop M14 where upstream makes it unneeded. Upstream's `document-events.ts` no longer reads the print policy there; it blocks every print whose origin isn't `user`. Check that rule against M14's case (a script `print()` under a blocking policy); if upstream's rule already refuses it, drop M14's code and port upstream's rule.
 3. **The five new packages**: port all of them, each as a crate under `crates/plugins/`. `core/fonts`, `core/form` and `plugin/history` first, because the ported `plugin/form` and `plugin/page-edit` now depend on them; then `plugin/outline` and `plugin/attachment`.
 
