@@ -80,25 +80,6 @@ const selectionHasRotation = (model: Model, ids: Id[]): boolean =>
     return !!record && geomRotation(shapeOf(record.annotation)) !== 0;
   });
 
-/**
- * Whether a gesture lost a record it reads: the record went (another
- * session deleted it, the engine refused its create) between the press and
- * now. Such a gesture ends with nothing written. Rotate and group resize
- * read only the members still there, so they go on.
- */
-export function editDraftLost(model: Model, draft: Draft): boolean {
-  switch (draft.kind) {
-    case 'move':
-      return draft.ids.some((id) => !model.byId[id]);
-    case 'handle':
-    case 'caption':
-    case 'leader':
-      return !model.byId[draft.id];
-    default:
-      return false;
-  }
-}
-
 export function editPointer(
   model: Model,
   phase: 'down' | 'move' | 'up',
@@ -224,7 +205,6 @@ export function editDown(model: Model, input: PointerInput): [Model, Effect[]] {
 
 export function editMove(model: Model, input: PointerInput): [Model, Effect[]] {
   const draft = model.draft!;
-  if (editDraftLost(model, draft)) return [{ ...model, draft: null }, []];
   // Foreign coordinate frame (see the page-bound gesture rules above) — ignore.
   const home = editDraftPage(model, draft);
   if (home != null && input.page.objectNumber !== home.objectNumber) return [model, []];

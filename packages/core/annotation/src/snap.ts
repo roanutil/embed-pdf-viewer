@@ -40,9 +40,9 @@ const shift = (bounds: Bounds, point: Point): Bounds => ({
 /** An annotation's visual footprint corners — the oriented quad, so a rotated
  *  shape snaps by what's actually drawn, not its unrotated box. */
 const annotQuad = (model: Model, id: Id): Point[] => {
-  const record = model.byId[id];
-  if (!record) return [];
-  return selectionQuad(shapeOf(record.annotation), styleOf(record.annotation));
+  const geometry = shapeOf(model.byId[id].annotation);
+  const style = styleOf(model.byId[id].annotation);
+  return selectionQuad(geometry, style);
 };
 
 /**
