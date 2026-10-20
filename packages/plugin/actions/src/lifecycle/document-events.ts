@@ -111,18 +111,6 @@ export function createDocumentEvents(
     uiContext: { origin: ActionOrigin; phase: 'boot' | 'user' } | undefined,
     diagnose: (diagnostic: ActionDiagnostic) => void,
   ): Promise<{ status: ActionNodeStatus; detail?: string }> => {
-    // A script's print() is not a dispatched node, so the print row has not
-    // been consulted yet; the dispatch path (no uiContext) already was.
-    if (uiContext) {
-      const decision = currentPolicy().print[uiContext.origin];
-      if (decision === 'block' || decision === 'report') {
-        diagnose({
-          code: 'blocked',
-          message: `print: policy '${decision}' for origin '${uiContext.origin}'`,
-        });
-        return { status: 'blocked', detail: `policy '${decision}'` };
-      }
-    }
     if (printLatch.active) {
       diagnose({
         code: 'reentrant-print',
@@ -147,6 +135,19 @@ export function createDocumentEvents(
         }),
       );
       return { status: 'executed' };
+    }
+    // A script's print() is not a dispatched node, so the print row has not
+    // been consulted yet; the dispatch path (no uiContext) already was. The
+    // printer path above refuses every non-user request itself.
+    if (uiContext) {
+      const decision = currentPolicy().print[uiContext.origin];
+      if (decision === 'block' || decision === 'report') {
+        diagnose({
+          code: 'blocked',
+          message: `print: policy '${decision}' for origin '${uiContext.origin}'`,
+        });
+        return { status: 'blocked', detail: `policy '${decision}'` };
+      }
     }
     if (!ports.uiAdapter) {
       diagnose({ code: 'no-adapter', message: 'print: no UI adapter installed' });
