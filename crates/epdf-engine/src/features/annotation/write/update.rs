@@ -247,6 +247,19 @@ fn preflight(
     let subtype = crate::features::annotation::subtype::AnnotationSubtype::from_code(
         annotation.subtype_code(),
     );
+    // re-port (Task 8): refused here, before the identity stamp writes, until
+    // the engine writes `/RD` again. See rect_differences_not_ported.
+    let rect_differences = match &patch.kind {
+        AnnotationPatchKind::Square { fields } | AnnotationPatchKind::Circle { fields } => {
+            &fields.rect_differences
+        }
+        AnnotationPatchKind::Caret { fields } => &fields.rect_differences,
+        AnnotationPatchKind::FreeText { fields } => &fields.rect_differences,
+        _ => &Patch::Keep,
+    };
+    if matches!(rect_differences, Patch::Set(_)) {
+        return Err(rect_differences_not_ported());
+    }
     if subtype != patch.kind.subtype() {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
@@ -831,10 +844,8 @@ fn apply_shape_patch(
     {
         match &fields.rect_differences {
             Patch::Keep => {}
-            Patch::Set(_) => {
-                // re-port (Task 8): see rect_differences_not_ported.
-                return Err(rect_differences_not_ported());
-            }
+            // re-port (Task 8): preflight refuses a set.
+            Patch::Set(_) => {}
             Patch::Clear => {
                 annotation.clear_rectangle_differences();
             }
@@ -984,10 +995,8 @@ fn patch_rect_differences(
         Patch::Clear => {
             annotation.clear_rectangle_differences();
         }
-        Patch::Set(_) => {
-            // re-port (Task 8): see rect_differences_not_ported.
-            return Err(rect_differences_not_ported());
-        }
+        // re-port (Task 8): preflight refuses a set.
+        Patch::Set(_) => {}
     }
     Ok(())
 }

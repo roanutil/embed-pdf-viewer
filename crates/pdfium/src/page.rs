@@ -228,7 +228,10 @@ impl<'a> PageView<'a> {
         };
 
         // SAFETY: the bitmap, page and annotation handles are all live, and
-        // the matrix outlives the call.
+        // the matrix outlives the call. `state_ptr` is null or points into
+        // `state`, a NUL-terminated CString that lives to the end of this
+        // function. `&unrotated_box` is a local that lives across the one
+        // call it is passed to.
         let ok = unsafe {
             // Transparent, not white: an appearance composites over page
             // content that this bitmap does not contain.

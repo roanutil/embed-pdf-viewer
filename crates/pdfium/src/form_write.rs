@@ -88,9 +88,9 @@ impl FieldValueWrite<'_> {
     /// `EPDF_FORM_VALUE_*`.
     fn kind(self) -> i32 {
         match self {
-            Self::None => 0,
-            Self::Scalar(_) => 1,
-            Self::Array(_) => 2,
+            Self::None => pdfium_sys::EPDF_FORM_VALUE_NONE as i32,
+            Self::Scalar(_) => pdfium_sys::EPDF_FORM_VALUE_SCALAR as i32,
+            Self::Array(_) => pdfium_sys::EPDF_FORM_VALUE_ARRAY as i32,
         }
     }
 

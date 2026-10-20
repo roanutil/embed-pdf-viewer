@@ -254,6 +254,15 @@ fn render_one(
     strip_rotation: bool,
     subtype_code: i32,
 ) -> Result<Option<PageRaster>, EngineError> {
+    if strip_rotation {
+        // re-port (Task 8): EPDF_RenderAnnotBitmapUnrotated now takes the turn
+        // (degrees and unrotated box) from the caller; port upstream's
+        // readAnnotationTurn and pass it as a pdfium::AppearanceTurn. Until
+        // then a turned box annotation is skipped, like one with no stream
+        // for the mode: the result has no per-annotation skip record, and
+        // failing the page would hide every other appearance on it.
+        return Ok(None);
+    }
     if !annotation.has_appearance_stream(mode) {
         // THE WIDGET FALLBACK IS UNREACHABLE, HERE AND IN THE TYPESCRIPT.
         //
@@ -310,15 +319,6 @@ fn render_one(
         }
     }
 
-    if strip_rotation {
-        // re-port (Task 8): EPDF_RenderAnnotBitmapUnrotated now takes the turn
-        // (degrees and unrotated box) from the caller; port upstream's
-        // readAnnotationTurn and pass it as a pdfium::AppearanceTurn.
-        return Err(EngineError::with_message(
-            EngineErrorCode::NotImplemented,
-            "unrotated appearance render is not ported to the runtime 1461b0c51 API",
-        ));
-    }
     let matrix = display_rect_to_device_matrix(display_rect, options.rotation, width, height);
     let bitmap = view
         .render_annotation_rgba_with_matrix(

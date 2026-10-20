@@ -26,7 +26,10 @@ impl Document {
     ///
     /// Media always resolves through page-tree inheritance and a US Letter
     /// default, and crop falls back to media, so those two are always present
-    /// for a page that exists. Bleed, trim and art are genuinely optional.
+    /// for a page that exists. Bleed, trim and art are genuinely optional,
+    /// and are read from the page dictionary only: since this pin they are no
+    /// longer inherited through `/Parent` (ISO 32000 never allowed it), where
+    /// the old fork inherited them like media and crop.
     ///
     /// The defaults live here because the fork stopped applying them:
     /// `EPDF_GetPageBoxByIndex` now reports a box only as the file writes it
@@ -87,9 +90,7 @@ impl Document {
     pub fn page_size_by_index(&self, index: u32) -> Option<(f32, f32)> {
         let media = self.page_box_by_index(index, PageBoxType::Media)?;
         let crop = self.page_box_by_index(index, PageBoxType::Crop)?;
-        let width = (crop.right.min(media.right) - crop.left.max(media.left)).max(0.0);
-        let height = (crop.top.min(media.top) - crop.bottom.max(media.bottom)).max(0.0);
-        Some((width, height))
+        Some(intersection_size(media, crop))
     }
 
     /// A page's `/Rotate` as the file writes it, resolved through page-tree
@@ -112,8 +113,7 @@ impl Document {
     /// is reduced the way the removed `EPDF_GetPageRotationByIndex` did:
     /// truncated to whole quarter turns, then taken modulo four.
     pub fn page_rotation_quarter_turns(&self, index: u32) -> u8 {
-        let written = self.page_rotate_by_index(index).unwrap_or(0);
-        ((written / 90) % 4).rem_euclid(4) as u8
+        quarter_turns_of(self.page_rotate_by_index(index).unwrap_or(0))
     }
 
     /// A page's `/UserUnit`, defaulting to 1.
@@ -171,5 +171,74 @@ impl Document {
     pub fn page_object_number_by_index(&self, index: u32) -> u32 {
         // SAFETY: the handle is live.
         unsafe { pdfium_sys::EPDFDoc_GetPageObjectNumberByIndex(self.handle, index as i32) }
+    }
+}
+
+/// The size of the overlap of two ordered rects, or nothing.
+///
+/// Either side at or below zero means they do not overlap, and the whole
+/// result is then zero, as `CFX_FloatRect::Intersect` and the TypeScript's
+/// `pdfRectIntersection` both have it. Clamping each axis separately would
+/// report a strip of positive width and zero height.
+fn intersection_size(a: RectF, b: RectF) -> (f32, f32) {
+    let width = a.right.min(b.right) - a.left.max(b.left);
+    let height = a.top.min(b.top) - a.bottom.max(b.bottom);
+    if width <= 0.0 || height <= 0.0 { (0.0, 0.0) } else { (width, height) }
+}
+
+/// The removed `EPDF_GetPageRotationByIndex` reduction: whole quarter turns,
+/// modulo four, made non-negative.
+fn quarter_turns_of(written: i32) -> u8 {
+    ((written / 90) % 4).rem_euclid(4) as u8
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn rect(left: f32, bottom: f32, right: f32, top: f32) -> RectF {
+        RectF { left, top, right, bottom }
+    }
+
+    #[test]
+    fn a_crop_inside_the_media_is_its_own_size() {
+        let media = rect(0.0, 0.0, 612.0, 792.0);
+        assert_eq!(intersection_size(media, rect(10.0, 20.0, 110.0, 220.0)), (100.0, 200.0));
+    }
+
+    #[test]
+    fn a_crop_past_the_media_is_cut_to_it() {
+        let media = rect(0.0, 0.0, 612.0, 792.0);
+        assert_eq!(intersection_size(media, rect(-10.0, -10.0, 700.0, 800.0)), (612.0, 792.0));
+    }
+
+    #[test]
+    fn a_miss_on_one_axis_is_no_size_at_all() {
+        let media = rect(0.0, 0.0, 612.0, 792.0);
+        // Overlaps horizontally, sits above the media vertically.
+        assert_eq!(intersection_size(media, rect(100.0, 800.0, 200.0, 900.0)), (0.0, 0.0));
+        // Overlaps vertically, sits right of the media horizontally.
+        assert_eq!(intersection_size(media, rect(700.0, 100.0, 800.0, 200.0)), (0.0, 0.0));
+        // Touching edges is zero area too.
+        assert_eq!(intersection_size(media, rect(612.0, 0.0, 700.0, 792.0)), (0.0, 0.0));
+    }
+
+    #[test]
+    fn rotation_truncates_to_whole_quarter_turns() {
+        assert_eq!(quarter_turns_of(0), 0);
+        assert_eq!(quarter_turns_of(90), 1);
+        assert_eq!(quarter_turns_of(45), 0);
+        assert_eq!(quarter_turns_of(100), 1);
+        assert_eq!(quarter_turns_of(270), 3);
+        assert_eq!(quarter_turns_of(450), 1);
+    }
+
+    #[test]
+    fn negative_rotation_wraps_to_the_same_turn() {
+        assert_eq!(quarter_turns_of(-90), 3);
+        assert_eq!(quarter_turns_of(-180), 2);
+        assert_eq!(quarter_turns_of(-270), 1);
+        assert_eq!(quarter_turns_of(-360), 0);
+        assert_eq!(quarter_turns_of(-45), 0);
     }
 }

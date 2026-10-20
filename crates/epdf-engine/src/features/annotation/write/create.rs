@@ -189,6 +189,19 @@ fn preflight(
     draft: &AnnotationDraft,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
+    // re-port (Task 8): refused here, before the annotation exists, until the
+    // engine writes `/RD` again. See rect_differences_not_ported.
+    let rect_differences = match &draft.kind {
+        AnnotationDraftKind::Square { fields } | AnnotationDraftKind::Circle { fields } => {
+            fields.rect_differences.as_set().is_some()
+        }
+        AnnotationDraftKind::Caret { fields } => fields.rect_differences.as_set().is_some(),
+        AnnotationDraftKind::FreeText { fields } => fields.rect_differences.as_set().is_some(),
+        _ => false,
+    };
+    if rect_differences {
+        return Err(rect_differences_not_ported());
+    }
     match &draft.kind {
         AnnotationDraftKind::Highlight { fields }
         | AnnotationDraftKind::Underline { fields }
@@ -625,10 +638,7 @@ fn apply_caret(
     if let Some(intent) = fields.intent {
         write(annotation.set_intent(intent.name()), "/IT")?;
     }
-    // re-port (Task 8): see rect_differences_not_ported.
-    if fields.rect_differences.as_set().is_some() {
-        return Err(rect_differences_not_ported());
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
     Ok(())
 }
 
@@ -786,11 +796,7 @@ fn apply_free_text(
         ));
     }
     write(annotation.set_intent(fields.intent.name()), "/IT")?;
-
-    // re-port (Task 8): see rect_differences_not_ported.
-    if fields.rect_differences.as_set().is_some() {
-        return Err(rect_differences_not_ported());
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
 
     if let Some(callout) = fields.callout_line.as_ref() {
         let points: Vec<pdfium::PointF> = match callout {
@@ -1643,10 +1649,7 @@ fn apply_shape(
             "EPDFAnnot_SetBorderEffect refused the intensity",
         ));
     }
-    // re-port (Task 8): see rect_differences_not_ported.
-    if fields.rect_differences.as_set().is_some() {
-        return Err(rect_differences_not_ported());
-    }
+    // re-port (Task 8): write `/RD` here; preflight refuses it until then.
     Ok(())
 }
 

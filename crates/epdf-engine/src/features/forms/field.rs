@@ -270,6 +270,11 @@ pub fn create_field(
 ) -> Result<FormFieldDto, EngineError> {
     cancel.check()?;
     preflight_draft(draft)?;
+    if draft.default_value.is_some() {
+        // re-port (Task 8): refused before the field exists. See
+        // default_value_not_ported.
+        return Err(default_value_not_ported());
+    }
 
     let field_object_number =
         document.create_field(draft.family.native(), &draft.name).ok_or_else(|| {
@@ -289,10 +294,6 @@ pub fn create_field(
     }
     if !draft.options.is_empty() {
         write_options(document, field_object_number, &draft.options)?;
-    }
-    if draft.default_value.is_some() {
-        // re-port (Task 8): see default_value_not_ported.
-        return Err(default_value_not_ported());
     }
     if let Some(max_length) = draft.max_length
         && !document.set_field_max_length(field_object_number, max_length)
@@ -357,6 +358,11 @@ pub fn update_field(
             format!("a {:?} patch cannot be applied to a {family:?} field", patch.family),
         ));
     }
+    if !matches!(patch.default_value, Patch::Keep) {
+        // re-port (Task 8): refused before the rename writes. See
+        // default_value_not_ported.
+        return Err(default_value_not_ported());
+    }
     drop(model);
     cancel.check()?;
 
@@ -389,11 +395,6 @@ pub fn update_field(
                 ));
             }
         }
-    }
-    match &patch.default_value {
-        Patch::Keep => {}
-        // re-port (Task 8): see default_value_not_ported.
-        Patch::Clear | Patch::Set(_) => return Err(default_value_not_ported()),
     }
     write_patch_name(document, object_number, &patch.alternate_name, true)?;
     write_patch_name(document, object_number, &patch.mapping_name, false)?;
