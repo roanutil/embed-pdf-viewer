@@ -83,42 +83,92 @@ Made on 2026-10-20.
 
 ## Order of work
 
-### Phase 0: tooling
+All work lands on two integration branches, so `research/multi-platform-rust-core-impl` and this branch move only when the user approves the final merge: `research/catchup-impl` (off impl, worktree `.claude/worktrees/catchup-impl`) and `research/catchup-plugins` (off this branch at the plan's commit, worktree `.claude/worktrees/catchup-plugins`). Pushes wait for the user's go-ahead; nothing in a task pushes.
 
-- [ ] Rework `scripts/sync-upstream.sh` to take a source branch, so it can merge `main` into impl and impl into this branch, each with the runtime-src resolution. Test it on a throwaway worktree, as for the first version.
-- [ ] Push `sync/runtime-1461b0c51` to `roanutil/embed-pdf-runtime` so the parked resolution survives this machine.
-- [ ] Start the fork build of `1d23fe9e9` for wasm32-eh (`buildFork` in `perf-compare/scripts/build-arm.mjs`). Upstream changed DEPS, so expect hours; it runs while Phase 1 proceeds.
+The re-port tasks (8, 13) are too large to write out before the vectors exist. Tasks 7 and 12 end by appending numbered tasks for them to this file, one per crate or feature family, each with the vector files it must replay.
 
-### Phase 1: impl
+### Task 1: Sync script takes a source branch
 
-- [ ] Merge `main` into impl, resolving the 14 files: take upstream's side, then re-apply impl's change where it is the Rust-core routing (`WorkerHost.ts`, `InlineTransport.ts`, `PageGeometryReader.ts`, `compile.esm.sh`, `engine-runtime-build.local.json`); regenerate `pdf-functions.generated.ts` from the new headers rather than merging it. Point runtime-src at `1d23fe9e9`. Commit the merge before anything else.
-- [ ] Make the 33 engine generators run against the new engine API (the "reshaped" and "does not import" rows), keeping each generator's cases. Then `wire`, `operations` and `scope`.
-- [ ] Regenerate the engine vectors and read every diff.
-- [ ] Re-port `crates/pdfium` to the new headers and `crates/epdf-engine` to the regenerated vectors, until every engine conformance test in `crates/` replays its file. Add the five new wire kinds.
-- [ ] Build the payload with the Rust core (`scripts/publish-engine-payload.mjs --dry-run` from a tree with the fork built), run `verify-rust-core.mjs`, push impl.
+Branch `research/catchup-plugins`. `scripts/sync-upstream.sh` merges `main` only. Give it `--from <url-or-ref> <branch>` (default: upstream viewer `main`), so the same script merges `main` into impl and impl into this branch. The runtime-src step stays: read the pointer the source pins, merge it into the fork branch, resolve this side's pointer to the fork merge. When the source pins the same runtime commit as the fork branch already contains, the runtime step is a no-op.
 
-### Phase 2: this branch
+- [ ] Add the option and keep the default behaviour byte-for-byte for `main`.
+- [ ] Test both paths on a throwaway worktree (`git worktree add --detach`), as the first version was tested: `--from` a local branch, and the default. Delete the worktree.
+- [ ] `shellcheck scripts/sync-upstream.sh` clean; commit.
 
-- [ ] Merge impl into this branch. `toolbar.tsx` and the 18 files from `main` resolve as in Phase 1, with `update.ts` taken as deleted and H3 re-applied to `update/` as in "Decisions". `pnpm-lock.yaml`: take impl's, then `pnpm install`.
-- [ ] Re-run `staleness.ts` and record the table here, replacing the probe's.
+### Task 2: Merge upstream main into impl
 
-### Phase 3: plugin generators and vectors
+Branch `research/catchup-impl`, created from `research/multi-platform-rust-core-impl`. Runtime-src must point at `1d23fe9e9` (local branch `sync/runtime-1461b0c51` in `.claude/worktrees/plugins-share/packages/engine/runtime/runtime-src`; the new worktree's submodule borrows objects from there with `git submodule update --init --reference`).
 
-- [ ] Rewrite each "does not import" suite against the new module layout, starting with `interaction.ts` (it clears the "throws" row) and the six `annotation-core-*` suites. Keep each suite's cases; change only how it reaches the code.
-- [ ] Run `vectors`, then read the diff of every vector file.
+- [ ] Merge upstream `main` at `b456ee4fd` (`git -c core.commitGraph=false merge`). Resolve the 14 files: upstream's side, then re-apply impl's own change where it is Rust-core routing or build (`WorkerHost.ts`, `InlineTransport.ts`, `PageGeometryReader.ts`, `index.ts` exports, `compile.esm.sh`, `engine-runtime-build.local.json`). The conventions skill: upstream's table plus a row for `docs/conventions/engine-lifecycle.md`; `.prettierignore`: both sides; repoint `.agents/skills/embedpdf-conventions/references/` mentions in `crates/` and `multiplatform-plan.md` to `docs/conventions/`. `pdf-functions.generated.ts`: take upstream's, then regenerate from the fork's headers once Task 3's build has them (`node build/generate-functions.mjs`), and commit that separately.
+- [ ] Runtime-src to `1d23fe9e9`; `.gitmodules` to the fork URL and branch, as on this branch.
+- [ ] `pnpm install`, `pnpm exec turbo run build --filter=@embedpdf/engine...`, `pnpm exec turbo run typecheck --filter=@embedpdf/engine...`: no errors. Commit the merge alone, before anything else.
 
-### Phase 4: re-port
+### Task 3: Fork build and payload inputs for the new pin
 
-- [ ] Re-port crate by crate in dependency order: kernel, core libraries, interaction and actions, stage, selection, annotation, then the plugins on top, until `cargo test` replays every file. Where the TS changed shape (the annotation model's three layers), move the Rust to match rather than adapting vectors.
-- [ ] Port `core/fonts`, `core/form` and `plugin/history` before re-porting `plugin/form` and `plugin/page-edit`; port `plugin/outline` and `plugin/attachment` after the plugins they use.
-- [ ] Settle M14 against upstream's print rule, as in "Decisions".
+Not a subagent task: the controller starts `buildFork` for `1d23fe9e9` (wasm32-eh) in the background with `PERF_WORK_DIR=/Users/andrew/repos/embed-pdf-viewer/perf-compare/.work`, and fetches upstream's native `darwin-arm64` artifact for `1461b0c51` into `packages/engine/runtime/build/libpdfium/` for host Rust tests (`bash packages/engine/runtime/scripts/fetch-libpdfium.sh darwin-arm64`). Upstream DEPS changed, so the fork build takes hours; Tasks 4 to 7 do not need it.
 
-### Phase 5: close
+### Task 4: Engine generators import and boot
 
-- [ ] Regenerate `coverage.json`; re-run mutation testing on every crate whose source changed.
-- [ ] Re-check the kept divergences one by one.
-- [ ] Update each crate README, `multiplatform-plugins-status.md` and `multiplatform-start-here.md`.
-- [ ] Publish the payload, push this branch and the fork branch, then point the perf harness's `plugins-next` arm at the tip for a run.
+Branch `research/catchup-impl`, in `tooling/engine-conformance`. Make every generator load and run against the new engine API, keeping each generator's cases and its output format; only how it reaches the engine changes. First the six that do not import (`render`, `charmap`, `layout`, `annotation`, `annotation-write`, `actions`), then `scope` (`rawScope.map is not a function`), `wire` (the request union is 89 kinds; list the five new ones), `operations` (add rows for the new protocol operations, with the same columns), then the 18 whose engine calls were reshaped (`doc.metadata.read`, `annotations.listRaw`, `listRawAll`, `handle.text.read`, `doc.pages.move`, `forms.applyEffects`, `forms.createField`, `holder.applications`, `service.read`, and the rest the checks name).
+
+- [ ] Each script in `package.json` ending `:check` runs to a verdict (current, or "differ"), none throws. Record per script: current or differs.
+- [ ] Where a case's input no longer exists in the new API (a removed operation), keep the case in a comment with the reason, and list it in the report.
+- [ ] Commit. No vector file changes in this task.
+
+### Task 5: Regenerate engine vectors and write the diff report
+
+- [ ] Run every regenerate script (the `:check` names without the suffix) and commit the vectors.
+- [ ] Write `docs/research/catchup-engine-vector-diffs.md`: per vector file, unchanged or what changed (new fields, renamed fields, different values, new or removed cases), with the upstream commit that caused it where `git log -S` finds it. This report is the input for the engine re-port.
+
+### Task 6: PDFium bindings for the new pin
+
+`crates/pdfium-sys` regenerates from `wrapper.h` and the include directory. Add any new headers to `wrapper.h`. In `crates/pdfium`, replace the 12 removed functions with what upstream's TS now calls (for example `EPDF_GetPageRotateByIndex` for `EPDF_GetPageRotationByIndex`; the form writers through `EPDFForm_LoadModel`): read upstream's `packages/engine/services/src/features/` for each.
+
+- [ ] `CARGO_BUILD_JOBS=6 cargo build --workspace` and `cargo test -p pdfium -p pdfium-sys` pass against the `darwin-arm64` artifact from Task 3.
+- [ ] Commit.
+
+### Task 7: Engine re-port tasks
+
+- [ ] From Task 5's report, append Tasks 8.1 to 8.N to this file: one per feature family under `crates/epdf-engine/src/features/` (and the wire kinds), each naming the vector files it must replay and the upstream TS files that are its reference. Order them so shared types come first. Commit the plan change.
+
+### Task 8: Engine re-port (expanded by Task 7)
+
+Each sub-task ends with `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine` replaying its vector files, and the kept divergences in its area re-checked against `docs/research/rust-plugins-branch-review.md`, "Status".
+
+### Task 9: Payload with the Rust core
+
+- [ ] Once Task 3's fork build is done: from `.claude/worktrees/catchup-impl`, `PERF_WORK_DIR=/Users/andrew/repos/embed-pdf-viewer/perf-compare/.work node scripts/publish-engine-payload.mjs --dry-run` (bring the script over from this branch if impl lacks it), `verify-rust-core.mjs` passes, and the 33 engine `:check` scripts are current.
+
+### Task 10: Merge impl into this branch, with H3
+
+Branch `research/catchup-plugins`.
+
+- [ ] Merge `research/catchup-impl` (with Task 1's script, `--from`). `toolbar.tsx` and the files that came from `main` resolve as in Task 2; `packages/core/annotation/src/update.ts` taken as deleted; `pnpm-lock.yaml` impl's, then `pnpm install`.
+- [ ] Re-apply H3 to `packages/core/annotation/src/update/edit.ts` and `update/edit-commit.ts`, as in "Decisions": the temp-id rename reaches the draft, and the gesture's reads of a missing annotation clear the draft. Add a TS unit test for create, pointer down, Created, move, up.
+- [ ] Commit the merge, then the H3 change separately.
+
+### Task 11: Plugin generators import
+
+`tooling/plugin-conformance/src/suites`. Rewrite each of the 31 suite files that do not import against the new module layout, starting with `interaction.ts` (it clears the 13 "throws") and the six `annotation-core-*`. Keep each suite's cases; change only how it reaches the code. Add suites for the five new packages only in Task 13's sub-tasks.
+
+- [ ] `npx tsx --conditions=development src/staleness.ts` reports no `no-import` and no `throws`. Replace the probe table under "Plugin vectors" with this result. Commit.
+
+### Task 12: Regenerate plugin vectors and plan the re-port
+
+- [ ] `pnpm --filter @embedpdf/tooling-plugin-conformance run vectors`; commit.
+- [ ] Write `docs/research/catchup-plugin-vector-diffs.md` as in Task 5.
+- [ ] Append Tasks 13.1 to 13.N: one per crate in dependency order (kernel, core libraries, `core/fonts`, `core/form`, interaction and actions, `plugin/history`, stage, selection, annotation with H3, form, page-edit, the other plugins, `plugin/outline`, `plugin/attachment`), each naming its vector files and TS reference; the M14 check goes with actions. Commit.
+
+### Task 13: Plugin re-port (expanded by Task 12)
+
+Each sub-task ends with its crate's `cargo test` replaying its vector files, and its kept divergences re-checked.
+
+### Task 14: Close
+
+- [ ] `coverage` regenerated; `vectors:check` and `coverage:check` clean; every engine `:check` current.
+- [ ] `scripts/mutants.sh` on every crate whose source changed, one `--file` at a time; triage survivors.
+- [ ] Update each touched crate README, `multiplatform-plugins-status.md`, `multiplatform-port-status.md` and `multiplatform-start-here.md`.
+- [ ] Report to the user for the merges and pushes: `research/catchup-impl` into impl, `research/catchup-plugins` into this branch, `sync/runtime-1461b0c51` to the fork, and the payload publish.
 
 ## What it will cost
 
