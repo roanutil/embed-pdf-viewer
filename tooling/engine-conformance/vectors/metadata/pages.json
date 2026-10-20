@@ -11,7 +11,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -19,22 +22,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -46,7 +75,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 2,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -54,24 +86,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 1,
-            "pageObjectNumber": 43,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 43
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -79,24 +139,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 2,
-            "pageObjectNumber": 104,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 104
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -104,24 +192,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 3,
-            "pageObjectNumber": 110,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 110
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -129,24 +245,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 4,
-            "pageObjectNumber": 116,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 116
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -154,24 +298,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 5,
-            "pageObjectNumber": 122,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 122
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -179,24 +351,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 6,
-            "pageObjectNumber": 156,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 156
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -204,24 +404,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 7,
-            "pageObjectNumber": 193,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 193
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -229,24 +457,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 8,
-            "pageObjectNumber": 196,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 196
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -254,24 +510,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 9,
-            "pageObjectNumber": 202,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 202
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -279,24 +563,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 10,
-            "pageObjectNumber": 217,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 217
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -304,24 +616,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 11,
-            "pageObjectNumber": 787,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 787
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -329,24 +669,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 12,
-            "pageObjectNumber": 790,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 790
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -354,24 +722,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 13,
-            "pageObjectNumber": 966,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 966
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -379,22 +775,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -406,7 +828,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 80,
@@ -414,22 +839,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 80,
-                "bottom": 0,
-                "top": 20
+                "x": 0,
+                "y": 0,
+                "width": 80,
+                "height": 20
               },
               "crop": {
-                "left": 0,
-                "right": 80,
-                "bottom": 0,
-                "top": 20
+                "x": 0,
+                "y": 0,
+                "width": 80,
+                "height": 20
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 80,
+                "height": 20
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 80,
+                "height": 20
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 80,
+                "height": 20
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 80,
+              "bottom": 0,
+              "top": 20
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -441,7 +892,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -449,22 +903,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -476,7 +956,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -484,24 +967,52 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 1,
-            "pageObjectNumber": 4,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 4
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -509,24 +1020,52 @@
             },
             "rotation": 90,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 2,
-            "pageObjectNumber": 5,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 5
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -534,24 +1073,52 @@
             },
             "rotation": 180,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           },
           {
             "index": 3,
-            "pageObjectNumber": 6,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 6
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -559,22 +1126,48 @@
             },
             "rotation": 270,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -586,7 +1179,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -594,19 +1190,44 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             },
             "actions": {
               "open": {
@@ -634,10 +1255,13 @@
                   "subtype": "GoTo",
                   "destination": {
                     "kind": "xyz",
-                    "pageObjectNumber": 4,
-                    "left": 100,
-                    "top": 200,
-                    "zoom": null
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 4
+                    },
+                    "zoom": null,
+                    "x": 100,
+                    "y": 592
                   },
                   "next": []
                 },
@@ -649,7 +1273,10 @@
           },
           {
             "index": 1,
-            "pageObjectNumber": 4,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 4
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -657,22 +1284,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     },
     {
@@ -685,7 +1338,10 @@
         "pages": [
           {
             "index": 0,
-            "pageObjectNumber": 3,
+            "ref": {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            },
             "label": null,
             "size": {
               "width": 612,
@@ -693,22 +1349,48 @@
             },
             "rotation": 0,
             "userUnit": 1,
+            "tabOrder": null,
             "boxes": {
               "media": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               },
               "crop": {
-                "left": 0,
-                "right": 612,
-                "bottom": 0,
-                "top": 792
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "bleed": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "trim": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
+              },
+              "art": {
+                "x": 0,
+                "y": 0,
+                "width": 612,
+                "height": 792
               }
+            },
+            "pdfCropBox": {
+              "left": 0,
+              "right": 612,
+              "bottom": 0,
+              "top": 792
             }
           }
-        ]
+        ],
+        "namedPages": []
       }
     }
   ]

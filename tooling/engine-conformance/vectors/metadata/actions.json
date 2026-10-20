@@ -37,48 +37,6 @@
       "fixture": "tooling/engine-conformance/fixtures/document_actions.pdf",
       "covers": "Every catalog action slot: a two-entry JavaScript name tree in boot order, an /OpenAction in its action form, and all five additional events. Nothing else in the repository has any of them.",
       "actions": {
-        "nameTreeScripts": [
-          {
-            "name": "aaa-first",
-            "action": {
-              "root": {
-                "type": "javascript",
-                "subtype": "JavaScript",
-                "script": "var first = 1;",
-                "next": []
-              },
-              "incomplete": false,
-              "warningFlags": 0,
-              "warnings": []
-            }
-          },
-          {
-            "name": "zzz-second",
-            "action": {
-              "root": {
-                "type": "javascript",
-                "subtype": "JavaScript",
-                "script": "var second = 2;",
-                "next": []
-              },
-              "incomplete": false,
-              "warningFlags": 0,
-              "warnings": []
-            }
-          }
-        ],
-        "openAction": {
-          "root": {
-            "type": "javascript",
-            "subtype": "JavaScript",
-            "script": "var opened = true;",
-            "next": []
-          },
-          "incomplete": false,
-          "warningFlags": 0,
-          "warnings": []
-        },
-        "openDestination": null,
         "willClose": {
           "root": {
             "type": "javascript",
@@ -133,7 +91,49 @@
           "incomplete": false,
           "warningFlags": 0,
           "warnings": []
-        }
+        },
+        "nameTreeScripts": [
+          {
+            "name": "aaa-first",
+            "action": {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "var first = 1;",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            }
+          },
+          {
+            "name": "zzz-second",
+            "action": {
+              "root": {
+                "type": "javascript",
+                "subtype": "JavaScript",
+                "script": "var second = 2;",
+                "next": []
+              },
+              "incomplete": false,
+              "warningFlags": 0,
+              "warnings": []
+            }
+          }
+        ],
+        "openAction": {
+          "root": {
+            "type": "javascript",
+            "subtype": "JavaScript",
+            "script": "var opened = true;",
+            "next": []
+          },
+          "incomplete": false,
+          "warningFlags": 0,
+          "warnings": []
+        },
+        "openDestination": null
       }
     },
     {
