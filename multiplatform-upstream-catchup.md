@@ -73,11 +73,13 @@ Upstream viewer `main` pins runtime `1461b0c51`. The fork merge of it is resolve
 
 It can't land alone. Between `7c7b600b1` and `1d23fe9e9` the public headers lose 27 functions and gain 106, and 12 of the lost ones are called by this branch's TS and Rust: `EPDF_GetPageRotationByIndex`, `EPDF_GetPageSizeByIndexNormalized`, `EPDFAnnot_ApplyRedaction`, `EPDFAnnot_SetRectangleDifferences`, and eight `EPDFForm_*` writers (`SetTextValue`, `SetToggle`, `SetChoiceValues`, `ResetField`, `ImportFDF`, `ImportXFDF`, `SetFieldDefaultValues`, `RemoveFieldDefaultValue`). Upstream's TS moved to replacements such as `EPDF_GetPageRotateByIndex` and `EPDFForm_LoadModel`. The Rust side (`crates/pdfium/src/page_list.rs`, `page_write.rs`, `annot_write.rs`, `form_write.rs`) follows the TS in the engine re-port.
 
-## Decisions before starting
+## Decisions
 
-1. **H3** (`046d47578`). Its guards lived in the deleted `update.ts`. Either re-apply them to upstream's `update/edit.ts` and `update/edit-commit.ts` (a TS change to approve again), or drop H3 and the vectors that pin it, after checking whether upstream's new model can still reach a missing annotation mid-gesture.
-2. **M14** (`0bef57fe5`, `print()` checks the print policy). Re-check it survives the merge of `packages/plugin/actions`.
-3. **The five new packages.** Port them in this catch-up, or record them as out of scope and port later. Each is a new crate under `crates/plugins/`.
+Made on 2026-10-20.
+
+1. **H3** (`046d47578`): re-apply it. After the merge, `reconcile`'s temp-id rename reaches the draft in upstream's `update/edit.ts` and `update/edit-commit.ts`, and the edit gesture's reads of a missing annotation clear the draft instead of throwing. The Rust re-port carries the same guards, and the `core/annotation-update` vector case (create, pointer down, Created, move, up) stays.
+2. **M14** (`0bef57fe5`): follow upstream where it is stricter, drop M14 where upstream makes it unneeded. Upstream's `document-events.ts` no longer reads the print policy there; it blocks every print whose origin isn't `user`. Check that rule against M14's case (a script `print()` under a blocking policy); if upstream's rule already refuses it, drop M14's code and port upstream's rule.
+3. **The five new packages**: port all of them, each as a crate under `crates/plugins/`. `core/fonts`, `core/form` and `plugin/history` first, because the ported `plugin/form` and `plugin/page-edit` now depend on them; then `plugin/outline` and `plugin/attachment`.
 
 ## Order of work
 
@@ -97,7 +99,7 @@ It can't land alone. Between `7c7b600b1` and `1d23fe9e9` the public headers lose
 
 ### Phase 2: this branch
 
-- [ ] Merge impl into this branch. `toolbar.tsx` and the 18 files from `main` resolve as in Phase 1, with `update.ts` taken as deleted and H3 handled per the decision. `pnpm-lock.yaml`: take impl's, then `pnpm install`.
+- [ ] Merge impl into this branch. `toolbar.tsx` and the 18 files from `main` resolve as in Phase 1, with `update.ts` taken as deleted and H3 re-applied to `update/` as in "Decisions". `pnpm-lock.yaml`: take impl's, then `pnpm install`.
 - [ ] Re-run `staleness.ts` and record the table here, replacing the probe's.
 
 ### Phase 3: plugin generators and vectors
@@ -108,7 +110,8 @@ It can't land alone. Between `7c7b600b1` and `1d23fe9e9` the public headers lose
 ### Phase 4: re-port
 
 - [ ] Re-port crate by crate in dependency order: kernel, core libraries, interaction and actions, stage, selection, annotation, then the plugins on top, until `cargo test` replays every file. Where the TS changed shape (the annotation model's three layers), move the Rust to match rather than adapting vectors.
-- [ ] Port the new packages, per the decision.
+- [ ] Port `core/fonts`, `core/form` and `plugin/history` before re-porting `plugin/form` and `plugin/page-edit`; port `plugin/outline` and `plugin/attachment` after the plugins they use.
+- [ ] Settle M14 against upstream's print rule, as in "Decisions".
 
 ### Phase 5: close
 
