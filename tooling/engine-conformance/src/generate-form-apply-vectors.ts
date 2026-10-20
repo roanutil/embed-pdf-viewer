@@ -90,7 +90,7 @@ const CASES: readonly ApplyCase[] = [
   {
     name: 'a-rejection-does-not-stop-the-batch',
     covers:
-      'Preflight refused the first and nothing was written for it, so the second still runs. Only a failed write stops a batch.',
+      'Named for the per-effect batch applyEffects ran. A doc.apply change is all or none since 98e5c270c, so the refused first op refuses the whole change and the second never runs.',
     // The old effect was a toggle state on a text field; a toggle is
     // `{ checked }` in v3.
     ops: [
@@ -164,12 +164,12 @@ const CASES: readonly ApplyCase[] = [
   },
   {
     name: 'a-push-button-cannot-be-reset',
-    covers: 'It has no value to go back to, and the refusal names the family.',
+    covers: 'Named for the refusal applyEffects made. A push button has no value to go back to, and doc.apply now answers its reset with an item that changes nothing.',
     ops: [{ type: 'forms.reset', fields: [{ kind: 'fqn', name: 'submit' }] }],
   },
   {
     name: 'reset-with-no-fields-is-rejected',
-    covers: 'An empty list is a caller assembling a request wrong rather than a reset of nothing.',
+    covers: 'Named for the refusal applyEffects made. doc.apply now answers a reset that names no fields with an item that changes nothing.',
     ops: [{ type: 'forms.reset', fields: [] }],
   },
   {
@@ -212,7 +212,7 @@ const CASES: readonly ApplyCase[] = [
   {
     name: 'an-all-no-op-batch-produces-no-meta',
     covers:
-      'Nothing was written, so there is no artifact, no event and no version bump. This is the common outcome for a recompute-everything script: one effect the field already satisfies, one the document cannot satisfy at all.',
+      'Named for the per-effect batch applyEffects ran. One op the field already satisfies and one naming a field that does not exist: the missing field refuses the whole change with NotFound, so nothing is written.',
     ops: [
       { type: 'forms.setValue', field: TEXT, value: { value: 'Ada Lovelace' } },
       { type: 'forms.setValue', field: MISSING, value: { value: 'x' } },
@@ -221,7 +221,7 @@ const CASES: readonly ApplyCase[] = [
   {
     name: 'a-no-op-in-the-middle-does-not-stop-the-batch',
     covers:
-      'Only a FAILED write stops a batch. Unchanged and rejected both let the rest run, which is what keeps a recompute-everything script from being truncated by its own no-ops.',
+      'Named for the per-effect batch applyEffects ran. A no-op, a missing field and a real write: the missing field refuses the whole change, so the write after it never lands.',
     ops: [
       { type: 'forms.setValue', field: TEXT, value: { value: 'Ada Lovelace' } },
       { type: 'forms.setValue', field: MISSING, value: { value: 'x' } },
