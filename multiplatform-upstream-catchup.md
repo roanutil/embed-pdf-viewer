@@ -167,7 +167,8 @@ Task 7 (redo) wrote Tasks 8.1 to 8.28 on 2026-10-21 against `research/catchup-pl
 | 8.24 Outline | 8.4, 8.6 |
 | 8.25 Measure | 8.4, 8.6, 8.12 |
 | 8.26 Signatures | 8.1, 8.3, 8.21 |
-| 8.29 Layer-backed fat-memory open | 8.3 |
+| 8.29 Layer-backed fat-memory open | 8.3, 8.32 |
+| 8.32 Fix the fork's layer tiling-pattern crash | none |
 | 8.30 Session parity | 8.6, 8.29 |
 | 8.31 Render parity | 8.4, 8.13, 8.19 |
 | 8.27 Close the Rust side | 8.1 to 8.26, 8.29, 8.30, 8.31 |
@@ -1052,6 +1053,19 @@ Kept divergences to re-check: none recorded in this area.
 - [ ] Record the baseline before you start: `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-viewer-host -p epdf-wasm --no-fail-fast 2>&1 | grep -E '^test .* FAILED'`. At the end the same command lists no test the baseline did not.
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
+
+#### Task 8.32: Fix the fork's layer tiling-pattern crash
+
+Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`) and, inside it, the runtime-src submodule (`packages/engine/runtime/runtime-src`) on its local branch `research/multi-platform-rust-core`, which is at `1d23fe9e9` (upstream runtime `1461b0c51` plus the fork's one build commit `ca1932c4a`). Needs nothing. The user chose this fix on 2026-10-21.
+
+The bug (8.29's report, `.superpowers/sdd/multiplatform-upstream-catchup/task-8.29-report.md`): a layer's `CPDF_DocPageData::GetPattern` falls back to the base for an unpromoted pattern (`core/fpdfapi/page/cpdf_docpagedata.cpp:435-438`), so images inside the pattern's form belong to the base document. `CPDF_PageImageCache::StartGetCachedBitmap` refuses the cross-document image without setting its entry (`core/fpdfapi/page/cpdf_pageimagecache.cpp:177-180`), and `CPDF_ImageLoader::Finish` dereferences the null entry. The Rust repro is `.superpowers/sdd/multiplatform-upstream-catchup/task-8.29-repro.rs` (report.pdf, page index 12).
+
+- [ ] In the fork, stop `GetPattern` falling back for tiling patterns, as `GetImage` (`:490-495`) already doesn't, with a comment in the existing `EmbedPDF(layer-seam)` style. Check `GetFont` for Type3 fonts whose glyph procedures draw images, and treat it the same way if it falls back. Also make `CPDF_ImageLoader::Start` safe when `StartGetCachedBitmap` returns false with no entry (load uncached, or guard `Finish`), so no other cross-document path can reach the null read.
+- [ ] Add a fork regression test in its embedder-test style (`testing/` / `*_embeddertest.cpp`, see how the fork tests layers) that opens a layer over a PDF with an image drawn through an unpromoted tiling pattern and renders it. Use a small fixture, not report.pdf, if one can be built.
+- [ ] Commit in the submodule as one commit on `research/multi-platform-rust-core`, with a message naming the bug. Don't push.
+- [ ] Rebuild what the Rust tests link: the darwin-arm64 native library for host tests (the fork's `scripts/embedpdf-runtime/build-target.sh darwin-arm64`, then point this repo's `packages/engine/runtime/build/libpdfium/darwin-arm64` at it, via `engine-runtime-build.local.json` / `runtime:use-local` as the repo documents), and the wasm32-eh archive (`buildFork` in `perf-compare/scripts/build-arm.mjs`, with `PERF_WORK_DIR=/Users/andrew/repos/embed-pdf-viewer/perf-compare/.work`). Expect each to take a while.
+- [ ] In this repo, add the Rust repro as a test (`crates/pdfium/tests/` or `crates/epdf-engine/tests/`) that renders report.pdf page 12 through a fresh layer and passes. Bump the runtime-src pointer to the new fork commit. Commit with explicit paths.
+- [ ] Done: the fork test passes; `CARGO_BUILD_JOBS=6 cargo test -p pdfium` and the new repro test pass; the full engine, viewer-host and wasm run has no new failures.
 
 #### Task 8.27: Close the Rust side
 
