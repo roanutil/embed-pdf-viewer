@@ -19,10 +19,14 @@ import { fileURLToPath } from 'node:url';
 import { decodePdfBits } from '../../../packages/engine/core/src/auth/scope/pdf-bits';
 import { parseScope } from '../../../packages/engine/core/src/auth/scope/parser';
 import {
+  checkAnyFieldAction,
   checkCapability,
   checkCollab,
+  checkFieldAction,
   checkSetGroup,
   expandRawScope,
+  fieldRightsOf,
+  type FieldRights,
 } from '../../../packages/engine/core/src/auth/scope/resolver';
 import type {
   DocCapability,
@@ -71,6 +75,13 @@ interface PerBitsResult {
   readonly granted: readonly string[];
   readonly collab?: readonly { readonly probe: string; readonly allowed: boolean }[];
   readonly setGroup?: readonly { readonly probe: string; readonly allowed: boolean }[];
+  /** `checkFieldAction`, probe `fill:buyer` (`-` for no group). */
+  readonly fields?: readonly { readonly probe: string; readonly allowed: boolean }[];
+  /** `checkAnyFieldAction`, probe `fill` or `sign`. */
+  readonly anyField?: readonly { readonly probe: string; readonly allowed: boolean }[];
+  /** `fieldRightsOf` with the identity's default group. */
+  readonly fieldRights?: FieldRights;
+  readonly fieldSetGroup?: readonly { readonly probe: string; readonly allowed: boolean }[];
 }
 
 interface ResolveResult extends ResolveCase {
@@ -126,7 +137,35 @@ function runResolveCase(entry: ResolveCase): ResolveResult {
       allowed: checkSetGroup('annotations', probe.newGroupId, probe.callerDefaultGroupId, entry.scope),
     }));
 
-    return { bits: name, expanded, granted, ...(collab && { collab }), ...(setGroup && { setGroup }) };
+    const fields = entry.fields?.map((probe) => ({
+      probe: `${probe.action}:${probe.groupId ?? '-'}`,
+      allowed: checkFieldAction(probe.action, probe.groupId, entry.scope, bits),
+    }));
+    const anyField = entry.fields
+      ? (['fill', 'sign'] as const).map((action) => ({
+          probe: action,
+          allowed: checkAnyFieldAction(action, entry.scope, bits),
+        }))
+      : undefined;
+    const fieldRights = entry.fields
+      ? fieldRightsOf(entry.scope, bits, null, identity.groupId)
+      : undefined;
+    const fieldSetGroup = entry.fieldSetGroup?.map((probe) => ({
+      probe: `${probe.newGroupId}<-${probe.callerDefaultGroupId ?? '-'}`,
+      allowed: checkSetGroup('fields', probe.newGroupId, probe.callerDefaultGroupId, entry.scope),
+    }));
+
+    return {
+      bits: name,
+      expanded,
+      granted,
+      ...(collab && { collab }),
+      ...(setGroup && { setGroup }),
+      ...(fields && { fields }),
+      ...(anyField && { anyField }),
+      ...(fieldRights && { fieldRights }),
+      ...(fieldSetGroup && { fieldSetGroup }),
+    };
   });
   return { ...entry, results };
 }
