@@ -266,6 +266,60 @@ fn close_does_not_invalidate_a_page_somebody_is_still_holding() {
     assert!(held.view().width() > 0.0, "the holder can still read it");
 }
 
+/// report.pdf's page index 12 paints an image through a tiling pattern, so
+/// its first render reads image streams out of the base's bytes.
+const PATTERN_PAGE: usize = 12;
+
+/// Page index 12 of report.pdf rendered from a plain document.
+fn plain_pattern_page() -> Vec<u8> {
+    let plain =
+        pdfium::Document::from_bytes(pdfium::Library::acquire(), &report(), None).expect("open");
+    render_view(&plain.page(PATTERN_PAGE as u32).expect("page"))
+}
+
+fn render_view(page: &pdfium::PageView<'_>) -> Vec<u8> {
+    let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+    page.render_rgba_with_matrix(306, 396, identity, true, false).expect("render").bgra
+}
+
+#[test]
+fn a_page_held_past_close_reads_through_its_base() {
+    // The layer document holds its base, so a page held past close still
+    // reads the base's bytes: its first render, after the close, decodes
+    // images the base has never handed out.
+    let mut session = opened();
+    let page = session.all_records().expect("records")[PATTERN_PAGE].page_object_number;
+    let held = session.acquire_page(page).expect("acquire");
+
+    session.close();
+
+    assert!(render_view(held.view()) == plain_pattern_page(), "the held page renders as it is");
+}
+
+#[test]
+fn a_page_held_past_close_keeps_a_registry_layers_base_alive() {
+    // `open.layerMemBase`: the registry and the session both let go of the
+    // base, and a held page still reads through it.
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let page = session.all_records().expect("records")[PATTERN_PAGE].page_object_number;
+    let held = session.acquire_page(page).expect("acquire");
+
+    session.close();
+    registry.release_all();
+
+    assert!(render_view(held.view()) == plain_pattern_page(), "the held page renders as it is");
+}
+
 #[test]
 fn retained_disposers_run_last_and_in_reverse() {
     // `pages.insert` needs this order: FPDF_ImportPagesByIndex leaves the

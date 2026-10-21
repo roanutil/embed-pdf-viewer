@@ -102,6 +102,50 @@ fn prepare_then_complete_seals_the_field() {
 }
 
 #[test]
+fn a_signed_fat_memory_session_stays_a_layer_that_persists_no_artifact() {
+    // `install` opens the sealed bytes as a layer, and a session that came
+    // from bytes keeps `persistLayerArtifact = false`
+    // (`SignatureMutator.verifySealed`): a write after the signing answers
+    // no artifact, and the session still hands out object numbers.
+    use epdf_engine::session::document::OpenKind;
+    use epdf_engine::session::registry::SessionKey;
+
+    let mut host = Host::new();
+    let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
+    let field = unsigned_field(&mut host, &doc);
+    let (prepared, digest) = sig_call_bytes_with(
+        &mut host,
+        json!({ "kind": "signatures.prepare", "docId": doc,
+                "input": { "field": field, "attribution": { "name": "Test Signer" } } }),
+    );
+    let input = json!({ "signingId": prepared["signingId"], "expectedVersion": prepared["expectedVersion"] });
+    let completed = sig_call_with_payload(
+        &mut host,
+        json!({ "kind": "signatures.complete", "docId": doc, "input": input }),
+        test_cms(&digest),
+    );
+    assert_eq!(completed["result"]["status"], json!("completed"), "{completed}");
+
+    let session = host.sessions().session(&SessionKey::document(&doc)).expect("the session");
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
+    assert!(!session.persists_layer_artifact());
+    let written = host.call(
+        &json!({ "kind": "metadata.update", "jobId": 8, "docId": doc, "opId": "after-sign",
+            "patch": { "title": "Signed" } })
+        .to_string(),
+        Vec::new(),
+    );
+    assert!(!written.json.contains("\"error\""), "{}", written.json);
+    assert!(written.payloads.is_empty(), "a write after the signing answered an artifact");
+    let reserved = envelope(
+        &mut host,
+        json!({ "kind": "objectNumbers.reserve", "docId": doc, "count": 1 }),
+        Vec::new(),
+    );
+    assert!(reserved["result"]["range"]["first"].as_u64().is_some(), "{reserved}");
+}
+
+#[test]
 fn abort_discards_a_prepared_signing() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));

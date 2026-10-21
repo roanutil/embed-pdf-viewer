@@ -22,6 +22,12 @@ pub struct Document {
     /// code itself; it exists to be dropped after the close call below.
     #[allow(dead_code)]
     library: Rc<Library>,
+    /// The base a layer reads through, for a layer opened over one. Dropped
+    /// after the close in `Drop`, like `bytes`, so every holder of the
+    /// document (a pooled page's `Rc<Document>` included) keeps the base
+    /// alive for as long as PDFium can read through it.
+    #[allow(dead_code)]
+    base: Option<Rc<crate::BaseDocument>>,
     _not_send: PhantomData<*const ()>,
 }
 
@@ -84,7 +90,7 @@ impl Document {
             });
         }
 
-        Ok(Self { handle, bytes: owned, library: lib, _not_send: PhantomData })
+        Ok(Self { handle, bytes: owned, library: lib, base: None, _not_send: PhantomData })
     }
 
     /// Open a document read through a [`FileAccess`] rather than from a copy.
@@ -130,16 +136,30 @@ impl Document {
     /// # Safety
     /// `handle` must be a non-null `FPDF_DOCUMENT` that this `Document` may
     /// close exactly once with `FPDF_CloseDocument`, and whatever it points
-    /// into must outlive it. `EPDFLayer_OpenLayer` returns such a handle; the
-    /// base document it points into is kept alive by
-    /// [`crate::LayerDocument`]. A stamp drawing the fork exports or makes
-    /// canonical is another: it points into nothing (`crate::stamp`).
+    /// into must outlive it. A stamp drawing the fork exports or makes
+    /// canonical is such a handle: it points into nothing (`crate::stamp`).
+    /// A layer over a [`crate::BaseDocument`] is opened with
+    /// [`Document::from_raw_layer_over`], which keeps its base.
     pub(crate) unsafe fn from_raw_layer(
         handle: pdfium_sys::FPDF_DOCUMENT,
         library: Rc<Library>,
     ) -> Self {
         // No bytes of its own: a layer's storage belongs to its base.
-        Self { handle, bytes: Vec::new(), library, _not_send: PhantomData }
+        Self { handle, bytes: Vec::new(), library, base: None, _not_send: PhantomData }
+    }
+
+    /// [`Document::from_raw_layer`] for a layer `EPDFLayer_OpenLayer` opened
+    /// over `base`, which the document holds until after its handle closes.
+    ///
+    /// # Safety
+    /// As [`Document::from_raw_layer`], with `base` the document the handle
+    /// points into.
+    pub(crate) unsafe fn from_raw_layer_over(
+        handle: pdfium_sys::FPDF_DOCUMENT,
+        library: Rc<Library>,
+        base: Rc<crate::BaseDocument>,
+    ) -> Self {
+        Self { handle, bytes: Vec::new(), library, base: Some(base), _not_send: PhantomData }
     }
 
     pub fn page_count(&self) -> u32 {
@@ -329,7 +349,8 @@ pub struct PasswordPermissions {
 
 impl Drop for Document {
     fn drop(&mut self) {
-        // Closes first; `self.bytes` is freed afterwards, when the fields drop.
+        // Closes first; `self.bytes` and a layer's base are freed afterwards,
+        // when the fields drop.
         // SAFETY: the handle was returned non-null by FPDF_LoadMemDocument64
         // and is closed exactly once, here.
         unsafe { pdfium_sys::FPDF_CloseDocument(self.handle) };

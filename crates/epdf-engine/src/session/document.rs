@@ -1,7 +1,7 @@
 //! One open document, and everything the engine knows about it.
 //!
 //! G3. Replaces `services/src/document-session/DocumentSession.ts` and the
-//! fat-memory half of `lifecycle/PdfDocumentOpener.ts`.
+//! session half of `lifecycle/PdfDocumentOpener.ts`.
 //!
 //! Owns the bytes, the page registry that maps index to durable object number,
 //! the [`RevisionAuthority`], the [`PagePtrPool`] and the mutation sequence.
@@ -16,12 +16,13 @@
 //! and holds the transferred bytes so an unlock attempt does not have to ship
 //! them again. Everything except the password check refuses.
 //!
-//! # What is not here yet
+//! # Every document is a layer
 //!
-//! Layer documents. `open.layerMemBase` and `open.layerFileBase` need the
-//! `EPDFLayer_*` calls and a base-document registry, and they are their own
-//! piece of work; [`DocumentSession::open`] is the fat-memory path only. The
-//! `kind` field exists so adding them does not change this type's shape.
+//! `open.layerMemBase` and `open.layerFileBase` open a layer over a base from
+//! the base-document registry ([`DocumentSession::open_layer_from`]), and
+//! [`DocumentSession::open`] opens bytes as a fresh layer over a private base
+//! (`openBytesAsLayer`). A layer document holds its base until after its own
+//! handle closes.
 
 use std::cell::Cell;
 use std::rc::Rc;
@@ -197,17 +198,14 @@ pub fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
 }
 
 /// `bytes` as a fresh layer over a private memory base
-/// (`WorkerHost.openBytesAsLayer`), with the base the layer reads through. The
-/// base must outlive the layer document, so the caller retains it until the
-/// session closes.
+/// (`WorkerHost.openBytesAsLayer`). The layer document holds its base, and
+/// releases it after its own handle closes, so anything holding the document
+/// (a pooled page) keeps the base alive too.
 ///
 /// A missing password reports `DocPasswordRequired` and a wrong one
 /// `DocPasswordIncorrect`, as a plain open does, so a locked document parks
 /// and unlocks the same way.
-fn open_bytes_as_layer(
-    bytes: &[u8],
-    password: Option<&str>,
-) -> Result<(Document, Rc<BaseDocument>), EngineError> {
+fn open_bytes_as_layer(bytes: &[u8], password: Option<&str>) -> Result<Document, EngineError> {
     let base =
         BaseDocument::from_bytes(Library::acquire(), bytes, password).map_err(|e| match e {
             PdfiumError::Password if password.is_some() => EngineError::with_message(
@@ -223,7 +221,7 @@ fn open_bytes_as_layer(
     let layer = Rc::new(base)
         .open_layer()
         .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string()))?;
-    Ok(layer.into_parts())
+    Ok(layer.into_parts().0)
 }
 
 impl DocumentSession {
@@ -325,7 +323,7 @@ impl DocumentSession {
                 "document already open",
             ));
         }
-        let (document, base) = open_bytes_as_layer(&bytes, password)?;
+        let document = open_bytes_as_layer(&bytes, password)?;
 
         // PDFium's own subsystems, forms especially, consult the permission
         // bits and would otherwise refuse work this engine has already
@@ -359,9 +357,6 @@ impl DocumentSession {
         self.password = password.map(str::to_owned);
         self.persist_layer_artifact = false;
         self.loaded_sequence.set(self.mutation_sequence.get());
-        // Runs after `close` has dropped the layer document, which is the
-        // order the base's lifetime requires.
-        self.retain_until_close(move || drop(base));
         Ok(())
     }
 
@@ -372,10 +367,9 @@ impl DocumentSession {
     /// ordinary document; what makes it a layer is that its storage belongs to
     /// the base, which several sessions share.
     ///
-    /// The base is parked with the session's retained resources, so it is
-    /// released after the layer document is closed. Getting that order wrong
-    /// leaves the layer reading freed memory, which is why the base is not
-    /// simply held in a field beside it.
+    /// The layer document holds the base and releases it after its own handle
+    /// closes, so the base outlives the document and every page still holding
+    /// it. Getting that order wrong leaves the layer reading freed memory.
     pub fn open_layer(
         &mut self,
         base: Rc<BaseDocument>,
@@ -429,7 +423,8 @@ impl DocumentSession {
             EngineError::with_message(code, e.to_string())
         })?;
         drop(base);
-        let (document, base) = layer.into_parts();
+        // The layer document holds its base until after its handle closes.
+        let (document, _) = layer.into_parts();
 
         let mut authority = authority;
         authority.set_pdf_bits(decode_pdf_bits(Some(i64::from(document.user_permissions()))));
@@ -447,9 +442,6 @@ impl DocumentSession {
         self.authority = authority;
         self.parked_bytes = None;
         self.loaded_sequence.set(self.mutation_sequence.get());
-        // Runs after `close` has dropped the layer document, which is the
-        // order the base's lifetime requires.
-        self.retain_until_close(move || drop(base));
         Ok(())
     }
 
@@ -759,7 +751,7 @@ impl DocumentSession {
     /// that was not one persists no artifact from here on
     /// (`SignatureMutator.verifySealed`); a layer keeps what it had.
     pub fn install(&mut self, bytes: Vec<u8>) -> Result<(), EngineError> {
-        let (document, base) = open_bytes_as_layer(&bytes, self.password.as_deref())
+        let document = open_bytes_as_layer(&bytes, self.password.as_deref())
             .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.message))?;
         if self.kind() != Some(OpenKind::Layer) {
             self.persist_layer_artifact = false;
@@ -790,9 +782,6 @@ impl DocumentSession {
         if let Some(open) = self.transaction.as_mut() {
             open.numbers_in_use.clear();
         }
-        // The old document is closed; its base, retained at its open, goes at
-        // close with this one.
-        self.retain_until_close(move || drop(base));
         Ok(())
     }
 

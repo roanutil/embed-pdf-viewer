@@ -505,3 +505,38 @@ fn an_inline_annotation_deleted_is_named_by_its_birth_and_the_others_keep_theirs
         .expect_err("a deleted name");
     assert_eq!(again["code"], "NotFound", "{again}");
 }
+
+/// A server can send the record an undo runs (`document.applyChanges`'s
+/// `record`). One whose restore step carries no capture of what the delete
+/// removed can't bring it back, and is refused rather than claimed.
+#[test]
+fn a_server_record_with_no_capture_is_refused() {
+    let file = load();
+    let case = file.cases.iter().find(|c| c.name == "the-last-annotation").expect("a case");
+    let pon = case.page_object_number;
+    let mut replay = Replay::open(&file.fixture, DOC);
+    let authority = json!({ "identity": {}, "grants": null });
+    let deleted = replay
+        .replay(&json!({ "kind": "document.applyChanges", "jobId": "<job>", "docId": DOC,
+            "changes": [{ "opId": "s1", "authority": authority,
+                "change": { "ops": [{ "type": "annotations.delete", "ref": case.annotation_ref }] } }] }))
+        .expect("the job runs");
+    let mut record = deleted["outcomes"][0]["record"].clone();
+    let step = &mut record["steps"][0];
+    assert!(step["capture"].is_string(), "the delete captured: {record}");
+    step["capture"] = Value::Null;
+
+    let undone = replay
+        .replay(&json!({ "kind": "document.applyChanges", "jobId": "<job>", "docId": DOC,
+            "changes": [{ "opId": "s2", "authority": authority, "change": { "undoOf": "s9" },
+                "record": record }] }))
+        .expect("the job runs");
+    let outcome = &undone["outcomes"][0];
+    assert_eq!(outcome["status"], "refused", "{undone}");
+    assert_eq!(outcome["error"]["code"], "InvalidArg", "{undone}");
+    assert_eq!(
+        names(&listed(&mut replay, pon)),
+        case.remaining,
+        "the refused undo wrote something"
+    );
+}
