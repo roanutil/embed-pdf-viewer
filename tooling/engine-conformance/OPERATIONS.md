@@ -26,11 +26,11 @@ cancellation case it has to document. Group assignments come from
 | `document.probeSecurityFile` | A | 1 | queued-only | ported |  |
 | `close` | control | 1 | control | routed | Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents. |
 | `layer.close` | control | 1 | control | routed |  |
-| `abort` | control | 1 | control | routed | Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds. |
+| `abort` | control | 1 | control | routed | Handled in WorkerHost.receive before anything is queued (WorkerHost.ts:413), as pages.workingSet is (WorkerHost.ts:418). The other 87 of the 89 kinds reach a switch: 76 arms in run() (WorkerHost.ts:554) and 11 sliced reads in slicedWork() (WorkerHost.ts:1896). |
 | `shutdown` | control | 1 | control | routed |  |
 | `document.version` | A | 1 | queued-only | routed | SignatureReader.version (WorkerHost.ts:1018-1024): the hash and length of the base the session is on. |
 | `objectNumbers.reserve` | A | 1 | queued-only | planned | A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. |
-| `pages.workingSet` | A | 1 | queued-only | planned | Never answers: the worker takes it on arrival, even mid-render, and jobId only names the message. Not one of the four control frames. |
+| `pages.workingSet` | A | 1 | non-preemptible | planned | Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case. |
 
 ## G4
 
@@ -67,7 +67,7 @@ cancellation case it has to document. Group assignments come from
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
 | `annotations.renderAppearances` | A | 2 | non-preemptible | ported |  |
-| `annotations.list` | A | 2 | cooperative | planned | Replaces annotations.listRawAll, listRawPage and listFullPage. |
+| `annotations.list` | A | 2 | cooperative | planned | Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list. |
 | `annotations.readAppearance` | A | 2 | cooperative | planned | An annotation's appearance as a one-page PDF (bytes). |
 
 ## G8
@@ -79,7 +79,7 @@ cancellation case it has to document. Group assignments come from
 | `annotations.readFile` | A | 2 | cooperative | ported | Byte equality with the TypeScript path, not a semantic comparison. |
 | `pieceInfo.read` | A | 2 | cooperative | ported |  |
 | `pieceInfo.applications` | A | 2 | cooperative | ported |  |
-| `forms.list` | A | 2 | cooperative | ported | Filed by behaviour: a read despite the forms. prefix. |
+| `forms.list` | A | 2 | cooperative | ported | Filed by behaviour: a read despite the forms. prefix. Builds the widget rows (forms/internal/widgetRows.ts) and joins each to its field through the cached form model (joinWidgetField.ts, acquireFormModel), so it carries the repeated-read benchmark against that cache that annotations.listFullPage carried. |
 | `forms.export` | A | 2 | cooperative | routed |  |
 | `annotations.export` | A | 2 | cooperative | planned | Annotations and their resources as one bundle; a snapshot, like forms.export. |
 
@@ -107,7 +107,7 @@ cancellation case it has to document. Group assignments come from
 | `annotations.delete` | C | 4 | after-first-write | ported |  |
 | `annotations.import` | C | 4 | after-first-write | planned |  |
 | `annotations.reorder` | C | 4 | after-first-write | planned | Replaces annotations.move. |
-| `document.apply` | C | 4 | after-first-write | planned | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds. |
+| `document.apply` | C | 4 | after-first-write | planned | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. |
 | `document.applyChanges` | C | 4 | after-first-write | planned | A server request's changes as one job, each in its own layer transaction. |
 
 ## G12
@@ -166,4 +166,4 @@ cancellation case it has to document. Group assignments come from
 | `signatures.prepare` | B | 5 | queued-only | routed | A snapshot, like the saves. Never touches the live document: the candidate is parked on the session until complete or cancel. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
 | `signatures.complete` | C | 5 | queued-only | routed | A content write. Installs the sealed bytes as the session document (DocumentSession.install), which advances the edit sequence itself. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
 | `signatures.cancel` | A | 5 | queued-only | planned | A session effect. Still planned: this branch's Rust host routes it under its pre-rename kind, signatures.abort (crates/epdf-engine/src/host.rs:519), so a signatures.cancel request does not reach it. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
-| `signatures.finalizeCandidate` | C | 5 | after-first-write | routed | Session-less: patches a signing candidate file in place and verifies it. |
+| `signatures.finalizeCandidate` | C | 5 | queued-only | routed | Session-less, like document.renderPageFile: patches the caller's candidate file in place and reads it back through a document that is never a session. Kept at stage C though its effect is read: no session's document changes, but it opens, writes and closes a document of its own. queued-only, not after-first-write: the handler gets no AbortSignal (WorkerHost.ts:626-627, 1071-1083), so once it starts it runs to the end. |

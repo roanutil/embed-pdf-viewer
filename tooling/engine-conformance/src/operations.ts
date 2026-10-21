@@ -168,7 +168,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'control',
     rustStatus: 'routed',
-    note: 'Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds.',
+    note: 'Handled in WorkerHost.receive before anything is queued (WorkerHost.ts:413), as pages.workingSet is (WorkerHost.ts:418). The other 87 of the 89 kinds reach a switch: 76 arms in run() (WorkerHost.ts:554) and 11 sliced reads in slicedWork() (WorkerHost.ts:1896).',
   },
   {
     kind: 'shutdown',
@@ -203,9 +203,9 @@ export const OPERATIONS: readonly OperationRow[] = [
     group: 'G3',
     stage: 'A',
     phase: 1,
-    cancellation: 'queued-only',
+    cancellation: 'non-preemptible',
     rustStatus: 'planned',
-    note: 'Never answers: the worker takes it on arrival, even mid-render, and jobId only names the message. Not one of the four control frames.',
+    note: 'Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case.',
   },
 
   // --- G4. Render and fonts. Fonts are engine-level and move as one unit,
@@ -392,7 +392,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'planned',
-    note: 'Replaces annotations.listRawAll, listRawPage and listFullPage.',
+    note: "Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list.",
   },
   {
     kind: 'annotations.readAppearance',
@@ -453,7 +453,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Filed by behaviour: a read despite the forms. prefix.',
+    note: 'Filed by behaviour: a read despite the forms. prefix. Builds the widget rows (forms/internal/widgetRows.ts) and joins each to its field through the cached form model (joinWidgetField.ts, acquireFormModel), so it carries the repeated-read benchmark against that cache that annotations.listFullPage carried.',
   },
   {
     kind: 'forms.export',
@@ -585,7 +585,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'planned',
-    note: 'One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds.',
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
   },
   {
     kind: 'document.applyChanges',
@@ -1019,8 +1019,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     group: 'G15',
     stage: 'C',
     phase: 5,
-    cancellation: 'after-first-write',
+    cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: 'Session-less: patches a signing candidate file in place and verifies it.',
+    note: "Session-less, like document.renderPageFile: patches the caller's candidate file in place and reads it back through a document that is never a session. Kept at stage C though its effect is read: no session's document changes, but it opens, writes and closes a document of its own. queued-only, not after-first-write: the handler gets no AbortSignal (WorkerHost.ts:626-627, 1071-1083), so once it starts it runs to the end.",
   },
 ];
