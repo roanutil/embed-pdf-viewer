@@ -8,7 +8,7 @@
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::search::matcher::SearchQuery;
-use epdf_engine::features::search::reader::{SearchLimit, SearchRequest, search};
+use epdf_engine::features::search::reader::{SearchLimit, SearchMatch, SearchRequest, search};
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -528,4 +528,146 @@ fn a_cursor_will_not_resume_against_a_conflicting_start_page() {
         &CancelToken::never(),
     )
     .expect("the cursor alone resumes");
+}
+
+// ── `packages/engine/main/test/search.test.ts` (`runSearchConformance`) ──
+
+/// Every match of a request over report.pdf, slice after slice.
+fn collect_all(session: &mut DocumentSession, query: SearchQuery) -> Vec<SearchMatch> {
+    let mut matches = Vec::new();
+    let mut cursor = None;
+    loop {
+        let slice = search(
+            session,
+            &SearchRequest { cursor, ..request(query.clone()) },
+            &CancelToken::never(),
+        )
+        .expect("search");
+        matches.extend(slice.matches);
+        match slice.next_cursor {
+            None => return matches,
+            next => cursor = next,
+        }
+    }
+}
+
+fn key(m: &SearchMatch) -> (u32, u32, u32) {
+    (m.page.get(), m.start, m.count)
+}
+
+#[test]
+fn matching_is_case_insensitive_by_default() {
+    let mut session = report();
+    let lower = collect_all(&mut session, literal("report"));
+    let upper = collect_all(&mut session, literal("REPORT"));
+    assert!(!lower.is_empty());
+    assert_eq!(
+        lower.iter().map(key).collect::<Vec<_>>(),
+        upper.iter().map(key).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn regex_flags_are_restrictions_match_case_and_whole_word_return_subsets() {
+    // Each flag can only remove matches, never invent them.
+    let mut session = report();
+    let pattern = SearchQuery { text: "the".into(), regex: true, ..SearchQuery::default() };
+    let all = collect_all(&mut session, pattern.clone());
+    let all_keys: std::collections::HashSet<_> = all.iter().map(key).collect();
+    assert!(!all.is_empty());
+    for restricted in [
+        SearchQuery { match_case: true, ..pattern.clone() },
+        SearchQuery { whole_word: true, ..pattern.clone() },
+    ] {
+        let found = collect_all(&mut session, restricted.clone());
+        assert!(found.len() <= all.len(), "{restricted:?} found more");
+        for m in &found {
+            assert!(all_keys.contains(&key(m)), "{restricted:?} invented {:?}", key(m));
+        }
+        // The fixture has "The" and "there", so each flag removes some.
+        assert!(found.len() < all.len(), "{restricted:?} removed nothing, so the check is vacuous");
+    }
+}
+
+#[test]
+fn each_segments_page_space_rect_bounds_its_quad_on_a_host_answer() {
+    use epdf_engine::host::Host;
+
+    let mut host = Host::new();
+    let opened = host.call(
+        &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" }).to_string(),
+        vec![test_support::fixture(test_support::REPORT)],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let response = host.call(
+        &serde_json::json!({ "kind": "search.query", "jobId": 2, "docId": "d1",
+            "request": { "text": "report" } })
+        .to_string(),
+        Vec::new(),
+    );
+    let body: serde_json::Value = serde_json::from_str(&response.json).expect("JSON");
+    let matches = body["result"]["matches"].as_array().expect("matches");
+    assert!(!matches.is_empty(), "{body}");
+    let mut checked = 0;
+    for m in matches {
+        assert!(m["count"].as_u64().expect("count") > 0);
+        let segments = m["segments"].as_array().expect("segments");
+        assert!(!segments.is_empty());
+        for s in segments {
+            let n = |v: &serde_json::Value| v.as_f64().expect("a number");
+            let corners = ["upperLeft", "upperRight", "lowerLeft", "lowerRight"];
+            let xs: Vec<f64> = corners.iter().map(|c| n(&s["quad"][c]["x"])).collect();
+            let ys: Vec<f64> = corners.iter().map(|c| n(&s["quad"][c]["y"])).collect();
+            let min = |v: &[f64]| v.iter().copied().fold(f64::INFINITY, f64::min);
+            let max = |v: &[f64]| v.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+            let (x, y, w, h) = (
+                n(&s["rect"]["x"]),
+                n(&s["rect"]["y"]),
+                n(&s["rect"]["width"]),
+                n(&s["rect"]["height"]),
+            );
+            assert!(w > 0.0 && h > 0.0, "{s}");
+            assert!((x - min(&xs)).abs() < 1e-3, "{s}");
+            assert!((x + w - max(&xs)).abs() < 1e-3, "{s}");
+            assert!((y - min(&ys)).abs() < 1e-3, "{s}");
+            assert!((y + h - max(&ys)).abs() < 1e-3, "{s}");
+            assert!(s["advance"] == 1 || s["advance"] == -1, "{s}");
+            checked += 1;
+        }
+    }
+    assert!(checked > 0);
+}
+
+#[test]
+fn a_negative_skip_behaves_like_no_skip() {
+    let mut session = report();
+    let plain =
+        search(&mut session, &request(literal(RARE)), &CancelToken::never()).expect("search");
+    let negative = search(
+        &mut session,
+        &SearchRequest { skip: Some(-3.0), ..request(literal(RARE)) },
+        &CancelToken::never(),
+    )
+    .expect("search");
+    assert_eq!(
+        negative.matches.iter().map(key).collect::<Vec<_>>(),
+        plain.matches.iter().map(key).collect::<Vec<_>>()
+    );
+    assert_eq!(negative.pages_searched, plain.pages_searched);
+}
+
+#[test]
+fn a_negative_page_limit_searches_one_page() {
+    let mut session = report();
+    let slice = search(
+        &mut session,
+        &SearchRequest {
+            limit: Some(SearchLimit { pages: Some(-1.0), ..Default::default() }),
+            ..request(literal("the"))
+        },
+        &CancelToken::never(),
+    )
+    .expect("search");
+    assert_eq!(slice.pages_searched, 1);
+    assert!(slice.next_cursor.is_some());
 }

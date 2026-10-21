@@ -1152,8 +1152,8 @@ fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
 /// A `SearchRequest` as the plugin sends it (`{query, mode, startPage,
 /// cursor, skip, budget}`, the spelling before upstream's a10ed2659), as the
 /// host's `search.query` reads it: the flattened `SearchScanRequest`, with
-/// the query's text and flags at the top level, `snippets` for any mode but
-/// `rects`, `from` for `startPage` as a `PageRef` with a whole object number,
+/// the query's text and flags at the top level, `snippets` for `full` or no
+/// mode and not for `rects` (any other mode is `invalid-input`), `from` for `startPage` as a `PageRef` with a whole object number,
 /// and `limit` for `budget`.
 fn search_request(request: Value) -> Result<Value, Error> {
     let invalid = |what: &str| {
@@ -1165,8 +1165,14 @@ fn search_request(request: Value) -> Result<Value, Error> {
     let Some(Value::Object(mut flat)) = old.remove("query") else {
         return Err(invalid("needs a query"));
     };
-    let mode = old.remove("mode");
-    let snippets = mode.as_ref().and_then(Value::as_str) != Some("rects");
+    // An unknown mode is refused, not read as the full one: `rects` is the
+    // tier that withholds text, and a misspelling must not leak snippets.
+    let snippets = match old.remove("mode") {
+        None | Some(Value::Null) => true,
+        Some(Value::String(mode)) if mode == "full" => true,
+        Some(Value::String(mode)) if mode == "rects" => false,
+        Some(_) => return Err(invalid("takes a mode of full or rects")),
+    };
     flat.insert("snippets".into(), Value::Bool(snippets));
     if let Some(start) = old.remove("startPage").filter(|s| !s.is_null()) {
         flat.insert("from".into(), page_ref("search.query's startPage", &start)?);

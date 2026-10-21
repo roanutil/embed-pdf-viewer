@@ -142,10 +142,22 @@ fn a_search_start_page_that_is_not_a_page_ref_is_invalid_input() {
     assert_eq!(error.code(), Some("invalid-input"));
 }
 
+#[test]
+fn a_search_mode_other_than_full_or_rects_is_invalid_input() {
+    // Reading an unknown mode as full would hand snippets to a caller that
+    // meant the rects tier.
+    for mode in [json!("Rects"), json!("snippets"), json!(1), json!(true)] {
+        let request = json!({"query": {"text": "the"}, "mode": mode});
+        let error = translate("d1", "search.query", None, &[request], 15).err().unwrap();
+        assert_eq!(error.code(), Some("invalid-input"), "{mode}");
+    }
+}
+
 /// The `search.query` answer for "Report" over the report fixture, as
 /// `call_host` hands it to `decode`: the kernel's spelling, in the file's
-/// coordinates.
-const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"charCount":6,"charStart":6156,"page":{"kind":"objectNumber","objectNumber":202},"segments":[{"advance":1,"quad":{"p1":{"x":354.4305114746094,"y":196.280029296875},"p2":{"x":375.85125732421875,"y":196.280029296875},"p3":{"x":354.4305114746094,"y":185.4755096435547},"p4":{"x":375.85125732421875,"y":185.4755096435547}},"rect":{"bottom":185.4755096435547,"left":354.4305114746094,"right":375.85125732421875,"top":196.280029296875}}],"snippet":{"matchLength":6,"matchStart":47,"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4"}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
+/// coordinates. Recorded from this reader after 878f58585 gave it
+/// upstream's loose boxes.
+const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"page":{"kind":"objectNumber","objectNumber":202},"charStart":6156,"charCount":6,"segments":[{"quad":{"p1":{"x":354.4305114746094,"y":194.0742950439453},"p2":{"x":375.85125732421875,"y":194.0742950439453},"p3":{"x":354.4305114746094,"y":186.05833435058594},"p4":{"x":375.85125732421875,"y":186.05833435058594}},"rect":{"left":354.4305114746094,"bottom":186.05833435058594,"right":375.85125732421875,"top":194.0742950439453},"advance":1}],"snippet":{"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4","matchStart":47,"matchLength":6}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
 
 #[test]
 fn a_search_slice_answers_each_hit_with_its_page() {
@@ -185,36 +197,7 @@ fn a_search_answer_reaches_the_kernel_in_the_files_coordinates_and_its_spelling(
     let response = call_host(&mut host, &call.request.to_string(), Vec::new());
     let slice = decode(&call.decode, response).unwrap().value;
 
-    // The segments are the reader's own, in the file's coordinates, to the
-    // bit: the page-space round trip is exact. `SEARCH_SLICE` was recorded
-    // before the geometry reader took upstream's loose boxes (878f58585), so
-    // its segments are compared against the reader rather than kept.
-    let reader = {
-        use epdf_engine::features::search::matcher::SearchQuery;
-        use epdf_engine::features::search::reader::{SearchRequest, search};
-        let mut session = epdf_engine::session::document::DocumentSession::new();
-        session
-            .open_with(
-                test_support::fixture(test_support::REPORT),
-                None,
-                epdf_engine::session::authority::SessionAuthority::unrestricted(),
-            )
-            .unwrap();
-        let request = SearchRequest {
-            query: SearchQuery { text: "Report".into(), ..Default::default() },
-            ..Default::default()
-        };
-        search(&mut session, &request, &epdf_engine::cancel::CancelToken::never()).unwrap()
-    };
-    let segment = reader.matches[0].segments[0];
-    let quad = segment.quad;
-    let mut expected = decode(&Decode::SearchSlice, answer(SEARCH_SLICE)).unwrap().value;
-    expected["matches"][0]["segments"] = json!([{
-        "quad": { "p1": quad.upper_left, "p2": quad.upper_right,
-            "p3": quad.lower_left, "p4": quad.lower_right },
-        "rect": segment.rect,
-        "advance": segment.advance,
-    }]);
+    let expected = decode(&Decode::SearchSlice, answer(SEARCH_SLICE)).unwrap().value;
     assert_eq!(slice, expected);
 }
 
