@@ -23,6 +23,7 @@ use crate::error::EngineError;
 use crate::geom::{NamedPdfQuad, PagePoint, PageQuad, PageRect, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::PageObjectNumber;
 
+pub mod annotations;
 pub mod boundary;
 pub mod destinations;
 pub mod forms;

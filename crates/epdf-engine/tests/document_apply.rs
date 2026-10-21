@@ -517,14 +517,14 @@ fn a_final_change_ends_undo_for_the_changes_before_it() {
     assert_eq!(doc, DOC);
     let before = applied(&mut host, json!({ "ops": [update(json!({ "title": "Before" }))] }));
 
-    let listed = common::call_legacy(
+    let listed = common::call(
         &mut host,
-        json!({ "kind": "annotations.listRawPage", "docId": DOC, "page": common::page_ref(page) }),
+        json!({ "kind": "annotations.list", "docId": DOC, "pages": [common::page_ref(page)] }),
     );
     let target = listed["annotations"]
         .as_array()
-        .and_then(|all| all.iter().find(|a| a["ref"]["kind"] == "objectNumber"))
-        .unwrap_or_else(|| panic!("no annotation named by object number: {listed}"))["ref"]
+        .and_then(|all| all.first())
+        .unwrap_or_else(|| panic!("no annotation on the page: {listed}"))["ref"]
         .clone();
     let flattened = send(
         &mut host,

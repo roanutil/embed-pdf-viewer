@@ -67,7 +67,9 @@ pub enum WidgetAttachment {
 /// annotation has been found: it is the form-model question this module
 /// cannot answer, and asking it for every delete would build a form model
 /// per delete on documents that have no form at all.
+#[allow(clippy::too_many_arguments)]
 pub fn delete_annotation(
+    document: &pdfium::Document,
     page: &PageView<'_>,
     annotation_ref: &AnnotationRef,
     state_before: &PageState,
@@ -119,7 +121,7 @@ pub fn delete_annotation(
             delete_at(page, *index, resolve_widget, cancel)?
         }
         AnnotationRef::BaseIndex { base_index, .. } => {
-            let index = super::resolve::base_index_position(page, *base_index)?;
+            let index = super::resolve::base_index_position(document, page, *base_index)?;
             delete_at(page, index, resolve_widget, cancel)?
         }
     };

@@ -21,6 +21,7 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+use super::annotations::page_annotation_list_of;
 use super::destinations::page_document_actions_of;
 use super::forms::page_form_snapshot_of;
 use super::pages::page_list_of;
@@ -320,16 +321,18 @@ pub fn result_in_page_space(
         K::FormsList => convert_result(response, |snapshot: FormSnapshot<PdfCoordinates>| {
             page_form_snapshot_of(snapshot, box_of)
         }),
+        K::AnnotationsList => convert_result(response, |list: serde_json::Value| {
+            page_annotation_list_of(list, box_of)
+        }),
 
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: page names' layouts (8.18),
-        // annotation reads and writes (8.12, 8.14, 8.15),
+        // annotation writes (8.14, 8.15),
         // appearance rects (8.13), the outline (8.24), viewports (8.25),
         // form fields and widgets of the writes (8.20 to 8.22, 8.26), and
         // imports (8.22).
         K::PagesSetName
         | K::PagesRemoveName
-        | K::AnnotationsList
         | K::AnnotationsCreate
         | K::AnnotationsUpdate
         | K::AnnotationsImport

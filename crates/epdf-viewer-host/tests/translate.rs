@@ -826,11 +826,14 @@ fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
     let call = translate("d1", "page.annotations.list", Some(5), &[], 11).unwrap();
     assert_eq!(
         call.request,
-        json!({ "kind": "annotations.listRawPage", "jobId": 11, "docId": "d1", "page": wire_page(5) })
+        json!({ "kind": "annotations.list", "jobId": 11, "docId": "d1", "pages": [wire_page(5)] })
     );
-    assert!(matches!(call.decode, Decode::Result));
+    assert!(matches!(call.decode, Decode::FirstPage));
     let error = translate("d1", "page.annotations.list", None, &[], 12).err().unwrap();
     assert_eq!(error.code(), Some("invalid-input"));
+    let all = translate("d1", "annotations.listRawAll", None, &[], 13).unwrap();
+    assert_eq!(all.request, json!({ "kind": "annotations.list", "jobId": 13, "docId": "d1" }));
+    assert!(matches!(all.decode, Decode::Result));
 }
 
 /// Page 1 of `features.pdf` as the native engine lists it, trimmed: every
@@ -840,12 +843,12 @@ fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
 /// with the annotation ref's number `annotObjectNumber`.
 #[test]
 fn a_listed_snapshot_arrives_in_the_kernels_spelling() {
-    let json = r#"{"result":{"annotations":[{"page":{"kind":"objectNumber","objectNumber":5},"subtype":"link",
+    let json = r#"{"result":{"pages":[{"annotations":[{"page":{"kind":"objectNumber","objectNumber":5},"subtype":"link",
         "ref":{"objectNumber":8,"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":5}},
         "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"page":{"kind":"objectNumber","objectNumber":7},"top":400.0,"zoom":null}},
         "actions":{"activate":{"root":{"type":"goto","subtype":"GoTo","next":[],
             "destination":{"kind":"fitR","page":{"kind":"objectNumber","objectNumber":7},"left":1.0,"bottom":2.0,"right":3.0,"top":4.0}}}}}],
-        "pageState":{"page":{"kind":"objectNumber","objectNumber":5},"revision":{"docSessionId":"s","generation":0,"page":{"kind":"objectNumber","objectNumber":5}}}}}"#;
+        "pageState":{"page":{"kind":"objectNumber","objectNumber":5},"revision":{"docSessionId":"s","generation":0,"page":{"kind":"objectNumber","objectNumber":5}}}}]}}"#;
     let kernel = r#"{"annotations":[{"page":{"kind":"objectNumber","pageObjectNumber":5},"subtype":"link",
         "ref":{"annotObjectNumber":8,"kind":"objectNumber","page":{"kind":"objectNumber","pageObjectNumber":5}},
         "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"page":{"kind":"objectNumber","pageObjectNumber":7},"top":400.0,"zoom":null}},
@@ -1750,10 +1753,10 @@ fn an_nm_ref_reaches_the_host_as_its_base_index() {
         .find_map(|page| {
             let listed = call_host_json(
                 &mut host,
-                json!({ "kind": "annotations.listRawPage", "jobId": 3, "docId": "d",
-                    "page": page["ref"] }),
+                json!({ "kind": "annotations.list", "jobId": 3, "docId": "d",
+                    "pages": [page["ref"]] }),
             );
-            listed["result"]["annotations"]
+            listed["result"]["pages"][0]["annotations"]
                 .as_array()?
                 .iter()
                 .find(|a| a["ref"]["kind"] == "nm")
@@ -1767,6 +1770,31 @@ fn an_nm_ref_reaches_the_host_as_its_base_index() {
     assert_eq!(wire["error"]["code"], "WireFormat", "the wire still took an nm ref: {wire}");
     let answer = call_host_json(&mut host, update);
     assert!(answer.get("error").is_none(), "{answer}");
+}
+
+/// The kernel's listings are read from the session in the kernel's shape
+/// (`pageState`, an `index` each, refs by object number, `/NM` or index),
+/// while the wire's `annotations.list` answers upstream's record.
+#[test]
+fn the_kernels_listing_keeps_its_shape_while_the_wire_answers_upstreams() {
+    let mut host = opened_host();
+    let call = translate("d", "annotations.listRawAll", None, &[], 2).unwrap();
+    let kernel = call_host_json(&mut host, call.request.clone());
+    let pages = kernel["result"]["pages"].as_array().expect("pages");
+    assert!(!pages.is_empty(), "{kernel}");
+    assert!(pages.iter().all(|page| page["pageState"]["revision"].is_object()), "{kernel}");
+    let first = pages
+        .iter()
+        .flat_map(|page| page["annotations"].as_array().unwrap())
+        .next()
+        .expect("the fixture has annotations");
+    assert!(first["index"].is_u64() && first["flags"].is_object(), "{first}");
+
+    let wire: Value =
+        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+    let record = &wire["result"]["annotations"][0];
+    assert!(record.get("index").is_none() && record["print"].is_boolean(), "{record}");
+    assert!(record["rect"]["width"].is_number(), "the wire answers page space: {record}");
 }
 
 // ── page space (Task 8.4) ───────────────────────────────────────────────────

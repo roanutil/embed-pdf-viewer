@@ -5,8 +5,8 @@
 //! (26 files, 1,922), the flag and enum decoders (~560), and
 //! `core/src/annotation/{subtype,primitives,base,registry,
 //! AnnotationListSnapshot}.ts` (557) with `kinds/*/dto.ts` (337).
-//! Operations: `annotations.listRawAll`, `annotations.listRawPage`,
-//! `annotations.listFullPage`, `annotations.renderAppearances`.
+//! Operations: `annotations.list`, `annotations.readFile`,
+//! `annotations.renderAppearances`.
 //!
 //! Writes replace `AnnotationMutator.ts` (784), `internal/write/*` (22 files,
 //! 3,496), `computeMutationImpact.ts` (141) and the appearance, normalize,
@@ -27,7 +27,7 @@
 //! and silently. They are pinned to the TypeScript by
 //! `vectors/annotation/vocabulary.json` rather than trusted to transcription.
 //!
-//! [`read`] holds the readers that walk PDFium: the base shell so far.
+//! [`read`] holds the readers that walk PDFium.
 
 pub mod appearance;
 pub mod flags;

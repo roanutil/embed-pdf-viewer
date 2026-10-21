@@ -20,18 +20,17 @@ pub enum FreeTextIntent {
     FreeText,
     /// A text box with a `/CL` leader line pointing at what it calls out.
     FreeTextCallout,
+    /// Another app's typewriter text (404b79b3e).
+    FreeTextTypewriter,
 }
 
 impl FreeTextIntent {
-    pub const ALL: [Self; 2] = [Self::FreeText, Self::FreeTextCallout];
+    pub const ALL: [Self; 3] = [Self::FreeText, Self::FreeTextCallout, Self::FreeTextTypewriter];
 
-    /// Decode an `/IT` name, absent included.
-    ///
-    /// `FreeTextTypeWriter` reads as `FreeText`. It is a real Acrobat variant
-    /// and this engine does not author it, so preserving it on the wire would
-    /// promise a round trip the writer cannot keep.
+    /// Decode an `/IT` name, absent included (`freeTextIntentFromName`): a
+    /// name it doesn't know reads as the plain intent.
     pub fn from_name(name: Option<&str>) -> Self {
-        if name == Some("FreeTextCallout") { Self::FreeTextCallout } else { Self::FreeText }
+        Self::ALL.into_iter().find(|intent| Some(intent.name()) == name).unwrap_or(Self::FreeText)
     }
 
     /// The `/IT` name a write path stores.
@@ -39,6 +38,7 @@ impl FreeTextIntent {
         match self {
             Self::FreeText => "FreeText",
             Self::FreeTextCallout => "FreeTextCallout",
+            Self::FreeTextTypewriter => "FreeTextTypeWriter",
         }
     }
 
@@ -46,6 +46,7 @@ impl FreeTextIntent {
         match self {
             Self::FreeText => "free-text",
             Self::FreeTextCallout => "free-text-callout",
+            Self::FreeTextTypewriter => "free-text-typewriter",
         }
     }
 }
@@ -143,6 +144,61 @@ impl StrikeoutIntent {
     }
 }
 
+/// Line `/IT` (§12.5.6.7): an arrow, or a dimension line
+/// (`lineIntentFromName`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum LineIntent {
+    LineArrow,
+    LineDimension,
+}
+
+impl LineIntent {
+    pub fn from_name(name: Option<&str>) -> Option<Self> {
+        match name {
+            Some("LineArrow") => Some(Self::LineArrow),
+            Some("LineDimension") => Some(Self::LineDimension),
+            _ => None,
+        }
+    }
+}
+
+/// Polygon `/IT` (§12.5.6.9): a cloud, or an area measurement
+/// (`polygonIntentFromName`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PolygonIntent {
+    PolygonCloud,
+    PolygonDimension,
+}
+
+impl PolygonIntent {
+    pub fn from_name(name: Option<&str>) -> Option<Self> {
+        match name {
+            Some("PolygonCloud") => Some(Self::PolygonCloud),
+            Some("PolygonDimension") => Some(Self::PolygonDimension),
+            _ => None,
+        }
+    }
+}
+
+/// Polyline `/IT` (§12.5.6.9): a perimeter measurement
+/// (`polylineIntentFromName`). Note PDF's capital `L`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PolylineIntent {
+    PolylineDimension,
+}
+
+impl PolylineIntent {
+    pub fn from_name(name: Option<&str>) -> Option<Self> {
+        match name {
+            Some("PolyLineDimension") => Some(Self::PolylineDimension),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,6 +220,25 @@ mod tests {
     }
 
     #[test]
+    fn the_measurement_intents_read_only_their_own_kinds_names() {
+        assert_eq!(LineIntent::from_name(Some("LineDimension")), Some(LineIntent::LineDimension));
+        assert_eq!(LineIntent::from_name(Some("PolygonCloud")), None);
+        assert_eq!(
+            PolygonIntent::from_name(Some("PolygonCloud")),
+            Some(PolygonIntent::PolygonCloud)
+        );
+        assert_eq!(
+            PolylineIntent::from_name(Some("PolyLineDimension")),
+            Some(PolylineIntent::PolylineDimension)
+        );
+        assert_eq!(PolylineIntent::from_name(Some("PolylineDimension")), None);
+        assert_eq!(
+            serde_json::to_value(PolylineIntent::PolylineDimension).unwrap(),
+            "polyline-dimension"
+        );
+    }
+
+    #[test]
     fn an_absent_it_is_nothing_except_on_free_text() {
         assert_eq!(FreeTextIntent::from_name(None), FreeTextIntent::FreeText);
         assert_eq!(InkIntent::from_name(None), None);
@@ -176,7 +251,11 @@ mod tests {
         assert_eq!(FreeTextIntent::from_name(Some("freetextcallout")), FreeTextIntent::FreeText);
         assert_eq!(InkIntent::from_name(Some("inkhighlight")), None);
         assert_eq!(StrikeoutIntent::from_name(Some("StrikeoutTextEdit")), None);
-        // The typewriter variant, which reads as the plain intent by design.
-        assert_eq!(FreeTextIntent::from_name(Some("FreeTextTypeWriter")), FreeTextIntent::FreeText);
+        // Another app's typewriter reads as itself (404b79b3e).
+        assert_eq!(
+            FreeTextIntent::from_name(Some("FreeTextTypeWriter")),
+            FreeTextIntent::FreeTextTypewriter
+        );
+        assert_eq!(FreeTextIntent::from_name(Some("FreeTextTypewriter")), FreeTextIntent::FreeText);
     }
 }

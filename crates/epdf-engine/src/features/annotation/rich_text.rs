@@ -301,15 +301,33 @@ pub fn parse_engine_rich_text(json: &str) -> Option<RichTextDocument> {
         Some(Value::Object(body)) => body,
         _ => return None,
     };
-    let paragraphs = match raw.remove("paragraphs") {
+    let mut paragraphs = match raw.remove("paragraphs") {
         Some(paragraphs @ Value::Array(_)) => paragraphs,
         _ => return None,
     };
     body.remove("source");
+    // Every colour as the engine gives colours: `#rrggbb`, lowercase
+    // (`withLowercaseColor`), the body's and each run's.
+    lowercase_color(&mut body);
+    for paragraph in paragraphs.as_array_mut().into_iter().flatten() {
+        let runs = paragraph.get_mut("runs").and_then(Value::as_array_mut);
+        for run in runs.into_iter().flatten() {
+            if let Some(Value::Object(style)) = run.get_mut("style") {
+                lowercase_color(style);
+            }
+        }
+    }
     Some(RichTextDocument {
         body: serde_json::from_value(Value::Object(body)).ok()?,
         paragraphs: serde_json::from_value(paragraphs).ok()?,
     })
+}
+
+/// `withLowercaseColor`.
+fn lowercase_color(style: &mut Map<String, Value>) {
+    if let Some(Value::String(color)) = style.get_mut("color") {
+        *color = color.to_lowercase();
+    }
 }
 
 /// `readEngineRichText`.

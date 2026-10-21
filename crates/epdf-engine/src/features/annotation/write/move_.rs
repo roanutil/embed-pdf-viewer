@@ -98,7 +98,7 @@ pub fn move_annotations(
     let mut changed: Vec<AnnotationStableId> = Vec::with_capacity(refs.len());
     for annotation_ref in refs {
         cancel.check()?;
-        let annotation = resolve_annotation(page, annotation_ref)?;
+        let annotation = resolve_annotation(document, page, annotation_ref)?;
         let index = page.annotation_index(&annotation);
         if index < 0 {
             return Err(EngineError::with_message(

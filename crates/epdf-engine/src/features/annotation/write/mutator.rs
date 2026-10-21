@@ -245,7 +245,15 @@ pub(crate) fn delete_unnoted(
         let owned = session.document()?;
         let page = owned.page(page_object_number)?;
         let resolve = widget_resolver(owned);
-        delete_annotation(page.view(), annotation_ref, &before, &before, &resolve, cancel)
+        delete_annotation(
+            owned.document(),
+            page.view(),
+            annotation_ref,
+            &before,
+            &before,
+            &resolve,
+            cancel,
+        )
     };
 
     // Bumped on both paths. A refusal that never touched `/Annots` costs one
@@ -379,7 +387,7 @@ fn resolve_all<'page>(
             if let AnnotationRef::Index { revision, .. } = annotation_ref {
                 session.validate_revision(revision)?;
             }
-            resolve_annotation(page, annotation_ref)
+            resolve_annotation(session.document()?.document(), page, annotation_ref)
         })
         .collect()
 }

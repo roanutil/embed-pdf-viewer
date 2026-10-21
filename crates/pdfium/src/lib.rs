@@ -49,7 +49,7 @@ pub use action::{
 pub use action_write::{Action, Destination, view};
 pub use annot::{
     Annotation, AppearanceMode, Attachment, AttachmentExtractError, BorderStyle, DefaultAppearance,
-    RectangleDifferences,
+    LineCaption, RectangleDifferences, ShapeCaption,
 };
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;

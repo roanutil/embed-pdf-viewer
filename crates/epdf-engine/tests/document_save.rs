@@ -14,7 +14,7 @@
 use epdf_engine::access::DocumentAccess;
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::annotation::read::page::read_document_annotations;
+use epdf_engine::features::annotation::read::list::list_annotations;
 use epdf_engine::features::metadata::read_metadata;
 use epdf_engine::features::pages::list_pages;
 use epdf_engine::features::save::{
@@ -22,7 +22,6 @@ use epdf_engine::features::save::{
 };
 use epdf_engine::features::text::reader::read_page_text;
 use epdf_engine::identity::PageObjectNumber;
-use epdf_engine::revision::RevisionToken;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
@@ -99,20 +98,12 @@ fn describe(bytes: Vec<u8>, password: Option<String>) -> Reopened {
     let listing = list_pages(document, &CancelToken::never()).expect("list");
     let metadata = read_metadata(document, &CancelToken::never()).expect("metadata");
 
-    // The annotation listing needs a revision token per page, and this one
-    // never leaves the function, so a fixed generation is enough: nothing
-    // here dereferences an index later.
-    let annotations = read_document_annotations(
-        document,
-        |page: PageObjectNumber| RevisionToken::new("describe", page, 0),
-        &CancelToken::never(),
-    )
-    .expect("annotations");
-    let counts: std::collections::BTreeMap<u32, u32> = annotations
-        .pages
-        .iter()
-        .map(|p| (p.page_state.page_object_number.get(), p.annotations.len() as u32))
-        .collect();
+    // `annotations.list`, which leaves widgets to the form (1233d1349).
+    let annotations = list_annotations(owned, None, &CancelToken::never()).expect("annotations");
+    let mut counts: std::collections::BTreeMap<u32, u32> = std::collections::BTreeMap::new();
+    for annotation in &annotations.annotations {
+        *counts.entry(annotation.base.page.get()).or_default() += 1;
+    }
 
     let pages = listing
         .pages
@@ -151,7 +142,9 @@ fn cancelled() -> CancelToken {
 fn mode_of(name: &str) -> SaveMode {
     match name {
         "incremental" => SaveMode::Incremental,
-        "rewrite" => SaveMode::Rewrite,
+        // The generator keeps its `full` key for what `PdfSaveMode` spells
+        // `rewrite` (`generate-save-vectors.ts`).
+        "rewrite" | "full" => SaveMode::Rewrite,
         other => panic!("the vector names a save mode {other} this runner does not map"),
     }
 }

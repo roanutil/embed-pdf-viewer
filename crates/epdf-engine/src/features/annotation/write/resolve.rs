@@ -16,14 +16,15 @@
 //! otherwise would mean either threading a store through every write or
 //! validating against nothing. The caller validates and then resolves.
 
-use pdfium::{Annotation, PageView};
+use pdfium::{Annotation, Document, PageView};
 
 use crate::error::{EngineError, EngineErrorCode};
 use crate::identity::{AnnotationRef, AnnotationStableId};
 use crate::ids::IdSource;
 
-/// Resolve a reference on an already-open page.
+/// Resolve a reference on an already-open page of `document`.
 pub fn resolve_annotation<'page>(
+    document: &Document,
     page: &'page PageView<'_>,
     annotation_ref: &AnnotationRef,
 ) -> Result<Annotation<'page>, EngineError> {
@@ -49,21 +50,32 @@ pub fn resolve_annotation<'page>(
             )
         }),
         AnnotationRef::BaseIndex { base_index, .. } => {
-            let index = base_index_position(page, *base_index)?;
+            let index = base_index_position(document, page, *base_index)?;
             page.annotation(index).ok_or_else(|| base_index_not_found(*base_index))
         }
     }
 }
 
-/// Where the annotation born inline at `base_index` of the page is now:
-/// `resolveAnnotIndexRaw.ts` `baseIndexPosition`, on a page the layer has not
-/// promoted. Only an inline entry (object number `0`) still sits at its birth
-/// position, so an object there, or nothing, is `NotFound`.
-///
-/// The promoted-page branch (`EPDFLayer_IsPagePromoted`,
-/// `EPDFLayer_GetBirthObjectNumber`) has no binding in `pdfium` yet, so a
-/// page this engine restructured is read as if it were not promoted.
-pub fn base_index_position(page: &PageView<'_>, base_index: u32) -> Result<u32, EngineError> {
+/// Where the annotation born inline at `base_index` of the page is now
+/// (`resolveAnnotIndexRaw.ts` `baseIndexPosition`). On a page the layer
+/// promoted, the birth list gives the object it became
+/// (`EPDFLayer_IsPagePromoted`, `EPDFLayer_GetBirthObjectNumber`); on any
+/// other page only an inline entry (object number `0`) still sits at its
+/// birth position, so an object there, or nothing, is `NotFound`.
+pub fn base_index_position(
+    document: &Document,
+    page: &PageView<'_>,
+    base_index: u32,
+) -> Result<u32, EngineError> {
+    let page_object_number = page.object_number();
+    if document.layer_is_page_promoted(page_object_number) {
+        let found = document
+            .layer_birth_object_number(page_object_number, base_index)
+            .and_then(|object_number| page.annotation_by_object_number(object_number))
+            .ok_or_else(|| base_index_not_found(base_index))?;
+        return u32::try_from(page.annotation_index(&found))
+            .map_err(|_| base_index_not_found(base_index));
+    }
     match page.annotation(base_index) {
         Some(found) if found.object_number() == 0 => Ok(base_index),
         _ => Err(base_index_not_found(base_index)),

@@ -102,7 +102,7 @@ pub fn update_annotation(
     cancel: &CancelToken,
 ) -> Result<AnnotationUpdateResult, EngineError> {
     cancel.check()?;
-    let annotation = resolve_annotation(page, annotation_ref)?;
+    let annotation = resolve_annotation(document, page, annotation_ref)?;
 
     // Everything that can refuse comes first. After the identity stamp below
     // this function has written to the document and cannot take it back.

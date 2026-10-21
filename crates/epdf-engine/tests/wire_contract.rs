@@ -42,7 +42,6 @@ const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf"
 /// The kinds of upstream's union this host does not route yet, each with the
 /// sub-task that routes it. That sub-task removes its rows.
 const NOT_YET_ROUTED: &[(&str, &str)] = &[
-    ("annotations.list", "8.12"),
     ("annotations.export", "8.22"),
     ("annotations.import", "8.22"),
     ("annotations.readAppearance", "8.13"),
@@ -300,12 +299,13 @@ fn every_wire_kind_routes_to_an_implementation() {
 
 #[test]
 fn every_removed_kind_is_unknown_to_the_wire_and_known_to_the_legacy_entry() {
-    // The 12 kinds upstream removed that are still parked (`signatures.abort`
+    // The 9 kinds upstream removed that are still parked (`signatures.abort`
     // renamed `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers
     // a kind it has no case for, and reach their old arm only through
     // `call_legacy`, until each owner sub-task retires it. 8.8 retired
-    // `attachments.create`, `attachments.delete` and `pieceInfo.clear`.
-    assert_eq!(LEGACY_KINDS.len(), 12);
+    // `attachments.create`, `attachments.delete` and `pieceInfo.clear`; 8.12
+    // the three annotation listings.
+    assert_eq!(LEGACY_KINDS.len(), 9);
     let cases = cases();
     for kind in LEGACY_KINDS {
         assert!(!cases.iter().any(|c| c.kind == *kind), "{kind} is in upstream's union");
@@ -532,16 +532,15 @@ fn a_page_is_addressed_by_the_ref_the_listing_answered() {
     let text = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": first }));
     assert!(text.get("error").is_none(), "pages.text refused the listing's ref: {text}");
 
-    // `annotations.listRawPage` and `pages.rotate` were removed upstream;
-    // owners 8.12 and 8.18.
-    let annotations = send_legacy(
-        &mut host,
-        serde_json::json!({ "kind": "annotations.listRawPage", "page": first }),
-    );
+    let annotations =
+        send(&mut host, serde_json::json!({ "kind": "annotations.list", "pages": [first] }));
     assert_eq!(
-        annotations["result"]["pageState"]["page"], first,
-        "the page state names its page differently from the request: {annotations}",
+        annotations["result"]["pages"],
+        serde_json::json!([first]),
+        "the list names its page differently from the request: {annotations}",
     );
+
+    // `pages.rotate` was removed upstream; owner 8.18.
 
     let rotated = send_legacy(
         &mut host,
@@ -598,17 +597,9 @@ fn an_annotation_is_named_by_object_number_or_base_index_only() {
     // `baseIndex` names an inline annotation, and one that names no such
     // annotation on the page is `NotFound`.
     let mut host = open();
-    let listing = send_legacy(
-        &mut host,
-        serde_json::json!({ "kind": "annotations.listRawPage", "page": page_ref(1) }),
-    );
-    let page = listing["result"]["pageState"]["page"].clone();
-    let page = if page.is_null() {
+    let page =
         send(&mut host, serde_json::json!({ "kind": "pages.list" }))["result"]["pages"][0]["ref"]
-            .clone()
-    } else {
-        page
-    };
+            .clone();
     for gone in [
         serde_json::json!({ "kind": "nm", "page": page, "nm": "x" }),
         serde_json::json!({ "kind": "index", "page": page, "index": 0,

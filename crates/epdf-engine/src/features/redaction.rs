@@ -104,7 +104,7 @@ pub fn apply<P: PageAccess>(
     for (page, _) in &plan {
         super::pages_write::require_page(document, *page)?;
     }
-    preflight(&open_page, &plan, cancel)?;
+    preflight(document, &open_page, &plan, cancel)?;
 
     let mut results = Vec::with_capacity(plan.len());
     let mut total = 0u32;
@@ -126,7 +126,7 @@ pub fn apply<P: PageAccess>(
         let view = PageAccess::view(&page);
         let outcome = match refs {
             None => apply_every_marking(view),
-            Some(refs) => apply_named_markings(view, refs),
+            Some(refs) => apply_named_markings(document, view, refs),
         };
         match outcome {
             Ok((status, removed)) => {
@@ -219,16 +219,12 @@ fn build_plan(scope: &RedactionScope) -> Result<Plan, EngineError> {
             for (page, refs) in &plan {
                 let Some(refs) = refs else { continue };
                 // Applying shifts every index after the annotation it
-                // removed, so the second positional reference in a batch
-                // names something else by the time it is resolved. A
-                // `baseIndex` is positional here too: upstream keeps it
-                // stable by promoting the page first, which this engine
-                // cannot do yet (`resolve::base_index_position`).
-                if refs.len() > 1
-                    && refs.iter().any(|r| {
-                        matches!(r, AnnotationRef::Index { .. } | AnnotationRef::BaseIndex { .. })
-                    })
-                {
+                // removed, so an engine-internal positional reference
+                // (`Index`, which no request can carry) names something
+                // else once another applies. A `baseIndex` is a name for
+                // life: every ref of a page resolves before any applies
+                // ([`apply_named_markings`]), as upstream's `applyRefsOnPage`.
+                if refs.len() > 1 && refs.iter().any(|r| matches!(r, AnnotationRef::Index { .. })) {
                     return Err(EngineError::with_message(
                         EngineErrorCode::InvalidArg,
                         format!(
@@ -252,6 +248,7 @@ fn build_plan(scope: &RedactionScope) -> Result<Plan, EngineError> {
 /// annotations, and redacting the other pages anyway would be acting on half
 /// of an instruction nobody meant.
 fn preflight<P: PageAccess>(
+    document: &Document,
     open_page: &impl Fn(PageObjectNumber) -> Result<P, EngineError>,
     plan: &Plan,
     cancel: &CancelToken,
@@ -264,8 +261,9 @@ fn preflight<P: PageAccess>(
         let page = open_page(*page_object_number)?;
         let view = PageAccess::view(&page);
         for reference in refs {
-            let annotation =
-                crate::features::annotation::write::resolve::resolve_annotation(view, reference)?;
+            let annotation = crate::features::annotation::write::resolve::resolve_annotation(
+                document, view, reference,
+            )?;
             let subtype = AnnotationSubtype::from_code(annotation.subtype_code());
             if subtype != AnnotationSubtype::Redact {
                 return Err(EngineError::with_message(
@@ -312,24 +310,27 @@ fn apply_every_marking(page: &pdfium::PageView<'_>) -> Result<(RedactionStatus, 
     }
 }
 
-/// Apply the markings named.
+/// Apply the markings named, in one pass (`applyRefsOnPage`): every ref
+/// resolves before any applies, so their regions are redacted together and
+/// an image under several of them is read and written once.
 fn apply_named_markings(
+    document: &Document,
     page: &pdfium::PageView<'_>,
     refs: &[AnnotationRef],
 ) -> Result<(RedactionStatus, u32), EngineError> {
-    let mut removed = 0;
-    for reference in refs {
-        // Re-resolved at apply time rather than carried from preflight: an
-        // earlier apply on this page may have taken collateral annotations
-        // with it, and a durable reference survives that.
-        let annotation =
-            crate::features::annotation::write::resolve::resolve_annotation(page, reference)?;
-        removed += page.apply_redaction(&annotation).ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "PDFium refused to apply a redaction that passed preflight",
+    let marks = refs
+        .iter()
+        .map(|reference| {
+            crate::features::annotation::write::resolve::resolve_annotation(
+                document, page, reference,
             )
-        })?;
-    }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let removed = page.apply_redaction_marks(&marks).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "PDFium refused to apply redactions that passed preflight",
+        )
+    })?;
     Ok((RedactionStatus::Applied, removed))
 }

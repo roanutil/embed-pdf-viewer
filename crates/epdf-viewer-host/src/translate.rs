@@ -48,6 +48,8 @@ pub struct WireCall {
 pub enum Decode {
     /// The result as the host sent it.
     Result,
+    /// The first of the result's `pages`: one page's annotation listing.
+    FirstPage,
     /// One member of the result, which must be there.
     Field(&'static str),
     /// A `PageListSnapshot`, which must name every page by its `ref`.
@@ -196,9 +198,9 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
-        // Removed upstream; owner 8.12 (`annotations.list`).
-        "page.annotations.list" => ("annotations.listRawPage", Decode::Result),
-        "annotations.listRawAll" => ("annotations.listRawAll", Decode::Result),
+        // Answered in the kernel's shape by `call_host` (`kernel_annotations`).
+        "page.annotations.list" => ("annotations.list", Decode::FirstPage),
+        "annotations.listRawAll" => ("annotations.list", Decode::Result),
         "page.annotations.create" => ("annotations.create", Decode::Mutation),
         "page.annotations.update" => ("annotations.update", Decode::Mutation),
         "page.annotations.delete" => ("annotations.delete", Decode::Mutation),
@@ -276,7 +278,10 @@ pub fn translate(
         "pages.text" | "pages.geometry" => vec![("page", page()?)],
         "pages.render" => vec![("page", page()?), ("options", render_options(arg(0)))],
         "search.query" => vec![("request", search_request(arg(0))?)],
-        "annotations.listRawPage" => vec![("page", page()?)],
+        "annotations.list" if path == "page.annotations.list" => {
+            vec![("pages", Value::Array(vec![page()?]))]
+        }
+        "annotations.list" => Vec::new(),
         "annotations.create" => {
             let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
             let draft = wire_refs_in(path, draft)?;
@@ -486,6 +491,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if let Some(response) = metadata::kernel_call(host, &kind, &request) {
         return response;
     }
+    if kind == "annotations.list" {
+        return kernel_annotations::listing(host, &request);
+    }
     let respelled = base_index_refs(host, &mut request);
     let moved = page_space::render_target_to_page_space(host, &mut request);
     let response = if respelled || moved {
@@ -610,6 +618,89 @@ mod metadata {
                 json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin });
         }
         Ok((json!({ "result": answer }), response.payloads))
+    }
+}
+
+/// The kernel's annotation listings (Task 8.12).
+///
+/// The kernel reads the annotation record this branch's wire had before the
+/// catch-up: `{pageState, annotations}` per page, refs by object number,
+/// `/NM` or revisioned index, an `index` per annotation, the `/F` bits
+/// under `flags`, PDF-space places, `{r, g, b}` colours, widgets among the
+/// rest, rotation from our `/EMBD_Metadata`. Upstream's `annotations.list`
+/// answers none of that, and parts of it (the index, the weak state, the
+/// recorded rotation and `/RD`) can't be rebuilt from its answer. So the
+/// kernel's two listings are read here from the host's session with the
+/// engine's previous reader (`read::page`, which the annotation writes still
+/// answer with), never crossing the wire. Dead once Task 13 ports the
+/// kernel onto `annotations.list`.
+mod kernel_annotations {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::error::{EngineError, EngineErrorCode};
+    use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
+    use epdf_engine::features::annotation::read::page::read_page_annotations;
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::identity::{PageObjectNumber, PageRef};
+    use epdf_engine::session::registry::SessionKey;
+    use serde_json::{Value, json};
+
+    /// `{pages: [{pageState, annotations}]}` for the request's `pages`, or
+    /// for every page in document order, as the removed
+    /// `annotations.listRawAll` answered.
+    pub(super) fn listing(host: &mut Host, request: &Value) -> HostResponse {
+        let json = match read(host, request) {
+            Ok(pages) => json!({ "result": { "pages": pages } }),
+            Err(error) => json!({ "error": error.to_wire() }),
+        };
+        HostResponse { json: json.to_string(), payloads: Vec::new() }
+    }
+
+    fn read(host: &mut Host, request: &Value) -> Result<Vec<Value>, EngineError> {
+        let doc = request.get("docId").and_then(Value::as_str).ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::WireFormat, "the listing names no document")
+        })?;
+        let key = match request.get("layerName").and_then(Value::as_str) {
+            Some(layer) => SessionKey::layer(doc, layer),
+            None => SessionKey::document(doc),
+        };
+        let session = host.sessions_mut().session_mut(&key)?;
+        let pages: Vec<PageObjectNumber> = match request.get("pages") {
+            Some(Value::Array(pages)) => pages
+                .iter()
+                .map(|page| PageRef::from_value(page, "pages").map(PageRef::object_number))
+                .collect::<Result<_, _>>()?,
+            _ => {
+                let document = session.document()?.document();
+                (0..document.page_count())
+                    .filter_map(|index| {
+                        PageObjectNumber::new(document.page_object_number_by_index(index)).ok()
+                    })
+                    .collect()
+            }
+        };
+        // One budget across the listing, as the removed whole-document
+        // listing kept one.
+        let mut budget = ActionReadBudgetTracker::default();
+        let mut snapshots = Vec::with_capacity(pages.len());
+        for page in pages {
+            let state = session.page_state(page)?;
+            let owned = session.document()?;
+            let index = owned.page_index(page)?;
+            let snapshot = read_page_annotations(
+                owned.document(),
+                index,
+                page,
+                &state.revision,
+                &mut budget,
+                &CancelToken::never(),
+            )?;
+            snapshots.push(
+                serde_json::to_value(&snapshot).map_err(|e| {
+                    EngineError::with_message(EngineErrorCode::Unknown, e.to_string())
+                })?,
+            );
+        }
+        Ok(snapshots)
     }
 }
 
@@ -1100,15 +1191,15 @@ fn base_index_refs(host: &mut Host, request: &mut Value) -> bool {
                 let listed = match listings.iter().find(|(p, _)| *p == page) {
                     Some((_, listed)) => listed.clone(),
                     None => {
-                        let mut list = serde_json::json!({ "kind": "annotations.listRawPage",
-                            "docId": doc, "page": page });
+                        let mut list = serde_json::json!({ "kind": "annotations.list",
+                            "docId": doc, "pages": [page] });
                         if let Some(layer) = &layer {
                             list["layerName"] = layer.clone();
                         }
-                        let response = host.call_legacy(&list.to_string(), Vec::new());
+                        let response = kernel_annotations::listing(host, &list);
                         let listed = serde_json::from_str::<Value>(&response.json)
                             .ok()
-                            .and_then(|mut e| e.get_mut("result").map(Value::take))
+                            .and_then(|mut e| e.pointer_mut("/result/pages/0").map(Value::take))
                             .unwrap_or(Value::Null);
                         listings.push((page, listed.clone()));
                         listed
@@ -1723,6 +1814,10 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     let value = match decode {
         Decode::Unit => unreachable!("answered above"),
         Decode::Result | Decode::OptionalResult | Decode::FormResult => Value::Object(result),
+        Decode::FirstPage => match take(&mut result, "pages")? {
+            Value::Array(mut pages) if !pages.is_empty() => pages.swap_remove(0),
+            other => return Err(malformed(format!("a listing with no page: {other}"))),
+        },
         Decode::Field(name) => take(&mut result, name)?,
         Decode::PageList => {
             let Some(Value::Array(pages)) = result.get("pages") else {

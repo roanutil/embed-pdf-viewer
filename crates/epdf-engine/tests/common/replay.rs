@@ -75,6 +75,13 @@ impl Replay {
         Self { host, doc_id: doc_id.to_owned(), next_job: 2 }
     }
 
+    /// A replay against `doc_id`, which the caller already opened in `host`
+    /// (a layer, say), with job ids from 2.
+    #[allow(dead_code)]
+    pub fn adopt(host: Host, doc_id: &str) -> Self {
+        Self { host, doc_id: doc_id.to_owned(), next_job: 2 }
+    }
+
     /// Send `recorded`, with this run's ids, through [`Host::call`].
     pub fn send(&mut self, recorded: &Value, payloads: Payloads) -> Answer {
         let job_id = self.next_job;

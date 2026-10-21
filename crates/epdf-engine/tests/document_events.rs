@@ -579,17 +579,18 @@ fn a_field_delete_removes_its_widgets_and_names_them() {
     assert!(!after.contains(&7) && !after.contains(&8), "the widgets are still there: {after:?}");
 }
 
-/// The object numbers of page 3's annotations.
+/// The object numbers of page 3's annotations and widgets: the widgets are
+/// the form's (`forms.list`), the rest `annotations.list`'s (1233d1349).
 fn on_page(host: &mut Host, doc: &str) -> Vec<u64> {
-    // Removed upstream; owner 8.12 (`annotations.list`).
-    let list = call_legacy(
-        host,
-        json!({ "kind": "annotations.listRawPage", "docId": doc, "page": page_ref(3u64) }),
-    );
+    let list =
+        call(host, json!({ "kind": "annotations.list", "docId": doc, "pages": [page_ref(3u64)] }));
+    let form = call(host, json!({ "kind": "forms.list", "docId": doc }));
+    let widgets = form["widgets"].as_array().unwrap_or_else(|| panic!("widgets: {form}"));
     list["annotations"]
         .as_array()
         .unwrap_or_else(|| panic!("annotations: {list}"))
         .iter()
+        .chain(widgets.iter().filter(|w| w["page"] == page_ref(3u64)))
         .filter_map(|a| a["ref"]["objectNumber"].as_u64())
         .collect()
 }

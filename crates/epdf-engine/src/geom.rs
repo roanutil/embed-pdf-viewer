@@ -457,6 +457,153 @@ pub fn pdf_turn_of_drawn(points: &[PdfPoint], degrees: f64) -> PdfPointTurn {
     }
 }
 
+/// `QUAD_EPSILON` (`geometry/convert.ts`).
+const QUAD_EPSILON: f64 = 1e-6;
+
+fn is_finite_point(point: PdfPoint) -> bool {
+    point.x.is_finite() && point.y.is_finite()
+}
+
+/// Whether four points, read as upper-left, upper-right, lower-left,
+/// lower-right, make a quad (`isZigzagQuad`).
+fn is_zigzag_quad([ul, ur, ll, lr]: [PdfPoint; 4]) -> bool {
+    if ![ul, ur, ll, lr].into_iter().all(is_finite_point) {
+        return false;
+    }
+    let edge = |from: PdfPoint, to: PdfPoint| PdfPoint { x: to.x - from.x, y: to.y - from.y };
+    let upper = edge(ul, ur);
+    let lower = edge(ll, lr);
+    let left = edge(ul, ll);
+    let right = edge(ur, lr);
+    let lengths = [upper, lower, left, right].map(|e| e.x.hypot(e.y));
+    if lengths.iter().any(|length| *length <= QUAD_EPSILON) {
+        return false;
+    }
+    // Opposite edges run the same way: a crossed or reversed order fails here.
+    if upper.x * lower.x + upper.y * lower.y <= 0.0 {
+        return false;
+    }
+    if left.x * right.x + left.y * right.y <= 0.0 {
+        return false;
+    }
+    // Both ends have area and turn the same way.
+    let left_area = upper.x * left.y - upper.y * left.x;
+    let right_area = lower.x * right.y - lower.y * right.x;
+    if left_area.abs() <= QUAD_EPSILON * lengths[0] * lengths[2] {
+        return false;
+    }
+    if right_area.abs() <= QUAD_EPSILON * lengths[1] * lengths[3] {
+        return false;
+    }
+    left_area.signum() == right_area.signum()
+}
+
+/// Name the corners of a `/QuadPoints` entry, given in the file's order
+/// (`normalizePdfQuad`): Acrobat's order (upper-left, upper-right,
+/// lower-left, lower-right) is kept, the ring order some writers use is
+/// repaired, and anything else is named from its shape, the edge highest on
+/// the page being the upper one and its end with the smaller x the left.
+pub fn normalize_pdf_quad(points: [PdfPoint; 4]) -> NamedPdfQuad {
+    let [first, second, third, fourth] = points;
+    if is_zigzag_quad(points) {
+        return NamedPdfQuad {
+            upper_left: first,
+            upper_right: second,
+            lower_left: third,
+            lower_right: fourth,
+        };
+    }
+    if is_zigzag_quad([first, second, fourth, third]) {
+        return NamedPdfQuad {
+            upper_left: first,
+            upper_right: second,
+            lower_left: fourth,
+            lower_right: third,
+        };
+    }
+
+    let finite = points.map(|p| if is_finite_point(p) { p } else { PdfPoint { x: 0.0, y: 0.0 } });
+    let cx = finite.iter().map(|p| p.x).sum::<f64>() / 4.0;
+    let cy = finite.iter().map(|p| p.y).sum::<f64>() / 4.0;
+    let mut ring = finite;
+    // `Array.prototype.sort` is stable, as `sort_by` is.
+    ring.sort_by(|a, b| {
+        let angle = |p: &PdfPoint| (p.y - cy).atan2(p.x - cx);
+        angle(a).partial_cmp(&angle(b)).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let mut upper = 0;
+    for i in 1..4 {
+        if ring[i].y + ring[(i + 1) % 4].y > ring[upper].y + ring[(upper + 1) % 4].y {
+            upper = i;
+        }
+    }
+    // Round the ring: upper ends, then lower ends back.
+    let upper_ends = [ring[upper], ring[(upper + 1) % 4]];
+    let lower_ends = [ring[(upper + 3) % 4], ring[(upper + 2) % 4]];
+    if upper_ends[0].x <= upper_ends[1].x {
+        NamedPdfQuad {
+            upper_left: upper_ends[0],
+            upper_right: upper_ends[1],
+            lower_left: lower_ends[0],
+            lower_right: lower_ends[1],
+        }
+    } else {
+        NamedPdfQuad {
+            upper_left: upper_ends[1],
+            upper_right: upper_ends[0],
+            lower_left: lower_ends[1],
+            lower_right: lower_ends[0],
+        }
+    }
+}
+
+/// Whether two rects are the same within what a file's numbers hold
+/// (`isSamePdfRect`): Acrobat writes three decimals, and a rect the engine
+/// writes is floats.
+pub fn is_same_pdf_rect(rect: PdfRect, other: PdfRect) -> bool {
+    let size = (rect.right - rect.left)
+        .max(rect.top - rect.bottom)
+        .max(other.right - other.left)
+        .max(other.top - other.bottom);
+    let tolerance = 0.01 + 1e-4 * size;
+    (rect.left - other.left).abs() <= tolerance
+        && (rect.bottom - other.bottom).abs() <= tolerance
+        && (rect.right - other.right).abs() <= tolerance
+        && (rect.top - other.top).abs() <= tolerance
+}
+
+/// The upright box around `rect` turned by `degrees` about its middle,
+/// either way (`pdfRectTurnedBounds`). A quarter turn is exact: the sides
+/// swap.
+pub fn pdf_rect_turned_bounds(rect: PdfRect, degrees: f64) -> PdfRect {
+    let turn = ((degrees % 360.0) + 360.0) % 360.0;
+    if turn % 90.0 == 0.0 {
+        if turn == 0.0 || turn == 180.0 {
+            return rect;
+        }
+        let x = (rect.left + rect.right) / 2.0;
+        let y = (rect.bottom + rect.top) / 2.0;
+        let half_width = (rect.top - rect.bottom) / 2.0;
+        let half_height = (rect.right - rect.left) / 2.0;
+        return PdfRect {
+            left: x - half_width,
+            bottom: y - half_height,
+            right: x + half_width,
+            top: y + half_height,
+        };
+    }
+    let radians = degrees * std::f64::consts::PI / 180.0;
+    let cos = radians.cos().abs();
+    let sin = radians.sin().abs();
+    let width = rect.right - rect.left;
+    let height = rect.top - rect.bottom;
+    let half_across = (width * cos + height * sin) / 2.0;
+    let half_up = (width * sin + height * cos) / 2.0;
+    let x = (rect.left + rect.right) / 2.0;
+    let y = (rect.bottom + rect.top) / 2.0;
+    PdfRect { left: x - half_across, bottom: y - half_up, right: x + half_across, top: y + half_up }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

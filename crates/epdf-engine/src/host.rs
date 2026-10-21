@@ -120,10 +120,6 @@ enum Route {
 /// the sub-task named beside it moves its callers to the kind that replaced
 /// it.
 pub const LEGACY_KINDS: &[&str] = &[
-    // 8.12: `annotations.list` (83f6598d2).
-    "annotations.listFullPage",
-    "annotations.listRawAll",
-    "annotations.listRawPage",
     // 8.16: `annotations.reorder` (1233d1349).
     "annotations.move",
     // 8.20: `document.apply` (98e5c270c).
@@ -759,6 +755,16 @@ impl Host {
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::actions::document::read_document_actions(d, cancel)?)?))
             }
+            "annotations.list" => {
+                let pages = match body.get("pages") {
+                    None | Some(serde_json::Value::Null) => None,
+                    Some(_) => Some(pages_field(body)?),
+                };
+                let owned = self.sessions.session(&key)?.document()?;
+                let list =
+                    f::annotation::read::list::list_annotations(owned, pages.as_deref(), cancel)?;
+                Ok(ok(value(&list)?))
+            }
             "forms.list" => {
                 let d = self.document(&key)?;
                 let model = d.form_model().ok_or_else(form_model_missing)?;
@@ -1018,6 +1024,7 @@ impl Host {
                 let owned = self.sessions.session(&key)?.document()?;
                 let opened = owned.page(page)?;
                 let found = f::annotation::write::resolve::resolve_annotation(
+                    owned.document(),
                     crate::access::PageAccess::view(&opened),
                     &annotation_ref,
                 )?;
@@ -1735,43 +1742,6 @@ impl Host {
                 let notice =
                     crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
                 self.answer_with_notice(&key, result, notice, Vec::new())
-            }
-
-            // Owner: 8.12 (`annotations.list`, 83f6598d2).
-            "annotations.listRawPage" | "annotations.listFullPage" => {
-                let page = page_field(body)?;
-                let session = self.sessions.session_mut(&key)?;
-                let state = session.page_state(page)?;
-                let index = page_index_of(session.document()?.document(), page)?;
-                let snapshot = f::annotation::read::page::read_page_annotations(
-                    session.document()?.document(),
-                    index,
-                    page,
-                    &state.revision,
-                    &mut f::actions::vocabulary::ActionReadBudgetTracker::default(),
-                    cancel,
-                )?;
-                Ok(ok(value(&snapshot)?))
-            }
-
-            // Owner: 8.12 (`annotations.list`, 83f6598d2).
-            "annotations.listRawAll" => {
-                let session = self.sessions.session_mut(&key)?;
-                // Every page's token comes from the session's own authority,
-                // so a client's weak reference can be checked against the
-                // same generation the listing reported.
-                let tokens = page_tokens(session)?;
-                let snapshot = f::annotation::read::page::read_document_annotations(
-                    session.document()?.document(),
-                    |page| {
-                        tokens
-                            .get(&page)
-                            .cloned()
-                            .unwrap_or_else(|| crate::revision::RevisionToken::new("", page, 0))
-                    },
-                    cancel,
-                )?;
-                Ok(ok(value(&snapshot)?))
             }
 
             // Owner: 8.16 (`annotations.reorder`, 1233d1349).
@@ -3076,48 +3046,6 @@ fn borrowed_resources(
             )
         })
         .collect()
-}
-
-/// Where a page sits in the document today.
-fn page_index_of(
-    document: &pdfium::Document,
-    page: crate::identity::PageObjectNumber,
-) -> Result<u32, EngineError> {
-    (0..document.page_count())
-        .find(|index| document.page_object_number_by_index(*index) == page.get())
-        .ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::NotFound,
-                format!("no page with object number {}", page.get()),
-            )
-        })
-}
-
-/// Every page's current revision token.
-///
-/// Collected before the listing rather than looked up per page, because the
-/// reader takes a closure and borrowing the session inside it would conflict
-/// with the document borrow the listing already holds.
-fn page_tokens(
-    session: &mut crate::session::document::DocumentSession,
-) -> Result<
-    std::collections::BTreeMap<crate::identity::PageObjectNumber, crate::revision::RevisionToken>,
-    EngineError,
-> {
-    let count = session.document()?.document().page_count();
-    let numbers: Vec<crate::identity::PageObjectNumber> = (0..count)
-        .filter_map(|index| {
-            crate::identity::PageObjectNumber::new(
-                session.document().ok()?.document().page_object_number_by_index(index),
-            )
-            .ok()
-        })
-        .collect();
-    let mut tokens = std::collections::BTreeMap::new();
-    for page in numbers {
-        tokens.insert(page, session.page_state(page)?.revision);
-    }
-    Ok(tokens)
 }
 
 /// Framing for a host that has one buffer rather than a list of them.

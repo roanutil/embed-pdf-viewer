@@ -202,6 +202,16 @@ impl<'page> Viewport<'page> {
     }
 }
 
+impl<'page> crate::Annotation<'page> {
+    /// The annotation's `/Measure`, or `None` when it has none
+    /// (`EPDFAnnot_GetMeasure`). Reading never changes the document.
+    pub fn measure(&self) -> Option<Measure<'page>> {
+        // SAFETY: the annotation handle is live for the page borrow.
+        let handle = unsafe { pdfium_sys::EPDFAnnot_GetMeasure(self.as_raw()) };
+        Measure::wrap(handle)
+    }
+}
+
 impl<'page> Measure<'page> {
     fn wrap(handle: pdfium_sys::EPDF_MEASURE) -> Option<Self> {
         (!handle.is_null()).then_some(Measure {

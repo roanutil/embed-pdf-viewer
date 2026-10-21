@@ -396,8 +396,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
-    note: "Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list.",
+    rustStatus: 'ported',
+    note: "Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list. Answers AnnotationList in upstream's record shape, read in the file's coordinates and converted at the host boundary by field space (pageAnnotationOf); a promoted inline annotation reads by its birth name (EPDFLayer_GetBirthName). Gated by vectors/annotation/read.json through crates/epdf-engine/tests/annotation_reader.rs.",
   },
   {
     kind: 'annotations.readAppearance',
@@ -434,7 +434,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Byte equality with the TypeScript path, not a semantic comparison.',
+    note: 'Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer\'s births.',
   },
   {
     kind: 'pieceInfo.read',

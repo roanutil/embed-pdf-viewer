@@ -6,35 +6,24 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, call_legacy, open_fixture, page_ref};
+use common::{call, open_fixture, page_ref};
 
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
 
-/// The wire's name for the annotation whose `/NM` is `nm`. The `nm` ref
-/// kind is gone (bc0057f3a): an annotation born as an object is named by
-/// its object number, and one born inline in the file by its position in
-/// the page's `/Annots` (`baseIndex`), which on a page nothing has
-/// restructured is the index the listing answers.
+/// The wire's name for the annotation whose `/NM` is `nm`: the `ref` the
+/// list answers (an object number, or a `baseIndex` for one born inline).
 fn by_nm(host: &mut Host, doc: &str, page: u64, nm: &str) -> Value {
     let listed = list(host, doc, page);
     let found = listed["annotations"]
         .as_array()
         .and_then(|all| all.iter().find(|a| a["nm"] == nm))
         .unwrap_or_else(|| panic!("no annotation named {nm}: {listed}"));
-    if found["ref"]["kind"] == "objectNumber" {
-        return found["ref"].clone();
-    }
-    json!({ "kind": "baseIndex", "page": page_ref(page), "baseIndex": found["index"] })
+    found["ref"].clone()
 }
 
-/// The page's annotations. `annotations.listRawPage` was removed upstream;
-/// owner 8.12 (`annotations.list`).
+/// The page's annotations (`annotations.list`).
 fn list(host: &mut Host, doc: &str, page: u64) -> Value {
-    call_legacy(
-        host,
-        json!({ "kind": "annotations.listRawPage", "docId": doc,
-        "page": page_ref(page) }),
-    )
+    call(host, json!({ "kind": "annotations.list", "docId": doc, "pages": [page_ref(page)] }))
 }
 
 #[test]

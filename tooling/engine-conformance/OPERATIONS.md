@@ -67,7 +67,7 @@ cancellation case it has to document. Group assignments come from
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
 | `annotations.renderAppearances` | A | 2 | non-preemptible | ported |  |
-| `annotations.list` | A | 2 | cooperative | planned | Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list. |
+| `annotations.list` | A | 2 | cooperative | ported | Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list. Answers AnnotationList in upstream's record shape, read in the file's coordinates and converted at the host boundary by field space (pageAnnotationOf); a promoted inline annotation reads by its birth name (EPDFLayer_GetBirthName). Gated by vectors/annotation/read.json through crates/epdf-engine/tests/annotation_reader.rs. |
 | `annotations.readAppearance` | A | 2 | cooperative | planned | An annotation's appearance as a one-page PDF (bytes). |
 
 ## G8
@@ -76,7 +76,7 @@ cancellation case it has to document. Group assignments come from
 | --- | --- | --- | --- | --- | --- |
 | `attachments.list` | A | 2 | cooperative | ported | Answers { attachments } (AttachmentList, a9434c0e2): each entry carries its ref, createdAt and modifiedAt as ISO dates, and null for every field the PDF has no value for. Gated by vectors/files/attachments.json through Host::call. |
 | `attachments.readFile` | A | 2 | cooperative | ported |  |
-| `annotations.readFile` | A | 2 | cooperative | ported | Byte equality with the TypeScript path, not a semantic comparison. |
+| `annotations.readFile` | A | 2 | cooperative | ported | Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer's births. |
 | `pieceInfo.read` | A | 2 | cooperative | ported |  |
 | `pieceInfo.applications` | A | 2 | cooperative | ported |  |
 | `forms.list` | A | 2 | cooperative | ported | Filed by behaviour: a read despite the forms. prefix. Answers FormSnapshot: the fields in upstream's shape (ref by objectNumber, the /Ff bits as readOnly, required and noExport, groupId and attribution from the field's /EMBD_Metadata) and every widget row the pages' /Annots hold, each joined to its field (widgetRows.ts, joinWidgetField.ts). The reader answers the file's coordinates and the host boundary converts them (pageFormSnapshotOf). Upstream joins through its cached form model (acquireFormModel) and carries the repeated-read benchmark annotations.listFullPage carried; the Rust host has no form model cache and builds one model per read. Gated by vectors/forms/snapshot.json through crates/epdf-engine/tests/form_reader.rs. |

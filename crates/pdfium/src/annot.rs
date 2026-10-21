@@ -770,6 +770,200 @@ impl Annotation<'_> {
             unsafe { pdfium_sys::EPDFAnnot_GetAPMatrix(self.handle, mode as i32, &raw mut matrix) };
         (ok != 0).then(|| matrix.into())
     }
+
+    /// The form the normal appearance is drawn in and the matrix that places
+    /// it on the page (`EPDFAnnot_GetAppearanceTransform`): the form's
+    /// `/BBox` and the whole transform a viewer applies, its `/Matrix` and
+    /// the fit onto `/Rect` together. `None` when there is no normal
+    /// appearance, or its box is empty.
+    pub fn appearance_transform(&self) -> Option<(RectF, MatrixF)> {
+        let mut rect = pdfium_sys::FS_RECTF::default();
+        let mut matrix = pdfium_sys::FS_MATRIX::default();
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetAppearanceTransform(
+                self.handle,
+                &raw mut rect,
+                &raw mut matrix,
+            )
+        };
+        (ok != 0).then(|| (rect.into(), matrix.into()))
+    }
+
+    /// A boolean entry of the dictionary, such as a popup's `/Open`
+    /// (`EPDFAnnot_GetBooleanValue`). `None` when it is absent or not a
+    /// boolean.
+    pub fn boolean_value(&self, key: &str) -> Result<Option<bool>, PdfiumError> {
+        let key = c_key(key)?;
+        let mut value = 0;
+        // SAFETY: the handle and key are live and `value` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetBooleanValue(self.handle, key.as_ptr(), &raw mut value)
+        };
+        Ok((ok != 0).then_some(value != 0))
+    }
+
+    /// One `/EMBD_Metadata` boolean entry
+    /// (`EPDFAnnot_GetEmbedMetadataBoolean`). `None` when it is absent.
+    pub fn embed_metadata_boolean(&self, key: &str) -> Result<Option<bool>, PdfiumError> {
+        let key = c_key(key)?;
+        let mut value = 0;
+        // SAFETY: the handle and key are live and `value` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetEmbedMetadataBoolean(self.handle, key.as_ptr(), &raw mut value)
+        };
+        Ok((ok != 0).then_some(value != 0))
+    }
+
+    /// A line's `/Cap`, `/CP` and `/CO` (`EPDFAnnot_GetLineCaption`). `None`
+    /// when the annotation is not a line or the read fails.
+    pub fn line_caption(&self) -> Option<LineCaption> {
+        let mut enabled = 0;
+        let mut position = pdfium_sys::EPDF_CAPTION_POSITION::default();
+        let mut offset = pdfium_sys::EPDF_CAPTION_OFFSET::default();
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetLineCaption(
+                self.handle,
+                &raw mut enabled,
+                &raw mut position,
+                &raw mut offset,
+            )
+        };
+        (ok != 0).then_some(LineCaption {
+            enabled: enabled != 0,
+            position_code: position as i32,
+            along: offset.along,
+            perpendicular: offset.perpendicular,
+        })
+    }
+
+    /// A polygon's or polyline's caption, as `/EMBD_Metadata` keeps it
+    /// (`EPDFAnnot_GetShapeCaption`): whether it shows, and its manual
+    /// center when it has one. `None` when the read fails.
+    pub fn shape_caption(&self) -> Option<ShapeCaption> {
+        let mut enabled = 0;
+        let mut has_center = 0;
+        let mut center = pdfium_sys::FS_POINTF::default();
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetShapeCaption(
+                self.handle,
+                &raw mut enabled,
+                &raw mut has_center,
+                &raw mut center,
+            )
+        };
+        (ok != 0).then(|| ShapeCaption {
+            enabled: enabled != 0,
+            center: (has_center != 0).then(|| center.into()),
+        })
+    }
+
+    /// A line's `/LL`, `/LLE` and `/LLO` (`EPDFAnnot_GetLineLeader`):
+    /// length, extension and offset. `None` when the read fails.
+    pub fn line_leader(&self) -> Option<(f32, f32, f32)> {
+        let (mut length, mut extension, mut offset) = (0f32, 0f32, 0f32);
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetLineLeader(
+                self.handle,
+                &raw mut length,
+                &raw mut extension,
+                &raw mut offset,
+            )
+        };
+        (ok != 0).then_some((length, extension, offset))
+    }
+}
+
+/// A line's caption (`/Cap`, `/CP`, `/CO`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LineCaption {
+    pub enabled: bool,
+    /// The raw `EPDF_CAPTION_POSITION`: 0 inline, 1 top.
+    pub position_code: i32,
+    /// `/CO`, along the line and across it.
+    pub along: f32,
+    pub perpendicular: f32,
+}
+
+/// A polygon's or polyline's caption.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShapeCaption {
+    pub enabled: bool,
+    /// The label's manual center, in the file's coordinates.
+    pub center: Option<PointF>,
+}
+
+impl Document {
+    /// `EPDFLayer_GetBirthName`: the page and the position in the base
+    /// page's `/Annots` an annotation object was born at, when this layer
+    /// promoted it from an inline annotation of the base. `None` for any
+    /// other object, and for a document that is not a layer.
+    pub fn layer_birth_name(&self, object_number: u32) -> Option<(u32, u32)> {
+        let (mut page, mut birth): (std::os::raw::c_ulong, std::os::raw::c_ulong) = (0, 0);
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFLayer_GetBirthName(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(object_number),
+                &raw mut page,
+                &raw mut birth,
+            )
+        };
+        if ok == 0 {
+            return None;
+        }
+        Some((u32::try_from(page).ok()?, u32::try_from(birth).ok()?))
+    }
+
+    /// `EPDFLayer_IsPagePromoted`: whether this layer promoted the page's
+    /// inline annotations, so they resolve through their births rather than
+    /// by position. `false` for a document that is not a layer.
+    pub fn layer_is_page_promoted(&self, page_object_number: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFLayer_IsPagePromoted(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(page_object_number),
+            ) != 0
+        }
+    }
+
+    /// `EPDFLayer_GetBirthObjectNumber`: the object the inline annotation
+    /// born at `birth_index` of the page became when this layer promoted the
+    /// page. `None` when the page is not promoted or had no inline
+    /// annotation there.
+    pub fn layer_birth_object_number(
+        &self,
+        page_object_number: u32,
+        birth_index: u32,
+    ) -> Option<u32> {
+        // SAFETY: the handle is live.
+        let number = unsafe {
+            pdfium_sys::EPDFLayer_GetBirthObjectNumber(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(page_object_number),
+                std::os::raw::c_ulong::from(birth_index),
+            )
+        };
+        u32::try_from(number).ok().filter(|number| *number > 0)
+    }
+
+    /// `EPDFPage_PromoteInlineAnnotsRaw`: make every inline annotation of a
+    /// page's `/Annots` an object, without loading the page. On a layer the
+    /// first promotion of a page the base has records its births. Answers
+    /// how many moved, or `None` when the runtime refused.
+    pub fn promote_inline_annotations_raw(&self, page_index: u32) -> Option<u32> {
+        let page_index = i32::try_from(page_index).ok()?;
+        // SAFETY: the handle is live.
+        let moved =
+            unsafe { pdfium_sys::EPDFPage_PromoteInlineAnnotsRaw(self.as_raw(), page_index) };
+        u32::try_from(moved).ok()
+    }
 }
 
 fn c_key(key: &str) -> Result<CString, PdfiumError> {

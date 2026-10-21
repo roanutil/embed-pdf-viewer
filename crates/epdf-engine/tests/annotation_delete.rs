@@ -124,6 +124,7 @@ fn a_delete_removes_the_annotation_the_typescript_engine_removed() {
             let owned = session.document().expect("open");
             let view = owned.document().page(0).expect("page");
             delete_annotation(
+                owned.document(),
                 &view,
                 &annotation_ref,
                 &before,
@@ -199,6 +200,7 @@ fn a_reference_that_names_nothing_is_an_invalid_reference() {
         ),
     ] {
         let refused = delete_annotation(
+            owned.document(),
             &view,
             &annotation_ref,
             &before,
@@ -271,14 +273,29 @@ fn an_attached_widget_is_not_deleted_through_the_annotation_plane() {
         None => WidgetAttachment::Deletable,
     };
 
-    let refused =
-        delete_annotation(&view, &attached_ref, &before, &after, &resolve, &CancelToken::never())
-            .expect_err("an attached widget");
+    let refused = delete_annotation(
+        owned.document(),
+        &view,
+        &attached_ref,
+        &before,
+        &after,
+        &resolve,
+        &CancelToken::never(),
+    )
+    .expect_err("an attached widget");
     assert!(refused.is(EngineErrorCode::InvalidArg), "{refused}");
 
     // The inert one goes.
-    delete_annotation(&view, &orphan_ref, &before, &after, &resolve, &CancelToken::never())
-        .expect("an inert widget deletes like any other annotation");
+    delete_annotation(
+        owned.document(),
+        &view,
+        &orphan_ref,
+        &before,
+        &after,
+        &resolve,
+        &CancelToken::never(),
+    )
+    .expect("an inert widget deletes like any other annotation");
 
     // And so does a widget with no object number at all, which the join key
     // cannot even address. `resolve_widget` is asked about zero there, and
@@ -291,8 +308,16 @@ fn an_attached_widget_is_not_deleted_through_the_annotation_plane() {
         .base
         .annotation_ref
         .clone();
-    delete_annotation(&view, &bare_ref, &before, &after, &resolve, &CancelToken::never())
-        .expect("a widget with no object number is an ordinary annotation");
+    delete_annotation(
+        owned.document(),
+        &view,
+        &bare_ref,
+        &before,
+        &after,
+        &resolve,
+        &CancelToken::never(),
+    )
+    .expect("a widget with no object number is an ordinary annotation");
     let _ = model;
     let _ = view;
     let _ = owned;

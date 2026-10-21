@@ -10,10 +10,8 @@
 //! `modifiedAt`. The record is read in the file's coordinates and converted
 //! to page space at the host boundary (`page_space::forms`).
 //!
-//! Only the widget reads into this shape so far: the form's rows
-//! (`forms.list`) are its first reader. The other kinds still read into
-//! [`super::dto`] until the annotation read moves over (Task 8.12), which
-//! extends [`AnnotationRecordBase`] rather than writing a second one.
+//! The widget's rows (`forms.list`) read into this shape here; every other
+//! kind's record extends [`AnnotationRecordBase`] in [`super::kinds`].
 
 use pdfium::{Annotation, AppearanceMode};
 use serde::{Deserialize, Serialize};
@@ -199,24 +197,41 @@ const MK_BACKGROUND_COLOR: i32 = 1;
 const MK_CAPTION: i32 = 0;
 
 /// The annotation at `index` of `page`'s `/Annots`, by its name for life
-/// (`annotationRefOf`): its object number, or its position when it is
-/// inline. A promoted inline annotation's birth name is not read yet: that
-/// needs `EPDFLayer_GetBirthName`, which Task 8.12 binds.
+/// (`annotationRefOf`): its position when it is inline, its birth name when
+/// the layer promoted it from an inline annotation of the file, and its
+/// object number otherwise.
 pub fn annotation_ref_of(
+    document: &pdfium::Document,
     annotation: &Annotation<'_>,
     page: PageObjectNumber,
     index: u32,
 ) -> AnnotationRef {
     match annotation.object_number() {
         0 => AnnotationRef::BaseIndex { page, base_index: index },
-        annot => AnnotationRef::ObjectNumber { page, annot },
+        annot => object_ref_of(document, page, annot),
     }
 }
 
-/// The annotation `key` (`/IRT`, `/Popup`) points at, on the same page, or
-/// `None` when the key is absent or its target has no object number
-/// (`readLinkedAnnotationRef`).
-fn linked_ref(
+/// The name of the annotation object `annot` on `page` (`objectRefOf`): its
+/// birth name when the layer promoted it from an inline annotation
+/// (`EPDFLayer_GetBirthName`), else its object number. A document that is
+/// not a layer has no births, so every object reads by its number.
+pub fn object_ref_of(
+    document: &pdfium::Document,
+    page: PageObjectNumber,
+    annot: u32,
+) -> AnnotationRef {
+    match document.layer_birth_name(annot) {
+        Some((_, base_index)) => AnnotationRef::BaseIndex { page, base_index },
+        None => AnnotationRef::ObjectNumber { page, annot },
+    }
+}
+
+/// The annotation `key` (`/IRT`, `/Popup`, `/Parent`) points at, as a ref on
+/// the same page, or `None` when the key is absent or its target has no
+/// object number (`readLinkedAnnotationRef`).
+pub fn linked_ref(
+    document: &pdfium::Document,
     annotation: &Annotation<'_>,
     key: &str,
     page: PageObjectNumber,
@@ -226,7 +241,7 @@ fn linked_ref(
     };
     Ok(match linked.object_number() {
         0 => None,
-        annot => Some(AnnotationRef::ObjectNumber { page, annot }),
+        annot => Some(object_ref_of(document, page, annot)),
     })
 }
 
@@ -251,7 +266,7 @@ pub fn read_annotation_record_base(
         // An empty date is no date; one the parser refuses reads as none.
         Ok(raw.filter(|raw| !raw.is_empty()).as_deref().and_then(pdf_date_to_iso))
     };
-    let reply = linked_ref(annotation, "IRT", page)?.map(|to| AnnotationReply {
+    let reply = linked_ref(document, annotation, "IRT", page)?.map(|to| AnnotationReply {
         to,
         reply_type: AnnotationReplyType::from_code(annotation.reply_type_code()),
     });
@@ -261,7 +276,7 @@ pub fn read_annotation_record_base(
     };
 
     Ok(AnnotationRecordBase {
-        annotation_ref: annotation_ref_of(annotation, page, index),
+        annotation_ref: annotation_ref_of(document, annotation, page, index),
         page,
         has_appearance: annotation.has_appearance_stream(AppearanceMode::Normal),
         appearance_state: dictionary_read("AS", annotation.appearance_state())?,
@@ -280,7 +295,7 @@ pub fn read_annotation_record_base(
         modified_at: date("M")?,
         blend_mode: BlendMode::from_code(annotation.blend_mode_code()),
         reply,
-        popup: linked_ref(annotation, "Popup", page)?,
+        popup: linked_ref(document, annotation, "Popup", page)?,
         group_id: embed("GroupID")?,
         user_id: embed("UserID")?,
         created_by: embed("CreatedBy")?,
