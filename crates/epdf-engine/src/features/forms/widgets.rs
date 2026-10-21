@@ -77,3 +77,54 @@ pub fn read_form_widgets(
     }
     Ok(rows)
 }
+
+/// The rows of `widgets`, each read by its object number on its page: a
+/// form write's answer (`readWidgetRows`). A widget no page shows any more
+/// (deleted with its field), or one on no page, has no row; each is read
+/// once.
+pub fn read_widget_rows(
+    owned: &crate::access::OwnedDocument,
+    widgets: &[super::snapshot::FormWidgetRef],
+) -> Result<Vec<WidgetAnnotation>, EngineError> {
+    let document = owned.document();
+    let model = document.form_model();
+    let mut rows = Vec::new();
+    let mut seen = Vec::new();
+    for widget in widgets {
+        let Ok(page) = PageObjectNumber::new(widget.page_object_number) else {
+            continue;
+        };
+        if widget.annot_object_number == 0 || seen.contains(&widget.annot_object_number) {
+            continue;
+        }
+        seen.push(widget.annot_object_number);
+        let Ok(page_index) = owned.page_index(page) else {
+            continue;
+        };
+        let reference = crate::identity::AnnotationRef::ObjectNumber {
+            page,
+            annot: widget.annot_object_number,
+        };
+        let index = match crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+            document, page_index, &reference,
+        ) {
+            Ok(index) => index,
+            Err(e) if e.code == crate::error::EngineErrorCode::NotFound => continue,
+            Err(e) => return Err(e),
+        };
+        let Some(annotation) = document.raw_annotation(page_index, index) else {
+            continue;
+        };
+        if annotation.subtype_code() != code::WIDGET {
+            continue;
+        }
+        let mut budget = ActionReadBudgetTracker::default();
+        let base = read_annotation_record_base(document, &annotation, page, index, &mut budget)?;
+        let mut row = read_widget_annotation(&annotation, base)?;
+        if let Some(model) = &model {
+            join_widget_field(model, &mut row);
+        }
+        rows.push(row);
+    }
+    Ok(rows)
+}

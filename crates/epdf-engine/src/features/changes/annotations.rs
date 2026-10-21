@@ -791,7 +791,7 @@ fn write_update(
     let reverse = ReverseStep::ObjectsRevert(ObjectsRevertStep {
         reports: reports.to_owned(),
         objects: Vec::new(),
-        subject: RevertSubject { annotation: reference.clone() },
+        subject: RevertSubject::Annotation { annotation: reference.clone() },
         appearance_changed: Some(result.appearance.changed),
         fallback: Some(values_changed(&before, &after, &written)),
     });
@@ -825,7 +825,7 @@ fn values_changed(
             .filter_map(|key| from.get(*key).map(|value| ((*key).clone(), value.clone())))
             .collect::<Map<String, Value>>()
     };
-    RevertFallback { restore: pick(before), left: pick(after) }
+    RevertFallback::Annotation { restore: pick(before), left: pick(after) }
 }
 
 /// Undoes an update (`revertAnnotation`): puts back, by value, each field it
@@ -835,7 +835,9 @@ pub fn revert_annotation(
     ctx: &mut ChangeContext<'_>,
     step: &ObjectsRevertStep,
 ) -> Result<Done, EngineError> {
-    let reference = &step.subject.annotation;
+    let RevertSubject::Annotation { annotation: reference } = &step.subject else {
+        return left_alone(ctx, &step.reports);
+    };
     let Ok(current) = read_annotation(ctx, reference) else {
         return left_alone(ctx, &step.reports);
     };
@@ -843,21 +845,21 @@ pub fn revert_annotation(
     // re-port (Task 8): 8.30 puts the dictionaries back exactly from their
     // captures while they read as the update left them; until then every
     // revert takes the value path below.
-    let Some(fallback) = &step.fallback else {
+    let Some(RevertFallback::Annotation { restore, left }) = &step.fallback else {
         return left_alone(ctx, &step.reports);
     };
-    let keys: Vec<&String> = fallback.left.keys().collect();
+    let keys: Vec<&String> = left.keys().collect();
     let kept: Vec<&String> = keys
         .iter()
         .copied()
-        .filter(|key| super::applier::values_equal(current.get(*key), fallback.left.get(*key)))
+        .filter(|key| super::applier::values_equal(current.get(*key), left.get(*key)))
         .collect();
     if kept.is_empty() {
         return left_alone(ctx, &step.reports);
     }
     let patch: Map<String, Value> = kept
         .iter()
-        .filter_map(|key| fallback.restore.get(*key).map(|value| ((*key).clone(), value.clone())))
+        .filter_map(|key| restore.get(*key).map(|value| ((*key).clone(), value.clone())))
         .collect();
     let mut done = write_update(ctx, reference, patch, &OpResources::default(), &step.reports)?;
     let skipped: Vec<String> =

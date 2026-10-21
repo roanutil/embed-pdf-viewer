@@ -120,8 +120,6 @@ enum Route {
 /// the sub-task named beside it moves its callers to the kind that replaced
 /// it.
 pub const LEGACY_KINDS: &[&str] = &[
-    // 8.20: `document.apply` (98e5c270c).
-    "forms.applyEffects",
     // 8.21: `forms.addWidget` (d7bd2d277).
     "forms.attachWidget",
     // 8.26: renamed `signatures.cancel` (7bccc4f35).
@@ -1423,65 +1421,52 @@ impl Host {
                 Ok(bytes_response(bytes))
             }
 
+            // `WorkerHost.handleFormsSetValue`: the single verb as a one-op
+            // change, so its `opId` undoes it and a retry under it gets the
+            // first answer. Answered `{result, mutationSequence, event}`,
+            // the event `forms.valueSet` as main publishes it.
             "forms.setValue" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let form_value: f::forms::write::FormFieldValue = field(body, "value")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::write::set_value(d, &reference, &form_value, cancel)?
+                let value: f::forms::value::FormFieldValue = field(body, "value")?;
+                let op = f::changes::op::ChangeOp::FormsSetValue {
+                    field: reference,
+                    value,
+                    expect: None,
                 };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormValueChanged(with_empty_meta(
-                        value(&result)?,
-                    )),
-                )
+                self.form_verb(&key, &header.kind, body, op, cancel)
             }
+            // `WorkerHost.handleFormsReset`: the named fields, or every field
+            // without `refs`, as a one-op change. Main publishes one
+            // `forms.valueSet` per field that changed (`formResetFacts`), so
+            // this answer carries them as `events`, as `document.apply`'s
+            // does (see `features::changes`, "Events").
             "forms.reset" => {
-                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::write::reset(d, &reference, cancel)?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormValueChanged(with_empty_meta(
-                        value(&result)?,
-                    )),
-                )
+                let fields: Option<Vec<f::forms::snapshot::FormFieldRef>> = optional(body, "refs")?;
+                let op = f::changes::op::ChangeOp::FormsReset { fields };
+                self.form_verb(&key, &header.kind, body, op, cancel)
             }
-            "forms.import" => {
-                // The data is a PAYLOAD, never a JSON field. An FDF is a file,
-                // and base64 through a string would double its size on a path
-                // that already exists for exactly this.
-                let data = payload(&payloads, 0, "the form data")?;
-                let format: Option<f::forms::write::FormDataFormat> = optional(body, "format")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::write::import_data(d, data, format.map(|f| f.native()), cancel)?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormImported(with_empty_meta(value(
-                        &result,
-                    )?)),
-                )
-            }
+            // re-port (Task 8): FDF and XFDF import went with the runtime
+            // 1461b0c51 API (69e229992) and upstream's form bundles
+            // (7f0b73a3c); 8.22 ports the bundle import.
+            "forms.import" => Err(EngineError::with_message(
+                EngineErrorCode::NotImplemented,
+                "form import takes a form bundle now, which is not ported yet (Task 8.22)",
+            )),
+            // `WorkerHost.handleFormsRepair`: not a change. A final change
+            // (`FINAL_CHANGES`): it ends undo, and its meta says it can't be
+            // undone.
             "forms.repair" => {
                 let bake: bool = optional(body, "bakeAppearances")?.unwrap_or(false);
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let stamp = crate::session::document::WriteStamp { op_id, undoable: false };
                 let result = {
                     let d = self.document(&key)?;
-                    f::forms::write::repair(d, bake, cancel)?
+                    f::forms::write::repair(d, bake, &stamp, cancel)?
                 };
                 self.note_form_write(&key)?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::FormRepaired(with_empty_meta(value(
-                        &result,
-                    )?)),
+                    crate::session::save::DocumentEventInit::FormRepaired(value(&result)?),
                 )
             }
             "forms.createField" => {
@@ -1807,44 +1792,6 @@ impl Host {
                 self.answer_with_notice(&key, result, notice, Vec::new())
             }
 
-            // Owner: 8.20 (`document.apply`, 98e5c270c).
-            "forms.applyEffects" => {
-                let effects: Vec<f::forms::effects::FormEffect> = field(body, "effects")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::effects::apply(d, &effects, cancel)?
-                };
-                // A batch that wrote nothing publishes nothing. `meta` is
-                // the applier's own answer to "did anything land", and
-                // finalizing an all-no-op run would bump the version and
-                // invalidate every cache for a script that changed nothing.
-                // `WorkerHost.handleFormsApplyEffects` still answers it as
-                // `{tag, result}`, the shape `finishMutation` answers, so it
-                // goes out as `pages.flatten`'s and `redaction.apply`'s do.
-                if result.meta.is_none() {
-                    let session = self.sessions.session(&key)?;
-                    return Ok(ok(serde_json::json!({
-                        "result": value(&result)?,
-                        "mutationSequence": session.mutation_sequence(),
-                    })));
-                }
-                // `FormsEffectsApplier` notes the mutation once per effect
-                // that applied or failed, before re-reading its fields.
-                for _ in result.results.iter().filter(|r| {
-                    matches!(
-                        r.status,
-                        f::forms::effects::FormEffectStatus::Applied
-                            | f::forms::effects::FormEffectStatus::Failed
-                    )
-                }) {
-                    self.note_form_write(&key)?;
-                }
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormEffectsApplied(value(&result)?),
-                )
-            }
-
             // Owner: 8.21 (`forms.addWidget`, d7bd2d277).
             "forms.attachWidget" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
@@ -2076,6 +2023,37 @@ impl Host {
                 Ok(op_id.clone())
             }
         }
+    }
+
+    /// A form value verb as a one-op change under the request's
+    /// authority (`handleFormsSetValue`, `handleFormsReset`): its item
+    /// without `type` and `skipped`, and its events. One event answers as
+    /// `event`; a reset, whose facts are one per field, as `events`.
+    fn form_verb(
+        &mut self,
+        key: &SessionKey,
+        kind: &str,
+        body: &serde_json::Value,
+        op: crate::features::changes::op::ChangeOp,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        let job = JobEnvelope::parse(kind, body)?;
+        let op_id = self.op_id_of(&job)?;
+        let authority = job.authority.as_ref().map(change_authority).transpose()?;
+        let item = self.apply_one(key, &op_id, op, authority, cancel)?;
+        let events = item.events()?;
+        let (result, sequence, mut events, payloads) =
+            self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
+        let mut answer = serde_json::json!({
+            "result": result,
+            "mutationSequence": sequence,
+        });
+        if kind == "forms.reset" {
+            answer["events"] = serde_json::Value::Array(events);
+        } else if let Some(event) = events.pop() {
+            answer["event"] = event;
+        }
+        Ok(HostResponse { json: envelope(answer), payloads })
     }
 
     /// A single annotation verb as a one-op change, checked against the
@@ -2522,14 +2500,6 @@ fn empty_meta() -> serde_json::Value {
     serde_json::json!({ "affectedPages": [], "cacheDelta": null })
 }
 
-/// A form write's result as the TypeScript answers it: with `meta`.
-fn with_empty_meta(mut result: serde_json::Value) -> serde_json::Value {
-    if let Some(object) = result.as_object_mut() {
-        object.insert("meta".into(), empty_meta());
-    }
-    result
-}
-
 /// A field edit's result (`FormFieldCreateResult`, `FormFieldUpdateResult`,
 /// `FormWidgetLinkResult`): the field read back, and `meta`.
 fn field_result(
@@ -2762,6 +2732,15 @@ fn strip_item(
         ChangeItem::AnnotationsRestore { annotations, meta, .. } => {
             Ok(serde_json::json!({ "annotations": annotations, "meta": value(&meta)? }))
         }
+        // Without its `skipped` too, as `handleFormsReset` strips it.
+        ChangeItem::FormsSetValue { field, widgets, meta }
+        | ChangeItem::FormsSetDisplay { field, widgets, meta }
+        | ChangeItem::FormsSetAppearanceText { field, widgets, meta } => {
+            Ok(serde_json::json!({ "field": field, "widgets": widgets, "meta": value(&meta)? }))
+        }
+        ChangeItem::FormsReset { fields, widgets, meta, .. } => {
+            Ok(serde_json::json!({ "fields": fields, "widgets": widgets, "meta": value(&meta)? }))
+        }
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }
@@ -2792,7 +2771,6 @@ const MUTATING_KINDS: &[&str] = &[
     "annotations.flatten",
     "forms.setValue",
     "forms.reset",
-    "forms.applyEffects",
     "forms.import",
     "forms.repair",
     "forms.createField",

@@ -191,11 +191,10 @@ pub enum DocumentEventInit {
     /// `metadata.updateCustom` (a4b8259f7).
     #[serde(rename = "metadata.customUpdated")]
     MetadataCustomUpdated(serde_json::Value),
-    #[serde(rename = "form.valueChanged")]
-    FormValueChanged(serde_json::Value),
     #[serde(rename = "form.imported")]
     FormImported(serde_json::Value),
-    #[serde(rename = "form.repaired")]
+    /// `forms.repair` (`publishWrite(opId, { type: 'forms.repaired' })`).
+    #[serde(rename = "forms.repaired")]
     FormRepaired(serde_json::Value),
     #[serde(rename = "form.fieldCreated")]
     FormFieldCreated(serde_json::Value),
@@ -207,10 +206,6 @@ pub enum DocumentEventInit {
     FormWidgetAttached(serde_json::Value),
     #[serde(rename = "form.widgetDetached")]
     FormWidgetDetached(serde_json::Value),
-    /// `forms.applyEffects`, published only when the batch wrote something
-    /// (`meta` is not null).
-    #[serde(rename = "form.effectsApplied")]
-    FormEffectsApplied(serde_json::Value),
     /// `measure.setScale`. The TypeScript publishes it from
     /// `LocalPageMeasureService` rather than the worker, with the same
     /// `PageScaleResult` the call answers.
@@ -245,7 +240,6 @@ impl DocumentEventInit {
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
             | Self::MetadataCustomUpdated(v)
-            | Self::FormValueChanged(v)
             | Self::FormImported(v)
             | Self::FormRepaired(v)
             | Self::FormFieldCreated(v)
@@ -253,7 +247,6 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(v)
             | Self::FormWidgetAttached(v)
             | Self::FormWidgetDetached(v)
-            | Self::FormEffectsApplied(v)
             | Self::PageViewportsChanged(v)
             | Self::SignatureCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
@@ -274,15 +267,13 @@ impl DocumentEventInit {
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
             Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
-            Self::FormValueChanged(_) => "form.valueChanged",
             Self::FormImported(_) => "form.imported",
-            Self::FormRepaired(_) => "form.repaired",
+            Self::FormRepaired(_) => "forms.repaired",
             Self::FormFieldCreated(_) => "form.fieldCreated",
             Self::FormFieldUpdated(_) => "form.fieldUpdated",
             Self::FormFieldDeleted(_) => "form.fieldDeleted",
             Self::FormWidgetAttached(_) => "form.widgetAttached",
             Self::FormWidgetDetached(_) => "form.widgetDetached",
-            Self::FormEffectsApplied(_) => "form.effectsApplied",
             Self::PageViewportsChanged(_) => "page.viewportsChanged",
             Self::SignaturePrepared { .. } => "signature.prepared",
             Self::SignatureCompleted(_) => "signature.completed",
@@ -313,7 +304,6 @@ impl DocumentEventInit {
     pub fn family(&self) -> MutationFamily {
         match self {
             Self::RedactionApplied(_)
-            | Self::FormValueChanged(_)
             | Self::FormImported(_)
             | Self::FormRepaired(_)
             | Self::FormFieldCreated(_)
@@ -321,7 +311,6 @@ impl DocumentEventInit {
             | Self::FormFieldDeleted(_)
             | Self::FormWidgetAttached(_)
             | Self::FormWidgetDetached(_)
-            | Self::FormEffectsApplied(_)
             // The install already advanced the sequence.
             | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,

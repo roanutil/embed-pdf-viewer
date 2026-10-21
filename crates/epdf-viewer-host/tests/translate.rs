@@ -1243,8 +1243,8 @@ fn a_field_edit_answers_its_result_and_event_as_the_host_sent_them() {
 
 #[test]
 fn an_effects_batch_hands_back_the_hosts_effects_applied() {
-    // The host publishes `form.effectsApplied` itself, as the TypeScript
-    // engine does, so the event goes out as it came.
+    // `call_host` answers a batch with the kernel's `form.effectsApplied`
+    // (`kernel_forms`), so the event goes out as it came.
     let call = translate("d1", "forms.applyEffects", None, &[json!([])], 31).unwrap();
     let json = r#"{"result":{"result":{"results":[],"changedWidgets":[]},"mutationSequence":4,"event":{"type":"form.effectsApplied","origin":{"kind":"local"},"results":[],"changedWidgets":[]}}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
@@ -1252,6 +1252,98 @@ fn an_effects_batch_hands_back_the_hosts_effects_applied() {
     let event = decoded.event.unwrap();
     assert_eq!(event["type"], "form.effectsApplied");
     assert_eq!(event["changedWidgets"], json!([]));
+}
+
+/// A host with `form_fields.pdf` open as `d1`, through `call_host`.
+fn form_host() -> epdf_engine::host::Host {
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let fixture = test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf");
+    let opened =
+        epdf_viewer_host::translate::call_host(&mut host, &open.to_string(), vec![fixture]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    host
+}
+
+/// Send a kernel call through `call_host` and decode it as the kernel does.
+fn kernel_call(
+    host: &mut epdf_engine::host::Host,
+    path: &str,
+    args: &[Value],
+) -> Result<epdf_viewer_host::translate::Decoded, epdf_kernel::Error> {
+    let call = translate("d1", path, None, args, 40).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(host, &call.request.to_string(), Vec::new());
+    decode(&call.decode, response)
+}
+
+#[test]
+fn a_kernel_value_write_runs_in_upstreams_spelling_and_answers_in_the_kernels() {
+    // The kernel's `{type: "choice", values}` on a dropdown goes as
+    // `{value}`, and the answer comes back as `{field, changedWidgets}` with
+    // a `form.valueChanged` event, its widgets in the kernel's spelling.
+    let mut host = form_host();
+    let decoded = kernel_call(
+        &mut host,
+        "forms.setValue",
+        &[kernel_field(10), json!({ "type": "choice", "values": ["DE"] })],
+    )
+    .unwrap();
+    assert_eq!(decoded.value["field"]["name"], "country", "{}", decoded.value);
+    assert_eq!(decoded.value["field"]["value"], "DE");
+    assert_eq!(decoded.value["field"]["fieldObjectNumber"], 10);
+    assert_eq!(decoded.value["changedWidgets"][0]["annotObjectNumber"], 10, "{}", decoded.value);
+    let event = decoded.event.expect("an event");
+    assert_eq!(event["type"], "form.valueChanged");
+    assert_eq!(event["field"]["value"], "DE");
+}
+
+#[test]
+fn a_kernel_effects_batch_runs_as_one_change() {
+    // The batch is one `document.apply` change: each effect answers a
+    // status, and the change publishes the kernel's `form.effectsApplied`.
+    let mut host = form_host();
+    let effects = json!([
+        { "kind": "setValue", "ref": kernel_field(4), "value": { "type": "text", "value": "Ada" } },
+        { "kind": "setValue", "ref": kernel_field(4), "value": { "type": "text", "value": "Ada" } },
+        { "kind": "reset", "refs": [kernel_field(4)] },
+    ]);
+    let decoded = kernel_call(&mut host, "forms.applyEffects", &[effects]).unwrap();
+    let statuses: Vec<&Value> =
+        decoded.value["results"].as_array().unwrap().iter().map(|r| &r["status"]).collect();
+    assert_eq!(statuses, [&json!("applied"), &json!("unchanged"), &json!("applied")]);
+    assert_eq!(decoded.value["results"][2]["fields"][0]["value"], "unset");
+    assert_eq!(decoded.value["changedWidgets"][0]["annotObjectNumber"], 4, "{}", decoded.value);
+    assert_eq!(decoded.event.expect("an event")["type"], "form.effectsApplied");
+}
+
+#[test]
+fn a_refused_kernel_batch_rejects_every_effect_and_writes_nothing() {
+    // All or none: the missing field refuses the change, so the write
+    // before it is taken back and every effect reports the refusal.
+    let mut host = form_host();
+    let effects = json!([
+        { "kind": "setValue", "ref": kernel_field(4), "value": { "type": "text", "value": "Ada" } },
+        { "kind": "setValue", "ref": kernel_field(9999), "value": { "type": "text", "value": "x" } },
+    ]);
+    let decoded = kernel_call(&mut host, "forms.applyEffects", &[effects]).unwrap();
+    for result in decoded.value["results"].as_array().unwrap() {
+        assert_eq!(result["status"], "rejected", "{}", decoded.value);
+        assert_eq!(result["error"]["code"], "NotFound", "{}", decoded.value);
+    }
+    assert!(decoded.event.is_none());
+    let form = kernel_call(&mut host, "forms.list", &[]).unwrap().value;
+    let text = form["fields"].as_array().unwrap().iter().find(|f| f["name"] == "billing.name");
+    assert_eq!(text.unwrap()["value"], "Ada Lovelace", "the refused batch wrote");
+}
+
+#[test]
+fn a_kernel_repair_answers_its_counters_in_the_kernels_spelling() {
+    let mut host = form_host();
+    let decoded = kernel_call(&mut host, "forms.repair", &[json!({})]).unwrap();
+    assert_eq!(decoded.value["needAppearancesCleared"], false, "{}", decoded.value);
+    assert!(decoded.value.get("needsAppearancesCleared").is_none());
+    assert_eq!(decoded.event.expect("an event")["type"], "form.repaired");
 }
 
 // ── redaction ──────────────────────────────────────────────────────────────

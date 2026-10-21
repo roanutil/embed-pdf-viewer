@@ -114,10 +114,8 @@ impl MutationMeta {
 
 /// The page-state envelope the families answered before upstream's
 /// [`MutationMeta`]: each affected page's revision and weak-annotation
-/// state. Kept only for the writes that have not moved to [`MutationMeta`]
-/// yet, each named by the sub-task that moves it: `forms.applyEffects`
-/// (8.20, retired for `document.apply`) and `redaction.apply` (8.23). The
-/// last owner deletes it.
+/// state. Kept only for the write that has not moved to [`MutationMeta`]
+/// yet, `redaction.apply`, whose owner (8.23) deletes it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageStateMeta {

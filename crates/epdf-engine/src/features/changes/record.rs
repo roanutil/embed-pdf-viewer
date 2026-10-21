@@ -142,23 +142,24 @@ mod hex_vec {
     }
 }
 
-/// Puts back what an annotation update wrote (`ObjectsRevertStep`).
+/// Puts back the dictionaries an op wrote, exactly as they were, when each
+/// still reads as the op left it (`ObjectsRevertStep`). When one doesn't,
+/// someone changed it since: an annotation update or a form value write
+/// puts back, by value, only what still shows what the op set
+/// (`fallback`); any other op is skipped.
 ///
-/// Upstream captures each dictionary the update wrote, before and after
-/// (`objects`), and puts them back exactly while they still read as the
-/// update left them, falling back to values only when someone changed them
-/// since. The captures are canonical and raw dictionary exports, which the
-/// fork makes only inside a layer transaction (Task 8.30, as 8.8 left the
-/// attachment captures). Until then `objects` is empty and the step always
-/// takes the value path: the fields the update changed that still hold what
-/// it left are put back by an update, and the rest are reported skipped.
+/// A form write captures its dictionaries (`objects`, the fork's raw and
+/// canonical dictionary exports). An annotation update does not yet: its
+/// captures wait for Task 8.30, so its `objects` is empty and it always
+/// takes the value path.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectsRevertStep {
-    /// What its item reports doing: `annotations.update`.
+    /// What its item reports doing: `annotations.update`, `forms.setValue`,
+    /// `forms.setDisplay`, `forms.setAppearanceText` or `forms.reset`.
     pub reports: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub objects: Vec<serde_json::Value>,
+    pub objects: Vec<CapturedObject>,
     /// What the item reads back.
     pub subject: RevertSubject,
     /// Whether the update changed what the annotation shows.
@@ -168,21 +169,54 @@ pub struct ObjectsRevertStep {
     pub fallback: Option<RevertFallback>,
 }
 
-/// What a revert's item reads back.
+/// A dictionary an op wrote (`CapturedObject`): what the layer held of it
+/// before (`None`: it didn't exist), its keys under `deep` with the objects
+/// they reach, and the canonical bytes of how the op left it, the guard.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RevertSubject {
-    pub annotation: crate::identity::AnnotationRef,
+pub struct CapturedObject {
+    pub object_number: u32,
+    pub deep: Vec<String>,
+    #[serde(with = "crate::features::files::attachments::hex_bytes")]
+    pub before: Option<Vec<u8>>,
+    #[serde(with = "hex_vec")]
+    pub after: Vec<u8>,
 }
 
-/// How a revert puts values back (`RevertFallback`, its `annotation` kind):
-/// `restore` the old values of the fields the update changed, `left` the
-/// values it left in them. A field still holding its value is put back.
+/// What a revert's item reads back: the annotation, or the form fields by
+/// object number.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename = "annotation")]
-pub struct RevertFallback {
-    pub restore: serde_json::Map<String, serde_json::Value>,
-    pub left: serde_json::Map<String, serde_json::Value>,
+#[serde(untagged)]
+pub enum RevertSubject {
+    Annotation { annotation: crate::identity::AnnotationRef },
+    Fields { fields: Vec<u32> },
+}
+
+/// How a revert puts values back when the dictionaries it wrote changed
+/// since (`RevertFallback`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum RevertFallback {
+    /// `restore` the old values of the fields an annotation update changed,
+    /// `left` the values it left in them. A field still holding its value
+    /// is put back.
+    Annotation {
+        restore: serde_json::Map<String, serde_json::Value>,
+        left: serde_json::Map<String, serde_json::Value>,
+    },
+    /// Each form field a value write changed: its value before, and the
+    /// value it left. A field still holding that value gets its old one
+    /// back.
+    Value { fields: Vec<FieldValueChange> },
+}
+
+/// One field of a [`RevertFallback::Value`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldValueChange {
+    pub object_number: u32,
+    pub before: crate::features::forms::value::FormFieldValue,
+    pub left: crate::features::forms::value::FormFieldValue,
 }
 
 /// Deletes what a create or a restore brought, with its thread and popups,
@@ -308,7 +342,8 @@ pub struct MetadataRevertStep {
 /// The bytes of captures a record holds, which the ledger budgets
 /// (`recordBytes`). A metadata step captures no bytes, and neither does an
 /// attachment remove here: its guard is a read, not canonical bytes. An
-/// annotation restore and a page restore hold their captures.
+/// annotation restore, a page restore and a form write's revert hold their
+/// captures.
 pub fn record_bytes(record: &ChangeRecord) -> usize {
     record
         .steps
@@ -316,8 +351,12 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
         .map(|step| match step {
             ReverseStep::MetadataRevert(_)
             | ReverseStep::AttachmentsRemove(_)
-            | ReverseStep::AnnotationRemove(_)
-            | ReverseStep::ObjectsRevert(_) => 0,
+            | ReverseStep::AnnotationRemove(_) => 0,
+            ReverseStep::ObjectsRevert(step) => step
+                .objects
+                .iter()
+                .map(|object| object.before.as_ref().map_or(0, Vec::len) + object.after.len())
+                .sum(),
             ReverseStep::AttachmentsRestore(step) => {
                 step.capture.bytes.as_ref().map_or(0, Vec::len)
             }

@@ -7,7 +7,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, call_legacy, open_fixture, page_ref};
+use common::{call, open_fixture, page_ref};
 
 const RICH: &str = "tooling/engine-conformance/fixtures/rich_metadata.pdf";
 const ROTATED: &str = "tooling/engine-conformance/fixtures/rotated_pages.pdf";
@@ -334,37 +334,33 @@ fn attachment_writes_publish_the_typescript_events() {
 }
 
 #[test]
-fn an_effects_batch_publishes_form_effects_applied() {
+fn a_form_change_publishes_each_ops_fact() {
+    // `changeEvents`: a value write is `forms.valueSet`, a script's display
+    // effect `forms.updated`, each the op's item without its `type`, one
+    // fact of the change each, under its `opId`.
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
-    let effect = json!({ "kind": "setValue", "ref": { "kind": "objectNumber", "objectNumber": 4 },
-                         "value": { "type": "text", "value": "Ada" } });
-    // Removed upstream; owner 8.20 (`document.apply`).
-    let applied = call_legacy(
+    let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
+    let applied = call(
         &mut host,
-        json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }),
+        json!({ "kind": "document.apply", "docId": doc, "opId": "script-1", "change": { "ops": [
+            { "type": "forms.setValue", "field": text, "value": { "value": "Ada" } },
+            { "type": "forms.setDisplay", "field": text, "display": "hidden" },
+        ] } }),
     );
-    assert_eq!(applied["event"]["type"], json!("form.effectsApplied"), "{applied}");
-    assert_result_rides(&applied);
-
-    let sequence = applied["mutationSequence"].clone();
-    assert!(sequence.is_u64(), "{applied}");
-
-    // The same value again writes nothing: no mutation, no event. The answer
-    // is still `{result, mutationSequence}`, as `redaction.apply`'s no-op
-    // is: `WorkerHost` packs `{tag, result}` for both, with or without
-    // `finishMutation`.
-    let again = call_legacy(
-        &mut host,
-        json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }),
-    );
-    assert!(again.get("event").is_none(), "{again}");
-    assert_eq!(again["result"]["results"][0]["status"], json!("unchanged"), "{again}");
-    assert!(again["result"].get("meta").is_some_and(Value::is_null), "{again}");
-    assert_eq!(again["mutationSequence"], sequence, "{again}");
-    let mut keys: Vec<&str> = again.as_object().unwrap().keys().map(String::as_str).collect();
-    keys.sort_unstable();
-    assert_eq!(keys, ["mutationSequence", "result"], "{again}");
+    let events = applied["events"].as_array().expect("events");
+    let types: Vec<&Value> = events.iter().map(|e| &e["type"]).collect();
+    assert_eq!(types, [&json!("forms.valueSet"), &json!("forms.updated")], "{applied}");
+    for (index, (event, item)) in
+        events.iter().zip(applied["result"]["items"].as_array().unwrap()).enumerate()
+    {
+        assert_eq!(
+            event["origin"]["tx"],
+            json!({ "id": "script-1", "index": index, "count": 2 }),
+            "{applied}"
+        );
+        assert_item_rides(item, event);
+    }
 }
 
 #[test]
@@ -472,15 +468,15 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert!(nothing.get("event").is_none(), "{nothing}");
 }
 
-/// `EMPTY_FORM_META` and `FormMutator`'s `EMPTY_META`: a form write is
-/// non-structural at the page-list level, so a local engine pins nothing.
+/// `EMPTY_FORM_META`: a field edit is non-structural at the page-list
+/// level, so a local engine pins nothing.
 fn empty_meta() -> Value {
     json!({ "affectedPages": [], "cacheDelta": null })
 }
 
 /// Answer a form write, pinning what every one of them shares: the
-/// TypeScript result's `meta`, the event that spreads the result beside
-/// its type, and a sequence that moved past `last`.
+/// event that spreads the result beside its type, and a sequence that moved
+/// past `last`.
 fn form_write(
     host: &mut Host,
     last: &mut u64,
@@ -495,7 +491,6 @@ fn form_write(
         envelope(host, request.clone(), payloads)
     }["result"]
         .clone();
-    assert_eq!(answer["result"]["meta"], empty_meta(), "{request}: {answer}");
     assert_eq!(answer["event"]["type"], json!(event), "{answer}");
     assert_result_rides(&answer);
     let sequence = answer["mutationSequence"].as_u64().expect("a mutation sequence");
@@ -506,49 +501,78 @@ fn form_write(
 
 #[test]
 fn every_form_write_carries_meta() {
+    // `FormMutationMeta` for the value writes: the write's pages, `opId`
+    // and whether it can be undone, beside the fields and widgets it
+    // changed. A repair's is `emptyMeta`: no page, and no undo.
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
     let mut last = 0;
     let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
+    let widget = json!({ "ref": { "kind": "objectNumber", "page": page_ref(3u64),
+        "objectNumber": 4 }, "objectNumber": 4, "page": page_ref(3u64) });
 
     let set = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.setValue", "docId": doc, "ref": text,
-                "value": { "type": "text", "value": "Ada" } }),
+        json!({ "kind": "forms.setValue", "docId": doc, "opId": "fill-1", "ref": text,
+                "value": { "value": "Ada" } }),
         Vec::new(),
-        "form.valueChanged",
+        "forms.valueSet",
     );
-    assert!(set["result"]["field"].is_object(), "{set}");
-    form_write(
-        &mut host,
-        &mut last,
-        json!({ "kind": "forms.reset", "docId": doc, "ref": text }),
-        Vec::new(),
-        "form.valueChanged",
+    assert_eq!(
+        set["result"]["meta"],
+        json!({ "affectedPages": [page_ref(3u64)], "cacheDelta": null, "opId": "fill-1",
+                "undoable": true, "changedFields": [text], "changedWidgets": [widget],
+                "redrawnWidgets": [widget] }),
+        "{set}"
     );
+    assert_eq!(set["result"]["field"]["value"], json!("Ada"), "{set}");
+    assert_eq!(set["result"]["widgets"][0]["ref"], widget["ref"], "{set}");
+    assert_eq!(set["event"]["origin"]["tx"], json!({ "id": "fill-1", "index": 0, "count": 1 }));
 
-    let exported = host.call(
-        &json!({ "kind": "forms.export", "jobId": 9, "docId": doc, "format": "xfdf" }).to_string(),
-        Vec::new(),
-    );
-    let data = exported.payloads.into_iter().next().expect("the exported data");
-    form_write(
+    // A reset publishes one `forms.valueSet` per field it changed
+    // (`formResetFacts`), as `events`.
+    let reset = envelope(
         &mut host,
-        &mut last,
-        json!({ "kind": "forms.import", "docId": doc, "format": "xfdf" }),
-        vec![data],
-        "form.imported",
-    );
-    form_write(
-        &mut host,
-        &mut last,
-        json!({ "kind": "forms.repair", "docId": doc }),
+        json!({ "kind": "forms.reset", "docId": doc, "opId": "reset-1", "refs": [text] }),
         Vec::new(),
-        "form.repaired",
-    );
+    )["result"]
+        .clone();
+    assert_eq!(reset["result"]["fields"][0]["value"], json!("unset"), "{reset}");
+    assert_eq!(reset["result"]["meta"]["changedFields"], json!([text]), "{reset}");
+    let events = reset["events"].as_array().expect("events");
+    assert_eq!(events.len(), 1, "{reset}");
+    assert_eq!(events[0]["type"], json!("forms.valueSet"), "{reset}");
+    assert_eq!(events[0]["field"], reset["result"]["fields"][0], "{reset}");
+    assert_eq!(events[0]["meta"]["changedFields"], json!([text]), "{reset}");
+    let sequence = reset["mutationSequence"].as_u64().expect("a sequence");
+    assert!(sequence > last, "{reset}");
+    last = sequence;
 
-    // The field edits answer `{field, meta}`, not the bare field.
+    let repaired = form_write(
+        &mut host,
+        &mut last,
+        json!({ "kind": "forms.repair", "docId": doc, "opId": "repair-1" }),
+        Vec::new(),
+        "forms.repaired",
+    );
+    assert_eq!(
+        repaired["result"]["meta"],
+        json!({ "affectedPages": [], "cacheDelta": null, "opId": "repair-1", "undoable": false }),
+        "{repaired}"
+    );
+    assert_eq!(repaired["result"]["needsAppearancesCleared"], json!(false), "{repaired}");
+}
+
+#[test]
+fn every_field_edit_carries_meta() {
+    // The field edits answer `{field, meta}`, not the bare field. Their
+    // move to upstream's ops and `FormMutationMeta` is 8.21's.
+    let mut host = Host::new();
+    let (doc, _) = open_fixture(&mut host, FORMS);
+    let mut last = 0;
+    let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
+    let check = |answer: &Value| assert_eq!(answer["result"]["meta"], empty_meta(), "{answer}");
     let created = form_write(
         &mut host,
         &mut last,
@@ -557,6 +581,7 @@ fn every_form_write_carries_meta() {
         Vec::new(),
         "form.fieldCreated",
     );
+    check(&created);
     assert_eq!(created["result"]["field"]["name"], json!("new.plain"), "{created}");
     let updated = form_write(
         &mut host,
@@ -566,6 +591,7 @@ fn every_form_write_carries_meta() {
         Vec::new(),
         "form.fieldUpdated",
     );
+    check(&updated);
     assert_eq!(updated["result"]["field"]["ref"]["objectNumber"], json!(4), "{updated}");
 
     let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
@@ -577,7 +603,7 @@ fn every_form_write_carries_meta() {
         Vec::new(),
         "form.widgetDetached",
     );
-    assert!(detached["result"]["field"].is_object(), "{detached}");
+    check(&detached);
     let attached = form_write(
         &mut host,
         &mut last,
@@ -586,7 +612,7 @@ fn every_form_write_carries_meta() {
         Vec::new(),
         "form.widgetAttached",
     );
-    assert!(attached["result"]["field"].is_object(), "{attached}");
+    check(&attached);
 }
 
 #[test]

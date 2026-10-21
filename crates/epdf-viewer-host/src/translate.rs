@@ -220,7 +220,8 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.list" => ("forms.list", Decode::FormResult),
         "forms.setValue" => ("forms.setValue", Decode::FormMutation),
         "forms.reset" => ("forms.reset", Decode::FormMutation),
-        // Removed upstream; owner 8.20 (`document.apply`).
+        // Removed upstream (98e5c270c): a `document.apply` change, answered
+        // in the kernel's shape by `call_host` (`kernel_forms`).
         "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::FormMutation),
@@ -485,6 +486,10 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if let Some(response) = metadata::kernel_call(host, &kind, &request) {
         return response;
     }
+    if kernel_forms::KINDS.contains(&kind.as_str()) {
+        let response = kernel_forms::call(host, &kind, &request, payloads);
+        return page_space::with_raw_field_flags(host, &request, response);
+    }
     if kind == "annotations.list" {
         return kernel_annotations::listing(host, &request);
     }
@@ -621,6 +626,305 @@ mod metadata {
                 json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin });
         }
         Ok((json!({ "result": answer }), response.payloads))
+    }
+}
+
+/// The kernel's form value writes (Task 8.20).
+///
+/// The kernel writes a value in this branch's old spelling
+/// (`{type: "text", value}`, `{type: "toggle", state}` by on-state,
+/// `{type: "choice", values}`), resets one field, and sends a script's
+/// effects as one `forms.applyEffects` batch that answers each effect's
+/// status. Upstream takes a value as a read returns it (`{value}`,
+/// `{checked}`, `{selectedValues}`), resets `refs`, and runs a script's
+/// effects as `document.apply` ops, all or none (98e5c270c). [`call`]
+/// reads the form to spell each value as its field takes it, sends the
+/// upstream request, and answers in the kernel's shape: `{field,
+/// changedWidgets}` and a `form.valueChanged` event for a value write or a
+/// reset; `{results, changedWidgets, meta}` and `form.effectsApplied` for a
+/// batch, every effect `rejected` with the refusal when the change was
+/// refused, since nothing of it landed; and `form.repaired` for a repair,
+/// with its counter `needAppearancesCleared`. Field records go back to the
+/// file's coordinates. Dead once Task 13 ports the kernel.
+mod kernel_forms {
+    use epdf_engine::host::{Host, HostResponse};
+    use serde_json::{Value, json};
+
+    /// The kinds [`call`] answers.
+    pub(super) const KINDS: &[&str] =
+        &["forms.setValue", "forms.reset", "forms.applyEffects", "forms.repair"];
+
+    /// The kernel's call `kind`, one of [`KINDS`], answered in its shape.
+    pub(super) fn call(
+        host: &mut Host,
+        kind: &str,
+        request: &Value,
+        payloads: Vec<Vec<u8>>,
+    ) -> HostResponse {
+        let answer = match kind {
+            "forms.setValue" => set_value(host, request),
+            "forms.reset" => reset(host, request),
+            "forms.applyEffects" => apply_effects(host, request),
+            _ => repair(host, request, payloads),
+        };
+        match answer {
+            Ok((envelope, payloads)) => HostResponse { json: envelope.to_string(), payloads },
+            Err(response) => response,
+        }
+    }
+
+    type Answer = Result<(Value, Vec<Vec<u8>>), HostResponse>;
+
+    /// One call, answering the envelope's `result` and the response, or the
+    /// whole response when it is an error.
+    fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
+        let response = host.call(&call.to_string(), Vec::new());
+        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        if envelope.get("error").is_some() {
+            return Err(response);
+        }
+        match envelope.get_mut("result") {
+            Some(result) => {
+                let result = result.take();
+                Ok((result, response))
+            }
+            None => Err(response),
+        }
+    }
+
+    fn on_document(request: &Value, kind: &str) -> Value {
+        let mut call = json!({ "kind": kind, "jobId": request.get("jobId").cloned() });
+        for key in ["docId", "layerName", "opId", "authority"] {
+            if let Some(value) = request.get(key) {
+                call[key] = value.clone();
+            }
+        }
+        call
+    }
+
+    /// The form's fields, as `forms.list` reads them.
+    fn fields(host: &mut Host, request: &Value) -> Result<Vec<Value>, HostResponse> {
+        let (form, _) = send(host, &on_document(request, "forms.list"))?;
+        Ok(form["fields"].as_array().cloned().unwrap_or_default())
+    }
+
+    fn field_of<'f>(fields: &'f [Value], reference: &Value) -> Option<&'f Value> {
+        fields.iter().find(|field| {
+            field["ref"] == *reference
+                || (reference["kind"] == "fqn" && field["name"] == reference["name"])
+        })
+    }
+
+    /// A kernel value as its field takes it now. A value already in
+    /// upstream's spelling goes as it came; one that fits no field goes in
+    /// the shape the host refuses, so the refusal is the host's.
+    pub(super) fn wire_value(field: Option<&Value>, value: &Value) -> Value {
+        let family = field.and_then(|f| f["family"].as_str()).unwrap_or_default();
+        match value.get("type").and_then(Value::as_str) {
+            Some("text") => json!({ "value": value.get("value").cloned().unwrap_or(Value::Null) }),
+            Some("toggle") => {
+                let state = value.get("state").and_then(Value::as_str);
+                let Some(state) = state else { return json!({ "value": null }) };
+                // The widget with that on-state, by its export value.
+                let export = field
+                    .and_then(|f| f["widgets"].as_array())
+                    .and_then(|w| w.iter().find(|w| w["onState"] == state))
+                    .and_then(|w| w["exportValue"].as_str())
+                    .unwrap_or(state);
+                json!({ "value": export })
+            }
+            Some("choice") => {
+                let values = value.get("values").cloned().unwrap_or_else(|| json!([]));
+                match (family, values.as_array().map(Vec::len)) {
+                    ("combobox", Some(0)) => json!({ "value": null }),
+                    ("combobox", Some(1)) => json!({ "value": values[0] }),
+                    _ => json!({ "selectedValues": values }),
+                }
+            }
+            _ => value.clone(),
+        }
+    }
+
+    /// A field record answered in page space, in the file's coordinates.
+    fn field_in_file_space(
+        host: &Host,
+        request: &Value,
+        field: Value,
+    ) -> Result<Value, HostResponse> {
+        let mut records = json!({ "fields": [field] });
+        records = super::page_space::form_records_in_file_space(host, request, records)
+            .map_err(|message| refusal(&message))?;
+        Ok(records["fields"][0].take())
+    }
+
+    fn refusal(message: &str) -> HostResponse {
+        HostResponse {
+            json: json!({ "error": { "name": "EngineError", "code": "WireFormat",
+                "message": message } })
+            .to_string(),
+            payloads: Vec::new(),
+        }
+    }
+
+    /// The kernel's mutation envelope.
+    fn mutation(result: Value, sequence: &Value, event: Option<Value>) -> Value {
+        let mut answer = json!({ "result": result, "mutationSequence": sequence });
+        if let Some(event) = event {
+            answer["event"] = event;
+        }
+        json!({ "result": answer })
+    }
+
+    /// `{type: kernel, origin, ...result}`.
+    fn kernel_event(kind: &str, origin: Option<&Value>, result: &Value) -> Option<Value> {
+        let origin = origin?;
+        let mut event = json!({ "type": kind, "origin": origin });
+        if let (Some(event), Some(fields)) = (event.as_object_mut(), result.as_object()) {
+            for (key, value) in fields {
+                event.insert(key.clone(), value.clone());
+            }
+        }
+        Some(event)
+    }
+
+    fn set_value(host: &mut Host, request: &Value) -> Answer {
+        let fields = fields(host, request)?;
+        let reference = request.get("ref").cloned().unwrap_or(Value::Null);
+        let value = wire_value(field_of(&fields, &reference), &request["value"]);
+        let mut call = on_document(request, "forms.setValue");
+        call["effect"] = json!("write");
+        call["ref"] = reference;
+        call["value"] = value;
+        let (answer, response) = send(host, &call)?;
+        let field = field_in_file_space(host, request, answer["result"]["field"].clone())?;
+        let result = json!({
+            "field": field,
+            "changedWidgets": answer["result"]["meta"]["changedWidgets"],
+        });
+        let event = kernel_event("form.valueChanged", answer["event"].get("origin"), &result);
+        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    fn reset(host: &mut Host, request: &Value) -> Answer {
+        let reference = request.get("ref").cloned().unwrap_or(Value::Null);
+        let mut call = on_document(request, "forms.reset");
+        call["effect"] = json!("write");
+        call["refs"] = json!([reference]);
+        let (answer, response) = send(host, &call)?;
+        // The field read back: the one the reset changed, or as it is.
+        let field = match answer["result"]["fields"].get(0) {
+            Some(field) => field.clone(),
+            None => {
+                let fields = fields(host, request)?;
+                field_of(&fields, &reference).cloned().unwrap_or(Value::Null)
+            }
+        };
+        let field = field_in_file_space(host, request, field)?;
+        let result = json!({
+            "field": field,
+            "changedWidgets": answer["result"]["meta"]["changedWidgets"],
+        });
+        let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
+        let event = kernel_event("form.valueChanged", origin, &result);
+        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    /// An effect as the op upstream runs for it (`formEffectOps`).
+    fn op_of(effect: &Value, fields: &[Value]) -> Value {
+        let reference = effect.get("ref").cloned().unwrap_or(Value::Null);
+        match effect.get("kind").and_then(Value::as_str) {
+            Some("setValue") => json!({ "type": "forms.setValue", "field": reference,
+                "value": wire_value(field_of(fields, &reference), &effect["value"]) }),
+            Some("setDisplay") => json!({ "type": "forms.setDisplay", "field": reference,
+                "display": effect["display"] }),
+            Some("setAppearanceText") => json!({ "type": "forms.setAppearanceText",
+                "field": reference, "text": effect["text"] }),
+            Some("reset") => json!({ "type": "forms.reset", "fields": effect["refs"] }),
+            _ => effect.clone(),
+        }
+    }
+
+    fn apply_effects(host: &mut Host, request: &Value) -> Answer {
+        let effects = request["effects"].as_array().cloned().unwrap_or_default();
+        let fields = fields(host, request)?;
+        let ops: Vec<Value> = effects.iter().map(|effect| op_of(effect, &fields)).collect();
+        let mut call = on_document(request, "document.apply");
+        call["effect"] = json!("write");
+        call["change"] = json!({ "ops": ops });
+        let (answer, response) = match send(host, &call) {
+            Ok(sent) => sent,
+            Err(refused) => {
+                // Refused whole: nothing landed, and every effect says why.
+                let envelope: Value = serde_json::from_str(&refused.json).unwrap_or(Value::Null);
+                let error = envelope.get("error").cloned().unwrap_or(Value::Null);
+                let results: Vec<Value> = (0..effects.len())
+                    .map(|index| {
+                        json!({ "index": index, "status": "rejected", "fields": [],
+                        "changedWidgets": [], "error": error })
+                    })
+                    .collect();
+                let result = json!({ "results": results, "changedWidgets": [], "meta": null });
+                return Ok((mutation(result, &Value::Null, None), Vec::new()));
+            }
+        };
+        let items = answer["result"]["items"].as_array().cloned().unwrap_or_default();
+        let mut results = Vec::new();
+        let mut all_changed: Vec<Value> = Vec::new();
+        let mut wrote = false;
+        for (index, item) in items.iter().enumerate() {
+            let changed = item["meta"]["changedWidgets"].as_array().cloned().unwrap_or_default();
+            let touched: Vec<Value> = match item.get("field") {
+                Some(field) => vec![field.clone()],
+                None => item["fields"].as_array().cloned().unwrap_or_default(),
+            };
+            let applied = match item["type"].as_str() {
+                Some("forms.reset") => !touched.is_empty(),
+                _ => !changed.is_empty(),
+            };
+            wrote |= applied;
+            let mut converted = Vec::new();
+            for field in touched {
+                converted.push(field_in_file_space(host, request, field)?);
+            }
+            for widget in &changed {
+                if !all_changed.contains(widget) {
+                    all_changed.push(widget.clone());
+                }
+            }
+            results.push(json!({
+                "index": index,
+                "status": if applied { "applied" } else { "unchanged" },
+                "fields": converted,
+                "changedWidgets": changed,
+            }));
+        }
+        let meta = if wrote { answer["result"]["meta"].clone() } else { Value::Null };
+        let result = json!({ "results": results, "changedWidgets": all_changed, "meta": meta });
+        let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
+        let event = if wrote { kernel_event("form.effectsApplied", origin, &result) } else { None };
+        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    fn repair(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
+        let response = host.call(&request.to_string(), payloads);
+        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        if envelope.get("error").is_some() {
+            return Err(response);
+        }
+        let rename = |object: &mut Value| {
+            if let Some(map) = object.as_object_mut()
+                && let Some(cleared) = map.remove("needsAppearancesCleared")
+            {
+                map.insert("needAppearancesCleared".into(), cleared);
+            }
+        };
+        let answer = &mut envelope["result"];
+        rename(&mut answer["result"]);
+        if let Some(event) = answer.get_mut("event").filter(|e| e.is_object()) {
+            rename(event);
+            event["type"] = json!("form.repaired");
+        }
+        Ok((envelope, response.payloads))
     }
 }
 
@@ -1676,6 +1980,17 @@ mod page_space {
         };
         records(&mut envelope, &mut raw_of);
         HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// Form records answered in page space (`{fields, widgets}`), in the
+    /// file's coordinates, as [`form_in_file_space`] converts `forms.list`'s.
+    pub(super) fn form_records_in_file_space(
+        host: &Host,
+        request: &Value,
+        records: Value,
+    ) -> Result<Value, String> {
+        let mut boxes = visible_boxes(host, request);
+        form_in_file_space(records, &mut boxes)
     }
 
     /// `forms.list`'s answer in the file's coordinates: each field's action

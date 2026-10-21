@@ -1,8 +1,11 @@
 //! Changing what a form says.
 //!
 //! G12. Ports the value half of
-//! `services/src/features/forms/FormMutator.ts`: `forms.setValue` and
-//! `forms.reset`.
+//! `services/src/features/forms/FormMutator.ts` (`setValue`, `setDisplay`,
+//! `setAppearanceText`, `reset`, `repair`), its `internal/fieldValues.ts`,
+//! `formMutationMeta.ts`, `signatureLocks.ts` and the fill stamps of
+//! `fieldAttribution.ts`. The change ops of
+//! [`crate::features::changes::forms`] run them.
 //!
 //! # The model is a snapshot and a write invalidates it
 //!
@@ -26,69 +29,24 @@ use serde::{Deserialize, Serialize};
 
 use pdfium::{Document, FormModel};
 
-use super::snapshot::{FormFieldDto, FormFieldFamily, FormFieldRef, FormWidgetRef, read_field};
+use super::snapshot::{
+    FormFieldDto, FormFieldFamily, FormFieldKind, FormFieldRef, FormValueEntry, FormWidgetRef,
+    ToggleFieldWidget, read_field,
+};
+use super::value::FormFieldValue;
+use crate::auth::scope::IdentityClaims;
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
-
-/// What a caller is setting a field to.
-///
-/// Three shapes rather than one string, because the three families store
-/// different things: a toggle addresses a widget by its appearance state and
-/// a list box holds several values at once. A shape that does not apply to
-/// the field is refused rather than coerced.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-#[serde(rename_all_fields = "camelCase")]
-pub enum FormFieldValue {
-    Text {
-        value: String,
-    },
-    /// The `/AP /N` key to turn on, or `null` to clear the group. Clearing
-    /// is not the same as naming `Off`: one removes `/V` and the other
-    /// selects the off appearance.
-    Toggle {
-        state: Option<String>,
-    },
-    Choice {
-        values: Vec<String>,
-    },
-}
-
-impl FormFieldValue {
-    /// The families this shape applies to.
-    fn families(&self) -> &'static [FormFieldFamily] {
-        match self {
-            Self::Text { .. } => &[FormFieldFamily::Text],
-            Self::Toggle { .. } => &[FormFieldFamily::Checkbox, FormFieldFamily::Radio],
-            Self::Choice { .. } => &[FormFieldFamily::Combobox, FormFieldFamily::Listbox],
-        }
-    }
-
-    pub(super) fn name(&self) -> &'static str {
-        match self {
-            Self::Text { .. } => "text",
-            Self::Toggle { .. } => "toggle",
-            Self::Choice { .. } => "choice",
-        }
-    }
-}
-
-/// What a value write did.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FormSetValueResult {
-    /// The field, read back through a fresh model.
-    pub field: FormFieldDto,
-    /// The widgets whose appearance the write re-baked, as annotation
-    /// references a caller can key a cache by.
-    pub changed_widgets: Vec<FormWidgetRef>,
-}
+use crate::features::signature::types::SignedDocumentPolicy;
+use crate::identity::{PageObjectNumber, PageRef};
+use crate::mutation::MutationMeta;
+use crate::session::document::WriteStamp;
 
 /// Where in the model a caller's reference landed.
-pub(super) struct ResolvedField {
-    pub(super) index: u32,
-    pub(super) object_number: u32,
+pub(crate) struct ResolvedField {
+    pub(crate) index: u32,
+    pub(crate) object_number: u32,
 }
 
 /// Resolve a reference against a model.
@@ -97,7 +55,7 @@ pub(super) struct ResolvedField {
 /// compared against every field's, which is linear and is what the
 /// TypeScript does: a name reference exists FOR the fields that have no
 /// object number, so there is no index to consult.
-pub(super) fn resolve(
+pub(crate) fn resolve(
     model: &FormModel<'_>,
     reference: &FormFieldRef,
 ) -> Result<ResolvedField, EngineError> {
@@ -108,7 +66,7 @@ pub(super) fn resolve(
             .ok_or_else(|| {
                 EngineError::with_message(
                     EngineErrorCode::NotFound,
-                    format!("no form field with object number {field}"),
+                    format!("form field not found: object {field}"),
                 )
             }),
         FormFieldRef::Fqn { name } => {
@@ -120,7 +78,7 @@ pub(super) fn resolve(
             }
             Err(EngineError::with_message(
                 EngineErrorCode::NotFound,
-                format!("no form field named '{name}'"),
+                format!("form field not found: \"{name}\""),
             ))
         }
     }
@@ -191,75 +149,8 @@ pub(super) fn require_unlocked(
     Ok(())
 }
 
-/// Set a field's value.
-pub fn set_value(
-    document: &Document,
-    reference: &FormFieldRef,
-    value: &FormFieldValue,
-    cancel: &CancelToken,
-) -> Result<FormSetValueResult, EngineError> {
-    cancel.check()?;
-    let model = load_model(document)?;
-    let resolved = resolve(&model, reference)?;
-    let object_number = require_writable(&resolved)?;
-    require_unlocked(document, &model, &resolved)?;
-
-    // The family check happens HERE rather than being left to PDFium. A
-    // toggle state on a text field is the caller having confused two fields,
-    // and PDFium would refuse it with the same code it uses for a value the
-    // field could have held, which tells a caller nothing about which.
-    let family = FormFieldFamily::from_code(
-        model.field(resolved.index).expect("the index resolved").family_code(),
-    );
-    if !value.families().contains(&family) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!("a '{}' value does not apply to a {family:?} field", value.name()),
-        ));
-    }
-    // The model goes before the write. It is a snapshot taken before it,
-    // and holding one across a mutation is how a later read reports what
-    // the field used to be.
-    drop(model);
-    cancel.check()?;
-
-    // re-port (Task 8): EPDFForm_SetTextValue, SetToggle and SetChoiceValues
-    // are gone (runtime 69e229992). Port upstream's fieldValues.ts:
-    // EPDFForm_SetFieldValue, then EPDFForm_SetFieldWidgetsChecked for a
-    // toggle or EPDFForm_RedrawFieldWidgets otherwise, then read_back.
-    let _ = object_number;
-    Err(EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        "setting a form field's value is not ported to the runtime 1461b0c51 API",
-    ))
-}
-
-/// Put a field back to its default value.
-pub fn reset(
-    document: &Document,
-    reference: &FormFieldRef,
-    cancel: &CancelToken,
-) -> Result<FormSetValueResult, EngineError> {
-    cancel.check()?;
-    let model = load_model(document)?;
-    let resolved = resolve(&model, reference)?;
-    let object_number = require_writable(&resolved)?;
-    require_unlocked(document, &model, &resolved)?;
-    drop(model);
-    cancel.check()?;
-
-    // re-port (Task 8): EPDFForm_ResetField is gone (runtime 69e229992). Port
-    // upstream's reset: write /DV back as the value through
-    // EPDFForm_SetFieldValue and redraw, then read_back.
-    let _ = object_number;
-    Err(EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        "resetting a form field is not ported to the runtime 1461b0c51 API",
-    ))
-}
-
 /// Load a model, or say the document has no form machinery at all.
-pub(super) fn load_model(document: &Document) -> Result<FormModel<'_>, EngineError> {
+pub(crate) fn load_model(document: &Document) -> Result<FormModel<'_>, EngineError> {
     document.form_model().ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the form model could not be loaded")
     })
@@ -286,59 +177,623 @@ pub(super) fn read_field_back(
     read_field(&model, &field, index, &mut ActionReadBudgetTracker::default())
 }
 
-/// Read the field back through a FRESH model, and turn the changed object
-/// numbers into references a caller can use.
-///
-/// The changed list comes back as bare object numbers, and a caller keying a
-/// cache needs the page too. Joining them against the field's own widgets is
-/// what supplies it, and it also drops any number that is no longer one of
-/// the field's widgets, which is the honest answer for a reference that
-/// cannot be resolved.
-// re-port (Task 8): unused until set_value and reset are ported back onto it.
-#[allow(dead_code)]
-fn read_back(
-    document: &Document,
-    object_number: u32,
-    changed: &pdfium::ChangedWidgets,
-    cancel: &CancelToken,
-) -> Result<FormSetValueResult, EngineError> {
-    cancel.check()?;
-    let model = load_model(document)?;
-    let index = model.field_index_by_object_number(object_number).ok_or_else(|| {
-        EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "the form field vanished after the write",
-        )
-    })?;
-    let field = model.field(index).expect("the index resolved");
-    let dto = read_field(&model, &field, index, &mut ActionReadBudgetTracker::default())?;
-    let changed_widgets = dto
-        .widgets()
-        .filter(|widget| changed.object_numbers.contains(&widget.annot_object_number))
-        .cloned()
-        .collect();
-    Ok(FormSetValueResult { field: dto, changed_widgets })
-}
-
-/// What an import did, and what the form looks like afterwards.
+/// A form write's meta (`FormMutationMeta`): the page envelope plus what
+/// changed, the fields written and every widget whose look changed, and of
+/// those the ones drawn again. A field's widgets can sit on several pages,
+/// so `changed_widgets` is what invalidates renders. An idempotent write
+/// lists no widgets.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FormImportResult {
-    /// Fields the payload named.
-    pub fields_total: u32,
-    /// Fields it named that the document has and that took the value.
-    pub fields_applied: u32,
-    /// Fields it named that the document does not have, or that refused.
-    /// A skip is not a failure: an FDF exported from one form and applied
-    /// to another legitimately names fields the second one lacks.
-    pub fields_skipped: u32,
-    pub widgets_changed: u32,
-    /// The whole form, read back. An import can touch any number of
-    /// fields, so a caller has no useful subset to ask for.
-    pub snapshot: super::snapshot::FormSnapshot,
+pub struct FormMutationMeta {
+    #[serde(flatten)]
+    pub meta: MutationMeta,
+    pub changed_fields: Vec<FormFieldRef>,
+    pub changed_widgets: Vec<MetaWidget>,
+    /// The widgets of `changed_widgets` whose look was drawn again (a text
+    /// or choice value, a new look). A checkbox or radio button whose value
+    /// only switched its state isn't one, nor is a widget shown or hidden.
+    pub redrawn_widgets: Vec<MetaWidget>,
 }
 
-/// What a repair pass found and fixed.
+/// A widget a form write's meta names. A write builds each with
+/// `formWidget` (`{ref, objectNumber, page}`); an item that names every
+/// widget of its field (`fieldResult`, `resetResult`) hands over the field's
+/// own widget records as they are, so a checkbox's or radio button's carry
+/// its `onState`, `exportValue` and `checked` too, as upstream's answer
+/// does.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum MetaWidget {
+    Toggle(ToggleFieldWidget),
+    Plain(FormWidgetRef),
+}
+
+impl MetaWidget {
+    pub fn widget(&self) -> &FormWidgetRef {
+        match self {
+            Self::Toggle(toggle) => &toggle.widget,
+            Self::Plain(widget) => widget,
+        }
+    }
+
+    /// Every widget record of `field`, as the field holds them.
+    pub fn of_field(field: &FormFieldDto) -> Vec<MetaWidget> {
+        match &field.kind {
+            FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => {
+                widgets.iter().cloned().map(Self::Toggle).collect()
+            }
+            _ => field.widgets().copied().map(Self::Plain).collect(),
+        }
+    }
+}
+
+/// The meta of a form write (`formMutationMeta`): the fields and widgets it
+/// changed, the ones of those it drew again (all of them unless `redrawn`
+/// says fewer), and the pages those widgets sit on, once each in the order
+/// they come. An unplaced widget names no page. Form writes never change
+/// the page list, so there is no cache delta.
+pub fn form_mutation_meta(
+    stamp: &WriteStamp,
+    changed_fields: Vec<FormFieldRef>,
+    changed_widgets: Vec<MetaWidget>,
+    redrawn: Option<Vec<MetaWidget>>,
+) -> FormMutationMeta {
+    let mut pages: Vec<PageRef> = Vec::new();
+    for widget in changed_widgets.iter().map(MetaWidget::widget) {
+        if let Ok(page) = PageObjectNumber::new(widget.page_object_number) {
+            let page = PageRef::new(page);
+            if !pages.contains(&page) {
+                pages.push(page);
+            }
+        }
+    }
+    FormMutationMeta {
+        meta: MutationMeta::local(pages, stamp),
+        changed_fields,
+        redrawn_widgets: redrawn.unwrap_or_else(|| changed_widgets.clone()),
+        changed_widgets,
+    }
+}
+
+/// The widgets of a field a value write draws again (`redrawnByValue`): a
+/// checkbox's or radio group's value only switches each widget's state
+/// between the pictures it has.
+pub fn redrawn_by_value(family: FormFieldFamily, widgets: &[MetaWidget]) -> Vec<MetaWidget> {
+    match family {
+        FormFieldFamily::Checkbox | FormFieldFamily::Radio => Vec::new(),
+        _ => widgets.to_vec(),
+    }
+}
+
+/// Acrobat's `Field.display`, as the wire spells it (`FormFieldDisplay`,
+/// `core/src/forms/effects.ts`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FormFieldDisplay {
+    Visible,
+    Hidden,
+    NoPrint,
+    NoView,
+}
+
+impl FormFieldDisplay {
+    fn native(self) -> pdfium::FieldDisplay {
+        match self {
+            Self::Visible => pdfium::FieldDisplay::Visible,
+            Self::Hidden => pdfium::FieldDisplay::Hidden,
+            Self::NoPrint => pdfium::FieldDisplay::NoPrint,
+            Self::NoView => pdfium::FieldDisplay::NoView,
+        }
+    }
+}
+
+/// One field written, read back, and the write's meta: `FormSetValueResult`
+/// without its widget rows, which the change that ran it reads
+/// (`FieldWriteResult`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct FieldWriteResult {
+    pub field: FormFieldDto,
+    pub meta: FormMutationMeta,
+}
+
+/// The fields a reset changed, read back, and one meta for all of them
+/// (`FormResetResult` without its widget rows). No fields: every field was
+/// at its default already.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ResetResult {
+    pub fields: Vec<FormFieldDto>,
+    pub meta: FormMutationMeta,
+}
+
+/// The families that hold a value: the ones a reset puts back
+/// (`VALUE_FAMILIES`).
+pub fn holds_value(family: FormFieldFamily) -> bool {
+    matches!(
+        family,
+        FormFieldFamily::Text
+            | FormFieldFamily::Checkbox
+            | FormFieldFamily::Radio
+            | FormFieldFamily::Combobox
+            | FormFieldFamily::Listbox
+    )
+}
+
+/// The value half of `FormMutator`: each write resolves its field against a
+/// fresh model, checks it can be written, writes what the field's rules
+/// (`super::value`) leave it holding that it doesn't hold now, and reads it
+/// back through another fresh model.
+pub struct FormMutator<'a> {
+    pub document: &'a Document,
+    /// Whether the signatures' field locks hold (`signedDocumentPolicy:
+    /// 'protect'`); under `'permit'` nothing is locked.
+    pub signed_document_policy: SignedDocumentPolicy,
+    /// What every meta carries: the write's `opId` and whether it can be
+    /// undone.
+    pub stamp: WriteStamp,
+}
+
+impl FormMutator<'_> {
+    /// Set a field's value, as `actor` filled it in (`setValue`): what the
+    /// field's rules (`fieldAfterValue`) leave it holding. A write that
+    /// changes the field names who filled it in, at `now`; one that leaves
+    /// it as it was writes nothing.
+    pub fn set_value(
+        &self,
+        reference: &FormFieldRef,
+        value: &FormFieldValue,
+        actor: &IdentityClaims,
+        now: Option<&str>,
+        cancel: &CancelToken,
+    ) -> Result<FieldWriteResult, EngineError> {
+        cancel.check()?;
+        let model = load_model(self.document)?;
+        let resolved = resolve(&model, reference)?;
+        self.assert_writable(&model, &resolved)?;
+        let before = read_at(&model, resolved.index)?;
+        let after = super::value::field_after_value(&before, value)?;
+        drop(model);
+        let changed = self.write_field_after(resolved.object_number, &before, &after, false)?;
+        if changed.is_some() {
+            stamp_field_fill(self.document, resolved.object_number, actor, now)?;
+        }
+        self.read_back(resolved.object_number, &changed.unwrap_or_default(), None, cancel)
+    }
+
+    /// Show, hide or keep from printing every widget of a field, as a
+    /// script's `Field.display` does (`setDisplay`): only the four flags it
+    /// names change, and no picture is drawn.
+    pub fn set_display(
+        &self,
+        reference: &FormFieldRef,
+        display: FormFieldDisplay,
+        cancel: &CancelToken,
+    ) -> Result<FieldWriteResult, EngineError> {
+        cancel.check()?;
+        let model = load_model(self.document)?;
+        let resolved = resolve(&model, reference)?;
+        self.assert_writable(&model, &resolved)?;
+        drop(model);
+        let changed = self
+            .document
+            .set_field_display(resolved.object_number, display.native())
+            .ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "the field could not be shown or hidden",
+                )
+            })?;
+        self.read_back(resolved.object_number, &changed.object_numbers, Some(false), cancel)
+    }
+
+    /// Draw a text field's or dropdown's widgets with `text` (a format
+    /// script's result) without changing its value (`setAppearanceText`).
+    pub fn set_appearance_text(
+        &self,
+        reference: &FormFieldRef,
+        text: &str,
+        cancel: &CancelToken,
+    ) -> Result<FieldWriteResult, EngineError> {
+        cancel.check()?;
+        let model = load_model(self.document)?;
+        let resolved = resolve(&model, reference)?;
+        self.assert_writable(&model, &resolved)?;
+        let family = read_at(&model, resolved.index)?.base.family;
+        drop(model);
+        if !matches!(family, FormFieldFamily::Text | FormFieldFamily::Combobox) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!(
+                    "appearance text does not apply to a {} field",
+                    serde_json::to_value(family)
+                        .ok()
+                        .and_then(|v| v.as_str().map(str::to_owned))
+                        .unwrap_or_default()
+                ),
+            ));
+        }
+        let changed = self
+            .document
+            .set_field_appearance_text(resolved.object_number, text)
+            .ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "the appearance text could not be drawn",
+                )
+            })?;
+        self.read_back(resolved.object_number, &changed.object_numbers, Some(true), cancel)
+    }
+
+    /// Put fields back to their default value (`reset`): the ones named, or,
+    /// with `refs` absent, every field of the form. Fields that hold no
+    /// value are skipped; so, in a whole-form reset, are fields stored
+    /// inline or locked by a signature (named, they are refused). Every
+    /// field is checked before the first write. Answers the fields that
+    /// changed.
+    pub fn reset(
+        &self,
+        refs: Option<&[FormFieldRef]>,
+        cancel: &CancelToken,
+    ) -> Result<ResetResult, EngineError> {
+        cancel.check()?;
+        let model = load_model(self.document)?;
+        let targets = match refs {
+            None => self.whole_form_targets(&model)?,
+            Some(refs) => self.named_targets(&model, refs)?,
+        };
+        drop(model);
+        cancel.check()?;
+
+        // Each field as its rules (`fieldAfterReset`) put it back; one
+        // already at its default is left alone.
+        let mut written = Vec::new();
+        for before in targets.into_iter().filter(|field| !super::value::is_at_default(field)) {
+            let after = super::value::field_after_reset(&before)?;
+            let object_number = before.base.field_object_number();
+            let Some(changed) = self.write_field_after(object_number, &before, &after, false)?
+            else {
+                continue;
+            };
+            // Back at its default, the value was filled in by nobody.
+            clear_field_fill(self.document, object_number)?;
+            written.push((before, changed));
+        }
+
+        let mut fields = Vec::new();
+        let mut changed_widgets = Vec::new();
+        let mut redrawn_widgets = Vec::new();
+        for (before, changed) in written {
+            let after = read_field_back(self.document, before.base.field_object_number(), cancel)?;
+            if changed.is_empty()
+                && super::value::value_entries_equal(
+                    &before.base.value_entry,
+                    &after.base.value_entry,
+                )
+            {
+                continue;
+            }
+            let own: Vec<MetaWidget> = after
+                .widgets()
+                .filter(|widget| changed.contains(&widget.annot_object_number))
+                .copied()
+                .map(MetaWidget::Plain)
+                .collect();
+            redrawn_widgets.extend(redrawn_by_value(after.base.family, &own));
+            changed_widgets.extend(own);
+            fields.push(after);
+        }
+        let changed_fields = fields.iter().map(|field| field.base.field_ref.clone()).collect();
+        Ok(ResetResult {
+            fields,
+            meta: form_mutation_meta(
+                &self.stamp,
+                changed_fields,
+                changed_widgets,
+                Some(redrawn_widgets),
+            ),
+        })
+    }
+
+    /// Every field a whole-form reset puts back: those with a value, written
+    /// directly, unlocked (`wholeFormTargets`).
+    fn whole_form_targets(&self, model: &FormModel<'_>) -> Result<Vec<FormFieldDto>, EngineError> {
+        let locks = self.field_locks();
+        let mut targets = Vec::new();
+        for index in 0..model.field_count() {
+            let field = read_at(model, index)?;
+            if !holds_value(field.base.family) || field.base.field_object_number() == 0 {
+                continue;
+            }
+            if locks.as_ref().is_some_and(|locks| locks.lock_for(&field.base.name).is_some()) {
+                continue;
+            }
+            targets.push(field);
+        }
+        Ok(targets)
+    }
+
+    /// The named fields with a value, each once; one that can't be written
+    /// is refused (`namedTargets`).
+    fn named_targets(
+        &self,
+        model: &FormModel<'_>,
+        refs: &[FormFieldRef],
+    ) -> Result<Vec<FormFieldDto>, EngineError> {
+        let mut seen = Vec::new();
+        let mut targets = Vec::new();
+        for reference in refs {
+            let resolved = resolve(model, reference)?;
+            let field = read_at(model, resolved.index)?;
+            if !holds_value(field.base.family) || seen.contains(&resolved.object_number) {
+                continue;
+            }
+            self.assert_writable(model, &resolved)?;
+            seen.push(resolved.object_number);
+            targets.push(field);
+        }
+        Ok(targets)
+    }
+
+    /// `assertWritable`: a field stored as a direct object can't be written,
+    /// and one an earlier signature locked refuses every write.
+    fn assert_writable(
+        &self,
+        model: &FormModel<'_>,
+        resolved: &ResolvedField,
+    ) -> Result<(), EngineError> {
+        if resolved.object_number == 0 {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "form field is stored as a direct object and cannot be written",
+            ));
+        }
+        let Some(locks) = self.field_locks() else {
+            return Ok(());
+        };
+        let name = model
+            .field(resolved.index)
+            .and_then(|f| super::snapshot::text(f.name()).ok().flatten())
+            .unwrap_or_default();
+        locks.assert_not_locked(&name)
+    }
+
+    /// `readFieldLocks`: the field locks earlier signatures declared, read
+    /// once for a write; `None` when there are none, under `'permit'`, or
+    /// for a document whose signature model cannot be built.
+    fn field_locks(&self) -> Option<FieldLocks> {
+        if self.signed_document_policy != SignedDocumentPolicy::Protect {
+            return None;
+        }
+        let protection = crate::features::signature::reader::read_protection(self.document).ok()?;
+        (!protection.field_locks.is_empty()).then_some(FieldLocks(protection))
+    }
+
+    /// Write what `after` holds that `before` doesn't (`writeFieldAfter`):
+    /// `/V`; a checkbox's or radio group's widgets on or off; a choice
+    /// field's selected options (`/I`); and a text or choice field's new
+    /// pictures (also with `redraw`). Answers the widgets whose pictures
+    /// changed, or `None` when the field already held it all and nothing
+    /// was written.
+    fn write_field_after(
+        &self,
+        object_number: u32,
+        before: &FormFieldDto,
+        after: &FormFieldDto,
+        redraw: bool,
+    ) -> Result<Option<Vec<u32>>, EngineError> {
+        let toggles = match &after.kind {
+            FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => {
+                Some(widgets)
+            }
+            _ => None,
+        };
+        let value_changes =
+            !super::value::value_entries_equal(&before.base.value_entry, &after.base.value_entry);
+        let was_checked = |at: usize| match &before.kind {
+            FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. } => {
+                widgets.get(at).map(|widget| widget.checked)
+            }
+            _ => None,
+        };
+        let states_change = toggles.is_some_and(|widgets| {
+            widgets.iter().enumerate().any(|(at, widget)| Some(widget.checked) != was_checked(at))
+        });
+        if !value_changes && !states_change && !redraw {
+            return Ok(None);
+        }
+
+        let refused = || {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("'{}' could not take the value", after.base.name),
+            )
+        };
+        if value_changes && !write_entry(self.document, object_number, &after.base.value_entry) {
+            return Err(refused());
+        }
+        if let FormFieldKind::Combobox { options, .. } | FormFieldKind::Listbox { options, .. } =
+            &after.kind
+        {
+            let selected: Vec<i32> = options
+                .iter()
+                .enumerate()
+                .filter(|(_, option)| option.selected)
+                .map(|(at, _)| at as i32)
+                .collect();
+            if !self.document.set_field_selected_indices(object_number, &selected) {
+                return Err(refused());
+            }
+        }
+        if toggles.is_some_and(|widgets| widgets.is_empty()) {
+            return Ok(Some(Vec::new()));
+        }
+        let changed = match toggles {
+            Some(widgets) => {
+                let checked: Vec<bool> = widgets.iter().map(|widget| widget.checked).collect();
+                self.document.set_field_widgets_checked(object_number, &checked)
+            }
+            None => self.document.redraw_field_widgets(object_number),
+        };
+        changed.map(|changed| Some(changed.object_numbers)).ok_or_else(refused)
+    }
+
+    /// Read the field back through a fresh model, and its changed widgets
+    /// (`readBack`). `redraws`: whether the write drew the widgets again;
+    /// `None` for a value write, which decides by the field's family.
+    fn read_back(
+        &self,
+        object_number: u32,
+        changed: &[u32],
+        redraws: Option<bool>,
+        cancel: &CancelToken,
+    ) -> Result<FieldWriteResult, EngineError> {
+        let field = read_field_back(self.document, object_number, cancel).map_err(|e| {
+            if e.code == EngineErrorCode::Unknown {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "form field vanished after write",
+                )
+            } else {
+                e
+            }
+        })?;
+        let changed_widgets: Vec<MetaWidget> = field
+            .widgets()
+            .filter(|widget| changed.contains(&widget.annot_object_number))
+            .copied()
+            .map(MetaWidget::Plain)
+            .collect();
+        let redrawn = match redraws {
+            None => redrawn_by_value(field.base.family, &changed_widgets),
+            Some(true) => changed_widgets.clone(),
+            Some(false) => Vec::new(),
+        };
+        let meta = form_mutation_meta(
+            &self.stamp,
+            vec![field.base.field_ref.clone()],
+            changed_widgets,
+            Some(redrawn),
+        );
+        Ok(FieldWriteResult { field, meta })
+    }
+}
+
+/// The locks earlier signatures put on fields, by fully qualified name.
+struct FieldLocks(crate::features::signature::types::DocumentProtection);
+
+impl FieldLocks {
+    fn lock_for(
+        &self,
+        name: &str,
+    ) -> Option<&crate::features::signature::types::DocumentFieldLock> {
+        crate::features::signature::protection::field_lock_for(&self.0, name)
+    }
+
+    /// `assertFieldNotLocked`: `ProtectedDocument` when a signature locked
+    /// the field.
+    fn assert_not_locked(&self, name: &str) -> Result<(), EngineError> {
+        use crate::features::signature::types::FieldLockSource;
+        let Some(lock) = self.lock_for(name) else {
+            return Ok(());
+        };
+        Err(EngineError::with_message(
+            EngineErrorCode::ProtectedDocument,
+            format!(
+                "form field \"{name}\" is locked by signature {} ({})",
+                lock.signature_index,
+                if lock.source == FieldLockSource::Fieldmdp { "FieldMDP" } else { "/Lock" }
+            ),
+        ))
+    }
+}
+
+/// One field of a loaded model, read whole.
+pub(crate) fn read_at(model: &FormModel<'_>, index: u32) -> Result<FormFieldDto, EngineError> {
+    let field = model.field(index).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "the field index did not resolve")
+    })?;
+    read_field(model, &field, index, &mut ActionReadBudgetTracker::default())
+}
+
+/// `writeFieldEntry(…, 'value')`: `/V` as `entry` holds it. `false` when
+/// the fork refuses it, or for an entry no write can hold.
+fn write_entry(document: &Document, object_number: u32, entry: &FormValueEntry) -> bool {
+    let write = match entry {
+        FormValueEntry::None => pdfium::FieldValueWrite::None,
+        FormValueEntry::Scalar { value } => pdfium::FieldValueWrite::Scalar(value),
+        FormValueEntry::Array { values } => pdfium::FieldValueWrite::Array(values),
+        FormValueEntry::Unsupported => return false,
+    };
+    document.set_field_value(object_number, write)
+}
+
+/// `/EMBD_Metadata` keys of a field's attribution (`fieldAttribution.ts`).
+const KEY_SCHEMA_VERSION: &str = "SchemaVersion";
+const KEY_FILLED_BY: &str = "FilledBy";
+const KEY_FILLED_BY_NAME: &str = "FilledByName";
+const KEY_FILLED_AT: &str = "FilledAt";
+
+/// `stampFieldFill`: a field whose value a write changed names who filled
+/// it in, and when. An anonymous session clears the last filler instead.
+fn stamp_field_fill(
+    document: &Document,
+    object_number: u32,
+    actor: &IdentityClaims,
+    now: Option<&str>,
+) -> Result<(), EngineError> {
+    let Some(user_id) = actor.user_id.as_deref() else {
+        return clear_field_fill(document, object_number);
+    };
+    let failed = || attribution_failed(object_number);
+    let wrote = document
+        .set_field_embed_metadata_number(
+            object_number,
+            KEY_SCHEMA_VERSION,
+            crate::features::annotation::write::primitives::EMBD_METADATA_SCHEMA_VERSION,
+        )
+        .map_err(|_| failed())?;
+    if !wrote {
+        return Err(failed());
+    }
+    for (key, value) in [
+        (KEY_FILLED_BY, Some(user_id)),
+        (KEY_FILLED_BY_NAME, actor.display_name.as_deref()),
+        (KEY_FILLED_AT, now),
+    ] {
+        let wrote = match value {
+            Some(value) => document.set_field_embed_metadata_string(object_number, key, value),
+            None => document.clear_field_embed_metadata_key(object_number, key),
+        };
+        if !wrote.map_err(|_| failed())? {
+            return Err(failed());
+        }
+    }
+    Ok(())
+}
+
+/// `clearFieldFill`: who filled a field in is cleared; a reset put its value
+/// back to its default.
+fn clear_field_fill(document: &Document, object_number: u32) -> Result<(), EngineError> {
+    for key in [KEY_FILLED_BY, KEY_FILLED_BY_NAME, KEY_FILLED_AT] {
+        if !document
+            .clear_field_embed_metadata_key(object_number, key)
+            .map_err(|_| attribution_failed(object_number))?
+        {
+            return Err(attribution_failed(object_number));
+        }
+    }
+    Ok(())
+}
+
+fn attribution_failed(object_number: u32) -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::Unknown,
+        format!("the metadata of field {object_number} could not be written"),
+    )
+}
+
+/// What a repair pass found and fixed (`FormRepairResult`). Repair is
+/// validate-then-apply and idempotent: with nothing to fix, every counter
+/// is zero and the document is untouched.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FormRepairResult {
@@ -347,74 +802,34 @@ pub struct FormRepairResult {
     pub widgets_linked: u32,
     pub fields_unrepairable: u32,
     pub appearances_baked: u32,
-    pub need_appearances_cleared: bool,
+    /// `/NeedAppearances` was cleared after re-baking (7bccc4f35 spells it
+    /// `needsAppearancesCleared`).
+    pub needs_appearances_cleared: bool,
+    /// No page and no cache delta: a repair changes no page list
+    /// (`emptyMeta`).
+    pub meta: MutationMeta,
 }
 
-/// Apply an FDF or XFDF payload.
-///
-/// The format is SNIFFED when the caller does not name one, because a
-/// declared format that disagrees with the bytes sends the payload to the
-/// wrong parser, and both parsers answer a bad payload the same way.
-pub fn import_data(
-    document: &Document,
-    bytes: &[u8],
-    format: Option<pdfium::FormDataFormat>,
-    cancel: &CancelToken,
-) -> Result<FormImportResult, EngineError> {
-    cancel.check()?;
-    if bytes.is_empty() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "the form data payload is empty",
-        ));
-    }
-    let format = format.unwrap_or_else(|| sniff_format(bytes));
-    // re-port (Task 8): EPDFForm_ImportFDF and EPDFForm_ImportXFDF were
-    // removed upstream (runtime 69e229992; the viewer replaced FDF/XFDF import
-    // with form bundles in 7f0b73a3c). Decide whether this operation goes or
-    // is rebuilt on the value writers.
-    let _ = document;
-    Err(EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        format!("{format:?} form data import was removed in the runtime 1461b0c51 API"),
-    ))
-}
-
-/// Which parser the bytes want.
-///
-/// XFDF is XML and FDF is a PDF-shaped file, so the first character that is
-/// not whitespace or a byte-order mark decides it. A payload that is neither
-/// goes to the FDF parser, which is the one that will say so.
-fn sniff_format(bytes: &[u8]) -> pdfium::FormDataFormat {
-    for byte in bytes.iter().take(64) {
-        match byte {
-            // A UTF-8 byte-order mark, which an XFDF exporter may write.
-            0xEF | 0xBB | 0xBF => continue,
-            b' ' | b'\t' | b'\n' | b'\r' => continue,
-            b'<' => return pdfium::FormDataFormat::Xfdf,
-            _ => return pdfium::FormDataFormat::Fdf,
-        }
-    }
-    pdfium::FormDataFormat::Fdf
-}
-
-/// Relink a form whose `/AcroForm` and pages disagree.
+/// Relink a form whose `/AcroForm` and pages disagree (`FormMutator.repair`),
+/// stamped as the write `stamp` names.
 pub fn repair(
     document: &Document,
     bake_appearances: bool,
+    stamp: &WriteStamp,
     cancel: &CancelToken,
 ) -> Result<FormRepairResult, EngineError> {
     cancel.check()?;
-    let report = document.repair_form(bake_appearances).ok_or_else(|| {
-        EngineError::with_message(EngineErrorCode::Unknown, "the form repair failed")
-    })?;
+    let report = document
+        .repair_form(bake_appearances)
+        .ok_or_else(|| EngineError::with_message(EngineErrorCode::Unknown, "form repair failed"))?;
     Ok(FormRepairResult {
         acroform_created: report.acroform_created,
         fields_linked: report.fields_linked,
         widgets_linked: report.widgets_linked,
         fields_unrepairable: report.fields_unrepairable,
         appearances_baked: report.appearances_baked,
-        need_appearances_cleared: report.need_appearances_cleared,
+        needs_appearances_cleared: report.need_appearances_cleared,
+        meta: MutationMeta::local(Vec::new(), stamp),
     })
 }
 

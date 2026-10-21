@@ -7,6 +7,7 @@ use super::attachments::AttachmentMutationMeta;
 use crate::error::EngineError;
 use crate::features::annotation::write::create::AnnotationMutationMeta;
 use crate::features::files::attachments::EmbeddedFileItem;
+use crate::features::forms::write::FormMutationMeta;
 use crate::features::metadata_write::{CustomMetadataUpdateResult, MetadataUpdateResult};
 use crate::identity::PageRef;
 use crate::mutation::MutationMeta;
@@ -119,6 +120,40 @@ pub enum ChangeItem {
     /// an insert brought, redone), back, in display order.
     #[serde(rename = "pages.restore")]
     PagesRestore { pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    /// `FormSetValueResult`: the field read back, the rows of the widgets it
+    /// changed, and its meta. Field and rows stay JSON, so one item holds
+    /// them in either space ([`crate::page_space::forms`] converts them).
+    #[serde(rename = "forms.setValue")]
+    FormsSetValue {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormFieldUpdateResult` of a script's display effect.
+    #[serde(rename = "forms.setDisplay")]
+    FormsSetDisplay {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormFieldUpdateResult` of a script's formatted text.
+    #[serde(rename = "forms.setAppearanceText")]
+    FormsSetAppearanceText {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormResetResult`: the fields that changed, read back, and the rows
+    /// of their changed widgets; in an undo, the fields it left alone, by
+    /// name.
+    #[serde(rename = "forms.reset")]
+    FormsReset {
+        fields: Vec<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<String>,
+    },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -146,6 +181,10 @@ impl ChangeItem {
             | Self::PagesInsert { meta, .. }
             | Self::PagesRestore { meta, .. }
             | Self::Skipped { meta, .. } => meta,
+            Self::FormsSetValue { meta, .. }
+            | Self::FormsSetDisplay { meta, .. }
+            | Self::FormsSetAppearanceText { meta, .. }
+            | Self::FormsReset { meta, .. } => &meta.meta,
         }
     }
 
@@ -168,6 +207,10 @@ impl ChangeItem {
             | Self::PagesInsert { meta, .. }
             | Self::PagesRestore { meta, .. }
             | Self::Skipped { meta, .. } => meta,
+            Self::FormsSetValue { meta, .. }
+            | Self::FormsSetDisplay { meta, .. }
+            | Self::FormsSetAppearanceText { meta, .. }
+            | Self::FormsReset { meta, .. } => &mut meta.meta,
         }
     }
 
@@ -249,6 +292,30 @@ impl ChangeItem {
                 "pages.restored",
                 serde_json::json!({ "pages": pages, "layout": layout, "meta": to_value(meta)? }),
             ),
+            Self::FormsSetValue { field, widgets, meta } => (
+                "forms.valueSet",
+                serde_json::json!({ "field": field, "widgets": widgets, "meta": to_value(meta)? }),
+            ),
+            Self::FormsSetDisplay { field, widgets, meta }
+            | Self::FormsSetAppearanceText { field, widgets, meta } => (
+                "forms.updated",
+                serde_json::json!({ "field": field, "widgets": widgets, "meta": to_value(meta)? }),
+            ),
+            // One `forms.valueSet` per field that changed (`formResetFacts`).
+            Self::FormsReset { fields, widgets, meta, .. } => {
+                return form_reset_facts(fields, widgets, meta)
+                    .into_iter()
+                    .map(|fact| {
+                        let mut event = serde_json::json!({ "type": "forms.valueSet" });
+                        if let (Some(object), serde_json::Value::Object(fields)) =
+                            (event.as_object_mut(), fact?)
+                        {
+                            object.extend(fields);
+                        }
+                        Ok(event)
+                    })
+                    .collect();
+            }
             Self::Skipped { .. } => return Ok(Vec::new()),
         };
         let mut event_value = serde_json::json!({ "type": event });
@@ -259,6 +326,62 @@ impl ChangeItem {
         }
         Ok(vec![event_value])
     }
+}
+
+/// A reset as one value write per changed field (`formResetFacts`): each
+/// field with the part of the meta that is its own.
+fn form_reset_facts(
+    fields: &[serde_json::Value],
+    widgets: &[serde_json::Value],
+    meta: &FormMutationMeta,
+) -> Vec<Result<serde_json::Value, EngineError>> {
+    fields
+        .iter()
+        .map(|field| {
+            let own: Vec<u64> = field["widgets"]
+                .as_array()
+                .map(|w| w.iter().filter_map(|w| w["objectNumber"].as_u64()).collect())
+                .unwrap_or_default();
+            let mine = |widget: &crate::features::forms::write::MetaWidget| {
+                own.contains(&u64::from(widget.widget().annot_object_number))
+            };
+            let changed_widgets: Vec<_> =
+                meta.changed_widgets.iter().filter(|w| mine(w)).cloned().collect();
+            let rows: Vec<&serde_json::Value> = widgets
+                .iter()
+                .filter(|row| {
+                    row["ref"]["kind"] == "objectNumber"
+                        && row["ref"]["objectNumber"].as_u64().is_some_and(|n| own.contains(&n))
+                })
+                .collect();
+            let pages: Vec<u32> = changed_widgets
+                .iter()
+                .map(|w| w.widget().page_object_number)
+                .filter(|page| *page > 0)
+                .collect();
+            let fact_meta = FormMutationMeta {
+                meta: MutationMeta {
+                    affected_pages: meta
+                        .meta
+                        .affected_pages
+                        .iter()
+                        .filter(|page| pages.contains(&page.object_number().get()))
+                        .copied()
+                        .collect(),
+                    cache_delta: None,
+                    op_id: meta.meta.op_id.clone(),
+                    undoable: meta.meta.undoable,
+                },
+                changed_fields: serde_json::from_value(field["ref"].clone())
+                    .map(|reference| vec![reference])
+                    .unwrap_or_default(),
+                redrawn_widgets: meta.redrawn_widgets.iter().filter(|w| mine(w)).cloned().collect(),
+                changed_widgets,
+            };
+            Ok(serde_json::json!({ "field": field, "widgets": rows,
+                "meta": to_value(&fact_meta)? }))
+        })
+        .collect()
 }
 
 /// What `document.apply` answers (`ChangeResult`).

@@ -97,6 +97,99 @@ impl ChangeAuthority {
     }
 }
 
+impl ChangeAuthority {
+    /// `allowsFieldWrite`: whether the caller may fill in or sign the field
+    /// in `group_id` (`None`: in no group). Nothing checked, always.
+    pub fn allows_field_write(
+        &self,
+        action: crate::auth::scope::FieldWriteAction,
+        group_id: Option<&str>,
+    ) -> bool {
+        self.grants.as_ref().is_none_or(|grants| grants.allows_field_write(action, group_id))
+    }
+
+    /// `allowsSomeFieldWrite`: whether the caller may `action` some field,
+    /// before the write knows which.
+    pub fn allows_some_field_write(&self, action: crate::auth::scope::FieldWriteAction) -> bool {
+        self.grants.as_ref().is_none_or(|grants| grants.allows_some_field_write(action))
+    }
+
+    /// `authorizeFieldWrite`: what the signatures forbid is
+    /// `ProtectedDocument`, and a field outside the caller's groups
+    /// `Forbidden`, naming the field scope it takes.
+    pub fn require_field_write(
+        &self,
+        group_id: Option<&str>,
+        action: crate::auth::scope::FieldWriteAction,
+    ) -> Result<(), EngineError> {
+        self.require_unprotected(action.broad())?;
+        if self.allows_field_write(action, group_id) {
+            return Ok(());
+        }
+        let verb = match action {
+            crate::auth::scope::FieldWriteAction::Fill => "fill",
+            crate::auth::scope::FieldWriteAction::Sign => "sign",
+        };
+        let needs = match group_id {
+            None => action.broad().to_string(),
+            Some(group) => format!("fields:{verb}:group={group}"),
+        };
+        Err(EngineError::with_message(
+            EngineErrorCode::Forbidden,
+            format!("permission denied (target): {needs}"),
+        ))
+    }
+}
+
+/// What a change fills in that its caller may fill (`fillsOwnField`), asked
+/// only when a field outside the caller's groups is written, and answered
+/// once, from the fields as they are then: the fields its value and text
+/// ops name (`opsFillOwnField`), or the fields its undo puts back a fill of
+/// (`stepsFillOwnField`).
+#[derive(Debug, Default)]
+pub struct OwnFill {
+    pub refs: Vec<crate::features::forms::snapshot::FormFieldRef>,
+    pub answer: std::cell::Cell<Option<bool>>,
+}
+
+impl OwnFill {
+    fn of_ops(ops: &[ChangeOp]) -> Self {
+        let refs = ops
+            .iter()
+            .filter_map(|op| match op {
+                ChangeOp::FormsSetValue { field, .. }
+                | ChangeOp::FormsSetAppearanceText { field, .. } => Some(field.clone()),
+                _ => None,
+            })
+            .collect();
+        Self { refs, answer: std::cell::Cell::new(None) }
+    }
+
+    fn of_steps(steps: &[ReverseStep]) -> Self {
+        use super::record::RevertSubject;
+        let refs = steps
+            .iter()
+            .filter_map(|step| match step {
+                ReverseStep::ObjectsRevert(step)
+                    if matches!(
+                        step.reports.as_str(),
+                        "forms.setValue" | "forms.setAppearanceText"
+                    ) =>
+                {
+                    match &step.subject {
+                        RevertSubject::Fields { fields } => Some(fields.clone()),
+                        RevertSubject::Annotation { .. } => None,
+                    }
+                }
+                _ => None,
+            })
+            .flatten()
+            .map(|field| crate::features::forms::snapshot::FormFieldRef::ObjectNumber { field })
+            .collect();
+        Self { refs, answer: std::cell::Cell::new(None) }
+    }
+}
+
 /// What a change writes with besides its document and authority: the
 /// clock, the id source, and this thread's fonts (a free text in a
 /// registered face).
@@ -126,6 +219,8 @@ pub struct ChangeContext<'a> {
     pub ids: &'a dyn IdSource,
     /// This thread's registered fonts, for a free text's face.
     pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
+    /// The fields the change fills in, for `fillsOwnField`.
+    pub own_fill: OwnFill,
 }
 
 /// What running an op or a step did: its item, and the steps that reverse
@@ -199,7 +294,8 @@ pub fn apply(
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
     let ChangeServices { clock, ids, fonts } = services;
-    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
+    let own_fill = OwnFill::of_ops(&ops);
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill };
     let mut collected = Collected::default();
     for (at, op) in ops.into_iter().enumerate() {
         cancel.check()?;
@@ -221,7 +317,8 @@ pub fn undo(
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
     let ChangeServices { clock, ids, fonts } = services;
-    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
+    let own_fill = OwnFill::of_steps(&record.steps);
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill };
     let mut collected = Collected::default();
     for step in &record.steps {
         cancel.check()?;
@@ -324,6 +421,16 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::PagesInsert { source, position } => {
             super::pages::insert_pages(ctx, source.bytes()?, position.as_ref())
         }
+        ChangeOp::FormsSetValue { field, value, expect } => {
+            super::forms::set_value(ctx, field, value, expect.as_ref(), at)
+        }
+        ChangeOp::FormsSetDisplay { field, display } => {
+            super::forms::set_display(ctx, field, *display)
+        }
+        ChangeOp::FormsSetAppearanceText { field, text } => {
+            super::forms::set_appearance_text(ctx, field, text)
+        }
+        ChangeOp::FormsReset { fields } => super::forms::reset(ctx, fields.as_deref()),
     }
 }
 
@@ -337,7 +444,12 @@ pub(super) fn run_step(
         ReverseStep::AttachmentsRemove(step) => super::attachments::remove_attachment(ctx, step),
         ReverseStep::AttachmentsRestore(step) => super::attachments::restore_attachment(ctx, step),
         ReverseStep::AnnotationRemove(step) => super::annotations::remove_annotation(ctx, step),
-        ReverseStep::ObjectsRevert(step) => super::annotations::revert_annotation(ctx, step),
+        ReverseStep::ObjectsRevert(step) => match step.subject {
+            super::record::RevertSubject::Fields { .. } => super::forms::revert_form(ctx, step),
+            super::record::RevertSubject::Annotation { .. } => {
+                super::annotations::revert_annotation(ctx, step)
+            }
+        },
         ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
         ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
         ReverseStep::PagesRotate(step) => super::pages::rotate_pages_back(ctx, step),

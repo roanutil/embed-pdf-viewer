@@ -53,8 +53,15 @@ fn roll_back(session: &mut DocumentSession, clock: &dyn Clock) -> Result<(), Eng
     let authority = ChangeAuthority::rollback();
     let cancel = CancelToken::never();
     let ChangeServices { clock, ids, fonts } = ChangeServices::of_clock(clock);
-    let mut ctx =
-        ChangeContext { session, authority: &authority, cancel: &cancel, clock, ids, fonts };
+    let mut ctx = ChangeContext {
+        session,
+        authority: &authority,
+        cancel: &cancel,
+        clock,
+        ids,
+        fonts,
+        own_fill: Default::default(),
+    };
     let mut failed = None;
     for step in journal.iter().rev() {
         if let Err(e) = super::applier::run_step(&mut ctx, step) {

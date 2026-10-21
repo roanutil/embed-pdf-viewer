@@ -137,6 +137,42 @@ impl Document {
         take_owned(buffer, size)
     }
 
+    /// `EPDFDoc_ExportDictRawToOwnedBuffer`: the dictionary `object_number`
+    /// as it reads now, every key with its value, and under the keys in
+    /// `deep_keys` (separated by spaces, such as `"AP MK"`) every object the
+    /// layer holds a version of that they reach. `None` when it is not a
+    /// dictionary.
+    pub fn export_dict_raw(&self, object_number: u32, deep_keys: &str) -> Option<Vec<u8>> {
+        let deep = std::ffi::CString::new(deep_keys).ok()?;
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live, the string outlives the call and
+        // `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFDoc_ExportDictRawToOwnedBuffer(
+                self.as_raw(),
+                object_number,
+                deep.as_ptr(),
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFDoc_ImportDictRaw`: put the dictionary of `capture` back as it
+    /// was, the objects under its deep keys where the layer holds no version
+    /// and then exactly the keys it held. `false` outside a layer
+    /// transaction, for a malformed capture, or when the object is something
+    /// other than a dictionary now.
+    pub fn import_dict_raw(&self, capture: &[u8]) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(capture.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and `capture` outlives the call.
+        unsafe {
+            pdfium_sys::EPDFDoc_ImportDictRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0
+        }
+    }
+
     /// `EPDFLayer_BeginTransaction`: `false` for a document that is not a
     /// layer, or when one is already open.
     pub fn layer_begin_transaction(&self) -> bool {

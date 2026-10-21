@@ -594,7 +594,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation and page ops (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation, page and form value ops (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs, tests/form_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
   },
   {
     kind: 'document.applyChanges',
@@ -614,6 +614,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: 'A one-op change (forms.setValue, features/changes/forms.rs): the value as a read returns it ({ value }, { checked }, { selectedValues }), written as the field\'s rules leave it (fieldAfterValue) through the fork\'s value writers, answered { field, widgets, meta } with FormMutationMeta and a forms.valueSet event; its reverse puts back the field\'s and widgets\' dictionaries from the fork\'s captures, else the value. Gated by vectors/forms/write.json (tests/form_write.rs) and vectors/forms/apply.json (tests/form_apply.rs).',
   },
   {
     kind: 'forms.reset',
@@ -622,6 +623,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: 'A one-op change (forms.reset) over refs, or every field without them: each field back to its /DV through the value writers (fieldAfterReset), answered { fields, widgets, meta }. This host answers the forms.valueSet facts (formResetFacts) as an events array beside the result. Gated by vectors/forms/write.json and vectors/forms/apply.json.',
   },
   // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: removed upstream in 98e5c270c ("applyEffects removed").
   // {
@@ -647,6 +649,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: 'Not a change: a final one that ends undo. Answers the report with needsAppearancesCleared (7bccc4f35) and an emptyMeta that cannot be undone, and publishes forms.repaired. Gated by vectors/forms/write.json documentCases.',
   },
   {
     kind: 'forms.createField',

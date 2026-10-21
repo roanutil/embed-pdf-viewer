@@ -316,6 +316,67 @@ impl Document {
         }
     }
 
+    /// One string entry of the field's own `/EMBD_Metadata`, on the field
+    /// dictionary `field_object_number` names, never on a parent field
+    /// (`EPDFForm_SetFieldEmbedMetadataString`). The first write creates the
+    /// dictionary. `false` when the object is not a field.
+    pub fn set_field_embed_metadata_string(
+        &self,
+        field_object_number: u32,
+        key: &str,
+        value: &str,
+    ) -> Result<bool, PdfiumError> {
+        let key = CString::new(key).map_err(|_| PdfiumError::InvalidArgument("metadata key"))?;
+        let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and both strings outlive the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFForm_SetFieldEmbedMetadataString(
+                self.as_raw(),
+                field_object_number,
+                key.as_ptr(),
+                value.as_ptr(),
+            ) != 0
+        })
+    }
+
+    /// One number entry of the field's own `/EMBD_Metadata`
+    /// (`EPDFForm_SetFieldEmbedMetadataNumber`).
+    pub fn set_field_embed_metadata_number(
+        &self,
+        field_object_number: u32,
+        key: &str,
+        value: f32,
+    ) -> Result<bool, PdfiumError> {
+        let key = CString::new(key).map_err(|_| PdfiumError::InvalidArgument("metadata key"))?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFForm_SetFieldEmbedMetadataNumber(
+                self.as_raw(),
+                field_object_number,
+                key.as_ptr(),
+                value,
+            ) != 0
+        })
+    }
+
+    /// Remove one entry of the field's own `/EMBD_Metadata`; removing its
+    /// last key removes the dictionary (`EPDFForm_ClearFieldEmbedMetadataKey`).
+    pub fn clear_field_embed_metadata_key(
+        &self,
+        field_object_number: u32,
+        key: &str,
+    ) -> Result<bool, PdfiumError> {
+        let key = CString::new(key).map_err(|_| PdfiumError::InvalidArgument("metadata key"))?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFForm_ClearFieldEmbedMetadataKey(
+                self.as_raw(),
+                field_object_number,
+                key.as_ptr(),
+            ) != 0
+        })
+    }
+
     /// `/V`, written as given.
     ///
     /// Drops `/RV` and copies `/V` onto the field's twin controls in other

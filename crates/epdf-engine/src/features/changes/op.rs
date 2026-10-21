@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 use crate::dto::{CustomMetadataPatch, MetadataPatch};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::files::attachments::{AttachmentFileBase, AttachmentRef};
+use crate::features::forms::snapshot::FormFieldRef;
+use crate::features::forms::value::FormFieldValue;
 use crate::identity::PageRef;
 
 /// One change (`Change`): its ops in order, all of them or none; or the
@@ -146,6 +148,30 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         position: Option<crate::features::pages_write::PagePosition>,
     },
+    /// The field's value, as a read of it returns one (`FormFieldValue`).
+    /// `expect` is the value it assumes the field holds now.
+    #[serde(rename = "forms.setValue")]
+    FormsSetValue {
+        field: FormFieldRef,
+        value: FormFieldValue,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<FormFieldValue>,
+    },
+    /// A script's visibility effect on every widget of the field.
+    #[serde(rename = "forms.setDisplay")]
+    FormsSetDisplay {
+        field: FormFieldRef,
+        display: crate::features::forms::write::FormFieldDisplay,
+    },
+    /// A script's formatted text, drawn without changing the value.
+    #[serde(rename = "forms.setAppearanceText")]
+    FormsSetAppearanceText { field: FormFieldRef, text: String },
+    /// The fields back to their defaults; every field without `fields`.
+    #[serde(rename = "forms.reset")]
+    FormsReset {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        fields: Option<Vec<FormFieldRef>>,
+    },
 }
 
 /// A `pages.insert` source: a payload it names, or its bytes.
@@ -273,7 +299,11 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::PagesRotate { .. }
             | ChangeOp::PagesReorder { .. }
             | ChangeOp::PagesDelete { .. }
-            | ChangeOp::PagesInsertBlank { .. } => {}
+            | ChangeOp::PagesInsertBlank { .. }
+            | ChangeOp::FormsSetValue { .. }
+            | ChangeOp::FormsSetDisplay { .. }
+            | ChangeOp::FormsSetAppearanceText { .. }
+            | ChangeOp::FormsReset { .. } => {}
         }
     }
     Ok(())
@@ -319,6 +349,10 @@ impl ChangeOp {
             Self::PagesDelete { .. } => "pages.delete",
             Self::PagesInsertBlank { .. } => "pages.insertBlank",
             Self::PagesInsert { .. } => "pages.insert",
+            Self::FormsSetValue { .. } => "forms.setValue",
+            Self::FormsSetDisplay { .. } => "forms.setDisplay",
+            Self::FormsSetAppearanceText { .. } => "forms.setAppearanceText",
+            Self::FormsReset { .. } => "forms.reset",
         }
     }
 }
@@ -339,11 +373,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.20: form values and effects (98e5c270c).
-    ("forms.setValue", "8.20"),
-    ("forms.setDisplay", "8.20"),
-    ("forms.setAppearanceText", "8.20"),
-    ("forms.reset", "8.20"),
     // 8.21: the other form ops.
     ("forms.create", "8.21"),
     ("forms.update", "8.21"),
@@ -444,7 +473,11 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
-        | ChangeOp::PagesInsert { .. } => {}
+        | ChangeOp::PagesInsert { .. }
+        | ChangeOp::FormsSetValue { .. }
+        | ChangeOp::FormsSetDisplay { .. }
+        | ChangeOp::FormsSetAppearanceText { .. }
+        | ChangeOp::FormsReset { .. } => {}
     }
     Ok(parsed)
 }
@@ -487,11 +520,11 @@ mod tests {
     fn an_op_another_task_registers_refuses_the_whole_change_naming_its_owner() {
         let refused = parse_ops(&serde_json::json!([
             { "type": "metadata.update", "patch": {} },
-            { "type": "forms.setValue", "ref": {}, "value": "x" },
+            { "type": "forms.create", "draft": {} },
         ]))
         .unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::NotImplemented);
-        assert!(refused.message.contains("8.20"), "{refused}");
+        assert!(refused.message.contains("8.21"), "{refused}");
         assert_eq!(refused.details.unwrap()["opIndex"], 1);
     }
 
@@ -583,6 +616,10 @@ mod tests {
             "pages.delete",
             "pages.insertBlank",
             "pages.insert",
+            "forms.setValue",
+            "forms.setDisplay",
+            "forms.setAppearanceText",
+            "forms.reset",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

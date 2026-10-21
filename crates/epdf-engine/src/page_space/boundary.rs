@@ -397,22 +397,40 @@ pub fn result_in_page_space(
 
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: the outline (8.24), viewports
-        // (8.25), form fields and widgets of the writes (8.20 to 8.22,
-        // 8.26), and imports (8.22).
+        // (8.25), form fields and widgets of the writes (8.21, 8.22, 8.26),
+        // and imports (8.22).
         K::AnnotationsImport
         | K::OutlineRead
         | K::MeasureViewports
         | K::FormsImport
         | K::FormsImportValues
-        | K::FormsSetValue
         | K::FormsCreateField
         | K::FormsUpdateField
         | K::FormsSetSignatureAppearance
         | K::FormsAddWidget
         | K::FormsDetachWidget
-        | K::FormsReset
         | K::FormsUpdateWidget
         | K::FormsDeleteWidget => Ok(response),
+
+        // The field or fields and the widget rows (`pageFormFieldOf`,
+        // `pageWidgetOf`), in the result and in each event that carries
+        // them.
+        K::FormsSetValue | K::FormsReset => {
+            convert_result(response, |mut answer: serde_json::Value| {
+                if let Some(result) = answer.get_mut("result") {
+                    super::forms::page_form_result_value(result, box_of)?;
+                }
+                if let Some(event) = answer.get_mut("event").filter(|event| !event.is_null()) {
+                    super::forms::page_form_result_value(event, box_of)?;
+                }
+                if let Some(serde_json::Value::Array(events)) = answer.get_mut("events") {
+                    for event in events.iter_mut() {
+                        super::forms::page_form_result_value(event, box_of)?;
+                    }
+                }
+                Ok(answer)
+            })
+        }
 
         // A change answers page space already: each item converts right
         // after its op ran ([`change_item_in_page_space`]).
@@ -526,7 +544,11 @@ pub fn change_op_in_file_space(
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
-        | ChangeOp::PagesInsert { .. }) => Ok(op),
+        | ChangeOp::PagesInsert { .. }
+        | ChangeOp::FormsSetValue { .. }
+        | ChangeOp::FormsSetDisplay { .. }
+        | ChangeOp::FormsSetAppearanceText { .. }
+        | ChangeOp::FormsReset { .. }) => Ok(op),
     }
 }
 
@@ -590,6 +612,34 @@ pub fn change_item_in_page_space(
         ChangeItem::PagesRestore { pages, layout, meta } => {
             Ok(ChangeItem::PagesRestore { pages, layout: page_layout_value(layout)?, meta })
         }
+        // The field and the rows of its changed widgets (`pageFormFieldOf`,
+        // `pageWidgetOf`).
+        ChangeItem::FormsSetValue { field, widgets, meta } => Ok(ChangeItem::FormsSetValue {
+            field: super::forms::page_form_field_value(field, box_of)?,
+            widgets: page_widgets(widgets, box_of)?,
+            meta,
+        }),
+        ChangeItem::FormsSetDisplay { field, widgets, meta } => Ok(ChangeItem::FormsSetDisplay {
+            field: super::forms::page_form_field_value(field, box_of)?,
+            widgets: page_widgets(widgets, box_of)?,
+            meta,
+        }),
+        ChangeItem::FormsSetAppearanceText { field, widgets, meta } => {
+            Ok(ChangeItem::FormsSetAppearanceText {
+                field: super::forms::page_form_field_value(field, box_of)?,
+                widgets: page_widgets(widgets, box_of)?,
+                meta,
+            })
+        }
+        ChangeItem::FormsReset { fields, widgets, meta, skipped } => Ok(ChangeItem::FormsReset {
+            fields: fields
+                .into_iter()
+                .map(|field| super::forms::page_form_field_value(field, box_of))
+                .collect::<Result<_, _>>()?,
+            widgets: page_widgets(widgets, box_of)?,
+            meta,
+            skipped,
+        }),
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
@@ -600,6 +650,14 @@ pub fn change_item_in_page_space(
         | ChangeItem::AnnotationsReorder { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
+}
+
+/// Widget rows sent as JSON in the file's coordinates, in page space.
+fn page_widgets(
+    widgets: Vec<serde_json::Value>,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<Vec<serde_json::Value>, EngineError> {
+    widgets.into_iter().map(|widget| super::forms::page_widget_value(widget, box_of)).collect()
 }
 
 /// A page list, sent as JSON in the file's coordinates, in page space

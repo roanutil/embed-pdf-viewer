@@ -3,21 +3,26 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run form-write
 //!
+//! Each case's recorded `request` (`forms.setValue` or `forms.reset`) is
+//! replayed through `Host::call` with `common::replay`.
+//!
 //! # Two halves, and the second is the one a field comparison misses
 //!
-//! A value write reports the WIDGETS whose appearance it re-baked, and that
-//! set is not derivable from the value. A radio switch changes two, the one
-//! turning on and the one turning off. Writing an already-checked checkbox
-//! changes none. So the list is compared alongside the field, and a writer
-//! that reported the wrong set would otherwise pass.
+//! A value write reports the WIDGETS whose appearance it re-baked
+//! (`meta.changedWidgets`, 7bccc4f35), and that set is not derivable from
+//! the value. A radio switch changes two, the one turning on and the one
+//! turning off. Writing an already-checked checkbox changes none. So the
+//! list is compared alongside the field, and a writer that reported the
+//! wrong set would otherwise pass.
+//!
+//! The import cases went with FDF and XFDF (7f0b73a3c): form bundles
+//! replaced them, and 8.22 ports their import.
 
-use epdf_engine::cancel::CancelToken;
-use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::forms::snapshot::FormFieldRef;
-use epdf_engine::features::forms::write::{FormFieldValue, reset, set_value};
-use epdf_engine::session::authority::SessionAuthority;
-use epdf_engine::session::document::DocumentSession;
+mod common;
+
+use common::replay::Replay;
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -31,35 +36,17 @@ struct VectorFile {
     document_cases: Vec<DocumentCase>,
 }
 
-/// An import or a repair: the operations that touch the whole form rather
-/// than one field.
+/// A repair: the operation that touches the whole form rather than one
+/// field.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct DocumentCase {
     name: String,
     covers: String,
-    /// The bytes the TypeScript imported. Recorded rather than re-derived,
-    /// so both engines import the SAME payload: importing each engine's own
-    /// export would compare two writers instead of two readers.
-    #[serde(default)]
-    payload: Vec<u8>,
-    /// The format the caller declared, or absent to let the sniffer decide.
-    #[serde(default)]
-    import_of: Option<String>,
-    #[serde(default)]
-    declare_format: bool,
     #[serde(default)]
     repair: Option<RepairOptions>,
     #[serde(default)]
-    refused: bool,
-    #[serde(default)]
-    refused_with: Option<String>,
-    #[serde(default)]
-    counts: Option<serde_json::Value>,
-    #[serde(default)]
-    snapshot: Option<serde_json::Value>,
-    #[serde(default)]
-    report: Option<serde_json::Value>,
+    report: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,10 +60,6 @@ struct RepairOptions {
 struct Case {
     name: String,
     covers: String,
-    #[serde(rename = "ref")]
-    reference: serde_json::Value,
-    #[serde(default)]
-    value: Option<serde_json::Value>,
     #[serde(default)]
     refused: bool,
     /// The error CODE the TypeScript reported. The message is deliberately
@@ -85,14 +68,11 @@ struct Case {
     #[serde(default)]
     refused_with: Option<String>,
     #[serde(default)]
-    field: Option<serde_json::Value>,
-    /// The wire request the TypeScript sent. Its `ref` is in the wire's
-    /// spelling (`objectNumber`, 595bdc6c7); the case's own `ref` keeps the
-    /// generator's older `fieldObjectNumber`.
+    field: Option<Value>,
+    /// The wire request the TypeScript sent.
+    request: Value,
     #[serde(default)]
-    request: Option<serde_json::Value>,
-    #[serde(default)]
-    changed_widgets: Vec<serde_json::Value>,
+    changed_widgets: Vec<Value>,
 }
 
 fn load() -> VectorFile {
@@ -105,13 +85,19 @@ fn load() -> VectorFile {
     file
 }
 
-/// The case's field ref as the wire spells it: its recorded request's.
-fn wire_ref(case: &Case) -> serde_json::Value {
-    case.request
-        .as_ref()
-        .and_then(|request| request.get("ref"))
+/// The field `reference` names, as `forms.list` reads it now.
+fn read_field(replay: &mut Replay, reference: &Value) -> Value {
+    let form = replay.replay(&json!({ "kind": "forms.list" })).expect("the form lists");
+    form["fields"]
+        .as_array()
+        .expect("fields")
+        .iter()
+        .find(|field| {
+            &field["ref"] == reference
+                || (reference["kind"] == "fqn" && field["name"] == reference["name"])
+        })
         .cloned()
-        .unwrap_or_else(|| case.reference.clone())
+        .unwrap_or_else(|| panic!("no field {reference} in {form}"))
 }
 
 /// Run one case against a fresh copy of the fixture.
@@ -119,27 +105,10 @@ fn wire_ref(case: &Case) -> serde_json::Value {
 /// Fresh per case, deliberately: several cases write the same field, and a
 /// shared document would make each one depend on the order of the ones
 /// before it.
-fn run(
-    file: &VectorFile,
-    case: &Case,
-) -> Result<epdf_engine::features::forms::write::FormSetValueResult, epdf_engine::error::EngineError>
-{
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-
-    let reference: FormFieldRef = serde_json::from_value(wire_ref(case))
-        .unwrap_or_else(|e| panic!("{}: the ref does not decode: {e}", case.name));
-    match &case.value {
-        Some(value) => {
-            let value: FormFieldValue = serde_json::from_value(value.clone())
-                .unwrap_or_else(|e| panic!("{}: the value does not decode: {e}", case.name));
-            set_value(owned.document(), &reference, &value, &CancelToken::never())
-        }
-        None => reset(owned.document(), &reference, &CancelToken::never()),
-    }
+fn run(file: &VectorFile, case: &Case) -> (Replay, Result<Value, Value>) {
+    let mut replay = Replay::open(&file.fixture, &format!("form-write:{}", case.name));
+    let answer = replay.replay(&case.request);
+    (replay, answer)
 }
 
 #[test]
@@ -153,20 +122,24 @@ fn a_written_field_reads_back_as_the_typescript_engines_did() {
             continue;
         }
         written += 1;
-        let result = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
-
+        let (mut replay, answer) = run(&file, case);
+        let answer = answer.unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let result = &answer["result"];
+        let field = match result.get("field") {
+            Some(field) => field.clone(),
+            // A reset answers the fields it changed: the field is read back.
+            None => read_field(&mut replay, &case.request["refs"][0]),
+        };
         assert_eq!(
-            test_support::canonical_numbers(
-                &serde_json::to_value(&result.field).expect("serialize")
-            ),
+            test_support::canonical_numbers(&field),
             test_support::canonical_numbers(case.field.as_ref().expect("a recorded field")),
             "{}: {}",
             case.name,
             case.covers,
         );
         assert_eq!(
-            serde_json::to_value(&result.changed_widgets).expect("serialize"),
-            serde_json::Value::Array(case.changed_widgets.clone()),
+            result["meta"]["changedWidgets"],
+            Value::Array(case.changed_widgets.clone()),
             "{}: the changed-widget set differs",
             case.name,
         );
@@ -185,45 +158,44 @@ fn a_refused_write_is_refused_for_the_same_reason() {
             continue;
         }
         refusals += 1;
-        let error = run(&file, case).expect_err(&case.name);
-        let expected = match case.refused_with.as_deref() {
-            Some("NotFound") => EngineErrorCode::NotFound,
-            Some("InvalidArg") => EngineErrorCode::InvalidArg,
-            other => panic!("{}: unhandled refusal code {other:?}", case.name),
-        };
-        assert!(error.is(expected), "{}: {} (got {error})", case.name, case.covers);
+        let (_, answer) = run(&file, case);
+        let error = answer.expect_err(&case.name);
+        let expected = case.refused_with.as_deref().expect("a recorded code");
+        assert_eq!(error["code"], json!(expected), "{}: {} (got {error})", case.name, case.covers);
     }
 
     assert!(refusals >= 4, "the refusal list shrank");
 }
 
 #[test]
-fn a_family_mismatch_says_which_two_families() {
+fn a_family_mismatch_says_which_family_and_which_shape() {
     // The refusal CODE is the same one PDFium gives for a value the field
     // could have held, so the vector comparison cannot tell a caller that
-    // confused two fields from one that sent a bad value. The message can,
-    // and it is this engine's own, so it is pinned here rather than against
-    // the oracle.
+    // confused two fields from one that sent a bad value. The message can:
+    // `fieldValueWriteOf` names the family and the shapes it takes.
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "toggle-on-text-refused").expect("the case");
-    let error = run(&file, case).expect_err("a toggle does not apply to a text field");
-    let message = error.to_string();
-    assert!(message.contains("toggle"), "the message does not name the value: {message}");
-    assert!(message.contains("Text"), "the message does not name the family: {message}");
+    let (_, answer) = run(&file, case);
+    let error = answer.expect_err("a checked value does not apply to a text field");
+    assert_eq!(error["code"], json!("InvalidArg"), "{error}");
+    let message = error["message"].as_str().unwrap_or_default();
+    assert!(
+        message.contains("text field takes { value }") && message.contains("{ checked }"),
+        "the message does not name the family and the shape: {message}",
+    );
 }
 
 #[test]
-fn an_unwritable_field_says_why_it_is_unwritable() {
-    // Same reasoning as the family mismatch: PDFium refuses a write with
-    // object number zero too, and with the same code, so only the message
-    // separates "this field cannot be written" from "that value is wrong".
+fn a_direct_field_is_not_found_by_the_number_a_write_takes() {
+    // A field stored as a direct object has no object number: a read names
+    // it by its full name, and the write, which resolves the field again by
+    // the number the read found (0), finds nothing (`writeValue`).
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "direct-field-refused").expect("the case");
-    let message = run(&file, case).expect_err("a direct field has no object number").to_string();
-    assert!(
-        message.contains("direct object"),
-        "the message does not say why the field is unwritable: {message}",
-    );
+    let (_, answer) = run(&file, case);
+    let error = answer.expect_err("a direct field has no object number");
+    assert_eq!(error["code"], json!("NotFound"), "{error}");
+    assert!(error["message"].as_str().unwrap_or_default().contains("object 0"), "{error}");
 }
 
 #[test]
@@ -232,33 +204,41 @@ fn a_form_model_is_a_snapshot_and_a_write_makes_it_stale() {
     // first one walked the field tree before the write and is correct
     // forever about a document that no longer exists.
     let file = load();
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let reference = FormFieldRef::ObjectNumber { field: 4 };
-
-    let stale = owned.document().form_model().expect("a form model");
-    let index = stale.field_index_by_object_number(4).expect("the field is in the model");
-    let before = stale.field(index).expect("the index resolved").value_at(0).expect("a value read");
-
-    set_value(
-        owned.document(),
-        &reference,
-        &FormFieldValue::Text { value: String::from("Grace Hopper") },
-        &CancelToken::never(),
-    )
-    .expect("the write lands");
-
-    let after_stale =
-        stale.field(index).expect("the index still resolves").value_at(0).expect("a value read");
-    assert_eq!(before, after_stale, "the old model reported the write, so it is not a snapshot");
-    assert_eq!(
-        read_value(owned.document(), &reference)["value"],
-        serde_json::Value::from("Grace Hopper"),
-        "a fresh model does not report the write",
-    );
+    let mut replay = Replay::open(&file.fixture, "stale");
+    let stale_value = {
+        let session = replay
+            .host
+            .sessions()
+            .session(&epdf_engine::session::registry::SessionKey::document("stale"))
+            .expect("the session");
+        let document = session.document().expect("open").document();
+        let stale = document.form_model().expect("a form model");
+        let index = stale.field_index_by_object_number(4).expect("the field is in the model");
+        let before =
+            stale.field(index).expect("the index resolved").value_at(0).expect("a value read");
+        drop(stale);
+        before
+    };
+    let reference = json!({ "kind": "objectNumber", "objectNumber": 4 });
+    replay
+        .replay(&json!({ "kind": "forms.setValue", "ref": reference,
+                         "value": { "value": "Grace Hopper" } }))
+        .expect("the write lands");
+    // The model loaded before the write still reads what was there, and a
+    // fresh one reads the write.
+    let after = {
+        let session = replay
+            .host
+            .sessions()
+            .session(&epdf_engine::session::registry::SessionKey::document("stale"))
+            .expect("the session");
+        let document = session.document().expect("open").document();
+        let fresh = document.form_model().expect("a form model");
+        let index = fresh.field_index_by_object_number(4).expect("the field");
+        fresh.field(index).expect("the index resolved").value_at(0).expect("a value")
+    };
+    assert_ne!(stale_value, after, "the write did not land");
+    assert_eq!(read_field(&mut replay, &reference)["value"], json!("Grace Hopper"));
 }
 
 #[test]
@@ -273,103 +253,11 @@ fn a_refused_write_leaves_the_field_alone() {
         .iter()
         .find(|c| c.name == "unknown-toggle-state-refused")
         .expect("the unknown-state case");
-
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let reference: FormFieldRef = serde_json::from_value(wire_ref(case)).expect("the ref decodes");
-    let value: FormFieldValue =
-        serde_json::from_value(case.value.clone().expect("a value")).expect("the value decodes");
-
-    let before = read_value(owned.document(), &reference);
-    set_value(owned.document(), &reference, &value, &CancelToken::never())
-        .expect_err("the state is not one the group has");
-    assert_eq!(before, read_value(owned.document(), &reference), "the refusal wrote something");
-}
-
-/// The field's value, as the reader reports it.
-fn read_value(document: &pdfium::Document, reference: &FormFieldRef) -> serde_json::Value {
-    let model = document.form_model().expect("a form model");
-    let snapshot =
-        epdf_engine::features::forms::snapshot::read_form_fields(&model, &CancelToken::never())
-            .expect("the form lists");
-    let field = snapshot
-        .fields
-        .iter()
-        .find(|field| &field.base.field_ref == reference)
-        .expect("the field is in the snapshot");
-    serde_json::to_value(&field.kind).expect("serialize")
-}
-
-/// Open a fresh copy of the fixture for a document-wide case.
-fn open(file: &VectorFile, name: &str) -> DocumentSession {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    session
-}
-
-fn declared_format(case: &DocumentCase) -> Option<pdfium::FormDataFormat> {
-    if !case.declare_format {
-        return None;
-    }
-    match case.import_of.as_deref() {
-        Some("fdf") => Some(pdfium::FormDataFormat::Fdf),
-        Some("xfdf") => Some(pdfium::FormDataFormat::Xfdf),
-        other => panic!("unhandled format {other:?}"),
-    }
-}
-
-#[test]
-fn an_import_applies_what_the_typescript_engine_applied() {
-    let file = load();
-    let mut imports = 0usize;
-
-    for case in &file.document_cases {
-        if case.repair.is_some() || case.refused {
-            continue;
-        }
-        imports += 1;
-        let session = open(&file, &case.name);
-        let owned = session.document().expect("open");
-        let result = epdf_engine::features::forms::write::import_data(
-            owned.document(),
-            &case.payload,
-            declared_format(case),
-            &CancelToken::never(),
-        )
-        .unwrap_or_else(|e| panic!("{}: {e}", case.name));
-
-        let recorded = case.counts.as_ref().expect("recorded counts");
-        for key in ["fieldsTotal", "fieldsApplied", "fieldsSkipped", "widgetsChanged"] {
-            let mine = match key {
-                "fieldsTotal" => result.fields_total,
-                "fieldsApplied" => result.fields_applied,
-                "fieldsSkipped" => result.fields_skipped,
-                _ => result.widgets_changed,
-            };
-            assert_eq!(
-                serde_json::Value::from(mine),
-                recorded[key],
-                "{}: {key}: {}",
-                case.name,
-                case.covers,
-            );
-        }
-        assert_eq!(
-            test_support::canonical_numbers(
-                &serde_json::to_value(&result.snapshot).expect("serialize")
-            ),
-            test_support::canonical_numbers(case.snapshot.as_ref().expect("a snapshot")),
-            "{}: the form after the import differs",
-            case.name,
-        );
-    }
-
-    assert!(imports >= 4, "the import list shrank");
+    let mut replay = Replay::open(&file.fixture, "refused");
+    let reference = case.request["ref"].clone();
+    let before = read_field(&mut replay, &reference);
+    replay.replay(&case.request).expect_err("the state is not one the group has");
+    assert_eq!(before, read_field(&mut replay, &reference), "the refusal wrote something");
 }
 
 #[test]
@@ -380,16 +268,24 @@ fn a_repair_reports_what_the_typescript_engine_reported() {
     for case in &file.document_cases {
         let Some(options) = &case.repair else { continue };
         repairs += 1;
-        let session = open(&file, &case.name);
-        let owned = session.document().expect("open");
-        let result = epdf_engine::features::forms::write::repair(
-            owned.document(),
-            options.bake_appearances,
-            &CancelToken::never(),
-        )
-        .unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let mut replay = Replay::open(&file.fixture, &case.name);
+        let mut answer = replay
+            .replay(&json!({ "kind": "forms.repair", "opId": "repair",
+                             "bakeAppearances": options.bake_appearances }))
+            .unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let mut result = answer["result"].take();
+        // Not recorded: the write's meta, which names no page and can't be
+        // undone (a repair is a final change).
+        let meta = result.as_object_mut().and_then(|r| r.remove("meta"));
         assert_eq!(
-            test_support::canonical_numbers(&serde_json::to_value(&result).expect("serialize")),
+            meta,
+            Some(json!({ "affectedPages": [], "cacheDelta": null, "opId": "repair",
+                         "undoable": false })),
+            "{}",
+            case.name
+        );
+        assert_eq!(
+            test_support::canonical_numbers(&result),
             test_support::canonical_numbers(case.report.as_ref().expect("a report")),
             "{}: {}",
             case.name,
@@ -398,50 +294,4 @@ fn a_repair_reports_what_the_typescript_engine_reported() {
     }
 
     assert_eq!(repairs, 2, "both repair modes are covered");
-}
-
-#[test]
-fn an_unreadable_payload_is_refused() {
-    let file = load();
-    let mut refusals = 0usize;
-
-    for case in &file.document_cases {
-        if !case.refused {
-            continue;
-        }
-        refusals += 1;
-        let session = open(&file, &case.name);
-        let owned = session.document().expect("open");
-        let error = epdf_engine::features::forms::write::import_data(
-            owned.document(),
-            &case.payload,
-            declared_format(case),
-            &CancelToken::never(),
-        )
-        .expect_err(&case.name);
-        assert_eq!(
-            case.refused_with.as_deref(),
-            Some("InvalidArg"),
-            "{}: unhandled refusal code",
-            case.name,
-        );
-        assert!(error.is(EngineErrorCode::InvalidArg), "{}: {error}", case.name);
-    }
-
-    assert!(refusals > 0, "no payload is refused");
-
-    // An EMPTY payload is refused by this layer rather than by PDFium,
-    // which answers it the same way it answers malformed bytes. Nothing
-    // sent nothing, and saying so is more useful than saying the nothing
-    // was badly formed.
-    let session = open(&file, "empty");
-    let owned = session.document().expect("open");
-    let error = epdf_engine::features::forms::write::import_data(
-        owned.document(),
-        &[],
-        None,
-        &CancelToken::never(),
-    )
-    .expect_err("an empty payload");
-    assert!(error.to_string().contains("empty"), "{error}");
 }

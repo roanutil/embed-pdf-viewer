@@ -128,6 +128,67 @@ pub fn page_form_snapshot_of(
     })
 }
 
+/// A form field sent as JSON in the file's coordinates, in page space: a
+/// change item or a write's answer holds it that way.
+pub fn page_form_field_value(
+    field: serde_json::Value,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Value, EngineError> {
+    let field: FormFieldDto<PdfCoordinates> = from_json(field)?;
+    to_json(&page_form_field_of(field, box_of)?)
+}
+
+/// A widget row sent as JSON in the file's coordinates, in page space.
+pub fn page_widget_value(
+    widget: serde_json::Value,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Value, EngineError> {
+    let widget: WidgetAnnotation<PdfCoordinates> = from_json(widget)?;
+    to_json(&page_widget_of(widget, box_of)?)
+}
+
+/// A form write's answer (or the event that carries it) in page space: its
+/// `field` or `fields`, and its widget rows (`pageFormFieldOf`,
+/// `pageWidgetOf`, as `pageSpaceBoundary`'s form cases map them).
+pub fn page_form_result_value(
+    result: &mut serde_json::Value,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<(), EngineError> {
+    if let Some(field) = result.get_mut("field").filter(|field| !field.is_null()) {
+        *field = page_form_field_value(field.take(), box_of)?;
+    }
+    for list in ["fields", "widgets"] {
+        if let Some(serde_json::Value::Array(items)) = result.get_mut(list) {
+            for item in items.iter_mut() {
+                *item = if list == "fields" {
+                    page_form_field_value(item.take(), box_of)?
+                } else {
+                    page_widget_value(item.take(), box_of)?
+                };
+            }
+        }
+    }
+    Ok(())
+}
+
+fn from_json<T: serde::de::DeserializeOwned>(value: serde_json::Value) -> Result<T, EngineError> {
+    serde_json::from_value(value).map_err(|e| {
+        EngineError::with_message(
+            crate::error::EngineErrorCode::Unknown,
+            format!("a form record could not be read: {e}"),
+        )
+    })
+}
+
+fn to_json<T: serde::Serialize>(value: &T) -> Result<serde_json::Value, EngineError> {
+    serde_json::to_value(value).map_err(|e| {
+        EngineError::with_message(
+            crate::error::EngineErrorCode::Unknown,
+            format!("a form record could not be written: {e}"),
+        )
+    })
+}
+
 #[cfg(test)]
 mod tests {
     //! The read half of `describe('render, form and measure values')` in
