@@ -372,9 +372,14 @@ fn form_reset_facts(
                     op_id: meta.meta.op_id.clone(),
                     undoable: meta.meta.undoable,
                 },
-                changed_fields: serde_json::from_value(field["ref"].clone())
-                    .map(|reference| vec![reference])
-                    .unwrap_or_default(),
+                changed_fields: vec![serde_json::from_value(field["ref"].clone()).map_err(
+                    |e| {
+                        EngineError::with_message(
+                            crate::error::EngineErrorCode::Unknown,
+                            format!("a reset's field has no ref: {e}"),
+                        )
+                    },
+                )?],
                 redrawn_widgets: meta.redrawn_widgets.iter().filter(|w| mine(w)).cloned().collect(),
                 changed_widgets,
             };

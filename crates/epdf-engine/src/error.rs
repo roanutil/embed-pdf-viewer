@@ -196,6 +196,34 @@ impl EngineError {
         self
     }
 
+    /// `PermissionDenied` (`core/src/auth/scope/errors.ts`): `Forbidden`,
+    /// naming what the caller needed in the message and in
+    /// `details.required`, with the `context` it was refused in when there
+    /// is one, and `details.anyOf` when any of several would have done
+    /// (`required` is then the first).
+    pub fn permission_denied(
+        required: &str,
+        context: Option<&str>,
+        any_of: Option<&[&str]>,
+    ) -> Self {
+        let mut message = String::from("permission denied");
+        if let Some(context) = context {
+            message.push_str(&format!(" ({context})"));
+        }
+        match any_of {
+            Some(any_of) => message.push_str(&format!(": one of {}", any_of.join(", "))),
+            None => message.push_str(&format!(": {required}")),
+        }
+        let mut details = serde_json::json!({ "required": required });
+        if let Some(context) = context {
+            details["context"] = serde_json::json!(context);
+        }
+        if let Some(any_of) = any_of {
+            details["anyOf"] = serde_json::json!(any_of);
+        }
+        Self::with_message(EngineErrorCode::Forbidden, message).with_details(details)
+    }
+
     pub fn is(&self, code: EngineErrorCode) -> bool {
         self.code == code
     }

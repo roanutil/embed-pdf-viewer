@@ -27,7 +27,7 @@ use crate::auth::scope::{
     check_any_field_action, check_capability, check_collab, check_field_action, check_set_group,
     expanded_capabilities, field_rights_of, parse_all,
 };
-use crate::error::{EngineError, EngineErrorCode};
+use crate::error::EngineError;
 use crate::features::signature::protection::protected_capabilities;
 use crate::features::signature::types::DocumentProtection;
 
@@ -203,10 +203,7 @@ impl SessionAuthority {
         if self.allows(capability) {
             return Ok(());
         }
-        Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            format!("permission denied: {capability}"),
-        ))
+        Err(EngineError::permission_denied(capability.as_str(), None, None))
     }
 
     /// Refuse unless at least one of the capabilities is granted.
@@ -218,9 +215,10 @@ impl SessionAuthority {
             return Ok(());
         }
         let names: Vec<&str> = capabilities.iter().map(|c| c.as_str()).collect();
-        Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            format!("permission denied: one of {}", names.join(", ")),
+        Err(EngineError::permission_denied(
+            names.first().copied().unwrap_or("doc.open"),
+            None,
+            Some(&names),
         ))
     }
 }
@@ -244,6 +242,7 @@ impl Default for SessionAuthority {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::EngineErrorCode;
 
     fn scope(entries: &[&str]) -> Vec<String> {
         entries.iter().map(|s| s.to_string()).collect()
@@ -282,6 +281,9 @@ mod tests {
         assert!(refused.message.contains("doc.render"), "{}", refused.message);
         // And says nothing about what the caller does hold.
         assert!(!refused.message.contains("doc.open"), "{}", refused.message);
+        // `PermissionDenied`'s details name what was required.
+        assert_eq!(refused.message, "permission denied: doc.render");
+        assert_eq!(refused.details, Some(serde_json::json!({ "required": "doc.render" })));
     }
 
     #[test]
@@ -333,5 +335,10 @@ mod tests {
             .require_any(&[DocCapability::DocPrint, DocCapability::DocDownload])
             .expect_err("neither");
         assert_eq!(refused.code, EngineErrorCode::Forbidden);
+        assert_eq!(
+            refused.details,
+            Some(serde_json::json!({ "required": "doc.print",
+                "anyOf": ["doc.print", "doc.download"] }))
+        );
     }
 }

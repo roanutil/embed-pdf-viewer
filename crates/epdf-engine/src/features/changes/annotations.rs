@@ -37,8 +37,9 @@ use crate::features::annotation::write::{delete, reorder};
 use crate::identity::{AnnotationRef, PageObjectNumber};
 use crate::mutation::list_position::{AnnotationPosition, ListPosition};
 
+/// `PermissionDenied(what, 'target')`.
 fn forbidden(what: &str) -> EngineError {
-    EngineError::with_message(EngineErrorCode::Forbidden, format!("permission denied: {what}"))
+    EngineError::permission_denied(what, Some("target"), None)
 }
 
 /// `authorizeAnnotationCreate`: the group the annotation goes in, the

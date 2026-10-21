@@ -301,10 +301,13 @@ fn is_calculated(ctx: &ChangeContext<'_>, target: &ReadField) -> Result<bool, En
     }
     let document = ctx.session.document()?.document();
     let model = load_model(document)?;
-    let order =
-        crate::features::forms::snapshot::read_form_fields(&model, ctx.cancel)?.calculation_order;
-    let wanted = FormFieldRef::ObjectNumber { field: target.object_number };
-    Ok(order.iter().any(|entry| entry.as_ref() == Some(&wanted)))
+    // `/CO` by field index; only the field's own number is read.
+    Ok((0..model.calculation_order_count()).any(|at| {
+        u32::try_from(model.calculation_order_field(at))
+            .ok()
+            .and_then(|index| model.field(index))
+            .is_some_and(|field| field.object_number() == target.object_number)
+    }))
 }
 
 /// A value write to the field `before` reads, recording what it writes

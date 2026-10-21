@@ -56,11 +56,14 @@ impl ChangeAuthority {
         Self { user_id: identity.user_id.clone(), identity, grants: None }
     }
 
-    /// `authorizeCapability`.
+    /// `authorizeCapability`: refused `PermissionDenied(capability,
+    /// 'target')`.
     pub fn require(&self, capability: DocCapability) -> Result<(), EngineError> {
         match &self.grants {
-            Some(grants) => grants.require(capability),
-            None => Ok(()),
+            Some(grants) if !grants.allows(capability) => {
+                Err(EngineError::permission_denied(capability.as_str(), Some("target"), None))
+            }
+            _ => Ok(()),
         }
     }
 
@@ -134,10 +137,7 @@ impl ChangeAuthority {
             None => action.broad().to_string(),
             Some(group) => format!("fields:{verb}:group={group}"),
         };
-        Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            format!("permission denied (target): {needs}"),
-        ))
+        Err(EngineError::permission_denied(&needs, Some("target"), None))
     }
 }
 
@@ -520,8 +520,40 @@ pub fn assert_expected(
 
 #[cfg(test)]
 mod tests {
-    use super::values_equal;
+    use super::{ChangeAuthority, values_equal};
+    use crate::auth::scope::{DocCapability, FieldWriteAction, IdentityClaims, PdfBits};
+    use crate::session::authority::SessionAuthority;
     use serde_json::json;
+
+    fn granting(scope: &[&str]) -> ChangeAuthority {
+        let scope: Vec<String> = scope.iter().map(|s| (*s).to_owned()).collect();
+        let grants =
+            SessionAuthority::new(&scope, IdentityClaims::default(), PdfBits::default()).unwrap();
+        ChangeAuthority { user_id: None, identity: IdentityClaims::default(), grants: Some(grants) }
+    }
+
+    #[test]
+    fn a_refusal_names_what_it_required_as_permission_denied_does() {
+        let authority = granting(&["doc.open"]);
+        let field =
+            authority.require_field_write(Some("buyer"), FieldWriteAction::Fill).unwrap_err();
+        assert_eq!(field.message, "permission denied (target): fields:fill:group=buyer");
+        assert_eq!(
+            field.details,
+            Some(json!({ "required": "fields:fill:group=buyer", "context": "target" }))
+        );
+        let broad = authority.require_field_write(None, FieldWriteAction::Fill).unwrap_err();
+        assert_eq!(
+            broad.details,
+            Some(json!({ "required": "doc.forms.fill", "context": "target" }))
+        );
+        let capability = authority.require(DocCapability::DocFormsModify).unwrap_err();
+        assert_eq!(capability.message, "permission denied (target): doc.forms.modify");
+        assert_eq!(
+            capability.details,
+            Some(json!({ "required": "doc.forms.modify", "context": "target" }))
+        );
+    }
 
     #[test]
     fn values_compare_by_value_as_object_is_does() {

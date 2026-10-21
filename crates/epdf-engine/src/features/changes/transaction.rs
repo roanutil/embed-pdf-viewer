@@ -174,10 +174,7 @@ fn undo_kept(
     // Only the user who made a change may undo it; one made by no one,
     // anyone.
     if record.user_id.is_some() && record.user_id != authority.user_id {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            "permission denied: changes:undo",
-        ));
+        return Err(EngineError::permission_denied("changes:undo", Some("target"), None));
     }
     undo(session, &record, authority, cancel, services, space)
 }

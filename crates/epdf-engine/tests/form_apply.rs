@@ -93,33 +93,60 @@ fn every_change_agrees_with_the_typescript_engine() {
     assert_eq!((applied, refused), (14, 9), "the applied and refused cases moved");
 }
 
+/// The dictionaries the form ops below write: the text field (its own
+/// widget), the radio group 9 and its widgets 7 and 8.
+const WRITTEN: [u32; 4] = [4, 9, 7, 8];
+
+/// What a write could leave behind: the form as `forms.list` reads it (the
+/// fields' values and every widget row's flags and appearance state), and
+/// each written dictionary's canonical bytes with its `/AP` and `/MK`
+/// streams.
+fn state_of(replay: &mut Replay) -> (Value, Vec<Option<Vec<u8>>>) {
+    let form = replay.replay(&json!({ "kind": "forms.list" })).expect("the form lists");
+    let key = epdf_engine::session::registry::SessionKey::document(replay.doc_id.as_str());
+    let session = replay.host.sessions().session(&key).expect("the session");
+    let document = session.document().expect("open").document();
+    let canonical =
+        WRITTEN.iter().map(|n| document.export_dict_canonical(*n, "AP MK", "")).collect();
+    (form, canonical)
+}
+
+fn widget_row(form: &Value, object_number: u64) -> Value {
+    form["widgets"]
+        .as_array()
+        .expect("widgets")
+        .iter()
+        .find(|row| row["ref"]["objectNumber"] == object_number)
+        .cloned()
+        .unwrap_or_else(|| panic!("no widget {object_number}"))
+}
+
 #[test]
 fn a_refused_change_leaves_every_op_before_it_unwritten() {
-    // All or none: the first op writes, the second names no field, and the
-    // change is refused with the first op taken back, its value and the
-    // widget it drew.
+    // All or none: the first ops write a value, hide a widget and keep a
+    // radio group from printing; the last names no field, and the change
+    // is refused with every op before it taken back, values, flags and
+    // pictures alike.
     let file = load();
     let mut replay = Replay::open(&file.fixture, "all-or-none");
     let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
-    let read = |replay: &mut Replay| {
-        let form = replay.replay(&json!({ "kind": "forms.list" })).expect("the form lists");
-        form["fields"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|f| f["ref"] == text)
-            .cloned()
-            .expect("the text field")
-    };
-    let before = read(&mut replay);
+    let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
+    let before = state_of(&mut replay);
+    assert!(before.1.iter().all(Option::is_some), "a written object has no dictionary");
     let refused = replay.replay(&json!({ "kind": "document.apply", "change": { "ops": [
         { "type": "forms.setValue", "field": text, "value": { "value": "Changed" } },
         { "type": "forms.setDisplay", "field": text, "display": "hidden" },
+        { "type": "forms.setValue", "field": radio, "value": { "value": "Red" } },
+        { "type": "forms.setDisplay", "field": radio, "display": "noPrint" },
         { "type": "forms.setValue",
           "field": { "kind": "objectNumber", "objectNumber": 9999 }, "value": { "value": "x" } },
     ] } }));
     assert_eq!(refused.expect_err("the missing field refuses")["code"], json!("NotFound"));
-    assert_eq!(read(&mut replay), before, "a refused change wrote its first ops");
+    let after = state_of(&mut replay);
+    assert_eq!(widget_row(&after.0, 4)["hidden"], json!(false), "a hidden widget was left");
+    assert_eq!(widget_row(&after.0, 7)["print"], json!(true), "a noPrint widget was left");
+    assert_eq!(after.0, before.0, "a refused change left the form changed");
+    assert_eq!(after.1, before.1, "a refused change left a dictionary changed");
 }
 
 #[test]
@@ -127,32 +154,44 @@ fn a_value_write_undoes_and_redoes() {
     let file = load();
     let mut replay = Replay::open(&file.fixture, "undo");
     let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
-    let value = |replay: &mut Replay| {
-        let form = replay.replay(&json!({ "kind": "forms.list" })).expect("the form lists");
-        form["fields"].as_array().unwrap().iter().find(|f| f["ref"] == text).unwrap()["value"]
-            .clone()
-    };
-    let original = value(&mut replay);
-    replay
+    let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
+    let original = state_of(&mut replay);
+    let filled = replay
         .replay(&json!({ "kind": "document.apply", "opId": "fill", "change": { "ops": [
             { "type": "forms.setValue", "field": text, "value": { "value": "Ada" } },
-            { "type": "forms.setDisplay", "field": text, "display": "noPrint" },
+            { "type": "forms.setDisplay", "field": text, "display": "hidden" },
+            { "type": "forms.setValue", "field": radio, "value": { "value": "Red" } },
         ] } }))
         .expect("the fill applies");
-    assert_eq!(value(&mut replay), json!("Ada"));
+    assert_eq!(filled["result"]["meta"]["undoable"], json!(true), "{filled}");
+    let written = state_of(&mut replay);
+    assert_eq!(widget_row(&written.0, 4)["hidden"], json!(true));
+    assert_eq!(widget_row(&written.0, 7)["appearanceState"], json!("Red"));
+    assert_ne!(written.1, original.1, "the fill wrote no dictionary");
+
     let undone = replay
         .replay(&json!({ "kind": "document.apply", "opId": "undo",
                          "change": { "undoOf": "fill" } }))
         .expect("the fill undoes");
-    assert_eq!(value(&mut replay), original);
     let types: Vec<&Value> =
         undone["result"]["items"].as_array().unwrap().iter().map(|i| &i["type"]).collect();
-    assert_eq!(types, [&json!("forms.setDisplay"), &json!("forms.setValue")], "{undone}");
+    assert_eq!(
+        types,
+        [&json!("forms.setValue"), &json!("forms.setDisplay"), &json!("forms.setValue")],
+        "{undone}"
+    );
+    let back = state_of(&mut replay);
+    assert_eq!(widget_row(&back.0, 4)["hidden"], json!(false), "the undo left the widget hidden");
+    assert_eq!(back.0, original.0, "the undo left the form changed");
+    assert_eq!(back.1, original.1, "the undo left a dictionary changed");
+
     replay
         .replay(&json!({ "kind": "document.apply", "opId": "redo",
                          "change": { "undoOf": "undo" } }))
         .expect("the undo redoes");
-    assert_eq!(value(&mut replay), json!("Ada"));
+    let again = state_of(&mut replay);
+    assert_eq!(again.0, written.0, "the redo is not the fill");
+    assert_eq!(again.1, written.1, "the redo wrote other dictionaries");
 }
 
 #[test]
@@ -171,4 +210,9 @@ fn a_field_the_caller_may_not_fill_refuses_the_change() {
     let error = refused.expect_err("the caller may not fill the field");
     assert_eq!(error["code"], json!("Forbidden"), "{error}");
     assert_eq!(error["message"], json!("permission denied (target): doc.forms.fill"), "{error}");
+    assert_eq!(
+        error["details"],
+        json!({ "required": "doc.forms.fill", "context": "target" }),
+        "{error}"
+    );
 }
