@@ -1017,6 +1017,8 @@ Upstream reference: `PageResidency.ts:1-474`, `PagePtrPool.ts:1-85`, `packages/e
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+**Added by controller ruling after 8.8:** port upstream's attachment undo through the fork's raw/canonical captures (they need a layer transaction, so this comes after 8.29). Replace 8.8's reconstructing restore, which loses the file's object number, shared streams and an absent `/Params`, and add a test that an undone removal keeps the object number.
+
 #### Task 8.31: Render parity
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.4 (the page-space boundary and render targets), 8.13 (annotation appearances, which share the raster path and its widget flag) and 8.19 (form read, so a render can draw the fields as the form reads them). Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push.
