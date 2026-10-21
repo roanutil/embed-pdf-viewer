@@ -434,3 +434,299 @@ pub fn write_new_points(
     set_rect(annotation, crate::geom::pdf_points_bounds(&flat))?;
     Ok(drawn)
 }
+
+// ── an update's geometry ────────────────────────────────────────────────────
+
+/// `clearBorderDashPattern`: `/BS /D` removed.
+pub fn clear_border_dash_pattern(annotation: &Annotation<'_>) -> Result<(), EngineError> {
+    checked(annotation.set_border_dash_pattern(&[]), "EPDFAnnot_SetBorderDashPattern")
+}
+
+/// `clearBorderEffect`: benign when there is none.
+pub fn clear_border_effect(annotation: &Annotation<'_>) {
+    annotation.clear_border_effect();
+}
+
+/// `EPDFAnnot_RemoveKey`, a missing key being no failure.
+pub fn remove_key(annotation: &Annotation<'_>, key: &str) -> Result<(), EngineError> {
+    annotation.remove_key(key).map(|_| ()).map_err(|e| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("EPDFAnnot_RemoveKey failed: {e}"),
+        )
+    })
+}
+
+/// `setIntentOrClear`: `/IT`, or none.
+pub fn set_intent_or_clear(
+    annotation: &Annotation<'_>,
+    name: Option<&str>,
+) -> Result<(), EngineError> {
+    match name {
+        Some(name) => set_intent(annotation, name),
+        None => remove_key(annotation, "IT"),
+    }
+}
+
+/// `/Rect` as written, normalized (`readAnnotRect`).
+pub fn read_rect(annotation: &Annotation<'_>) -> PdfRect {
+    let rect = annotation.rect();
+    crate::geom::normalize_pdf_rect(PdfRect {
+        left: f64::from(rect.left),
+        bottom: f64::from(rect.bottom),
+        right: f64::from(rect.right),
+        top: f64::from(rect.top),
+    })
+}
+
+/// A shift of every point by the same amount (`PointShift`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PointShift {
+    pub dx: f64,
+    pub dy: f64,
+}
+
+fn same_number(a: f64, b: f64) -> bool {
+    (a - b).abs() <= 1e-3
+}
+
+/// How far `after` is `before` shifted, when every point moved the same way
+/// (`shiftBetween`).
+pub fn shift_between(before: &[PdfPoint], after: &[PdfPoint]) -> Option<PointShift> {
+    let (first, moved) = (before.first()?, after.first()?);
+    if before.len() != after.len() {
+        return None;
+    }
+    let dx = moved.x - first.x;
+    let dy = moved.y - first.y;
+    before
+        .iter()
+        .zip(after)
+        .all(|(p, q)| same_number(p.x + dx, q.x) && same_number(p.y + dy, q.y))
+        .then_some(PointShift { dx, dy })
+}
+
+/// Move `/Rect` by `shift` (`shiftAnnotRect`): an appearance that isn't
+/// drawn again moves with it.
+pub fn shift_annot_rect(annotation: &Annotation<'_>, shift: PointShift) -> Result<(), EngineError> {
+    let rect = read_rect(annotation);
+    set_rect(
+        annotation,
+        PdfRect {
+            left: rect.left + shift.dx,
+            bottom: rect.bottom + shift.dy,
+            right: rect.right + shift.dx,
+            top: rect.top + shift.dy,
+        },
+    )
+}
+
+fn normalize_degrees(degrees: f64) -> f64 {
+    ((degrees % 360.0) + 360.0) % 360.0
+}
+
+fn is_same_rotation(rotation: Option<f64>, other: Option<f64>) -> bool {
+    match (rotation, other) {
+        (Some(a), Some(b)) => same_number(normalize_degrees(a), normalize_degrees(b)),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+fn same_rect(a: PdfRect, b: PdfRect) -> bool {
+    same_number(a.left, b.left)
+        && same_number(a.bottom, b.bottom)
+        && same_number(a.right, b.right)
+        && same_number(a.top, b.top)
+}
+
+/// `applyAnnotationBoxPatch`: an update's `box` and `rotation`, each kept
+/// when left out (`rotation: null` straightens the box where it is). A move
+/// of the box by the same turn shifts `/Rect` and keeps `/RD`: an appearance
+/// that isn't drawn again moves with it. Answers whether the geometry
+/// changed.
+pub fn apply_annotation_box_patch(
+    annotation: &Annotation<'_>,
+    content_box: Option<PdfRect>,
+    rotation: Option<Option<f64>>,
+) -> Result<bool, EngineError> {
+    if content_box.is_none() && rotation.is_none() {
+        return Ok(false);
+    }
+    let current = crate::features::annotation::read::turn::read_annotation_box(annotation);
+    let next_box = crate::geom::normalize_pdf_rect(content_box.unwrap_or(current.content_box));
+    let next_rotation = match rotation {
+        None => current.rotation,
+        Some(rotation) => turn_of(rotation),
+    };
+    let turned = is_same_rotation(next_rotation, current.rotation);
+    if turned && same_rect(next_box, current.content_box) {
+        return Ok(false);
+    }
+    let from = current.content_box;
+    let moved = turned
+        && same_number(next_box.right - next_box.left, from.right - from.left)
+        && same_number(next_box.top - next_box.bottom, from.top - from.bottom);
+    if !moved {
+        write_annotation_box(annotation, next_box, next_rotation)?;
+        return Ok(true);
+    }
+    shift_annot_rect(
+        annotation,
+        PointShift { dx: next_box.left - from.left, dy: next_box.bottom - from.bottom },
+    )?;
+    if let Some(rotation) = next_rotation {
+        write_recorded_turn(annotation, Some(RecordedTurn { rotation, content_box: next_box }))?;
+    }
+    Ok(true)
+}
+
+/// What an annotation drawn from points has now (`CurrentPoints`): its
+/// points as drawn and upright, in the lists the kind keeps them in, and
+/// the turn read.
+#[derive(Debug, Clone)]
+pub struct CurrentPoints {
+    pub upright: Vec<Vec<PdfPoint>>,
+    pub drawn: Vec<Vec<PdfPoint>>,
+    pub turn: Option<PdfPointTurn>,
+}
+
+fn point_of(p: pdfium::PointF) -> PdfPoint {
+    PdfPoint { x: f64::from(p.x), y: f64::from(p.y) }
+}
+
+/// `readDrawnPointSets`: a line's two ends, a polygon's or polyline's
+/// vertices, an ink's strokes, as the file keeps them.
+pub fn read_drawn_point_sets(annotation: &Annotation<'_>) -> Vec<Vec<PdfPoint>> {
+    use crate::features::annotation::subtype::code;
+    match annotation.subtype_code() {
+        code::LINE => annotation
+            .line()
+            .map(|(start, end)| vec![vec![point_of(start), point_of(end)]])
+            .unwrap_or_default(),
+        code::POLYGON | code::POLYLINE => {
+            vec![annotation.vertices().unwrap_or_default().into_iter().map(point_of).collect()]
+        }
+        code::INK => annotation
+            .ink_list()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|stroke| stroke.into_iter().map(point_of).collect())
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// `readCurrentPoints`.
+pub fn read_current_points(annotation: &Annotation<'_>) -> CurrentPoints {
+    use crate::features::annotation::read::turn::{read_points_turn, upright_point};
+    let drawn = read_drawn_point_sets(annotation);
+    let turn = read_points_turn(annotation, &drawn);
+    let upright =
+        drawn.iter().map(|set| set.iter().map(|p| upright_point(*p, turn)).collect()).collect();
+    CurrentPoints { upright, drawn, turn }
+}
+
+/// `updatePoints`: an update's points and turn, each kept when left out
+/// (`rotation: null` straightens the points where they are); `None` when
+/// neither changes. When the drawn points only shift, `/Rect` shifts with
+/// them. Answers the points as drawn, in the lists they came in.
+pub fn update_points(
+    annotation: &Annotation<'_>,
+    current: &CurrentPoints,
+    upright: Option<&[Vec<PdfPoint>]>,
+    rotation: Option<Option<f64>>,
+) -> Result<Option<Vec<Vec<PdfPoint>>>, EngineError> {
+    if upright.is_none() && rotation.is_none() {
+        return Ok(None);
+    }
+    let current_rotation = current.turn.map(|turn| turn.degrees);
+    let next_rotation = match rotation {
+        None => current_rotation,
+        Some(rotation) => turn_of(rotation),
+    };
+    let same_turn = same_number(
+        normalize_degrees(next_rotation.unwrap_or(0.0)),
+        normalize_degrees(current_rotation.unwrap_or(0.0)),
+    );
+    if upright.is_none() && same_turn {
+        return Ok(None);
+    }
+    let points = upright.unwrap_or(&current.upright);
+    let all: Vec<PdfPoint> = points.iter().flatten().copied().collect();
+    let turn: Option<PdfPointTurn> = next_rotation
+        .filter(|_| !all.is_empty())
+        .map(|degrees| crate::geom::pdf_turn_of_upright(&all, degrees));
+    write_recorded_turn(
+        annotation,
+        turn.map(|turn| RecordedTurn {
+            rotation: turn.degrees,
+            content_box: crate::geom::pdf_points_bounds(&all),
+        }),
+    )?;
+    let drawn: Vec<Vec<PdfPoint>> = points
+        .iter()
+        .map(|set| {
+            set.iter()
+                .map(|point| match turn {
+                    Some(turn) => crate::geom::pdf_point_turned(*point, turn),
+                    None => *point,
+                })
+                .collect()
+        })
+        .collect();
+    let before: Vec<PdfPoint> = current.drawn.iter().flatten().copied().collect();
+    let after: Vec<PdfPoint> = drawn.iter().flatten().copied().collect();
+    if let Some(shift) = shift_between(&before, &after) {
+        shift_annot_rect(annotation, shift)?;
+    }
+    Ok(Some(drawn))
+}
+
+/// `settleAnnotationTurn`: before the engine redraws or re-places a box
+/// kind, our keys come to record the turn it reads. A turn another app drew
+/// is written; keys another app left behind are rewritten or cleared.
+/// Acrobat's own `/Rotate` stays as the file has it.
+pub fn settle_annotation_turn(annotation: &Annotation<'_>) -> Result<(), EngineError> {
+    use crate::features::annotation::read::turn::{
+        is_same_annotation_turn, is_turnable_box_kind, read_annotation_turn,
+        read_recorded_annotation_turn,
+    };
+    if !is_turnable_box_kind(annotation) {
+        return Ok(());
+    }
+    let turn = read_annotation_turn(annotation);
+    if is_same_annotation_turn(turn, read_recorded_annotation_turn(annotation)) {
+        return Ok(());
+    }
+    use crate::features::annotation::appearance::pdf_from_clockwise;
+    match turn {
+        Some(turn) => {
+            ensure_schema_version(annotation)?;
+            written(
+                annotation.set_embed_metadata_number(
+                    KEY_ROTATION,
+                    pdf_from_clockwise(turn.rotation) as f32,
+                ),
+                "EPDFAnnot_SetEmbedMetadataNumber",
+            )?;
+            let rect = turn.content_box;
+            written(
+                annotation.set_embed_metadata_rect(
+                    KEY_UNROTATED_RECT,
+                    pdfium::RectF {
+                        left: rect.left as f32,
+                        top: rect.top as f32,
+                        right: rect.right as f32,
+                        bottom: rect.bottom as f32,
+                    },
+                ),
+                "EPDFAnnot_SetEmbedMetadataRect",
+            )
+        }
+        None => {
+            clear_embed_key(annotation, KEY_ROTATION)?;
+            clear_embed_key(annotation, KEY_UNROTATED_RECT)
+        }
+    }
+}

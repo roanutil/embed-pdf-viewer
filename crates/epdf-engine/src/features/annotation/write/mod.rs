@@ -30,6 +30,6 @@ pub mod patch;
 pub mod prepare;
 pub mod primitives;
 pub mod resolve;
+pub mod shape_for_rect;
 pub mod stamp;
-pub mod transform;
 pub mod update;

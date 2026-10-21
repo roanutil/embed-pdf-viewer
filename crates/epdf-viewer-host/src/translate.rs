@@ -498,6 +498,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if kind == "annotations.create" {
         return kernel_create::call(host, &request, payloads);
     }
+    if kind == "annotations.update" {
+        return kernel_update::call(host, &request, payloads);
+    }
     let moved = page_space::render_target_to_page_space(host, &mut request);
     let response = if respelled || moved {
         host.call(&request.to_string(), payloads)
@@ -731,11 +734,11 @@ mod kernel_create {
     use epdf_engine::page_space::{page_point_of, page_rect_of};
     use serde_json::{Map, Value, json};
 
-    fn malformed(message: impl Into<String>) -> EngineError {
+    pub(super) fn malformed(message: impl Into<String>) -> EngineError {
         EngineError::with_message(EngineErrorCode::WireFormat, message)
     }
 
-    fn refused(error: EngineError) -> HostResponse {
+    pub(super) fn refused(error: EngineError) -> HostResponse {
         HostResponse { json: json!({ "error": error.to_wire() }).to_string(), payloads: Vec::new() }
     }
 
@@ -785,7 +788,7 @@ mod kernel_create {
         if let Some(index) = payload_of(draft.get("file").and_then(|f| f.get("resource"))) {
             roles.insert("file".into(), json!({ "payload": index }));
         }
-        let draft = v3_draft(draft, visible, &mut box_of)?;
+        let draft = v3_draft(draft, visible, &mut box_of, false)?;
         let mut wire = Map::new();
         for key in ["kind", "jobId", "docId", "layerName", "opId", "page", "objectNumberFloor"] {
             if let Some(value) = request.get(key).filter(|v| !v.is_null()) {
@@ -838,12 +841,17 @@ mod kernel_create {
 
     /// A kernel draft (old spelling, the file's coordinates) as upstream's
     /// v3 draft in page space, keeping only the fields its kind declares.
+    /// The kernel's patch is the same statement (`toPatch`): with `update`,
+    /// it is respelled as a v3 patch, where a drawn kind's `rect` is a
+    /// command, a turn of 0 and a cloud of 0 clear, and the shape the
+    /// statement states wins over its `rect`.
     pub(super) fn v3_draft(
         mut draft: Map<String, Value>,
         visible: PdfRect,
         box_of: &mut dyn FnMut(
             epdf_engine::identity::PageObjectNumber,
         ) -> Result<PdfRect, EngineError>,
+        update: bool,
     ) -> Result<Map<String, Value>, EngineError> {
         let subtype_name = draft.get("subtype").and_then(Value::as_str).unwrap_or("").to_owned();
         let subtype: AnnotationSubtype = serde_json::from_value(json!(subtype_name))
@@ -866,19 +874,22 @@ mod kernel_create {
         draft.remove("replyType");
         // A box kind's box: the turned-from box when it is turned, its rect
         // when upright. The kernel's turn is counterclockwise.
+        let rotation_sent = draft.contains_key("rotation");
         let rotation = draft.remove("rotation").and_then(|r| r.as_f64()).filter(|r| *r != 0.0);
         let clockwise = rotation.map(|r| (360.0 - r.rem_euclid(360.0)).rem_euclid(360.0));
         let is_box_kind =
             matches!(subtype, S::Square | S::Circle | S::FreeText | S::Stamp | S::Caret);
         let unrotated = draft.remove("unrotatedRect");
         let given_rect = draft.remove("rect");
-        if is_box_kind {
-            let content =
-                unrotated.filter(|u| !u.is_null() && rotation.is_some()).or(given_rect.clone());
-            if let Some(content) = content {
+        let turned_from = unrotated.filter(|u| !u.is_null() && rotation.is_some());
+        if is_box_kind && !update {
+            if let Some(content) = turned_from.or(given_rect.clone()) {
                 out.insert("box".into(), page_box(&content, visible));
             }
-        } else if matches!(subtype, S::Text | S::Link | S::Redact | S::FileAttachment | S::Popup)
+        } else if is_box_kind && let Some(content) = turned_from {
+            out.insert("box".into(), page_box(&content, visible));
+        } else if (update
+            || matches!(subtype, S::Text | S::Link | S::Redact | S::FileAttachment | S::Popup))
             && let Some(rect) = given_rect
         {
             out.insert("rect".into(), page_box(&rect, visible));
@@ -898,6 +909,8 @@ mod kernel_create {
             )
         {
             out.insert("rotation".into(), json!(degrees));
+        } else if update && rotation_sent {
+            out.insert("rotation".into(), Value::Null);
         }
         for (name, value) in draft {
             let converted = match name.as_str() {
@@ -938,6 +951,7 @@ mod kernel_create {
                 }),
                 "cloudyIntensity" => match value.as_f64() {
                     Some(intensity) if intensity > 0.0 => value,
+                    _ if update => Value::Null,
                     _ => continue,
                 },
                 "file" => {
@@ -968,6 +982,20 @@ mod kernel_create {
         // any other, where the previous create ignored them.
         let declared: Vec<&str> = declared_fields(subtype).map(|(name, _)| name).collect();
         out.retain(|name, _| declared.contains(&name.as_str()));
+        // A drawn kind's `rect` beside the shape it states is the rect
+        // around it, not a command.
+        if update
+            && epdf_engine::features::annotation::write::shape_for_rect::is_drawn_rect_kind(
+                &subtype_name,
+            )
+            && epdf_engine::features::annotation::write::shape_for_rect::shape_fields_of(
+                &subtype_name,
+            )
+            .iter()
+            .any(|field| *field != "rotation" && out.contains_key(*field))
+        {
+            out.remove("rect");
+        }
         out.insert("subtype".into(), json!(subtype_name));
         Ok(out)
     }
@@ -1009,6 +1037,147 @@ mod kernel_create {
             event.remove("annotation");
             event.insert("type".into(), json!("annotation.created"));
             event.insert("created".into(), created);
+        }
+        Ok(())
+    }
+}
+
+/// The kernel's annotation update, on the host's (Task 8.15).
+///
+/// The kernel sends its patch as the statement it sends a create
+/// (`toPatch`): the old spelling, in the file's coordinates, its bytes as
+/// keyed resources. The host now takes upstream's v3 patch in page space,
+/// with its bytes by role, and answers the new record, its appearance
+/// verdict and an `annotations.updated` event. [`call`] respells the patch
+/// ([`super::kernel_create::v3_draft`] with `update`) and the resources,
+/// sends the update, and answers the kernel the annotation the previous
+/// reader reads (the shape `sync` takes) under `updated`, with an
+/// `annotation.updated` event carrying it. Dead once Task 13 ports the
+/// kernel.
+mod kernel_update {
+    use epdf_engine::error::{EngineError, EngineErrorCode};
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::identity::AnnotationRef;
+    use epdf_engine::session::registry::SessionKey;
+    use serde_json::{Map, Value, json};
+
+    use super::kernel_create::{malformed, refused, v3_draft};
+
+    /// The kernel's update, answered in the kernel's shape.
+    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
+        let (wire, index) = match respell(host, request) {
+            Ok(respelled) => respelled,
+            Err(error) => return refused(error),
+        };
+        let response = host.call(&wire.to_string(), payloads);
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        if envelope.get("error").is_some() {
+            return response;
+        }
+        match answer_for_kernel(host, request, index, &mut envelope) {
+            Ok(()) => HostResponse { json: envelope.to_string(), payloads: response.payloads },
+            Err(error) => refused(error),
+        }
+    }
+
+    fn session_key(request: &Value) -> Result<SessionKey, EngineError> {
+        let doc = request
+            .get("docId")
+            .and_then(Value::as_str)
+            .ok_or_else(|| malformed("the update names no document"))?;
+        Ok(match request.get("layerName").and_then(Value::as_str) {
+            Some(layer) => SessionKey::layer(doc, layer),
+            None => SessionKey::document(doc),
+        })
+    }
+
+    /// The v3 request, in page space, with its bytes by role, and where the
+    /// annotation sits in its page's `/Annots` (an update doesn't move it).
+    fn respell(host: &Host, request: &Value) -> Result<(Value, u32), EngineError> {
+        let reference: AnnotationRef =
+            serde_json::from_value(request.get("ref").cloned().unwrap_or_default())
+                .map_err(|e| malformed(format!("the update names no annotation: {e}")))?;
+        let index = {
+            let session = host.sessions().session(&session_key(request)?)?;
+            let owned = session.document()?;
+            let page_index = owned.page_index(reference.page())?;
+            epdf_engine::features::annotation::write::resolve::resolve_annotation_index_raw(
+                owned.document(),
+                page_index,
+                &reference,
+            )?
+        };
+        let mut box_of = super::page_space::visible_boxes(host, request);
+        let visible = box_of(reference.page())?;
+        let patch = match request.get("patch") {
+            Some(Value::Object(patch)) => patch.clone(),
+            _ => return Err(malformed("the update carries no patch")),
+        };
+        let keyed = request.get("resources").cloned().unwrap_or(Value::Null);
+        let payload_of = |resource: Option<&Value>| -> Option<Value> {
+            let key = resource?.as_str()?;
+            keyed.get(key)?.get("payload").cloned()
+        };
+        let mut roles = Map::new();
+        if let Some(index) = payload_of(patch.get("source").and_then(|s| s.get("resource"))) {
+            roles.insert("appearance".into(), json!({ "payload": index }));
+        }
+        if let Some(index) = payload_of(patch.get("file").and_then(|f| f.get("resource"))) {
+            roles.insert("file".into(), json!({ "payload": index }));
+        }
+        let patch = v3_draft(patch, visible, &mut box_of, true)?;
+        let mut wire = Map::new();
+        for key in
+            ["kind", "jobId", "docId", "layerName", "opId", "ref", "authority", "objectNumberFloor"]
+        {
+            if let Some(value) = request.get(key).filter(|v| !v.is_null()) {
+                wire.insert(key.into(), value.clone());
+            }
+        }
+        wire.insert("patch".into(), Value::Object(patch));
+        if !roles.is_empty() {
+            wire.insert("resources".into(), Value::Object(roles));
+        }
+        Ok((Value::Object(wire), index))
+    }
+
+    /// The updated annotation as the previous reader reads it, under
+    /// `updated`, and the event the kernel's sync takes.
+    fn answer_for_kernel(
+        host: &mut Host,
+        request: &Value,
+        index: u32,
+        envelope: &mut Value,
+    ) -> Result<(), EngineError> {
+        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
+        let listing = super::kernel_annotations::listing(
+            host,
+            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
+                "layerName": request.get("layerName"), "pages": [page] }),
+        );
+        let listed: Value = serde_json::from_str(&listing.json)
+            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
+        let updated = listed
+            .pointer("/result/pages/0/annotations")
+            .and_then(Value::as_array)
+            .and_then(|all| all.iter().find(|a| a["index"] == json!(index)))
+            .cloned()
+            .ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "the updated annotation does not read back",
+                )
+            })?;
+        let answer = &mut envelope["result"];
+        let appearance = answer["result"]["appearance"].take();
+        let meta = answer["result"]["meta"].take();
+        answer["result"] = json!({ "updated": updated, "appearance": appearance, "meta": meta });
+        if let Some(Value::Object(event)) = answer.get_mut("event") {
+            event.remove("annotation");
+            event.insert("type".into(), json!("annotation.updated"));
+            event.insert("updated".into(), updated);
         }
         Ok(())
     }

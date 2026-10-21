@@ -199,6 +199,14 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_UpdateAppearanceToRect(self.as_raw(), fit.code()) != 0 }
     }
 
+    /// `/CA` set and the appearance re-fit as [`Self::update_appearance_to_rect`]
+    /// does, its opacity layer replaced for the new value rather than kept as
+    /// drawing (`EPDFAnnot_SetStampOpacity`). On failure nothing changes.
+    pub fn set_stamp_opacity(&self, fit: StampFit, opacity: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetStampOpacity(self.as_raw(), fit.code(), opacity) != 0 }
+    }
+
     /// Deep-clone a page of another document in as this annotation's `/AP`.
     ///
     /// The source document has to stay open for the call and not after it:

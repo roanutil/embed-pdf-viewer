@@ -73,10 +73,12 @@ fn every_annotation_write_names_its_page() {
         json!({ "kind": "annotations.update", "docId": doc, "ref": annotation,
                 "patch": { "subtype": "square", "contents": "moved on" } }),
     );
-    assert_eq!(updated["event"]["type"], json!("annotation.updated"), "{updated}");
+    // An update is a one-op change too (Task 8.15): `annotations.updated`.
+    assert_eq!(updated["event"]["type"], json!("annotations.updated"), "{updated}");
     assert_eq!(updated["event"]["page"], page, "{updated}");
+    assert!(updated["result"].get("page").is_none(), "the page leaked into the result");
     assert_result_rides(&updated);
-    let annotation = updated["result"]["updated"]["ref"].clone();
+    let annotation = updated["result"]["annotation"]["ref"].clone();
 
     // Removed upstream; owner 8.16 (`annotations.reorder`).
     let moved = call_legacy(

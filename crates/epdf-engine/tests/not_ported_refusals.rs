@@ -1,32 +1,18 @@
 //! Writes not yet ported to the runtime 1461b0c51 API are refused BEFORE
 //! anything is written.
 //!
-//! re-port (Task 8): delete these once `/RD` and `/DV` writes are ported. Each
+//! re-port (Task 8): delete these once `/DV` writes are ported (8.21). Each
 //! asserts NotImplemented and that nothing was written: the document saves
-//! to the same bytes it did before the request, or, where an earlier write
-//! in the test makes saves differ anyway, the page reads back the same.
-//! A create writes `/RD` the way upstream does since 8.14 (its drafts have
-//! no `rectDifferences`, and the appearance writes `/RD`); the update and the
-//! field writes are 8.15's and 8.21's.
+//! to the same bytes it did before the request. A create and an update
+//! write `/RD` the way upstream does since 8.14 and 8.15: their writes have
+//! no `rectDifferences`, and the appearance writes `/RD`.
 
 use epdf_engine::cancel::CancelToken;
-use epdf_engine::clock::{FixedClock, Timestamp};
 use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
-use epdf_engine::features::annotation::read::page::read_page_annotations;
-use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::{
-    CreateRequest, CreateServices, create_annotation,
-};
-use epdf_engine::features::annotation::write::patch::AnnotationPatch;
-use epdf_engine::features::annotation::write::update::update_annotation;
 use epdf_engine::features::forms::field::{
     FormFieldDraft, FormFieldPatch, OwnedPageWidgets, create_field, update_field,
 };
 use epdf_engine::features::forms::snapshot::FormFieldRef;
-use epdf_engine::identity::PageObjectNumber;
-use epdf_engine::ids::SeededIdSource;
-use epdf_engine::revision::RevisionToken;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 
@@ -44,105 +30,6 @@ fn saved(document: &pdfium::Document) -> Vec<u8> {
 
 fn field_count(document: &pdfium::Document) -> u32 {
     document.form_model().expect("a form model").field_count()
-}
-
-fn rect_differences() -> serde_json::Value {
-    serde_json::json!({ "left": 2.0, "top": 2.0, "right": 2.0, "bottom": 2.0 })
-}
-
-/// A square on the first page, made by the create, named as a read names it.
-fn create_square(document: &pdfium::Document) -> epdf_engine::identity::AnnotationRef {
-    let page = PageObjectNumber::new(document.page_object_number_by_index(0)).expect("indirect");
-    let draft = serde_json::json!({ "subtype": "square",
-        "box": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 } });
-    let drawings = std::cell::RefCell::default();
-    let created = create_annotation(
-        document,
-        0,
-        &epdf_engine::session::document::WriteStamp { op_id: "op".into(), undoable: false },
-        CreateRequest {
-            page,
-            draft: draft.as_object().unwrap().clone(),
-            resources: Default::default(),
-            object_number: None,
-            actor: None,
-        },
-        &CreateServices {
-            context: &AnnotationWriteContext::empty(),
-            drawings: &drawings,
-            clock: &FixedClock(Timestamp::utc(1_700_000_000_000)),
-            ids: &SeededIdSource::new(3),
-        },
-        &CancelToken::never(),
-    )
-    .expect("a square creates");
-    created.annotation.base.annotation_ref
-}
-
-#[test]
-fn an_update_with_rect_differences_is_refused_before_the_identity_stamp() {
-    let session = open(test_support::fixture(test_support::REPORT));
-    let owned = session.document().expect("open");
-    let document = owned.document();
-    let page_object_number =
-        PageObjectNumber::new(document.page_object_number_by_index(0)).expect("indirect page");
-    let state = read_page_annotations(
-        document,
-        0,
-        page_object_number,
-        &RevisionToken::new("<session>", page_object_number, 0),
-        &mut ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists")
-    .page_state;
-    let created = create_square(document);
-    let page = document.page(0).expect("page");
-    // Bytes are no use here: two incremental saves of a document with an
-    // unsaved create already differ from each other. The page's annotations
-    // read back as DTOs carry `/NM` and every field a patch could touch.
-    let listing = || {
-        let annotations = read_page_annotations(
-            document,
-            0,
-            page_object_number,
-            &RevisionToken::new("<session>", page_object_number, 0),
-            &mut ActionReadBudgetTracker::default(),
-            &CancelToken::never(),
-        )
-        .expect("the page lists");
-        serde_json::to_value(&annotations).expect("serialize")
-    };
-    let annotations_before = page.annotation_count();
-    let listing_before = listing();
-
-    // The opacity is written before `/RD` in apply_shape_patch, so a refusal
-    // made there rather than in preflight would leave it changed.
-    let patch: AnnotationPatch = serde_json::from_value(serde_json::json!({
-        "subtype": "square",
-        "opacity": 0.5,
-        "rectDifferences": rect_differences(),
-    }))
-    .expect("the patch decodes");
-    let error = update_annotation(
-        document,
-        &page,
-        0,
-        page_object_number,
-        &created,
-        &patch,
-        &AnnotationWriteContext::empty(),
-        &state,
-        &state,
-        &FixedClock(Timestamp::utc(1_700_000_100_000)),
-        &SeededIdSource::new(7),
-        &CancelToken::never(),
-    )
-    .expect_err("refused");
-
-    assert_eq!(error.code, EngineErrorCode::NotImplemented, "{error}");
-    assert_eq!(page.annotation_count(), annotations_before);
-    assert_eq!(listing(), listing_before, "the refusal wrote to the annotation");
 }
 
 #[test]

@@ -548,6 +548,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A one-op change (applyOne) and an op of document.apply: the v3 patch in page space, converted at the boundary (pdfAnnotationPatchOf), resolved against the annotation's read (pdfResolveAnnotationPatch: a drawn kind's rect becomes the shape that puts the drawing there, what it sends back as it reads is dropped, each field checked against its kind's update schema, what follows stated), then written in place by its kind's writer. The appearance verdict classifies the resolved patch (appearanceImpactOf); /RD is the appearance's. A widget is refused for doc.forms.updateWidget. Its reverse puts back by value the fields it changed that still show it, until 8.30 brings the dictionary captures. Measurement writes (a scale, a leader, a shown or placed caption, a derived label) are refused NotImplemented until 8.25. Gated by vectors/annotation/update.json and write.json through crates/epdf-engine/tests/annotation_update.rs and annotation_write.rs.",
   },
   {
     kind: 'annotations.delete',

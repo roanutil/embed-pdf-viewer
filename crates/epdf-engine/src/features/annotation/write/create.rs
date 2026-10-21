@@ -318,7 +318,7 @@ fn claim_name(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Link {
+pub(super) enum Link {
     Reply,
     Popup,
 }
@@ -326,7 +326,7 @@ enum Link {
 /// A link's target, checked before the first write: an annotation the
 /// document has, on the same page (ISO 32000-2 §12.5.6.2). Answers its
 /// place in the page's `/Annots`; creates only append, so it holds.
-fn link_target(
+pub(super) fn link_target(
     document: &Document,
     page_index: u32,
     page: PageObjectNumber,
@@ -353,7 +353,7 @@ fn link_target(
     super::resolve::resolve_annotation_index_raw(document, page_index, target)
 }
 
-fn open_existing(
+pub(super) fn open_existing(
     document: &Document,
     page_index: u32,
     index: u32,
@@ -364,7 +364,7 @@ fn open_existing(
 }
 
 /// `linkReply`: `/IRT` and `/RT`.
-fn link_reply(
+pub(super) fn link_reply(
     annotation: &Annotation<'_>,
     parent: &Annotation<'_>,
     reply_type: AnnotationReplyType,
@@ -380,7 +380,10 @@ fn link_reply(
 /// popup: a second is refused, naming the first. A note and its popup hold
 /// one `/Open`: on linking the popup's wins when it has one, else it takes
 /// the note's.
-fn link_popup(popup: &Annotation<'_>, parent: &Annotation<'_>) -> Result<(), EngineError> {
+pub(super) fn link_popup(
+    popup: &Annotation<'_>,
+    parent: &Annotation<'_>,
+) -> Result<(), EngineError> {
     if let Ok(Some(existing)) = parent.linked_annotation("Popup") {
         let existing = existing.object_number();
         if existing != popup.object_number() {
@@ -758,7 +761,7 @@ fn apply_filled_style(annotation: &Annotation<'_>, f: &DraftFields) -> Result<()
 
 /// `applyDefaultAppearance`: `/DA` from a standard font, or from a font this
 /// thread registered under its key.
-fn set_default_appearance(
+pub(super) fn set_default_appearance(
     annotation: &Annotation<'_>,
     family: &str,
     size: f64,
@@ -894,7 +897,7 @@ fn apply_redact(
 
 /// `applyLinkTarget` (`createLinkTargetAction`): a new action of the
 /// document, set as `/A`.
-fn write_link_target(
+pub(super) fn write_link_target(
     document: &Document,
     annotation: &Annotation<'_>,
     target: &LinkTargetWrite,

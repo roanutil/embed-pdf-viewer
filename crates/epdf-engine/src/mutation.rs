@@ -114,7 +114,7 @@ impl MutationMeta {
 /// [`MutationMeta`]: each affected page's revision and weak-annotation
 /// state. Kept only for the writes that have not moved to [`MutationMeta`]
 /// yet, each named by the sub-task that moves it: the annotation flatten
-/// (8.15), `pages.flatten` (8.17), `forms.applyEffects` (8.20, retired for
+/// and `pages.flatten` (8.17), `forms.applyEffects` (8.20, retired for
 /// `document.apply`) and `redaction.apply` (8.23). The last owner deletes it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

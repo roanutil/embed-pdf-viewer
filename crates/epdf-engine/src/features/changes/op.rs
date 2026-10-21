@@ -77,6 +77,21 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "OpResources::is_empty")]
         resources: OpResources,
     },
+    /// The annotation `ref` names, changed by `patch` (`AnnotationPatch`),
+    /// with the bytes beside it. `expect` is the values it assumes the
+    /// annotation reads now. The patch stays the JSON object the caller
+    /// sent: an update checks it against the annotation
+    /// (`features::annotation::write::patch`).
+    #[serde(rename = "annotations.update", rename_all = "camelCase")]
+    AnnotationsUpdate {
+        #[serde(rename = "ref")]
+        reference: crate::identity::AnnotationRef,
+        patch: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "OpResources::is_empty")]
+        resources: OpResources,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
 }
 
 /// The bytes beside an op, by role (`WireAnnotationResources`).
@@ -169,7 +184,8 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
     for op in ops {
         match op {
             ChangeOp::AttachmentsCreate { resources, .. }
-            | ChangeOp::AnnotationsCreate { resources, .. } => resources.resolve(payloads)?,
+            | ChangeOp::AnnotationsCreate { resources, .. }
+            | ChangeOp::AnnotationsUpdate { resources, .. } => resources.resolve(payloads)?,
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
             | ChangeOp::AttachmentsDelete { .. } => {}
@@ -210,6 +226,7 @@ impl ChangeOp {
             Self::AttachmentsCreate { .. } => "attachments.create",
             Self::AttachmentsDelete { .. } => "attachments.delete",
             Self::AnnotationsCreate { .. } => "annotations.create",
+            Self::AnnotationsUpdate { .. } => "annotations.update",
         }
     }
 }
@@ -230,8 +247,7 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.15 and 8.16: the other annotation ops.
-    ("annotations.update", "8.15"),
+    // 8.16: the other annotation ops.
     ("annotations.delete", "8.16"),
     ("annotations.reorder", "8.16"),
     // 8.18: page structure (119685ea4, b69c40377).
@@ -337,7 +353,8 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         }
         ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
-        | ChangeOp::AnnotationsCreate { .. } => {}
+        | ChangeOp::AnnotationsCreate { .. }
+        | ChangeOp::AnnotationsUpdate { .. } => {}
     }
     Ok(parsed)
 }
@@ -468,6 +485,7 @@ mod tests {
             "attachments.create",
             "attachments.delete",
             "annotations.create",
+            "annotations.update",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

@@ -52,6 +52,21 @@ pub enum ChangeItem {
         annotation: serde_json::Value,
         meta: AnnotationMutationMeta,
     },
+    /// `AnnotationUpdateResult`, with its page: the annotation read back,
+    /// what happened to its appearance, and in an undo the fields it left
+    /// alone.
+    #[serde(rename = "annotations.update")]
+    AnnotationsUpdate {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        annotation: serde_json::Value,
+        appearance: crate::features::annotation::write::update::AppearanceOutcome,
+        meta: AnnotationMutationMeta,
+        /// The fields an undo left alone: they no longer showed what the
+        /// change had set.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<String>,
+    },
     /// `AnnotationDeleteResult`, with its page: nothing exists after it, so
     /// only `meta`, whose `changed` names what went. Here only as the undo
     /// of a create; Task 8.16 runs it as an op.
@@ -76,9 +91,9 @@ impl ChangeItem {
             Self::AttachmentsCreate { meta, .. }
             | Self::AttachmentsDelete { meta }
             | Self::AttachmentsRestore { meta, .. } => &meta.meta,
-            Self::AnnotationsCreate { meta, .. } | Self::AnnotationsDelete { meta, .. } => {
-                &meta.meta
-            }
+            Self::AnnotationsCreate { meta, .. }
+            | Self::AnnotationsUpdate { meta, .. }
+            | Self::AnnotationsDelete { meta, .. } => &meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -90,9 +105,9 @@ impl ChangeItem {
             Self::AttachmentsCreate { meta, .. }
             | Self::AttachmentsDelete { meta }
             | Self::AttachmentsRestore { meta, .. } => &mut meta.meta,
-            Self::AnnotationsCreate { meta, .. } | Self::AnnotationsDelete { meta, .. } => {
-                &mut meta.meta
-            }
+            Self::AnnotationsCreate { meta, .. }
+            | Self::AnnotationsUpdate { meta, .. }
+            | Self::AnnotationsDelete { meta, .. } => &mut meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -129,6 +144,12 @@ impl ChangeItem {
                 "annotations.created",
                 serde_json::json!({ "page": crate::identity::PageRef::new(*page),
                     "annotation": annotation, "meta": to_value(meta)? }),
+            ),
+            Self::AnnotationsUpdate { page, annotation, appearance, meta, .. } => (
+                "annotations.updated",
+                serde_json::json!({ "page": crate::identity::PageRef::new(*page),
+                    "annotation": annotation, "appearance": to_value(appearance)?,
+                    "meta": to_value(meta)? }),
             ),
             // `deletedAnnotationsOf`: the refs in `meta.changed`.
             Self::AnnotationsDelete { page, meta } => (

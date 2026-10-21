@@ -1328,30 +1328,46 @@ impl Host {
                 }
                 Ok(HostResponse { json: envelope(answer), payloads })
             }
+            // `WorkerHost.handleAnnotationsUpdate`: the single verb as a
+            // one-op change, checked against the request's authority with no
+            // protection (`{ ...req.authority, protection: null }`). The
+            // patch reached here in the file's coordinates; the bytes are
+            // the request's payloads, by role.
             "annotations.update" => {
-                let annotation_ref: crate::identity::AnnotationRef = field(body, "ref")?;
-                let patch: f::annotation::write::patch::AnnotationPatch = field(body, "patch")?;
-                let owned_payloads = resource_map(body, &payloads)?;
-                let resources = borrowed_resources(&owned_payloads);
-                let context = annotation_context(self.fonts.as_ref(), &resources);
-                let result = f::annotation::write::mutator::update(
-                    self.sessions.session_mut(&key)?,
-                    &annotation_ref,
-                    &patch,
-                    &context,
-                    self.clock.as_ref(),
-                    self.ids.as_ref(),
-                    cancel,
-                )?;
-                // `LocalPageAnnotationsService` publishes the page it was
-                // asked through, which is the page the ref names.
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AnnotationUpdated {
-                        page_object_number: annotation_ref.page(),
-                        result: value(&result)?,
-                    },
-                )
+                let reference: crate::identity::AnnotationRef = field(body, "ref")?;
+                let patch: serde_json::Map<String, serde_json::Value> = field(body, "patch")?;
+                let mut resources: f::changes::op::OpResources =
+                    optional(body, "resources")?.unwrap_or_default();
+                resources.resolve(&payloads)?;
+                let job = JobEnvelope::parse(&header.kind, body)?;
+                let op_id = self.op_id_of(&job)?;
+                let authority = match job.authority {
+                    Some(mut wire) => {
+                        wire.protection = None;
+                        Some(change_authority(&wire)?)
+                    }
+                    None => None,
+                };
+                let op = f::changes::op::ChangeOp::AnnotationsUpdate {
+                    reference,
+                    patch,
+                    resources,
+                    expect: None,
+                };
+                let item = self.apply_one(&key, &op_id, op, authority, cancel)?;
+                let event = item.events()?.into_iter().next().ok_or_else(|| {
+                    EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
+                })?;
+                let (result, sequence, mut events, payloads) =
+                    self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
+                let mut answer = serde_json::json!({
+                    "result": result,
+                    "mutationSequence": sequence,
+                });
+                if let Some(event) = events.pop() {
+                    answer["event"] = event;
+                }
+                Ok(HostResponse { json: envelope(answer), payloads })
             }
             "annotations.delete" => {
                 let annotation_ref: crate::identity::AnnotationRef = field(body, "ref")?;
@@ -2810,6 +2826,12 @@ fn strip_item(
         ChangeItem::AnnotationsCreate { annotation, meta, .. } => {
             Ok(serde_json::json!({ "annotation": annotation, "meta": value(&meta)? }))
         }
+        // Without its `page` and `skipped`, as `handleAnnotationsUpdate`
+        // strips them.
+        ChangeItem::AnnotationsUpdate { annotation, appearance, meta, .. } => {
+            Ok(serde_json::json!({ "annotation": annotation, "appearance": value(&appearance)?,
+                "meta": value(&meta)? }))
+        }
         ChangeItem::AnnotationsDelete { meta, .. } => {
             Ok(serde_json::json!({ "meta": value(&meta)? }))
         }
@@ -3027,90 +3049,6 @@ fn piece_info_holder(body: &serde_json::Value) -> Result<pdfium::PieceInfoHolder
         None | Some(serde_json::Value::Null) => Ok(pdfium::PieceInfoHolder::Catalog),
         Some(_) => Ok(pdfium::PieceInfoHolder::Page(page_field(body)?.get())),
     }
-}
-
-/// The binaries a mutation carried, owned for the length of one call.
-///
-/// The bytes are owned here and borrowed by [`borrowed_resources`], because
-/// a writer takes a borrow and the payloads arrive as a `Vec` this function
-/// indexes into: nothing else owns the right slices for the right keys.
-type OwnedResources = std::collections::BTreeMap<String, (Vec<u8>, Option<String>)>;
-
-/// The binaries a mutation carried, keyed as its draft names them.
-///
-/// The JSON says which payload each key is; the payloads say what is in them.
-/// Splitting it that way is what lets a draft reference an image without the
-/// image ever entering the JSON.
-fn resource_map(
-    body: &serde_json::Value,
-    payloads: &Payloads,
-) -> Result<OwnedResources, EngineError> {
-    #[derive(Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    struct WireResource {
-        /// Which payload holds the bytes.
-        payload: usize,
-        #[serde(default)]
-        mime_type: Option<String>,
-    }
-
-    let Some(declared) = body.get("resources") else {
-        return Ok(std::collections::BTreeMap::new());
-    };
-    if declared.is_null() {
-        return Ok(std::collections::BTreeMap::new());
-    }
-    let declared: std::collections::BTreeMap<String, WireResource> =
-        serde_json::from_value(declared.clone()).map_err(|e| {
-            EngineError::with_message(
-                EngineErrorCode::WireFormat,
-                format!("'resources' is not a map of payload references: {e}"),
-            )
-        })?;
-
-    let mut out = OwnedResources::new();
-    for (key, resource) in declared {
-        let bytes = payload(payloads, resource.payload, &format!("resource '{key}'"))?;
-        out.insert(key, (bytes.to_vec(), resource.mime_type));
-    }
-    Ok(out)
-}
-
-/// What an annotation writer is given beyond its draft.
-///
-/// The fonts are present only when this host has claimed the thread's
-/// registry. A draft naming a registered family without one is refused by
-/// the context itself, saying that this host has no registry, which is more
-/// useful than a silent fall back to Helvetica: the document would get the
-/// wrong glyphs and nothing downstream could tell.
-fn annotation_context<'a>(
-    fonts: Option<&'a crate::features::fonts::FontRegistry>,
-    resources: &'a crate::features::annotation::write::context::WriteResourceMap<'a>,
-) -> crate::features::annotation::write::context::AnnotationWriteContext<'a> {
-    use crate::features::annotation::write::context::AnnotationWriteContext;
-    match fonts {
-        Some(fonts) => AnnotationWriteContext::with_fonts(fonts),
-        None => AnnotationWriteContext::empty(),
-    }
-    .with_resources(resources)
-}
-
-/// Borrow the owned resource map in the shape a writer takes.
-fn borrowed_resources(
-    owned: &OwnedResources,
-) -> crate::features::annotation::write::context::WriteResourceMap<'_> {
-    owned
-        .iter()
-        .map(|(key, (bytes, mime))| {
-            (
-                key.clone(),
-                crate::features::annotation::write::context::WriteResource {
-                    bytes: bytes.as_slice(),
-                    mime_type: mime.as_deref(),
-                },
-            )
-        })
-        .collect()
 }
 
 /// Framing for a host that has one buffer rather than a list of them.

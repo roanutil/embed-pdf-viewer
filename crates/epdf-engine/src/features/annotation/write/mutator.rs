@@ -33,7 +33,6 @@
 
 use crate::access::{DocumentAccess, OwnedDocument, PageAccess};
 use crate::cancel::CancelToken;
-use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::pages_write::FlattenUsage;
 use crate::identity::{AnnotationRef, PageObjectNumber};
@@ -42,12 +41,9 @@ use crate::mutation::PageStateMeta;
 use crate::revision::WeakAnnotationState;
 use crate::session::document::DocumentSession;
 
-use super::context::AnnotationWriteContext;
 use super::delete::{AnnotationDeleteResult, WidgetAttachment, delete_annotation};
 use super::move_::{AnnotationMoveResult, move_annotations};
-use super::patch::AnnotationPatch;
 use super::resolve::resolve_annotation;
-use super::update::{AnnotationUpdateResult, update_annotation};
 
 /// Whether this page holds an annotation nothing can address durably.
 ///
@@ -136,42 +132,6 @@ fn widget_resolver(owned: &OwnedDocument) -> impl Fn(u32) -> WidgetAttachment + 
         Some(_) => WidgetAttachment::Attached,
         None => WidgetAttachment::Deletable,
     }
-}
-
-/// Rewrite one annotation in place.
-pub fn update(
-    session: &mut DocumentSession,
-    annotation_ref: &AnnotationRef,
-    patch: &AnnotationPatch,
-    context: &AnnotationWriteContext<'_>,
-    clock: &dyn Clock,
-    ids: &dyn IdSource,
-    cancel: &CancelToken,
-) -> Result<AnnotationUpdateResult, EngineError> {
-    cancel.check()?;
-    let page_object_number = annotation_ref.page();
-    ensure_weak_state(session, page_object_number)?;
-    let state = session.page_state(page_object_number)?;
-
-    let owned = session.document()?;
-    let index = page_index_of(owned.document(), page_object_number)?;
-    let page = owned.page(page_object_number)?;
-    let result = update_annotation(
-        owned.document(),
-        page.view(),
-        index,
-        page_object_number,
-        annotation_ref,
-        patch,
-        context,
-        &state,
-        &state,
-        clock,
-        ids,
-        cancel,
-    )?;
-    session.note_mutation();
-    Ok(result)
 }
 
 /// Remove one annotation.

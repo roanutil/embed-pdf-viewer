@@ -204,15 +204,29 @@ pub fn request_in_file_space(
             Ok(())
         }
 
+        // The patch on the page of the annotation it changes
+        // (`pdfAnnotationPatchOf`).
+        K::AnnotationsUpdate => {
+            let reference: crate::identity::AnnotationRef =
+                from_value(body.get("ref").cloned().unwrap_or_default())?;
+            let visible = box_of(reference.page())?;
+            if let Some(serde_json::Value::Object(patch)) = body.get_mut("patch") {
+                let converted = super::annotations::pdf_annotation_patch_of(
+                    std::mem::take(patch),
+                    visible,
+                    box_of,
+                )?;
+                *patch = converted;
+            }
+            Ok(())
+        }
+
         // re-port (Task 8): these take places in page space upstream and
-        // convert here once their owners move them: annotation patches
-        // (8.15), widget placements and patches and field drafts (8.21), a
-        // measure (8.25).
-        K::AnnotationsUpdate
-        | K::FormsUpdateWidget
-        | K::FormsCreateField
-        | K::FormsAddWidget
-        | K::MeasureSetScale => Ok(()),
+        // convert here once their owners move them: widget placements and
+        // patches and field drafts (8.21), a measure (8.25).
+        K::FormsUpdateWidget | K::FormsCreateField | K::FormsAddWidget | K::MeasureSetScale => {
+            Ok(())
+        }
 
         // No places.
         K::Abort
@@ -355,25 +369,26 @@ pub fn result_in_page_space(
             })
         }
 
-        // The new annotation on its page (`pageAnnotationOf`), in the result
-        // and in the event that carries it.
-        K::AnnotationsCreate => convert_result(response, |mut answer: serde_json::Value| {
-            for at in ["/result/annotation", "/event/annotation"] {
-                if let Some(annotation) = answer.pointer_mut(at) {
-                    *annotation = page_annotation_of(annotation.take(), box_of)?;
+        // The new or changed annotation on its page (`pageAnnotationOf`), in
+        // the result and in the event that carries it.
+        K::AnnotationsCreate | K::AnnotationsUpdate => {
+            convert_result(response, |mut answer: serde_json::Value| {
+                for at in ["/result/annotation", "/event/annotation"] {
+                    if let Some(annotation) = answer.pointer_mut(at) {
+                        *annotation = page_annotation_of(annotation.take(), box_of)?;
+                    }
                 }
-            }
-            Ok(answer)
-        }),
+                Ok(answer)
+            })
+        }
 
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: page names' layouts (8.18),
-        // annotation updates (8.15), the outline (8.24), viewports (8.25),
+        // the outline (8.24), viewports (8.25),
         // form fields and widgets of the writes (8.20 to 8.22, 8.26), and
         // imports (8.22).
         K::PagesSetName
         | K::PagesRemoveName
-        | K::AnnotationsUpdate
         | K::AnnotationsImport
         | K::OutlineRead
         | K::MeasureViewports
@@ -471,6 +486,15 @@ pub fn change_op_in_file_space(
             let data = super::annotations::pdf_annotation_draft_of(data, visible, box_of)?;
             Ok(ChangeOp::AnnotationsCreate { page, data, object_number, resources })
         }
+        // The patch, and what it expects, on the annotation's page.
+        ChangeOp::AnnotationsUpdate { reference, patch, resources, expect } => {
+            let visible = box_of(reference.page())?;
+            let patch = super::annotations::pdf_annotation_patch_of(patch, visible, box_of)?;
+            let expect = expect
+                .map(|expect| super::annotations::pdf_annotation_patch_of(expect, visible, box_of))
+                .transpose()?;
+            Ok(ChangeOp::AnnotationsUpdate { reference, patch, resources, expect })
+        }
         // No places.
         op @ (ChangeOp::MetadataUpdate { .. }
         | ChangeOp::MetadataUpdateCustom { .. }
@@ -492,6 +516,15 @@ pub fn change_item_in_page_space(
                 page,
                 annotation: page_annotation_of(annotation, box_of)?,
                 meta,
+            })
+        }
+        ChangeItem::AnnotationsUpdate { page, annotation, appearance, meta, skipped } => {
+            Ok(ChangeItem::AnnotationsUpdate {
+                page,
+                annotation: page_annotation_of(annotation, box_of)?,
+                appearance,
+                meta,
+                skipped,
             })
         }
         // No places.

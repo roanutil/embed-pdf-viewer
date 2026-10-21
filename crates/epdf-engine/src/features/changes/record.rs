@@ -38,6 +38,51 @@ pub enum ReverseStep {
     AttachmentsRestore(AttachmentRestoreStep),
     #[serde(rename = "annotation.remove")]
     AnnotationRemove(AnnotationRemoveStep),
+    #[serde(rename = "objects.revert")]
+    ObjectsRevert(ObjectsRevertStep),
+}
+
+/// Puts back what an annotation update wrote (`ObjectsRevertStep`).
+///
+/// Upstream captures each dictionary the update wrote, before and after
+/// (`objects`), and puts them back exactly while they still read as the
+/// update left them, falling back to values only when someone changed them
+/// since. The captures are canonical and raw dictionary exports, which the
+/// fork makes only inside a layer transaction (Task 8.30, as 8.8 left the
+/// attachment captures). Until then `objects` is empty and the step always
+/// takes the value path: the fields the update changed that still hold what
+/// it left are put back by an update, and the rest are reported skipped.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ObjectsRevertStep {
+    /// What its item reports doing: `annotations.update`.
+    pub reports: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub objects: Vec<serde_json::Value>,
+    /// What the item reads back.
+    pub subject: RevertSubject,
+    /// Whether the update changed what the annotation shows.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub appearance_changed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fallback: Option<RevertFallback>,
+}
+
+/// What a revert's item reads back.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RevertSubject {
+    pub annotation: crate::identity::AnnotationRef,
+}
+
+/// How a revert puts values back (`RevertFallback`, its `annotation` kind):
+/// `restore` the old values of the fields the update changed, `left` the
+/// values it left in them. A field still holding its value is put back.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename = "annotation")]
+pub struct RevertFallback {
+    pub restore: serde_json::Map<String, serde_json::Value>,
+    pub left: serde_json::Map<String, serde_json::Value>,
 }
 
 /// Deletes what a create made, with its thread and popups, while it all
@@ -121,7 +166,8 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
         .map(|step| match step {
             ReverseStep::MetadataRevert(_)
             | ReverseStep::AttachmentsRemove(_)
-            | ReverseStep::AnnotationRemove(_) => 0,
+            | ReverseStep::AnnotationRemove(_)
+            | ReverseStep::ObjectsRevert(_) => 0,
             ReverseStep::AttachmentsRestore(step) => {
                 step.capture.bytes.as_ref().map_or(0, Vec::len)
             }

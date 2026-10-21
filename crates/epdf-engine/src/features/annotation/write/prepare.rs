@@ -295,7 +295,7 @@ pub fn declared_fields(
         .chain(own.iter().copied().filter(|(name, _)| *name != "rect"))
 }
 
-fn owner_of(subtype: AnnotationSubtype, name: &str) -> Option<FieldOwner> {
+pub(crate) fn owner_of(subtype: AnnotationSubtype, name: &str) -> Option<FieldOwner> {
     declared_fields(subtype).find(|(n, _)| *n == name).map(|(_, owner)| owner)
 }
 
@@ -488,10 +488,12 @@ impl PreparedDraft {
     }
 }
 
-fn invalid(subtype: &str, field: &str, message: impl std::fmt::Display) -> EngineError {
+/// A refusal naming `field`. `kind` is the kind and the write, `"square
+/// create"` or `"square update"`, as `invalidWrite` names it.
+fn invalid(kind: &str, field: &str, message: impl std::fmt::Display) -> EngineError {
     EngineError::with_message(
         EngineErrorCode::InvalidArg,
-        format!("{subtype} create field '{field}': {message}"),
+        format!("{kind} field '{field}': {message}"),
     )
     .with_details(serde_json::json!({ "field": field }))
 }
@@ -580,15 +582,18 @@ fn intents_of(subtype: AnnotationSubtype) -> &'static [&'static str] {
     }
 }
 
-/// Read one data field of `subtype` into `fields`.
-fn read_field(
+/// Read one data field of `subtype` into `fields`, as `verb` (`create` or
+/// `update`) takes it.
+pub(crate) fn read_field(
+    verb: &str,
     subtype: AnnotationSubtype,
     name: &str,
     value: &Value,
     fields: &mut DraftFields,
 ) -> Result<(), EngineError> {
     use AnnotationSubtype as S;
-    let kind = subtype.as_str();
+    let kind = format!("{} {verb}", subtype.as_str());
+    let kind = kind.as_str();
     let positive = |n: f64| n.is_finite() && n > 0.0;
     let nonnegative = |n: f64| n.is_finite() && n >= 0.0;
     if let Some(bit) = FLAG_NAMES.iter().position(|flag| *flag == name) {
@@ -830,7 +835,7 @@ fn read_field(
 fn measurement_not_ported(kind: &str, name: &str) -> EngineError {
     EngineError::with_message(
         EngineErrorCode::NotImplemented,
-        format!("{kind} create field '{name}': measurements are written by Task 8.25"),
+        format!("{kind} field '{name}': measurements are written by Task 8.25"),
     )
     .with_details(serde_json::json!({ "field": name }))
 }
@@ -942,12 +947,13 @@ fn box_draft_follows(
         )
         .with_details(serde_json::json!({ "field": "box" })));
     };
-    let rect = read_rect(kind, "rect", rect)
-        .map_err(|_| invalid(kind, "rect", "not a rect of finite numbers"))?;
+    let create = format!("{kind} create");
+    let rect = read_rect(&create, "rect", rect)
+        .map_err(|_| invalid(&create, "rect", "not a rect of finite numbers"))?;
     let rotation = draft.get("rotation").and_then(Value::as_f64).unwrap_or(0.0);
     let turn = quarter_turn_of(rotation).ok_or_else(|| {
         invalid(
-            kind,
+            &create,
             "rect",
             format!("a rect places a box at a quarter turn; at {rotation}° give its `box`"),
         )
@@ -993,7 +999,7 @@ pub fn check_draft(mut draft: Map<String, Value>) -> Result<PreparedDraft, Engin
             continue;
         }
         if !draft.contains_key(*required) {
-            return Err(invalid(kind, required, "Required"));
+            return Err(invalid(&format!("{kind} create"), required, "Required"));
         }
     }
     let mut fields = DraftFields::default();
@@ -1002,11 +1008,11 @@ pub fn check_draft(mut draft: Map<String, Value>) -> Result<PreparedDraft, Engin
             continue;
         }
         match owner_of(subtype, name) {
-            Some(FieldOwner::Data) => read_field(subtype, name, value, &mut fields)?,
+            Some(FieldOwner::Data) => read_field("create", subtype, name, value, &mut fields)?,
             // An engine field the engine works out (`readBack`), sent back
             // as a read has it: checked as a read, then the engine's own.
             Some(FieldOwner::Engine) if name == "rect" => {
-                read_rect(kind, name, value)?;
+                read_rect(&format!("{kind} create"), name, value)?;
             }
             // Accepted so a read can be sent back; nothing writes them.
             _ => {}
@@ -1016,7 +1022,7 @@ pub fn check_draft(mut draft: Map<String, Value>) -> Result<PreparedDraft, Engin
 }
 
 /// `standardStateModelOf`: the model a standard state belongs to.
-fn standard_state_model_of(state: &str) -> Option<&'static str> {
+pub(crate) fn standard_state_model_of(state: &str) -> Option<&'static str> {
     match state {
         "accepted" | "rejected" | "cancelled" | "completed" | "none" => Some("review"),
         "marked" | "unmarked" => Some("marked"),
@@ -1141,10 +1147,11 @@ pub fn derive_draft(
 }
 
 /// `assertAnnotationResources`: a role the kind doesn't take is refused, and
-/// so is a create without the role it requires.
+/// so is a create (`create`) without the role it requires.
 pub fn assert_resources(
     subtype: AnnotationSubtype,
     resources: &DraftResources<'_>,
+    create: bool,
 ) -> Result<(), EngineError> {
     let (takes_appearance, takes_file) = resource_roles(subtype);
     let kind = subtype.as_str();
@@ -1158,7 +1165,7 @@ pub fn assert_resources(
                 format!("a {kind} annotation takes no '{role}' resource"),
             ));
         }
-        if !given && takes {
+        if !given && takes && create {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!("creating a {kind} annotation needs its '{role}' resource"),
@@ -1236,7 +1243,7 @@ pub fn prepare_create(
 ) -> Result<PreparedDraft, EngineError> {
     let checked = check_draft(draft)?;
     let resolved = derive_draft(checked, context)?;
-    assert_resources(resolved.subtype, resources)?;
+    assert_resources(resolved.subtype, resources, true)?;
     preflight_draft(&resolved, resources, context, document)?;
     Ok(resolved)
 }
@@ -1374,9 +1381,16 @@ mod tests {
     fn a_resource_the_kind_does_not_take_or_needs_is_refused() {
         let bytes: &[u8] = b"x";
         let stray = DraftResources { appearance: Some(bytes), file: None };
-        assert!(assert_resources(AnnotationSubtype::Square, &stray).is_err());
-        assert!(assert_resources(AnnotationSubtype::Stamp, &DraftResources::default()).is_err());
-        assert!(assert_resources(AnnotationSubtype::Stamp, &stray).is_ok());
+        assert!(assert_resources(AnnotationSubtype::Square, &stray, true).is_err());
+        assert!(
+            assert_resources(AnnotationSubtype::Stamp, &DraftResources::default(), true).is_err()
+        );
+        assert!(assert_resources(AnnotationSubtype::Stamp, &stray, true).is_ok());
+        // An update takes the role or leaves it out.
+        assert!(
+            assert_resources(AnnotationSubtype::Stamp, &DraftResources::default(), false).is_ok()
+        );
+        assert!(assert_resources(AnnotationSubtype::Square, &stray, false).is_err());
     }
 
     #[test]

@@ -1831,6 +1831,61 @@ fn the_kernels_create_keeps_its_shape_while_the_wire_takes_upstreams() {
     assert!(event.get("annotation").is_none(), "{event}");
 }
 
+/// The kernel's update in its old spelling and the file's coordinates, sent
+/// as the whole statement it sends a create: the host takes upstream's v3
+/// patch in page space, and the kernel gets back the annotation the previous
+/// reader reads, under `updated`, with the appearance verdict and an
+/// `annotation.updated` event carrying it (Task 8.15).
+#[test]
+fn the_kernels_update_keeps_its_shape_while_the_wire_takes_upstreams() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let rect = json!({ "left": 100.0, "bottom": 100.0, "right": 160.0, "top": 140.0 });
+    let draft = json!({ "subtype": "square", "nm": "kernel-square", "rect": rect,
+        "color": { "r": 255, "g": 0, "b": 0 }, "interiorColor": null, "opacity": 1,
+        "strokeWidth": 2, "rotation": 0, "flags": { "print": true, "hidden": false } });
+    let call =
+        translate("d", "page.annotations.create", Some(pon), std::slice::from_ref(&draft), 3)
+            .unwrap();
+    let created = decode(
+        &call.decode,
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads),
+    )
+    .unwrap()
+    .value["created"]
+        .clone();
+
+    // The statement again, recoloured and moved 10 to the right.
+    let mut patch = draft;
+    patch["color"] = json!({ "r": 0, "g": 0, "b": 255 });
+    patch["rect"] = json!({ "left": 110.0, "bottom": 100.0, "right": 170.0, "top": 140.0 });
+    patch["contents"] = json!("moved");
+    let call =
+        translate("d", "page.annotations.update", Some(pon), &[created["ref"].clone(), patch], 4)
+            .unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    let updated = &decoded.value["updated"];
+    assert_eq!(updated["ref"], created["ref"], "{updated}");
+    assert_eq!(updated["contents"], "moved");
+    assert_eq!(updated["color"], json!({ "r": 0, "g": 0, "b": 255 }), "{updated}");
+    assert!(
+        (updated["rect"]["left"].as_f64().unwrap()
+            - created["rect"]["left"].as_f64().unwrap()
+            - 10.0)
+            .abs()
+            < 0.01,
+        "the rect moved in the file's coordinates: {updated}"
+    );
+    assert_eq!(decoded.value["appearance"]["action"], "regenerated");
+    let event = decoded.event.expect("an event");
+    assert_eq!(event["type"], "annotation.updated");
+    assert_eq!(event["updated"], *updated);
+}
+
 // ── page space (Task 8.4) ───────────────────────────────────────────────────
 
 /// A two-page PDF whose visible boxes do not start at the origin: page 3

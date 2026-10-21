@@ -201,6 +201,14 @@ impl Annotation<'_> {
         Ok(unsafe { pdfium_sys::FPDFAnnot_HasKey(self.handle, key.as_ptr()) } != 0)
     }
 
+    /// The object type of `key`'s value (`FPDFAnnot_GetValueType`,
+    /// `FPDF_OBJECT_*`): `0` when the key is absent, `6` for a dictionary.
+    pub fn value_type(&self, key: &str) -> Result<i32, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe { pdfium_sys::FPDFAnnot_GetValueType(self.handle, key.as_ptr()) })
+    }
+
     /// A UTF-16 string entry.
     ///
     /// `None` when the key is absent, `Some("")` when it is present and
@@ -745,6 +753,15 @@ impl Annotation<'_> {
     pub fn file_attachment(&self) -> Option<Attachment<'_>> {
         // SAFETY: the handle is live for the borrow this returns.
         let handle = unsafe { pdfium_sys::FPDFAnnot_GetFileAttachment(self.handle) };
+        (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
+    }
+
+    /// The same file, for writing (`EPDFAnnot_GetFileAttachmentForWrite`):
+    /// inside a layer transaction the file specification is copied up first,
+    /// so a change reaches only this layer.
+    pub fn file_attachment_for_write(&self) -> Option<Attachment<'_>> {
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::EPDFAnnot_GetFileAttachmentForWrite(self.handle) };
         (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
     }
 

@@ -290,6 +290,16 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
                 resources,
             )
         }
+        ChangeOp::AnnotationsUpdate { reference, patch, resources, expect } => {
+            super::annotations::update_annotation(
+                ctx,
+                reference,
+                patch,
+                resources,
+                expect.as_ref(),
+                at,
+            )
+        }
     }
 }
 
@@ -303,6 +313,7 @@ pub(super) fn run_step(
         ReverseStep::AttachmentsRemove(step) => super::attachments::remove_attachment(ctx, step),
         ReverseStep::AttachmentsRestore(step) => super::attachments::restore_attachment(ctx, step),
         ReverseStep::AnnotationRemove(step) => super::annotations::remove_annotation(ctx, step),
+        ReverseStep::ObjectsRevert(step) => super::annotations::revert_annotation(ctx, step),
     }
 }
 

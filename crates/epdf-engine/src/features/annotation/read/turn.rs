@@ -336,6 +336,36 @@ pub fn read_annotation_turn(annotation: &Annotation<'_>) -> Option<AnnotationTur
     Some(AnnotationTurn { rotation, content_box: turn.content_box })
 }
 
+/// Our keys as written, the turn clockwise (`readRecordedAnnotationTurn`);
+/// `None` when they record none.
+pub fn read_recorded_annotation_turn(annotation: &Annotation<'_>) -> Option<AnnotationTurn> {
+    let recorded = read_recorded(annotation)?;
+    let rotation = clockwise_from_pdf(recorded.degrees)?;
+    Some(AnnotationTurn { rotation, content_box: recorded.content_box })
+}
+
+/// Whether two turns are the same, within what a file's numbers hold
+/// (`isSameAnnotationTurn`).
+pub fn is_same_annotation_turn(
+    turn: Option<AnnotationTurn>,
+    other: Option<AnnotationTurn>,
+) -> bool {
+    match (turn, other) {
+        (Some(turn), Some(other)) => {
+            is_same_turn(turn.rotation, other.rotation)
+                && is_same_pdf_rect(turn.content_box, other.content_box)
+        }
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+/// Whether the annotation is a kind that turns as a box
+/// (`isTurnableBoxKind`).
+pub fn is_turnable_box_kind(annotation: &Annotation<'_>) -> bool {
+    is_box_kind(annotation.subtype_code())
+}
+
 /// A box kind's box and turn: the turned box, or upright `/Rect` less
 /// `/RD` (`readAnnotationBox`).
 pub fn read_annotation_box(annotation: &Annotation<'_>) -> AnnotationBox {
