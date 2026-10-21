@@ -196,11 +196,11 @@ impl Collected {
 /// not compile until it has an arm here.
 fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done, EngineError> {
     match op {
-        ChangeOp::MetadataUpdate { patch, expect } => {
-            super::metadata::update_metadata(ctx, patch, expect.as_deref(), at)
+        ChangeOp::MetadataUpdate { patch, expect, keys } => {
+            super::metadata::update_metadata(ctx, patch, expect.as_deref(), keys, at)
         }
-        ChangeOp::MetadataUpdateCustom { patch } => {
-            super::metadata::update_custom_metadata(ctx, patch)
+        ChangeOp::MetadataUpdateCustom { patch, keys } => {
+            super::metadata::update_custom_metadata(ctx, patch, keys)
         }
     }
 }

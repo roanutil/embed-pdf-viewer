@@ -19,6 +19,31 @@
 //! The op table ([`op`]) runs the metadata ops; every other op type answers
 //! `NotImplemented` naming the sub-task that registers it
 //! ([`op::OP_OWNERS`]).
+//!
+//! # Events
+//!
+//! Upstream's worker publishes nothing for a change; main does.
+//! `LocalDocumentChanges.apply` (`main/src/document/LocalDocumentChanges.ts`,
+//! lines 89-94) publishes the change's events with `publishChange` once the
+//! worker answers, all under its `opId`, and nothing for a retry. This host
+//! stands in for both, so `document.apply` answers those events beside its
+//! result as an `events` array (`{result, replayed, mutationSequence,
+//! events}`), each stamped with `origin.tx` and, for an undo, `undoOf`. One
+//! envelope `event` could not carry them: a change publishes one fact per
+//! op. That is this host's own decision; Task 8.27, which closes the wire
+//! contract, confirms or replaces it. `document.applyChanges` publishes
+//! nothing, as upstream's doesn't: the server relays a request's changes
+//! from its audit log.
+//!
+//! # Authority
+//!
+//! Upstream's `document.apply` and each change of `document.applyChanges`
+//! require an `authority`. This host takes one when it is sent and
+//! otherwise acts for the session's own ([`applier::ChangeAuthority::
+//! of_session`]), as `JobEnvelope` reads an absent authority for every kind
+//! until Task 8.27: the kernel's calls through `epdf-viewer-host`'s
+//! `translate.rs` carry none (the kernel's metadata patch runs as a
+//! `document.apply`), and neither do most of `tests/document_apply.rs`'s.
 
 pub mod applier;
 pub mod fingerprint;

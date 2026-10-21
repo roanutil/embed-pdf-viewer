@@ -1101,14 +1101,18 @@ impl Host {
             // the single verb as a one-op change, so its `opId` undoes it and a
             // retry under it gets the first answer.
             "metadata.update" | "metadata.updateCustom" => {
-                let op = if header.kind == "metadata.update" {
-                    f::changes::op::ChangeOp::MetadataUpdate {
-                        patch: field(body, "patch")?,
-                        expect: None,
-                    }
-                } else {
-                    f::changes::op::ChangeOp::MetadataUpdateCustom { patch: field(body, "patch")? }
-                };
+                // Read as `document.apply` reads an op, so the patch keeps
+                // its wire key order.
+                let patch = body.get("patch").cloned().ok_or_else(|| {
+                    EngineError::with_message(
+                        EngineErrorCode::WireFormat,
+                        "the request has no 'patch'",
+                    )
+                })?;
+                let op = f::changes::op::parse_op(
+                    0,
+                    &serde_json::json!({ "type": header.kind, "patch": patch }),
+                )?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
                 let item = self.apply_one(&key, &op_id, op, cancel)?;
                 let event = item.events()?.into_iter().next().ok_or_else(|| {
@@ -1126,7 +1130,12 @@ impl Host {
                 Ok(HostResponse { json: envelope(answer), payloads })
             }
             // `WorkerHost.handleDocumentApply`: one change, in page space both
-            // ways, each op converting as it runs.
+            // ways, each op converting as it runs. The answer carries the
+            // change's `events` beside it: this host's fold of main's
+            // `LocalDocumentChanges.apply`, which publishes them
+            // (`publishChange`) once the worker answers (see
+            // `features::changes`, "Events"). Without an `authority` the
+            // change acts for the session (see `JobEnvelope`).
             "document.apply" => {
                 let job = JobEnvelope::parse(&header.kind, body)?;
                 let raw = body.get("change").ok_or_else(|| {
@@ -1135,9 +1144,12 @@ impl Host {
                         "the request has no 'change'",
                     )
                 })?;
+                f::changes::op::assert_no_import(raw)?;
                 let change = f::changes::op::parse_change(raw)?;
                 let op_id = self.op_id_of(&job)?;
-                let fingerprint = f::changes::fingerprint::change_fingerprint(raw);
+                let fingerprint = f::changes::fingerprint::change_fingerprint(
+                    &f::changes::op::change_value(&change)?,
+                );
                 let undo_of = match &change {
                     f::changes::op::Change::UndoOf(undone) => Some(undone.clone()),
                     f::changes::op::Change::Ops(_) => None,
@@ -1186,20 +1198,15 @@ impl Host {
             }
             // `WorkerHost.handleDocumentApplyChanges`: a server request's
             // changes as one job, each in its own transaction, with one
-            // outcome per change. One save for all that wrote.
+            // outcome per change. One save for all that wrote. No events:
+            // upstream publishes none for it, since the server relays the
+            // changes from its audit log.
             "document.applyChanges" => {
                 let entries: Vec<serde_json::Value> = field(body, "changes")?;
                 let mut changes = Vec::with_capacity(entries.len());
                 for entry in &entries {
                     changes.push(self.server_change(&key, entry)?);
                 }
-                let undone: Vec<Option<String>> = changes
-                    .iter()
-                    .map(|c| match &c.change {
-                        f::changes::op::Change::UndoOf(undone) => Some(undone.clone()),
-                        f::changes::op::Change::Ops(_) => None,
-                    })
-                    .collect();
                 let outcomes = f::changes::transaction::run_server_changes(
                     self.sessions.session_mut(&key)?,
                     changes,
@@ -1209,28 +1216,16 @@ impl Host {
                     .iter()
                     .map(f::changes::transaction::ServerChangeOutcome::to_wire)
                     .collect::<Result<Vec<_>, _>>()?;
-                let mut written = Vec::new();
-                for (outcome, undo_of) in outcomes.iter().zip(undone) {
-                    if let f::changes::transaction::ServerChangeOutcome::Applied {
-                        op_id,
-                        result,
-                        ..
-                    } = outcome
-                        && result.wrote()
-                    {
-                        let mut events = Vec::new();
-                        for item in &result.items {
-                            events.extend(item.events()?);
-                        }
-                        written.push((op_id.clone(), undo_of, events));
-                    }
-                }
-                if written.is_empty() {
+                let wrote = outcomes.iter().any(|outcome| {
+                    matches!(outcome,
+                        f::changes::transaction::ServerChangeOutcome::Applied { result, .. }
+                            if result.wrote())
+                });
+                if !wrote {
                     let session = self.sessions.session(&key)?;
                     return Ok(ok(serde_json::json!({
                         "outcomes": wire,
                         "mutationSequence": session.mutation_sequence(),
-                        "events": [],
                     })));
                 }
                 let finished = crate::session::save::finish_mutation(
@@ -1238,15 +1233,10 @@ impl Host {
                     crate::session::save::MutationFamily::Ordinary,
                     &CancelToken::never(),
                 )?;
-                let mut events = Vec::new();
-                for (op_id, undo_of, change_events) in written {
-                    events.extend(self.stamp_change(&key, &op_id, undo_of, change_events)?);
-                }
                 Ok(HostResponse {
                     json: envelope(serde_json::json!({
                         "outcomes": wire,
                         "mutationSequence": finished.mutation_sequence,
-                        "events": events,
                     })),
                     payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
                 })
@@ -2057,6 +2047,13 @@ impl Host {
     ) -> Result<HostResponse, EngineError> {
         use crate::session::save;
 
+        // A final change ends undo for itself and every change before it
+        // (`FINAL_CHANGES` in `WorkerHost.finishMutation`): redaction apply,
+        // both flattens, form repair and a completed signing, each of
+        // which finishes here with its event.
+        if event.as_ref().is_some_and(save::DocumentEventInit::ends_undo) {
+            self.sessions.session_mut(key)?.ledger_mut().end_undo();
+        }
         let session = self.sessions.session(key)?;
         let finished = save::finish_mutation(session, family, &CancelToken::never())?;
         let mut answer = serde_json::json!({
@@ -2149,18 +2146,19 @@ impl Host {
         op: crate::features::changes::op::ChangeOp,
         cancel: &CancelToken,
     ) -> Result<crate::features::changes::item::ChangeItem, EngineError> {
-        use crate::features::changes::{applier, fingerprint, op::Change, transaction};
+        use crate::features::changes::op::{self, Change};
+        use crate::features::changes::{applier, fingerprint, transaction};
 
         let kind = op.type_name();
-        let fingerprint =
-            fingerprint::change_fingerprint(&serde_json::json!({ "ops": [value(&op)?] }));
+        let change = Change::Ops(vec![op]);
+        let fingerprint = fingerprint::change_fingerprint(&op::change_value(&change)?);
         let session = self.sessions.session_mut(key)?;
         let authority = applier::ChangeAuthority::of_session(session);
         let answered = transaction::run_change(
             session,
             op_id,
             fingerprint,
-            Change::Ops(vec![op]),
+            change,
             &authority,
             cancel,
             applier::ChangeSpace::File,

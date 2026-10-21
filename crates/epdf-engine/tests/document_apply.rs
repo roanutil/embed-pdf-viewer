@@ -428,13 +428,11 @@ fn a_server_request_answers_one_outcome_per_change() {
     assert_eq!(outcomes[1]["error"]["code"], "InvalidArg");
     assert_eq!(outcomes[2]["result"]["items"][0]["type"], "metadata.update");
     assert_eq!(facts(&mut host), before, "a2 left a write behind, or a3 did not undo a1");
-    let txs: Vec<&str> = answer["events"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|e| e["origin"]["tx"]["id"].as_str().unwrap())
-        .collect();
-    assert_eq!(txs, ["a1", "a3"]);
+    // Upstream publishes nothing for a server request: the server relays its
+    // changes from the audit log.
+    assert!(answer.get("events").is_none(), "{answer}");
+    assert!(answer["mutationSequence"].is_u64(), "{answer}");
+    assert_eq!(answer.as_object().unwrap().len(), 2, "{answer}");
 
     // An undo of a change outside the request runs the record the caller
     // kept, and one that left none undoes nothing.
@@ -456,4 +454,92 @@ fn a_server_request_answers_one_outcome_per_change() {
     assert_eq!(outcomes[1]["result"]["items"], json!([]));
     assert_eq!(outcomes[2]["error"]["code"], "UndoUnavailable");
     assert!(record["steps"].is_array());
+    assert!(redo.get("events").is_none(), "{redo}");
+}
+
+#[test]
+fn a_server_change_holding_an_import_is_not_ported_yet() {
+    // `document.apply` refuses an import as its own verb's (`assertNoImport`);
+    // a server request's change may hold one, and until 8.22 ports it the
+    // whole job answers `NotImplemented`, which no change keeps.
+    let mut host = open();
+    let import = json!({ "type": "forms.importValues", "bundle": {} });
+    let refused = send(
+        &mut host,
+        json!({ "kind": "document.applyChanges", "changes": [
+            { "opId": "i1", "authority": { "identity": {}, "grants": null },
+              "change": { "ops": [import] } },
+        ] }),
+    )
+    .expect_err("an import is 8.22's");
+    assert_eq!(refused["code"], "NotImplemented", "{refused}");
+    assert!(refused["message"].as_str().unwrap().contains("8.22"), "{refused}");
+
+    let refused = apply(&mut host, json!({ "ops": [import] }), None).expect_err("no import");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+}
+
+#[test]
+fn an_undo_lists_what_it_skipped_in_the_order_the_patch_named_it() {
+    // `Object.keys(op.patch)`: the wire's key order, not the alphabet.
+    let mut host = open();
+    let mine = applied(
+        &mut host,
+        json!({ "ops": [
+            update(json!({ "title": "Mine", "author": "Mine", "subject": "Mine" })),
+            update_custom(json!({ "Zed": "mine", "Alpha": "mine", "Mid": "mine" })),
+        ] }),
+    );
+    applied(
+        &mut host,
+        json!({ "ops": [
+            update(json!({ "author": "Theirs", "title": "Theirs" })),
+            update_custom(json!({ "Alpha": "theirs", "Zed": "theirs" })),
+        ] }),
+    );
+    let undo = applied(&mut host, json!({ "undoOf": mine["meta"]["opId"] }));
+    // The undo runs the reverses in reverse op order: the custom op first.
+    assert_eq!(item_types(&undo), ["metadata.updateCustom", "metadata.update"]);
+    assert_eq!(undo["items"][0]["skipped"], json!(["Zed", "Alpha"]), "{undo}");
+    assert_eq!(undo["items"][1]["skipped"], json!(["title", "author"]), "{undo}");
+    let after = facts(&mut host);
+    assert_eq!(after["metadata"]["subject"], "");
+    assert!(after["custom"].get("Mid").is_none(), "{after}");
+}
+
+#[test]
+fn a_final_change_ends_undo_for_the_changes_before_it() {
+    // `FINAL_CHANGES`: an applied `annotations.flatten` ends undo for every
+    // change before it, and plain edits after it stay undoable.
+    const APPEARANCES: &str = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
+    let mut host = Host::new();
+    let (doc, page) = common::open_fixture(&mut host, APPEARANCES);
+    assert_eq!(doc, DOC);
+    let before = applied(&mut host, json!({ "ops": [update(json!({ "title": "Before" }))] }));
+
+    let listed = common::call_legacy(
+        &mut host,
+        json!({ "kind": "annotations.listRawPage", "docId": DOC, "page": common::page_ref(page) }),
+    );
+    let target = listed["annotations"]
+        .as_array()
+        .and_then(|all| all.iter().find(|a| a["ref"]["kind"] == "objectNumber"))
+        .unwrap_or_else(|| panic!("no annotation named by object number: {listed}"))["ref"]
+        .clone();
+    let flattened = send(
+        &mut host,
+        json!({ "kind": "annotations.flatten", "page": common::page_ref(page),
+            "refs": [target], "usage": "display" }),
+    )
+    .expect("the flatten applies");
+    assert_eq!(flattened["result"]["results"][0]["status"], "applied", "{flattened}");
+
+    let refused = apply(&mut host, json!({ "undoOf": before["meta"]["opId"] }), None)
+        .expect_err("the flatten ended undo");
+    assert_eq!(refused["code"], "UndoUnavailable", "{refused}");
+    assert_eq!(refused["details"], json!({ "reason": "final-change" }));
+
+    let after = applied(&mut host, json!({ "ops": [update(json!({ "title": "After" }))] }));
+    assert_eq!(after["meta"]["undoable"], true);
+    applied(&mut host, json!({ "undoOf": after["meta"]["opId"] }));
 }

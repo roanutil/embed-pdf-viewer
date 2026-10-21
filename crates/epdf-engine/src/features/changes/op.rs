@@ -33,9 +33,42 @@ pub enum ChangeOp {
         patch: Box<MetadataPatch>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expect: Option<Box<MetadataPatch>>,
+        /// The patch's keys in the order the wire sent them: what the op's
+        /// reverse lists, and an undo's `skipped` follows
+        /// (`Object.keys(op.patch)`). Not part of the op's identity.
+        #[serde(skip)]
+        keys: PatchKeys,
     },
     #[serde(rename = "metadata.updateCustom", rename_all = "camelCase")]
-    MetadataUpdateCustom { patch: CustomMetadataPatch },
+    MetadataUpdateCustom {
+        patch: CustomMetadataPatch,
+        /// As above: the custom map is a `BTreeMap`, which sorts its keys.
+        #[serde(skip)]
+        keys: PatchKeys,
+    },
+}
+
+/// A patch's keys in wire order. Compares equal whatever it holds, so two
+/// ops with the same patch are the same op.
+#[derive(Debug, Clone, Default)]
+pub struct PatchKeys(pub Vec<String>);
+
+impl PartialEq for PatchKeys {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl PatchKeys {
+    /// The keys of `op`'s `patch` object, in the order they arrived.
+    fn of(op: &serde_json::Value) -> Self {
+        Self(
+            op.get("patch")
+                .and_then(serde_json::Value::as_object)
+                .map(|patch| patch.keys().cloned().collect())
+                .unwrap_or_default(),
+        )
+    }
 }
 
 impl ChangeOp {
@@ -44,6 +77,18 @@ impl ChangeOp {
         match self {
             Self::MetadataUpdate { .. } => "metadata.update",
             Self::MetadataUpdateCustom { .. } => "metadata.updateCustom",
+        }
+    }
+}
+
+/// A change as its typed ops spell it, what both `document.apply` and a
+/// single verb fingerprint, so the two agree on what "the same change" is.
+pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
+    match change {
+        Change::UndoOf(op_id) => Ok(serde_json::json!({ "undoOf": op_id })),
+        Change::Ops(ops) => {
+            let ops = serde_json::to_value(ops).map_err(|e| malformed(e.to_string()))?;
+            Ok(serde_json::json!({ "ops": ops }))
         }
     }
 }
@@ -119,6 +164,17 @@ pub fn parse_change(change: &serde_json::Value) -> Result<Change, EngineError> {
 /// A change's ops, in order.
 pub fn parse_ops(ops: &serde_json::Value) -> Result<Vec<ChangeOp>, EngineError> {
     let ops = ops.as_array().ok_or_else(|| malformed("ops is a list"))?;
+    ops.iter().enumerate().map(|(at, op)| parse_op(at, op)).collect()
+}
+
+/// `document.apply` takes no import (`assertNoImport`, which only
+/// `handleDocumentApply` runs): an import is its own verb's one-op change.
+/// A server request's change may hold one; until 8.22 ports the imports,
+/// it answers `NotImplemented` there like any op owned elsewhere.
+pub fn assert_no_import(change: &serde_json::Value) -> Result<(), EngineError> {
+    let Some(ops) = change.get("ops").and_then(serde_json::Value::as_array) else {
+        return Ok(());
+    };
     if let Some((_, verb)) = ops.iter().find_map(|op| {
         let kind = op.get("type").and_then(serde_json::Value::as_str)?;
         IMPORT_VERBS.iter().find(|(import, _)| *import == kind)
@@ -128,10 +184,11 @@ pub fn parse_ops(ops: &serde_json::Value) -> Result<Vec<ChangeOp>, EngineError> 
             format!("doc.apply takes no import: import a bundle with {verb}"),
         ));
     }
-    ops.iter().enumerate().map(|(at, op)| parse_op(at, op)).collect()
+    Ok(())
 }
 
-fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineError> {
+/// One op as the wire spells it, its patch's keys kept in wire order.
+pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineError> {
     let kind = op
         .get("type")
         .and_then(serde_json::Value::as_str)
@@ -143,8 +200,14 @@ fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineError> 
         )
         .with_details(serde_json::json!({ "opIndex": at, "type": kind })));
     }
-    serde_json::from_value(op.clone())
-        .map_err(|e| malformed(format!("op {at} ({kind}) is not the shape it takes: {e}")))
+    let mut parsed: ChangeOp = serde_json::from_value(op.clone())
+        .map_err(|e| malformed(format!("op {at} ({kind}) is not the shape it takes: {e}")))?;
+    match &mut parsed {
+        ChangeOp::MetadataUpdate { keys, .. } | ChangeOp::MetadataUpdateCustom { keys, .. } => {
+            *keys = PatchKeys::of(op);
+        }
+    }
+    Ok(parsed)
 }
 
 fn malformed(message: impl Into<String>) -> EngineError {
@@ -194,12 +257,27 @@ mod tests {
     }
 
     #[test]
-    fn an_import_is_refused_as_its_own_verbs() {
-        let refused =
-            parse_ops(&serde_json::json!([{ "type": "forms.importValues", "bundle": {} }]))
-                .unwrap_err();
+    fn document_apply_refuses_an_import_as_its_own_verbs_and_a_server_change_as_unported() {
+        let change = serde_json::json!({ "ops": [{ "type": "forms.importValues", "bundle": {} }] });
+        let refused = assert_no_import(&change).unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::InvalidArg);
         assert!(refused.message.contains("doc.forms.importValues"), "{refused}");
+        let unported = parse_change(&change).unwrap_err();
+        assert_eq!(unported.code, EngineErrorCode::NotImplemented);
+        assert!(unported.message.contains("8.22"), "{unported}");
+    }
+
+    #[test]
+    fn a_patch_keeps_its_wire_key_order() {
+        let ops = parse_ops(&serde_json::json!([
+            { "type": "metadata.update", "patch": { "subject": "S", "author": "A", "title": "T" } },
+            { "type": "metadata.updateCustom", "patch": { "Zed": "z", "Alpha": null } },
+        ]))
+        .unwrap();
+        let ChangeOp::MetadataUpdate { keys, .. } = &ops[0] else { panic!("update") };
+        assert_eq!(keys.0, ["subject", "author", "title"]);
+        let ChangeOp::MetadataUpdateCustom { keys, .. } = &ops[1] else { panic!("custom") };
+        assert_eq!(keys.0, ["Zed", "Alpha"]);
     }
 
     #[test]

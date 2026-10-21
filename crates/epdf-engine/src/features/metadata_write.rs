@@ -136,18 +136,28 @@ pub fn apply_custom_metadata_patch(
     document: &Document,
     patch: &CustomMetadataPatch,
 ) -> Result<(), EngineError> {
-    for key in patch.0.keys() {
-        if let Some(problem) = custom_key_problem(key) {
-            return Err(EngineError::with_message(EngineErrorCode::InvalidArg, problem)
-                .with_details(serde_json::json!({ "field": key })));
-        }
-    }
+    check_custom_keys(patch.0.keys())?;
     for (key, value) in &patch.0 {
         let value = match value {
             Some(text) => Patch::Set(text.as_str()),
             None => Patch::Clear,
         };
         write_text(document, key, value)?;
+    }
+    Ok(())
+}
+
+/// Refuse a custom patch naming a key it cannot write: `InvalidArg` naming
+/// the first such key in the order given, as `applyCustomMetadataPatch`
+/// checks before writing.
+pub fn check_custom_keys<'a>(
+    keys: impl IntoIterator<Item = &'a String>,
+) -> Result<(), EngineError> {
+    for key in keys {
+        if let Some(problem) = custom_key_problem(key) {
+            return Err(EngineError::with_message(EngineErrorCode::InvalidArg, problem)
+                .with_details(serde_json::json!({ "field": key })));
+        }
     }
     Ok(())
 }

@@ -10,7 +10,10 @@ crate-type = ["rlib"]
 [dependencies]
 pdfium = { path = "../pdfium" }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# `preserve_order`: a patch keeps the key order the wire sent (a change
+# record and an undo's `skipped` list it in that order, as upstream's
+# `Object.keys` does).
+serde_json = { version = "1", features = ["preserve_order"] }
 getrandom = "0.3"
 # TypeScript generation for the wire DTOs. Rust is canonical; the emitted .ts
 # is checked in and CI fails on a dirty diff (multiplatform-plan.md, G1).

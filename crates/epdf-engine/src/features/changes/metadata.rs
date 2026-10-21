@@ -6,6 +6,7 @@ use serde_json::{Map, Value};
 
 use super::applier::{ChangeContext, Done, assert_expected, left_alone};
 use super::item::ChangeItem;
+use super::op::PatchKeys;
 use super::record::{MetadataOp, MetadataRevertStep, ReverseStep};
 use crate::auth::scope::DocCapability;
 use crate::dto::{CustomMetadataPatch, MetadataPatch};
@@ -13,7 +14,7 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::features::metadata::{read_custom_metadata, read_metadata};
 use crate::features::metadata_write::{
     CustomMetadataUpdateResult, MetadataUpdateResult, apply_custom_metadata_patch,
-    apply_metadata_patch,
+    apply_metadata_patch, check_custom_keys,
 };
 use crate::mutation::MutationMeta;
 
@@ -23,6 +24,7 @@ pub fn update_metadata(
     ctx: &mut ChangeContext<'_>,
     patch: &MetadataPatch,
     expect: Option<&MetadataPatch>,
+    keys: &PatchKeys,
     op_index: usize,
 ) -> Result<Done, EngineError> {
     ctx.authority.require(DocCapability::DocMetadataModify)?;
@@ -32,16 +34,14 @@ pub fn update_metadata(
     if let Some(expect) = expect {
         assert_expected(op_index, &before, &object(expect)?)?;
     }
-    let keys: Vec<String> = object(patch)?.keys().cloned().collect();
+    let keys = wire_keys(keys, object(patch)?.keys())?;
     if let Err(failed) = apply_metadata_patch(document, patch) {
         // Put back what the patch wrote before the write that failed: the
         // ops before this one are the transaction's to take back, this
-        // one's partial write is its own. Best effort: the failure is the
-        // answer either way.
-        if let Ok(restore) = from_map::<MetadataPatch>(pick(&before, &keys)) {
-            let _ = apply_metadata_patch(document, &restore);
-        }
-        return Err(failed);
+        // one's partial write is its own.
+        let restore = from_map::<MetadataPatch>(pick(&before, &keys))
+            .and_then(|restore| apply_metadata_patch(document, &restore));
+        return Err(taken_back_or(failed, restore));
     }
     let metadata = read_metadata(document, ctx.cancel)?;
     let after = object(&metadata)?;
@@ -60,19 +60,20 @@ pub fn update_metadata(
 pub fn update_custom_metadata(
     ctx: &mut ChangeContext<'_>,
     patch: &CustomMetadataPatch,
+    keys: &PatchKeys,
 ) -> Result<Done, EngineError> {
     ctx.authority.require(DocCapability::DocMetadataModify)?;
     ctx.cancel.check()?;
     let document = ctx.session.document()?.document();
     let before = object(&read_custom_metadata(document, ctx.cancel)?)?;
-    let keys: Vec<String> = patch.0.keys().cloned().collect();
+    let keys = wire_keys(keys, patch.0.keys())?;
+    // A key a PDF cannot hold is refused before anything is written, so
+    // only a failed write has anything to take back.
+    check_custom_keys(&keys)?;
     if let Err(failed) = apply_custom_metadata_patch(document, patch) {
-        // As above. A key a PDF cannot hold is refused before anything is
-        // written, and the restore is refused the same way.
-        if let Ok(restore) = from_map::<CustomMetadataPatch>(pick(&before, &keys)) {
-            let _ = apply_custom_metadata_patch(document, &restore);
-        }
-        return Err(failed);
+        let restore = from_map::<CustomMetadataPatch>(pick(&before, &keys))
+            .and_then(|restore| apply_custom_metadata_patch(document, &restore));
+        return Err(taken_back_or(failed, restore));
     }
     let custom = read_custom_metadata(document, ctx.cancel)?;
     let after = object(&custom)?;
@@ -141,6 +142,42 @@ pub fn revert_metadata(
     Ok(Done { item, reverse: vec![reverse] })
 }
 
+/// The patch's keys in wire order, as the op was given them; the patch's
+/// own order for an op built in-process, which carries none. Both name the
+/// same keys.
+fn wire_keys<'a>(
+    wire: &PatchKeys,
+    patch: impl Iterator<Item = &'a String>,
+) -> Result<Vec<String>, EngineError> {
+    let mut own: Vec<String> = patch.cloned().collect();
+    if wire.0.is_empty() {
+        return Ok(own);
+    }
+    let mut sorted = wire.0.clone();
+    sorted.sort();
+    own.sort();
+    if sorted != own {
+        return Err(unexpected(format!(
+            "the patch's keys {own:?} are not its wire keys {sorted:?}"
+        )));
+    }
+    Ok(wire.0.clone())
+}
+
+/// A partial write's own refusal, or, when what it wrote could not be put
+/// back, `Unknown` saying so (as `transaction::roll_back` reports it).
+fn taken_back_or(failed: EngineError, restore: Result<(), EngineError>) -> EngineError {
+    match restore {
+        Ok(()) => failed,
+        Err(e) => EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!(
+                "a refused write could not be taken back: {e} (the write was refused: {failed})"
+            ),
+        ),
+    }
+}
+
 /// The reverse of a metadata write: the entries it changed, their old values
 /// (`null` for a custom key that wasn't there), and the values it left
 /// (`revertOf`).
@@ -186,4 +223,31 @@ fn unexpected(message: String) -> EngineError {
         EngineErrorCode::Unknown,
         format!("a metadata revert could not be read back: {message}"),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_partial_write_that_cannot_be_taken_back_says_so() {
+        let failed = EngineError::with_message(EngineErrorCode::Unknown, "failed to write /Author");
+        assert_eq!(taken_back_or(failed.clone(), Ok(())), failed);
+        let lost = taken_back_or(
+            failed,
+            Err(EngineError::with_message(EngineErrorCode::Unknown, "failed to write /Title")),
+        );
+        assert_eq!(lost.code, EngineErrorCode::Unknown);
+        assert!(lost.message.contains("could not be taken back"), "{lost}");
+        assert!(lost.message.contains("/Title") && lost.message.contains("/Author"), "{lost}");
+    }
+
+    #[test]
+    fn wire_keys_keep_the_wire_order_and_must_name_the_patch() {
+        let patch = ["author".to_owned(), "title".to_owned()];
+        let wire = PatchKeys(vec!["title".into(), "author".into()]);
+        assert_eq!(wire_keys(&wire, patch.iter()).unwrap(), ["title", "author"]);
+        assert_eq!(wire_keys(&PatchKeys::default(), patch.iter()).unwrap(), ["author", "title"]);
+        assert!(wire_keys(&PatchKeys(vec!["title".into()]), patch.iter()).is_err());
+    }
 }

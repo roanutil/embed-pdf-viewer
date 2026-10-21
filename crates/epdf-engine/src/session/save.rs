@@ -359,6 +359,20 @@ impl DocumentEventInit {
         }
     }
 
+    /// Whether the write behind this event is a final change
+    /// (`FINAL_CHANGES` in `WorkerHost.ts`): what it destroys or seals
+    /// can't be put back, so it ends undo for every change before it.
+    pub fn ends_undo(&self) -> bool {
+        matches!(
+            self,
+            Self::RedactionApplied(_)
+                | Self::PagesFlattened(_)
+                | Self::AnnotationsFlattened(_)
+                | Self::FormRepaired(_)
+                | Self::SignatureCompleted(_)
+        )
+    }
+
     /// Which family the mutation behind this event belongs to.
     ///
     /// Derived from the event rather than passed alongside it, so a caller
