@@ -650,7 +650,9 @@ impl Host {
                     password.as_deref(),
                     self.clock.as_ref(),
                 )?;
-                value(&probe)?
+                // `{ tag: 'document.probeSecurityFile', security }`
+                // (`WorkerHost.handleDocumentProbeSecurityFile`).
+                serde_json::json!({ "security": value(&probe)? })
             }
             "document.renderPageFile" | "document.renderPageFileEncoded" => {
                 let path = string_field(body, "path")?;
@@ -1088,12 +1090,13 @@ impl Host {
                     mode,
                     self.clock.as_ref(),
                 )?;
-                // The protection beside the probe, as the TypeScript's
-                // answer carries it, so a host that just unlocked knows
-                // what the signatures forbid.
-                let mut answer = value(&probe)?;
-                answer["protection"] = self.protection_of(&key);
-                Ok(ok(answer))
+                // `{ tag: 'document.checkPasswordPermissions', security,
+                // protection }`: the protection beside the probe, so a host
+                // that just unlocked knows what the signatures forbid.
+                Ok(ok(serde_json::json!({
+                    "security": value(&probe)?,
+                    "protection": self.protection_of(&key),
+                })))
             }
 
             // ── Mutations ─────────────────────────────────────────────

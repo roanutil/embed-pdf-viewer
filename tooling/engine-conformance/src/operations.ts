@@ -135,6 +135,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'ported',
+    note: 'Answers { security, protection } as WorkerHost.handleDocumentCheckPasswordPermissions does; on a locked session it loads the parked document with the password.',
   },
   {
     kind: 'document.probeSecurityFile',
@@ -143,6 +144,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'ported',
+    note: 'Answers { security } as WorkerHost.handleDocumentProbeSecurityFile does. Needs no session.',
   },
   {
     kind: 'close',

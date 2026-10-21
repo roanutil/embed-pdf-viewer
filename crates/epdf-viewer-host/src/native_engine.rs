@@ -560,14 +560,9 @@ impl DocumentSecurity for NativeSecurity {
         });
         let (promise, resolver) = Promise::pending();
         rt::spawn(async move {
+            // `{ security, protection }`, as `WorkerHost` answers it.
             let (security, protection) = match checked.await {
-                Ok(mut security) => {
-                    let protection = security
-                        .as_object_mut()
-                        .and_then(|m| m.remove("protection"))
-                        .unwrap_or(Value::Null);
-                    (security, protection)
-                }
+                Ok(mut answer) => (answer["security"].take(), answer["protection"].take()),
                 Err(error) => return resolver.reject(error),
             };
             let pages = state

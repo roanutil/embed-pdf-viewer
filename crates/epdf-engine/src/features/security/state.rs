@@ -12,7 +12,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::auth::scope::PdfBits;
+use crate::auth::scope::{DocCapability, PdfBits, materialize_pdf_permissions};
 
 /// How a document was unlocked.
 ///
@@ -192,16 +192,22 @@ pub struct PermissionAdvisory {
     pub can_assemble: bool,
 }
 
+/// What `pdf.permissions` grants on a file with these bits
+/// (`advisoryFromPdfBits`, `document-security-state.ts`): read off
+/// [`materialize_pdf_permissions`], so the advisory and the resolver cannot
+/// disagree.
 pub fn advisory_from_pdf_bits(b: PdfBits) -> PermissionAdvisory {
+    let granted = materialize_pdf_permissions(b);
+    let has = |c: DocCapability| granted.contains(&c);
     PermissionAdvisory {
-        can_print: b.bit3,
-        can_print_high: b.bit12 && b.bit3,
-        can_copy: b.bit5,
-        can_annotate: b.bit6,
-        can_fill_forms: b.bit6 || b.bit9,
-        can_modify_forms: b.bit6 && b.bit4,
-        can_modify_pages: b.bit4,
-        can_assemble: b.bit11,
+        can_print: has(DocCapability::DocPrint),
+        can_print_high: has(DocCapability::DocPrintHigh),
+        can_copy: has(DocCapability::DocTextCopy),
+        can_annotate: has(DocCapability::DocAnnotateModify),
+        can_fill_forms: has(DocCapability::DocFormsFill),
+        can_modify_forms: has(DocCapability::DocFormsModify),
+        can_modify_pages: has(DocCapability::DocPagesModify),
+        can_assemble: has(DocCapability::DocPagesAssemble),
     }
 }
 

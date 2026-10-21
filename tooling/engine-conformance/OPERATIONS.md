@@ -22,8 +22,8 @@ cancellation case it has to document. Group assignments come from
 | `open.fatMem` | A | 1 | queued-only | routed | No throwIfAborted reaches PdfDocumentOpener: once an open starts it runs to completion. |
 | `open.layerMemBase` | A | 1 | queued-only | routed |  |
 | `open.layerFileBase` | A | 1 | queued-only | routed |  |
-| `document.checkPasswordPermissions` | A | 1 | queued-only | ported |  |
-| `document.probeSecurityFile` | A | 1 | queued-only | ported |  |
+| `document.checkPasswordPermissions` | A | 1 | queued-only | ported | Answers { security, protection } as WorkerHost.handleDocumentCheckPasswordPermissions does; on a locked session it loads the parked document with the password. |
+| `document.probeSecurityFile` | A | 1 | queued-only | ported | Answers { security } as WorkerHost.handleDocumentProbeSecurityFile does. Needs no session. |
 | `close` | control | 1 | control | routed | Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents. |
 | `layer.close` | control | 1 | control | routed |  |
 | `abort` | control | 1 | control | routed | Handled in WorkerHost.receive before anything is queued (WorkerHost.ts:413), as pages.workingSet is (WorkerHost.ts:418). The other 87 of the 89 kinds reach a switch: 76 arms in run() (WorkerHost.ts:554) and 11 sliced reads in slicedWork() (WorkerHost.ts:1896). |

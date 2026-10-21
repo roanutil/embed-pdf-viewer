@@ -11,8 +11,11 @@
 //! `tooling/engine-conformance/vectors/scope/` and checked by
 //! `tests/scope_conformance.rs`. Change one side and the other fails.
 //!
-//! `builders.ts` has no counterpart here. It mints scope arrays for SDK
-//! callers, which is a cloud concern; the engine only ever consumes them.
+//! Of `builders.ts`, only `materializePdfPermissions` has a counterpart
+//! ([`resolver::materialize_pdf_permissions`]): it is the one reading of the
+//! PDF bits, which the resolver and the permission advisory share. The rest
+//! mints scope arrays for SDK callers, which is a cloud concern; the engine
+//! only ever consumes them.
 
 pub mod parser;
 pub mod pdf_bits;
@@ -23,7 +26,8 @@ pub use parser::{InvalidScope, parse_scope, validate_scope_array};
 pub use pdf_bits::decode_pdf_bits;
 pub use resolver::{
     Capabilities, check_any_capability, check_capability, check_collab, check_set_group,
-    expand_raw_scope, expanded_capabilities, filter_matches, parse_all,
+    expand_raw_scope, expanded_capabilities, filter_matches, materialize_pdf_permissions,
+    parse_all,
 };
 pub use types::{
     CollabAction, CollabActionPattern, CollabEntity, CollabFilter, CollabTarget, DocCapability,

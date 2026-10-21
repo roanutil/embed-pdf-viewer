@@ -247,11 +247,32 @@ fn the_bit_decoder_agrees_with_typescript() {
     }
 }
 
+/// Capabilities upstream's closed set has (`types.ts`, `parser.ts`
+/// `KNOWN_CAPABILITIES`) that the generator's `ALL_CAPABILITIES`
+/// (`tooling/engine-conformance/src/scope-cases.ts`) does not list yet, so
+/// the vector's `capabilities` and its `granted` lists leave them out. Not a
+/// divergence between the resolvers: the generator lags the TypeScript it
+/// runs. `doc.outline.modify` still shows in `expanded`, which the generator
+/// takes from the resolver itself. When the generator lists them, the
+/// closed-set test fails until this list is emptied.
+const GENERATOR_LAGS: &[&str] =
+    &["doc.forms.import", "doc.forms.script", "doc.annotate.import", "doc.outline.modify"];
+
 #[test]
 fn the_closed_capability_set_is_the_same_set() {
     let file: ResolveFile = serde_json::from_str(&read("resolve.json")).expect("resolve.json");
     let expected: Vec<&str> = file.capabilities.iter().map(String::as_str).collect();
-    let actual: Vec<&str> = DocCapability::ALL.iter().map(|c| c.as_str()).collect();
+    for lag in GENERATOR_LAGS {
+        assert!(
+            !expected.contains(lag),
+            "the generator lists {lag} now; take it off GENERATOR_LAGS",
+        );
+    }
+    let actual: Vec<&str> = DocCapability::ALL
+        .iter()
+        .map(|c| c.as_str())
+        .filter(|c| !GENERATOR_LAGS.contains(c))
+        .collect();
     assert_eq!(
         actual, expected,
         "the capability sets differ, so one side has a scope string the other cannot express",
@@ -302,9 +323,13 @@ fn resolution_agrees_with_typescript() {
             }
             checked += 1;
 
-            let granted: Vec<&str> = DocCapability::ALL
+            // Over the vector's own list, as the generator filters its
+            // `ALL_CAPABILITIES`; the closed-set test pins that list to ours.
+            let granted: Vec<&str> = file
+                .capabilities
                 .iter()
-                .filter(|c| check_capability(**c, &parsed, bits))
+                .map(|name| DocCapability::parse(name).expect("a capability Rust has"))
+                .filter(|c| check_capability(*c, &parsed, bits))
                 .map(|c| c.as_str())
                 .collect();
             let want_granted: Vec<&str> = per.granted.iter().map(String::as_str).collect();
