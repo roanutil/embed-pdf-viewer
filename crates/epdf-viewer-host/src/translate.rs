@@ -476,8 +476,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
 /// destination, a render target. The host now answers and takes page space,
 /// as upstream's worker does. [`call_host`] converts a render target on the
 /// way out and a page list's or the catalog actions' places on the way back,
-/// reading the pages' visible boxes off the host's own page list, so the
-/// kernel keeps its space until Task 13 ports it. Dead then.
+/// reading each page's visible box from the host's session (a page list
+/// carries its own), so the kernel keeps its space until Task 13 ports it.
+/// Dead then.
 mod page_space {
     use epdf_engine::error::EngineError;
     use epdf_engine::features::actions::document::DocumentActionsSnapshot;
@@ -487,25 +488,27 @@ mod page_space {
     use epdf_engine::identity::PageObjectNumber;
     use epdf_engine::page_space::destinations::{PageDestination, pdf_destination_of};
     use epdf_engine::page_space::{PageCoordinates, PdfCoordinates, page_rect_of, pdf_rect_of};
+    use epdf_engine::session::registry::SessionKey;
     use serde_json::Value;
     use std::collections::HashMap;
 
-    /// Every page's `pdfCropBox`, from the host's page list of the
-    /// request's document.
-    fn visible_boxes(host: &mut Host, request: &Value) -> HashMap<u32, PdfRect> {
-        let mut list =
-            serde_json::json!({ "kind": "pages.list", "jobId": 0, "docId": request["docId"] });
-        if let Some(layer) = request.get("layerName") {
-            list["layerName"] = layer.clone();
-        }
-        let response = host.call(&list.to_string(), Vec::new());
-        let listed = serde_json::from_str::<Value>(&response.json)
-            .ok()
-            .and_then(|mut e| e.get_mut("result").map(Value::take))
-            .and_then(|r| serde_json::from_value::<PageListSnapshot<PageCoordinates>>(r).ok());
-        listed
-            .map(|l| l.pages.iter().map(|p| (p.page_object_number.get(), p.pdf_crop_box)).collect())
-            .unwrap_or_default()
+    /// The visible box of any page of the request's document, read one page
+    /// at a time through the session's index, as the host's own boundary
+    /// reads it (`page_space::boundary::session_boxes`). It takes `&Host`,
+    /// so it can issue no call: a kernel tile costs one page's box reads,
+    /// not a page list, and reads the document as it is now, so there is
+    /// nothing to go stale after a write.
+    fn visible_boxes<'h>(
+        host: &'h Host,
+        request: &Value,
+    ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + 'h {
+        let key = request.get("docId").and_then(Value::as_str).map(|doc| {
+            match request.get("layerName").and_then(Value::as_str) {
+                Some(layer) => SessionKey::layer(doc, layer),
+                None => SessionKey::document(doc),
+            }
+        });
+        epdf_engine::page_space::boundary::session_boxes(host.sessions(), key, "translate")
     }
 
     fn lookup(
@@ -525,7 +528,7 @@ mod page_space {
     /// the file's coordinates (`{left, bottom, right, top}`), in page space
     /// on its page. Answers whether it changed anything; a target it cannot
     /// place goes as it came, for the host to refuse.
-    pub(super) fn render_target_to_page_space(host: &mut Host, request: &mut Value) -> bool {
+    pub(super) fn render_target_to_page_space(host: &Host, request: &mut Value) -> bool {
         let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default();
         if kind != "pages.render" && kind != "pages.renderEncoded" {
             return false;
@@ -536,13 +539,16 @@ mod page_space {
             return false;
         };
         let Ok(rect) = serde_json::from_value::<PdfRect>(rect.clone()) else { return false };
-        let Some(page) = request.pointer("/page/objectNumber").and_then(Value::as_u64) else {
+        let Some(page) = request
+            .pointer("/page/objectNumber")
+            .and_then(Value::as_u64)
+            .and_then(|n| u32::try_from(n).ok())
+            .and_then(|n| PageObjectNumber::new(n).ok())
+        else {
             return false;
         };
-        let boxes = visible_boxes(host, request);
-        let Some(visible) = boxes.get(&(page as u32)) else { return false };
-        let Ok(rect) = serde_json::to_value(page_rect_of(normalize_pdf_rect(rect), *visible))
-        else {
+        let Ok(visible) = visible_boxes(host, request)(page) else { return false };
+        let Ok(rect) = serde_json::to_value(page_rect_of(normalize_pdf_rect(rect), visible)) else {
             return false;
         };
         request["options"]["target"]["rect"] = rect;
@@ -553,7 +559,7 @@ mod page_space {
     /// boxes and page actions, and `actions.read`'s destinations, in the
     /// file's coordinates. Every other answer goes as it came.
     pub(super) fn answer_to_file_space(
-        host: &mut Host,
+        host: &Host,
         kind: &str,
         request: &Value,
         response: HostResponse,
@@ -573,12 +579,12 @@ mod page_space {
                 .and_then(|list| page_list_in_file_space(list).map_err(|e| e.message))
                 .and_then(|list| serde_json::to_value(list).map_err(|e| e.to_string()))
         } else {
-            let boxes = visible_boxes(host, request);
+            let mut boxes = visible_boxes(host, request);
             serde_json::from_value::<DocumentActionsSnapshot<PageDestination>>(result.take())
                 .map_err(|e| e.to_string())
                 .and_then(|snapshot| {
                     snapshot
-                        .try_map_destinations(&mut |d| pdf_destination_of(d, &mut lookup(&boxes)))
+                        .try_map_destinations(&mut |d| pdf_destination_of(d, &mut boxes))
                         .map_err(|e| e.message)
                 })
                 .and_then(|snapshot| serde_json::to_value(snapshot).map_err(|e| e.to_string()))

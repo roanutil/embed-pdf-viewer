@@ -184,3 +184,66 @@ fn a_saved_scale_survives_a_reopen() {
     assert_eq!(after.len(), 2);
     assert_eq!(after[1]["owned"], json!(true));
 }
+
+/// A one-page PDF with these page dictionary entries. Cross-reference
+/// offsets are computed, so PDFium reads it as written.
+fn one_page_pdf(entries: &str) -> Vec<u8> {
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_owned(),
+        format!("<< /Type /Page /Parent 2 0 R {entries} >>"),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn a_scale_covers_the_visible_page_as_page_boxes_of_reads_it() {
+    // `MeasureMutator.setScale` calibrates over `readBoxes(...).crop`: US
+    // Letter for a page with no media box, and a crop box cut to the media
+    // box. The runtime writes the `/BBox` normalized, so it reads back as
+    // the box it was given.
+    for (entries, expected) in [
+        ("", json!({ "left": 0.0, "right": 612.0, "bottom": 0.0, "top": 792.0 })),
+        (
+            "/MediaBox [0 0 612 792] /CropBox [-10 -10 700 800]",
+            json!({ "left": 0.0, "right": 612.0, "bottom": 0.0, "top": 792.0 }),
+        ),
+        (
+            "/MediaBox [0 0 612 792] /CropBox [50 60 562 732]",
+            json!({ "left": 50.0, "right": 562.0, "bottom": 60.0, "top": 732.0 }),
+        ),
+    ] {
+        let mut host = Host::new();
+        let response = host.call(
+            &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+            vec![one_page_pdf(entries)],
+        );
+        assert!(!response.json.contains("\"error\""), "{entries}: {}", response.json);
+        call(
+            &mut host,
+            json!({ "kind": "measure.setScale", "docId": "d", "page": page_ref(3u64),
+                "measure": rl_measure() }),
+        );
+        let after = viewports(&mut host, "d", 3);
+        assert_eq!(after.len(), 1, "{entries}");
+        assert_eq!(after[0]["bbox"], expected, "{entries}");
+    }
+}

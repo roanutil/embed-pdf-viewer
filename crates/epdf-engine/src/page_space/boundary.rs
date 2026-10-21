@@ -457,30 +457,32 @@ fn unserializable(message: String) -> EngineError {
 }
 
 /// The visible boxes of a request's document, read only when a request or a
-/// result asks for one (`WorkerHost.visibleBoxesFor`). A request that names
-/// no document has none: `InvalidArg`, as upstream's is.
+/// result asks for one (`WorkerHost.visibleBoxesFor`). Each is one page's
+/// read through the session's index ([`crate::features::pages::
+/// visible_box_of`]). A request that names no document has none:
+/// `InvalidArg`, as upstream's is.
 pub fn session_boxes<'a>(
     sessions: &'a crate::session::registry::SessionRegistry,
     key: Option<crate::session::registry::SessionKey>,
     kind: &'a str,
 ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + 'a {
-    type Reader<'r> = Box<dyn FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + 'r>;
-    let mut reader: Option<Reader<'a>> = None;
+    // Within one call: an answer with many destinations to one page reads
+    // that page's boxes once.
+    let mut boxes: std::collections::HashMap<u32, PdfRect> = std::collections::HashMap::new();
     move |page| {
-        if reader.is_none() {
-            let key = key.as_ref().ok_or_else(|| {
-                EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    format!("{kind} has no document"),
-                )
-            })?;
-            let document = sessions.session(key)?.document()?.document();
-            reader = Some(Box::new(crate::features::pages::visible_box_reader(document)));
+        if let Some(known) = boxes.get(&page.get()) {
+            return Ok(*known);
         }
-        match reader.as_mut() {
-            Some(read) => read(page),
-            None => unreachable!("set above"),
-        }
+        let key = key.as_ref().ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("{kind} has no document"),
+            )
+        })?;
+        let visible =
+            crate::features::pages::visible_box_of(sessions.session(key)?.document()?, page)?;
+        boxes.insert(page.get(), visible);
+        Ok(visible)
     }
 }
 

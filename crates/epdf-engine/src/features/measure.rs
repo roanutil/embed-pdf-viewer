@@ -342,11 +342,13 @@ fn is_owned(viewport: &Viewport<'_>) -> Result<bool, EngineError> {
 
 /// `MeasureMutator.setScale`. `measure` is `None` for the wire's `null`:
 /// remove every owned viewport, highest index first. Otherwise update the
-/// last owned viewport, or append one over the crop box (else the media
-/// box), and write the measure into a fresh `/Measure`.
+/// last owned viewport, or append one over the visible page, and write the
+/// measure into a fresh `/Measure`.
 ///
-/// `document` and `index` are the page's, for the box read the TypeScript
-/// does through `EPDF_GetPageBoxByIndex`.
+/// The visible page is `pageBoxesOf`'s crop box (`readBoxes(...).crop`,
+/// `MeasureMutator.ts:52-56`): US Letter when the page has no media box,
+/// and the crop box cut to the media box. `document` and `index` are the
+/// page's, for that read.
 pub fn set_scale(
     document: &Document,
     index: u32,

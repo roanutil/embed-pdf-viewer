@@ -1609,3 +1609,37 @@ fn a_render_target_from_the_kernel_goes_out_in_page_space() {
         "the host drew the area the kernel asked for"
     );
 }
+
+#[test]
+fn a_kernel_tile_after_a_page_insert_is_measured_on_its_page_as_it_now_sits() {
+    // `call_host` reads a tile's page box through the session's index, one
+    // page at a time (it takes `&Host`, so it issues no `pages.list`). An
+    // insert in front of the page moves its index; the read follows it, and
+    // the second tile lands where the first did.
+    use epdf_viewer_host::translate::call_host;
+    let mut host = shifted_host();
+    let tile = json!({ "target": { "kind": "rect",
+        "rect": { "left": 150.0, "right": 250.0, "top": 632.0, "bottom": 582.0 } } });
+    let render = |host: &mut epdf_engine::host::Host, job: u64| {
+        let call =
+            translate("d", "page.render.image", Some(3), std::slice::from_ref(&tile), job).unwrap();
+        let response = call_host(host, &call.request.to_string(), call.payloads);
+        let envelope: Value = serde_json::from_str(&response.json).unwrap();
+        envelope["result"]["area"].clone()
+    };
+    let before = render(&mut host, 2);
+    assert_eq!(before, json!({ "x": 100.0, "y": 100.0, "width": 100.0, "height": 50.0 }));
+
+    let insert = translate(
+        "d",
+        "pages.insertBlank",
+        None,
+        &[json!({ "size": { "width": 100.0, "height": 100.0 } }), json!(0)],
+        3,
+    )
+    .unwrap();
+    let inserted = call_host(&mut host, &insert.request.to_string(), insert.payloads);
+    assert!(!inserted.json.contains("\"error\""), "{}", inserted.json);
+
+    assert_eq!(render(&mut host, 4), before, "page 3 moved to index 1 and kept its box");
+}

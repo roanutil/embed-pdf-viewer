@@ -294,8 +294,20 @@ pub fn read_boxes(document: &Document, index: u32) -> PageBoxes {
     })
 }
 
+/// One page's visible box in an open document (`visibleBoxReader`'s read):
+/// the session's index finds the page without walking the page tree, so
+/// this costs one page's box reads however long the document is. A page
+/// that isn't in the document is `NotFound`.
+pub fn visible_box_of(
+    document: &crate::access::OwnedDocument,
+    page: PageObjectNumber,
+) -> Result<PdfRect, EngineError> {
+    Ok(read_boxes(document.document(), document.page_index(page)?).crop)
+}
+
 /// Each page's visible box, read the first time it is asked for: what a
-/// result's destinations are measured on (`visibleBoxReader`). A page that
+/// result's destinations are measured on (`visibleBoxReader`), for a
+/// document that no session indexes. A page that
 /// isn't in the document has none, which is `NotFound`.
 pub fn visible_box_reader(
     document: &Document,
