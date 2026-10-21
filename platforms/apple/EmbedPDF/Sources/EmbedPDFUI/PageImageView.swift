@@ -5,14 +5,20 @@ public struct PageImageView: View {
   let render: RenderCapability
   let page: PageRef
   let scale: Double
+  let isOnScreen: Bool
   @State private var rendered: RenderedPage?
   @State private var error: PDFError?
   @State private var renderedPage: PageRef?
 
-  public init(render: RenderCapability, page: PageRef, scale: Double) {
+  /// `isOnScreen` false renders a placeholder at
+  /// `PageRenderResolution.offScreenDeviceWidth` instead of `scale`. Hosts
+  /// that keep off-screen pages built, like a lazy stack in a scroll view,
+  /// drive it with `trackingScrollVisibility(_:)`.
+  public init(render: RenderCapability, page: PageRef, scale: Double, isOnScreen: Bool = true) {
     self.render = render
     self.page = page
     self.scale = scale
+    self.isOnScreen = isOnScreen
   }
 
   public var body: some View {
@@ -28,12 +34,13 @@ public struct PageImageView: View {
         ProgressView()
       }
     }
-    .task(id: TaskID(page: page, scale: scale)) { await task() }
+    .task(id: TaskID(page: page, scale: scale, isOnScreen: isOnScreen)) { await task() }
   }
 
   private struct TaskID: Hashable {
     let page: PageRef
     let scale: Double
+    let isOnScreen: Bool
   }
 
   private func task() async {
@@ -43,7 +50,10 @@ public struct PageImageView: View {
     }
     error = nil
     do {
-      let image = try await render.renderPage(page, options: RenderPageOptions(scale: scale))
+      let options = isOnScreen
+        ? RenderPageOptions(scale: scale)
+        : RenderPageOptions(width: PageRenderResolution.offScreenDeviceWidth)
+      let image = try await render.renderPage(page, options: options)
       // A newer task owns the view now; this result is for a page or scale
       // it no longer shows.
       guard !Task.isCancelled else { return }
