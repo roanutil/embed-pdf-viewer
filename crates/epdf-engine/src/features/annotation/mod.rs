@@ -6,7 +6,7 @@
 //! `core/src/annotation/{subtype,primitives,base,registry,
 //! AnnotationListSnapshot}.ts` (557) with `kinds/*/dto.ts` (337).
 //! Operations: `annotations.list`, `annotations.readFile`,
-//! `annotations.renderAppearances`.
+//! `annotations.renderAppearances`, `annotations.readAppearance`.
 //!
 //! Writes replace `AnnotationMutator.ts` (784), `internal/write/*` (22 files,
 //! 3,496), `computeMutationImpact.ts` (141) and the appearance, normalize,

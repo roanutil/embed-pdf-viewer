@@ -602,6 +602,96 @@ impl Annotation<'_> {
         Ok(Some(text.unwrap_or_default()))
     }
 
+    /// The states `mode` stores, in the file's key order
+    /// (`EPDFAnnot_GetAppearanceStateCount`, `EPDFAnnot_GetAppearanceStateName`):
+    /// none when the mode is a single stream or missing. Each is the name
+    /// [`crate::PageView::render_annotation_rgba_with_matrix`] takes as its
+    /// `state`.
+    pub fn appearance_state_names(&self, mode: AppearanceMode) -> Result<Vec<String>, PdfiumError> {
+        // SAFETY: the handle is live.
+        let count =
+            unsafe { pdfium_sys::EPDFAnnot_GetAppearanceStateCount(self.handle, mode as i32) };
+        let mut names = Vec::new();
+        for index in 0..count.max(0) {
+            let name = read_utf8(|buffer, len| {
+                // SAFETY: the handle is live and `len` describes `buffer`.
+                unsafe {
+                    pdfium_sys::EPDFAnnot_GetAppearanceStateName(
+                        self.handle,
+                        mode as i32,
+                        index,
+                        buffer,
+                        len,
+                    )
+                }
+            })?;
+            if let Some(name) = name {
+                names.push(name);
+            }
+        }
+        Ok(names)
+    }
+
+    /// Where `mode`'s appearance is drawn, in page space, without writing
+    /// anything (`EPDFAnnot_GetDrawingRect`): a stored appearance fitted into
+    /// `/Rect`, or, with none, the box the normal appearance PDFium draws in
+    /// memory takes, which can reach past `/Rect`. `None` when nothing can be
+    /// drawn without writing an appearance.
+    pub fn drawing_rect(&self, mode: AppearanceMode) -> Option<RectF> {
+        let mut rect = pdfium_sys::FS_RECTF::default();
+        // SAFETY: the handle is live and `rect` is a valid out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetDrawingRect(self.handle, mode as i32, &raw mut rect)
+        };
+        (ok != 0).then(|| rect.into())
+    }
+
+    /// `EPDFAnnot_ExportAppearance`, saved whole: the normal appearance as a
+    /// one-page drawing document, with `degrees` (counterclockwise) about
+    /// `unrotated_box` taken out. `Ok(None)` when there is no normal
+    /// appearance, `Err(Save)` when the new document would not serialize.
+    /// The source document is untouched.
+    pub fn export_appearance(
+        &self,
+        degrees: f32,
+        unrotated_box: Option<RectF>,
+    ) -> Result<Option<Vec<u8>>, PdfiumError> {
+        let unrotated_box = unrotated_box.map(|rect| pdfium_sys::FS_RECTF {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+        });
+        let box_ptr = unrotated_box.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live, and `box_ptr` is null or points at a
+        // local that outlives the call.
+        let exported =
+            unsafe { pdfium_sys::EPDFAnnot_ExportAppearance(self.handle, degrees, box_ptr) };
+        if exported.is_null() {
+            return Ok(None);
+        }
+        struct Scratch(pdfium_sys::FPDF_DOCUMENT);
+        impl Drop for Scratch {
+            fn drop(&mut self) {
+                // SAFETY: created above and closed exactly once.
+                unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
+            }
+        }
+        let scratch = Scratch(exported);
+        /// `FPDF_NO_INCREMENTAL`: the drawing is a new document, saved whole.
+        const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and `size` is a valid out-parameter.
+        let ptr = unsafe {
+            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
+                scratch.0,
+                FPDF_NO_INCREMENTAL,
+                &raw mut size,
+            )
+        };
+        crate::save::owned_buffer(ptr, size).map(Some).ok_or(PdfiumError::Save)
+    }
+
     /// `/MK /R`, the widget's turn in degrees counterclockwise, as the file
     /// holds it; 0 when absent.
     pub fn mk_rotation(&self) -> i32 {

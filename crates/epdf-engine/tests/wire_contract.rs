@@ -44,7 +44,6 @@ const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf"
 const NOT_YET_ROUTED: &[(&str, &str)] = &[
     ("annotations.export", "8.22"),
     ("annotations.import", "8.22"),
-    ("annotations.readAppearance", "8.13"),
     ("annotations.reorder", "8.16"),
     ("forms.addWidget", "8.21"),
     ("forms.updateWidget", "8.21"),

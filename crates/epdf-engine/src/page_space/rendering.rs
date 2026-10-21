@@ -31,6 +31,24 @@ pub fn page_render_area_of(area: PdfRect, visible: PdfRect) -> PageRect {
     page_rect_of(area, visible)
 }
 
+/// Where each rendered appearance goes, in page space (`pageAppearancesOf`):
+/// raster or encoded, each placed by its `rect`, which becomes a page box.
+/// `visible` is the page's visible box. Everything else an entry carries
+/// passes through.
+pub fn page_appearances_of(
+    appearances: &mut [serde_json::Value],
+    visible: PdfRect,
+) -> Result<(), serde_json::Error> {
+    for appearance in appearances {
+        let Some(rect) = appearance.get_mut("rect") else {
+            continue;
+        };
+        let pdf: PdfRect = serde_json::from_value(rect.take())?;
+        *rect = serde_json::to_value(page_rect_of(pdf, visible))?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -52,5 +70,24 @@ mod tests {
             panic!("a whole-page render reads no box")
         });
         assert_eq!(converted, Ok(RenderOptions::default()));
+    }
+
+    #[test]
+    fn an_appearance_is_placed_on_the_visible_box_and_keeps_everything_else() {
+        let visible = PdfRect { left: 50.0, bottom: 60.0, right: 562.0, top: 732.0 };
+        let mut appearances = vec![serde_json::json!({
+            "mode": "normal",
+            "state": null,
+            "rect": { "left": 60.0, "bottom": 662.0, "right": 160.0, "top": 712.0 },
+        })];
+        page_appearances_of(&mut appearances, visible).expect("converts");
+        assert_eq!(
+            appearances[0],
+            serde_json::json!({
+                "mode": "normal",
+                "state": null,
+                "rect": { "x": 10.0, "y": 20.0, "width": 100.0, "height": 50.0 },
+            })
+        );
     }
 }

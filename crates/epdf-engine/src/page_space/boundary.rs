@@ -25,7 +25,7 @@ use super::annotations::page_annotation_list_of;
 use super::destinations::page_document_actions_of;
 use super::forms::page_form_snapshot_of;
 use super::pages::page_list_of;
-use super::rendering::{page_render_area_of, pdf_render_target_of};
+use super::rendering::{page_appearances_of, page_render_area_of, pdf_render_target_of};
 use super::text::{page_geometry_of, page_search_slice_of};
 use super::{PdfCoordinates, VisibleBoxOf};
 use crate::error::{EngineError, EngineErrorCode};
@@ -324,11 +324,26 @@ pub fn result_in_page_space(
         K::AnnotationsList => convert_result(response, |list: serde_json::Value| {
             page_annotation_list_of(list, box_of)
         }),
+        // Raster or encoded, each appearance placed on the page it names
+        // (`pageAppearancesOf(payload.result.appearances, boxOf(payload.page))`).
+        K::AnnotationsRenderAppearances | K::AnnotationsRenderAppearancesEncoded => {
+            convert_result(response, |mut answer: serde_json::Value| {
+                let page: PageRef = from_value(answer.get("page").cloned().unwrap_or_default())?;
+                let visible = box_of(page.object_number())?;
+                if let Some(appearances) =
+                    answer.get_mut("appearances").and_then(serde_json::Value::as_array_mut)
+                {
+                    page_appearances_of(appearances, visible).map_err(|e| {
+                        unserializable(format!("an appearance's rect is not a rect: {e}"))
+                    })?;
+                }
+                Ok(answer)
+            })
+        }
 
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: page names' layouts (8.18),
-        // annotation writes (8.14, 8.15),
-        // appearance rects (8.13), the outline (8.24), viewports (8.25),
+        // annotation writes (8.14, 8.15), the outline (8.24), viewports (8.25),
         // form fields and widgets of the writes (8.20 to 8.22, 8.26), and
         // imports (8.22).
         K::PagesSetName
@@ -336,8 +351,6 @@ pub fn result_in_page_space(
         | K::AnnotationsCreate
         | K::AnnotationsUpdate
         | K::AnnotationsImport
-        | K::AnnotationsRenderAppearances
-        | K::AnnotationsRenderAppearancesEncoded
         | K::OutlineRead
         | K::MeasureViewports
         | K::FormsImport

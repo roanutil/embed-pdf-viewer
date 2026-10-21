@@ -66,9 +66,9 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `annotations.renderAppearances` | A | 2 | non-preemptible | ported |  |
+| `annotations.renderAppearances` | A | 2 | non-preemptible | ported | One family per request (annotations, or widgets for page.forms). Every mode and every state an annotation stores, each labelled (17350fb4c); an annotation with no normal appearance is drawn in memory into EPDFAnnot_GetDrawingRect's box, never written (25dd21f38). A box kind drawn turned renders upright into its box, the turn passed to EPDF_RenderAnnotBitmapUnrotated (runtime 5e9241945). Refs by baseIndex or object number; rects converted to page space at the host boundary (pageAppearancesOf). Gated by vectors/annotation/appearances.json through crates/epdf-engine/tests/annotation_appearance.rs. |
 | `annotations.list` | A | 2 | cooperative | ported | Replaces annotations.listRawAll, listRawPage and listFullPage. Unlike listFullPage it builds no widget rows (RawAnnotationReader.list with the 'annotations' family), so it never reaches the cached form model; the widget-to-field join and its repeated-read benchmark moved to forms.list. Answers AnnotationList in upstream's record shape, read in the file's coordinates and converted at the host boundary by field space (pageAnnotationOf); a promoted inline annotation reads by its birth name (EPDFLayer_GetBirthName). Gated by vectors/annotation/read.json through crates/epdf-engine/tests/annotation_reader.rs. |
-| `annotations.readAppearance` | A | 2 | cooperative | planned | An annotation's appearance as a one-page PDF (bytes). |
+| `annotations.readAppearance` | A | 2 | cooperative | ported | An annotation's appearance as a one-page PDF (bytes): EPDFAnnot_ExportAppearance with the turn the annotation reads taken out (exportUnturnedAppearance). Only a kind with an appearance resource (the stamp) has one. |
 
 ## G8
 

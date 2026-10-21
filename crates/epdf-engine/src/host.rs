@@ -966,20 +966,25 @@ impl Host {
                 Ok(encoded_response(encoded))
             }
             "annotations.renderAppearances" | "annotations.renderAppearancesEncoded" => {
+                let family: f::annotation::appearance::AnnotationFamily = field(body, "family")?;
                 let options: f::annotation::appearance::AppearanceRenderOptions =
                     optional(body, "options")?.unwrap_or_default();
                 let page = page_field(body)?;
-                let revision = self.sessions.session_mut(&key)?.page_state(page)?.revision;
                 let owned = self.sessions.session(&key)?.document()?;
                 let opened = owned.page(page)?;
                 let result = f::annotation::appearance::render_page_appearances(
-                    &opened, page, &revision, &options, cancel,
+                    owned.document(),
+                    &opened,
+                    page,
+                    family,
+                    &options,
+                    cancel,
                 )?;
-                // The index rides in the JSON and each appearance's pixels
-                // in their own payload, in the same order. A page of stamps
-                // is tens of megabytes of RGBA, and putting that through the
-                // JSON would be the single most expensive thing this
-                // dispatcher does.
+                // `{page, appearances}` (`AnnotationAppearancesResult`), each
+                // appearance's pixels in their own payload, in the same
+                // order. A page of stamps is tens of megabytes of RGBA, and
+                // putting that through the JSON would be the single most
+                // expensive thing this dispatcher does.
                 let encode: Option<f::server::RenderEncode> = optional(body, "encode")?;
                 let mut index = Vec::with_capacity(result.appearances.len());
                 let mut payloads = Vec::with_capacity(result.appearances.len());
@@ -987,13 +992,15 @@ impl Host {
                     let mut entry = serde_json::json!({
                         "ref": value(&appearance.annotation_ref)?,
                         "mode": value(&appearance.mode)?,
+                        "state": appearance.state,
                         "rect": value(&appearance.rect)?,
-                        "width": appearance.raster.width,
-                        "height": appearance.raster.height,
                     });
                     match &encode {
                         None => {
-                            entry["stride"] = appearance.raster.stride.into();
+                            let mut raster = raster_json(&appearance.raster);
+                            raster["color"] = "rgba8".into();
+                            raster["premultipliedAlpha"] = false.into();
+                            entry["raster"] = raster;
                             payloads.push(appearance.raster.rgba);
                         }
                         Some(encode) => {
@@ -1003,7 +1010,7 @@ impl Host {
                                 encode,
                                 cancel,
                             )?;
-                            entry["mimeType"] = image.content_type.clone().into();
+                            entry["image"] = encoded_json(&image);
                             payloads.push(image.bytes);
                         }
                     }
@@ -1011,11 +1018,22 @@ impl Host {
                 }
                 Ok(HostResponse {
                     json: envelope(serde_json::json!({
-                        "pageState": value(&result.page_state)?,
+                        "page": crate::identity::PageRef::from(result.page),
                         "appearances": index,
                     })),
                     payloads,
                 })
+            }
+            "annotations.readAppearance" => {
+                let page = page_field(body)?;
+                let annotation_ref: crate::identity::AnnotationRef = field(body, "ref")?;
+                let bytes = f::annotation::appearance::read_appearance(
+                    self.sessions.session(&key)?,
+                    page,
+                    &annotation_ref,
+                    cancel,
+                )?;
+                Ok(bytes_response(bytes))
             }
             "annotations.readFile" => {
                 let page = page_field(body)?;

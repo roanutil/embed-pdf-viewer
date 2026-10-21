@@ -530,7 +530,7 @@ fn a_created_annotation_ships_with_an_appearance() {
     // Checked by rendering, which is also the only way a consumer would find
     // out.
     use epdf_engine::features::annotation::appearance::{
-        AppearanceRenderOptions, render_page_appearances,
+        AnnotationFamily, AppearanceRenderOptions, render_page_appearances,
     };
 
     let file = load();
@@ -580,9 +580,10 @@ fn a_created_annotation_ships_with_an_appearance() {
     // which is the same page handle the create just wrote through.
     let owned_page = owned.page(page_object_number).expect("page");
     let rendered = render_page_appearances(
+        owned.document(),
         &owned_page,
         page_object_number,
-        &revision,
+        AnnotationFamily::Annotations,
         &AppearanceRenderOptions::default(),
         &CancelToken::never(),
     )
@@ -613,7 +614,7 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     // Saving and reopening is what makes the page's own content stream
     // matter, and it is also what a caller actually does with the result.
     use epdf_engine::features::annotation::appearance::{
-        AppearanceRenderOptions, render_page_appearances,
+        AnnotationFamily, AppearanceRenderOptions, render_page_appearances,
     };
     use epdf_engine::features::save::{SaveMode, save_to_buffer};
 
@@ -686,11 +687,13 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     // And it still draws, which is what the page's regenerated content
     // stream is for: an appearance the page does not reference is in the
     // file and invisible.
-    let owned_page = reopened.document().expect("open").page(page_object_number).expect("page");
+    let reopened_document = reopened.document().expect("open");
+    let owned_page = reopened_document.page(page_object_number).expect("page");
     let rendered = render_page_appearances(
+        reopened_document.document(),
         &owned_page,
         page_object_number,
-        &revision,
+        AnnotationFamily::Annotations,
         &AppearanceRenderOptions::default(),
         &CancelToken::never(),
     )

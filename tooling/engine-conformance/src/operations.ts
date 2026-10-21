@@ -387,6 +387,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'non-preemptible',
     rustStatus: 'ported',
+    note: "One family per request (annotations, or widgets for page.forms). Every mode and every state an annotation stores, each labelled (17350fb4c); an annotation with no normal appearance is drawn in memory into EPDFAnnot_GetDrawingRect's box, never written (25dd21f38). A box kind drawn turned renders upright into its box, the turn passed to EPDF_RenderAnnotBitmapUnrotated (runtime 5e9241945). Refs by baseIndex or object number; rects converted to page space at the host boundary (pageAppearancesOf). Gated by vectors/annotation/appearances.json through crates/epdf-engine/tests/annotation_appearance.rs.",
   },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
@@ -405,8 +406,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
-    note: "An annotation's appearance as a one-page PDF (bytes).",
+    rustStatus: 'ported',
+    note: "An annotation's appearance as a one-page PDF (bytes): EPDFAnnot_ExportAppearance with the turn the annotation reads taken out (exportUnturnedAppearance). Only a kind with an appearance resource (the stamp) has one.",
   },
 
   // --- G8. Files, forms reads, piece info.
