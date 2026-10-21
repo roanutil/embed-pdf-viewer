@@ -317,9 +317,9 @@ fn an_effects_batch_publishes_form_effects_applied() {
     assert!(sequence.is_u64(), "{applied}");
 
     // The same value again writes nothing: no mutation, no event. The answer
-    // is still `{result, mutationSequence}`, as `pages.flatten`'s and
-    // `redaction.apply`'s no-ops are: `WorkerHost` packs `{tag, result}` for
-    // all three, with or without `finishMutation`.
+    // is still `{result, mutationSequence}`, as `redaction.apply`'s no-op
+    // is: `WorkerHost` packs `{tag, result}` for both, with or without
+    // `finishMutation`.
     let again = call_legacy(
         &mut host,
         json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }),
@@ -343,14 +343,14 @@ fn a_page_flatten_carries_meta_and_publishes_only_a_change() {
     );
     assert_eq!(flattened["event"]["type"], json!("pages.flattened"), "{flattened}");
     assert_eq!(flattened["result"]["results"][0]["status"], json!("applied"));
-    let pins = &flattened["result"]["meta"]["affectedPages"];
-    assert_eq!(pins.as_array().map(Vec::len), Some(1), "{flattened}");
-    assert_eq!(pins[0]["page"], page_ref(pon));
-    assert_eq!(pins[0]["revision"]["generation"], json!(1), "{flattened}");
-    assert_eq!(flattened["result"]["meta"]["cacheDelta"], Value::Null);
-    // The flattener notes the mutation once, and the finish skips this tag
-    // as `WorkerHost.finishMutation` does.
+    let meta = &flattened["result"]["meta"];
+    assert_eq!(meta["affectedPages"], json!([page_ref(pon)]), "{flattened}");
+    assert_eq!(meta["cacheDelta"], Value::Null);
+    assert_eq!(meta["undoable"], json!(false), "a flatten is final");
+    // The finish notes the mutation once, as `WorkerHost.finishMutation`
+    // does.
     assert_eq!(flattened["mutationSequence"], json!(1), "{flattened}");
+    assert_eq!(flattened["wrote"], json!(true));
     assert_result_rides(&flattened);
 
     // Flat already: unchanged, which is no mutation.
@@ -360,7 +360,8 @@ fn a_page_flatten_carries_meta_and_publishes_only_a_change() {
     );
     assert_eq!(again["result"]["results"][0]["status"], json!("unchanged"), "{again}");
     assert!(again.get("event").is_none(), "{again}");
-    assert_eq!(again["result"]["meta"], Value::Null);
+    assert_eq!(again["result"]["meta"]["affectedPages"], json!([]), "{again}");
+    assert_eq!(again["wrote"], json!(false));
     assert_eq!(again["mutationSequence"], json!(1), "{again}");
 }
 
@@ -602,18 +603,31 @@ fn on_page(host: &mut Host, doc: &str) -> Vec<u64> {
         .collect()
 }
 
-/// A failed page as `PagesFlattener` and `RedactionApplier` answer it: the
-/// `error` is a `SerializedEngineError`, not a message.
+/// `flatten-schema.test.ts`: a flatten's result keeps its request beside
+/// its outcome, for audit replay, and reads back as it was written.
 #[test]
-fn a_failed_page_carries_a_serialized_engine_error() {
-    use epdf_engine::features::{pages_write::FlattenResult, redaction::RedactionApplyResult};
-    let error = json!({ "name": "EngineError", "code": "Unknown",
-                        "message": "native page flatten failed after preflight" });
-    let flattened = json!({ "pages": [page_ref(3u64)], "usage": "display",
-        "results": [{ "page": page_ref(3u64), "status": "failed", "error": error }] });
+fn a_flatten_result_keeps_its_request_for_replay() {
+    use epdf_engine::features::pages_write::FlattenResult;
+    let flattened = json!({ "pages": [page_ref(12u64), page_ref(18u64)], "usage": "print",
+        "results": [{ "page": page_ref(12u64), "status": "applied" },
+                    { "page": page_ref(18u64), "status": "unchanged" }],
+        "meta": { "affectedPages": [], "cacheDelta": null, "opId": "op-1", "undoable": false } });
     let read: FlattenResult = serde_json::from_value(flattened.clone()).expect("a TS flatten");
     assert_eq!(serde_json::to_value(&read).unwrap(), flattened);
+    let failed = json!({ "pages": [page_ref(3u64)], "usage": "display",
+        "results": [{ "page": page_ref(3u64), "status": "failed" }],
+        "meta": { "affectedPages": [], "cacheDelta": null, "opId": "op-1", "undoable": false } });
+    assert!(serde_json::from_value::<FlattenResult>(failed).is_err(), "no page status 'failed'");
+}
 
+/// A failed page as `RedactionApplier` answers it: the `error` is a
+/// `SerializedEngineError`, not a message. A flatten has no failed page:
+/// one that fails fails the call.
+#[test]
+fn a_failed_page_carries_a_serialized_engine_error() {
+    use epdf_engine::features::redaction::RedactionApplyResult;
+    let error = json!({ "name": "EngineError", "code": "Unknown",
+                        "message": "native page flatten failed after preflight" });
     let redacted = json!({ "scope": { "kind": "pages", "pages": [page_ref(3u64)] },
         "results": [{ "page": page_ref(3u64), "status": "failed", "removedAnnotationCount": 0,
                       "error": error }],

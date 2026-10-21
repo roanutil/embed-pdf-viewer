@@ -502,7 +502,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Flattens chosen annotation appearances into a new single-page PDF; a snapshot, like pages.extract. Builds a scratch document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs.',
+    note: 'Flattens chosen annotation appearances, named by objectNumber or baseIndex refs, into a new single-page PDF; a snapshot, like pages.extract. Builds a scratch document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs; annotation_flatten.rs ports the export conformance suite.',
   },
 
   // --- G10. Session authority and save. Stage B.
@@ -804,6 +804,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call; a plain session keeps the pages already flattened (8.29). Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs.",
   },
   {
     kind: 'redaction.apply',
@@ -822,7 +823,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A content write: pages.flatten for a chosen set of one page's annotations. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs.",
+    note: "A content write and a final change: pages.flatten for a chosen set of one page's annotations, named by objectNumber or baseIndex refs. Promotes the page's inline annotations first, answers per-ref applied or unchanged and MutationMeta, and its event carries the write's opId. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs; annotation_flatten.rs ports the conformance suite.",
   },
   {
     kind: 'pages.setName',

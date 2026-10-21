@@ -1,6 +1,6 @@
 //! G13's first gate: a page list is reordered, rotated and thinned the way
-//! the TypeScript engine does it, and a chosen set of one page's annotations
-//! is flattened or exported the way it does.
+//! the TypeScript engine does it. The file's flatten and export cases are
+//! replayed by `flatten_corpus.rs` (8.17) and skipped here.
 //!
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate
@@ -14,11 +14,10 @@
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::pages_write::{
-    FlattenUsage, delete_pages, flatten_pages, insert_blank_pages, insert_pages_from, move_pages,
-    rotate_pages,
+    delete_pages, insert_blank_pages, insert_pages_from, move_pages, rotate_pages,
 };
 use epdf_engine::geom::PdfRotation;
-use epdf_engine::identity::{AnnotationRef, PageObjectNumber, PageRef};
+use epdf_engine::identity::{PageObjectNumber, PageRef};
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
@@ -45,9 +44,11 @@ struct Case {
     delete: Option<DeleteInput>,
     insert_blank: Option<InsertBlankInput>,
     insert: Option<InsertInput>,
-    flatten: Option<FlattenInput>,
-    flatten_annotations: Option<FlattenAnnotationsInput>,
-    export_appearance: Option<ExportAppearanceInput>,
+    /// The flatten and export inputs, only to know the case is
+    /// `flatten_corpus.rs`'s.
+    flatten: Option<serde_json::Value>,
+    flatten_annotations: Option<serde_json::Value>,
+    export_appearance: Option<serde_json::Value>,
     #[serde(default)]
     refused: bool,
     #[serde(default)]
@@ -58,100 +59,6 @@ struct Case {
     /// nothing.
     #[serde(default)]
     inserted: Option<Vec<PageRef>>,
-    /// Per-page flatten outcomes, for the cases that flatten.
-    #[serde(default)]
-    flattened: Option<serde_json::Value>,
-    /// `annotations.flatten`'s result less its `meta`, whether there was a
-    /// `meta` (an apply is a mutation and a skip is not), and how many
-    /// annotations the page has afterwards.
-    #[serde(default)]
-    annotations_flattened: Option<serde_json::Value>,
-    #[serde(default)]
-    applied: Option<bool>,
-    #[serde(default)]
-    remaining: Option<u32>,
-    /// The layout of the document `annotations.exportAppearance` produced.
-    #[serde(default)]
-    exported: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct FlattenAnnotationsInput {
-    fixture: String,
-    page: PageRef,
-    nms: Vec<String>,
-    usage: String,
-    #[serde(default)]
-    ref_page: Option<PageRef>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ExportAppearanceInput {
-    fixture: String,
-    page: PageRef,
-    nms: Vec<String>,
-}
-
-fn nm_refs(page: PageRef, nms: &[String]) -> Vec<AnnotationRef> {
-    let page = page.object_number();
-    nms.iter().map(|nm| AnnotationRef::Nm { page, nm: nm.clone() }).collect()
-}
-
-/// The per-annotation flatten verbs, which need the session rather than
-/// the bare document: an apply bumps the page's revision.
-fn run_annotation_case(
-    session: &mut DocumentSession,
-    case: &Case,
-) -> Option<Result<serde_json::Value, epdf_engine::error::EngineError>> {
-    use epdf_engine::access::{DocumentAccess, PageAccess};
-    use epdf_engine::features::annotation::write::mutator;
-    let cancel = CancelToken::never();
-    if let Some(input) = &case.flatten_annotations {
-        let usage = match input.usage.as_str() {
-            "print" => FlattenUsage::Print,
-            "display" => FlattenUsage::Display,
-            other => panic!("{}: unhandled usage {other:?}", case.name),
-        };
-        let page = input.page.object_number();
-        let refs = nm_refs(input.ref_page.unwrap_or(input.page), &input.nms);
-        return Some(mutator::flatten(session, page, &refs, usage, &cancel).map(|result| {
-            let mut answer = serde_json::to_value(&result).expect("serialize");
-            let meta = answer.as_object_mut().expect("an object").remove("meta");
-            let owned = session.document().expect("open");
-            let remaining = owned.page(page).expect("the page").view().annotation_count();
-            serde_json::json!({
-                "annotationsFlattened": answer,
-                "applied": meta.is_some_and(|m| !m.is_null()),
-                "remaining": remaining,
-            })
-        }));
-    }
-    if let Some(input) = &case.export_appearance {
-        let page = input.page.object_number();
-        let refs = nm_refs(input.page, &input.nms);
-        return Some(mutator::export_appearance(session, page, &refs, &cancel).map(|bytes| {
-            let mut copy = DocumentSession::new();
-            copy.open_with(bytes, None, SessionAuthority::unrestricted())
-                .expect("the export opens");
-            let owned = copy.document().expect("open");
-            let listing =
-                epdf_engine::features::pages::list_pages(owned.document(), &cancel).expect("list");
-            let listing = serde_json::to_value(&listing).expect("serialize");
-            serde_json::json!({ "exported": listing["pages"] })
-        }));
-    }
-    None
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct FlattenInput {
-    /// A flatten needs a page with annotations on it, which the page-order
-    /// fixture has none of, so these cases name their own.
-    fixture: String,
-    pages: Vec<PageRef>,
-    usage: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -206,6 +113,15 @@ fn load() -> VectorFile {
     file
 }
 
+impl Case {
+    /// A flatten or export case, which `flatten_corpus.rs` replays.
+    fn flattens(&self) -> bool {
+        self.flatten.is_some()
+            || self.flatten_annotations.is_some()
+            || self.export_appearance.is_some()
+    }
+}
+
 fn pages(refs: &[PageRef]) -> Vec<PageObjectNumber> {
     refs.iter().map(|page| page.object_number()).collect()
 }
@@ -215,41 +131,13 @@ fn run(
     file: &VectorFile,
     case: &Case,
 ) -> Result<serde_json::Value, epdf_engine::error::EngineError> {
-    let fixture = case
-        .flatten
-        .as_ref()
-        .map(|f| f.fixture.as_str())
-        .or(case.flatten_annotations.as_ref().map(|f| f.fixture.as_str()))
-        .or(case.export_appearance.as_ref().map(|f| f.fixture.as_str()))
-        .unwrap_or(file.fixture.as_str());
+    let fixture = file.fixture.as_str();
     let bytes = std::fs::read(test_support::workspace_root().join(fixture))
         .unwrap_or_else(|e| panic!("{}: read {fixture}: {e}", case.name));
     let mut session = DocumentSession::new();
     session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    if let Some(answer) = run_annotation_case(&mut session, case) {
-        return answer;
-    }
     let owned = session.document().expect("open");
     let cancel = CancelToken::never();
-
-    if let Some(input) = &case.flatten {
-        let usage = match input.usage.as_str() {
-            "print" => FlattenUsage::Print,
-            "display" => FlattenUsage::Display,
-            other => panic!("{}: unhandled usage {other:?}", case.name),
-        };
-        let result = flatten_pages(
-            owned.document(),
-            |page| {
-                use epdf_engine::access::DocumentAccess;
-                owned.page(page)
-            },
-            &pages(&input.pages),
-            usage,
-            &cancel,
-        )?;
-        return Ok(serde_json::json!({ "flattened": result }));
-    }
 
     if let Some(input) = &case.insert_blank {
         let result = insert_blank_pages(
@@ -304,55 +192,11 @@ fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
     let mut applied = 0usize;
 
     for case in &file.cases {
-        if case.refused {
+        if case.refused || case.flattens() {
             continue;
         }
         applied += 1;
         let mine = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
-        if let Some(flattened) = mine.get("annotationsFlattened") {
-            assert_eq!(
-                test_support::canonical_numbers(flattened),
-                test_support::canonical_numbers(
-                    case.annotations_flattened.as_ref().expect("recorded flatten results")
-                ),
-                "{}: {}",
-                case.name,
-                case.covers,
-            );
-            assert_eq!(mine["applied"].as_bool(), case.applied, "{}: applied", case.name);
-            assert_eq!(
-                mine["remaining"].as_u64().map(|n| n as u32),
-                case.remaining,
-                "{}: annotations left on the page",
-                case.name,
-            );
-            continue;
-        }
-        if let Some(exported) = mine.get("exported") {
-            assert_eq!(
-                test_support::canonical_numbers(exported),
-                test_support::canonical_numbers(
-                    case.exported.as_ref().expect("a recorded exported layout")
-                ),
-                "{}: {}",
-                case.name,
-                case.covers,
-            );
-            continue;
-        }
-        // An insert answers with two things; everything else with one.
-        if let Some(flattened) = mine.get("flattened") {
-            assert_eq!(
-                test_support::canonical_numbers(flattened),
-                test_support::canonical_numbers(
-                    case.flattened.as_ref().expect("recorded flatten results")
-                ),
-                "{}: {}",
-                case.name,
-                case.covers,
-            );
-            continue;
-        }
         let (layout, inserted) = match mine.get("layout") {
             Some(layout) => (layout.clone(), mine.get("inserted").cloned()),
             None => (mine, None),
@@ -381,7 +225,7 @@ fn a_refused_page_mutation_is_refused_for_the_same_reason() {
     let mut refusals = 0usize;
 
     for case in &file.cases {
-        if !case.refused {
+        if !case.refused || case.flattens() {
             continue;
         }
         refusals += 1;

@@ -20,9 +20,9 @@
 //! and what it does is decided by the mutation's KIND rather than by the
 //! caller remembering.
 //!
-//! # Three families bump their own sequence
+//! # Two families bump their own sequence
 //!
-//! The form mutators, the page flattener and the redaction applier all
+//! The form mutators and the redaction applier both
 //! re-read through a model or a listing before they return, and a read that
 //! happened before the bump would be the stale one. So they bump first and
 //! this skips them, rather than bumping twice per write and rebuilding
@@ -46,7 +46,7 @@ pub enum MutationFamily {
     /// They do not re-read through a version-keyed cache, so the sequence
     /// bumps here.
     Ordinary,
-    /// The form writers, the page flattener and the redaction applier.
+    /// The form writers and the redaction applier.
     /// Each re-reads after its own bump, so bumping again would rebuild
     /// every version-keyed cache for nothing.
     SelfSequenced,
@@ -165,7 +165,7 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    /// `annotations.flatten`, published only when something was applied.
+    /// `annotations.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "annotations.flattened")]
     AnnotationsFlattened(serde_json::Value),
     /// `LocalDocumentPagesService.move`: the moved block, in the caller's
@@ -203,8 +203,7 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    /// `pages.flatten`, published only when a page was applied or failed
-    /// (`meta` is not null).
+    /// `pages.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
     /// `pages.setName` and `pages.removeName`. The event names the key and
@@ -355,8 +354,7 @@ impl DocumentEventInit {
     /// only so the question has an answer.
     pub fn family(&self) -> MutationFamily {
         match self {
-            Self::PagesFlattened(_)
-            | Self::RedactionApplied(_)
+            Self::RedactionApplied(_)
             | Self::FormValueChanged(_)
             | Self::FormImported(_)
             | Self::FormRepaired(_)

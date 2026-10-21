@@ -1511,9 +1511,11 @@ fn a_flatten_carries_its_pages_and_usage_and_answers_page_refs() {
     assert_eq!(call.request["kind"], json!("pages.flatten"));
     assert_eq!(call.request["pages"], json!([wire_page(3)]));
     assert_eq!(call.request["usage"], json!("display"));
-    let json = r#"{"result":{"result":{"pages":[{"kind":"objectNumber","objectNumber":3}],"usage":"display","results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied"}]},"mutationSequence":1,"event":null}}"#;
+    let json = r#"{"result":{"result":{"pages":[{"kind":"objectNumber","objectNumber":3}],"usage":"display","results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied"}],"meta":{"affectedPages":[{"kind":"objectNumber","objectNumber":3}],"cacheDelta":null,"opId":"op-1","undoable":false}},"wrote":true,"mutationSequence":1,"event":{"type":"pages.flattened"}}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
     assert_eq!(decoded.value["results"][0]["page"], page_ref(3));
+    assert_eq!(decoded.value["meta"]["affectedPages"][0], page_ref(3));
+    assert_eq!(decoded.event.unwrap()["type"], json!("pages.flattened"));
 }
 
 #[test]

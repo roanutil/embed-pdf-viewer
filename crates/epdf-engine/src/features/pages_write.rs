@@ -28,8 +28,11 @@ use pdfium::Document;
 use super::pages::{PageListSnapshot, list_pages};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::annotation::write::delete::promote_inline_annotations;
 use crate::geom::PdfRotation;
-use crate::identity::PageObjectNumber;
+use crate::identity::{PageObjectNumber, PageRef};
+use crate::mutation::MutationMeta;
+use crate::session::document::DocumentSession;
 
 /// What a page mutation leaves behind.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -419,7 +422,8 @@ fn read_inserted(
     Ok(PageInsertResult { inserted_page_object_numbers: inserted, layout })
 }
 
-/// What flattening one page did.
+/// What flattening one page did (`PageFlattenStatus`). A page that fails
+/// fails the whole call.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum FlattenStatus {
@@ -428,27 +432,18 @@ pub enum FlattenStatus {
     /// There was nothing to flatten, which is not a failure: a page with no
     /// annotations is a page that is already flat.
     Unchanged,
-    Failed,
-    /// Not attempted, because an earlier page failed.
-    Skipped,
 }
 
-/// One page's outcome.
+/// One page's outcome (`PageFlattenItemResult`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FlattenItem {
     #[serde(rename = "page", with = "crate::identity::page_ref")]
     pub page_object_number: PageObjectNumber,
     pub status: FlattenStatus,
-    /// Why, for a failure: a `SerializedEngineError`, as `PagesFlattener`
-    /// writes it with `serializeError`. Carried per page rather than thrown,
-    /// because a batch that flattened four pages and failed on the fifth has
-    /// done something the caller needs to know about.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<serde_json::Value>,
 }
 
-/// What a flatten batch did.
+/// What a flatten did (`PageFlattenResult`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FlattenResult {
@@ -458,6 +453,9 @@ pub struct FlattenResult {
     pub page_object_numbers: Vec<PageObjectNumber>,
     pub usage: FlattenUsage,
     pub results: Vec<FlattenItem>,
+    /// The pages the flatten changed, applied or promoted, in the order it
+    /// first changed them, and the write's stamp.
+    pub meta: MutationMeta,
 }
 
 /// Which appearance to bake.
@@ -487,89 +485,103 @@ impl FlattenUsage {
     }
 }
 
-/// A failed page's `error`: the `SerializedEngineError` `PagesFlattener`
-/// writes, with its messages, under `Unknown`.
-fn flatten_failure(outcome: pdfium::FlattenOutcome) -> serde_json::Value {
+/// A page whose flatten failed: `Unknown`, with `PagesFlattener`'s
+/// messages.
+fn flatten_failure(outcome: pdfium::FlattenOutcome) -> EngineError {
     let message = match outcome {
         pdfium::FlattenOutcome::Unknown(code) => {
             format!("native page flatten returned unexpected code {code}")
         }
         _ => String::from("native page flatten failed after preflight"),
     };
-    EngineError::with_message(EngineErrorCode::Unknown, message).to_wire()
+    EngineError::with_message(EngineErrorCode::Unknown, message)
 }
 
-/// Turn a page's annotations into page content.
+/// `PagesFlattener.requireUniquePages`, with its messages.
+fn require_unique_pages(pages: &[PageObjectNumber]) -> Result<(), EngineError> {
+    if pages.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "pages.flatten requires at least one page",
+        ));
+    }
+    let mut seen = std::collections::BTreeSet::new();
+    for page in pages {
+        if !seen.insert(page.get()) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("pages.flatten was given duplicate page object number {}", page.get()),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Turn each page's annotations into page content (`PagesFlattener`), in
+/// the session's open write transaction, whose stamp the `meta` carries.
+/// Each page's inline annotations become objects first, so the entries the
+/// flatten removes from `/Annots` leave every other position alone.
 ///
-/// Irreversible, and per page. A failure does NOT unwind the pages already
-/// flattened, because there is nothing to unwind to: the annotations they
-/// held are content now. What it does instead is stop, so the pages after
-/// the failure are reported as skipped rather than silently left alone.
-pub fn flatten_pages<P: crate::access::PageAccess>(
-    document: &Document,
-    open_page: impl Fn(PageObjectNumber) -> Result<P, EngineError>,
+/// Upstream is all or nothing: a page that fails, or a cancel, throws, and
+/// the layer transaction takes back every page before it. A plain session
+/// has no layer transaction (8.29), so the pages already changed stay
+/// changed, and the sequence moves for them before the refusal goes out
+/// (`after-first-write`: bookkeeping completes, and a refusal is no
+/// evidence of rollback).
+pub fn flatten_pages(
+    session: &DocumentSession,
     pages: &[PageObjectNumber],
     usage: FlattenUsage,
     cancel: &CancelToken,
 ) -> Result<FlattenResult, EngineError> {
+    use crate::access::{DocumentAccess, PageAccess};
+
     cancel.check()?;
-    require_distinct("pages.flatten", pages)?;
-    resolve_indices(document, pages)?;
+    let owned = session.document()?;
+    let indices =
+        pages.iter().map(|page| owned.page_index(*page)).collect::<Result<Vec<_>, _>>()?;
+    require_unique_pages(pages)?;
 
     let mut results = Vec::with_capacity(pages.len());
-    let mut stop = false;
-    for page_object_number in pages {
-        if stop {
-            results.push(FlattenItem {
-                page_object_number: *page_object_number,
-                status: FlattenStatus::Skipped,
-                error: None,
-            });
-            continue;
-        }
-        // The cancel check is BEFORE the flatten and not inside the loop's
-        // reporting: a cancelled batch reports what it did rather than
-        // throwing away the record of it.
-        if cancel.check().is_err() {
-            stop = true;
-            results.push(FlattenItem {
-                page_object_number: *page_object_number,
-                status: FlattenStatus::Skipped,
-                error: None,
-            });
-            continue;
-        }
-
-        let page = open_page(*page_object_number)?;
-        let item = match crate::access::PageAccess::view(&page).flatten(usage.native()) {
-            pdfium::FlattenOutcome::Applied => FlattenItem {
-                page_object_number: *page_object_number,
-                status: FlattenStatus::Applied,
-                error: None,
-            },
-            pdfium::FlattenOutcome::NothingToDo => FlattenItem {
-                page_object_number: *page_object_number,
-                status: FlattenStatus::Unchanged,
-                error: None,
-            },
-            // Unexercised: nothing in the corpus makes a flatten fail, so
-            // the stop and the skipped statuses after it are written from
-            // the TypeScript rather than from a case. The alternative is a
-            // batch that keeps flattening after a failure and reports the
-            // rest as though nothing had gone wrong.
-            outcome => {
-                stop = true;
-                FlattenItem {
-                    page_object_number: *page_object_number,
-                    status: FlattenStatus::Failed,
-                    error: Some(flatten_failure(outcome)),
-                }
+    let mut affected: Vec<PageObjectNumber> = Vec::new();
+    for (page, page_index) in pages.iter().copied().zip(indices) {
+        let flattened = cancel.check().and_then(|()| {
+            if promote_inline_annotations(owned.document(), page_index, page)? {
+                affected.push(page);
             }
+            Ok(owned.page(page)?.view().flatten(usage.native()))
+        });
+        let status = match flattened {
+            Ok(pdfium::FlattenOutcome::NothingToDo) => FlattenStatus::Unchanged,
+            Ok(pdfium::FlattenOutcome::Applied) => FlattenStatus::Applied,
+            // Unexercised: nothing in the corpus makes a flatten fail.
+            Ok(outcome) => return Err(after_writes(session, &affected, flatten_failure(outcome))),
+            Err(refused) => return Err(after_writes(session, &affected, refused)),
         };
-        results.push(item);
+        if status == FlattenStatus::Applied && !affected.contains(&page) {
+            affected.push(page);
+        }
+        results.push(FlattenItem { page_object_number: page, status });
     }
 
-    Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results })
+    let meta = MutationMeta::local(
+        affected.into_iter().map(PageRef::new).collect(),
+        &session.write_stamp()?,
+    );
+    Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results, meta })
+}
+
+/// `refused`, after the sequence moved for the pages a refused flatten had
+/// already changed.
+fn after_writes(
+    session: &DocumentSession,
+    changed: &[PageObjectNumber],
+    refused: EngineError,
+) -> EngineError {
+    if !changed.is_empty() {
+        session.note_mutation();
+    }
+    refused
 }
 
 #[cfg(test)]
@@ -577,15 +589,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_failed_flatten_carries_a_serialized_engine_error() {
+    fn a_failed_flatten_is_unknown_with_the_flatteners_message() {
+        let failed = flatten_failure(pdfium::FlattenOutcome::Failed);
+        assert!(failed.is(EngineErrorCode::Unknown), "{failed}");
+        assert_eq!(failed.message, "native page flatten failed after preflight");
         assert_eq!(
-            flatten_failure(pdfium::FlattenOutcome::Failed),
-            serde_json::json!({ "name": "EngineError", "code": "Unknown",
-                                "message": "native page flatten failed after preflight" }),
-        );
-        assert_eq!(
-            flatten_failure(pdfium::FlattenOutcome::Unknown(7))["message"],
+            flatten_failure(pdfium::FlattenOutcome::Unknown(7)).message,
             "native page flatten returned unexpected code 7",
         );
+    }
+
+    #[test]
+    fn a_flatten_names_at_least_one_page_and_each_once() {
+        let page = |n| PageObjectNumber::new(n).unwrap();
+        let empty = require_unique_pages(&[]).unwrap_err();
+        assert!(empty.is(EngineErrorCode::InvalidArg), "{empty}");
+        assert_eq!(empty.message, "pages.flatten requires at least one page");
+        let twice = require_unique_pages(&[page(3), page(4), page(3)]).unwrap_err();
+        assert!(twice.is(EngineErrorCode::InvalidArg), "{twice}");
+        assert_eq!(twice.message, "pages.flatten was given duplicate page object number 3");
+        assert!(require_unique_pages(&[page(3), page(4)]).is_ok());
     }
 }

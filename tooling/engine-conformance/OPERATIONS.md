@@ -88,7 +88,7 @@ cancellation case it has to document. Group assignments come from
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
 | `pages.extract` | A | 2 | cooperative | ported | Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing". |
-| `annotations.exportAppearance` | A | 2 | cooperative | ported | Flattens chosen annotation appearances into a new single-page PDF; a snapshot, like pages.extract. Builds a scratch document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs. |
+| `annotations.exportAppearance` | A | 2 | cooperative | ported | Flattens chosen annotation appearances, named by objectNumber or baseIndex refs, into a new single-page PDF; a snapshot, like pages.extract. Builds a scratch document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs; annotation_flatten.rs ports the export conformance suite. |
 
 ## G10
 
@@ -134,9 +134,9 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `pages.flatten` | C | 4 | after-first-write | ported |  |
+| `pages.flatten` | C | 4 | after-first-write | ported | A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call; a plain session keeps the pages already flattened (8.29). Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs. |
 | `redaction.apply` | C | 4 | after-first-write | ported |  |
-| `annotations.flatten` | C | 4 | after-first-write | ported | A content write: pages.flatten for a chosen set of one page's annotations. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs. |
+| `annotations.flatten` | C | 4 | after-first-write | ported | A content write and a final change: pages.flatten for a chosen set of one page's annotations, named by objectNumber or baseIndex refs. Promotes the page's inline annotations first, answers per-ref applied or unchanged and MutationMeta, and its event carries the write's opId. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs; annotation_flatten.rs ports the conformance suite. |
 | `pages.setName` | C | 4 | after-first-write | routed |  |
 | `pages.removeName` | C | 4 | after-first-write | routed |  |
 

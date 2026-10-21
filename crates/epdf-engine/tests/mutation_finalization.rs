@@ -88,7 +88,7 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
             MutationFamily::Ordinary,
         ),
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::SelfSequenced),
+        (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::FormValueChanged(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::FormFieldCreated(nothing.clone()), MutationFamily::SelfSequenced),

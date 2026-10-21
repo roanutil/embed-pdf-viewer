@@ -35,11 +35,12 @@ use crate::access::{DocumentAccess, PageAccess};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::pages_write::FlattenUsage;
-use crate::identity::{AnnotationRef, PageObjectNumber};
-use crate::mutation::PageStateMeta;
+use crate::identity::{AnnotationRef, PageObjectNumber, PageRef};
+use crate::mutation::{MutationMeta, PageStateMeta};
 use crate::session::document::DocumentSession;
 
-use super::resolve::resolve_annotation;
+use super::delete::promote_inline_annotations;
+use super::resolve::resolve_annotation_index_raw;
 
 /// Whether this page holds an annotation nothing can address durably.
 ///
@@ -88,20 +89,18 @@ pub struct AnnotationFlattenItem {
     pub status: AnnotationFlattenStatus,
 }
 
-/// `applied`: painted into the page content and removed. `skipped`: left
+/// `applied`: painted into the page content and removed. `unchanged`: left
 /// in place, hidden for the usage, a Popup, or without a usable normal
 /// appearance.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AnnotationFlattenStatus {
     Applied,
-    Skipped,
+    Unchanged,
 }
 
-/// `AnnotationFlattenResult`. `meta` is `None` when nothing was applied.
-///
-/// The page is the wire's `page: PageRef`, as every other result this crate
-/// answers names it.
+/// `AnnotationFlattenResult`. `meta` names the page when the flatten
+/// changed it (an apply, or the promotion before it) and nothing otherwise.
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationFlattenResult {
@@ -109,7 +108,7 @@ pub struct AnnotationFlattenResult {
     pub page_object_number: PageObjectNumber,
     pub usage: FlattenUsage,
     pub results: Vec<AnnotationFlattenItem>,
-    pub meta: Option<PageStateMeta>,
+    pub meta: MutationMeta,
 }
 
 /// `AnnotationFlattener.requireRefs`.
@@ -139,42 +138,78 @@ fn require_refs(
     Ok(())
 }
 
-/// `AnnotationFlattener.resolveAll`: every ref on the page, an index ref's
-/// revision validated first (`resolveAnnotPtr`). A failure drops, and so
-/// closes, whatever was opened.
-fn resolve_all<'page>(
-    session: &DocumentSession,
-    page: &'page pdfium::PageView<'_>,
+/// Where each ref is in its page's `/Annots` (`resolveAnnotIndexRaw`, as
+/// `AnnotationFlattener.resolveAll` resolves them): `NotFound` for a ref
+/// nothing on the page answers to.
+///
+/// Upstream resolves after promoting the page and finds a promoted inline
+/// annotation through the layer's births. A plain session has none (8.29),
+/// so the flatten resolves first; the promotion keeps every position.
+fn positions_of(
+    document: &pdfium::Document,
+    page_index: u32,
     refs: &[AnnotationRef],
-) -> Result<Vec<pdfium::Annotation<'page>>, EngineError> {
+) -> Result<Vec<u32>, EngineError> {
     refs.iter()
-        .map(|annotation_ref| {
-            if let AnnotationRef::Index { revision, .. } = annotation_ref {
-                session.validate_revision(revision)?;
-            }
-            resolve_annotation(session.document()?.document(), page, annotation_ref)
+        .map(|annotation_ref| resolve_annotation_index_raw(document, page_index, annotation_ref))
+        .collect()
+}
+
+/// The loaded page's annotation at each position (`resolveAnnotPtr`). A
+/// failure drops, and so closes, whatever was opened.
+fn open_all<'page>(
+    page: &'page pdfium::PageView<'_>,
+    page_object_number: PageObjectNumber,
+    positions: &[u32],
+) -> Result<Vec<pdfium::Annotation<'page>>, EngineError> {
+    positions
+        .iter()
+        .map(|index| {
+            page.annotation(*index).ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    format!(
+                        "annotation {index} of page {} could not be opened",
+                        page_object_number.get()
+                    ),
+                )
+            })
         })
         .collect()
 }
 
 /// `AnnotationFlattener.flatten`: `pages.flatten` for a chosen set of one
-/// page's annotations. A content and annotation mutation of that page.
+/// page's annotations. A content and annotation mutation of that page, run
+/// in the session's open write transaction, whose stamp its `meta` carries.
+///
+/// A refusal after the promotion leaves the page promoted, which a layer
+/// transaction would take back; this engine's plain sessions can't (8.29),
+/// so the sequence moves for it, as `after-first-write` asks.
 pub fn flatten(
-    session: &mut DocumentSession,
+    session: &DocumentSession,
     page_object_number: PageObjectNumber,
     refs: &[AnnotationRef],
     usage: FlattenUsage,
     cancel: &CancelToken,
 ) -> Result<AnnotationFlattenResult, EngineError> {
     cancel.check()?;
+    // The handler resolves the page before the flattener checks the refs.
+    let owned = session.document()?;
+    let page_index = owned.page_index(page_object_number)?;
     require_refs("annotations.flatten", page_object_number, refs)?;
+    let document = owned.document();
+    let positions = positions_of(document, page_index, refs)?;
+    // A flatten removes entries from /Annots; promotion keeps every position.
+    let promoted = promote_inline_annotations(document, page_index, page_object_number)?;
 
-    let (outcome, statuses) = {
-        let owned = session.document()?;
-        let page = owned.page(page_object_number)?;
-        let annotations = resolve_all(session, page.view(), refs)?;
-        page.view().flatten_annotations(&annotations, usage.native())
+    let flattened = owned.page(page_object_number).and_then(|page| {
+        let annotations = open_all(page.view(), page_object_number, &positions)?;
+        Ok(page.view().flatten_annotations(&annotations, usage.native()))
         // Every handle closes here, before anything reads the page again.
+    });
+    let (outcome, statuses) = match flattened {
+        Ok(flattened) => flattened,
+        Err(refused) => return Err(after_promotion(session, promoted, refused)),
     };
 
     if outcome == pdfium::FlattenOutcome::Failed {
@@ -182,7 +217,7 @@ pub fn flatten(
         // disagreeing with /Annots or a catalog write failing.
         let foreign =
             statuses.iter().position(|s| *s == pdfium::AnnotationFlattenStatus::NotOnPage);
-        return Err(match foreign {
+        let refused = match foreign {
             Some(index) => EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 format!(
@@ -194,7 +229,8 @@ pub fn flatten(
                 EngineErrorCode::Unknown,
                 "native annotation flatten failed after preflight",
             ),
-        });
+        };
+        return Err(after_promotion(session, promoted, refused));
     }
 
     let results = refs
@@ -205,28 +241,23 @@ pub fn flatten(
             status: if *status == pdfium::AnnotationFlattenStatus::Applied {
                 AnnotationFlattenStatus::Applied
             } else {
-                AnnotationFlattenStatus::Skipped
+                AnnotationFlattenStatus::Unchanged
             },
         })
         .collect();
-    if outcome != pdfium::FlattenOutcome::Applied {
-        return Ok(AnnotationFlattenResult { page_object_number, usage, results, meta: None });
-    }
+    // A promotion with nothing to flatten still changed the page.
+    let changed = outcome == pdfium::FlattenOutcome::Applied || promoted;
+    let affected_pages = if changed { vec![PageRef::new(page_object_number)] } else { Vec::new() };
+    let meta = MutationMeta::local(affected_pages, &session.write_stamp()?);
+    Ok(AnnotationFlattenResult { page_object_number, usage, results, meta })
+}
 
-    // Content and annotation liveness changed on this page: the same
-    // bookkeeping the whole-page flatten performs per affected page.
-    session.note_mutation();
-    session.bump_revision(page_object_number)?;
-    // The TypeScript re-lists the page for its weak-annotation state and
-    // ignores a failure, so this does too.
-    if let Ok(has_weak) = scan_weak(session, page_object_number) {
-        let _ = session.record_weak_flag(page_object_number, has_weak);
+/// `refused`, after the sequence moved for a promotion that stays.
+fn after_promotion(session: &DocumentSession, promoted: bool, refused: EngineError) -> EngineError {
+    if promoted {
+        session.note_mutation();
     }
-    let meta = PageStateMeta {
-        affected_pages: vec![session.page_state(page_object_number)?],
-        cache_delta: None,
-    };
-    Ok(AnnotationFlattenResult { page_object_number, usage, results, meta: Some(meta) })
+    refused
 }
 
 /// The bookkeeping `PagesFlattener` and `RedactionApplier` perform once
@@ -264,10 +295,12 @@ pub fn export_appearance(
     cancel: &CancelToken,
 ) -> Result<Vec<u8>, EngineError> {
     cancel.check()?;
-    require_refs("annotations.exportAppearance", page_object_number, refs)?;
     let owned = session.document()?;
+    let page_index = owned.page_index(page_object_number)?;
+    require_refs("annotations.exportAppearance", page_object_number, refs)?;
+    let positions = positions_of(owned.document(), page_index, refs)?;
     let page = owned.page(page_object_number)?;
-    let annotations = resolve_all(session, page.view(), refs)?;
+    let annotations = open_all(page.view(), page_object_number, &positions)?;
     match page.view().export_annotations_as_document(&annotations) {
         // All-or-nothing by contract: a ref without a usable normal
         // appearance (hidden, popup, no /AP) refuses the whole export.
