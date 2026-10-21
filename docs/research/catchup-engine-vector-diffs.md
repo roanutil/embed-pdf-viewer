@@ -505,3 +505,73 @@ The PDFium runtime. The `runtime-src` submodule moved from `f5ca81379` to `1461b
 accounts for the text and geometry value changes (trailing spaces, dropped degenerate and
 zero-size text, shorter loose boxes), which no TypeScript commit explains. A Rust engine that
 links its own PDFium must be on the same runtime build to match these vectors.
+
+## Recovered from research/catchup-plugins
+
+Task 10 resolved the 37 conformance files both branches changed by taking impl's side, which
+dropped this branch's own edits to them. Catch-up Task 8.1 put back the ones that still have a
+subject upstream. Every hash here is ours unless it is named as upstream's. Each regenerator ran
+twice with byte-identical output, and all 33 `:check` scripts pass on the result.
+
+`pages/mutate.json` (4d9df5c00, from 93ee01678). Eight cases for `annotations.flatten` and
+`annotations.exportAppearance` are back, 36 cases in all. The cases name annotations by `/NM`. The
+`nm` ref went upstream in bc0057f3a, so the generator looks each name up in the page's
+`annotations.list` and sends that annotation's own ref. Every annotation in
+`annotation_appearances.pdf` is inline, so the refs are `baseIndex`, not `objectNumber`. The one
+name meant to match nothing, `no-such-annotation`, goes out as object number 9999 and is refused
+`NotFound` (it was `InvalidReference`). Each case records its `request`; `exportAppearance` is a
+`snapshot` read, so `src/recording-engine.ts` gained a `kinds` option to record it by name.
+
+Upstream changed two outcomes. The bare highlight has no `/AP`, and upstream now draws it one and
+flattens it: `flatten-annotations-subset` applies all three refs where it used to skip one. A
+flatten also gives the page's inline annotations object numbers before it starts, so `meta` always
+names the page and the write always publishes. The old `applied` flag is therefore replaced by
+`affectedPages`. `flatten-annotations-nothing-eligible` and
+`export-appearance-without-appearance-refused` kept their names and their subjects by swapping the
+highlight for `a-print-only-square`, which is hidden on screen: flattening it for display leaves it
+`unchanged`, and exporting it is refused `InvalidArg`. The cost is that no case now pins a bare
+annotation being skipped, since upstream no longer skips one.
+
+`search/slice-protocol.json` (87711ea88, from 82fc580e9). Two cases are back:
+`regex-with-ignore-whitespace-is-refused` (issue `ignore-whitespace-with-regex`) and
+`key-separates-ignore-whitespace`. The second now carries a cursor minted with `searchQueryKey`
+and `encodeSearchCursor` for the same text without the flag, marked `keyMismatch`, so the decoder
+shows the slot separating the queries rather than the vector only recording the key. Both record
+the built `SearchRequest`, as every slice case has since 0963cacd3.
+
+`pages/extract.json` (b594ad822, from b7573c3a6 and 3baec217b). Each case records `sources`, the
+`PageRef`s sent to `doc.pages.extract`, beside `sourceObjectNumbers`.
+`crates/epdf-engine/tests/page_extract_corpus.rs` reads `sources`.
+
+`signature/protection.json` (2268565ee, generator from da3297cf3). The check failed on upstream
+behaviour, not on the generator. `protectedCapabilities` protects four more capabilities:
+`doc.outline.modify` (upstream 67ccb76dc), `doc.forms.script` and `doc.forms.import` (upstream
+b43963d12), and `doc.annotate.import` (upstream c78997346). Six of the 13 cases gain some of them.
+The generator also built its input DTOs with two retired spellings, `fieldObjectNumber` on the field
+ref (upstream 595bdc6c7) and `claimedTime` on the signer (upstream fd175ba50). It now writes
+`objectNumber` and `signedAt`. `deriveProtection` reads neither, so only the echoed `signatures`
+change.
+
+`scope/resolve.json` (b8bb19cb3, from a4ed2b228). `scope-cases.ts` already lists `doc.sign` and
+`doc.sign.certify`, as upstream's `auth/scope/types.ts` does, but the vector still had the 21
+capabilities before them. Regenerated, the closed set is 23, the wildcard grants both, and each bit
+word that expands to `doc.sign` now grants it. `scope/parse.json` did not change.
+
+`src/operations.ts` and `OPERATIONS.md` (0ce43e7ec from dd2e1c290, and 95d371d61). The 19 kinds
+this branch's Rust host gained were `planned` in impl's matrix. `annotations.flatten` and
+`annotations.exportAppearance` are `ported` (gated by `pages/mutate.json`). `signatures.cancel`
+stays `planned`: our host still routes it as `signatures.abort`. The other 16 are `routed`. The
+signature reads, `signatures.prepare`, `signatures.complete` and `signatures.finalizeCandidate`
+move to `queued-only`, because `WorkerHost` calls the signature handlers without the job's
+`AbortSignal`. `pages.workingSet` moves to `non-preemptible`, since it never queues. The `abort`
+note now counts upstream's dispatch: `abort` and `pages.workingSet` in `receive`, 76 arms in
+`run()`, 11 in `slicedWork()`. The reorder and insert invariants moved onto `document.apply`. The
+form-model cache note moved from `annotations.list`, which builds no widget rows, to `forms.list`.
+
+Nothing to do for the rest. 221fb1477 (save mode `'rewrite'`) is already in
+`generate-save-vectors.ts`. 94836c1c4 (the 84-kind wire vector) is superseded by the 89-kind one.
+457cdc82d and 3b795d4ac only regenerated vectors, and impl's set already carries `namedPages` and
+`richText`. The PageRef adapter commits (3baec217b, a35d60373, 804511a62, 28adb8b95, 953ac1a76,
+b4697879a, e2bcada08, 9a275186c, 0b42f996e, 78745772a, 43feeec45, 7b91ad1cf, fb1e125d0,
+672f185f6, cc3ea8527, 5a3b75400) are superseded by Task 4's adaptation to the v3 API, except for
+the `sources` field above.
