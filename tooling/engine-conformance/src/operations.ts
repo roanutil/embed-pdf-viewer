@@ -98,7 +98,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 0,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: "Answers PageGeometrySnapshot in page space: the reader answers the file's coordinates (runs with start, loose/tight boxes or quads, space/empty, rotation in degrees clockwise) and the host boundary converts them (pageGeometryOf). The C ABI export epdf_page_geometry answers the file's coordinates, which RustPageGeometryReader.ts reads as PageGeometrySnapshot<PdfCoordinates>. Gated by tooling/engine-conformance/vectors/pages.geometry through Host::call in crates/epdf-engine/tests/geometry_corpus.rs, and crates/epdf-wasm/tests/borrowed_page.rs.",
+    note: 'Answers PageGeometrySnapshot in page space: the reader answers the file\'s coordinates (runs with start, loose/tight boxes or quads, space/empty, rotation in degrees clockwise) and the host boundary converts them (pageGeometryOf). The C ABI export epdf_page_geometry answers the file\'s coordinates, which RustPageGeometryReader.ts reads as PageGeometrySnapshot<PdfCoordinates>. Gated by tooling/engine-conformance/vectors/pages.geometry through Host::call in crates/epdf-engine/tests/geometry_corpus.rs, and crates/epdf-wasm/tests/borrowed_page.rs.',
   },
 
   // --- G3. Session core and security. Native-only owner until the G3w
@@ -291,7 +291,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: "Takes the flattened SearchScanRequest (query fields at the top level, snippets, from as a PageRef, cursor, limit) and answers SearchSlice: matches as page ranges (start, count) with a snippet of before, match and after, pagesSearched and pageCount. The cursor key is searchQueryKey, mode spelled snippets or matches. The reader answers segments in the file's coordinates and the host boundary converts them (pageSearchSliceOf). Gated by vectors/search through crates/epdf-engine/tests/search_dialect.rs, search_slice_protocol.rs, search_reader.rs and search_ignore_whitespace.rs.",
+    note: 'Takes the flattened SearchScanRequest (query fields at the top level, snippets, from as a PageRef, cursor, limit) and answers SearchSlice: matches as page ranges (start, count) with a snippet of before, match and after, pagesSearched and pageCount. The cursor key is searchQueryKey, mode spelled snippets or matches. The reader answers segments in the file\'s coordinates and the host boundary converts them (pageSearchSliceOf). Gated by vectors/search through crates/epdf-engine/tests/search_dialect.rs, search_slice_protocol.rs, search_reader.rs and search_ignore_whitespace.rs.',
   },
 
   // --- G6. Document structure reads.
@@ -435,7 +435,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: "Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer's births.",
+    note: 'Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer\'s births.',
   },
   {
     kind: 'pieceInfo.read',
@@ -614,7 +614,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A one-op change (forms.setValue, features/changes/forms.rs): the value as a read returns it ({ value }, { checked }, { selectedValues }), written as the field's rules leave it (fieldAfterValue) through the fork's value writers, answered { field, widgets, meta } with FormMutationMeta and a forms.valueSet event; its reverse puts back the field's and widgets' dictionaries from the fork's captures, else the value. Gated by vectors/forms/write.json (tests/form_write.rs) and vectors/forms/apply.json (tests/form_apply.rs).",
+    note: 'A one-op change (forms.setValue, features/changes/forms.rs): the value as a read returns it ({ value }, { checked }, { selectedValues }), written as the field\'s rules leave it (fieldAfterValue) through the fork\'s value writers, answered { field, widgets, meta } with FormMutationMeta and a forms.valueSet event; its reverse puts back the field\'s and widgets\' dictionaries from the fork\'s captures, else the value. Gated by vectors/forms/write.json (tests/form_write.rs) and vectors/forms/apply.json (tests/form_apply.rs).',
   },
   {
     kind: 'forms.reset',
@@ -843,7 +843,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: 'A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page. Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.',
+    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page. Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
   },
   {
     kind: 'pages.removeName',
@@ -852,7 +852,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: 'A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page (null once removed). Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.',
+    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page (null once removed). Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
   },
 
   // --- G14. Remaining mutators.

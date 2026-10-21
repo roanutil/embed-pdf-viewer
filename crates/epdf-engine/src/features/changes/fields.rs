@@ -753,13 +753,7 @@ pub fn update_widget(
 ) -> Result<Done, EngineError> {
     ctx.cancel.check()?;
     ctx.authority.require(DocCapability::DocFormsModify)?;
-    // A read's actions (trees) sent back write nothing; only a patch can
-    // write a script.
-    let writes = patch
-        .get("actions")
-        .and_then(|actions| serde_json::from_value::<WidgetActionsPatch>(actions.clone()).ok())
-        .is_some_and(|actions| actions.writes_scripts());
-    if writes {
+    if patch.get("actions").is_some_and(writes_scripts) {
         ctx.authority.require(DocCapability::DocFormsScript)?;
     }
     let current = super::annotations::read_annotation(ctx, widget)?;
@@ -985,5 +979,43 @@ fn object(value: Value) -> Result<Map<String, Value>, EngineError> {
     match value {
         Value::Object(map) => Ok(map),
         _ => Err(unreadable("a field is an object")),
+    }
+}
+
+/// `writesScripts`, event by event: an event gets an action write (not a
+/// read's tree, sent back) whose tree holds a JavaScript, submit-form or URI
+/// action (`needsScriptRight`). Removing an action (`null`) never does.
+fn writes_scripts(actions: &Value) -> bool {
+    fn needs_script_right(action: &Value) -> bool {
+        matches!(
+            action.get("type").and_then(Value::as_str),
+            Some("javascript" | "submit-form" | "uri")
+        ) || action
+            .get("next")
+            .and_then(Value::as_array)
+            .is_some_and(|next| next.iter().any(needs_script_right))
+    }
+    actions.as_object().is_some_and(|events| {
+        events.values().any(|action| {
+            action.is_object() && action.get("root").is_none() && needs_script_right(action)
+        })
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    #[test]
+    fn a_script_right_is_asked_per_event_and_a_read_tree_asks_none() {
+        let tree = json!({ "root": { "type": "javascript", "script": "x", "subtype": "JavaScript",
+            "next": [] }, "incomplete": false, "warningFlags": 0, "warnings": [] });
+        let script = json!({ "type": "javascript", "script": "x" });
+        assert!(!super::writes_scripts(&json!({ "activate": tree.clone() })));
+        assert!(super::writes_scripts(&json!({ "activate": tree, "focus": script })));
+        assert!(!super::writes_scripts(&json!({ "focus": null })));
+        let chained = json!({ "type": "named", "name": "NextPage",
+            "next": [{ "type": "uri", "uri": "https://example.com" }] });
+        assert!(super::writes_scripts(&json!({ "blur": chained })));
     }
 }

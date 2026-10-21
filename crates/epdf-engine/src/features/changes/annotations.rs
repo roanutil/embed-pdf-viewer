@@ -952,19 +952,30 @@ pub fn revert_annotation(
     }
     // A widget's actions are kept as read (trees) and written as a patch.
     let widget = current.get("subtype").and_then(Value::as_str) == Some("widget");
-    let writable = |key: &str, value: &Value| -> Value {
+    // A widget's actions are kept as read (trees) and written as a patch
+    // (`widgetActionsOf`). A stored value that reads as no actions is a
+    // broken record, refused rather than written as "remove them all".
+    let writable = |key: &str, value: &Value| -> Result<Value, EngineError> {
         if key != "actions" || !widget {
-            return value.clone();
+            return Ok(value.clone());
         }
+        let broken = |e: serde_json::Error| {
+            EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("an update's recorded widget actions do not read: {e}"),
+            )
+        };
         let actions: Option<crate::features::annotation::read::base::AnnotationActions> =
-            serde_json::from_value(value.clone()).ok().flatten();
+            serde_json::from_value(value.clone()).map_err(broken)?;
         serde_json::to_value(crate::features::actions::write::widget_actions_of(actions.as_ref()))
-            .unwrap_or(Value::Null)
+            .map_err(broken)
     };
     let patch: Map<String, Value> = kept
         .iter()
-        .filter_map(|key| restore.get(*key).map(|value| ((*key).clone(), writable(key, value))))
-        .collect();
+        .filter_map(|key| {
+            restore.get(*key).map(|value| Ok(((*key).clone(), writable(key, value)?)))
+        })
+        .collect::<Result<_, EngineError>>()?;
     let mut done = write_update(ctx, reference, patch, &OpResources::default(), &step.reports)?;
     let skipped: Vec<String> =
         keys.into_iter().filter(|key| !kept.contains(key)).cloned().collect();

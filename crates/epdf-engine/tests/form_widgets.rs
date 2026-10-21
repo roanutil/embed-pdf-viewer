@@ -748,6 +748,49 @@ fn a_calculate_script_keeps_the_field_in_the_calculation_order() {
     assert_eq!(refused["details"]["required"], "doc.forms.script", "{refused}");
 }
 
+/// `FIELD_GROUP_TOKENS.designer`: designs the form, in the `legal` group,
+/// and may put fields in `buyer`'s.
+fn designer() -> Value {
+    json!({ "identity": { "userId": "lisa", "groupId": "legal" },
+        "grants": { "scope": ["doc.open", "doc.render", "doc.forms.modify",
+            "fields:set-group:group=buyer"],
+            "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
+                "bit10": true, "bit11": true, "bit12": true } },
+        "protection": { "enforced": null, "judged": null, "certification": null,
+            "fieldLocks": [], "policyVersion": 4 } })
+}
+
+#[test]
+fn a_designer_puts_fields_in_her_own_group_or_one_she_may_set() {
+    // `runFieldGroupsConformance`: a create goes in the caller's own group,
+    // or one she may set; another is refused, naming the scope it takes.
+    let mut doc = Doc::toggle_fields();
+    let placed = |x: u32| {
+        json!({ "page": page_ref(PAGE),
+        "rect": { "x": x, "y": 200, "width": 100, "height": 20 } })
+    };
+    let own = doc.write(json!({ "kind": "forms.createField", "authority": designer(),
+        "draft": { "family": "text", "name": "clause", "widgets": [placed(20)] } }));
+    assert_eq!(own["field"]["groupId"], "legal");
+    let buyers = doc.write(json!({ "kind": "forms.createField", "authority": designer(),
+        "draft": { "family": "text", "name": "buyer_address", "groupId": "buyer",
+            "widgets": [placed(140)] } }));
+    assert_eq!(buyers["field"]["groupId"], "buyer");
+    let refused = doc.refused(json!({ "kind": "forms.createField", "authority": designer(),
+        "draft": { "family": "text", "name": "seller_address", "groupId": "seller",
+            "widgets": [placed(260)] } }));
+    assert_eq!(code(&refused), "Forbidden", "{refused}");
+    assert_eq!(refused["details"]["required"], "fields:set-group:group=seller", "{refused}");
+    assert!(doc.form()["fields"].as_array().unwrap().iter().all(|f| f["name"] != "seller_address"));
+
+    let moved = doc.write(json!({ "kind": "forms.updateField", "authority": designer(),
+        "ref": own["field"]["ref"], "patch": { "groupId": "buyer" } }));
+    assert_eq!(moved["field"]["groupId"], "buyer");
+    let refused = doc.refused(json!({ "kind": "forms.updateField", "authority": designer(),
+        "ref": own["field"]["ref"], "patch": { "groupId": "seller" } }));
+    assert_eq!(code(&refused), "Forbidden", "{refused}");
+}
+
 // ── Widget rotation (`runWidgetRotationConformance`) ──────────────────────
 
 /// `pdfOf`: a PDF of `objects`, numbered from 1.
