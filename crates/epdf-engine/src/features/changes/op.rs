@@ -70,8 +70,10 @@ pub enum ChangeOp {
         #[serde(with = "crate::identity::page_ref")]
         page: crate::identity::PageObjectNumber,
         data: serde_json::Map<String, serde_json::Value>,
+        /// As sent: a value that isn't a whole number is refused by the
+        /// create, `InvalidArg`, as `claimObjectNumber` refuses it.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        object_number: Option<u32>,
+        object_number: Option<serde_json::Number>,
         #[serde(default, skip_serializing_if = "OpResources::is_empty")]
         resources: OpResources,
     },

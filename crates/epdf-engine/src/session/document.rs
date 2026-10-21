@@ -170,6 +170,23 @@ pub struct WriteStamp {
 struct OpenTransaction {
     stamp: WriteStamp,
     journal: Vec<ReverseStep>,
+    /// Held numbers the transaction made objects at (`objectNumbersInUse`):
+    /// spent when it commits, free again when it aborts.
+    numbers_in_use: Vec<u32>,
+}
+
+/// `objectNumberUnavailable`: a create named a number it can't have,
+/// because the session doesn't hold it (`not-held`) or something has it
+/// (`taken`). Upstream answers `ObjectNumberUnavailable`, a code this engine
+/// gains with the rest of the drift in Task 8.27; until then the refusal is
+/// `InvalidArg` with the same details.
+pub fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::InvalidArg,
+        format!("object number {number} is not available ({reason})"),
+    )
+    .with_details(serde_json::json!({ "field": "objectNumber", "objectNumber": number,
+        "reason": reason }))
 }
 
 impl DocumentSession {
@@ -802,6 +819,7 @@ impl DocumentSession {
         self.transaction = Some(OpenTransaction {
             stamp: WriteStamp { op_id: op_id.into(), undoable: false },
             journal: Vec::new(),
+            numbers_in_use: Vec::new(),
         });
         Ok(())
     }
@@ -829,8 +847,56 @@ impl DocumentSession {
     /// Keep everything the open transaction wrote.
     pub fn commit_transaction(&mut self) -> Result<(), EngineError> {
         self.require_transaction()?;
-        self.transaction = None;
+        let spent = self.transaction.take().map(|open| open.numbers_in_use).unwrap_or_default();
+        for number in spent {
+            self.release_held(number);
+        }
         Ok(())
+    }
+
+    /// `claimObjectNumber`: a create in the open transaction takes
+    /// `number`, one the session holds when it hands numbers out itself, and
+    /// that no earlier create of the transaction took. Whether another
+    /// object has it the create finds out.
+    pub fn claim_object_number(&mut self, number: u32) -> Result<(), EngineError> {
+        if number < 1 {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("{number} is not an object number"),
+            )
+            .with_details(serde_json::json!({ "field": "objectNumber" })));
+        }
+        if self.object_number_authority == ObjectNumberAuthority::Session
+            && !self.holds_object_number(number)
+        {
+            return Err(object_number_unavailable(number, "not-held"));
+        }
+        let open = self.require_transaction_mut()?;
+        if open.numbers_in_use.contains(&number) {
+            return Err(object_number_unavailable(number, "taken"));
+        }
+        open.numbers_in_use.push(number);
+        Ok(())
+    }
+
+    /// Stop holding `number`: a committed create spent it.
+    fn release_held(&mut self, number: u32) {
+        let mut kept = Vec::with_capacity(self.held_object_numbers.len() + 1);
+        for range in self.held_object_numbers.drain(..) {
+            if number < range.first || number - range.first >= range.count {
+                kept.push(range);
+                continue;
+            }
+            let before = number - range.first;
+            if before > 0 {
+                kept.push(ObjectNumberRange { first: range.first, count: before });
+            }
+            let after = range.count - before - 1;
+            if after > 0 {
+                kept.push(ObjectNumberRange { first: number + 1, count: after });
+            }
+        }
+        self.held_object_numbers = kept;
     }
 
     /// The steps that take back what the open transaction wrote, in the

@@ -21,7 +21,6 @@ use crate::features::annotation::write::create::{
 use crate::features::annotation::write::draft::AnnotationActor;
 use crate::features::annotation::write::prepare::DraftResources;
 use crate::identity::{AnnotationRef, PageObjectNumber};
-use crate::session::document::ObjectNumberAuthority;
 
 fn forbidden(what: &str) -> EngineError {
     EngineError::with_message(EngineErrorCode::Forbidden, format!("permission denied: {what}"))
@@ -54,13 +53,35 @@ fn authorize_create(
             return Err(forbidden("annotations:create"));
         }
     }
+    // An empty name names no one (`actor.userId || actor.groupId ||
+    // actor.displayName`).
+    let named = |value: Option<String>| value.filter(|v| !v.is_empty());
     let actor = AnnotationActor {
-        display_name: identity.display_name.clone(),
-        user_id: identity.user_id.clone(),
-        group_id: group,
+        display_name: named(identity.display_name.clone()),
+        user_id: named(identity.user_id.clone()),
+        group_id: named(group),
     };
-    let named = actor.user_id.is_some() || actor.group_id.is_some() || actor.display_name.is_some();
-    Ok(named.then_some(actor))
+    let anyone =
+        actor.user_id.is_some() || actor.group_id.is_some() || actor.display_name.is_some();
+    Ok(anyone.then_some(actor))
+}
+
+/// An object number as sent: a whole number from 1 (`claimObjectNumber`).
+fn object_number_of(number: &serde_json::Number) -> Result<u32, EngineError> {
+    // `Number.isInteger`: 70.0 is a whole number too.
+    let whole = number.as_u64().or_else(|| {
+        number
+            .as_f64()
+            .filter(|n| n.fract() == 0.0 && *n >= 0.0 && *n <= f64::from(u32::MAX))
+            .map(|n| n as u64)
+    });
+    whole.and_then(|n| u32::try_from(n).ok()).filter(|n| *n >= 1).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("{number} is not an object number"),
+        )
+        .with_details(serde_json::json!({ "field": "objectNumber" }))
+    })
 }
 
 /// `annotations.create`; its reverse deletes it, when nobody changed it
@@ -69,7 +90,7 @@ pub fn create_annotation(
     ctx: &mut ChangeContext<'_>,
     page: PageObjectNumber,
     data: &Map<String, Value>,
-    object_number: Option<u32>,
+    object_number: Option<&serde_json::Number>,
     resources: &OpResources,
 ) -> Result<Done, EngineError> {
     if data.get("subtype").and_then(Value::as_str) == Some("widget") {
@@ -83,22 +104,21 @@ pub fn create_annotation(
     let group_id = data.get("groupId").and_then(Value::as_str);
     let actor = authorize_create(ctx, group_id)?;
 
+    let object_number = object_number.map(object_number_of).transpose()?;
+    if let Some(number) = object_number {
+        ctx.session.claim_object_number(number)?;
+    }
     let appearance = resources.appearance.as_ref().map(|r| r.bytes()).transpose()?;
     let file = resources.file.as_ref().map(|r| r.bytes()).transpose()?;
     let session = &*ctx.session;
     let owned = session.document()?;
     let page_index = owned.page_index(page)?;
     let context = AnnotationWriteContext { fonts: ctx.fonts, resources: None };
-    let holds = |number: u32| {
-        session.object_number_authority() != ObjectNumberAuthority::Session
-            || session.holds_object_number(number)
-    };
     let services = CreateServices {
         context: &context,
         drawings: session.drawing_index()?,
         clock: ctx.clock,
         ids: ctx.ids,
-        holds_object_number: &holds,
     };
     let result = create(
         owned.document(),
@@ -134,6 +154,7 @@ pub fn create_annotation(
             },
         },
         left: vec![annotation.clone()],
+        parent: result.parent_before,
     });
     Ok(Done {
         item: ChangeItem::AnnotationsCreate { page, annotation, meta: result.meta },
@@ -269,9 +290,62 @@ pub fn remove_annotation(
             ));
         }
     }
+    // A popup's parent, when it stays, gets back what the popup's create
+    // changed on it.
+    if let Some(before) = &step.parent
+        && !places.iter().any(|(_, r)| *r == before.reference)
+        && let Ok(at) = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+            document,
+            page_index,
+            &before.reference,
+        )
+        && let Some(parent) = document.raw_annotation(page_index, at)
+    {
+        restore_parent(document, page_index, &parent, before)?;
+    }
     // The annotation first, then what went with it.
     let mut changed = vec![step.reference.clone()];
     changed.extend(places.into_iter().map(|(_, r)| r).filter(|r| *r != step.reference));
     let meta = AnnotationMutationMeta::of(&session.write_stamp()?, page, changed);
     Ok(Done { item: ChangeItem::AnnotationsDelete { page, meta }, reverse: Vec::new() })
+}
+
+/// Put back a popup's parent's `/Popup` and `/Open` as they were before the
+/// popup's create linked them.
+fn restore_parent(
+    document: &pdfium::Document,
+    page_index: u32,
+    parent: &pdfium::Annotation<'_>,
+    before: &crate::features::annotation::write::create::ParentBefore,
+) -> Result<(), EngineError> {
+    let refused = |what: &str| {
+        EngineError::with_message(EngineErrorCode::Unknown, format!("restoring {what} failed"))
+    };
+    let earlier = before.popup.and_then(|number| {
+        let count = document.raw_annotation_count(page_index).unwrap_or(0);
+        (0..count)
+            .filter_map(|i| document.raw_annotation(page_index, i))
+            .find(|a| a.object_number() == number)
+    });
+    match earlier {
+        Some(popup) => {
+            if !matches!(parent.set_linked_annotation("Popup", &popup), Ok(true)) {
+                return Err(refused("/Popup"));
+            }
+        }
+        None => {
+            parent.remove_key("Popup").map_err(|_| refused("/Popup"))?;
+        }
+    }
+    match before.open {
+        Some(open) => {
+            if !matches!(parent.set_boolean_value("Open", open), Ok(true)) {
+                return Err(refused("/Open"));
+            }
+        }
+        None => {
+            parent.remove_key("Open").map_err(|_| refused("/Open"))?;
+        }
+    }
+    Ok(())
 }

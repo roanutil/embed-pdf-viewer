@@ -950,3 +950,125 @@ fn a_refused_change_takes_its_create_back() {
     assert_eq!(refused["code"], "InvalidArg", "{refused}");
     assert_eq!(listed_count(&mut replay), before, "the first create was left behind");
 }
+
+// ── Fix round 1 ─────────────────────────────────────────────────────────────
+
+/// A measurement's scale, a shown caption or a leader needs 8.25's
+/// writing: refused `NotImplemented`, and nothing is written.
+#[test]
+fn a_measured_create_is_refused_until_8_25_and_writes_nothing() {
+    let file = load();
+    let pon = file.cases[0].page_object_number;
+    let line = case(&file, "line").draft.clone();
+    let mut replay = open(&file);
+    let before = listed_count(&mut replay);
+    for (field, value) in [
+        ("measure", json!({ "subtype": "rectilinear", "ratio": "1 in = 1 in" })),
+        ("captionEnabled", json!(true)),
+        ("captionPosition", json!("top")),
+        ("captionOffset", json!({ "along": 1, "perpendicular": 2 })),
+        ("leader", json!({ "length": 10 })),
+    ] {
+        let mut draft = line.clone();
+        draft[field] = value;
+        let refused = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
+            .outcome
+            .expect_err(field);
+        assert_eq!(refused["code"], "NotImplemented", "{field}: {refused}");
+        assert_eq!(refused["details"]["field"], field, "{field}: {refused}");
+        assert_eq!(listed_count(&mut replay), before, "{field}: something was written");
+    }
+}
+
+/// A line read sent back as a create: its unmeasured caption fields
+/// (`captionPosition: "inline"`, `captionEnabled` null or false, no offset,
+/// no leader, no scale) are accepted, as upstream accepts them.
+#[test]
+fn a_line_read_sent_back_as_a_create_is_accepted() {
+    let file = load();
+    let pon = file.cases[0].page_object_number;
+    let read = case(&file, "line").created.clone();
+    let mut replay = open(&file);
+    let mut draft = read.clone();
+    draft.as_object_mut().unwrap().remove("nm");
+    let copy = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
+        .outcome
+        .expect("the read creates");
+    assert_eq!(copy["annotation"]["captionEnabled"], Value::Null);
+    assert_eq!(copy["annotation"]["captionPosition"], "inline");
+    assert_eq!(
+        test_support::canonical_numbers(&copy["annotation"]["linePoints"]),
+        test_support::canonical_numbers(&read["linePoints"])
+    );
+    // A hidden caption is written as one.
+    draft["captionEnabled"] = json!(false);
+    let hidden = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
+        .outcome
+        .expect("a hidden caption creates");
+    assert_eq!(hidden["annotation"]["captionEnabled"], json!(false));
+}
+
+/// `claimObjectNumber`: a number a change's earlier create took is
+/// `taken` for a later one, before anything is written; one the session
+/// doesn't hold is `not-held`; a number that isn't whole is not an object
+/// number. (Checked on the session: the fork's numbered create needs the
+/// layer transaction Task 8.30 adds, so a create naming a number can't make
+/// its object here yet.)
+#[test]
+fn a_create_names_an_object_number_once_per_change() {
+    let file = load();
+    let mut replay = open(&file);
+    let session = replay.host.sessions_mut().session_mut(&SessionKey::document(DOC)).expect("open");
+    session.begin_transaction("claims").expect("a transaction");
+    session.claim_object_number(6).expect("a held number");
+    let taken = session.claim_object_number(6).expect_err("claimed twice");
+    assert_eq!(taken.details.as_ref().unwrap()["reason"], "taken", "{taken}");
+    let not_held = session.claim_object_number(70).expect_err("past the reserve");
+    assert_eq!(not_held.details.as_ref().unwrap()["reason"], "not-held", "{not_held}");
+    session.abort_transaction();
+    session.begin_transaction("again").expect("a transaction");
+    session.claim_object_number(6).expect("an aborted claim frees the number");
+    session.abort_transaction();
+
+    let square = case(&file, "square-defaults");
+    let mut fractional = request(&square.draft, square.page_object_number, &Default::default()).0;
+    fractional["objectNumber"] = json!(1.5);
+    let refused = replay.replay(&fractional).expect_err("not whole");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "objectNumber", "{refused}");
+    assert!(refused["message"].as_str().unwrap().contains("is not an object number"));
+}
+
+/// A popup's create in a refused change: taking it back puts the parent's
+/// `/Popup` and `/Open` back as they were.
+#[test]
+fn a_refused_popup_create_gives_its_parent_back() {
+    let file = load();
+    let pon = file.cases[0].page_object_number;
+    let mut replay = open(&file);
+    let note = created(
+        &mut replay,
+        json!({ "subtype": "text", "open": true,
+                "rect": { "x": 72, "y": 172, "width": 20, "height": 20 } }),
+    );
+    let note_ref = note["annotation"]["ref"].clone();
+    let before = listed(&mut replay, &note_ref);
+    assert_eq!(before["popup"], Value::Null);
+    assert_eq!(before["open"], json!(true));
+
+    let refused = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+            "change": { "ops": [
+                { "type": "annotations.create", "page": page_ref(pon),
+                  "data": { "subtype": "popup", "parent": note_ref, "open": false,
+                            "rect": { "x": 100, "y": 172, "width": 150, "height": 80 } } },
+                { "type": "annotations.create", "page": page_ref(pon),
+                  "data": { "subtype": "square", "color": "red",
+                            "box": { "x": 1, "y": 1, "width": 9, "height": 9 } } }
+            ] } }))
+        .expect_err("the second op is refused");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    let after = listed(&mut replay, &note_ref);
+    assert_eq!(after["popup"], Value::Null, "the parent still names the popup: {after}");
+    assert_eq!(after["open"], json!(true), "the parent's /Open was not put back: {after}");
+}

@@ -282,7 +282,13 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
             super::attachments::delete_attachment(ctx, reference)
         }
         ChangeOp::AnnotationsCreate { page, data, object_number, resources } => {
-            super::annotations::create_annotation(ctx, *page, data, *object_number, resources)
+            super::annotations::create_annotation(
+                ctx,
+                *page,
+                data,
+                object_number.as_ref(),
+                resources,
+            )
         }
     }
 }

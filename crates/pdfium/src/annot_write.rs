@@ -655,3 +655,32 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_SetReplyType(self.as_raw(), code as _) != 0 }
     }
 }
+
+impl Annotation<'_> {
+    /// A line's caption flag and position (`/Cap`, `/CP`), with no offset
+    /// (`EPDFAnnot_SetLineCaption`): `top` puts it above the line.
+    pub fn set_line_caption(&self, enabled: bool, top: bool) -> bool {
+        // SAFETY: the handle is live; a null offset is the normal position.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLineCaption(
+                self.as_raw(),
+                i32::from(enabled),
+                u32::from(top) as _,
+                std::ptr::null(),
+            ) != 0
+        }
+    }
+
+    /// A polygon's or polyline's caption flag, placed automatically
+    /// (`EPDFAnnot_SetShapeCaption` with no centre).
+    pub fn set_shape_caption(&self, enabled: bool) -> bool {
+        // SAFETY: the handle is live; a null centre places it automatically.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetShapeCaption(
+                self.as_raw(),
+                i32::from(enabled),
+                std::ptr::null(),
+            ) != 0
+        }
+    }
+}

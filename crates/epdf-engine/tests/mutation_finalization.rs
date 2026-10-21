@@ -197,7 +197,6 @@ fn an_event_carries_its_result_verbatim() {
                 1_700_000_000_000,
             )),
             ids: &epdf_engine::ids::SeededIdSource::new(1),
-            holds_object_number: &|_| true,
         },
         &CancelToken::never(),
     )

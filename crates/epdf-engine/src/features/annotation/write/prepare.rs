@@ -452,6 +452,10 @@ pub struct DraftFields {
     pub file: Nullable<AttachmentFileWrite>,
     // A popup.
     pub open_popup: Option<bool>,
+    // A measurement's caption, as far as it is written before 8.25.
+    /// Whether the draft names any caption field (`touchesCaption`).
+    pub caption_touched: bool,
+    pub caption_enabled: Nullable<bool>,
 }
 
 /// The `/F` flag fields, in `ANNOT_FLAG_BITS` order (bit 0 first).
@@ -789,23 +793,46 @@ fn read_field(
             });
         }
         // A measurement's scale, caption and leader (`measureField`,
-        // `shapeCaptionFields`, the line's caption and leader): the scale
-        // codec and the label it derives are 8.25's. Only their absence, or
-        // a null, can be written until then.
-        "measure" | "captionEnabled" | "captionCenter" | "captionPosition" | "captionOffset"
-        | "leader" => {
+        // `shapeCaptionFields`, the line's caption and leader).
+        // re-port (Task 8): 8.25 writes the scale, a shown or placed
+        // caption and a leader, with the label they derive. Until then only
+        // the values a read of an unmeasured shape gives can be written: no
+        // scale, no leader, no offset or centre, a hidden caption, inline.
+        "measure" | "leader" | "captionOffset" | "captionCenter" => {
             if !value.is_null() {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::NotImplemented,
-                    format!("{kind} create field '{name}': measurements are written by Task 8.25"),
-                )
-                .with_details(serde_json::json!({ "field": name })));
+                return Err(measurement_not_ported(kind, name));
             }
+            if name != "measure" && name != "leader" {
+                fields.caption_touched = true;
+            }
+        }
+        "captionEnabled" => {
+            let enabled: Option<bool> = read_nullable(kind, name, value)?;
+            if enabled == Some(true) {
+                return Err(measurement_not_ported(kind, name));
+            }
+            fields.caption_touched = true;
+            fields.caption_enabled = Some(enabled);
+        }
+        "captionPosition" => {
+            if one_of(kind, name, value, &["inline", "top"])? != "inline" {
+                return Err(measurement_not_ported(kind, name));
+            }
+            fields.caption_touched = true;
         }
         // A widget is the form's: refused before its fields are read.
         _ => return Err(invalid(kind, name, "not a field this engine writes")),
     }
     Ok(())
+}
+
+/// A measurement field whose value needs 8.25's writing.
+fn measurement_not_ported(kind: &str, name: &str) -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        format!("{kind} create field '{name}': measurements are written by Task 8.25"),
+    )
+    .with_details(serde_json::json!({ "field": name }))
 }
 
 fn read_target(

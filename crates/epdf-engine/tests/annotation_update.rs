@@ -547,7 +547,6 @@ fn create_subject(
             drawings: &drawings,
             clock,
             ids: &SeededIdSource::new(5),
-            holds_object_number: &|_| true,
         },
         &CancelToken::never(),
     )?;

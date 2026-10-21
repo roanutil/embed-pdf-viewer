@@ -78,6 +78,22 @@ impl AnnotationMutationMeta {
 pub struct AnnotationCreateResult {
     pub annotation: AnnotationRecord,
     pub meta: AnnotationMutationMeta,
+    /// A popup's parent as it was before the create linked it, for the
+    /// create's reverse to put back. Not on the wire.
+    #[serde(skip)]
+    pub parent_before: Option<ParentBefore>,
+}
+
+/// What a popup's create changed on the annotation it shows: its `/Popup`
+/// and, on a note, its `/Open` (`linkPopup`), as they were before.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParentBefore {
+    #[serde(rename = "ref")]
+    pub reference: AnnotationRef,
+    /// The object number its `/Popup` named, if any.
+    pub popup: Option<u32>,
+    pub open: Option<bool>,
 }
 
 /// One create (`BatchCreate`, as `AnnotationMutator.create` builds it).
@@ -88,7 +104,9 @@ pub struct CreateRequest<'a> {
     /// `reply` and a popup's `parent` still in it.
     pub draft: Map<String, Value>,
     pub resources: DraftResources<'a>,
-    /// The object number it gets; the next free one when absent.
+    /// The object number it gets, claimed by the caller
+    /// ([`crate::session::document::DocumentSession::claim_object_number`]);
+    /// the next free one when absent.
     pub object_number: Option<u32>,
     /// Who creates it, stamped as its author; `None` stamps no identity.
     pub actor: Option<AnnotationActor>,
@@ -100,9 +118,6 @@ pub struct CreateServices<'a> {
     pub drawings: &'a std::cell::RefCell<DrawingIndex>,
     pub clock: &'a dyn Clock,
     pub ids: &'a dyn IdSource,
-    /// The object numbers a session hands out itself (`'session'`
-    /// authority): a create may only name one it holds.
-    pub holds_object_number: &'a dyn Fn(u32) -> bool,
 }
 
 fn unknown(message: impl Into<String>) -> EngineError {
@@ -157,9 +172,6 @@ pub fn create_annotation(
         let fresh = uuid_v7(services.clock.now().epoch_millis, services.ids);
         prepared.fields.nm = Some(Some(fresh));
     }
-    if let Some(number) = object_number {
-        claim_object_number(number, services.holds_object_number)?;
-    }
     let reply_to = reply
         .map(|(to, reply_type)| {
             Ok((link_target(document, page_index, page, &to, Link::Reply)?, reply_type))
@@ -182,7 +194,7 @@ pub fn create_annotation(
     let annotation = document
         .create_annotation_raw(page_index, prepared.subtype.code(), object_number.unwrap_or(0))
         .ok_or_else(|| match object_number {
-            Some(number) => object_number_unavailable(number, "taken"),
+            Some(number) => crate::session::document::object_number_unavailable(number, "taken"),
             None => unknown("create: EPDFPage_CreateAnnotRaw returned NULL"),
         })?;
     apply_draft(document, &annotation, &prepared, &resources, services)?;
@@ -211,13 +223,20 @@ pub fn create_annotation(
         let parent = open_existing(document, page_index, target)?;
         link_reply(&created, &parent, reply_type)?;
     }
+    let mut parent_before = None;
     if let Some(target) = parent_at {
         let created = open()?;
         let parent = open_existing(document, page_index, target)?;
-        link_popup(&created, &parent)?;
-        linked.push(crate::features::annotation::read::record::annotation_ref_of(
+        let reference = crate::features::annotation::read::record::annotation_ref_of(
             document, &parent, page, target,
-        ));
+        );
+        parent_before = Some(ParentBefore {
+            reference: reference.clone(),
+            popup: parent.linked_annotation("Popup").ok().flatten().map(|p| p.object_number()),
+            open: parent.boolean_value("Open").ok().flatten(),
+        });
+        link_popup(&created, &parent)?;
+        linked.push(reference);
     }
 
     // Attributed last, so no later write touches `/M`.
@@ -232,6 +251,7 @@ pub fn create_annotation(
     Ok(AnnotationCreateResult {
         annotation: AnnotationRecord { base, kind },
         meta: AnnotationMutationMeta::of(stamp, page, changed),
+        parent_before,
     })
 }
 
@@ -295,34 +315,6 @@ fn claim_name(
         .with_details(serde_json::json!({ "field": "nm" })));
     }
     Ok(())
-}
-
-/// `claimObjectNumber`: a whole number of 1 or more, one the session holds
-/// when it hands numbers out itself. Taken numbers are found by the create.
-fn claim_object_number(number: u32, holds: &dyn Fn(u32) -> bool) -> Result<(), EngineError> {
-    if number < 1 {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!("{number} is not an object number"),
-        )
-        .with_details(serde_json::json!({ "field": "objectNumber" })));
-    }
-    if !holds(number) {
-        return Err(object_number_unavailable(number, "not-held"));
-    }
-    Ok(())
-}
-
-/// `objectNumberUnavailable`. Upstream answers `ObjectNumberUnavailable`,
-/// a code this engine gains with the rest of the drift in Task 8.27; until
-/// then the refusal is `InvalidArg` with the same details.
-fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
-    EngineError::with_message(
-        EngineErrorCode::InvalidArg,
-        format!("object number {number} is not available ({reason})"),
-    )
-    .with_details(serde_json::json!({ "field": "objectNumber", "objectNumber": number,
-        "reason": reason }))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -505,6 +497,7 @@ fn apply_draft(
             let vertices = f.vertices.clone().unwrap_or_default();
             let drawn = write_new_points(annotation, &[vertices], rotation(f))?;
             write_intent(annotation, f)?;
+            write_caption(annotation, draft.subtype, f)?;
             apply_filled_style(annotation, f)?;
             p::set_vertices(annotation, drawn.first().map(Vec::as_slice).unwrap_or_default())?;
             if draft.subtype == S::Polygon {
@@ -515,6 +508,7 @@ fn apply_draft(
         }
         S::Line => {
             write_intent(annotation, f)?;
+            write_caption(annotation, draft.subtype, f)?;
             apply_filled_style(annotation, f)?;
             let line = f.line_points.ok_or_else(|| unknown("a line create has no linePoints"))?;
             let drawn = write_new_points(annotation, &[vec![line.start, line.end]], rotation(f))?;
@@ -685,6 +679,37 @@ fn write_intent(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), Engi
     if let Some(Some(intent)) = &f.intent {
         let name = intent_name(intent).ok_or_else(|| unknown("an intent with no /IT name"))?;
         p::set_intent(annotation, name)?;
+    }
+    Ok(())
+}
+
+/// The caption half of `writeMeasurementFields`, for the captions a create
+/// can write before 8.25: hidden, inline, with no offset or centre. A line
+/// that names any caption field states the caption whole, hidden unless it
+/// says `null` (`resolveMeasurementDraft`); a shape writes a hidden caption
+/// when it says so.
+fn write_caption(
+    annotation: &Annotation<'_>,
+    subtype: AnnotationSubtype,
+    f: &DraftFields,
+) -> Result<(), EngineError> {
+    if !f.caption_touched {
+        return Ok(());
+    }
+    let enabled = match subtype {
+        AnnotationSubtype::Line => f.caption_enabled.unwrap_or(Some(false)),
+        _ => f.caption_enabled.flatten(),
+    };
+    // No caption flag: nothing to write on a new annotation.
+    if let Some(enabled) = enabled {
+        let ok = if subtype == AnnotationSubtype::Line {
+            annotation.set_line_caption(enabled, false)
+        } else {
+            annotation.set_shape_caption(enabled)
+        };
+        if !ok {
+            return Err(unknown("the caption could not be written"));
+        }
     }
     Ok(())
 }

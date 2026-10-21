@@ -50,6 +50,10 @@ pub struct AnnotationRemoveStep {
     #[serde(rename = "ref")]
     pub reference: crate::identity::AnnotationRef,
     pub left: Vec<serde_json::Value>,
+    /// For a popup's create: the annotation it shows, as it was before the
+    /// popup was linked to it, put back when the popup goes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent: Option<crate::features::annotation::write::create::ParentBefore>,
 }
 
 /// Deletes the embedded file a create or a restore brought, while it is

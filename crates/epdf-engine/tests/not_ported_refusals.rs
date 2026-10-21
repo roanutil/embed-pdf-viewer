@@ -72,7 +72,6 @@ fn create_square(document: &pdfium::Document) -> epdf_engine::identity::Annotati
             drawings: &drawings,
             clock: &FixedClock(Timestamp::utc(1_700_000_000_000)),
             ids: &SeededIdSource::new(3),
-            holds_object_number: &|_| true,
         },
         &CancelToken::never(),
     )

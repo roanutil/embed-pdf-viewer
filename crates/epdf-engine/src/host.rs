@@ -1291,7 +1291,7 @@ impl Host {
             "annotations.create" => {
                 let page = page_field(body)?;
                 let data: serde_json::Map<String, serde_json::Value> = field(body, "draft")?;
-                let object_number: Option<u32> = optional(body, "objectNumber")?;
+                let object_number: Option<serde_json::Number> = optional(body, "objectNumber")?;
                 let mut resources: f::changes::op::OpResources =
                     optional(body, "resources")?.unwrap_or_default();
                 resources.resolve(&payloads)?;
