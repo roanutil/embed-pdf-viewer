@@ -561,9 +561,10 @@ word that expands to `doc.sign` now grants it. `scope/parse.json` did not change
 this branch's Rust host gained were `planned` in impl's matrix. `annotations.flatten` and
 `annotations.exportAppearance` are `ported` (gated by `pages/mutate.json`). `signatures.cancel`
 stays `planned`: our host still routes it as `signatures.abort`. The other 16 are `routed`. The
-signature reads, `signatures.prepare`, `signatures.complete` and `signatures.finalizeCandidate`
-move to `queued-only`, because `WorkerHost` calls the signature handlers without the job's
-`AbortSignal`. `pages.workingSet` moves to `non-preemptible`, since it never queues. The `abort`
+five signature reads and `signatures.finalizeCandidate` move to `queued-only`, because `WorkerHost`
+calls the signature handlers without the job's `AbortSignal`. `signatures.prepare` and
+`signatures.complete` stay `after-first-write`: the matrix files cancellation by stage and effect,
+as it does the saves, and their notes record the missing signal. `pages.workingSet` moves to `non-preemptible`, since it never queues. The `abort`
 note now counts upstream's dispatch: `abort` and `pages.workingSet` in `receive`, 76 arms in
 `run()`, 11 in `slicedWork()`. The reorder and insert invariants moved onto `document.apply`. The
 form-model cache note moved from `annotations.list`, which builds no widget rows, to `forms.list`.
