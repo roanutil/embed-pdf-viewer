@@ -28,7 +28,7 @@ cancellation case it has to document. Group assignments come from
 | `layer.close` | control | 1 | control | routed |  |
 | `abort` | control | 1 | control | routed | Handled before the WorkerHost switch (WorkerHost.ts:199), which is why that switch has 64 arms and the protocol has 65 kinds. |
 | `shutdown` | control | 1 | control | routed |  |
-| `document.version` | A | 1 | queued-only | planned |  |
+| `document.version` | A | 1 | queued-only | routed | SignatureReader.version (WorkerHost.ts:1018-1024): the hash and length of the base the session is on. |
 | `objectNumbers.reserve` | A | 1 | queued-only | planned | A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. |
 | `pages.workingSet` | A | 1 | queued-only | planned | Never answers: the worker takes it on arrival, even mid-render, and jobId only names the message. Not one of the four control frames. |
 
@@ -41,8 +41,8 @@ cancellation case it has to document. Group assignments come from
 | `fonts.addFallback` | A | 1 | queued-only | routed |  |
 | `fonts.clearFallbacks` | A | 1 | queued-only | routed |  |
 | `fonts.clear` | A | 1 | queued-only | routed |  |
-| `fonts.authorizeEditing` | A | 1 | queued-only | planned |  |
-| `document.setFontSettings` | A | 1 | queued-only | planned | Per-document font and text-layout settings, a session effect. |
+| `fonts.authorizeEditing` | A | 1 | queued-only | routed |  |
+| `document.setFontSettings` | A | 1 | queued-only | routed | Per-document session state on the handle (EPDFDoc_SetFontEmbeddingPolicy, EPDFDoc_SetTypographicFeatures, WorkerHost.ts:2285-2290), never written to the file: a session effect. Filed with the fonts it configures. |
 
 ## G5
 
@@ -60,7 +60,7 @@ cancellation case it has to document. Group assignments come from
 | `actions.read` | A | 2 | cooperative | ported |  |
 | `outline.read` | A | 2 | cooperative | planned |  |
 | `metadata.readCustom` | A | 2 | cooperative | planned |  |
-| `measure.viewports` | A | 2 | cooperative | planned |  |
+| `measure.viewports` | A | 2 | cooperative | routed |  |
 
 ## G7
 
@@ -88,7 +88,7 @@ cancellation case it has to document. Group assignments come from
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
 | `pages.extract` | A | 2 | cooperative | ported | Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing". |
-| `annotations.exportAppearance` | A | 2 | cooperative | planned | Flattens chosen annotation appearances into a new single-page PDF; a snapshot, like pages.extract. |
+| `annotations.exportAppearance` | A | 2 | cooperative | ported | Flattens chosen annotation appearances into a new single-page PDF; a snapshot, like pages.extract. Builds a scratch document (EPDFPage_ExportAnnotationsAsDocument) and closes it before returning. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs. |
 
 ## G10
 
@@ -128,7 +128,7 @@ cancellation case it has to document. Group assignments come from
 | `forms.reorderWidgets` | C | 4 | after-first-write | planned |  |
 | `forms.reorderCalculations` | C | 4 | after-first-write | planned |  |
 | `forms.importValues` | C | 4 | after-first-write | planned |  |
-| `forms.setSignatureAppearance` | C | 4 | after-first-write | planned |  |
+| `forms.setSignatureAppearance` | C | 4 | after-first-write | routed |  |
 
 ## G13
 
@@ -136,9 +136,9 @@ cancellation case it has to document. Group assignments come from
 | --- | --- | --- | --- | --- | --- |
 | `pages.flatten` | C | 4 | after-first-write | ported |  |
 | `redaction.apply` | C | 4 | after-first-write | ported |  |
-| `annotations.flatten` | C | 4 | after-first-write | planned | A content write, like pages.flatten. |
-| `pages.setName` | C | 4 | after-first-write | planned |  |
-| `pages.removeName` | C | 4 | after-first-write | planned |  |
+| `annotations.flatten` | C | 4 | after-first-write | ported | A content write: pages.flatten for a chosen set of one page's annotations. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/pages_mutate.rs. |
+| `pages.setName` | C | 4 | after-first-write | routed |  |
+| `pages.removeName` | C | 4 | after-first-write | routed |  |
 
 ## G14
 
@@ -148,7 +148,7 @@ cancellation case it has to document. Group assignments come from
 | `pieceInfo.update` | C | 4 | after-first-write | ported |  |
 | `metadata.updateCustom` | C | 4 | after-first-write | planned |  |
 | `pieceInfo.delete` | C | 4 | after-first-write | planned | Replaces pieceInfo.clear. |
-| `measure.setScale` | C | 4 | after-first-write | planned |  |
+| `measure.setScale` | C | 4 | after-first-write | routed |  |
 
 ## G15
 
@@ -158,12 +158,12 @@ cancellation case it has to document. Group assignments come from
 | `annotations.renderAppearancesEncoded` | C | 5 | non-preemptible | routed |  |
 | `document.renderPageFile` | C | 5 | non-preemptible | routed |  |
 | `document.renderPageFileEncoded` | C | 5 | non-preemptible | routed |  |
-| `signatures.list` | A | 5 | cooperative | planned | No port group in multiplatform-port-order.md covers signing yet; parked in G15 until the port order assigns one. |
-| `signatures.analyze` | A | 5 | cooperative | planned |  |
-| `signatures.contents` | A | 5 | cooperative | planned |  |
-| `signatures.digest` | A | 5 | cooperative | planned |  |
-| `signatures.revisionBytes` | A | 5 | cooperative | planned |  |
-| `signatures.prepare` | B | 5 | after-first-write | planned | A snapshot, like the saves. |
-| `signatures.complete` | C | 5 | after-first-write | planned | A content write. |
-| `signatures.cancel` | A | 5 | queued-only | planned | A session effect. |
-| `signatures.finalizeCandidate` | C | 5 | after-first-write | planned | Session-less: patches a signing candidate file in place and verifies it. |
+| `signatures.list` | A | 5 | queued-only | routed | No port group in multiplatform-port-order.md covers signing yet; parked in G15 until the port order assigns one. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.analyze` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.contents` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.digest` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.revisionBytes` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.prepare` | B | 5 | queued-only | routed | A snapshot, like the saves. Never touches the live document: the candidate is parked on the session until complete or cancel. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.complete` | C | 5 | queued-only | routed | A content write. Installs the sealed bytes as the session document (DocumentSession.install), which advances the edit sequence itself. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.cancel` | A | 5 | queued-only | planned | A session effect. Still planned: this branch's Rust host routes it under its pre-rename kind, signatures.abort (crates/epdf-engine/src/host.rs:519), so a signatures.cancel request does not reach it. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
+| `signatures.finalizeCandidate` | C | 5 | after-first-write | routed | Session-less: patches a signing candidate file in place and verifies it. |
