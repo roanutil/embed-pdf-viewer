@@ -57,6 +57,13 @@ pub enum Decode {
     /// A mutation: `{result, mutationSequence, event}`. Answers `result`
     /// and hands back the event to publish.
     Mutation,
+    /// [`Decode::Result`] for an answer that holds form records (a form,
+    /// signatures): the field records and field refs go back to the
+    /// kernel's spelling first ([`to_kernel_form_records`]).
+    FormResult,
+    /// [`Decode::Mutation`] for a form or signature write, whose result and
+    /// event hold form records.
+    FormMutation,
     /// Width, height and stride, with the pixels moved into the `HostTable`
     /// behind a `$host` id, plus what the render plugin and its ffi read:
     /// the pixel format as `PageRaster` spells it and a raw-pixel `source`
@@ -208,20 +215,20 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
-        "forms.list" => ("forms.list", Decode::Result),
-        "forms.setValue" => ("forms.setValue", Decode::Mutation),
-        "forms.reset" => ("forms.reset", Decode::Mutation),
+        "forms.list" => ("forms.list", Decode::FormResult),
+        "forms.setValue" => ("forms.setValue", Decode::FormMutation),
+        "forms.reset" => ("forms.reset", Decode::FormMutation),
         // Removed upstream; owner 8.20 (`document.apply`).
-        "forms.applyEffects" => ("forms.applyEffects", Decode::Mutation),
+        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
-        "forms.importData" => ("forms.import", Decode::Mutation),
-        "forms.repair" => ("forms.repair", Decode::Mutation),
-        "forms.createField" => ("forms.createField", Decode::Mutation),
-        "forms.updateField" => ("forms.updateField", Decode::Mutation),
-        "forms.deleteField" => ("forms.deleteField", Decode::Mutation),
+        "forms.importData" => ("forms.import", Decode::FormMutation),
+        "forms.repair" => ("forms.repair", Decode::FormMutation),
+        "forms.createField" => ("forms.createField", Decode::FormMutation),
+        "forms.updateField" => ("forms.updateField", Decode::FormMutation),
+        "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
         // Removed upstream; owner 8.21 (`forms.addWidget`).
-        "forms.attachWidget" => ("forms.attachWidget", Decode::Mutation),
-        "forms.detachWidget" => ("forms.detachWidget", Decode::Mutation),
+        "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
+        "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
         "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
         // `void`, as the TypeScript resolves it, and no event to hand back.
         "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Unit),
@@ -231,18 +238,18 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         // the `page` the stamp plugin reads, and no layout.
         "pages.flatten" => ("pages.flatten", Decode::Mutation),
         "download" => ("document.saveBuffer", Decode::HostBytes),
-        "signatures.list" => ("signatures.list", Decode::Result),
+        "signatures.list" => ("signatures.list", Decode::FormResult),
         "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
         "signatures.digest" => ("signatures.digest", Decode::InlineBytes),
         "signatures.revisionBytes" => ("signatures.revisionBytes", Decode::InlineBytes),
-        "signatures.analyze" => ("signatures.analyze", Decode::Result),
+        "signatures.analyze" => ("signatures.analyze", Decode::FormResult),
         "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
-        "signatures.complete" => ("signatures.complete", Decode::Mutation),
+        "signatures.complete" => ("signatures.complete", Decode::FormMutation),
         // Renamed `signatures.cancel` upstream; owner 8.26.
         "signatures.abort" => ("signatures.abort", Decode::Result),
         // `{ tag: 'document.version'; version }`: the kernel takes the version.
         "document.version" => ("document.version", Decode::Field("version")),
-        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
+        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::FormMutation),
         _ => return None,
     })
 }
@@ -448,6 +455,22 @@ pub fn translate(
     Ok(WireCall { request, payloads, decode })
 }
 
+/// The host kinds whose answers hold form field records, decoded as
+/// [`Decode::FormResult`] or [`Decode::FormMutation`].
+const FORM_RECORD_KINDS: &[&str] = &[
+    "forms.list",
+    "forms.setValue",
+    "forms.reset",
+    "forms.applyEffects",
+    "forms.import",
+    "forms.repair",
+    "forms.createField",
+    "forms.updateField",
+    "forms.attachWidget",
+    "forms.detachWidget",
+    "forms.setSignatureAppearance",
+];
+
 /// Send one translated request to `host`: through [`Host::call`], or through
 /// [`Host::call_legacy`] for a kind upstream removed, which the wire answers
 /// as unknown. `route` names each one's owner sub-task.
@@ -470,7 +493,12 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     } else {
         host.call(json, payloads)
     };
-    page_space::answer_to_file_space(host, &kind, &request, response)
+    let response = page_space::answer_to_file_space(host, &kind, &request, response);
+    if FORM_RECORD_KINDS.contains(&kind.as_str()) {
+        page_space::with_raw_field_flags(host, &request, response)
+    } else {
+        response
+    }
 }
 
 /// The kernel's metadata, and the host's (Task 8.6).
@@ -751,6 +779,65 @@ mod page_space {
                 "message": format!("the {kind} answer is not in page space: {error}"),
             } }),
         };
+        HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// The answer with each form field record's raw `/Ff` word, read from
+    /// the session's form model by the field's object number, as
+    /// `flags: {raw}`. Upstream's record has no raw word (c3b90c3a4) and the
+    /// kernel's does; [`super::to_kernel_form_records`] keeps this one
+    /// rather than rebuilding it. A field with no object number, or one the
+    /// model no longer has, is left for that rebuild.
+    pub(super) fn with_raw_field_flags(
+        host: &Host,
+        request: &Value,
+        response: HostResponse,
+    ) -> HostResponse {
+        fn records(value: &mut Value, raw_of: &mut dyn FnMut(u32) -> Option<u32>) {
+            match value {
+                Value::Object(map) => {
+                    if map.get("family").is_some_and(Value::is_string)
+                        && map.contains_key("valueEntry")
+                        && let Some(raw) = map
+                            .get("ref")
+                            .filter(|r| {
+                                r.get("kind").and_then(Value::as_str) == Some("objectNumber")
+                            })
+                            .and_then(|r| r.get("objectNumber"))
+                            .and_then(Value::as_u64)
+                            .and_then(|n| u32::try_from(n).ok())
+                            .and_then(&mut *raw_of)
+                    {
+                        map.insert("flags".into(), serde_json::json!({ "raw": raw }));
+                    }
+                    map.values_mut().for_each(|v| records(v, raw_of));
+                }
+                Value::Array(items) => items.iter_mut().for_each(|v| records(v, raw_of)),
+                _ => {}
+            }
+        }
+        if !response.json.contains("\"valueEntry\"") {
+            return response;
+        }
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        let Some(key) = request.get("docId").and_then(Value::as_str).map(|doc| {
+            match request.get("layerName").and_then(Value::as_str) {
+                Some(layer) => SessionKey::layer(doc, layer),
+                None => SessionKey::document(doc),
+            }
+        }) else {
+            return response;
+        };
+        let Ok(owned) = host.sessions().session(&key).and_then(|s| s.document()) else {
+            return response;
+        };
+        let Some(model) = owned.document().form_model() else { return response };
+        let mut raw_of = |n: u32| {
+            model.field_index_by_object_number(n).and_then(|i| model.field(i)).map(|f| f.flags())
+        };
+        records(&mut envelope, &mut raw_of);
         HostResponse { json: envelope.to_string(), payloads: response.payloads }
     }
 
@@ -1112,10 +1199,12 @@ fn to_kernel_refs(value: &mut Value) {
 ///   each slot of `calculationOrder` and of a reset's `refs`.
 /// - A field record (an object with a `family` and a `valueEntry`) carries
 ///   `fieldObjectNumber` beside its ref, and its `/Ff` bits as `flags:
-///   {readOnly, required, noExport, raw}`. Upstream answers no raw word; it
-///   is rebuilt from the bits the record reports (its family's type bits,
-///   readOnly, required, noExport and the family's own flags), so a bit no
-///   record reports (`DoNotSpellCheck`, `Sort` and the like) reads clear.
+///   {readOnly, required, noExport, raw}`. Upstream answers no raw word:
+///   [`call_host`] reads it from the session's form model into
+///   `flags.raw` ([`page_space::with_raw_field_flags`]). An answer that
+///   did not come through it gets one rebuilt from the bits the record
+///   reports, where a bit no record reports (`DoNotSpellCheck`, `Sort`)
+///   reads clear.
 /// - A list box's record has no `defaultValue`: upstream's (bf7d4558e) is
 ///   the option values a reset selects, where the kernel reads a text or
 ///   combo box's string, so it is left out.
@@ -1164,7 +1253,12 @@ fn to_kernel_form_records(value: &mut Value) {
                     "readOnly": map.get("readOnly").cloned().unwrap_or(Value::Bool(false)),
                     "required": map.get("required").cloned().unwrap_or(Value::Bool(false)),
                     "noExport": map.get("noExport").cloned().unwrap_or(Value::Bool(false)),
-                    "raw": raw_flags(map),
+                    "raw": map
+                        .get("flags")
+                        .and_then(|flags| flags.get("raw"))
+                        .filter(|raw| raw.is_u64())
+                        .cloned()
+                        .unwrap_or_else(|| Value::from(raw_flags(map))),
                 });
                 map.insert("flags".into(), flags);
                 if map.get("family").and_then(Value::as_str) == Some("listbox") {
@@ -1599,7 +1693,9 @@ fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
-    to_kernel_form_records(&mut envelope);
+    if matches!(decode, Decode::FormResult | Decode::FormMutation) {
+        to_kernel_form_records(&mut envelope);
+    }
     to_kernel_refs(&mut envelope);
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
@@ -1626,7 +1722,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
     };
     let value = match decode {
         Decode::Unit => unreachable!("answered above"),
-        Decode::Result | Decode::OptionalResult => Value::Object(result),
+        Decode::Result | Decode::OptionalResult | Decode::FormResult => Value::Object(result),
         Decode::Field(name) => take(&mut result, name)?,
         Decode::PageList => {
             let Some(Value::Array(pages)) = result.get("pages") else {
@@ -1661,7 +1757,7 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             result.insert("bytes".into(), epdf_kernel::bytes::Bytes(bytes).to_json());
             Value::Object(result)
         }
-        Decode::Mutation => {
+        Decode::Mutation | Decode::FormMutation => {
             let value = take(&mut result, "result")?;
             return Ok(Decoded { value, event: result.remove("event") });
         }

@@ -245,6 +245,52 @@ fn a_form_reaches_the_kernel_in_the_files_coordinates_and_its_spelling() {
 }
 
 #[test]
+fn an_answer_with_no_form_records_is_not_read_for_them() {
+    // `pages.geometry` is the measured tile path: its answer goes through
+    // `decode` without the form-record walk, so a shape that walk would
+    // rewrite (a kind-less `objectNumber` beside a `page`, a `family` with a
+    // `valueEntry`) comes through as it was sent.
+    let call = translate("d1", "page.geometry.read", Some(3), &[], 1).unwrap();
+    let result = json!({ "runs": [{ "objectNumber": 5, "page": 1, "family": "text",
+        "valueEntry": { "kind": "none" } }] });
+    let json = json!({ "result": result }).to_string();
+    assert_eq!(decode(&call.decode, answer(&json)).unwrap().value, result);
+}
+
+#[test]
+fn a_fields_raw_flags_reach_the_kernel_whole() {
+    // Upstream's record answers no raw `/Ff` word; `call_host` reads it from
+    // the form model, so a bit no record reports (DoNotSpellCheck, bit 23)
+    // still reaches the kernel. The wire answer itself carries none.
+    use epdf_viewer_host::translate::call_host;
+
+    let do_not_spell_check = 1u64 << 22;
+    let pdf = pdf_of(&[
+        "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] >> >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Annots [4 0 R] >>",
+        "<< /Type /Annot /Subtype /Widget /FT /Tx /T (word) /Ff 4198402 \
+         /Rect [20 20 120 40] /P 3 0 R >>",
+    ]);
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let opened = call_host(&mut host, &open.to_string(), vec![pdf]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let call = translate("d1", "forms.list", None, &[], 2).unwrap();
+    let wire: Value =
+        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+    assert!(wire["result"]["fields"][0].get("flags").is_none(), "{wire}");
+    assert_eq!(wire["result"]["fields"][0]["required"], true);
+
+    let response = call_host(&mut host, &call.request.to_string(), Vec::new());
+    let field = decode(&call.decode, response).unwrap().value["fields"][0].clone();
+    // Required (bit 2), multiline (bit 13) and DoNotSpellCheck.
+    assert_eq!(field["flags"]["raw"], (1 << 1) | (1 << 12) | do_not_spell_check);
+    assert_eq!(field["flags"]["required"], true);
+}
+
+#[test]
 fn a_search_hit_without_its_page_is_an_error() {
     let json = r#"{"result":{"matches":[{"charCount":1,"charStart":0,"segments":[]}],"nextCursor":null,"scannedPages":1,"totalPages":1}}"#;
     assert!(decode(&Decode::SearchSlice, answer(json)).is_err());
@@ -1087,7 +1133,7 @@ fn a_repair_reads_bake_appearances_from_its_options() {
     let call =
         translate("d1", "forms.repair", None, &[json!({ "bakeAppearances": true })], 25).unwrap();
     assert_eq!(call.request["bakeAppearances"], true);
-    assert!(matches!(call.decode, Decode::Mutation));
+    assert!(matches!(call.decode, Decode::FormMutation));
 }
 
 #[test]
@@ -1105,7 +1151,7 @@ fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
         json!({ "kind": "forms.reset", "jobId": 26, "docId": "d1",
         "ref": { "kind": "objectNumber", "objectNumber": 4 } })
     );
-    assert!(matches!(call.decode, Decode::Mutation));
+    assert!(matches!(call.decode, Decode::FormMutation));
 }
 
 #[test]
@@ -1549,7 +1595,7 @@ fn complete_moves_the_cms_into_a_payload() {
     assert!(call.request["input"].get("cms").is_none());
     assert_eq!(call.request["input"]["expectedVersion"]["editsVersion"], json!(0));
     assert_eq!(call.payloads, vec![vec![1, 2, 3]]);
-    assert!(matches!(call.decode, Decode::Mutation));
+    assert!(matches!(call.decode, Decode::FormMutation));
 }
 
 #[test]
@@ -1737,6 +1783,11 @@ fn shifted_pdf() -> Vec<u8> {
          /AA << /C << /S /GoTo /D [4 0 R /FitH 300] >> >> >>",
         "<< /Type /Page /Parent 2 0 R /MediaBox [-300 -390 300 390] >>",
     ];
+    pdf_of(&objects)
+}
+
+/// A PDF file of `objects`, numbered from 1, with its cross-reference table.
+fn pdf_of(objects: &[&str]) -> Vec<u8> {
     let mut out = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
     for (i, object) in objects.iter().enumerate() {
