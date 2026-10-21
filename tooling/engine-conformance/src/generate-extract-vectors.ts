@@ -24,7 +24,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import { createLocalEngine, type PageRef } from '../../../packages/engine/main/src/index';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -96,13 +96,15 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
       { scope: ['*'] },
     );
     let extracted: Uint8Array;
+    let sources: PageRef[];
     let sourceObjectNumbers: number[];
     try {
       const listing = await doc.pages.list();
       // Pages are named by `PageRef` (`page.ref`) since 9f13cea3c ("Address
       // pages by PageRef everywhere"), which predates this catch-up. The
-      // vector keeps the bare object numbers.
-      const sources = entry.sourcePages.map((index) => {
+      // vector records the refs sent (`sources`, which the Rust runner
+      // reads) beside the bare object numbers.
+      sources = entry.sourcePages.map((index) => {
         const page = listing.pages[index];
         if (!page) throw new Error(`${entry.name}: the fixture has no page ${index}`);
         return page.ref;
@@ -131,7 +133,7 @@ async function readCase(entry: ExtractCase): Promise<unknown> {
           text: (await handle.text.get()).text,
         });
       }
-      return { ...entry, sourceObjectNumbers, pageCount: listing.pageCount, pages };
+      return { ...entry, sources, sourceObjectNumbers, pageCount: listing.pageCount, pages };
     } finally {
       await reopened.close();
     }
