@@ -469,17 +469,18 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'routed',
+    note: 'The fields a selection takes, each whole with its widgets, as a form bundle in page space (FormExporter, 7f0b73a3c, which removed FDF and XFDF); a snapshot. No vector: gated by crates/epdf-engine/tests/form_transfer.rs and the bundle unit tests (features/transfer).',
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'annotations.export',
     group: 'G8',
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
-    note: 'Annotations and their resources as one bundle; a snapshot, like forms.export.',
+    rustStatus: 'routed',
+    note: "Annotations and their resources as one bundle, in page space (AnnotationExporter); a snapshot, like forms.export. Each resource once, by its SHA-256. No vector: gated by crates/epdf-engine/tests/annotation_transfer.rs, whose export of the two Acrobat stamp fixtures hashes to the TypeScript engine's file.",
   },
 
   // --- G9. Page extract. Rust owns a scratch document end to end and closes
@@ -569,14 +570,15 @@ export const OPERATIONS: readonly OperationRow[] = [
   //   rustStatus: 'ported',
   // },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'annotations.import',
     group: 'G11',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
+    note: "A one-op change (the annotations.import op, which document.apply refuses and document.applyChanges runs): planned before the first write (planAnnotationImport), then made as one batch (AnnotationBatchApplier). Its reverse removes what it made, thread by thread; a restoring import's steps take its rights. No vector: gated by crates/epdf-engine/tests/annotation_transfer.rs.",
   },
   {
     kind: 'annotations.reorder',
@@ -640,7 +642,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'ported',
+    rustStatus: 'routed',
+    note: "A form bundle's design as a one-op change (the forms.import op; FDF and XFDF import went in 7f0b73a3c): planned before the first write (planFormImport), each field created with its widgets, flags and value, attribution restored or stamped. Its reverse deletes each field it made. No vector: gated by crates/epdf-engine/tests/form_transfer.rs.",
   },
   {
     kind: 'forms.repair',
@@ -749,7 +752,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
+    note: "A form bundle's values as a one-op change (the forms.importValues op): each field filled by full name (planFormValuesImport); its reverse puts back each value and who filled it. No vector: gated by crates/epdf-engine/tests/form_transfer.rs.",
   },
   {
     kind: 'forms.setSignatureAppearance',

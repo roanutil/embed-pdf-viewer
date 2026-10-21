@@ -1170,9 +1170,7 @@ fn a_reply_lands_through_the_native_engine() {
     assert_eq!(read.contents.as_deref(), Some("Agreed"));
 }
 
-use epdf_plugin_form::ffi::{
-    FormConfig, FormDataFormat, FormFieldDetail, FormKind, FormValidation,
-};
+use epdf_plugin_form::ffi::{FormConfig, FormFieldDetail, FormKind, FormValidation};
 
 const FORM: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
 
@@ -1267,8 +1265,11 @@ fn a_reset_restores_the_default_through_the_native_engine() {
     assert_eq!(*reports.0.lock().unwrap(), Vec::<String>::new());
 }
 
+/// The kernel's `exportData` and `importData`, which wrote and read FDF
+/// until upstream replaced it with form bundles (7f0b73a3c): a bundle's
+/// file out of one copy, its values into a fresh one.
 #[test]
-fn an_fdf_export_imports_back() {
+fn a_form_bundle_export_fills_a_fresh_copy() {
     let host = with_form();
     let bytes = test_support::fixture(FORM);
     let first = block_on(host.open_document(bytes.clone(), options())).unwrap();
@@ -1281,13 +1282,13 @@ fn an_fdf_export_imports_back() {
         .unwrap();
     block_on(form.set_text(text.field_ref.clone(), "Round trip".into(), CancelToken::new()))
         .unwrap();
-    let export = block_on(form.export_data(Some(FormDataFormat::Fdf), CancelToken::new())).unwrap();
-    assert!(export.bytes.starts_with(b"%FDF"));
+    let export = block_on(form.export_data(None, CancelToken::new())).unwrap();
+    let file: serde_json::Value = serde_json::from_slice(&export.bytes).expect("a bundle's file");
+    assert_eq!(file["format"], "embedpdf/form");
     let second = block_on(host.open_document(bytes, options())).unwrap();
     let fresh = block_on(host.form(second.id)).unwrap();
     block_on(fresh.refresh(CancelToken::new())).unwrap();
-    block_on(fresh.import_data(export.bytes, Some(FormDataFormat::Fdf), CancelToken::new()))
-        .unwrap();
+    block_on(fresh.import_data(export.bytes, None, CancelToken::new())).unwrap();
     let imported = block_on(fresh.field(text.field_ref)).unwrap().unwrap();
     assert!(
         matches!(imported.detail, FormFieldDetail::Text { value, .. } if value == "Round trip")

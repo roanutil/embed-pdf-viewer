@@ -223,6 +223,10 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         // Removed upstream (98e5c270c): a `document.apply` change, answered
         // in the kernel's shape by `call_host` (`kernel_forms`).
         "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
+        // A form bundle as one file, both ways, in place of the FDF and
+        // XFDF upstream removed (7f0b73a3c): answered by `call_host`
+        // (`kernel_forms`) until Task 13 moves the kernel to upstream's
+        // `export` and `import`.
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::FormMutation),
         "forms.repair" => ("forms.repair", Decode::FormMutation),
@@ -652,6 +656,8 @@ mod kernel_forms {
 
     /// The kinds [`call`] answers.
     pub(super) const KINDS: &[&str] = &[
+        "forms.export",
+        "forms.import",
         "forms.setValue",
         "forms.reset",
         "forms.applyEffects",
@@ -679,6 +685,8 @@ mod kernel_forms {
             "forms.deleteField" => delete_field(host, request),
             "forms.attachWidget" => Err(attach_retired()),
             "forms.detachWidget" => field_edit(host, request, "forms.detachWidget"),
+            "forms.export" => export_bundle(host, request),
+            "forms.import" => import_bundle(host, request, payloads),
             _ => repair(host, request, payloads),
         };
         match answer {
@@ -841,6 +849,103 @@ mod kernel_forms {
         let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
         let event = kernel_event("form.valueChanged", origin, &result);
         Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    /// An engine refusal, as the host answers one.
+    fn engine_refusal(error: &epdf_engine::error::EngineError) -> HostResponse {
+        HostResponse { json: json!({ "error": error.to_wire() }).to_string(), payloads: Vec::new() }
+    }
+
+    /// The kernel's `exportData(format)`: every field as a form bundle
+    /// (`forms.export`), written as one file (`FormTransfer.stringify`).
+    /// FDF and XFDF went upstream (7f0b73a3c); the kernel's API still names
+    /// a format, which the answer echoes until Task 13 moves the kernel to
+    /// upstream's `export`.
+    fn export_bundle(host: &mut Host, request: &Value) -> Answer {
+        use epdf_engine::features::transfer::bundle::BundleKind;
+        use epdf_engine::features::transfer::{Bundle, codec, limits::DEFAULT_BUNDLE_LIMITS};
+        let mut call = on_document(request, "forms.export");
+        call["effect"] = json!("snapshot");
+        call["selection"] = json!({});
+        let response = host.call(&call.to_string(), Vec::new());
+        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        let Some(Value::Object(manifest)) = envelope.pointer("/result/bundle").cloned() else {
+            return Err(response);
+        };
+        let mut manifest = manifest;
+        let slots = manifest.remove("resources").unwrap_or(Value::Null);
+        let resources = slots
+            .as_object()
+            .into_iter()
+            .flatten()
+            .map(|(id, slot)| {
+                let at = slot["payload"].as_u64().unwrap_or(u64::MAX) as usize;
+                response
+                    .payloads
+                    .get(at)
+                    .map(|bytes| (id.clone(), bytes.clone()))
+                    .ok_or_else(|| refusal(&format!("resource {id} names no payload")))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let text = codec::stringify(
+            BundleKind::Form,
+            &Bundle { manifest, resources },
+            &DEFAULT_BUNDLE_LIMITS,
+        )
+        .map_err(|e| engine_refusal(&e))?;
+        let format =
+            request.get("format").filter(|f| f.is_string()).cloned().unwrap_or(json!("xfdf"));
+        let bytes = text.into_bytes();
+        Ok((json!({ "result": { "format": format, "size": bytes.len() } }), vec![bytes]))
+    }
+
+    /// The kernel's `importData(bytes, format)`: a form bundle's file
+    /// (`FormTransfer.parse`), its values filled into the fields of the
+    /// same name (`forms.importValues`, stamped as the session's, as the
+    /// FDF import it replaces filled them). Answered as the kernel reads an
+    /// import: the form read afresh, as `{snapshot}`.
+    fn import_bundle(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
+        use epdf_engine::features::transfer::bundle::BundleKind;
+        use epdf_engine::features::transfer::{codec, limits::DEFAULT_BUNDLE_LIMITS};
+        let Some(file) = payloads.into_iter().next() else {
+            return Err(refusal("an import carries the bundle's file"));
+        };
+        let text = String::from_utf8(file).map_err(|_| {
+            engine_refusal(&epdf_engine::error::EngineError::with_message(
+                epdf_engine::error::EngineErrorCode::InvalidArg,
+                "the file is not a form bundle",
+            ))
+        })?;
+        let bundle = codec::parse(BundleKind::Form, &text, &DEFAULT_BUNDLE_LIMITS)
+            .map_err(|e| engine_refusal(&e))?;
+        let mut manifest = bundle.manifest;
+        let mut slots = serde_json::Map::new();
+        let mut bytes = Vec::new();
+        for (id, resource) in bundle.resources {
+            slots.insert(id, json!({ "payload": bytes.len() }));
+            bytes.push(resource);
+        }
+        manifest.insert("resources".into(), Value::Object(slots));
+        let mut call = on_document(request, "forms.importValues");
+        call["effect"] = json!("write");
+        call["bundle"] = Value::Object(manifest);
+        call["attribution"] = json!("stamp");
+        let response = host.call(&call.to_string(), bytes);
+        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        if envelope.get("error").is_some() {
+            return Err(response);
+        }
+        let (form, _) = send(host, &on_document(request, "forms.list"))?;
+        let snapshot = super::page_space::form_records_in_file_space(host, request, form)
+            .map_err(|message| refusal(&message))?;
+        Ok((
+            mutation(
+                json!({ "snapshot": snapshot }),
+                &envelope["result"]["mutationSequence"],
+                None,
+            ),
+            response.payloads,
+        ))
     }
 
     /// An effect as the op upstream runs for it (`formEffectOps`).

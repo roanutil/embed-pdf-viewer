@@ -1916,6 +1916,73 @@ fn a_removed_kind_goes_through_the_legacy_entry() {
     assert!(legacy.get("error").is_none(), "{legacy}");
 }
 
+/// The kernel's form export and import through `call_host`: a form bundle
+/// as one file both ways, in place of FDF (7f0b73a3c). The export answers
+/// the file as its bytes, the format it was asked for beside it; the import
+/// fills a copy's fields of the same name and answers the form read again.
+#[test]
+fn a_kernel_form_export_is_a_bundle_file_and_its_import_fills_a_copy() {
+    let mut host = epdf_engine::host::Host::new();
+    for doc in ["a", "b"] {
+        let bytes = test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf");
+        let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc });
+        let opened = host.call(&open.to_string(), vec![bytes]);
+        assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    }
+    let form = call_host_json(&mut host, json!({ "kind": "forms.list", "jobId": 2, "docId": "a" }));
+    let text = form["result"]["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["family"] == "text" && f["readOnly"] == false)
+        .unwrap()
+        .clone();
+    let set = call_host_json(
+        &mut host,
+        json!({ "kind": "forms.setValue", "jobId": 3, "docId": "a",
+        "ref": text["ref"], "value": { "value": "Exported" } }),
+    );
+    assert!(set.get("error").is_none(), "{set}");
+
+    let export = translate("a", "forms.exportData", None, &[json!("fdf")], 4).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &export.request.to_string(), Vec::new());
+    let exported = decode(&export.decode, response).unwrap().value;
+    assert_eq!(exported["format"], "fdf");
+    let bytes = epdf_kernel::bytes::Bytes::from_json(&exported["bytes"]).unwrap().0;
+    let file: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(file["format"], "embedpdf/form");
+
+    let import = translate(
+        "b",
+        "forms.importData",
+        None,
+        &[exported["bytes"].clone(), epdf_kernel::undefined()],
+        5,
+    )
+    .unwrap();
+    let response = epdf_viewer_host::translate::call_host(
+        &mut host,
+        &import.request.to_string(),
+        import.payloads,
+    );
+    let imported = decode(&import.decode, response).unwrap().value;
+    let field = imported["snapshot"]["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == text["name"])
+        .unwrap();
+    assert_eq!(field["value"], "Exported", "{field}");
+
+    let refused = epdf_viewer_host::translate::call_host(
+        &mut host,
+        &import.request.to_string(),
+        vec![b"%FDF-1.2".to_vec()],
+    );
+    assert!(refused.json.contains("InvalidArg"), "an FDF file is no bundle: {}", refused.json);
+}
+
 /// A kernel page edit through `call_host`: translated, sent as a change,
 /// and decoded as the kernel reads a page mutation.
 fn kernel_page_edit(
