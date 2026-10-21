@@ -7,7 +7,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, open_fixture, page_ref};
+use common::{call, call_legacy, open_fixture, page_ref};
 
 const RICH: &str = "tooling/engine-conformance/fixtures/rich_metadata.pdf";
 const ROTATED: &str = "tooling/engine-conformance/fixtures/rotated_pages.pdf";
@@ -20,6 +20,15 @@ const FORMS: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
 fn envelope(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Value {
     request["jobId"] = json!(5);
     let response = host.call(&request.to_string(), payloads);
+    let envelope: Value = serde_json::from_str(&response.json).unwrap();
+    assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
+    envelope
+}
+
+/// [`envelope`], through `Host::call_legacy`, for a kind upstream removed.
+fn legacy_envelope(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Value {
+    request["jobId"] = json!(5);
+    let response = host.call_legacy(&request.to_string(), payloads);
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
     envelope
@@ -67,7 +76,8 @@ fn every_annotation_write_names_its_page() {
     assert_result_rides(&updated);
     let annotation = updated["result"]["updated"]["ref"].clone();
 
-    let moved = call(
+    // Removed upstream; owner 8.16 (`annotations.reorder`).
+    let moved = call_legacy(
         &mut host,
         json!({ "kind": "annotations.move", "docId": doc, "page": page,
                 "refs": [annotation], "toIndex": 0 }),
@@ -91,7 +101,8 @@ fn a_move_names_the_block_and_the_insertion_point() {
     assert!(pages.len() >= 2, "the fixture needs two pages");
     // The caller's order, not the document's.
     let block = json!([pages[1], pages[0]]);
-    let moved = call(
+    // Removed upstream; owner 8.18 (`document.apply`).
+    let moved = call_legacy(
         &mut host,
         json!({ "kind": "pages.move", "docId": doc, "pages": block, "destIndex": 0 }),
     );
@@ -109,7 +120,8 @@ fn a_rotation_names_its_pages_and_its_rotation() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, ROTATED);
     let pages = page_refs(&mut host, &doc);
-    let rotated = call(
+    // Removed upstream; owner 8.18 (`document.apply`).
+    let rotated = call_legacy(
         &mut host,
         json!({ "kind": "pages.rotate", "docId": doc, "pages": [pages[0]], "rotation": 90 }),
     );
@@ -125,8 +137,11 @@ fn a_delete_names_the_retired_pages() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, ROTATED);
     let pages = page_refs(&mut host, &doc);
-    let deleted =
-        call(&mut host, json!({ "kind": "pages.delete", "docId": doc, "pages": [pages[0]] }));
+    // Removed upstream; owner 8.18 (`document.apply`).
+    let deleted = call_legacy(
+        &mut host,
+        json!({ "kind": "pages.delete", "docId": doc, "pages": [pages[0]] }),
+    );
     assert_eq!(deleted["event"]["type"], json!("pages.deleted"), "{deleted}");
     assert_eq!(deleted["event"]["pages"], json!([pages[0]]));
     assert!(deleted["result"].as_object().unwrap().contains_key("cache"), "{deleted}");
@@ -138,7 +153,8 @@ fn an_insert_names_its_insertion_point_only_when_the_call_did() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, RICH);
     let size = json!({ "width": 200.0, "height": 300.0 });
-    let placed = call(
+    // Removed upstream; owner 8.18 (`document.apply`).
+    let placed = call_legacy(
         &mut host,
         json!({ "kind": "pages.insertBlank", "docId": doc, "size": size, "destIndex": 0 }),
     );
@@ -149,7 +165,7 @@ fn an_insert_names_its_insertion_point_only_when_the_call_did() {
     assert_result_rides(&placed);
 
     let appended =
-        call(&mut host, json!({ "kind": "pages.insertBlank", "docId": doc, "size": size }));
+        call_legacy(&mut host, json!({ "kind": "pages.insertBlank", "docId": doc, "size": size }));
     assert_eq!(appended["event"]["type"], json!("pages.inserted"), "{appended}");
     assert!(appended["event"].get("destIndex").is_none(), "{appended}");
 }
@@ -186,8 +202,11 @@ fn a_piece_info_write_publishes_nothing() {
     assert_eq!(written["result"], Value::Null, "{written}");
     assert!(written.as_object().unwrap().contains_key("result"), "{written}");
 
-    let cleared =
-        call(&mut host, json!({ "kind": "pieceInfo.clear", "docId": doc, "application": "Epdf" }));
+    // Removed upstream; owner 8.8 (`pieceInfo.delete`).
+    let cleared = call_legacy(
+        &mut host,
+        json!({ "kind": "pieceInfo.clear", "docId": doc, "application": "Epdf" }),
+    );
     assert!(cleared.get("event").is_none(), "{cleared}");
     assert_eq!(cleared["mutationSequence"], json!(2), "{cleared}");
     assert_eq!(cleared["result"], Value::Null, "{cleared}");
@@ -197,7 +216,8 @@ fn a_piece_info_write_publishes_nothing() {
 fn attachment_writes_answer_the_typescript_results() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, RICH);
-    let created = envelope(
+    // Both removed upstream; owner 8.8 (change ops through `document.apply`).
+    let created = legacy_envelope(
         &mut host,
         json!({ "kind": "attachments.create", "docId": doc,
                 "file": { "name": "notes.txt", "mimeType": "text/plain" } }),
@@ -209,7 +229,7 @@ fn attachment_writes_answer_the_typescript_results() {
     assert!(created["result"].as_object().unwrap().contains_key("cache"), "{created}");
     assert_result_rides(&created);
 
-    let deleted = call(
+    let deleted = call_legacy(
         &mut host,
         json!({ "kind": "attachments.delete", "docId": doc,
                 "ref": { "kind": "key", "key": "notes.txt" } }),
@@ -228,8 +248,11 @@ fn an_effects_batch_publishes_form_effects_applied() {
     let (doc, _) = open_fixture(&mut host, FORMS);
     let effect = json!({ "kind": "setValue", "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 },
                          "value": { "type": "text", "value": "Ada" } });
-    let applied =
-        call(&mut host, json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }));
+    // Removed upstream; owner 8.20 (`document.apply`).
+    let applied = call_legacy(
+        &mut host,
+        json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }),
+    );
     assert_eq!(applied["event"]["type"], json!("form.effectsApplied"), "{applied}");
     assert_result_rides(&applied);
 
@@ -240,8 +263,10 @@ fn an_effects_batch_publishes_form_effects_applied() {
     // is still `{result, mutationSequence}`, as `pages.flatten`'s and
     // `redaction.apply`'s no-ops are: `WorkerHost` packs `{tag, result}` for
     // all three, with or without `finishMutation`.
-    let again =
-        call(&mut host, json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }));
+    let again = call_legacy(
+        &mut host,
+        json!({ "kind": "forms.applyEffects", "docId": doc, "effects": [effect] }),
+    );
     assert!(again.get("event").is_none(), "{again}");
     assert_eq!(again["result"]["results"][0]["status"], json!("unchanged"), "{again}");
     assert!(again["result"].get("meta").is_some_and(Value::is_null), "{again}");
@@ -326,7 +351,8 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert_eq!(event["field"], field);
     assert_eq!(event["origin"]["kind"], json!("local"));
 
-    let aborted = envelope(
+    // Removed upstream, renamed `signatures.cancel`; owner 8.26.
+    let aborted = legacy_envelope(
         &mut host,
         json!({ "kind": "signatures.abort", "docId": doc, "signingId": signing_id }),
         Vec::new(),
@@ -345,7 +371,7 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert_eq!(aborted["event"]["signingId"], signing_id);
 
     // Nothing parked any more: not an abort, so no notice.
-    let nothing = envelope(
+    let nothing = legacy_envelope(
         &mut host,
         json!({ "kind": "signatures.abort", "docId": doc, "signingId": signing_id }),
         Vec::new(),
@@ -370,7 +396,13 @@ fn form_write(
     payloads: Vec<Vec<u8>>,
     event: &str,
 ) -> Value {
-    let answer = envelope(host, request.clone(), payloads)["result"].clone();
+    // `forms.attachWidget` was removed upstream; owner 8.21 (`forms.addWidget`).
+    let answer = if request["kind"] == "forms.attachWidget" {
+        legacy_envelope(host, request.clone(), payloads)
+    } else {
+        envelope(host, request.clone(), payloads)
+    }["result"]
+        .clone();
     assert_eq!(answer["result"]["meta"], empty_meta(), "{request}: {answer}");
     assert_eq!(answer["event"]["type"], json!(event), "{answer}");
     assert_result_rides(&answer);
@@ -445,7 +477,7 @@ fn every_form_write_carries_meta() {
     assert_eq!(updated["result"]["field"]["fieldObjectNumber"], json!(4), "{updated}");
 
     let radio = json!({ "kind": "objectNumber", "fieldObjectNumber": 9 });
-    let widget = |annot: u64| json!({ "kind": "objectNumber", "page": page_ref(3u64), "annotObjectNumber": annot });
+    let widget = |annot: u64| json!({ "kind": "objectNumber", "page": page_ref(3u64), "objectNumber": annot });
     let detached = form_write(
         &mut host,
         &mut last,
@@ -499,7 +531,8 @@ fn a_field_delete_removes_its_widgets_and_names_them() {
 
 /// The object numbers of page 3's annotations.
 fn on_page(host: &mut Host, doc: &str) -> Vec<u64> {
-    let list = call(
+    // Removed upstream; owner 8.12 (`annotations.list`).
+    let list = call_legacy(
         host,
         json!({ "kind": "annotations.listRawPage", "docId": doc, "page": page_ref(3u64) }),
     );
@@ -507,7 +540,7 @@ fn on_page(host: &mut Host, doc: &str) -> Vec<u64> {
         .as_array()
         .unwrap_or_else(|| panic!("annotations: {list}"))
         .iter()
-        .filter_map(|a| a["ref"]["annotObjectNumber"].as_u64())
+        .filter_map(|a| a["ref"]["objectNumber"].as_u64())
         .collect()
 }
 

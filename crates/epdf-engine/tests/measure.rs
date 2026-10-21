@@ -179,7 +179,7 @@ fn a_saved_scale_survives_a_reopen() {
         .call(&json!({ "kind": "open.fatMem", "jobId": 1, "docId": "r" }).to_string(), vec![saved]);
     assert!(!open.json.contains("\"error\""), "{}", open.json);
     let pages = call(&mut reopened, json!({ "kind": "pages.list", "docId": "r" }));
-    let pon = pages["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap();
+    let pon = pages["pages"][0]["ref"]["objectNumber"].as_u64().unwrap();
     let after = viewports(&mut reopened, "r", pon);
     assert_eq!(after.len(), 2);
     assert_eq!(after[1]["owned"], json!(true));

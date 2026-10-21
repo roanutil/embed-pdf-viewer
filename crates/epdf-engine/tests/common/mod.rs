@@ -3,6 +3,8 @@
 
 #![allow(dead_code)]
 
+pub mod replay;
+
 use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
@@ -18,13 +20,13 @@ pub fn open_fixture(host: &mut Host, relative: &str) -> (String, u64) {
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "open failed: {envelope}");
     let pages = call(host, json!({ "kind": "pages.list", "docId": "d" }));
-    let pon = pages["pages"][0]["ref"]["pageObjectNumber"].as_u64().expect("a first page");
+    let pon = pages["pages"][0]["ref"]["objectNumber"].as_u64().expect("a first page");
     ("d".into(), pon)
 }
 
 /// The wire's `PageRef` for an object number, as a request names a page.
 pub fn page_ref(pon: impl Into<u64>) -> Value {
-    json!({ "kind": "objectNumber", "pageObjectNumber": pon.into() })
+    json!({ "kind": "objectNumber", "objectNumber": pon.into() })
 }
 
 /// Send `request` with a job id, panic on an `error` envelope, and answer
@@ -32,6 +34,17 @@ pub fn page_ref(pon: impl Into<u64>) -> Value {
 pub fn call(host: &mut Host, mut request: Value) -> Value {
     request["jobId"] = json!(2);
     let response = host.call(&request.to_string(), Vec::new());
+    let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
+    assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
+    envelope["result"].take()
+}
+
+/// [`call`], through [`Host::call_legacy`]: for a kind upstream removed,
+/// which the wire answers as unknown until its owner sub-task moves the
+/// caller to the kind that replaced it.
+pub fn call_legacy(host: &mut Host, mut request: Value) -> Value {
+    request["jobId"] = json!(2);
+    let response = host.call_legacy(&request.to_string(), Vec::new());
     let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
     envelope["result"].take()
@@ -86,7 +99,7 @@ pub fn sig_open_fixture(host: &mut Host, path: &str) -> (String, u32) {
         .as_array()
         .or_else(|| pages["pages"].as_array())
         .and_then(|p| p.first())
-        .and_then(|p| p.pointer("/ref/pageObjectNumber"))
+        .and_then(|p| p.pointer("/ref/objectNumber"))
         .and_then(Value::as_u64)
         .unwrap_or_else(|| panic!("no first page in {pages}")) as u32;
     (doc, first)

@@ -152,7 +152,7 @@ fn a_request_decodes_from_the_shape_the_wire_sends() {
     let request: SearchRequest = serde_json::from_value(serde_json::json!({
         "query": { "text": "the", "matchCase": true },
         "mode": "rects",
-        "startPage": { "kind": "objectNumber", "pageObjectNumber": 4 },
+        "startPage": { "kind": "objectNumber", "objectNumber": 4 },
         "skip": 9,
         "budget": { "maxPages": 3, "maxMatches": 7 },
     }))

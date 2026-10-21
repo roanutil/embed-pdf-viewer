@@ -106,6 +106,247 @@ impl RequestHeader {
     }
 }
 
+/// Which entry a request came in through.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Route {
+    /// [`Host::call`]: upstream's `WorkerRequest` union.
+    Wire,
+    /// [`Host::call_legacy`]: the kinds upstream removed.
+    Legacy,
+}
+
+/// The kinds upstream removed from `WorkerRequest`, which [`Host::call`]
+/// refuses as unknown and [`Host::call_legacy`] still routes, each until
+/// the sub-task named beside it moves its callers to the kind that replaced
+/// it.
+pub const LEGACY_KINDS: &[&str] = &[
+    // 8.12: `annotations.list` (83f6598d2).
+    "annotations.listFullPage",
+    "annotations.listRawAll",
+    "annotations.listRawPage",
+    // 8.16: `annotations.reorder` (1233d1349).
+    "annotations.move",
+    // 8.8: change ops through `document.apply` (c2d7a5194), and
+    // `pieceInfo.delete` (a9434c0e2).
+    "attachments.create",
+    "attachments.delete",
+    "pieceInfo.clear",
+    // 8.20: `document.apply` (98e5c270c).
+    "forms.applyEffects",
+    // 8.21: `forms.addWidget` (d7bd2d277).
+    "forms.attachWidget",
+    // 8.18: page structure through `document.apply` (119685ea4, b69c40377).
+    "pages.delete",
+    "pages.insert",
+    "pages.insertBlank",
+    "pages.move",
+    "pages.rotate",
+    // 8.26: renamed `signatures.cancel` (7bccc4f35).
+    "signatures.abort",
+];
+
+/// The kinds that carry `WriteJobFields` (`worker-protocol.ts`): an `opId`
+/// and an optional `objectNumberFloor`.
+pub const WRITE_KINDS: &[&str] = &[
+    "annotations.create",
+    "annotations.delete",
+    "annotations.flatten",
+    "annotations.import",
+    "annotations.reorder",
+    "annotations.update",
+    "document.apply",
+    "forms.addWidget",
+    "forms.createField",
+    "forms.deleteField",
+    "forms.deleteWidget",
+    "forms.detachWidget",
+    "forms.import",
+    "forms.importValues",
+    "forms.reorderCalculations",
+    "forms.reorderWidgets",
+    "forms.repair",
+    "forms.reset",
+    "forms.setSignatureAppearance",
+    "forms.setValue",
+    "forms.updateField",
+    "forms.updateWidget",
+    "measure.setScale",
+    "metadata.update",
+    "metadata.updateCustom",
+    "pages.flatten",
+    "pages.removeName",
+    "pages.setName",
+    "pieceInfo.delete",
+    "pieceInfo.update",
+    "redaction.apply",
+    "signatures.complete",
+];
+
+/// `document.applyChanges` takes an `objectNumberFloor` without being a
+/// `WriteJobFields` kind: each change it carries has its own `opId`.
+pub const FLOOR_ONLY_KINDS: &[&str] = &["document.applyChanges"];
+
+/// The kinds whose request carries an `authority`: an `AnnotationAuthority`
+/// or a `ChangeAuthority` (`auth/scope/authority.ts`).
+pub const AUTHORITY_KINDS: &[&str] = &[
+    "annotations.delete",
+    "annotations.reorder",
+    "annotations.update",
+    "document.apply",
+    "forms.createField",
+    "forms.import",
+    "forms.importValues",
+    "forms.reset",
+    "forms.setSignatureAppearance",
+    "forms.setValue",
+    "forms.updateField",
+    "signatures.complete",
+    "signatures.prepare",
+];
+
+/// `RequestEffect` (`worker-protocol.ts`, f550e9e5f): what a job does to its
+/// document, which upstream's worker queue orders jobs by.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RequestEffect {
+    Read,
+    Snapshot,
+    Session,
+    Write,
+    ContentWrite,
+    RuntimeWrite,
+    Open,
+    Close,
+}
+
+/// `WorkerJobId`, a number upstream. A string is read too, for the callers
+/// that named their jobs before the catch-up; Task 8.27 decides whether it
+/// stays.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum JobId {
+    Number(u64),
+    Text(String),
+}
+
+impl std::fmt::Display for JobId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(n) => write!(f, "{n}"),
+            Self::Text(s) => f.write_str(s),
+        }
+    }
+}
+
+/// `ChangeAuthority`, or an `AnnotationAuthority` (the same without
+/// `protection`): who a write acts for and what it is checked against.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WireAuthority {
+    pub identity: WireAuthorityIdentity,
+    /// `null` when nothing is checked (a tenant writing its own document).
+    pub grants: Option<WireGrants>,
+    /// What the document's signatures forbid; absent on an
+    /// `AnnotationAuthority`, `null` when nothing is enforced.
+    #[serde(default)]
+    pub protection: Option<crate::features::signature::types::DocumentProtection>,
+}
+
+/// `Identity` (`auth/scope/types.ts`), as an authority names it.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WireAuthorityIdentity {
+    pub user_id: Option<String>,
+    pub display_name: Option<String>,
+    pub email: Option<String>,
+    pub title: Option<String>,
+    pub organization: Option<String>,
+    pub organizational_unit: Option<String>,
+    pub group_id: Option<String>,
+}
+
+/// An authority's `grants`: the caller's scope and the PDF permission bits.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WireGrants {
+    pub scope: Vec<String>,
+    pub pdf_bits: WirePdfBits,
+}
+
+/// `PdfBits`, as the wire spells it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct WirePdfBits {
+    pub bit3: bool,
+    pub bit4: bool,
+    pub bit5: bool,
+    pub bit6: bool,
+    pub bit9: bool,
+    pub bit10: bool,
+    pub bit11: bool,
+    pub bit12: bool,
+}
+
+impl From<WirePdfBits> for crate::auth::scope::types::PdfBits {
+    fn from(w: WirePdfBits) -> Self {
+        Self {
+            bit3: w.bit3,
+            bit4: w.bit4,
+            bit5: w.bit5,
+            bit6: w.bit6,
+            bit9: w.bit9,
+            bit10: w.bit10,
+            bit11: w.bit11,
+            bit12: w.bit12,
+        }
+    }
+}
+
+/// The fields a job request carries beside its kind's own arguments.
+///
+/// Every field is optional until Task 8.27, so the kernel's calls through
+/// `translate.rs` and the tests that predate the envelope keep working. An
+/// absent `authority` means the session's own, as `WorkerHost` treats a
+/// write whose handle was checked before the job.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct JobEnvelope {
+    pub effect: Option<RequestEffect>,
+    pub job_id: Option<JobId>,
+    /// Read for [`WRITE_KINDS`] only.
+    pub op_id: Option<String>,
+    /// Read for [`WRITE_KINDS`] and [`FLOOR_ONLY_KINDS`] only.
+    pub object_number_floor: Option<u32>,
+    /// Read for [`AUTHORITY_KINDS`] only.
+    pub authority: Option<WireAuthority>,
+}
+
+impl JobEnvelope {
+    /// The envelope of a `kind` request whose JSON is `body`.
+    ///
+    /// A field the kind does not take is ignored, as `WorkerHost` ignores
+    /// it. A field it takes in the wrong shape is `WireFormat`, as any
+    /// malformed argument is.
+    pub fn parse(kind: &str, body: &serde_json::Value) -> Result<Self, EngineError> {
+        let writes = WRITE_KINDS.contains(&kind);
+        let floor = writes || FLOOR_ONLY_KINDS.contains(&kind);
+        Ok(Self {
+            effect: optional(body, "effect")?,
+            job_id: optional(body, "jobId")?,
+            op_id: if writes { optional(body, "opId")? } else { None },
+            object_number_floor: if floor { optional(body, "objectNumberFloor")? } else { None },
+            authority: if AUTHORITY_KINDS.contains(&kind) {
+                optional(body, "authority")?
+            } else {
+                None
+            },
+        })
+    }
+}
+
+/// `WorkerHost`'s refusal of a kind it has no case for.
+fn unknown_kind(kind: &str) -> EngineError {
+    EngineError::with_message(EngineErrorCode::InvalidArg, format!("unknown request kind: {kind}"))
+}
+
 /// The engine, as a host sees it.
 ///
 /// Holds every open session. Not `Send`: every handle beneath it is
@@ -215,7 +456,25 @@ impl Host {
     /// host that got no response at all could not tell a refused operation
     /// from a crashed engine.
     pub fn call(&mut self, request: &str, payloads: Payloads) -> HostResponse {
-        match self.route(request, payloads) {
+        Self::respond(self.route(request, payloads, Route::Wire))
+    }
+
+    /// Handle one request of a kind upstream removed from the wire.
+    ///
+    /// Exists for the Task 8 transition only. [`Host::call`] answers each of
+    /// [`LEGACY_KINDS`] as an unknown kind, as `WorkerHost` does, while the
+    /// kernel's calls in `epdf-viewer-host`'s `translate.rs` and the tests
+    /// that still use them reach the old arms here. Every other kind is
+    /// unknown to this entry. Each owner sub-task moves its callers to the
+    /// kind that replaced its kinds and deletes their arms; Task 8.27 deletes
+    /// this.
+    #[doc(hidden)]
+    pub fn call_legacy(&mut self, request: &str, payloads: Payloads) -> HostResponse {
+        Self::respond(self.route(request, payloads, Route::Legacy))
+    }
+
+    fn respond(routed: Result<HostResponse, EngineError>) -> HostResponse {
+        match routed {
             Ok(response) => response,
             Err(error) => HostResponse {
                 json: serde_json::to_string(&Envelope {
@@ -234,7 +493,12 @@ impl Host {
         }
     }
 
-    fn route(&mut self, request: &str, payloads: Payloads) -> Result<HostResponse, EngineError> {
+    fn route(
+        &mut self,
+        request: &str,
+        payloads: Payloads,
+        route: Route,
+    ) -> Result<HostResponse, EngineError> {
         let header: RequestHeader = serde_json::from_str(request).map_err(|e| {
             EngineError::with_message(
                 EngineErrorCode::WireFormat,
@@ -244,6 +508,20 @@ impl Host {
         let body: serde_json::Value = serde_json::from_str(request)
             .map_err(|e| EngineError::with_message(EngineErrorCode::WireFormat, format!("{e}")))?;
         let cancel = CancelToken::never();
+
+        // A removed kind is unknown to the wire, and only a removed kind is
+        // known to the legacy entry.
+        let legacy = LEGACY_KINDS.contains(&header.kind.as_str());
+        if legacy != (route == Route::Legacy) {
+            return Err(unknown_kind(&header.kind));
+        }
+        // Read so that a malformed envelope is refused before any arm runs.
+        // No arm acts on it yet: each kind's owner sub-task wires in what
+        // its handler does with `opId`, `objectNumberFloor` and `authority`.
+        let _envelope = JobEnvelope::parse(&header.kind, &body)?;
+        if legacy {
+            return self.route_legacy(&header, &body, payloads, &cancel);
+        }
 
         let result = match header.kind.as_str() {
             "open.fatMem" => self.open_fat_memory(&header, &body, payloads)?,
@@ -261,8 +539,8 @@ impl Host {
             // to stop: a host that aborted a job which had already finished
             // must not report it as cancelled.
             "abort" => {
-                let job_id = string_field(&body, "jobId")?;
-                serde_json::json!({ "aborted": self.sessions.abort(&job_id) })
+                let job_id: JobId = field(&body, "jobId")?;
+                serde_json::json!({ "aborted": self.sessions.abort(&job_id.to_string()) })
             }
             // Fonts belong to the library, not to a document, so these five
             // route before a session is resolved. A document id on one of
@@ -516,20 +794,6 @@ impl Host {
                     result,
                 )
             }
-            "signatures.abort" => {
-                let signing_id = string_field(body, "signingId")?;
-                let session = self.sessions.session(&key)?;
-                session.require(DocCapability::DocSign)?;
-                let result = value(&f::signature::mutator::abort(session, &signing_id))?;
-                // `LocalDocumentSignaturesService.abort` publishes only an
-                // abort that happened, not one that found nothing parked.
-                if result["status"] != "aborted" {
-                    return Ok(ok(result));
-                }
-                let notice =
-                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
-                self.answer_with_notice(&key, result, notice, Vec::new())
-            }
             "forms.setSignatureAppearance" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let page_index: i32 = optional(body, "pageIndex")?.unwrap_or(0);
@@ -655,39 +919,6 @@ impl Host {
                     })),
                     payloads,
                 })
-            }
-            "annotations.listRawPage" | "annotations.listFullPage" => {
-                let page = page_field(body)?;
-                let session = self.sessions.session_mut(&key)?;
-                let state = session.page_state(page)?;
-                let index = page_index_of(session.document()?.document(), page)?;
-                let snapshot = f::annotation::read::page::read_page_annotations(
-                    session.document()?.document(),
-                    index,
-                    page,
-                    &state.revision,
-                    &mut f::actions::vocabulary::ActionReadBudgetTracker::default(),
-                    cancel,
-                )?;
-                Ok(ok(value(&snapshot)?))
-            }
-            "annotations.listRawAll" => {
-                let session = self.sessions.session_mut(&key)?;
-                // Every page's token comes from the session's own authority,
-                // so a client's weak reference can be checked against the
-                // same generation the listing reported.
-                let tokens = page_tokens(session)?;
-                let snapshot = f::annotation::read::page::read_document_annotations(
-                    session.document()?.document(),
-                    |page| {
-                        tokens
-                            .get(&page)
-                            .cloned()
-                            .unwrap_or_else(|| crate::revision::RevisionToken::new("", page, 0))
-                    },
-                    cancel,
-                )?;
-                Ok(ok(value(&snapshot)?))
             }
             "annotations.readFile" => {
                 let page = page_field(body)?;
@@ -859,26 +1090,6 @@ impl Host {
                     },
                 )
             }
-            "annotations.move" => {
-                let page = page_field(body)?;
-                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
-                let to_index: u32 = field(body, "toIndex")?;
-                let result = f::annotation::write::mutator::move_to(
-                    self.sessions.session_mut(&key)?,
-                    page,
-                    &refs,
-                    to_index,
-                    self.ids.as_ref(),
-                    cancel,
-                )?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AnnotationMoved {
-                        page_object_number: page,
-                        result: value(&result)?,
-                    },
-                )
-            }
 
             // `WorkerHost.handleAnnotationsFlatten`. Nothing applied is no
             // mutation: no event, no artifact, as the TypeScript answers it.
@@ -946,42 +1157,6 @@ impl Host {
                     crate::session::save::DocumentEventInit::FormValueChanged(with_empty_meta(
                         value(&result)?,
                     )),
-                )
-            }
-            "forms.applyEffects" => {
-                let effects: Vec<f::forms::effects::FormEffect> = field(body, "effects")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::effects::apply(d, &effects, cancel)?
-                };
-                // A batch that wrote nothing publishes nothing. `meta` is
-                // the applier's own answer to "did anything land", and
-                // finalizing an all-no-op run would bump the version and
-                // invalidate every cache for a script that changed nothing.
-                // `WorkerHost.handleFormsApplyEffects` still answers it as
-                // `{tag, result}`, the shape `finishMutation` answers, so it
-                // goes out as `pages.flatten`'s and `redaction.apply`'s do.
-                if result.meta.is_none() {
-                    let session = self.sessions.session(&key)?;
-                    return Ok(ok(serde_json::json!({
-                        "result": value(&result)?,
-                        "mutationSequence": session.mutation_sequence(),
-                    })));
-                }
-                // `FormsEffectsApplier` notes the mutation once per effect
-                // that applied or failed, before re-reading its fields.
-                for _ in result.results.iter().filter(|r| {
-                    matches!(
-                        r.status,
-                        f::forms::effects::FormEffectStatus::Applied
-                            | f::forms::effects::FormEffectStatus::Failed
-                    )
-                }) {
-                    self.note_form_write(&key)?;
-                }
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormEffectsApplied(value(&result)?),
                 )
             }
             "forms.import" => {
@@ -1087,28 +1262,6 @@ impl Host {
                     })),
                 )
             }
-            "forms.attachWidget" => {
-                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let widget = widget_field(body)?;
-                let on_state: Option<String> = optional(body, "onState")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::field::attach_widget(
-                        d,
-                        &reference,
-                        widget,
-                        on_state.as_deref(),
-                        cancel,
-                    )?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormWidgetAttached(field_result(
-                        &result,
-                    )?),
-                )
-            }
             "forms.detachWidget" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let widget = widget_field(body)?;
@@ -1125,23 +1278,6 @@ impl Host {
                 )
             }
 
-            "pages.move" => {
-                let pages = pages_field(body)?;
-                let destination: u32 = field(body, "destIndex")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::move_pages(d, &pages, destination, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesMoved {
-                        page_object_numbers: pages,
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
             "pages.setName" => {
                 let name: String = field(body, "name")?;
                 let page = page_field(body)?;
@@ -1170,44 +1306,6 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: None,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-            "pages.rotate" => {
-                let pages = pages_field(body)?;
-                let rotation: crate::geom::PdfRotation = field(body, "rotation")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::rotate_pages(d, &pages, rotation, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesRotated {
-                        page_object_numbers: pages,
-                        rotation,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-            "pages.delete" => {
-                let pages = pages_field(body)?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::delete_pages(d, &pages, cancel)?
-                };
-                // The deleted pages' per-session state goes with them. A
-                // retired object number can never come back, so anything
-                // keyed on it is dead weight that would also answer stale.
-                for page in &pages {
-                    self.sessions.session_mut(&key)?.drop_page_state(*page)?;
-                }
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesDeleted {
-                        page_object_numbers: pages,
                         result: with_local_cache(value(&result)?),
                     },
                 )
@@ -1245,57 +1343,6 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesFlattened(result)
                 })
             }
-            "pages.insertBlank" => {
-                let size: crate::geom::PdfSize = field(body, "size")?;
-                let count: u32 = optional(body, "count")?.unwrap_or(1);
-                let destination: Option<u32> = optional(body, "destIndex")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::insert_blank_pages(
-                        d,
-                        size.width,
-                        size.height,
-                        count,
-                        destination,
-                        cancel,
-                    )?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesInserted {
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-            "pages.insert" => {
-                // The source document arrives as a payload and is opened
-                // here, held only for the copy. `import_pages` leaves the
-                // imported streams reading through it, so it must outlive
-                // the call and not the operation.
-                let bytes = payload(&payloads, 0, "the document to insert from")?;
-                let destination: Option<u32> = optional(body, "destIndex")?;
-                let source = pdfium::Document::from_bytes(pdfium::Library::acquire(), bytes, None)
-                    .map_err(|e| {
-                        EngineError::with_message(
-                            EngineErrorCode::DocOpenFailed,
-                            format!("the document to insert from could not be opened: {e}"),
-                        )
-                    })?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::insert_pages_from(d, &source, destination, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesInserted {
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
             "redaction.apply" => {
                 let scope: f::redaction::RedactionScope = field(body, "scope")?;
                 let result = {
@@ -1322,42 +1369,6 @@ impl Host {
                 })
             }
 
-            "attachments.create" => {
-                let file: WireAttachmentFile = field(body, "file")?;
-                let bytes = payload(&payloads, 0, "the file to embed")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::files::attachments::create_attachment(
-                        d,
-                        &file.name,
-                        bytes,
-                        file.mime_type.as_deref(),
-                        file.description.as_deref(),
-                        cancel,
-                    )?
-                };
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AttachmentCreated(with_local_cache(
-                        value(&result)?,
-                    )),
-                )
-            }
-            "attachments.delete" => {
-                let name = embedded_file_key(body)?;
-                {
-                    let d = self.document(&key)?;
-                    f::files::attachments::delete_attachment(d, &name, cancel)?;
-                }
-                self.finish(
-                    &key,
-                    // `AttachmentDeleteResult`: the ref the call named.
-                    crate::session::save::DocumentEventInit::AttachmentDeleted(serde_json::json!({
-                        "deleted": { "kind": "key", "key": name },
-                        "cache": null,
-                    })),
-                )
-            }
             "measure.setScale" => {
                 use crate::access::{DocumentAccess, PageAccess};
                 let pon = page_field(body)?;
@@ -1390,14 +1401,11 @@ impl Host {
                     ),
                 )
             }
-            "pieceInfo.update" | "pieceInfo.clear" => {
+            "pieceInfo.update" => {
                 let holder = piece_info_holder(body)?;
                 let application = string_field(body, "application")?;
-                if header.kind == "pieceInfo.clear" {
-                    let d = self.document(&key)?;
-                    f::files::piece_info::clear_piece_info(d, holder, &application, cancel)?;
-                } else {
-                    let patch: f::files::piece_info::PieceInfoPatch = field(body, "patch")?;
+                let patch: f::files::piece_info::PieceInfoPatch = field(body, "patch")?;
+                {
                     let d = self.document(&key)?;
                     f::files::piece_info::update_piece_info(
                         d,
@@ -1412,17 +1420,346 @@ impl Host {
                 // private application data, and the event this once sent as
                 // `metadata.updated` carried no `metadata` for the metadata
                 // plugin to read. Nor is there a result: `WorkerHost` answers
-                // `{tag}` alone, and both calls resolve `void`.
+                // `{tag}` alone, and the call resolves `void`.
                 self.finish_quietly(&key, serde_json::Value::Null)
             }
 
             // `WorkerHost`'s `default:` arm, word for word.
             other => {
                 let _ = payloads;
-                Err(EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    format!("unknown request kind: {other}"),
-                ))
+                Err(unknown_kind(other))
+            }
+        }
+    }
+
+    /// The kinds upstream removed, routed for [`Host::call_legacy`] alone.
+    ///
+    /// Each arm is the one `route_session` had, moved here unchanged apart
+    /// from the ref spelling, and each names the sub-task that moves its
+    /// callers to the kind that replaced it and deletes the arm.
+    fn route_legacy(
+        &mut self,
+        header: &RequestHeader,
+        body: &serde_json::Value,
+        payloads: Payloads,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        use crate::features as f;
+
+        let key = header.key()?;
+        if MUTATING_KINDS.contains(&header.kind.as_str())
+            && let Ok(session) = self.sessions.session(&key)
+        {
+            f::signature::mutator::assert_no_pending_signing(session)?;
+        }
+        match header.kind.as_str() {
+            // Owner: 8.26 (`signatures.cancel`, 7bccc4f35).
+            "signatures.abort" => {
+                let signing_id = string_field(body, "signingId")?;
+                let session = self.sessions.session(&key)?;
+                session.require(DocCapability::DocSign)?;
+                let result = value(&f::signature::mutator::abort(session, &signing_id))?;
+                // `LocalDocumentSignaturesService.abort` publishes only an
+                // abort that happened, not one that found nothing parked.
+                if result["status"] != "aborted" {
+                    return Ok(ok(result));
+                }
+                let notice =
+                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
+                self.answer_with_notice(&key, result, notice, Vec::new())
+            }
+
+            // Owner: 8.12 (`annotations.list`, 83f6598d2).
+            "annotations.listRawPage" | "annotations.listFullPage" => {
+                let page = page_field(body)?;
+                let session = self.sessions.session_mut(&key)?;
+                let state = session.page_state(page)?;
+                let index = page_index_of(session.document()?.document(), page)?;
+                let snapshot = f::annotation::read::page::read_page_annotations(
+                    session.document()?.document(),
+                    index,
+                    page,
+                    &state.revision,
+                    &mut f::actions::vocabulary::ActionReadBudgetTracker::default(),
+                    cancel,
+                )?;
+                Ok(ok(value(&snapshot)?))
+            }
+
+            // Owner: 8.12 (`annotations.list`, 83f6598d2).
+            "annotations.listRawAll" => {
+                let session = self.sessions.session_mut(&key)?;
+                // Every page's token comes from the session's own authority,
+                // so a client's weak reference can be checked against the
+                // same generation the listing reported.
+                let tokens = page_tokens(session)?;
+                let snapshot = f::annotation::read::page::read_document_annotations(
+                    session.document()?.document(),
+                    |page| {
+                        tokens
+                            .get(&page)
+                            .cloned()
+                            .unwrap_or_else(|| crate::revision::RevisionToken::new("", page, 0))
+                    },
+                    cancel,
+                )?;
+                Ok(ok(value(&snapshot)?))
+            }
+
+            // Owner: 8.16 (`annotations.reorder`, 1233d1349).
+            "annotations.move" => {
+                let page = page_field(body)?;
+                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
+                let to_index: u32 = field(body, "toIndex")?;
+                let result = f::annotation::write::mutator::move_to(
+                    self.sessions.session_mut(&key)?,
+                    page,
+                    &refs,
+                    to_index,
+                    self.ids.as_ref(),
+                    cancel,
+                )?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::AnnotationMoved {
+                        page_object_number: page,
+                        result: value(&result)?,
+                    },
+                )
+            }
+
+            // Owner: 8.20 (`document.apply`, 98e5c270c).
+            "forms.applyEffects" => {
+                let effects: Vec<f::forms::effects::FormEffect> = field(body, "effects")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::forms::effects::apply(d, &effects, cancel)?
+                };
+                // A batch that wrote nothing publishes nothing. `meta` is
+                // the applier's own answer to "did anything land", and
+                // finalizing an all-no-op run would bump the version and
+                // invalidate every cache for a script that changed nothing.
+                // `WorkerHost.handleFormsApplyEffects` still answers it as
+                // `{tag, result}`, the shape `finishMutation` answers, so it
+                // goes out as `pages.flatten`'s and `redaction.apply`'s do.
+                if result.meta.is_none() {
+                    let session = self.sessions.session(&key)?;
+                    return Ok(ok(serde_json::json!({
+                        "result": value(&result)?,
+                        "mutationSequence": session.mutation_sequence(),
+                    })));
+                }
+                // `FormsEffectsApplier` notes the mutation once per effect
+                // that applied or failed, before re-reading its fields.
+                for _ in result.results.iter().filter(|r| {
+                    matches!(
+                        r.status,
+                        f::forms::effects::FormEffectStatus::Applied
+                            | f::forms::effects::FormEffectStatus::Failed
+                    )
+                }) {
+                    self.note_form_write(&key)?;
+                }
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::FormEffectsApplied(value(&result)?),
+                )
+            }
+
+            // Owner: 8.21 (`forms.addWidget`, d7bd2d277).
+            "forms.attachWidget" => {
+                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let widget = widget_field(body)?;
+                let on_state: Option<String> = optional(body, "onState")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::forms::field::attach_widget(
+                        d,
+                        &reference,
+                        widget,
+                        on_state.as_deref(),
+                        cancel,
+                    )?
+                };
+                self.note_form_write(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::FormWidgetAttached(field_result(
+                        &result,
+                    )?),
+                )
+            }
+
+            // Owner: 8.18 (`document.apply`, 119685ea4).
+            "pages.move" => {
+                let pages = pages_field(body)?;
+                let destination: u32 = field(body, "destIndex")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::move_pages(d, &pages, destination, cancel)?
+                };
+                self.refresh_pages(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesMoved {
+                        page_object_numbers: pages,
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
+                )
+            }
+
+            // Owner: 8.18 (`document.apply`, b69c40377).
+            "pages.rotate" => {
+                let pages = pages_field(body)?;
+                let rotation: crate::geom::PdfRotation = field(body, "rotation")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::rotate_pages(d, &pages, rotation, cancel)?
+                };
+                self.refresh_pages(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesRotated {
+                        page_object_numbers: pages,
+                        rotation,
+                        result: with_local_cache(value(&result)?),
+                    },
+                )
+            }
+
+            // Owner: 8.18 (`document.apply`, 119685ea4).
+            "pages.delete" => {
+                let pages = pages_field(body)?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::delete_pages(d, &pages, cancel)?
+                };
+                // The deleted pages' per-session state goes with them. A
+                // retired object number can never come back, so anything
+                // keyed on it is dead weight that would also answer stale.
+                for page in &pages {
+                    self.sessions.session_mut(&key)?.drop_page_state(*page)?;
+                }
+                self.refresh_pages(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesDeleted {
+                        page_object_numbers: pages,
+                        result: with_local_cache(value(&result)?),
+                    },
+                )
+            }
+
+            // Owner: 8.18 (`document.apply`, 119685ea4).
+            "pages.insertBlank" => {
+                let size: crate::geom::PdfSize = field(body, "size")?;
+                let count: u32 = optional(body, "count")?.unwrap_or(1);
+                let destination: Option<u32> = optional(body, "destIndex")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::insert_blank_pages(
+                        d,
+                        size.width,
+                        size.height,
+                        count,
+                        destination,
+                        cancel,
+                    )?
+                };
+                self.refresh_pages(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesInserted {
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
+                )
+            }
+
+            // Owner: 8.18 (`document.apply`, 119685ea4).
+            "pages.insert" => {
+                // The source document arrives as a payload and is opened
+                // here, held only for the copy. `import_pages` leaves the
+                // imported streams reading through it, so it must outlive
+                // the call and not the operation.
+                let bytes = payload(&payloads, 0, "the document to insert from")?;
+                let destination: Option<u32> = optional(body, "destIndex")?;
+                let source = pdfium::Document::from_bytes(pdfium::Library::acquire(), bytes, None)
+                    .map_err(|e| {
+                        EngineError::with_message(
+                            EngineErrorCode::DocOpenFailed,
+                            format!("the document to insert from could not be opened: {e}"),
+                        )
+                    })?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::pages_write::insert_pages_from(d, &source, destination, cancel)?
+                };
+                self.refresh_pages(&key)?;
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::PagesInserted {
+                        dest_index: destination,
+                        result: with_local_cache(value(&result)?),
+                    },
+                )
+            }
+
+            // Owner: 8.8 (`document.apply`, c2d7a5194).
+            "attachments.create" => {
+                let file: WireAttachmentFile = field(body, "file")?;
+                let bytes = payload(&payloads, 0, "the file to embed")?;
+                let result = {
+                    let d = self.document(&key)?;
+                    f::files::attachments::create_attachment(
+                        d,
+                        &file.name,
+                        bytes,
+                        file.mime_type.as_deref(),
+                        file.description.as_deref(),
+                        cancel,
+                    )?
+                };
+                self.finish(
+                    &key,
+                    crate::session::save::DocumentEventInit::AttachmentCreated(with_local_cache(
+                        value(&result)?,
+                    )),
+                )
+            }
+
+            // Owner: 8.8 (`document.apply`, c2d7a5194).
+            "attachments.delete" => {
+                let name = embedded_file_key(body)?;
+                {
+                    let d = self.document(&key)?;
+                    f::files::attachments::delete_attachment(d, &name, cancel)?;
+                }
+                self.finish(
+                    &key,
+                    // `AttachmentDeleteResult`: the ref the call named.
+                    crate::session::save::DocumentEventInit::AttachmentDeleted(serde_json::json!({
+                        "deleted": { "kind": "key", "key": name },
+                        "cache": null,
+                    })),
+                )
+            }
+
+            // Owner: 8.8 (`pieceInfo.delete`, a9434c0e2). Answers as
+            // `pieceInfo.update` does: no event and no result.
+            "pieceInfo.clear" => {
+                let holder = piece_info_holder(body)?;
+                let application = string_field(body, "application")?;
+                {
+                    let d = self.document(&key)?;
+                    f::files::piece_info::clear_piece_info(d, holder, &application, cancel)?;
+                }
+                self.finish_quietly(&key, serde_json::Value::Null)
+            }
+            other => {
+                let _ = payloads;
+                Err(unknown_kind(other))
             }
         }
     }

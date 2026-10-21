@@ -6,22 +6,46 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{call, open_fixture, page_ref};
+use common::{call, call_legacy, open_fixture, page_ref};
 
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
 
-fn nm(page: u64, nm: &str) -> Value {
-    json!({ "kind": "nm", "page": page_ref(page), "nm": nm })
+/// The wire's name for the annotation whose `/NM` is `nm`. The `nm` ref
+/// kind is gone (bc0057f3a): an annotation born as an object is named by
+/// its object number, and one born inline in the file by its position in
+/// the page's `/Annots` (`baseIndex`), which on a page nothing has
+/// restructured is the index the listing answers.
+fn by_nm(host: &mut Host, doc: &str, page: u64, nm: &str) -> Value {
+    let listed = list(host, doc, page);
+    let found = listed["annotations"]
+        .as_array()
+        .and_then(|all| all.iter().find(|a| a["nm"] == nm))
+        .unwrap_or_else(|| panic!("no annotation named {nm}: {listed}"));
+    if found["ref"]["kind"] == "objectNumber" {
+        return found["ref"].clone();
+    }
+    json!({ "kind": "baseIndex", "page": page_ref(page), "baseIndex": found["index"] })
+}
+
+/// The page's annotations. `annotations.listRawPage` was removed upstream;
+/// owner 8.12 (`annotations.list`).
+fn list(host: &mut Host, doc: &str, page: u64) -> Value {
+    call_legacy(
+        host,
+        json!({ "kind": "annotations.listRawPage", "docId": doc,
+        "page": page_ref(page) }),
+    )
 }
 
 #[test]
 fn an_applied_flatten_publishes_annotations_flattened() {
     let mut host = Host::new();
     let (doc, page) = open_fixture(&mut host, FIXTURE);
+    let target = by_nm(&mut host, &doc, page, "a-three-mode-square");
     let answer = call(
         &mut host,
         json!({ "kind": "annotations.flatten", "docId": doc,
-        "page": page_ref(page), "refs": [nm(page, "a-three-mode-square")], "usage": "display" }),
+        "page": page_ref(page), "refs": [target], "usage": "display" }),
     );
     assert_eq!(answer["event"]["type"], json!("annotations.flattened"), "{answer}");
     assert_eq!(answer["result"]["results"][0]["status"], json!("applied"));
@@ -36,10 +60,11 @@ fn an_applied_flatten_publishes_annotations_flattened() {
 fn a_flatten_that_applies_nothing_is_no_mutation() {
     let mut host = Host::new();
     let (doc, page) = open_fixture(&mut host, FIXTURE);
+    let target = by_nm(&mut host, &doc, page, "a-bare-highlight");
     let answer = call(
         &mut host,
         json!({ "kind": "annotations.flatten", "docId": doc,
-        "page": page_ref(page), "refs": [nm(page, "a-bare-highlight")], "usage": "display" }),
+        "page": page_ref(page), "refs": [target], "usage": "display" }),
     );
     assert!(answer.get("event").is_none(), "{answer}");
     assert!(answer["result"]["meta"].is_null());
@@ -51,14 +76,11 @@ fn a_flatten_that_applies_nothing_is_no_mutation() {
 fn an_export_answers_a_pdf_and_leaves_the_page_alone() {
     let mut host = Host::new();
     let (doc, page) = open_fixture(&mut host, FIXTURE);
-    let before = call(
-        &mut host,
-        json!({ "kind": "annotations.listRawPage", "docId": doc,
-        "page": page_ref(page) }),
-    );
+    let before = list(&mut host, &doc, page);
+    let target = by_nm(&mut host, &doc, page, "a-rotated-polygon");
     let response = host.call(
         &json!({ "kind": "annotations.exportAppearance", "jobId": 4, "docId": doc,
-            "page": page_ref(page), "refs": [nm(page, "a-rotated-polygon")] })
+            "page": page_ref(page), "refs": [target] })
         .to_string(),
         Vec::new(),
     );
@@ -67,10 +89,6 @@ fn an_export_answers_a_pdf_and_leaves_the_page_alone() {
     assert_eq!(response.payloads.len(), 1);
     assert!(response.payloads[0].starts_with(b"%PDF-"));
     assert_eq!(envelope["result"]["size"], json!(response.payloads[0].len()));
-    let after = call(
-        &mut host,
-        json!({ "kind": "annotations.listRawPage", "docId": doc,
-        "page": page_ref(page) }),
-    );
+    let after = list(&mut host, &doc, page);
     assert_eq!(before, after, "an export is a read");
 }

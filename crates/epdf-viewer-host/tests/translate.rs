@@ -25,7 +25,7 @@ fn a_page_chain_carries_its_page() {
         call.request,
         json!({
             "kind": "pages.render", "jobId": 8, "docId": "d1",
-            "page": {"kind": "objectNumber", "pageObjectNumber": 12},
+            "page": {"kind": "objectNumber", "objectNumber": 12},
             "options": {"scale": 2}
         })
     );
@@ -67,7 +67,7 @@ fn a_mutation_answers_its_inner_result_and_hands_back_its_event() {
 
 #[test]
 fn a_page_list_answers_each_page_by_its_ref() {
-    let json = r#"{"result":{"pageCount":1,"pages":[{"boxes":{"crop":{"bottom":0.0,"left":0.0,"right":612.0,"top":792.0},"media":{"bottom":0.0,"left":0.0,"right":612.0,"top":792.0}},"index":0,"label":null,"ref":{"kind":"objectNumber","pageObjectNumber":2},"rotation":0,"size":{"height":792.0,"width":612.0},"userUnit":1.0}]}}"#;
+    let json = r#"{"result":{"pageCount":1,"pages":[{"boxes":{"crop":{"bottom":0.0,"left":0.0,"right":612.0,"top":792.0},"media":{"bottom":0.0,"left":0.0,"right":612.0,"top":792.0}},"index":0,"label":null,"ref":{"kind":"objectNumber","objectNumber":2},"rotation":0,"size":{"height":792.0,"width":612.0},"userUnit":1.0}]}}"#;
     let page = &decode(&Decode::PageList, answer(json)).unwrap().value["pages"][0];
     assert_eq!(page["ref"], json!({"kind": "objectNumber", "pageObjectNumber": 2}));
     assert!(page.get("pageObjectNumber").is_none(), "{page}");
@@ -111,10 +111,10 @@ fn a_search_start_page_travels_as_a_whole_page_ref() {
         json!({
             "kind": "search.query", "jobId": 11, "docId": "d1",
             "request": {"query": {"text": "the"}, "mode": "full",
-                "startPage": {"kind": "objectNumber", "pageObjectNumber": 43}}
+                "startPage": {"kind": "objectNumber", "objectNumber": 43}}
         })
     );
-    assert!(call.request["request"]["startPage"]["pageObjectNumber"].is_u64());
+    assert!(call.request["request"]["startPage"]["objectNumber"].is_u64());
     assert!(matches!(call.decode, Decode::SearchSlice));
     let plain = json!({"query": {"text": "the"}, "mode": "full"});
     let call = translate("d1", "search.query", None, std::slice::from_ref(&plain), 12).unwrap();
@@ -129,7 +129,7 @@ fn a_search_start_page_that_is_not_a_page_ref_is_invalid_input() {
 }
 
 /// The host's `search.query` answer for "Report" over the report fixture.
-const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"charCount":6,"charStart":6156,"page":{"kind":"objectNumber","pageObjectNumber":202},"segments":[{"advance":1,"quad":{"p1":{"x":354.4305114746094,"y":196.280029296875},"p2":{"x":375.85125732421875,"y":196.280029296875},"p3":{"x":354.4305114746094,"y":185.4755096435547},"p4":{"x":375.85125732421875,"y":185.4755096435547}},"rect":{"bottom":185.4755096435547,"left":354.4305114746094,"right":375.85125732421875,"top":196.280029296875}}],"snippet":{"matchLength":6,"matchStart":47,"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4"}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
+const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"charCount":6,"charStart":6156,"page":{"kind":"objectNumber","objectNumber":202},"segments":[{"advance":1,"quad":{"p1":{"x":354.4305114746094,"y":196.280029296875},"p2":{"x":375.85125732421875,"y":196.280029296875},"p3":{"x":354.4305114746094,"y":185.4755096435547},"p4":{"x":375.85125732421875,"y":185.4755096435547}},"rect":{"bottom":185.4755096435547,"left":354.4305114746094,"right":375.85125732421875,"top":196.280029296875}}],"snippet":{"matchLength":6,"matchStart":47,"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4"}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
 
 #[test]
 fn a_search_slice_answers_each_hit_with_its_page() {
@@ -410,8 +410,19 @@ fn an_open_without_bytes_is_invalid_input() {
 
 // ── page edits ─────────────────────────────────────────────────────────────
 
+/// A page as the kernel holds it.
 fn page_ref(pon: u32) -> Value {
     json!({ "kind": "objectNumber", "pageObjectNumber": pon })
+}
+
+/// The same page as the host reads it (595bdc6c7).
+fn wire_page(pon: u32) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": pon })
+}
+
+/// An annotation ref by object number, as the host reads it.
+fn wire_annot(pon: u32, number: u32) -> Value {
+    json!({ "kind": "objectNumber", "page": wire_page(pon), "objectNumber": number })
 }
 
 #[test]
@@ -422,7 +433,7 @@ fn a_rotation_travels_as_a_whole_number() {
         call.request,
         json!({
             "kind": "pages.rotate", "jobId": 11, "docId": "d1",
-            "pages": [page_ref(3), page_ref(4)], "rotation": 90
+            "pages": [wire_page(3), wire_page(4)], "rotation": 90
         })
     );
     assert!(call.request["rotation"].is_u64());
@@ -433,7 +444,7 @@ fn a_rotation_travels_as_a_whole_number() {
 fn a_move_carries_its_destination() {
     let args = [json!([page_ref(3)]), json!(0.0)];
     let call = translate("d1", "pages.move", None, &args, 12).unwrap();
-    assert_eq!(call.request["pages"], json!([page_ref(3)]));
+    assert_eq!(call.request["pages"], json!([wire_page(3)]));
     assert_eq!(call.request["destIndex"], json!(0));
 }
 
@@ -484,7 +495,7 @@ fn an_extract_decodes_to_host_bytes() {
     assert_eq!(HostTable::take(id), Some(vec![1, 2, 3]));
 }
 
-const PAGE: &str = r#"{"boxes":{},"index":0,"label":null,"ref":{"kind":"objectNumber","pageObjectNumber":2},"rotation":90,"size":{"height":792.0,"width":612.0},"userUnit":1.0}"#;
+const PAGE: &str = r#"{"boxes":{},"index":0,"label":null,"ref":{"kind":"objectNumber","objectNumber":2},"rotation":90,"size":{"height":792.0,"width":612.0},"userUnit":1.0}"#;
 
 #[test]
 fn a_page_mutation_answers_every_layout_page_by_its_ref() {
@@ -503,7 +514,7 @@ fn a_page_mutation_answers_every_layout_page_by_its_ref() {
 #[test]
 fn an_insert_result_names_its_pages_as_refs() {
     let json = format!(
-        r#"{{"result":{{"event":{{"insertedPages":[{{"kind":"objectNumber","pageObjectNumber":2}}],"layout":{{"pageCount":1,"pages":[{PAGE}]}},"type":"pages.inserted"}},"mutationSequence":3,"result":{{"insertedPages":[{{"kind":"objectNumber","pageObjectNumber":2}}],"layout":{{"pageCount":1,"pages":[{PAGE}]}}}}}}}}"#
+        r#"{{"result":{{"event":{{"insertedPages":[{{"kind":"objectNumber","objectNumber":2}}],"layout":{{"pageCount":1,"pages":[{PAGE}]}},"type":"pages.inserted"}},"mutationSequence":3,"result":{{"insertedPages":[{{"kind":"objectNumber","objectNumber":2}}],"layout":{{"pageCount":1,"pages":[{PAGE}]}}}}}}}}"#
     );
     let decoded = decode(&Decode::PageMutation, answer(&json)).unwrap();
     assert_eq!(decoded.value["insertedPages"], json!([page_ref(2)]));
@@ -596,7 +607,7 @@ fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
     let call = translate("d1", "page.annotations.list", Some(5), &[], 11).unwrap();
     assert_eq!(
         call.request,
-        json!({ "kind": "annotations.listRawPage", "jobId": 11, "docId": "d1", "page": page_ref(5) })
+        json!({ "kind": "annotations.listRawPage", "jobId": 11, "docId": "d1", "page": wire_page(5) })
     );
     assert!(matches!(call.decode, Decode::Result));
     let error = translate("d1", "page.annotations.list", None, &[], 12).err().unwrap();
@@ -605,22 +616,40 @@ fn a_page_annotation_list_carries_its_page_and_answers_the_snapshot() {
 
 /// Page 1 of `features.pdf` as the native engine lists it, trimmed: every
 /// page the snapshot names (the DTO's own, its ref's, a destination's, the
-/// page state's and its revision's) is the `page: PageRef` the kernel's
-/// vectors spell, and arrives as the host sent it.
+/// page state's and its revision's) is the `page: PageRef` the host spells
+/// `objectNumber`, and arrives as the kernel spells it, `pageObjectNumber`,
+/// with the annotation ref's number `annotObjectNumber`.
 #[test]
-fn a_listed_snapshot_arrives_as_the_host_sent_it() {
-    let json = r#"{"result":{"annotations":[{"page":{"kind":"objectNumber","pageObjectNumber":5},"subtype":"link",
+fn a_listed_snapshot_arrives_in_the_kernels_spelling() {
+    let json = r#"{"result":{"annotations":[{"page":{"kind":"objectNumber","objectNumber":5},"subtype":"link",
+        "ref":{"objectNumber":8,"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":5}},
+        "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"page":{"kind":"objectNumber","objectNumber":7},"top":400.0,"zoom":null}},
+        "actions":{"activate":{"root":{"type":"goto","subtype":"GoTo","next":[],
+            "destination":{"kind":"fitR","page":{"kind":"objectNumber","objectNumber":7},"left":1.0,"bottom":2.0,"right":3.0,"top":4.0}}}}}],
+        "pageState":{"page":{"kind":"objectNumber","objectNumber":5},"revision":{"docSessionId":"s","generation":0,"page":{"kind":"objectNumber","objectNumber":5}}}}}"#;
+    let kernel = r#"{"annotations":[{"page":{"kind":"objectNumber","pageObjectNumber":5},"subtype":"link",
         "ref":{"annotObjectNumber":8,"kind":"objectNumber","page":{"kind":"objectNumber","pageObjectNumber":5}},
         "target":{"kind":"goto","destination":{"kind":"xyz","left":0.0,"page":{"kind":"objectNumber","pageObjectNumber":7},"top":400.0,"zoom":null}},
         "actions":{"activate":{"root":{"type":"goto","subtype":"GoTo","next":[],
             "destination":{"kind":"fitR","page":{"kind":"objectNumber","pageObjectNumber":7},"left":1.0,"bottom":2.0,"right":3.0,"top":4.0}}}}}],
-        "pageState":{"page":{"kind":"objectNumber","pageObjectNumber":5},"revision":{"docSessionId":"s","generation":0,"page":{"kind":"objectNumber","pageObjectNumber":5}}}}}"#;
+        "pageState":{"page":{"kind":"objectNumber","pageObjectNumber":5},"revision":{"docSessionId":"s","generation":0,"page":{"kind":"objectNumber","pageObjectNumber":5}}}}"#;
     let call = translate("d1", "page.annotations.list", Some(5), &[], 14).unwrap();
     let decoded = decode(&call.decode, answer(json)).unwrap().value;
-    let sent: Value = serde_json::from_str::<Value>(json).unwrap()["result"].clone();
-    assert_eq!(decoded, sent);
+    assert_eq!(decoded, serde_json::from_str::<Value>(kernel).unwrap());
     assert_eq!(decoded["annotations"][0]["ref"]["page"], page_ref(5));
     assert_eq!(decoded["pageState"]["revision"]["page"], page_ref(5));
+}
+
+/// A form field ref keeps `fieldObjectNumber` both ways: the host still
+/// reads and answers that spelling.
+#[test]
+fn a_field_ref_keeps_its_spelling_both_ways() {
+    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
+    let call = translate("d1", "forms.reset", None, std::slice::from_ref(&field), 1).unwrap();
+    assert_eq!(call.request["ref"], field);
+    let json = r#"{"result":{"result":{"field":{"ref":{"kind":"objectNumber","fieldObjectNumber":4}}},"mutationSequence":1}}"#;
+    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(decoded.value["field"]["ref"], field);
 }
 
 #[test]
@@ -644,7 +673,7 @@ fn a_ref_goes_out_nested_as_the_kernel_holds_it() {
     let call =
         translate("d1", "page.annotations.delete", Some(3), std::slice::from_ref(&nested), 12)
             .unwrap();
-    assert_eq!(call.request["ref"], nested);
+    assert_eq!(call.request["ref"], wire_annot(3, 17));
     assert!(matches!(call.decode, Decode::Mutation));
 }
 
@@ -653,7 +682,7 @@ fn a_stamp_drafts_bytes_travel_as_a_resource_payload() {
     let draft = json!({ "subtype": "stamp", "source": { "data": { "$bytes": "iVBORw==" }, "mimeType": "image/png" } });
     let call = translate("d1", "page.annotations.create", Some(3), &[draft], 13).unwrap();
     assert_eq!(call.request["kind"], "annotations.create");
-    assert_eq!(call.request["page"], page_ref(3));
+    assert_eq!(call.request["page"], wire_page(3));
     assert_eq!(call.request["draft"]["source"], json!({ "resource": "r0" }));
     assert_eq!(
         call.request["resources"],
@@ -684,10 +713,7 @@ fn an_update_carries_its_ref_and_patch() {
         15,
     )
     .unwrap();
-    assert_eq!(
-        call.request["ref"],
-        json!({ "kind": "nm", "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "nm": "abc" })
-    );
+    assert_eq!(call.request["ref"], json!({ "kind": "nm", "page": wire_page(3), "nm": "abc" }));
     assert_eq!(call.request["patch"], json!({ "contents": "x" }));
     assert!(matches!(call.decode, Decode::Mutation));
 }
@@ -703,15 +729,15 @@ fn a_refs_javascript_numbers_go_out_whole() {
     let call = translate("d1", "page.annotations.delete", Some(3), &[index], 17).unwrap();
     assert_eq!(
         call.request["ref"],
-        json!({ "kind": "index", "page": page_ref(3), "index": 2,
-            "revision": { "docSessionId": "s", "page": page_ref(3), "generation": 4 } })
+        json!({ "kind": "index", "page": wire_page(3), "index": 2,
+            "revision": { "docSessionId": "s", "page": wire_page(3), "generation": 4 } })
     );
-    assert!(call.request["ref"]["page"]["pageObjectNumber"].is_u64());
+    assert!(call.request["ref"]["page"]["objectNumber"].is_u64());
     let object = json!({ "kind": "objectNumber",
         "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17.0 });
     let call =
         translate("d1", "page.annotations.update", Some(3), &[object, json!({})], 18).unwrap();
-    assert_eq!(call.request["ref"]["annotObjectNumber"], json!(17));
+    assert_eq!(call.request["ref"]["objectNumber"], json!(17));
     let fractional = json!({ "kind": "objectNumber",
         "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 1.5 });
     let error =
@@ -725,11 +751,8 @@ fn an_attachment_read_carries_its_page_and_ref_and_answers_its_bytes() {
         "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "annotObjectNumber": 17.0 });
     let call = translate("d1", "page.annotations.downloadFile", Some(3), &[nested], 20).unwrap();
     assert_eq!(call.request["kind"], "annotations.readFile");
-    assert_eq!(call.request["page"], page_ref(3));
-    assert_eq!(
-        call.request["ref"],
-        json!({ "kind": "objectNumber", "page": page_ref(3), "annotObjectNumber": 17 })
-    );
+    assert_eq!(call.request["page"], wire_page(3));
+    assert_eq!(call.request["ref"], wire_annot(3, 17));
     let response = HostResponse {
         json: r#"{"result":{"name":"notes.txt","mimeType":"text/plain","size":2}}"#.into(),
         payloads: vec![b"hi".to_vec()],
@@ -748,10 +771,7 @@ fn refs_inside_a_draft_or_patch_go_out_whole() {
     let draft = json!({ "subtype": "text", "index": 2.5,
         "inReplyTo": { "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 17.0 } });
     let call = translate("d1", "page.annotations.create", Some(3), &[draft], 21).unwrap();
-    assert_eq!(
-        call.request["draft"]["inReplyTo"],
-        json!({ "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 17 })
-    );
+    assert_eq!(call.request["draft"]["inReplyTo"], wire_annot(3, 17));
     // A draft member that only shares a ref member's name is left alone.
     assert_eq!(call.request["draft"]["index"], json!(2.5));
     let target = json!({ "kind": "objectNumber", "page": page3.clone(), "annotObjectNumber": 5.0 });
@@ -760,7 +780,7 @@ fn refs_inside_a_draft_or_patch_go_out_whole() {
     let call = translate("d1", "page.annotations.update", Some(3), &[target, patch], 22).unwrap();
     assert_eq!(
         call.request["patch"]["target"]["destination"],
-        json!({ "kind": "fit", "page": page_ref(7) })
+        json!({ "kind": "fit", "page": wire_page(7) })
     );
 }
 
@@ -768,7 +788,7 @@ fn refs_inside_a_draft_or_patch_go_out_whole() {
 
 #[test]
 fn a_form_list_answers_each_widget_with_its_ref_and_page() {
-    let json = r#"{"result":{"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"family":"checkbox","widgets":[{"ref":{"kind":"objectNumber","page":{"kind":"objectNumber","pageObjectNumber":2},"annotObjectNumber":9},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2},"onState":"On","exportValue":"Yes","checked":true}]}]}}"#;
+    let json = r#"{"result":{"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"family":"checkbox","widgets":[{"ref":{"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":2},"annotObjectNumber":9},"annotObjectNumber":9,"page":{"kind":"objectNumber","objectNumber":2},"onState":"On","exportValue":"Yes","checked":true}]}]}}"#;
     let call = translate("d1", "forms.list", None, &[], 20).unwrap();
     let widget =
         decode(&call.decode, answer(json)).unwrap().value["fields"][0]["widgets"][0].clone();
@@ -806,8 +826,8 @@ fn a_widget_placement_goes_out_with_a_whole_page_ref() {
         "widget": { "page": { "kind": "objectNumber", "pageObjectNumber": 2.0 },
             "rect": { "left": 0, "bottom": 0, "right": 10, "top": 10 } } });
     let call = translate("d1", "forms.createField", None, &[draft], 22).unwrap();
-    assert_eq!(call.request["draft"]["widget"]["page"], page_ref(2));
-    assert!(call.request["draft"]["widget"]["page"]["pageObjectNumber"].is_u64());
+    assert_eq!(call.request["draft"]["widget"]["page"], wire_page(2));
+    assert!(call.request["draft"]["widget"]["page"]["objectNumber"].is_u64());
     let radio = json!({ "family": "radio", "name": "r",
         "widgets": [{ "page": { "kind": "index", "index": 0 }, "onState": "A" }] });
     let error = translate("d1", "forms.createField", None, &[radio], 23).err().unwrap();
@@ -882,7 +902,7 @@ fn a_widget_link_sends_the_widgets_annotation_ref() {
         assert_eq!(
             call.request,
             json!({ "kind": kind, "jobId": 27, "docId": "d1", "ref": field,
-            "widget": { "kind": "objectNumber", "annotObjectNumber": 9, "page": page_ref(2) } })
+            "widget": wire_annot(2, 9) })
         );
     }
 }
@@ -971,9 +991,9 @@ fn a_pages_scope_goes_out_as_whole_page_refs() {
     assert_eq!(
         call.request,
         json!({ "kind": "redaction.apply", "jobId": 30, "docId": "d1",
-            "scope": { "kind": "pages", "pages": [page_ref(3), page_ref(7)] } })
+            "scope": { "kind": "pages", "pages": [wire_page(3), wire_page(7)] } })
     );
-    assert!(call.request["scope"]["pages"][0]["pageObjectNumber"].is_u64());
+    assert!(call.request["scope"]["pages"][0]["objectNumber"].is_u64());
 }
 
 #[test]
@@ -983,9 +1003,9 @@ fn an_annotations_scope_goes_out_with_whole_refs() {
     let call = translate("d1", "redaction.apply", None, &[scope], 31).unwrap();
     assert_eq!(
         call.request["scope"],
-        json!({ "kind": "annotations", "refs": [{ "kind": "objectNumber", "page": page_ref(3), "annotObjectNumber": 17 }] })
+        json!({ "kind": "annotations", "refs": [wire_annot(3, 17)] })
     );
-    assert!(call.request["scope"]["refs"][0]["annotObjectNumber"].is_u64());
+    assert!(call.request["scope"]["refs"][0]["objectNumber"].is_u64());
 }
 
 #[test]
@@ -1001,7 +1021,7 @@ fn a_redaction_scope_that_is_neither_kind_is_invalid_input() {
 fn an_apply_result_answers_pages_and_nested_refs() {
     // The host's event spreads the result's members beside `type` and
     // `origin` (`DocumentEventInit` is an internally tagged enum).
-    let json = r#"{"result":{"result":{"scope":{"kind":"pages","pages":[{"kind":"objectNumber","pageObjectNumber":3}]},"results":[{"page":{"kind":"objectNumber","pageObjectNumber":3},"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2},"mutationSequence":4,"event":{"type":"redaction.applied","origin":{"kind":"local","serverId":null},"scope":{"kind":"pages","pages":[{"kind":"objectNumber","pageObjectNumber":3}]},"results":[{"page":{"kind":"objectNumber","pageObjectNumber":3},"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2}}}"#;
+    let json = r#"{"result":{"result":{"scope":{"kind":"pages","pages":[{"kind":"objectNumber","objectNumber":3}]},"results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2},"mutationSequence":4,"event":{"type":"redaction.applied","origin":{"kind":"local","serverId":null},"scope":{"kind":"pages","pages":[{"kind":"objectNumber","objectNumber":3}]},"results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied","removedAnnotationCount":2}],"removedAnnotationCount":2}}}"#;
     let call =
         translate("d1", "redaction.apply", None, &[json!({ "kind": "pages", "pages": [] })], 32)
             .unwrap();
@@ -1017,7 +1037,7 @@ fn an_apply_result_answers_pages_and_nested_refs() {
 
 #[test]
 fn an_annotations_apply_result_answers_nested_refs() {
-    let json = r#"{"result":{"result":{"scope":{"kind":"annotations","refs":[{"kind":"objectNumber","page":{"kind":"objectNumber","pageObjectNumber":3},"annotObjectNumber":17}]},"results":[{"page":{"kind":"objectNumber","pageObjectNumber":3},"status":"applied","removedAnnotationCount":0}],"removedAnnotationCount":0},"mutationSequence":5,"event":null}}"#;
+    let json = r#"{"result":{"result":{"scope":{"kind":"annotations","refs":[{"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":3},"objectNumber":17}]},"results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied","removedAnnotationCount":0}],"removedAnnotationCount":0},"mutationSequence":5,"event":null}}"#;
     let call = translate(
         "d1",
         "redaction.apply",
@@ -1038,14 +1058,14 @@ fn page_measure_paths_go_to_the_measure_kinds() {
     assert!(epdf_viewer_host::translate::maps("page.measure"));
     let read = translate("doc-1", "page.measure.viewports", Some(7), &[], 3).unwrap();
     assert_eq!(read.request["kind"], json!("measure.viewports"));
-    assert_eq!(read.request["page"], page_ref(7));
+    assert_eq!(read.request["page"], wire_page(7));
     assert!(matches!(read.decode, Decode::Field("viewports")));
     let measure = json!({ "subtype": "RL", "ratio": "1 in = 1 m" });
     let write =
         translate("doc-1", "page.measure.setScale", Some(7), std::slice::from_ref(&measure), 4)
             .unwrap();
     assert_eq!(write.request["kind"], json!("measure.setScale"));
-    assert_eq!(write.request["page"], page_ref(7));
+    assert_eq!(write.request["page"], wire_page(7));
     assert_eq!(write.request["measure"], measure);
 }
 
@@ -1117,7 +1137,7 @@ fn piece_info_paths_carry_their_holder() {
     )
     .unwrap();
     assert_eq!(page.request["kind"], json!("pieceInfo.update"));
-    assert_eq!(page.request["page"], page_ref(4));
+    assert_eq!(page.request["page"], wire_page(4));
     assert_eq!(page.request["patch"], json!({ "set": {} }));
     // `void`, as the TypeScript resolves an update, with no event.
     let decoded =
@@ -1148,7 +1168,7 @@ fn named_page_paths_go_out_as_the_host_reads_them() {
     .unwrap();
     assert_eq!(set.request["kind"], json!("pages.setName"));
     assert_eq!(set.request["name"], json!("a=A"));
-    assert_eq!(set.request["page"], page_ref(3));
+    assert_eq!(set.request["page"], wire_page(3));
     assert_eq!(set.request["replace"], json!("a=Z"));
     let remove =
         translate("doc-1", "pages.removeName", None, &[json!({ "name": "a=A" })], 2).unwrap();
@@ -1159,7 +1179,7 @@ fn named_page_paths_go_out_as_the_host_reads_them() {
 
 #[test]
 fn a_named_page_target_arrives_as_a_page_ref() {
-    let json = r#"{"result":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","pageObjectNumber":3}}],"namedPages":[{"name":"a=A","target":{"kind":"page","page":{"kind":"objectNumber","pageObjectNumber":3}}},{"name":"t","target":{"kind":"template","objectNumber":9}}]}}"#;
+    let json = r#"{"result":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":3}}],"namedPages":[{"name":"a=A","target":{"kind":"page","page":{"kind":"objectNumber","objectNumber":3}}},{"name":"t","target":{"kind":"template","objectNumber":9}}]}}"#;
     let decoded = decode(&Decode::PageList, answer(json)).unwrap();
     assert_eq!(
         decoded.value["namedPages"][0]["target"],
@@ -1177,7 +1197,7 @@ fn a_named_page_target_arrives_as_a_page_ref() {
         1,
     )
     .unwrap();
-    let mutation = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","pageObjectNumber":3}}],"namedPages":[{"name":"a=A","target":{"kind":"page","page":{"kind":"objectNumber","pageObjectNumber":3}}}]}},"mutationSequence":1,"event":{"type":"pages.named","name":"a=A","page":{"kind":"objectNumber","pageObjectNumber":3},"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","pageObjectNumber":3}}],"namedPages":[]}}}}"#;
+    let mutation = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":3}}],"namedPages":[{"name":"a=A","target":{"kind":"page","page":{"kind":"objectNumber","objectNumber":3}}}]}},"mutationSequence":1,"event":{"type":"pages.named","name":"a=A","page":{"kind":"objectNumber","objectNumber":3},"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":3}}],"namedPages":[]}}}}"#;
     let decoded = decode(&set.decode, answer(mutation)).unwrap();
     assert_eq!(decoded.value["layout"]["pages"][0]["ref"], page_ref(3));
     assert_eq!(decoded.value["layout"]["namedPages"][0]["target"]["page"], page_ref(3));
@@ -1188,7 +1208,7 @@ fn a_named_page_target_arrives_as_a_page_ref() {
     assert!(event.get("pageObjectNumber").is_none());
     let remove =
         translate("doc-1", "pages.removeName", None, &[json!({ "name": "a=A" })], 2).unwrap();
-    let removed = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","pageObjectNumber":3}}],"namedPages":[]}},"mutationSequence":2,"event":{"type":"pages.named","name":"a=A","page":null,"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","pageObjectNumber":3}}],"namedPages":[]}}}}"#;
+    let removed = r#"{"result":{"result":{"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":3}}],"namedPages":[]}},"mutationSequence":2,"event":{"type":"pages.named","name":"a=A","page":null,"layout":{"pageCount":1,"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":3}}],"namedPages":[]}}}}"#;
     let event = decode(&remove.decode, answer(removed)).unwrap().event.unwrap();
     assert_eq!(event["page"], Value::Null);
     assert!(event.get("pageObjectNumber").is_none());
@@ -1200,9 +1220,9 @@ fn a_flatten_carries_its_pages_and_usage_and_answers_page_refs() {
         translate("doc-1", "pages.flatten", None, &[json!([page_ref(3)]), json!("display")], 1)
             .unwrap();
     assert_eq!(call.request["kind"], json!("pages.flatten"));
-    assert_eq!(call.request["pages"], json!([page_ref(3)]));
+    assert_eq!(call.request["pages"], json!([wire_page(3)]));
     assert_eq!(call.request["usage"], json!("display"));
-    let json = r#"{"result":{"result":{"pages":[{"kind":"objectNumber","pageObjectNumber":3}],"usage":"display","results":[{"page":{"kind":"objectNumber","pageObjectNumber":3},"status":"applied"}]},"mutationSequence":1,"event":null}}"#;
+    let json = r#"{"result":{"result":{"pages":[{"kind":"objectNumber","objectNumber":3}],"usage":"display","results":[{"page":{"kind":"objectNumber","objectNumber":3},"status":"applied"}]},"mutationSequence":1,"event":null}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
     assert_eq!(decoded.value["results"][0]["page"], page_ref(3));
 }
@@ -1241,7 +1261,7 @@ fn an_encoded_render_asks_for_png_and_answers_bytes() {
     let options = json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });
     let call = translate_encoded_render("doc-1", Some(2), &[options], 1).unwrap();
     assert_eq!(call.request["kind"], json!("pages.renderEncoded"));
-    assert_eq!(call.request["page"], page_ref(2));
+    assert_eq!(call.request["page"], wire_page(2));
     assert_eq!(call.request["encode"], json!({ "format": "png" }));
     assert!(call.request["options"].get("format").is_none());
     let response = HostResponse {
@@ -1396,4 +1416,69 @@ fn prepare_answers_its_digest_inside_the_result() {
     let decoded = decode(&Decode::ResultWithBytes("digest"), response).unwrap();
     assert_eq!(decoded.value["digest"], json!({ "$bytes": "CQ==" }));
     assert_eq!(decoded.value["signingId"], json!("s1"));
+}
+
+// ── the Task 8 transition ────────────────────────────────────────────────
+
+fn call_host_json(host: &mut epdf_engine::host::Host, request: Value) -> Value {
+    let response = epdf_viewer_host::translate::call_host(host, &request.to_string(), Vec::new());
+    serde_json::from_str(&response.json).unwrap()
+}
+
+fn opened_host() -> epdf_engine::host::Host {
+    let mut host = epdf_engine::host::Host::new();
+    let bytes = test_support::fixture("tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    host
+}
+
+/// A kernel path mapped onto a kind upstream removed still reaches the
+/// host, through `call_legacy`, while the wire answers it as unknown.
+#[test]
+fn a_removed_kind_goes_through_the_legacy_entry() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let first = pages["result"]["pages"][0]["ref"].clone();
+    let rotate = json!({ "kind": "pages.rotate", "jobId": 3, "docId": "d",
+        "pages": [first], "rotation": 90 });
+    let wire: Value =
+        serde_json::from_str(&host.call(&rotate.to_string(), Vec::new()).json).unwrap();
+    assert_eq!(wire["error"]["message"], "unknown request kind: pages.rotate", "{wire}");
+    let legacy = call_host_json(&mut host, rotate);
+    assert!(legacy.get("error").is_none(), "{legacy}");
+}
+
+/// The listing still names an inline annotation by `nm`, and the kernel
+/// sends that back; the wire takes the `baseIndex` upstream names it by.
+#[test]
+fn an_nm_ref_reaches_the_host_as_its_base_index() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let named = pages["result"]["pages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find_map(|page| {
+            let listed = call_host_json(
+                &mut host,
+                json!({ "kind": "annotations.listRawPage", "jobId": 3, "docId": "d",
+                    "page": page["ref"] }),
+            );
+            listed["result"]["annotations"]
+                .as_array()?
+                .iter()
+                .find(|a| a["ref"]["kind"] == "nm")
+                .cloned()
+        })
+        .expect("the fixture has an inline annotation with a /NM");
+    let update = json!({ "kind": "annotations.update", "jobId": 4, "docId": "d",
+        "ref": named["ref"], "patch": { "subtype": named["subtype"], "contents": "edited" } });
+    let wire: Value =
+        serde_json::from_str(&host.call(&update.to_string(), Vec::new()).json).unwrap();
+    assert_eq!(wire["error"]["code"], "WireFormat", "the wire still took an nm ref: {wire}");
+    let answer = call_host_json(&mut host, update);
+    assert!(answer.get("error").is_none(), "{answer}");
 }

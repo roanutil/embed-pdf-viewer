@@ -220,8 +220,15 @@ fn build_plan(scope: &RedactionScope) -> Result<Plan, EngineError> {
                 let Some(refs) = refs else { continue };
                 // Applying shifts every index after the annotation it
                 // removed, so the second positional reference in a batch
-                // names something else by the time it is resolved.
-                if refs.len() > 1 && refs.iter().any(|r| matches!(r, AnnotationRef::Index { .. })) {
+                // names something else by the time it is resolved. A
+                // `baseIndex` is positional here too: upstream keeps it
+                // stable by promoting the page first, which this engine
+                // cannot do yet (`resolve::base_index_position`).
+                if refs.len() > 1
+                    && refs.iter().any(|r| {
+                        matches!(r, AnnotationRef::Index { .. } | AnnotationRef::BaseIndex { .. })
+                    })
+                {
                     return Err(EngineError::with_message(
                         EngineErrorCode::InvalidArg,
                         format!(

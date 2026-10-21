@@ -111,10 +111,10 @@ mod tests {
             serde_json::to_value(&meta).unwrap(),
             serde_json::json!({
                 "affectedPages": [{
-                    "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
+                    "page": { "kind": "objectNumber", "objectNumber": 3 },
                     "revision": {
                         "docSessionId": "session-1",
-                        "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
+                        "page": { "kind": "objectNumber", "objectNumber": 3 },
                         "generation": 2,
                     },
                     "weakAnnotationState": { "kind": "known", "hasAnyWeakAnnotations": false },

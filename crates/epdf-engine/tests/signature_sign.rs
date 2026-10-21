@@ -8,7 +8,8 @@ use serde_json::{Value, json};
 
 mod common;
 use common::{
-    sig_call, sig_call_bytes_with, sig_call_with_payload, sig_open_fixture, sig_open_fixture_with,
+    call_legacy, sig_call, sig_call_bytes_with, sig_call_with_payload, sig_open_fixture,
+    sig_open_fixture_with,
 };
 
 const FIX: &str = "packages/engine/main/test/fixtures";
@@ -91,7 +92,8 @@ fn prepare_then_complete_seals_the_field() {
         cms,
     );
     assert_eq!(replay["result"]["status"], json!("already-completed"));
-    let again = sig_call(
+    // Removed upstream, renamed `signatures.cancel`; owner 8.26.
+    let again = call_legacy(
         &mut host,
         json!({ "kind": "signatures.abort", "docId": doc, "signingId": prepared["signingId"] }),
     );
@@ -107,12 +109,13 @@ fn abort_discards_a_prepared_signing() {
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc, "input": { "field": field } }),
     );
-    let aborted = sig_call(
+    // Removed upstream, renamed `signatures.cancel`; owner 8.26.
+    let aborted = call_legacy(
         &mut host,
         json!({ "kind": "signatures.abort", "docId": doc, "signingId": prepared["signingId"] }),
     );
     assert_eq!(aborted["status"], json!("aborted"));
-    let again = sig_call(
+    let again = call_legacy(
         &mut host,
         json!({ "kind": "signatures.abort", "docId": doc, "signingId": prepared["signingId"] }),
     );

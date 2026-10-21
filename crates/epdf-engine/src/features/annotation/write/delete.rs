@@ -116,37 +116,11 @@ pub fn delete_annotation(
             // The caller validated the revision token before calling: an
             // index is only meaningful against the generation it was minted
             // for, and this module has no revision store to check it against.
-            let found = page.annotation(*index).ok_or_else(|| {
-                EngineError::with_message(
-                    EngineErrorCode::InvalidReference,
-                    format!("index {index} is past the end of this page's annotations"),
-                )
-            })?;
-            check_widget(&found, resolve_widget)?;
-            // Whatever durable id it turned out to have. Read BEFORE the
-            // removal, because afterwards there is nothing to ask.
-            let object_number = found.object_number();
-            let nm = found
-                .string_value("NM")
-                .map_err(|e| {
-                    EngineError::with_message(
-                        EngineErrorCode::RuntimeUnavailable,
-                        format!("reading /NM of the annotation being deleted failed: {e}"),
-                    )
-                })?
-                .filter(|nm| !nm.is_empty());
-            drop(found);
-            cancel.check()?;
-            if !page.remove_annotation_at(*index) {
-                return Err(removal_failed("index"));
-            }
-            match (object_number, nm) {
-                (n, _) if n > 0 => Some(AnnotationStableId::ObjectNumber { value: n }),
-                (_, Some(nm)) => Some(AnnotationStableId::Nm { value: nm }),
-                // A weak annotation. The engine refuses to fabricate an id
-                // at delete time, so the caller learns it must re-read.
-                _ => None,
-            }
+            delete_at(page, *index, resolve_widget, cancel)?
+        }
+        AnnotationRef::BaseIndex { base_index, .. } => {
+            let index = super::resolve::base_index_position(page, *base_index)?;
+            delete_at(page, index, resolve_widget, cancel)?
         }
     };
 
@@ -159,6 +133,47 @@ pub fn delete_annotation(
     .map_err(|e| EngineError::with_message(EngineErrorCode::InvalidArg, e.to_string()))?;
 
     Ok(AnnotationDeleteResult { deleted, meta })
+}
+
+/// Delete the annotation at `index` of the page's `/Annots`, answering
+/// whatever durable id it turned out to have.
+fn delete_at(
+    page: &PageView<'_>,
+    index: u32,
+    resolve_widget: &dyn Fn(u32) -> WidgetAttachment,
+    cancel: &CancelToken,
+) -> Result<Option<AnnotationStableId>, EngineError> {
+    let found = page.annotation(index).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidReference,
+            format!("index {index} is past the end of this page's annotations"),
+        )
+    })?;
+    check_widget(&found, resolve_widget)?;
+    // Whatever durable id it turned out to have. Read BEFORE the
+    // removal, because afterwards there is nothing to ask.
+    let object_number = found.object_number();
+    let nm = found
+        .string_value("NM")
+        .map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                format!("reading /NM of the annotation being deleted failed: {e}"),
+            )
+        })?
+        .filter(|nm| !nm.is_empty());
+    drop(found);
+    cancel.check()?;
+    if !page.remove_annotation_at(index) {
+        return Err(removal_failed("index"));
+    }
+    Ok(match (object_number, nm) {
+        (n, _) if n > 0 => Some(AnnotationStableId::ObjectNumber { value: n }),
+        (_, Some(nm)) => Some(AnnotationStableId::Nm { value: nm }),
+        // A weak annotation. The engine refuses to fabricate an id
+        // at delete time, so the caller learns it must re-read.
+        _ => None,
+    })
 }
 
 fn check_widget(

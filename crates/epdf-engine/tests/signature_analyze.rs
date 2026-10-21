@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{page_ref, sig_call, sig_open_fixture};
+use common::{call_legacy, page_ref, sig_call, sig_open_fixture};
 
 const FIX: &str = "packages/engine/main/test/fixtures";
 
@@ -123,7 +123,8 @@ fn an_edit_after_an_approval_is_judged_forbidden() {
     // no rule permits at any level.
     let mut host = Host::new();
     let (doc, pon) = sig_open_fixture(&mut host, &format!("{FIX}/signed_two_approvals.pdf"));
-    sig_call(
+    // Removed upstream; owner 8.18 (`document.apply`).
+    call_legacy(
         &mut host,
         json!({ "kind": "pages.rotate", "docId": doc, "pages": [page_ref(pon)], "rotation": 90 }),
     );

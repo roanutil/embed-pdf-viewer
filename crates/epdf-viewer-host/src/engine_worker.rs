@@ -59,7 +59,9 @@ impl EngineWorker {
                         }
                         Request::Call { json, payloads, reply } => {
                             let response = owner
-                                .run(move |host: &mut Host| host.call(&json, payloads))
+                                .run(move |host: &mut Host| {
+                                    crate::translate::call_host(host, &json, payloads)
+                                })
                                 .unwrap_or_else(|error| HostResponse {
                                     json: serde_json::json!({ "error": error }).to_string(),
                                     payloads: Vec::new(),

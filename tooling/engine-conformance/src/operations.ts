@@ -1012,7 +1012,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'queued-only',
     rustStatus: 'planned',
-    note: "A session effect. Still planned: this branch's Rust host routes it under its pre-rename kind, signatures.abort (crates/epdf-engine/src/host.rs:519), so a signatures.cancel request does not reach it. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
+    note: "A session effect. Still planned: this branch's Rust host keeps the arm under its pre-rename kind, signatures.abort, which the wire answers as an unknown kind and only Host::call_legacy reaches (crates/epdf-engine/src/host.rs, LEGACY_KINDS) until Task 8.26 renames it. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
   },
   {
     kind: 'signatures.finalizeCandidate',

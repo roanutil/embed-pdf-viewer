@@ -12,6 +12,17 @@
 //! annotation's `page`, a widget's `page` and `ref`), so the kernel reads
 //! them as they arrive.
 //!
+//! The kernel still spells refs as this branch's wire did before the
+//! catch-up: a `PageRef`'s number is `pageObjectNumber` and an annotation
+//! ref's is `annotObjectNumber`. The host spells both `objectNumber`, as
+//! upstream does (595bdc6c7). `translate` respells a request on the way out
+//! and `decode` respells an answer on the way back, so the kernel keeps its
+//! spelling until Task 13 ports it.
+//!
+//! A kernel path that maps onto a kind upstream removed goes to the host
+//! through `Host::call_legacy` (see [`call_host`]), each until the sub-task
+//! named beside it in `route` moves it to the kind that replaced it.
+//!
 //! Answers are read the host's way, which is not the TypeScript worker's in
 //! two respects: the host sends a result bare where the worker tags it
 //! (`{tag, snapshot}`), and wraps a mutation's result with its sequence and
@@ -20,7 +31,7 @@
 //! here, and a render request leaves its encode options behind. A shape the
 //! host did not send is an error, never a guess.
 
-use epdf_engine::host::HostResponse;
+use epdf_engine::host::{Host, HostResponse};
 use epdf_kernel::Error;
 use epdf_kernel::geometry::PageRef;
 use serde_json::{Map, Value};
@@ -177,6 +188,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.geometry.read" => ("pages.geometry", Decode::Result),
         "page.render.image" => ("pages.render", Decode::Raster),
         "search.query" => ("search.query", Decode::SearchSlice),
+        // Removed upstream; owner 8.12 (`annotations.list`).
         "page.annotations.list" => ("annotations.listRawPage", Decode::Result),
         "annotations.listRawAll" => ("annotations.listRawAll", Decode::Result),
         "page.annotations.create" => ("annotations.create", Decode::Mutation),
@@ -186,6 +198,8 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "redaction.apply" => ("redaction.apply", Decode::Mutation),
         "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
         "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
+        // Removed upstream; owner 8.18 (page structure through
+        // `document.apply`).
         "pages.move" => ("pages.move", Decode::PageMutation),
         "pages.rotate" => ("pages.rotate", Decode::PageMutation),
         "pages.delete" => ("pages.delete", Decode::PageMutation),
@@ -196,6 +210,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.list" => ("forms.list", Decode::Result),
         "forms.setValue" => ("forms.setValue", Decode::Mutation),
         "forms.reset" => ("forms.reset", Decode::Mutation),
+        // Removed upstream; owner 8.20 (`document.apply`).
         "forms.applyEffects" => ("forms.applyEffects", Decode::Mutation),
         "forms.exportData" => ("forms.export", Decode::ExportBytes),
         "forms.importData" => ("forms.import", Decode::Mutation),
@@ -203,6 +218,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.createField" => ("forms.createField", Decode::Mutation),
         "forms.updateField" => ("forms.updateField", Decode::Mutation),
         "forms.deleteField" => ("forms.deleteField", Decode::Mutation),
+        // Removed upstream; owner 8.21 (`forms.addWidget`).
         "forms.attachWidget" => ("forms.attachWidget", Decode::Mutation),
         "forms.detachWidget" => ("forms.detachWidget", Decode::Mutation),
         "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
@@ -221,6 +237,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "signatures.analyze" => ("signatures.analyze", Decode::Result),
         "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
         "signatures.complete" => ("signatures.complete", Decode::Mutation),
+        // Renamed `signatures.cancel` upstream; owner 8.26.
         "signatures.abort" => ("signatures.abort", Decode::Result),
         "document.version" => ("document.version", Decode::Result),
         "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
@@ -424,7 +441,141 @@ pub fn translate(
         let measure = if epdf_kernel::is_undefined(&measure) { Value::Null } else { measure };
         request.insert("measure".into(), measure);
     }
-    Ok(WireCall { request: Value::Object(request), payloads, decode })
+    let mut request = Value::Object(request);
+    to_wire_refs(&mut request);
+    Ok(WireCall { request, payloads, decode })
+}
+
+/// Send one translated request to `host`: through [`Host::call`], or through
+/// [`Host::call_legacy`] for a kind upstream removed, which the wire answers
+/// as unknown. `route` names each one's owner sub-task.
+pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostResponse {
+    let Ok(mut request) = serde_json::from_str::<Value>(json) else {
+        // Not JSON: the host's own refusal says so.
+        return host.call(json, payloads);
+    };
+    let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default().to_owned();
+    if epdf_engine::host::LEGACY_KINDS.contains(&kind.as_str()) {
+        return host.call_legacy(json, payloads);
+    }
+    if base_index_refs(host, &mut request) {
+        return host.call(&request.to_string(), payloads);
+    }
+    host.call(json, payloads)
+}
+
+/// The kernel's `nm` and `index` annotation refs, which the wire no longer
+/// takes (bc0057f3a), as the `baseIndex` refs upstream names the same
+/// annotations by. Answers whether it changed anything.
+///
+/// The host's annotation listing still answers an inline annotation (one
+/// with no object number) by `nm`, or by `index` when it has no `/NM`, and
+/// the kernel sends those back. Upstream names it by its position in the
+/// page's `/Annots` instead, which the host resolves on a page it has not
+/// restructured (`resolve::base_index_position`). An `index` ref is that
+/// position already; an `nm` ref's position is looked up in the page's
+/// listing. Its revision token is dropped: upstream has none.
+///
+/// Dead once Task 8.12 makes the listing answer `baseIndex` refs and Task 13
+/// moves the kernel onto them.
+fn base_index_refs(host: &mut Host, request: &mut Value) -> bool {
+    let doc = request.get("docId").cloned().unwrap_or(Value::Null);
+    let layer = request.get("layerName").cloned();
+    let mut listings: Vec<(Value, Value)> = Vec::new();
+    let mut changed = false;
+    let mut respell = |target: &mut Value| -> bool {
+        let Value::Object(map) = target else { return false };
+        let position = match map.get("kind").and_then(Value::as_str) {
+            Some("index") if map.contains_key("page") => map.get("index").cloned(),
+            Some("nm") if map.contains_key("page") => {
+                let page = map["page"].clone();
+                let listed = match listings.iter().find(|(p, _)| *p == page) {
+                    Some((_, listed)) => listed.clone(),
+                    None => {
+                        let mut list = serde_json::json!({ "kind": "annotations.listRawPage",
+                            "docId": doc, "page": page });
+                        if let Some(layer) = &layer {
+                            list["layerName"] = layer.clone();
+                        }
+                        let response = host.call_legacy(&list.to_string(), Vec::new());
+                        let listed = serde_json::from_str::<Value>(&response.json)
+                            .ok()
+                            .and_then(|mut e| e.get_mut("result").map(Value::take))
+                            .unwrap_or(Value::Null);
+                        listings.push((page, listed.clone()));
+                        listed
+                    }
+                };
+                let wanted = Value::Object(map.clone());
+                listed["annotations"]
+                    .as_array()
+                    .and_then(|all| all.iter().find(|a| a["ref"] == wanted))
+                    .and_then(|a| a.get("index").cloned())
+            }
+            _ => None,
+        };
+        let Some(position) = position.filter(Value::is_u64) else { return false };
+        let page = map["page"].clone();
+        *target = serde_json::json!({ "kind": "baseIndex", "page": page, "baseIndex": position });
+        true
+    };
+    fn walk(value: &mut Value, respell: &mut dyn FnMut(&mut Value) -> bool) -> bool {
+        if respell(value) {
+            return true;
+        }
+        let mut changed = false;
+        match value {
+            Value::Object(map) => map.values_mut().for_each(|v| changed |= walk(v, respell)),
+            Value::Array(items) => items.iter_mut().for_each(|v| changed |= walk(v, respell)),
+            _ => {}
+        }
+        changed
+    }
+    changed |= walk(request, &mut respell);
+    changed
+}
+
+/// The kernel's ref spelling as the host reads it: in every object tagged
+/// `objectNumber`, a `PageRef`'s `pageObjectNumber` and an annotation ref's
+/// `annotObjectNumber` become `objectNumber`. A form field ref keeps
+/// `fieldObjectNumber`, which is still what the host reads.
+fn to_wire_refs(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if map.get("kind").and_then(Value::as_str) == Some("objectNumber")
+                && !map.contains_key("objectNumber")
+                && let Some(number) =
+                    map.remove("pageObjectNumber").or_else(|| map.remove("annotObjectNumber"))
+            {
+                map.insert("objectNumber".into(), number);
+            }
+            map.values_mut().for_each(to_wire_refs);
+        }
+        Value::Array(items) => items.iter_mut().for_each(to_wire_refs),
+        _ => {}
+    }
+}
+
+/// The host's ref spelling as the kernel reads it, the inverse of
+/// [`to_wire_refs`]: an `objectNumber` beside a `page` is an annotation
+/// ref's (`annotObjectNumber`), and one without is a `PageRef`'s
+/// (`pageObjectNumber`). That rule holds while the host answers form field
+/// refs as `fieldObjectNumber`; the sub-task that respells those changes it.
+fn to_kernel_refs(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            if map.get("kind").and_then(Value::as_str) == Some("objectNumber")
+                && let Some(number) = map.remove("objectNumber")
+            {
+                let key =
+                    if map.contains_key("page") { "annotObjectNumber" } else { "pageObjectNumber" };
+                map.insert(key.into(), number);
+            }
+            map.values_mut().for_each(to_kernel_refs);
+        }
+        Value::Array(items) => items.iter_mut().for_each(to_kernel_refs),
+        _ => {}
+    }
 }
 
 /// `page.render.image` on the stamp plugin's asset engine: the same options
@@ -447,7 +598,7 @@ pub fn translate_encoded_render(
             format!("[epdf-viewer-host] the asset engine encodes png only, not {format}"),
         ));
     }
-    let request = serde_json::json!({
+    let mut request = serde_json::json!({
         "kind": "pages.renderEncoded",
         "jobId": job,
         "docId": doc,
@@ -455,6 +606,7 @@ pub fn translate_encoded_render(
         "options": render_options(options),
         "encode": { "format": "png" },
     });
+    to_wire_refs(&mut request);
     Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
@@ -795,6 +947,7 @@ fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
+    to_kernel_refs(&mut envelope);
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
         let message = error.get("message").and_then(Value::as_str).unwrap_or_default();

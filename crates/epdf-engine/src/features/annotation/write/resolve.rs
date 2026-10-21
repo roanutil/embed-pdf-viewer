@@ -48,7 +48,33 @@ pub fn resolve_annotation<'page>(
                 format!("index {index} is past the end of this page's annotations"),
             )
         }),
+        AnnotationRef::BaseIndex { base_index, .. } => {
+            let index = base_index_position(page, *base_index)?;
+            page.annotation(index).ok_or_else(|| base_index_not_found(*base_index))
+        }
     }
+}
+
+/// Where the annotation born inline at `base_index` of the page is now:
+/// `resolveAnnotIndexRaw.ts` `baseIndexPosition`, on a page the layer has not
+/// promoted. Only an inline entry (object number `0`) still sits at its birth
+/// position, so an object there, or nothing, is `NotFound`.
+///
+/// The promoted-page branch (`EPDFLayer_IsPagePromoted`,
+/// `EPDFLayer_GetBirthObjectNumber`) has no binding in `pdfium` yet, so a
+/// page this engine restructured is read as if it were not promoted.
+pub fn base_index_position(page: &PageView<'_>, base_index: u32) -> Result<u32, EngineError> {
+    match page.annotation(base_index) {
+        Some(found) if found.object_number() == 0 => Ok(base_index),
+        _ => Err(base_index_not_found(base_index)),
+    }
+}
+
+fn base_index_not_found(base_index: u32) -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotFound,
+        format!("no annotation born at position {base_index} of this page"),
+    )
 }
 
 /// The annotation's stable id, stamping one if it has none.
