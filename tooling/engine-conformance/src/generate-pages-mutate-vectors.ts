@@ -299,7 +299,7 @@ const CASES: readonly MutateCase[] = [
   {
     name: 'flatten-annotations-nothing-eligible',
     covers:
-      "Every ref left unchanged: the square that never shows on screen, flattened for display. No result is applied, yet the page is still affected and the write still published, because the flatten first gives the page's inline annotations object numbers. Named the bare highlight until the engine began drawing that one an appearance.",
+      "Every ref left unchanged: the square that never shows on screen, flattened for display. No result is applied, yet the page is still among the affected pages, because the flatten first gives the page's inline annotations object numbers. Named the bare highlight until the engine began drawing that one an appearance.",
     flattenAnnotations: {
       fixture: APPEARANCES,
       page: 3,
@@ -351,7 +351,7 @@ const CASES: readonly MutateCase[] = [
   {
     name: 'export-appearance-without-appearance-refused',
     covers:
-      'All or nothing: an annotation hidden on screen refuses the whole export, since a stamp silently missing one of its parts would be worse than an error. Named the bare highlight until the engine began drawing that one an appearance.',
+      'All or nothing: an annotation hidden on screen refuses the whole export, since a stamp silently missing one of its parts would be worse than an error. The name is kept from when the case sent a highlight with no appearance stream; the engine now draws that highlight an appearance and exports it, so the case sends the square hidden on screen to keep the refusal its subject.',
     exportAppearance: {
       fixture: APPEARANCES,
       page: 3,
