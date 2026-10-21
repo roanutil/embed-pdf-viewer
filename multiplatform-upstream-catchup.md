@@ -169,7 +169,8 @@ Task 7 (redo) wrote Tasks 8.1 to 8.28 on 2026-10-21 against `research/catchup-pl
 | 8.26 Signatures | 8.1, 8.3, 8.21 |
 | 8.29 Layer-backed fat-memory open | 8.3 |
 | 8.30 Session parity | 8.6, 8.29 |
-| 8.27 Close the Rust side | 8.1 to 8.26, 8.29, 8.30 |
+| 8.31 Render parity | 8.4, 8.13, 8.19 |
+| 8.27 Close the Rust side | 8.1 to 8.26, 8.29, 8.30, 8.31 |
 | Task 9 | 8.27 |
 | 8.28 Parity test | Task 9 |
 
@@ -1006,9 +1007,41 @@ Upstream reference: `PageResidency.ts:1-474`, `PagePtrPool.ts:1-85`, `packages/e
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+#### Task 8.31: Render parity
+
+Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.4 (the page-space boundary and render targets), 8.13 (annotation appearances, which share the raster path and its widget flag) and 8.19 (form read, so a render can draw the fields as the form reads them). Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push.
+
+Controller ruling after 8.4: render parity is its own sub-task. 8.4 (`63380c1e2`) moved render targets to page space and added `page` and `area` to the `pages.render` answer, and left four things Rust-only.
+
+Usage and the dpi viewport. Upstream's `PageRenderOptions` has `usage: 'display' | 'print'` (`packages/engine/core/src/dto/PageRender.ts:193-200`) and a `{kind: 'dpi', dpi: 150 | 300}` viewport (`:145-160`). `checkRenderUsage` (`:83-111`) refuses a dpi viewport on a display picture, a usage that is neither, and a print picture without a dpi viewport or with a `target`, `rotation` or `background`, each `InvalidArg` with `details.field`. A print picture is sized by `printScale` (`packages/engine/core/src/geometry/printSize.ts:18`, called from `renderSize.ts:32`) and drawn with `FPDF_PRINTING` (`PageRenderReader.ts:31`, `:66-76`). Rust's `RenderViewport` (`crates/epdf-engine/src/features/render/geometry.rs`) has only `scale` and `width`, and `RenderOptions` (`src/features/render/raster.rs`) has no `usage`. The worker checks with no rights (`checkRenderUsage(options, null)`, `PageRenderReader.ts:65`); the `doc.print` and `doc.print.high` checks are the engine's caller's (`PageRender.ts:100-109`), which `render-policy-local.test.ts` covers on the TS side.
+
+Form fields. `includeFormFields` (`PageRender.ts:181-191`) draws the widgets with `EPDF_RENDER_WIDGETS` (`0x8000`, `PageRenderReader.ts:26`), defaulted by `resolvePageLayers` (`PageRender.ts:42-57`; the worker passes `{annotations: true, formFields: true}`, `PageRenderReader.ts:72`): `false` when `includeAnnotations` is `false`, otherwise `true`. Rust's `PageView::render_rgba_with_matrix` (`crates/pdfium/src/page.rs`) takes one `include_annotations` bool and sets no widget or print flag.
+
+Sliced rendering. Upstream renders through `EPDF_RenderPageBitmapWithMatrix_Start` and `EPDF_RenderPage_Continue` with a time budget and closes with `FPDF_RenderPage_Close` (`PageRenderReader.ts:87-109`, `deviceRaster.ts:103-116` `rasterizeAsync`, `services/src/shared/slices.ts:1-40`), so an abort stops a render at the next slice (33ea7b4c9). Rust calls `FPDF_RenderPageBitmapWithMatrix` once. `Host::call` is synchronous, so slices here mean checking the job's cancel token between them, the way `CancelToken` is checked elsewhere; a token that nothing can set during the call is no reason to skip the slicing, since `crate::dispatch::OwnerThread` and the server hold the token.
+
+Answer shape. Upstream answers `pages.render` as `{tag, page, area, raster: {width, height, stride, color: 'rgba8', premultipliedAlpha: false, data}}` (`packages/engine/core/src/wire/worker-protocol.ts:1875-1881`, `PageRender.ts:246-253`), `pages.renderEncoded` as `{tag, image: {contentType, width, height, bytes}}` (`:1882`, `EncodedImageWire` `:1042-1047`), and `document.renderPageFile(Encoded)` as `{tag, page, pageCount, raster | image}` (`:1888-1901`). This host answers the raster's fields at the top of the result (`width`, `height`, `stride`, pixels as payload 0, `host.rs` `raster_json`) and the encoded image as `{mimeType, width, height, size}` (`encoded_json`). Nest them as upstream does, with the bytes still a payload (this wire's `data` and `bytes` are payload 0, as everywhere else). `translate.rs`'s `Decode::Raster` and `Decode::Encoded` read the flat shape today; change them to the nested one so the render plugin, the stamp plugin's asset engine and `crates/epdf-viewer-host/tests/asset_engine.rs` keep working.
+
+Files: `crates/epdf-engine/src/features/render/{geometry.rs, raster.rs}`, `src/features/server.rs`, `src/host.rs`, `src/page_space/rendering.rs` (a print picture takes no target, so the boundary converts none), `crates/pdfium/src/page.rs` (render flags, and the `_Start`/`_Continue`/`_Close` bindings), `crates/epdf-engine/tests/render_pixels.rs`, `tests/render_geometry.rs`, `tests/server_surfaces.rs`, `tests/wire_contract.rs`, a new `tests/print_render.rs`, `crates/epdf-viewer-host/src/translate.rs`, `tests/translate.rs`, `tests/asset_engine.rs`.
+
+Vectors: `render/geometry.json` (unchanged; it must keep passing). No vector records a print picture; port the tests below.
+
+Upstream reference: `packages/engine/core/src/dto/PageRender.ts:23-213`, `:246-253`, `packages/engine/core/src/geometry/renderSize.ts:15-40`, `printSize.ts:1-23`, `pageTransform.ts:83-121` (`pageTransform`, `renderTargetArea`), `packages/engine/services/src/features/render/PageRenderReader.ts:23-139`, `deviceRaster.ts:86-212`, `packages/engine/services/src/shared/slices.ts:1-40`, `packages/engine/services/src/worker-host/WorkerHost.ts:1874-1887` (`handlePagesRender`), `:1895-1938` (`slicedWork`), `:1944-2034` (`runSliced`, `encodeRaster`, `encodeRendered`), `:2160-2209` (`handleDocumentRenderPageFile`), `worker-protocol.ts:993-1072`, `:1875-1901`. Tests to port: `packages/engine/main/test/page-render.test.ts`, `print-render.test.ts`, `page-render-rights.test.ts` (the cases the worker decides, not the caller's rights), and `render-cancellation.test.ts` (the cases a synchronous host with a cancel token can express; name the rest in the report). Commits: 7e0d96c1c (print pictures and the dpi viewport), 17350fb4c (form fields drawn into a render), 33ea7b4c9 (sliced renders), 7f107fd7c and 771342379 (8.4's targets and `renderMatrix`, already ported).
+
+Kept divergences to re-check: none recorded in this area.
+
+- [ ] `usage` and the dpi viewport: `checkRenderUsage`'s refusals with upstream's `details.field`, `printScale` sizing, and `FPDF_PRINTING` for a print picture, on `pages.render`, `pages.renderEncoded` and `document.renderPageFile(Encoded)`.
+- [ ] `includeFormFields` with `resolvePageLayers`' default, drawn with `EPDF_RENDER_WIDGETS`. `includeAnnotations: false` with no `includeFormFields` draws neither.
+- [ ] Sliced rendering through `EPDF_RenderPageBitmapWithMatrix_Start`/`EPDF_RenderPage_Continue`, the cancel token checked between slices and `FPDF_RenderPage_Close` called before the bitmap is freed. The pixels match the one-shot render byte for byte (`render_pixels.rs` asserts it on `colors.pdf`).
+- [ ] The four render kinds answer upstream's shapes (`raster`, `image`), the bytes still payload 0. `translate.rs` decodes the nested shapes, and the render and stamp plugins see the same values as before.
+- [ ] Set the `operations.ts` notes for `pages.render`, `pages.renderEncoded`, `document.renderPageFile` and `document.renderPageFileEncoded`, removing 8.4's "not read yet" note, and re-render.
+- [ ] Done when `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine --test render_pixels --test render_geometry --test print_render --test server_surfaces --test wire_contract`, `CARGO_BUILD_JOBS=6 cargo test -p epdf-viewer-host --test translate --test asset_engine` and `CARGO_BUILD_JOBS=6 cargo test -p pdfium` pass. This task owns none of the tests failing at `253bca66b`.
+- [ ] Record the baseline before you start: `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-viewer-host -p epdf-wasm --no-fail-fast 2>&1 | grep -E '^test .* FAILED'`. At the end the same command lists no test the baseline did not.
+- [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
+- [ ] Commit with explicit paths.
+
 #### Task 8.27: Close the Rust side
 
-Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`). Needs 8.1 to 8.26, 8.29 and 8.30. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. No `packages/**` or `.github/**` changes; `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` only. Commit with explicit paths; no `git add -A`, no `git stash`, no push.
+Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`). Needs 8.1 to 8.26, 8.29, 8.30 and 8.31. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. No `packages/**` or `.github/**` changes; `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` only. Commit with explicit paths; no `git add -A`, no `git stash`, no push.
 
 Task 9 (the Rust-core payload) runs after this task, and 8.28 after Task 9.
 
