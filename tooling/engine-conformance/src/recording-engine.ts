@@ -8,7 +8,9 @@
  * engine's queue and the in-thread `WorkerHost` copies each request before
  * passing it on. `capture(run)` returns the write requests (`effect` one of
  * `write`, `contentWrite` and `runtimeWrite`) sent while `run` was in
- * flight. Calls are awaited one at a time
+ * flight, plus requests of any kind named in `options.kinds`, which is how
+ * a generator records a read it is about (`annotations.exportAppearance` is
+ * a `snapshot`). Calls are awaited one at a time
  * in every generator, so nothing else is in flight then.
  *
  * Two fields of a request are the session's own counters rather than the
@@ -58,13 +60,24 @@ const WRITES = new Set(['write', 'contentWrite', 'runtimeWrite']);
 
 type RuntimeOptions = Parameters<typeof createInlineTransport>[0];
 
-export function createRecordingEngine(runtime: RuntimeOptions = {}): RecordingEngine {
+export interface RecordingOptions {
+  /** Request kinds to record whatever their effect, besides every write. */
+  readonly kinds?: readonly string[];
+}
+
+export function createRecordingEngine(
+  runtime: RuntimeOptions = {},
+  options: RecordingOptions = {},
+): RecordingEngine {
   let recording: unknown[] | null = null;
+  const kinds = new Set(options.kinds ?? []);
   const inner = new LazyTransport(() => createInlineTransport(runtime));
   const transport: Transport = {
     send(pack) {
       const request = pack.payload as WorkerRequest & { effect?: string };
-      if (recording && WRITES.has(request.effect ?? '')) recording.push(plain(request));
+      if (recording && (WRITES.has(request.effect ?? '') || kinds.has(request.kind))) {
+        recording.push(plain(request));
+      }
       inner.send(pack);
     },
     start: () => inner.start(),

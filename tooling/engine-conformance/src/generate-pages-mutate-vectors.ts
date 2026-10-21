@@ -1,7 +1,9 @@
 /**
  * Emits `vectors/pages/mutate.json`: what `pages.reorder` (once
  * `pages.move`), `pages.rotate`, `pages.delete`, the inserts and
- * `pages.flatten` leave in the document.
+ * `pages.flatten` leave in the document, and what the per-annotation
+ * flatten verbs (`annotations.flatten`, `annotations.exportAppearance`) do
+ * to one page's annotations.
  *
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate
  *   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate:check
@@ -22,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   toPageRef,
+  type AnnotationRef,
   type PageRef,
   type PdfRotation,
 } from '../../../packages/engine/main/src/index';
@@ -58,8 +61,40 @@ interface MutateCase {
     readonly pages: number[];
     readonly usage: 'display' | 'print';
   };
+  /**
+   * Flatten a chosen set of one page's annotations, named by `/NM`. The refs
+   * are built on `refPage` when given, which is how a case names a ref on a
+   * page other than the one asked about.
+   */
+  readonly flattenAnnotations?: {
+    readonly fixture: string;
+    readonly page: number;
+    readonly nms: string[];
+    readonly usage: 'display' | 'print';
+    readonly refPage?: number;
+  };
+  /** Export a chosen set of one page's annotation appearances as a new PDF. */
+  readonly exportAppearance?: {
+    readonly fixture: string;
+    readonly page: number;
+    readonly nms: string[];
+  };
   readonly refused?: true;
 }
+
+const APPEARANCES = 'tooling/engine-conformance/fixtures/annotation_appearances.pdf';
+
+/**
+ * The `/NM`s the flatten cases name that no annotation carries, on purpose.
+ * Any other `/NM` that does not resolve stops the run.
+ */
+const UNLISTED_NMS = new Set(['no-such-annotation']);
+
+/**
+ * The object number an unlisted `/NM` is sent as: past the end of the
+ * fixture's cross-reference table, so no annotation on any page has it.
+ */
+const UNLISTED_OBJECT_NUMBER = 9999;
 
 const CASES: readonly MutateCase[] = [
   {
@@ -240,6 +275,91 @@ const CASES: readonly MutateCase[] = [
     refused: true,
   },
   {
+    name: 'flatten-annotations-subset',
+    covers:
+      "A chosen set of one page's annotations, including a highlight with no appearance stream. It used to be skipped; the engine now draws it an appearance and flattens it, so all three are applied.",
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-bare-highlight', 'a-rotated-polygon'],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-annotations-for-print',
+    covers:
+      'The other usage, over the square that prints and never shows on screen. The fork flattens it for both usages on this corpus (see FlattenUsage in pages_write.rs).',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-print-only-square', 'a-rotated-polygon'],
+      usage: 'print',
+    },
+  },
+  {
+    name: 'flatten-annotations-nothing-eligible',
+    covers:
+      "Every ref left unchanged: the square that never shows on screen, flattened for display. No result is applied, yet the page is still affected and the write still published, because the flatten first gives the page's inline annotations object numbers. Named the bare highlight until the engine began drawing that one an appearance.",
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-print-only-square'],
+      usage: 'display',
+    },
+  },
+  {
+    name: 'flatten-annotations-empty-refused',
+    covers: 'No refs is a malformed request rather than a flatten of nothing.',
+    flattenAnnotations: { fixture: APPEARANCES, page: 3, nms: [], usage: 'display' },
+    refused: true,
+  },
+  {
+    name: 'flatten-annotations-other-page-refused',
+    covers:
+      'A ref that names a different page than the one asked about, refused before anything resolves.',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square'],
+      usage: 'display',
+      refPage: 4,
+    },
+    refused: true,
+  },
+  {
+    name: 'flatten-annotations-unknown-ref-refused',
+    covers:
+      'A ref no annotation on the page answers to (the /NM is sent as an object number nothing has). Nothing is flattened.',
+    flattenAnnotations: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'no-such-annotation'],
+      usage: 'display',
+    },
+    refused: true,
+  },
+  {
+    name: 'export-appearance',
+    covers:
+      "Two appearances as a new single-page PDF sized to the union of their /Rect. The source is untouched, so the answer is the new document's layout.",
+    exportAppearance: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-rotated-polygon'],
+    },
+  },
+  {
+    name: 'export-appearance-without-appearance-refused',
+    covers:
+      'All or nothing: an annotation hidden on screen refuses the whole export, since a stamp silently missing one of its parts would be worse than an error. Named the bare highlight until the engine began drawing that one an appearance.',
+    exportAppearance: {
+      fixture: APPEARANCES,
+      page: 3,
+      nms: ['a-three-mode-square', 'a-print-only-square'],
+    },
+    refused: true,
+  },
+  {
     name: 'delete-one',
     covers:
       'A page removed. Its object number is RETIRED rather than freed, so per-page state a caller kept can never attach to an unrelated future page.',
@@ -267,16 +387,23 @@ const CASES: readonly MutateCase[] = [
 async function readCase(entry: MutateCase): Promise<unknown> {
   // A flatten needs a page with annotations on it, which the page-order
   // fixture has none of, so those cases name their own.
-  const bytes = new Uint8Array(
-    await readFile(join(repoRoot, entry.flatten?.fixture ?? FIXTURE)),
-  );
-  const { engine, capture } = createRecordingEngine({
-    prefer: 'wasm',
-    wasm: {
-      print: (message: string) => process.stderr.write(`${message}\n`),
-      printErr: (message: string) => process.stderr.write(`${message}\n`),
+  const fixture =
+    entry.flatten?.fixture ??
+    entry.flattenAnnotations?.fixture ??
+    entry.exportAppearance?.fixture ??
+    FIXTURE;
+  const bytes = new Uint8Array(await readFile(join(repoRoot, fixture)));
+  const { engine, capture } = createRecordingEngine(
+    {
+      prefer: 'wasm',
+      wasm: {
+        print: (message: string) => process.stderr.write(`${message}\n`),
+        printErr: (message: string) => process.stderr.write(`${message}\n`),
+      },
     },
-  });
+    // A read, so it is recorded by name: the Rust runner replays it too.
+    { kinds: ['annotations.exportAppearance'] },
+  );
   try {
     const doc = await engine.open(
       { kind: 'bytes', id: `pages-mutate:${entry.name}`, bytes },
@@ -300,6 +427,38 @@ async function readCase(entry: MutateCase): Promise<unknown> {
             : index === list.length
               ? ('end' as const)
               : { before: list[index]! };
+      // The flatten cases name annotations by `/NM`. The `nm` ref went in
+      // bc0057f3a ("Remove NM and implement BaseID"), so each is looked up
+      // in the page's listing and sent as that annotation's own ref, on
+      // `refPage` when the case names one. Every annotation in this fixture
+      // is a dictionary inline in `/Annots`, so those refs are `baseIndex`.
+      const annotationRefs = async (
+        page: number,
+        nms: readonly string[],
+        refPage = page,
+      ): Promise<AnnotationRef[]> => {
+        const listed = (await doc.page(toPageRef(page)).annotations.list()).annotations;
+        return nms.map((nm) => {
+          const found = listed.find((annotation) => annotation.nm === nm);
+          if (found) return { ...found.ref, page: toPageRef(refPage) };
+          if (!UNLISTED_NMS.has(nm)) throw new Error(`${entry.name}: no annotation named ${nm}`);
+          return {
+            kind: 'objectNumber',
+            page: toPageRef(refPage),
+            objectNumber: UNLISTED_OBJECT_NUMBER,
+          };
+        });
+      };
+      const flattenRefs = entry.flattenAnnotations
+        ? await annotationRefs(
+            entry.flattenAnnotations.page,
+            entry.flattenAnnotations.nms,
+            entry.flattenAnnotations.refPage,
+          )
+        : [];
+      const exportRefs = entry.exportAppearance
+        ? await annotationRefs(entry.exportAppearance.page, entry.exportAppearance.nms)
+        : [];
       const run = async () => {
         if (entry.move) {
           const moving = new Set(entry.move.pages);
@@ -332,6 +491,35 @@ async function readCase(entry: MutateCase): Promise<unknown> {
           const { meta: _meta, ...flattened } = result;
           return { flattened };
         }
+        if (entry.flattenAnnotations) {
+          const page = doc.page(toPageRef(entry.flattenAnnotations.page));
+          const result = await page.annotations.flatten(flattenRefs, {
+            usage: entry.flattenAnnotations.usage,
+          });
+          // `meta` carries the session's stamps, so only its affected pages
+          // are recorded. A flatten first gives a page's inline annotations
+          // object numbers, which changes the page whatever is applied.
+          const { meta, ...annotationsFlattened } = result;
+          const remaining = (await page.annotations.list()).annotations.length;
+          return {
+            annotationsFlattened,
+            affectedPages: meta.affectedPages,
+            remaining,
+          };
+        }
+        if (entry.exportAppearance) {
+          const page = doc.page(toPageRef(entry.exportAppearance.page));
+          const exported = await page.annotations.exportAppearance(exportRefs);
+          const copy = await engine.open(
+            { kind: 'bytes', id: `pages-mutate:${entry.name}:exported`, bytes: exported },
+            { scope: ['*'] },
+          );
+          try {
+            return { exported: (await copy.pages.list()).pages };
+          } finally {
+            await copy.close();
+          }
+        }
         if (entry.insert) {
           const source = new Uint8Array(await readFile(join(repoRoot, entry.insert.source)));
           const result = await doc.pages.insert(
@@ -357,6 +545,8 @@ async function readCase(entry: MutateCase): Promise<unknown> {
       // The insert operations report which pages are new alongside the
       // layout; the rest report the layout alone.
       if ('flattened' in produced) return { ...entry, request, flattened: produced.flattened };
+      if ('annotationsFlattened' in produced) return { ...entry, request, ...produced };
+      if ('exported' in produced) return { ...entry, request, exported: produced.exported };
       return 'layout' in produced
         ? { ...entry, request, layout: produced.layout, inserted: produced.inserted }
         : { ...entry, request, layout: produced };
