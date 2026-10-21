@@ -248,9 +248,6 @@ impl AnnotationFlattenStatus {
     }
 }
 
-/// `FPDF_SAVE_FLAGS`: a whole file rather than an incremental update.
-const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
-
 impl crate::PageView<'_> {
     /// `EPDFPage_FlattenAnnotations`: flatten a chosen set of this page's
     /// annotations. All-or-nothing on validity: a handle that is not on
@@ -311,23 +308,6 @@ impl crate::PageView<'_> {
         if exported.is_null() {
             return Ok(None);
         }
-        struct Scratch(pdfium_sys::FPDF_DOCUMENT);
-        impl Drop for Scratch {
-            fn drop(&mut self) {
-                // SAFETY: created above and closed exactly once.
-                unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
-            }
-        }
-        let scratch = Scratch(exported);
-        let mut size: std::os::raw::c_ulong = 0;
-        // SAFETY: the handle is live and `size` is a valid out-parameter.
-        let ptr = unsafe {
-            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
-                scratch.0,
-                FPDF_NO_INCREMENTAL,
-                &raw mut size,
-            )
-        };
-        crate::save::owned_buffer(ptr, size).map(Some).ok_or(crate::PdfiumError::Save)
+        crate::save::save_scratch_document(exported).map(Some).ok_or(crate::PdfiumError::Save)
     }
 }

@@ -39,11 +39,20 @@ impl Mat2D {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum RenderViewport {
     /// One PDF user-space unit becomes `scale` device pixels. A caller that
-    /// cares about device pixel ratio folds it into this.
-    Scale { scale: f64 },
+    /// cares about device pixel ratio folds it into this. Optional on the
+    /// wire, and 1 when absent (`scale?: number`, `viewport.scale ?? 1`).
+    Scale {
+        #[serde(default = "unit_scale")]
+        scale: f64,
+    },
     /// An exact output width. Height preserves the region's aspect ratio
     /// after rotation.
     Width { width: f64 },
+}
+
+/// The scale a `scale` viewport has when it names none.
+fn unit_scale() -> f64 {
+    1.0
 }
 
 impl Default for RenderViewport {

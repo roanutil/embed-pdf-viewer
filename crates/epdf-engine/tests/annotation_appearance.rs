@@ -293,18 +293,27 @@ fn filled(color: &str, width: u32, height: u32, matrix: &str) -> String {
 /// turned box. Beside it (object 6), the same drawing in a `/Rect` it doesn't fit
 /// evenly, which is `annotation_appearances.pdf`'s `a-rotated-square`.
 fn turned_square_pdf() -> Vec<u8> {
+    turned_pdf("Square")
+}
+
+/// [`turned_square_pdf`] with both annotations of `subtype`.
+fn turned_pdf(subtype: &str) -> Vec<u8> {
     let turn = "/Matrix [0.8660254 0.5 -0.5 0.8660254 0 0]";
     let fill = filled("0 0 1 rg", 100, 60, turn);
     pdf_of(&[
         "<< /Type /Catalog /Pages 2 0 R >>",
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R 6 0 R] >>",
-        "<< /Type /Annot /Subtype /Square /F 4 /NM (turned) \
-         /Rect [231.69873 579.01924 348.30127 680.98076] /AP << /N 5 0 R >> \
-         /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >>",
+        &format!(
+            "<< /Type /Annot /Subtype /{subtype} /F 4 /NM (turned) \
+             /Rect [231.69873 579.01924 348.30127 680.98076] /AP << /N 5 0 R >> \
+             /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 600 340 660] >> >>"
+        ),
         &fill,
-        "<< /Type /Annot /Subtype /Square /F 4 /NM (stretched) /Rect [220 280 350 380] \
-         /AP << /N 5 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 300 340 360] >> >>",
+        &format!(
+            "<< /Type /Annot /Subtype /{subtype} /F 4 /NM (stretched) /Rect [220 280 350 380] \
+             /AP << /N 5 0 R >> /EMBD_Metadata << /Rotation 30 /UnrotatedRect [240 300 340 360] >> >>"
+        ),
     ])
 }
 
@@ -548,14 +557,27 @@ fn an_annotation_with_no_appearance_stream_is_drawn_in_memory_and_nothing_is_wri
         .expect("the highlight");
     assert_eq!(annotation.available_appearance_modes(), 0, "the render wrote an appearance");
 
-    // A kind PDFium can't draw without writing an appearance (the kinds
-    // file gives none here) has no raster, and the empty answer is still an
-    // answer.
+    // A page full of annotations with not one /AP among them: both families
+    // draw, and the file is the same file afterwards. An incremental save
+    // appends whatever changed, so one taken after the renders equals one
+    // taken before only if neither wrote anything.
     let (document, page) =
         open(&read_fixture("tooling/engine-conformance/fixtures/annotation_kinds.pdf"));
-    let drawn =
+    let save = |document: &OwnedDocument| {
+        document.document().save_to_buffer(pdfium::PdfSaveMode::Incremental).expect("save")
+    };
+    let before = save(&document);
+    let annotations =
         render(&document, page, AnnotationFamily::Annotations, &AppearanceRenderOptions::default());
-    assert!(!drawn.appearances.is_empty(), "annotation_kinds.pdf is drawn in memory");
+    let widgets =
+        render(&document, page, AnnotationFamily::Widgets, &AppearanceRenderOptions::default());
+    assert!(!annotations.appearances.is_empty(), "annotation_kinds.pdf is drawn in memory");
+    assert!(
+        save(&document) == before,
+        "rendering {} and {} appearances wrote into the file",
+        annotations.appearances.len(),
+        widgets.appearances.len()
+    );
 }
 
 #[test]
@@ -823,6 +845,22 @@ fn each_state_draws_its_own_picture_whatever_the_check_box_shows() {
 }
 
 #[test]
+fn a_scale_viewport_that_names_no_scale_is_scale_one() {
+    // `normalizeScale(undefined)` is 1 (`AnnotationAppearanceReader.ts`), as
+    // `PageScreenViewport`'s optional `scale` allows.
+    let mut host = host_with(states_pdf());
+    let (answer, _) =
+        host_render(&mut host, 3, "annotations", Some(json!({ "viewport": { "kind": "scale" } })));
+    assert!(answer.get("error").is_none(), "{answer}");
+    let square = &answer["result"]["appearances"][0]["raster"];
+    assert_eq!(
+        (square["width"].as_u64(), square["height"].as_u64()),
+        (Some(40), Some(40)),
+        "{answer}"
+    );
+}
+
+#[test]
 fn an_empty_modes_list_is_refused() {
     let mut host = host_with(states_pdf());
     for family in ["annotations", "widgets"] {
@@ -877,4 +915,53 @@ fn a_stamps_appearance_reads_as_a_one_page_drawing_and_other_kinds_have_none() {
     let (answer, _) = read_appearance(&mut host, 7);
     assert_eq!(answer["error"]["code"], "InvalidArg", "{answer}");
     assert_eq!(answer["error"]["message"], "the annotation has no normal appearance to read");
+}
+
+#[test]
+fn a_turned_stamps_appearance_reads_without_its_turn() {
+    // `exportUnturnedAppearance`: the turn the stamp reads is taken out, so
+    // the drawing's page is the stamp's unturned box (100 by 60), not the
+    // upright box around it turned (116.6 by 102). A copy made from these
+    // bytes and the record turns it again.
+    let mut host = host_with(turned_pdf("Stamp"));
+    let response = host.call(
+        &json!({ "kind": "annotations.readAppearance", "effect": "read", "jobId": 3,
+            "docId": "doc", "page": { "kind": "objectNumber", "objectNumber": 3 },
+            "ref": { "kind": "objectNumber",
+                "page": { "kind": "objectNumber", "objectNumber": 3 }, "objectNumber": 4 } })
+        .to_string(),
+        Vec::new(),
+    );
+    let answer: Value = serde_json::from_str(&response.json).expect("JSON");
+    assert!(answer.get("error").is_none(), "{answer}");
+    let drawing = Document::from_bytes(Library::acquire(), &response.payloads[0], None)
+        .expect("a PDF of the drawing");
+    let page = drawing.page(0).expect("the drawing's page");
+    let (width, height) = (f64::from(page.width()), f64::from(page.height()));
+    assert!((width - 100.0).abs() < 0.01 && (height - 60.0).abs() < 0.01, "{width} x {height}");
+}
+
+#[test]
+fn a_budget_past_an_appearances_size_refuses_in_upstreams_words() {
+    let (document, page) = open(&read_fixture(APPEARANCES_FIXTURE));
+    let opened = document.page(page).expect("page");
+    let options = AppearanceRenderOptions {
+        max_output_pixels: Some(100),
+        ..AppearanceRenderOptions::default()
+    };
+    let refused = render_page_appearances(
+        document.document(),
+        &opened,
+        page,
+        AnnotationFamily::Annotations,
+        &options,
+        &CancelToken::never(),
+    )
+    .expect_err("past the budget");
+    assert_eq!(refused.code, epdf_engine::error::EngineErrorCode::InvalidArg);
+    assert_eq!(
+        refused.message,
+        "render output 100x60 exceeds the 100-pixel budget \u{2014} request a smaller width \
+         (or tiles, once available)"
+    );
 }

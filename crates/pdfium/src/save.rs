@@ -18,6 +18,30 @@
 
 use crate::{Document, PdfiumError};
 
+/// `FPDF_NO_INCREMENTAL` (`fpdf_save.h`): a whole file rather than an
+/// incremental update. Declared once, here.
+pub(crate) const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
+
+/// A document the fork made for the caller (an export), saved whole into
+/// bytes the caller owns, and closed. `document` is taken: it is closed on
+/// every path, exactly once. `None` when it would not serialize.
+pub(crate) fn save_scratch_document(document: pdfium_sys::FPDF_DOCUMENT) -> Option<Vec<u8>> {
+    struct Scratch(pdfium_sys::FPDF_DOCUMENT);
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            // SAFETY: handed over by the caller and closed exactly once.
+            unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
+        }
+    }
+    let scratch = Scratch(document);
+    let mut size: std::os::raw::c_ulong = 0;
+    // SAFETY: the handle is live and `size` is a valid out-parameter.
+    let ptr = unsafe {
+        pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(scratch.0, FPDF_NO_INCREMENTAL, &raw mut size)
+    };
+    owned_buffer(ptr, size)
+}
+
 /// How much of the file to rewrite.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PdfSaveMode {
@@ -42,7 +66,7 @@ impl PdfSaveMode {
             // combine: passing both is a contradiction PDFium resolves by
             // preferring one, silently.
             Self::Incremental => 1 << 0,
-            Self::Full => 1 << 1,
+            Self::Full => FPDF_NO_INCREMENTAL,
         }
     }
 }

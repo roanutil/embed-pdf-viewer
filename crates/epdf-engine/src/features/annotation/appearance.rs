@@ -403,9 +403,10 @@ fn render_one(
         if pixels > budget {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
+                // `allocateRaster`'s text, word for word.
                 format!(
-                    "render output {width}x{height} exceeds the {budget}-pixel budget; \
-                     request a smaller scale"
+                    "render output {width}x{height} exceeds the {budget}-pixel budget \u{2014} \
+                     request a smaller width (or tiles, once available)"
                 ),
             ));
         }

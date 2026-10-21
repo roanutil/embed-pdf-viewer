@@ -378,3 +378,19 @@ fn a_page_space_target_is_measured_from_the_visible_boxs_top_left() {
         ),
     );
 }
+
+#[test]
+fn a_scale_viewport_that_names_no_scale_is_scale_one() {
+    // `PageScreenViewport`'s `scale` is optional, and `viewport.scale ?? 1`
+    // (`renderSize.ts`): `{kind: "scale"}` is the page at its own size.
+    let mut host = epdf_engine::host::Host::new();
+    let opened = host.call(
+        &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+        vec![shifted_page_pdf()],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let (answer, _) =
+        render_on_the_wire(&mut host, 3, serde_json::json!({ "viewport": { "kind": "scale" } }));
+    assert_eq!((answer["width"].as_u64(), answer["height"].as_u64()), (Some(612), Some(792)));
+}

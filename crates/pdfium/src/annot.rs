@@ -670,26 +670,7 @@ impl Annotation<'_> {
         if exported.is_null() {
             return Ok(None);
         }
-        struct Scratch(pdfium_sys::FPDF_DOCUMENT);
-        impl Drop for Scratch {
-            fn drop(&mut self) {
-                // SAFETY: created above and closed exactly once.
-                unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
-            }
-        }
-        let scratch = Scratch(exported);
-        /// `FPDF_NO_INCREMENTAL`: the drawing is a new document, saved whole.
-        const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
-        let mut size: std::os::raw::c_ulong = 0;
-        // SAFETY: the handle is live and `size` is a valid out-parameter.
-        let ptr = unsafe {
-            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
-                scratch.0,
-                FPDF_NO_INCREMENTAL,
-                &raw mut size,
-            )
-        };
-        crate::save::owned_buffer(ptr, size).map(Some).ok_or(PdfiumError::Save)
+        crate::save::save_scratch_document(exported).map(Some).ok_or(PdfiumError::Save)
     }
 
     /// `/MK /R`, the widget's turn in degrees counterclockwise, as the file

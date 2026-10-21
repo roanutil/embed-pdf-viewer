@@ -10,12 +10,12 @@
 use crate::{Document, Library, PdfiumError};
 use std::rc::Rc;
 
-/// `FPDF_SAVE_FLAGS`: write a full file rather than an incremental update.
-///
-/// An incremental save appends a revision to the original bytes, which for a
-/// document built from nothing would produce a file with a history it never
-/// had. Extraction wants a clean document.
-const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
+// `FPDF_SAVE_FLAGS`: write a full file rather than an incremental update.
+//
+// An incremental save appends a revision to the original bytes, which for a
+// document built from nothing would produce a file with a history it never
+// had. Extraction wants a clean document.
+use crate::save::FPDF_NO_INCREMENTAL;
 
 /// A buffer PDFium allocated, freed when this drops.
 ///
