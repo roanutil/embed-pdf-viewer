@@ -34,7 +34,8 @@ use super::revisions::RevisionAuthority;
 use crate::access::OwnedDocument;
 use crate::auth::scope::{DocCapability, decode_pdf_bits};
 use crate::error::{EngineError, EngineErrorCode};
-use crate::identity::PageObjectNumber;
+use crate::features::signature::types::SignedDocumentPolicy;
+use crate::identity::{OBJECT_NUMBER_ISSUE_LIMIT, ObjectNumberRange, PageObjectNumber};
 use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
 
 /// How the underlying document was opened.
@@ -44,6 +45,32 @@ pub enum OpenKind {
     FatMemory,
     /// A base document plus a layer delta. Reserved; see the module docs.
     Layer,
+}
+
+/// Who decides which object numbers a create may name: the open kinds'
+/// `objectNumbers` (`worker-protocol.ts`). `Session`, the default, hands
+/// numbers out itself (`objectNumbers.reserve`) and refuses one it does not
+/// hold; `Caller` checked every number before sending the job (a server that
+/// hands numbers to editing sessions).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ObjectNumberAuthority {
+    #[default]
+    Session,
+    Caller,
+}
+
+/// What a layer opens from (`LayerOpenSource`, `worker-protocol.ts`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LayerOpenSource {
+    /// An empty layer.
+    Fresh,
+    /// The delta `EPDFLayer_SaveDelta` wrote, which names no base.
+    RawDelta(Vec<u8>),
+    /// A layer artifact, which PDFium refuses against any base but its own.
+    Artifact(Vec<u8>),
+    /// A layer artifact read from a file.
+    ArtifactFile(std::path::PathBuf),
 }
 
 /// A session id, unique within this process.
@@ -101,6 +128,15 @@ pub struct DocumentSession {
     /// detach imported objects from their source, so the source document and
     /// its bytes have to outlive every save of the destination.
     retained: Vec<Box<dyn FnOnce()>>,
+    /// `DocumentSession.objectNumberAuthority`, set by the open.
+    object_number_authority: ObjectNumberAuthority,
+    /// `DocumentSession.signedDocumentPolicy`, set by the open. Kept here for
+    /// the signature engine to enforce (Task 8.26).
+    signed_document_policy: SignedDocumentPolicy,
+    /// Numbers this session handed out that no committed create has used
+    /// (`heldObjectNumbers`), as the ranges they were handed out in: a
+    /// reserve can hand out millions.
+    held_object_numbers: Vec<ObjectNumberRange>,
 }
 
 impl DocumentSession {
@@ -120,6 +156,9 @@ impl DocumentSession {
             mutation_sequence: Cell::new(0),
             authority: SessionAuthority::default(),
             retained: Vec::new(),
+            object_number_authority: ObjectNumberAuthority::default(),
+            signed_document_policy: SignedDocumentPolicy::default(),
+            held_object_numbers: Vec::new(),
         }
     }
 
@@ -247,13 +286,44 @@ impl DocumentSession {
         base: Rc<BaseDocument>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
+        self.open_layer_from(base, &LayerOpenSource::Fresh, authority)
+    }
+
+    /// [`DocumentSession::open_layer`] from what the layer starts as
+    /// (`LayerOpenSource`): empty, a raw delta, or an artifact.
+    pub fn open_layer_from(
+        &mut self,
+        base: Rc<BaseDocument>,
+        source: &LayerOpenSource,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         if self.open.is_some() {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
                 "document already open",
             ));
         }
-        let layer = base.open_layer().map_err(|e| {
+        let access = |made: Result<pdfium::FileAccess, PdfiumError>| {
+            made.map_err(|e| {
+                EngineError::with_message(
+                    EngineErrorCode::DocOpenFailed,
+                    format!("the layer could not be read: {e}"),
+                )
+            })
+        };
+        let opened = match source {
+            LayerOpenSource::Fresh => base.open_layer(),
+            LayerOpenSource::RawDelta(bytes) => {
+                base.open_layer_delta(&access(pdfium::FileAccess::from_bytes(bytes.clone()))?)
+            }
+            LayerOpenSource::Artifact(bytes) => {
+                base.open_layer_artifact(&access(pdfium::FileAccess::from_bytes(bytes.clone()))?)
+            }
+            LayerOpenSource::ArtifactFile(path) => {
+                base.open_layer_artifact(&access(pdfium::FileAccess::from_file(path))?)
+            }
+        };
+        let layer = opened.map_err(|e| {
             let code = match e {
                 pdfium::LayerOpenError::PasswordRequired => EngineErrorCode::DocPasswordRequired,
                 pdfium::LayerOpenError::MalformedDelta | pdfium::LayerOpenError::BaseMismatch => {
@@ -478,6 +548,11 @@ impl DocumentSession {
         self.open.as_ref().is_some_and(|state| state.pages.is_held(page_object_number))
     }
 
+    /// The page pool of an open session: its working sets and their order.
+    pub fn page_pool(&self) -> Option<&PagePtrPool> {
+        self.open.as_ref().map(|state| &state.pages)
+    }
+
     /// Per-page liveness, for annotation reads and mutation results.
     pub fn page_state(
         &mut self,
@@ -651,6 +726,115 @@ impl std::fmt::Debug for DocumentSession {
             .field("mutation_sequence", &self.mutation_sequence())
             .field("retained", &self.retained.len())
             .finish()
+    }
+}
+
+/// Object numbers (`DocumentSession.ts`, "object numbers"): only a layer
+/// has a last object number to read and raise, so a session whose document
+/// is not one has none.
+impl DocumentSession {
+    pub fn object_number_authority(&self) -> ObjectNumberAuthority {
+        self.object_number_authority
+    }
+
+    pub fn set_object_number_authority(&mut self, authority: ObjectNumberAuthority) {
+        self.object_number_authority = authority;
+    }
+
+    pub fn signed_document_policy(&self) -> SignedDocumentPolicy {
+        self.signed_document_policy
+    }
+
+    pub fn set_signed_document_policy(&mut self, policy: SignedDocumentPolicy) {
+        self.signed_document_policy = policy;
+    }
+
+    /// `lastObjectNumber()`: every object the layer has is at or below it.
+    /// `None` for a session whose document is not a layer, which this engine
+    /// opens `open.fatMem` as (upstream opens those bytes as a layer,
+    /// `WorkerHost.openBytesAsLayer`).
+    pub fn last_object_number(&self) -> Result<Option<u32>, EngineError> {
+        let state = self.state()?;
+        if state.kind != OpenKind::Layer {
+            return Ok(None);
+        }
+        Ok(Some(state.document.document().layer_last_object_number()))
+    }
+
+    /// `raiseLastObjectNumber`: raise the layer's last object number to at
+    /// least `last`, so the objects the next write makes for itself land
+    /// above it. A raise outlives an abort. Refused with `LayerFull` past the
+    /// parser's limit. A session that is not a layer has no number to raise,
+    /// and nothing it hands out to protect, so this does nothing there.
+    pub fn raise_last_object_number(&self, last: u32) -> Result<(), EngineError> {
+        let state = self.state()?;
+        if state.kind != OpenKind::Layer {
+            return Ok(());
+        }
+        let document = state.document.document();
+        if !document.raise_layer_last_object_number(last) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::LayerFull,
+                format!("the document would pass object number {last}"),
+            )
+            .with_details(
+                serde_json::json!({ "lastObjectNumber": document.layer_last_object_number() }),
+            ));
+        }
+        Ok(())
+    }
+
+    /// `reserveObjectNumbers`: hand out `count` more numbers. The layer's
+    /// last object number moves up by `count`, so nothing the engine makes
+    /// lands on them, and they are this session's to name objects with.
+    pub fn reserve_object_numbers(&mut self, count: u32) -> Result<ObjectNumberRange, EngineError> {
+        if self.object_number_authority != ObjectNumberAuthority::Session {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "object numbers are handed out by the caller, not this session",
+            ));
+        }
+        if count < 1 {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("cannot reserve {count} object numbers"),
+            )
+            .with_details(serde_json::json!({ "field": "count" })));
+        }
+        let state = self.state()?;
+        if state.kind != OpenKind::Layer {
+            return Err(EngineError::with_message(
+                EngineErrorCode::NotImplemented,
+                "this session's document is not a layer, so it has no object numbers to hand \
+                 out: open.fatMem opens a plain document here, where upstream opens a layer",
+            ));
+        }
+        let document = state.document.document();
+        let last = document.layer_last_object_number();
+        if u64::from(last) + u64::from(count) > u64::from(OBJECT_NUMBER_ISSUE_LIMIT) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::LayerFull,
+                "no more object numbers to hand out",
+            )
+            .with_details(serde_json::json!({ "lastObjectNumber": last })));
+        }
+        if !document.raise_layer_last_object_number(last + count) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFLayer_RaiseLastObjectNumber refused",
+            ));
+        }
+        let range = ObjectNumberRange { first: last + 1, count };
+        self.held_object_numbers.push(range);
+        Ok(range)
+    }
+
+    /// Whether this session holds `object_number` (handed out, not yet
+    /// spent). For the creates that name one (8.14, 8.18, 8.21).
+    pub fn holds_object_number(&self, object_number: u32) -> bool {
+        self.held_object_numbers
+            .iter()
+            .any(|range| object_number >= range.first && object_number - range.first < range.count)
     }
 }
 

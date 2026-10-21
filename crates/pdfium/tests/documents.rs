@@ -171,3 +171,23 @@ fn applying_no_redaction_marks_is_refused_rather_than_applying_all() {
     assert_eq!(page.apply_redaction_marks(&[]), None);
     assert_eq!(page.annotation_count(), before);
 }
+
+#[test]
+fn a_layer_hands_out_object_numbers_and_a_plain_document_has_none() {
+    let bytes = test_support::fixture(test_support::REPORT);
+    let base = std::rc::Rc::new(
+        pdfium::BaseDocument::from_bytes(Library::acquire(), &bytes, None).expect("base"),
+    );
+    let layer = base.open_layer().expect("fresh layer");
+    let last = layer.layer_last_object_number();
+    assert!(last > 0, "a layer starts at its base's last object number");
+    assert!(layer.raise_layer_last_object_number(last + 10));
+    assert_eq!(layer.layer_last_object_number(), last + 10);
+    // Never lowered.
+    assert!(layer.raise_layer_last_object_number(last));
+    assert_eq!(layer.layer_last_object_number(), last + 10);
+
+    let plain = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
+    assert_eq!(plain.layer_last_object_number(), 0);
+    assert!(!plain.raise_layer_last_object_number(10));
+}

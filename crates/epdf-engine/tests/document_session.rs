@@ -553,3 +553,98 @@ fn a_layer_session_cannot_be_opened_twice() {
         EngineErrorCode::InvalidArg,
     );
 }
+
+#[test]
+fn a_layer_opens_from_its_raw_delta_and_not_its_artifact_against_another_base() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::save::{LayerArtifactKind, save_layer_to_buffer};
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+    use epdf_engine::session::document::LayerOpenSource;
+
+    // `LayerOpenSource`: a raw delta names no base, an artifact names its
+    // own and is refused against any other.
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let cancel = CancelToken::never();
+    // An empty layer has no delta to write.
+    let patch: epdf_engine::dto::MetadataPatch =
+        serde_json::from_value(serde_json::json!({ "title": "Layered" })).expect("a patch");
+    epdf_engine::features::metadata_write::update_metadata(
+        session.document().expect("open").document(),
+        &patch,
+        &cancel,
+    )
+    .expect("a write");
+    let delta = save_layer_to_buffer(&session, LayerArtifactKind::Delta, &cancel).expect("delta");
+    let artifact =
+        save_layer_to_buffer(&session, LayerArtifactKind::Artifact, &cancel).expect("artifact");
+
+    let mut from_delta = DocumentSession::new();
+    from_delta
+        .open_layer_from(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            &LayerOpenSource::RawDelta(delta),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("a delta opens");
+    let read = epdf_engine::features::metadata::read_metadata(
+        from_delta.document().expect("open").document(),
+        &cancel,
+    )
+    .expect("read");
+    assert_eq!(serde_json::to_value(&read).unwrap()["title"], "Layered");
+
+    let other = bytes("tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+    let mut elsewhere = DocumentSession::new();
+    let refused = elsewhere
+        .open_layer_from(
+            registry.acquire_memory("other", &other, None).expect("base"),
+            &LayerOpenSource::Artifact(artifact),
+            SessionAuthority::unrestricted(),
+        )
+        .expect_err("an artifact of another base");
+    assert_eq!(refused.code, EngineErrorCode::MalformedPdf);
+}
+
+#[test]
+fn a_layer_session_reserves_numbers_and_a_plain_one_has_none() {
+    use epdf_engine::identity::ObjectNumberRange;
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    // `DocumentSession.reserveObjectNumbers`: the layer's last object number
+    // moves up by `count`, and the numbers passed are the session's.
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let last = session.last_object_number().expect("open").expect("a layer has one");
+    let range = session.reserve_object_numbers(4).expect("reserve");
+    assert_eq!(range, ObjectNumberRange { first: last + 1, count: 4 });
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
+    assert!((last + 1..=last + 4).all(|n| session.holds_object_number(n)));
+    assert!(!session.holds_object_number(last));
+
+    // A raise never lowers, and outlives what it was for.
+    session.raise_last_object_number(last).expect("raise");
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
+
+    let mut plain = opened();
+    assert_eq!(plain.last_object_number().expect("open"), None);
+    assert_eq!(
+        plain.reserve_object_numbers(1).expect_err("no layer").code,
+        EngineErrorCode::NotImplemented,
+    );
+    plain.raise_last_object_number(10).expect("nothing to raise");
+}

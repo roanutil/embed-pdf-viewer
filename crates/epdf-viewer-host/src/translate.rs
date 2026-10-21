@@ -239,7 +239,8 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "signatures.complete" => ("signatures.complete", Decode::Mutation),
         // Renamed `signatures.cancel` upstream; owner 8.26.
         "signatures.abort" => ("signatures.abort", Decode::Result),
-        "document.version" => ("document.version", Decode::Result),
+        // `{ tag: 'document.version'; version }`: the kernel takes the version.
+        "document.version" => ("document.version", Decode::Field("version")),
         "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
         _ => return None,
     })

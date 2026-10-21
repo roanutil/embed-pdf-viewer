@@ -263,3 +263,333 @@ fn a_page_edit_reaches_the_page_reads() {
     );
     assert_eq!(text["error"]["code"], "NotFound", "a deleted page still reads: {text}");
 }
+
+/// A layer over [`PLAIN`] under `doc` (no layer name), with `extra` fields
+/// merged into the request.
+fn open_layer(host: &mut Host, doc: &str, extra: serde_json::Value) -> serde_json::Value {
+    let mut request = serde_json::json!({
+        "kind": "open.layerMemBase", "docId": doc, "baseKey": format!("base-{doc}"),
+        "layer": { "kind": "fresh" }, "password": null,
+    });
+    for (name, value) in extra.as_object().expect("an object") {
+        request[name] = value.clone();
+    }
+    call(host, request, vec![bytes(PLAIN)])
+}
+
+#[test]
+fn an_open_answers_its_document_and_a_layers_last_object_number() {
+    // `{ tag: 'open', docId, security, protection, objectNumbers?,
+    // lastObjectNumber? }` (`WorkerHost.handleOpen`). A layer knows its last
+    // object number; this engine's fat-memory session is a plain document,
+    // which has none, so its answer carries none.
+    let mut host = Host::new();
+    let layer = open_layer(&mut host, "layered", serde_json::json!({}));
+    assert_eq!(layer["result"]["docId"], "layered", "{layer}");
+    assert_eq!(layer["result"]["security"]["encryptionState"], "none");
+    assert!(layer["result"].get("protection").is_some(), "{layer}");
+    assert!(layer["result"]["lastObjectNumber"].as_u64().unwrap_or(0) > 0, "{layer}");
+    assert!(layer["result"].get("objectNumbers").is_none(), "nothing was asked for: {layer}");
+    // No layer name: the session is the document's own, as upstream keys it.
+    let list =
+        call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "layered" }), vec![]);
+    assert!(list["result"]["pages"].is_array(), "{list}");
+
+    let plain = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "plain" }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(plain["result"]["docId"], "plain", "{plain}");
+    assert!(plain["result"].get("lastObjectNumber").is_none(), "{plain}");
+}
+
+#[test]
+fn an_open_hands_out_the_numbers_it_asked_for() {
+    // `reserveObjectNumbers`: the result has them, and the last object
+    // number the open reports is past them.
+    let mut host = Host::new();
+    let first = open_layer(&mut host, "a", serde_json::json!({}));
+    let base_last = first["result"]["lastObjectNumber"].as_u64().expect("a number");
+    let json = open_layer(&mut host, "b", serde_json::json!({ "reserveObjectNumbers": 3 }));
+    assert_eq!(
+        json["result"]["objectNumbers"],
+        serde_json::json!({ "first": base_last + 1, "count": 3 }),
+        "{json}",
+    );
+    assert_eq!(json["result"]["lastObjectNumber"], base_last + 3, "{json}");
+}
+
+#[test]
+fn a_reserve_hands_out_the_next_numbers_each_once() {
+    let mut host = Host::new();
+    let opened = open_layer(&mut host, "d", serde_json::json!({}));
+    let last = opened["result"]["lastObjectNumber"].as_u64().expect("a number");
+    let reserve = |host: &mut Host, count: serde_json::Value| {
+        call(
+            host,
+            serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": count }),
+            vec![],
+        )
+    };
+    let one = reserve(&mut host, serde_json::json!(2));
+    assert_eq!(one["result"]["range"], serde_json::json!({ "first": last + 1, "count": 2 }));
+    let two = reserve(&mut host, serde_json::json!(5));
+    assert_eq!(two["result"]["range"], serde_json::json!({ "first": last + 3, "count": 5 }));
+
+    // `DocumentSession.reserveObjectNumbers`: a count that is not a whole
+    // number of at least one is refused on `count`.
+    for count in [serde_json::json!(0), serde_json::json!(1.5), serde_json::json!(-2)] {
+        let refused = reserve(&mut host, count.clone());
+        assert_eq!(refused["error"]["code"], "InvalidArg", "{count}: {refused}");
+        assert_eq!(refused["error"]["details"]["field"], "count", "{count}: {refused}");
+    }
+    // Nothing was spent by the refusals.
+    let three = reserve(&mut host, serde_json::json!(1));
+    assert_eq!(three["result"]["range"]["first"], last + 8);
+}
+
+#[test]
+fn a_reserve_past_the_issue_limit_is_layer_full() {
+    // `OBJECT_NUMBER_ISSUE_LIMIT` (8,000,000): the numbers above it are the
+    // engine's own, for appearance streams and fonts.
+    let mut host = Host::new();
+    let opened = open_layer(&mut host, "d", serde_json::json!({}));
+    let last = opened["result"]["lastObjectNumber"].as_u64().expect("a number");
+    let refused = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 8_000_000 }),
+        vec![],
+    );
+    assert_eq!(refused["error"]["code"], "LayerFull", "{refused}");
+    assert_eq!(refused["error"]["details"]["lastObjectNumber"], last, "{refused}");
+    // Up to the limit is still handed out.
+    let to_limit = 8_000_000 - last;
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": to_limit }),
+        vec![],
+    );
+    assert_eq!(json["result"]["range"]["count"], to_limit, "{json}");
+}
+
+#[test]
+fn a_session_the_caller_numbers_hands_out_nothing() {
+    // `objectNumbers: 'caller'`: a server checked every number itself.
+    let mut host = Host::new();
+    let opened = open_layer(&mut host, "d", serde_json::json!({ "objectNumbers": "caller" }));
+    assert!(opened.get("error").is_none(), "{opened}");
+    let refused = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
+        vec![],
+    );
+    assert_eq!(refused["error"]["code"], "InvalidArg", "{refused}");
+    // And an open that asks for numbers it may not hand out fails.
+    let refused = open_layer(
+        &mut host,
+        "e",
+        serde_json::json!({ "objectNumbers": "caller",
+            "reserveObjectNumbers": 2 }),
+    );
+    assert_eq!(refused["error"]["code"], "InvalidArg", "{refused}");
+
+    let malformed = open_layer(&mut host, "f", serde_json::json!({ "objectNumbers": "server" }));
+    assert_eq!(malformed["error"]["code"], "WireFormat", "{malformed}");
+}
+
+#[test]
+fn a_fat_memory_session_has_no_numbers_to_hand_out() {
+    // Upstream opens `open.fatMem` bytes as a layer (`openBytesAsLayer`);
+    // this engine opens a plain document, which has no last object number.
+    // Asked for numbers, it says so rather than inventing one.
+    let mut host = Host::new();
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
+    let refused = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
+        vec![],
+    );
+    assert_eq!(refused["error"]["code"], "NotImplemented", "{refused}");
+}
+
+#[test]
+fn a_write_honours_the_floor_its_caller_set() {
+    // `objectNumberFloor`: the layer's last object number is raised to just
+    // below it before the write runs, so the numbers handed out after it
+    // start at or above it.
+    let mut host = Host::new();
+    open_layer(&mut host, "d", serde_json::json!({}));
+    let written = call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.update", "docId": "d", "opId": "op-1",
+            "objectNumberFloor": 5000, "patch": { "title": "Floored" } }),
+        vec![],
+    );
+    assert!(written.get("error").is_none(), "{written}");
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
+        vec![],
+    );
+    let first = json["result"]["range"]["first"].as_u64().expect("a range");
+    assert!(first >= 5000, "{json}");
+}
+
+#[test]
+fn the_open_keeps_what_it_was_asked_for_on_the_session() {
+    // `signedDocumentPolicy` and `objectNumbers` live on the session, a
+    // parked one included, so the signature engine (8.26) and the creates
+    // can read them.
+    use epdf_engine::features::signature::types::SignedDocumentPolicy;
+    use epdf_engine::session::document::ObjectNumberAuthority;
+    use epdf_engine::session::registry::SessionKey;
+
+    let mut host = Host::new();
+    call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "d",
+            "signedDocumentPolicy": "permit", "objectNumbers": "caller" }),
+        vec![bytes(PLAIN)],
+    );
+    let session = host.sessions().session(&SessionKey::document("d")).expect("open");
+    assert_eq!(session.signed_document_policy(), SignedDocumentPolicy::Permit);
+    assert_eq!(session.object_number_authority(), ObjectNumberAuthority::Caller);
+
+    let locked = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "locked",
+            "signedDocumentPolicy": "permit" }),
+        vec![bytes(ENCRYPTED)],
+    );
+    assert!(locked["result"].get("lastObjectNumber").is_none(), "{locked}");
+    call(
+        &mut host,
+        serde_json::json!({ "kind": "document.checkPasswordPermissions", "docId": "locked",
+            "password": OPEN_PASSWORD }),
+        vec![],
+    );
+    let unlocked = host.sessions().session(&SessionKey::document("locked")).expect("unlocked");
+    assert_eq!(unlocked.signed_document_policy(), SignedDocumentPolicy::Permit);
+
+    let malformed = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "e",
+            "signedDocumentPolicy": "ignore" }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(malformed["error"]["code"], "WireFormat", "{malformed}");
+}
+
+#[test]
+fn a_layer_reopens_from_the_artifact_its_save_answered() {
+    // `document.saveLayerBuffer` answers the layer artifact, and
+    // `layer: { kind: 'artifact' }` opens a layer from it (its bytes the
+    // payload after the base's).
+    let mut host = Host::new();
+    open_layer(&mut host, "d", serde_json::json!({}));
+    call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.update", "docId": "d",
+            "patch": { "title": "Layered" } }),
+        vec![],
+    );
+    let response = host.call(
+        &serde_json::json!({ "kind": "document.saveLayerBuffer", "docId": "d" }).to_string(),
+        vec![],
+    );
+    let saved: serde_json::Value = serde_json::from_str(&response.json).unwrap();
+    let artifact = response.payloads.into_iter().next().expect("the artifact");
+    assert_eq!(saved["result"]["size"], artifact.len(), "{saved}");
+
+    let reopened = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "layerName": "again",
+            "baseKey": "base-d", "layer": { "kind": "artifact" }, "password": null }),
+        vec![bytes(PLAIN), artifact],
+    );
+    assert!(reopened.get("error").is_none(), "{reopened}");
+    let read = call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.read", "docId": "d", "layerName": "again" }),
+        vec![],
+    );
+    assert_eq!(read["result"]["title"], "Layered", "{read}");
+
+    // A layer that names bytes it did not send is refused before it opens.
+    let missing = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "layerName": "none",
+            "baseKey": "base-d", "layer": { "kind": "raw-delta" }, "password": null }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(missing["error"]["code"], "WireFormat", "{missing}");
+}
+
+#[test]
+fn a_working_set_is_taken_and_never_answered() {
+    // `pages.workingSet` (`WorkerHost.receive`): bookkeeping, taken at once,
+    // and ignored for a document that is not open. This entry answers every
+    // call, so it answers `null`.
+    use epdf_engine::session::pages::Place;
+    use epdf_engine::session::registry::SessionKey;
+
+    let mut host = Host::new();
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
+    let list = call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), vec![]);
+    let page = list["result"]["pages"][0]["ref"].clone();
+    let number = page["objectNumber"].as_u64().expect("a page") as u32;
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.workingSet", "docId": "d", "view": "main",
+            "pages": [{ "page": page, "role": "visible", "pixels": 1200 }] }),
+        vec![],
+    );
+    assert_eq!(json, serde_json::json!({ "result": null }));
+    let session = host.sessions().session(&SessionKey::document("d")).expect("open");
+    let placed = session
+        .page_pool()
+        .expect("a pool")
+        .place_of(epdf_engine::identity::PageObjectNumber::new(number).unwrap());
+    assert_eq!(placed.place, Place::Visible);
+
+    let ignored = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.workingSet", "docId": "closed", "view": "main",
+            "pages": [] }),
+        vec![],
+    );
+    assert_eq!(ignored, serde_json::json!({ "result": null }));
+    let malformed = call(
+        &mut host,
+        serde_json::json!({ "kind": "pages.workingSet", "docId": "d", "view": "main",
+            "pages": [{ "page": page, "role": "offscreen", "pixels": 0 }] }),
+        vec![],
+    );
+    assert_eq!(malformed["error"]["code"], "WireFormat", "{malformed}");
+}
+
+#[test]
+fn a_version_and_a_file_save_answer_as_upstream_does() {
+    // `{ tag: 'document.version'; version }` and `{ tag:
+    // 'document.saveFile'; path }`.
+    let mut host = Host::new();
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
+    let version =
+        call(&mut host, serde_json::json!({ "kind": "document.version", "docId": "d" }), vec![]);
+    assert_eq!(version["result"]["version"]["byteLength"], bytes(PLAIN).len(), "{version}");
+    assert_eq!(version["result"]["version"]["sha256"].as_str().map(str::len), Some(64));
+
+    let dir = std::env::temp_dir().join(format!("epdf-save-file-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("saved.pdf").to_string_lossy().into_owned();
+    let saved = call(
+        &mut host,
+        serde_json::json!({ "kind": "document.saveFile", "docId": "d", "mode": "rewrite",
+            "path": path }),
+        vec![],
+    );
+    assert_eq!(saved, serde_json::json!({ "result": { "path": path } }));
+    assert!(std::fs::read(&path).unwrap().starts_with(b"%PDF"));
+    std::fs::remove_dir_all(&dir).ok();
+}

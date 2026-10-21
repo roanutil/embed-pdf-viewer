@@ -69,11 +69,16 @@ pub enum EngineErrorCode {
     ProtectedDocument,
     /// The base the caller named is not the one the session is on.
     StaleBase,
+    /// The document would pass the highest object number a file should have
+    /// (`OBJECT_NUMBER_CEILING`), or a session asked for numbers past
+    /// `OBJECT_NUMBER_ISSUE_LIMIT`. `details.lastObjectNumber` is the
+    /// layer's last number. Upstream's other new codes come with Task 8.27.
+    LayerFull,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 25] = [
+    pub const ALL: [EngineErrorCode; 26] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
@@ -99,6 +104,7 @@ impl EngineErrorCode {
         Self::SignatureRefused,
         Self::ProtectedDocument,
         Self::StaleBase,
+        Self::LayerFull,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -128,6 +134,7 @@ impl EngineErrorCode {
             Self::SignatureRefused => "SignatureRefused",
             Self::ProtectedDocument => "ProtectedDocument",
             Self::StaleBase => "StaleBase",
+            Self::LayerFull => "LayerFull",
         }
     }
 }
@@ -222,7 +229,7 @@ mod tests {
     /// A value that changes on either side has to change in both, and this is
     /// where the two are compared until the generated-DTO parity harness
     /// covers it.
-    const TYPESCRIPT_CODES: [&str; 25] = [
+    const TYPESCRIPT_CODES: [&str; 26] = [
         "Unknown",
         "InvalidArg",
         "DocNotOpen",
@@ -248,6 +255,7 @@ mod tests {
         "SignatureRefused",
         "ProtectedDocument",
         "StaleBase",
+        "LayerFull",
     ];
 
     #[test]

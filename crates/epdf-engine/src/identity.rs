@@ -371,6 +371,23 @@ impl AnnotationRef {
     }
 }
 
+/// `OBJECT_NUMBER_CEILING` (`identity/ObjectNumbers.ts`): the highest object
+/// number a document should reach. A write that would pass it is refused
+/// with `LayerFull`.
+pub const OBJECT_NUMBER_CEILING: u32 = 8_388_607;
+
+/// `OBJECT_NUMBER_ISSUE_LIMIT`: the last object number handed out to
+/// sessions, which leaves the numbers above it to the objects the engine
+/// makes for itself until the ceiling.
+pub const OBJECT_NUMBER_ISSUE_LIMIT: u32 = 8_000_000;
+
+/// `ObjectNumberRange`: `count` consecutive object numbers from `first`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ObjectNumberRange {
+    pub first: u32,
+    pub count: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

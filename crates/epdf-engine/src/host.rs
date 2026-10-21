@@ -516,11 +516,21 @@ impl Host {
             return Err(unknown_kind(&header.kind));
         }
         // Read so that a malformed envelope is refused before any arm runs.
-        // No arm acts on it yet: each kind's owner sub-task wires in what
-        // its handler does with `opId`, `objectNumberFloor` and `authority`.
-        let _envelope = JobEnvelope::parse(&header.kind, &body)?;
+        // Each kind's owner sub-task wires in what its handler does with
+        // `opId` and `authority`.
+        let job = JobEnvelope::parse(&header.kind, &body)?;
         if legacy {
             return self.route_legacy(&header, &body, payloads, &cancel);
+        }
+        // `WorkerHost.run`: the write's own objects go at or above the floor
+        // its caller set, so the layer's last object number is raised to
+        // just below it before the write runs. The arm reports a session
+        // that is not open.
+        if let Some(floor) = job.object_number_floor
+            && let Ok(key) = header.key()
+            && let Ok(session) = self.sessions.session(&key)
+        {
+            session.raise_last_object_number(floor.saturating_sub(1))?;
         }
 
         let result = match header.kind.as_str() {
@@ -530,6 +540,13 @@ impl Host {
             }
             "close" => self.close_document(&header)?,
             "layer.close" => self.close_layer(&header)?,
+            // `WorkerHost.receive`: bookkeeping, taken on arrival and never
+            // answered, so a session that is not open ignores it. This entry
+            // answers every call, so it answers `null`, which a host drops.
+            "pages.workingSet" => {
+                self.set_working_set(&header, &body)?;
+                serde_json::Value::Null
+            }
             "shutdown" => {
                 self.sessions.shutdown();
                 serde_json::Value::Null
@@ -833,9 +850,17 @@ impl Host {
                 let d = self.document(&key)?;
                 Ok(bytes_response(f::signature::reader::revision_bytes(d, index)?))
             }
+            // `{ tag: 'document.version'; version: BaseVersionInfo }`.
             "document.version" => {
                 let session = self.sessions.session(&key)?;
-                Ok(ok(value(&f::signature::reader::version(session)?)?))
+                let version = f::signature::reader::version(session)?;
+                Ok(ok(serde_json::json!({ "version": value(&version)? })))
+            }
+            // `{ tag: 'objectNumbers.reserve'; range: ObjectNumberRange }`.
+            "objectNumbers.reserve" => {
+                let count = object_number_count(body, "count")?;
+                let range = self.sessions.session_mut(&key)?.reserve_object_numbers(count)?;
+                Ok(ok(serde_json::json!({ "range": value(&range)? })))
             }
             // `WorkerHost.handleDocumentSetFontSettings`: session state on
             // the handle, never written to the file, so not a mutation.
@@ -959,14 +984,14 @@ impl Host {
                 Ok(bytes_response(f::save::save_to_buffer(session, mode, cancel)?))
             }
             "document.saveLayerBuffer" => {
-                // No argument. A layer session has exactly one artifact to
-                // hand back, and the TypeScript's request carries nothing
-                // beyond the envelope; naming a kind here would invent a
-                // choice the wire does not offer.
+                // No argument: `WorkerHost.handleDocumentSaveLayerBuffer`
+                // answers the layer artifact (`DocumentSaver.
+                // saveLayerArtifact`), which names its base, never the raw
+                // delta.
                 let session = self.sessions.session(&key)?;
                 let bytes = f::save::save_layer_to_buffer(
                     session,
-                    f::save::LayerArtifactKind::Delta,
+                    f::save::LayerArtifactKind::Artifact,
                     cancel,
                 )?;
                 Ok(bytes_response(bytes))
@@ -976,14 +1001,14 @@ impl Host {
                 let path = string_field(body, "path")?;
                 let session = self.sessions.session(&key)?;
                 let bytes = f::save::save_to_buffer(session, mode, cancel)?;
-                let size = bytes.len();
                 std::fs::write(&path, bytes).map_err(|e| {
                     EngineError::with_message(
                         EngineErrorCode::Unknown,
                         format!("writing '{path}' failed: {e}"),
                     )
                 })?;
-                Ok(ok(serde_json::json!({ "size": size })))
+                // `{ tag: 'document.saveFile'; path }`.
+                Ok(ok(serde_json::json!({ "path": path })))
             }
             "document.checkPasswordPermissions" => {
                 let password = string_field(body, "password")?;
@@ -1969,26 +1994,34 @@ impl Host {
     /// its OWN key rather than the layer's, because several layer sessions
     /// over one base should share the one open document, which is the whole
     /// reason the base registry exists.
+    ///
+    /// `WorkerHost.handleOpen`: the session is `docId` with the optional
+    /// `layerName`, and `layer` (`LayerOpenSource`) says what the layer
+    /// starts from. Its bytes, for a `raw-delta` or an `artifact`, are the
+    /// payload after the base's: payload 1 beside `open.layerMemBase`'s base
+    /// bytes, payload 0 for `open.layerFileBase`. `baseSha256` is an identity
+    /// claim that saves the runtime a hash pass; this engine does not take
+    /// it.
     fn open_layer(
         &mut self,
         header: &RequestHeader,
         body: &serde_json::Value,
         payloads: Payloads,
     ) -> Result<serde_json::Value, EngineError> {
-        let layer = string_field(body, "layer")?;
-        let doc_id = header.doc_id.as_deref().ok_or_else(|| {
-            EngineError::with_message(EngineErrorCode::WireFormat, "a layer open names no document")
-        })?;
-        let key = SessionKey::layer(doc_id, &layer);
+        let key = header.key()?;
+        let options = OpenOptions::parse(body)?;
         let base_key = string_field(body, "baseKey")?;
         let password: Option<String> = optional(body, "password")?;
+        let file_base = header.kind == "open.layerFileBase";
+        let source = layer_source(body, &payloads, if file_base { 0 } else { 1 })?;
 
-        if header.kind == "open.layerFileBase" {
+        if file_base {
             let path = string_field(body, "basePath")?;
-            self.sessions.open_layer_file(
-                key,
+            self.sessions.open_layer_file_from(
+                key.clone(),
                 &base_key,
                 std::path::Path::new(&path),
+                &source,
                 password.as_deref(),
                 SessionAuthority::unrestricted(),
             )?;
@@ -1996,15 +2029,16 @@ impl Host {
             // The base bytes are a payload, never a JSON field, for the same
             // reason `open.fatMem`'s are.
             let bytes = payload(&payloads, 0, "the base document")?;
-            self.sessions.open_layer_memory(
-                key,
+            self.sessions.open_layer_memory_from(
+                key.clone(),
                 &base_key,
                 bytes,
+                &source,
                 password.as_deref(),
                 SessionAuthority::unrestricted(),
             )?;
         }
-        Ok(serde_json::json!({ "layerName": layer, "baseKey": base_key }))
+        self.open_answer(&key, options)
     }
 
     fn open_fat_memory(
@@ -2024,6 +2058,7 @@ impl Host {
         let bytes = payloads.remove(0);
         let password = body.get("password").and_then(serde_json::Value::as_str);
         let key = header.key()?;
+        let options = OpenOptions::parse(body)?;
         // A native extension of the wire: the TypeScript enforces scope in
         // `engine/main`, above the worker, and a native host has no such
         // layer. Absent is `["*"]`, everything.
@@ -2048,10 +2083,62 @@ impl Host {
             Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {}
             Err(error) => return Err(error),
         }
-        Ok(serde_json::json!({
-            "security": value(&self.security_on_open(&key)?)?,
-            "protection": self.protection_of(&key),
-        }))
+        self.open_answer(&key, options)
+    }
+
+    /// The open answer (`{ tag: 'open', docId, security, protection,
+    /// objectNumbers?, lastObjectNumber? }`), once the session for `key`
+    /// exists, open or parked.
+    ///
+    /// `WorkerHost.handleOpen` sets the session's object number authority
+    /// and signed-document policy before it loads, so a parked session keeps
+    /// them; and only an open that loaded hands out the numbers it asked
+    /// for and reports the layer's last object number. A failed reserve
+    /// fails the open and leaves the session open, as upstream's does. A
+    /// session whose document is not a layer has no last object number
+    /// (`DocumentSession::last_object_number`), so its answer has none.
+    fn open_answer(
+        &mut self,
+        key: &SessionKey,
+        options: OpenOptions,
+    ) -> Result<serde_json::Value, EngineError> {
+        if let Some(session) = self.sessions.configure(key) {
+            session.set_object_number_authority(options.object_numbers);
+            session.set_signed_document_policy(options.signed_document_policy);
+        }
+        let mut answer = serde_json::json!({
+            "docId": key.doc_id,
+            "security": value(&self.security_on_open(key)?)?,
+            "protection": self.protection_of(key),
+        });
+        if self.sessions.is_locked(key) {
+            return Ok(answer);
+        }
+        let session = self.sessions.session_mut(key)?;
+        if let Some(count) = options.reserve_object_numbers {
+            answer["objectNumbers"] = value(&session.reserve_object_numbers(count)?)?;
+        }
+        if let Some(last) = session.last_object_number()? {
+            answer["lastObjectNumber"] = serde_json::json!(last);
+        }
+        Ok(answer)
+    }
+
+    /// `pages.workingSet` (`WorkerHost.setWorkingSet`): what `view` shows of
+    /// an open session's pages, replacing its last set.
+    fn set_working_set(
+        &mut self,
+        header: &RequestHeader,
+        body: &serde_json::Value,
+    ) -> Result<(), EngineError> {
+        let view = string_field(body, "view")?;
+        let pages: Vec<crate::session::pages::WorkingSetPage> = field(body, "pages")?;
+        if let Ok(session) = self.sessions.session(&header.key()?)
+            && let Some(pool) = session.page_pool()
+        {
+            pool.set_working_set(&view, &pages);
+        }
+        Ok(())
     }
 
     /// What an open document's signatures forbid (`WorkerHost.probeProtection`),
@@ -2349,6 +2436,76 @@ const MUTATING_KINDS: &[&str] = &[
     "pieceInfo.update",
     "pieceInfo.clear",
 ];
+
+/// What the three open kinds ask of the session beside the document
+/// (`OpenFatMemoryWorkerRequest` and the layer opens).
+#[derive(Debug, Clone, Copy, Default)]
+struct OpenOptions {
+    /// `objectNumbers`, default `'session'`.
+    object_numbers: crate::session::document::ObjectNumberAuthority,
+    /// `signedDocumentPolicy`, default `protect`.
+    signed_document_policy: crate::features::signature::types::SignedDocumentPolicy,
+    /// `reserveObjectNumbers`; `0` and absent ask for none.
+    reserve_object_numbers: Option<u32>,
+}
+
+impl OpenOptions {
+    fn parse(body: &serde_json::Value) -> Result<Self, EngineError> {
+        let reserve = match body.get("reserveObjectNumbers") {
+            None | Some(serde_json::Value::Null) => None,
+            Some(n) if n.as_f64() == Some(0.0) => None,
+            Some(_) => Some(object_number_count(body, "reserveObjectNumbers")?),
+        };
+        Ok(Self {
+            object_numbers: optional(body, "objectNumbers")?.unwrap_or_default(),
+            signed_document_policy: optional(body, "signedDocumentPolicy")?.unwrap_or_default(),
+            reserve_object_numbers: reserve,
+        })
+    }
+}
+
+/// A count of object numbers to hand out. Not a number is `WireFormat`; a
+/// number that is not a whole one of at least 1 is `InvalidArg` on `count`,
+/// as `DocumentSession.reserveObjectNumbers` refuses it.
+fn object_number_count(body: &serde_json::Value, name: &str) -> Result<u32, EngineError> {
+    let raw: f64 = field(body, name)?;
+    if raw.fract() != 0.0 || raw < 1.0 || raw > f64::from(u32::MAX) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("cannot reserve {raw} object numbers"),
+        )
+        .with_details(serde_json::json!({ "field": "count" })));
+    }
+    Ok(raw as u32)
+}
+
+/// `LayerOpenSource`, its bytes from payload `index`.
+fn layer_source(
+    body: &serde_json::Value,
+    payloads: &Payloads,
+    index: usize,
+) -> Result<crate::session::document::LayerOpenSource, EngineError> {
+    use crate::session::document::LayerOpenSource;
+
+    #[derive(Deserialize)]
+    #[serde(tag = "kind", rename_all = "kebab-case")]
+    enum Wire {
+        Fresh,
+        RawDelta,
+        Artifact,
+        ArtifactFile { path: String },
+    }
+    Ok(match field::<Wire>(body, "layer")? {
+        Wire::Fresh => LayerOpenSource::Fresh,
+        Wire::RawDelta => {
+            LayerOpenSource::RawDelta(payload(payloads, index, "the layer's delta")?.to_vec())
+        }
+        Wire::Artifact => {
+            LayerOpenSource::Artifact(payload(payloads, index, "the layer artifact")?.to_vec())
+        }
+        Wire::ArtifactFile { path } => LayerOpenSource::ArtifactFile(path.into()),
+    })
+}
 
 /// The identity an `open.fatMem` may carry, spelled as the TypeScript's
 /// `IdentityClaims` (`auth/scope/types.ts`), snake_case keys and all.

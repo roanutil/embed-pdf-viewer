@@ -1093,6 +1093,19 @@ fn viewports_decode_to_the_list() {
 }
 
 #[test]
+fn a_version_decodes_to_the_version_it_carries() {
+    // `{ tag: 'document.version'; version }`; the kernel takes the version.
+    let call = translate("doc-1", "document.version", None, &[], 3).unwrap();
+    let version = json!({ "sha256": "ab".repeat(32), "byteLength": 1024 });
+    let decoded = decode(
+        &call.decode,
+        answer(&json!({ "result": { "version": version.clone() } }).to_string()),
+    )
+    .unwrap();
+    assert_eq!(decoded.value, version);
+}
+
+#[test]
 fn a_scale_write_publishes_its_page_as_a_page_ref() {
     let call = translate("doc-1", "page.measure.setScale", Some(7), &[Value::Null], 4).unwrap();
     let result =

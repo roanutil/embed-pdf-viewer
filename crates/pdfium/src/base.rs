@@ -311,3 +311,32 @@ impl std::ops::Deref for LayerDocument {
         &self.document
     }
 }
+
+/// A layer's object numbers: the last one it handed out, and raising it.
+///
+/// On [`Document`] because a layer is one; on a document that is not a layer
+/// both report failure, as the header says.
+impl Document {
+    /// `EPDFLayer_GetLastObjectNumber`: every object the layer has is at or
+    /// below this number, including those of a transaction that aborted.
+    /// `0` for a document that is not a layer.
+    pub fn layer_last_object_number(&self) -> u32 {
+        // SAFETY: the handle is live for the call.
+        let last = unsafe { pdfium_sys::EPDFLayer_GetLastObjectNumber(self.as_raw()) };
+        u32::try_from(last).unwrap_or(u32::MAX)
+    }
+
+    /// `EPDFLayer_RaiseLastObjectNumber`: raise the last object number to
+    /// `last` when it is lower, handing out the numbers in between. Never
+    /// lowers it. `false` for a document that is not a layer, or a number
+    /// past the parser's limit.
+    pub fn raise_layer_last_object_number(&self, last: u32) -> bool {
+        // SAFETY: the handle is live for the call.
+        unsafe {
+            pdfium_sys::EPDFLayer_RaiseLastObjectNumber(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(last),
+            ) != 0
+        }
+    }
+}

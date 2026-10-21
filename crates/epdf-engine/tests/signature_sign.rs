@@ -46,7 +46,8 @@ fn prepare_then_complete_seals_the_field() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
     let field = unsigned_field(&mut host, &doc);
-    let before = sig_call(&mut host, json!({ "kind": "document.version", "docId": doc }));
+    let before =
+        sig_call(&mut host, json!({ "kind": "document.version", "docId": doc }))["version"].clone();
     let (prepared, digest) = sig_call_bytes_with(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc,

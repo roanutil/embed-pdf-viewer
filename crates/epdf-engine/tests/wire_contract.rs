@@ -57,9 +57,7 @@ const NOT_YET_ROUTED: &[(&str, &str)] = &[
     ("document.applyChanges", "8.6"),
     ("metadata.readCustom", "8.6"),
     ("metadata.updateCustom", "8.6"),
-    ("objectNumbers.reserve", "8.3"),
     ("outline.read", "8.24"),
-    ("pages.workingSet", "8.3"),
     ("pieceInfo.delete", "8.8"),
     ("signatures.cancel", "8.26"),
 ];
@@ -69,7 +67,14 @@ const NOT_YET_ROUTED: &[(&str, &str)] = &[
 /// against the runtime 1461b0c51 API (`// re-port (Task 8):`): `forms.import`
 /// with no format reads FDF, which that runtime removed. The owner removes
 /// its row; a row whose kind stops answering `NotImplemented` fails.
-const STUBBED: &[(&str, &str)] = &[("forms.import", "8.22")];
+///
+/// `objectNumbers.reserve` is routed (8.3) and hands out numbers on a layer
+/// session, but this test opens `open.fatMem`, which this engine opens as a
+/// plain document where upstream opens a layer (`openBytesAsLayer`), and a
+/// plain document has no object numbers to hand out. No sub-task owns that
+/// open yet; the row goes when one does.
+const STUBBED: &[(&str, &str)] =
+    &[("forms.import", "8.22"), ("objectNumbers.reserve", "fat-memory layer open (unowned)")];
 
 #[derive(Debug)]
 struct Case {

@@ -24,7 +24,7 @@ use pdfium::BaseDocument;
 
 use super::authority::SessionAuthority;
 use super::base_registry::BaseDocumentRegistry;
-use super::document::DocumentSession;
+use super::document::{DocumentSession, LayerOpenSource};
 use pdfium::Library;
 
 use crate::cancel::CancelToken;
@@ -186,10 +186,30 @@ impl SessionRegistry {
         password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
+        self.open_layer_memory_from(
+            key,
+            base_key,
+            bytes,
+            &LayerOpenSource::Fresh,
+            password,
+            authority,
+        )
+    }
+
+    /// [`SessionRegistry::open_layer_memory`], the layer opened from `source`.
+    pub fn open_layer_memory_from(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        bytes: &[u8],
+        source: &LayerOpenSource,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
         let base = self.bases.acquire_memory(base_key, bytes, password)?;
-        self.attach_layer(key, base_key, base, authority)
+        self.attach_layer(key, base_key, base, source, authority)
     }
 
     fn refuse_if_taken(&self, key: &SessionKey) -> Result<(), EngineError> {
@@ -207,10 +227,11 @@ impl SessionRegistry {
         key: SessionKey,
         base_key: &str,
         base: Rc<BaseDocument>,
+        source: &LayerOpenSource,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
         let mut session = DocumentSession::new();
-        match session.open_layer(base, authority) {
+        match session.open_layer_from(base, source, authority) {
             Ok(()) => {
                 self.sessions.insert(key, session);
                 Ok(())
@@ -218,9 +239,9 @@ impl SessionRegistry {
             Err(error) => {
                 // Give the acquisition back, or the base stays registered for
                 // a session that does not exist and the next caller for that
-                // key inherits a parse nobody asked to keep alive. Untested:
-                // a fresh layer over a valid base does not fail, so there is
-                // no way to reach this without faking the failure.
+                // key inherits a parse nobody asked to keep alive. A fresh
+                // layer over a valid base does not fail; an artifact saved
+                // against another base does.
                 self.bases.release(base_key);
                 Err(error)
             }
@@ -242,10 +263,23 @@ impl SessionRegistry {
         password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
+        self.open_layer_file_from(key, base_key, path, &LayerOpenSource::Fresh, password, authority)
+    }
+
+    /// [`SessionRegistry::open_layer_file`], the layer opened from `source`.
+    pub fn open_layer_file_from(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        path: &std::path::Path,
+        source: &LayerOpenSource,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
         let base = self.bases.acquire_file(base_key, path, password)?;
-        self.attach_layer(key, base_key, base, authority)
+        self.attach_layer(key, base_key, base, source, authority)
     }
 
     /// Open a fresh layer over a base already registered.
@@ -283,6 +317,13 @@ impl SessionRegistry {
         // Checked before the mutable borrow so the error can name the key.
         self.session(key)?;
         Ok(self.sessions.get_mut(key).expect("checked above"))
+    }
+
+    /// The session for `key`, locked or open, to set what its open asked
+    /// for (`objectNumbers`, `signedDocumentPolicy`), which a locked session
+    /// keeps for its unlock as upstream's does.
+    pub fn configure(&mut self, key: &SessionKey) -> Option<&mut DocumentSession> {
+        self.sessions.get_mut(key)
     }
 
     pub fn contains(&self, key: &SessionKey) -> bool {
