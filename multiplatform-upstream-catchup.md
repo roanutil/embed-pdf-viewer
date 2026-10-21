@@ -737,6 +737,8 @@ Kept divergences to re-check: an absent `destIndex` is omitted on the page event
 
 **Note from 8.4:** add the page-space boundary arm for `pages.setName`/`removeName` (`layout`); its tag is in `crates/epdf-engine/src/page_space/boundary.rs`.
 
+**Note from 8.17:** `crates/epdf-engine/tests/pages_mutate.rs` skips the flatten and export cases on purpose; `tests/flatten_corpus.rs` replays them. Don't add them back here.
+
 #### Task 8.19: Form read
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.4 and 8.5. Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push. The per-file notes are in `docs/research/catchup-engine-vector-diffs.md`, "Forms" (`snapshot.json`, and the field record notes under `field.json`).
