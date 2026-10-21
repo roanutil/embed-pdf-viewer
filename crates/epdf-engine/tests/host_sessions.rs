@@ -27,16 +27,6 @@ fn call(host: &mut Host, request: serde_json::Value, payloads: Vec<Vec<u8>>) -> 
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
-/// [`call`], through `Host::call_legacy`, for a kind upstream removed.
-fn call_legacy(
-    host: &mut Host,
-    request: serde_json::Value,
-    payloads: Vec<Vec<u8>>,
-) -> serde_json::Value {
-    let response = host.call_legacy(&request.to_string(), payloads);
-    serde_json::from_str(&response.json).expect("every response is JSON")
-}
-
 #[test]
 fn an_open_reports_the_security_probe_the_client_handle_needs() {
     // Answered by the open rather than by a second request. A viewer decides
@@ -231,17 +221,17 @@ fn a_page_edit_reaches_the_page_reads() {
     // deleted one is still found.
     let mut host = Host::new();
     call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
-    // `pages.insertBlank` and `pages.delete` were removed upstream; owner
-    // 8.18 (`document.apply`).
-    let inserted = call_legacy(
+    // Page structure is `document.apply` ops (119685ea4).
+    let inserted = call(
         &mut host,
         serde_json::json!({
-            "kind": "pages.insertBlank", "docId": "d",
-            "size": { "width": 612.0, "height": 792.0 }
+            "kind": "document.apply", "docId": "d",
+            "change": { "ops": [{ "type": "pages.insertBlank",
+                "spec": { "size": { "width": 612.0, "height": 792.0 } } }] }
         }),
         Vec::new(),
     );
-    let new_page = inserted["result"]["result"]["insertedPages"][0].clone();
+    let new_page = inserted["result"]["result"]["items"][0]["insertedPages"][0].clone();
     assert!(new_page["objectNumber"].is_u64(), "no inserted page: {inserted}");
     let text = call(
         &mut host,
@@ -250,9 +240,10 @@ fn a_page_edit_reaches_the_page_reads() {
     );
     assert!(text.get("error").is_none(), "the inserted page is unknown to reads: {text}");
 
-    let deleted = call_legacy(
+    let deleted = call(
         &mut host,
-        serde_json::json!({ "kind": "pages.delete", "docId": "d", "pages": [new_page] }),
+        serde_json::json!({ "kind": "document.apply", "docId": "d",
+            "change": { "ops": [{ "type": "pages.delete", "pages": [new_page] }] } }),
         Vec::new(),
     );
     assert!(deleted.get("error").is_none(), "{deleted}");

@@ -1864,7 +1864,9 @@ fn bytes_that_are_not_a_pdf_are_refused() {
         CancelToken::new(),
     ))
     .unwrap_err();
-    assert!(format!("{error:?}").contains("DocOpenFailed"), "{error:?}");
+    // `MalformedPdf`, as `PagesInserter.insert` refuses a source it can't
+    // open (`runPageInsertConformance`).
+    assert!(format!("{error:?}").contains("MalformedPdf"), "{error:?}");
     assert_eq!(block_on(host.pages(doc.id)).unwrap().len(), 14);
 }
 

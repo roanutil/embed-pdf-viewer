@@ -10,6 +10,20 @@
 
 use crate::Document;
 
+/// The bytes of a buffer an export returned, which is then released; `None`
+/// for a null buffer.
+fn take_owned(buffer: *mut std::ffi::c_void, size: std::os::raw::c_ulong) -> Option<Vec<u8>> {
+    if buffer.is_null() {
+        return None;
+    }
+    let length = usize::try_from(size).unwrap_or(0);
+    // SAFETY: the fork reported `size` readable bytes at `buffer`.
+    let bytes = unsafe { std::slice::from_raw_parts(buffer.cast::<u8>(), length) }.to_vec();
+    // SAFETY: the buffer came from an export and is freed once.
+    unsafe { pdfium_sys::EPDF_FreeBuffer(buffer) };
+    Some(bytes)
+}
+
 impl Document {
     /// `EPDFPage_ExportAnnotsRawToOwnedBuffer`: the annotations at `indexes`
     /// of page `page_index`'s `/Annots`, with their positions, and every
@@ -63,6 +77,64 @@ impl Document {
                 size,
             ) != 0
         }
+    }
+
+    /// `EPDFPage_ExportRawToOwnedBuffer`: the page `page_object_number` as a
+    /// delete removes it, with every object the layer holds a version of
+    /// that it reaches, the `/Names /Pages` keys that name it, the page it
+    /// followed, and what it takes from the page tree above it. `None` when
+    /// it is not a page in the page tree, or the document is not a layer.
+    pub fn export_page_raw(&self, page_object_number: u32) -> Option<Vec<u8>> {
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFPage_ExportRawToOwnedBuffer(
+                self.as_raw(),
+                page_object_number,
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFPage_ImportRaw`: put the page of `capture` back into the page
+    /// tree, right after the page it followed while that is there (else
+    /// first), with its names. `false` outside a layer transaction, for a
+    /// malformed capture, or when the page is in the page tree already.
+    pub fn import_page_raw(&self, capture: &[u8]) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(capture.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and `capture` outlives the call.
+        unsafe { pdfium_sys::EPDFPage_ImportRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0 }
+    }
+
+    /// `EPDFDoc_ExportDictCanonicalToOwnedBuffer`: the dictionary
+    /// `object_number` as bytes a guard compares, without the keys in
+    /// `skip_keys` and with every object the layer holds under `deep_keys`,
+    /// each stream as it reads. Keys are separated by spaces. `None` when
+    /// it is not a dictionary.
+    pub fn export_dict_canonical(
+        &self,
+        object_number: u32,
+        deep_keys: &str,
+        skip_keys: &str,
+    ) -> Option<Vec<u8>> {
+        let deep = std::ffi::CString::new(deep_keys).ok()?;
+        let skip = std::ffi::CString::new(skip_keys).ok()?;
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live, both strings outlive the call and
+        // `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFDoc_ExportDictCanonicalToOwnedBuffer(
+                self.as_raw(),
+                object_number,
+                deep.as_ptr(),
+                skip.as_ptr(),
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
     }
 
     /// `EPDFLayer_BeginTransaction`: `false` for a document that is not a

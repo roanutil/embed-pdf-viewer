@@ -211,6 +211,33 @@ impl Document {
         }
     }
 
+    /// `EPDFPage_InsertBlankRaw`: a blank page of `width` by `height` points
+    /// at `index` (0 to the page count), made without loading it, at
+    /// `object_number`, or the next free number for 0. A number other than
+    /// 0 needs a layer transaction and a free number. An index out of range
+    /// is refused, never clamped; `false` changed nothing.
+    pub fn insert_blank_page_raw(
+        &self,
+        index: u32,
+        width: f64,
+        height: f64,
+        object_number: u32,
+    ) -> bool {
+        let Ok(index) = i32::try_from(index) else {
+            return false;
+        };
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFPage_InsertBlankRaw(
+                self.as_raw(),
+                index,
+                width,
+                height,
+                std::os::raw::c_ulong::from(object_number),
+            ) != 0
+        }
+    }
+
     /// Remove a page.
     ///
     /// The object number is retired, not freed.

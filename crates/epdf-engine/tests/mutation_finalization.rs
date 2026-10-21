@@ -10,7 +10,6 @@ use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
 use epdf_engine::features::annotation::write::create::{
     CreateRequest, CreateServices, create_annotation,
 };
-use epdf_engine::geom::PdfRotation;
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -80,9 +79,9 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
             MutationFamily::Ordinary,
         ),
         (
-            DocumentEventInit::PagesMoved {
-                page_object_numbers: vec![page(3)],
-                dest_index: 0,
+            DocumentEventInit::PagesNamed {
+                name: String::from("cover"),
+                page_object_number: Some(page(3)),
                 result: serde_json::json!({}),
             },
             MutationFamily::Ordinary,
@@ -111,18 +110,6 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         DocumentEventInit::AnnotationCreated { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationUpdated { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationsFlattened(nothing.clone()),
-        DocumentEventInit::PagesMoved {
-            page_object_numbers: vec![page(3)],
-            dest_index: 0,
-            result: empty(),
-        },
-        DocumentEventInit::PagesRotated {
-            page_object_numbers: vec![page(3)],
-            rotation: PdfRotation::Clockwise90,
-            result: empty(),
-        },
-        DocumentEventInit::PagesDeleted { page_object_numbers: vec![page(3)], result: empty() },
-        DocumentEventInit::PagesInserted { dest_index: None, result: empty() },
         DocumentEventInit::PagesFlattened(nothing.clone()),
         DocumentEventInit::PagesNamed {
             name: String::from("cover"),
@@ -152,8 +139,11 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     // host answer carries one event. The attachment events are not here
     // either: they are a change's (`ChangeItem::events`), since attachment
     // writes run only as `document.apply` ops (c2d7a5194). Nor are the
-    // annotation delete and reorder events, for the same reason (8.16).
-    assert_eq!(every.len(), 24, "the event list and the TypeScript union disagree");
+    // annotation delete and reorder events, for the same reason (8.16), nor
+    // the page structure events, `pages.rotated`, `pages.reordered`,
+    // `pages.deleted`, `pages.inserted` and `pages.restored`, whose writes
+    // are `document.apply` ops (8.18).
+    assert_eq!(every.len(), 20, "the event list and the TypeScript union disagree");
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");

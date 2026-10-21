@@ -124,12 +124,6 @@ pub const LEGACY_KINDS: &[&str] = &[
     "forms.applyEffects",
     // 8.21: `forms.addWidget` (d7bd2d277).
     "forms.attachWidget",
-    // 8.18: page structure through `document.apply` (119685ea4, b69c40377).
-    "pages.delete",
-    "pages.insert",
-    "pages.insertBlank",
-    "pages.move",
-    "pages.rotate",
     // 8.26: renamed `signatures.cancel` (7bccc4f35).
     "signatures.abort",
 ];
@@ -1061,10 +1055,14 @@ impl Host {
                 let session = self.sessions.session_mut(&key)?;
                 Ok(ok(value(&f::search::reader::search(session, &request, cancel)?)?))
             }
+            // `WorkerHost.handlePagesExtract`: a read. `flatten` is what the
+            // copy paints, already checked against the caller's rights
+            // (`resolvePageExtract`); absent for a plain copy.
             "pages.extract" => {
                 let pages = pages_field(body)?;
+                let flatten: Option<f::extract::PageExtractFlatten> = optional(body, "flatten")?;
                 let session = self.sessions.session_mut(&key)?;
-                let bytes = f::extract::extract_pages(session, &pages, cancel)?;
+                let bytes = f::extract::extract_pages(session, &pages, flatten.as_ref(), cancel)?;
                 Ok(bytes_response(bytes))
             }
             "document.saveBuffer" => {
@@ -1574,35 +1572,48 @@ impl Host {
                 )
             }
 
+            // `WorkerHost.handlePagesSetName` and `handlePagesRemoveName`: a
+            // write in its own transaction, whose stamp the result's `meta`
+            // carries, answering the new layout (`PageNameResult`).
             "pages.setName" => {
                 let name: String = field(body, "name")?;
-                let page = page_field(body)?;
+                let page: crate::identity::PageRef = field(body, "page")?;
                 let replace: Option<String> = optional(body, "replace")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::set_name(d, &name, page, replace.as_deref(), cancel)?
-                };
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| {
+                        f::pages_write::set_name(session, &name, page, replace.as_deref(), cancel)
+                    },
+                )?;
                 self.finish(
                     &key,
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
-                        page_object_number: Some(page),
-                        result: with_local_cache(value(&result)?),
+                        page_object_number: Some(page.object_number()),
+                        result: value(&result)?,
                     },
                 )
             }
             "pages.removeName" => {
                 let name: String = field(body, "name")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::remove_name(d, &name, cancel)?
-                };
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| f::pages_write::remove_name(session, &name, cancel),
+                )?;
                 self.finish(
                     &key,
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: None,
-                        result: with_local_cache(value(&result)?),
+                        result: value(&result)?,
                     },
                 )
             }
@@ -1855,122 +1866,6 @@ impl Host {
                     crate::session::save::DocumentEventInit::FormWidgetAttached(field_result(
                         &result,
                     )?),
-                )
-            }
-
-            // Owner: 8.18 (`document.apply`, 119685ea4).
-            "pages.move" => {
-                let pages = pages_field(body)?;
-                let destination: u32 = field(body, "destIndex")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::move_pages(d, &pages, destination, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesMoved {
-                        page_object_numbers: pages,
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-
-            // Owner: 8.18 (`document.apply`, b69c40377).
-            "pages.rotate" => {
-                let pages = pages_field(body)?;
-                let rotation: crate::geom::PdfRotation = field(body, "rotation")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::rotate_pages(d, &pages, rotation, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesRotated {
-                        page_object_numbers: pages,
-                        rotation,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-
-            // Owner: 8.18 (`document.apply`, 119685ea4).
-            "pages.delete" => {
-                let pages = pages_field(body)?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::delete_pages(d, &pages, cancel)?
-                };
-                // The deleted pages' per-session state goes with them. A
-                // retired object number can never come back, so anything
-                // keyed on it is dead weight that would also answer stale.
-                for page in &pages {
-                    self.sessions.session_mut(&key)?.drop_page_state(*page)?;
-                }
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesDeleted {
-                        page_object_numbers: pages,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-
-            // Owner: 8.18 (`document.apply`, 119685ea4).
-            "pages.insertBlank" => {
-                let size: crate::geom::PdfSize = field(body, "size")?;
-                let count: u32 = optional(body, "count")?.unwrap_or(1);
-                let destination: Option<u32> = optional(body, "destIndex")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::insert_blank_pages(
-                        d,
-                        size.width,
-                        size.height,
-                        count,
-                        destination,
-                        cancel,
-                    )?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesInserted {
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
-                )
-            }
-
-            // Owner: 8.18 (`document.apply`, 119685ea4).
-            "pages.insert" => {
-                // The source document arrives as a payload and is opened
-                // here, held only for the copy. `import_pages` leaves the
-                // imported streams reading through it, so it must outlive
-                // the call and not the operation.
-                let bytes = payload(&payloads, 0, "the document to insert from")?;
-                let destination: Option<u32> = optional(body, "destIndex")?;
-                let source = pdfium::Document::from_bytes(pdfium::Library::acquire(), bytes, None)
-                    .map_err(|e| {
-                        EngineError::with_message(
-                            EngineErrorCode::DocOpenFailed,
-                            format!("the document to insert from could not be opened: {e}"),
-                        )
-                    })?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::pages_write::insert_pages_from(d, &source, destination, cancel)?
-                };
-                self.refresh_pages(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::PagesInserted {
-                        dest_index: destination,
-                        result: with_local_cache(value(&result)?),
-                    },
                 )
             }
 
@@ -2370,16 +2265,6 @@ impl Host {
         Ok(HostResponse { json, payloads })
     }
 
-    /// Re-read the page registry after the page list changed.
-    ///
-    /// Anything that inserts, removes or reorders pages leaves every cached
-    /// record addressing the wrong position. Skipping this is not a stale
-    /// read but a wrong one: the next operation would resolve a page object
-    /// number through an index that now names a different page.
-    fn refresh_pages(&mut self, key: &SessionKey) -> Result<(), EngineError> {
-        self.sessions.session_mut(key)?.refresh_page_registry()
-    }
-
     /// The open document behind a key.
     fn document(&self, key: &SessionKey) -> Result<&pdfium::Document, EngineError> {
         Ok(self.sessions.session(key)?.document()?.document())
@@ -2653,16 +2538,6 @@ fn field_result(
     Ok(serde_json::json!({ "field": value(field)?, "meta": empty_meta() }))
 }
 
-/// A page-structure, metadata or attachment result as a local engine
-/// answers it: `cache: null`, the cloud's coherence pins that a local engine
-/// never has (`PageMoveResult.cache`, `MetadataUpdateResult.cache`, ...).
-fn with_local_cache(mut result: serde_json::Value) -> serde_json::Value {
-    if let Some(object) = result.as_object_mut() {
-        object.entry("cache").or_insert(serde_json::Value::Null);
-    }
-    result
-}
-
 /// Serialize an operation's result into the envelope's `result`.
 fn value<T: Serialize>(result: &T) -> Result<serde_json::Value, EngineError> {
     serde_json::to_value(result).map_err(|e| {
@@ -2890,6 +2765,16 @@ fn strip_item(
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }
+        // The page ops have no single verb (119685ea4): only
+        // `document.apply` runs them, and it answers the items whole.
+        ChangeItem::PagesRotate { .. }
+        | ChangeItem::PagesReorder { .. }
+        | ChangeItem::PagesDelete { .. }
+        | ChangeItem::PagesInsertBlank { .. }
+        | ChangeItem::PagesInsert { .. }
+        | ChangeItem::PagesRestore { .. } => {
+            Err(EngineError::with_message(EngineErrorCode::Unknown, "a page op has no single verb"))
+        }
     }
 }
 
@@ -2916,14 +2801,9 @@ const MUTATING_KINDS: &[&str] = &[
     "forms.deleteField",
     "forms.attachWidget",
     "forms.detachWidget",
-    "pages.move",
-    "pages.rotate",
-    "pages.delete",
     "pages.setName",
     "pages.removeName",
     "pages.flatten",
-    "pages.insert",
-    "pages.insertBlank",
     "redaction.apply",
     "measure.setScale",
     "pieceInfo.update",

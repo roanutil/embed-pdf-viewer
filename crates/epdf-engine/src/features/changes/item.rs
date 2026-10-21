@@ -93,6 +93,32 @@ pub enum ChangeItem {
         annotations: Vec<serde_json::Value>,
         meta: AnnotationMutationMeta,
     },
+    /// `PageRotateResult`, with the pages turned and the rotation each has
+    /// now.
+    #[serde(rename = "pages.rotate")]
+    PagesRotate {
+        pages: Vec<PageRef>,
+        rotation: crate::geom::PdfRotation,
+        /// The new `PageListSnapshot`: in the file's coordinates as the op
+        /// answers it, in page space once the boundary measured it.
+        layout: serde_json::Value,
+        meta: MutationMeta,
+    },
+    /// `PageReorderResult`: the pages that moved, in their new order.
+    #[serde(rename = "pages.reorder")]
+    PagesReorder { pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    /// `PageDeleteResult`, with the pages that went, in the order they had.
+    #[serde(rename = "pages.delete")]
+    PagesDelete { pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    /// `PageInsertResult`: the new pages, in the order they landed.
+    #[serde(rename = "pages.insertBlank", rename_all = "camelCase")]
+    PagesInsertBlank { inserted_pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    #[serde(rename = "pages.insert", rename_all = "camelCase")]
+    PagesInsert { inserted_pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
+    /// `PageRestoreResult`, only in an undo: the pages a delete removed (or
+    /// an insert brought, redone), back, in display order.
+    #[serde(rename = "pages.restore")]
+    PagesRestore { pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -113,7 +139,13 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &meta.meta,
-            Self::Skipped { meta, .. } => meta,
+            Self::PagesRotate { meta, .. }
+            | Self::PagesReorder { meta, .. }
+            | Self::PagesDelete { meta, .. }
+            | Self::PagesInsertBlank { meta, .. }
+            | Self::PagesInsert { meta, .. }
+            | Self::PagesRestore { meta, .. }
+            | Self::Skipped { meta, .. } => meta,
         }
     }
 
@@ -129,7 +161,13 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
-            Self::Skipped { meta, .. } => meta,
+            Self::PagesRotate { meta, .. }
+            | Self::PagesReorder { meta, .. }
+            | Self::PagesDelete { meta, .. }
+            | Self::PagesInsertBlank { meta, .. }
+            | Self::PagesInsert { meta, .. }
+            | Self::PagesRestore { meta, .. }
+            | Self::Skipped { meta, .. } => meta,
         }
     }
 
@@ -187,6 +225,29 @@ impl ChangeItem {
                 "annotations.restored",
                 serde_json::json!({ "page": crate::identity::PageRef::new(*page),
                     "annotations": annotations, "meta": to_value(meta)? }),
+            ),
+            Self::PagesRotate { pages, rotation, layout, meta } => (
+                "pages.rotated",
+                serde_json::json!({ "pages": pages, "rotation": rotation, "layout": layout,
+                    "meta": to_value(meta)? }),
+            ),
+            Self::PagesReorder { pages, layout, meta } => (
+                "pages.reordered",
+                serde_json::json!({ "pages": pages, "layout": layout, "meta": to_value(meta)? }),
+            ),
+            Self::PagesDelete { pages, layout, meta } => (
+                "pages.deleted",
+                serde_json::json!({ "pages": pages, "layout": layout, "meta": to_value(meta)? }),
+            ),
+            Self::PagesInsertBlank { inserted_pages, layout, meta }
+            | Self::PagesInsert { inserted_pages, layout, meta } => (
+                "pages.inserted",
+                serde_json::json!({ "insertedPages": inserted_pages, "layout": layout,
+                    "meta": to_value(meta)? }),
+            ),
+            Self::PagesRestore { pages, layout, meta } => (
+                "pages.restored",
+                serde_json::json!({ "pages": pages, "layout": layout, "meta": to_value(meta)? }),
             ),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };

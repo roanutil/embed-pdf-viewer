@@ -56,6 +56,7 @@ pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};
 pub use error::PdfiumError;
+pub use extract::ExtractCopy;
 pub use file_access::FileAccess;
 pub use fonts::{
     FontDescription, FontId, FontIdentity, FontLicence, add_fallback_font, authorize_font_editing,

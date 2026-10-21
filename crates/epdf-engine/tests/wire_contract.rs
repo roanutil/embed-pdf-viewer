@@ -291,13 +291,14 @@ fn every_wire_kind_routes_to_an_implementation() {
 
 #[test]
 fn every_removed_kind_is_unknown_to_the_wire_and_known_to_the_legacy_entry() {
-    // The 8 kinds upstream removed that are still parked (`signatures.abort`
+    // The 3 kinds upstream removed that are still parked (`signatures.abort`
     // renamed `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers
     // a kind it has no case for, and reach their old arm only through
     // `call_legacy`, until each owner sub-task retires it. 8.8 retired
     // `attachments.create`, `attachments.delete` and `pieceInfo.clear`; 8.12
-    // the three annotation listings; 8.16 `annotations.move`.
-    assert_eq!(LEGACY_KINDS.len(), 8);
+    // the three annotation listings; 8.16 `annotations.move`; 8.18 the five
+    // page structure kinds, now `document.apply` ops.
+    assert_eq!(LEGACY_KINDS.len(), 3);
     let cases = cases();
     for kind in LEGACY_KINDS {
         assert!(!cases.iter().any(|c| c.kind == *kind), "{kind} is in upstream's union");
@@ -532,14 +533,14 @@ fn a_page_is_addressed_by_the_ref_the_listing_answered() {
         "the list names its page differently from the request: {annotations}",
     );
 
-    // `pages.rotate` was removed upstream; owner 8.18.
-
-    let rotated = send_legacy(
+    // A page op of `document.apply` takes the listing's ref too.
+    let rotated = send(
         &mut host,
-        serde_json::json!({ "kind": "pages.rotate", "pages": [first], "rotation": 90 }),
+        serde_json::json!({ "kind": "document.apply", "change": { "ops": [
+            { "type": "pages.rotate", "pages": [first], "rotation": 90 }] } }),
     );
     assert!(rotated.get("error").is_none(), "pages.rotate refused the listing's ref: {rotated}");
-    let layout = &rotated["result"]["result"]["layout"]["pages"][0];
+    let layout = &rotated["result"]["result"]["items"][0]["layout"]["pages"][0];
     assert_eq!(layout["ref"], first, "the rotated page lost its identity: {rotated}");
     assert_eq!(layout["rotation"], 90, "{rotated}");
 }

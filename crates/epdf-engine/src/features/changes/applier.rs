@@ -306,6 +306,24 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::AnnotationsReorder { page, refs, position } => {
             super::annotations::reorder_annotations(ctx, *page, refs, position)
         }
+        ChangeOp::PagesRotate { pages, rotation } => {
+            super::pages::rotate_pages(ctx, pages, rotation)
+        }
+        ChangeOp::PagesReorder { pages, position } => {
+            super::pages::reorder_pages(ctx, pages, position)
+        }
+        ChangeOp::PagesDelete { pages } => super::pages::delete_pages(ctx, pages),
+        ChangeOp::PagesInsertBlank { spec, position, object_numbers } => {
+            super::pages::insert_blank_pages(
+                ctx,
+                spec,
+                position.as_ref(),
+                object_numbers.as_deref(),
+            )
+        }
+        ChangeOp::PagesInsert { source, position } => {
+            super::pages::insert_pages(ctx, source.bytes()?, position.as_ref())
+        }
     }
 }
 
@@ -322,6 +340,10 @@ pub(super) fn run_step(
         ReverseStep::ObjectsRevert(step) => super::annotations::revert_annotation(ctx, step),
         ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
         ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
+        ReverseStep::PagesRotate(step) => super::pages::rotate_pages_back(ctx, step),
+        ReverseStep::PagesReorder(step) => super::pages::reorder_pages_back(ctx, step),
+        ReverseStep::PagesRestore(step) => super::pages::restore_pages(ctx, step),
+        ReverseStep::PagesRemove(step) => super::pages::remove_pages(ctx, step),
     }
 }
 

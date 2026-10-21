@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::dto::{CustomMetadataPatch, MetadataPatch};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::files::attachments::{AttachmentFileBase, AttachmentRef};
+use crate::identity::PageRef;
 
 /// One change (`Change`): its ops in order, all of them or none; or the
 /// reverse of an earlier change, named by its `opId`.
@@ -110,6 +111,55 @@ pub enum ChangeOp {
         refs: Vec<crate::identity::AnnotationRef>,
         position: crate::mutation::list_position::AnnotationPosition,
     },
+    /// Every page gets `rotation`, its display rotation from now on. Kept
+    /// as sent: a value that isn't 0, 90, 180 or 270 is the op's
+    /// `InvalidArg`, as `PagesMutator.rotate` refuses it.
+    #[serde(rename = "pages.rotate")]
+    PagesRotate { pages: Vec<PageRef>, rotation: serde_json::Number },
+    /// The pages go together, in the order given, to `position`.
+    #[serde(rename = "pages.reorder")]
+    PagesReorder { pages: Vec<PageRef>, position: crate::features::pages_write::PagePosition },
+    /// The pages go, with their annotations. A document keeps at least one
+    /// page.
+    #[serde(rename = "pages.delete")]
+    PagesDelete { pages: Vec<PageRef> },
+    /// `spec.count` blank pages at `position` (the end when left out), each
+    /// at the number `objectNumbers` gives it, in order, when it gives one.
+    /// The spec stays the object sent: the op checks it as
+    /// `PagesInserter.insertBlank` does.
+    #[serde(rename = "pages.insertBlank", rename_all = "camelCase")]
+    PagesInsertBlank {
+        spec: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<crate::features::pages_write::PagePosition>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_numbers: Option<Vec<serde_json::Number>>,
+    },
+    /// Every page of the PDF `source`, copied in at `position` (the end
+    /// when left out). The source is a payload the request carries,
+    /// `{ "payload": n }`, or its bytes written out as a list of numbers,
+    /// as a recorded request holds upstream's typed array.
+    #[serde(rename = "pages.insert")]
+    PagesInsert {
+        #[serde(deserialize_with = "source_bytes")]
+        source: ResourceBytes,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<crate::features::pages_write::PagePosition>,
+    },
+}
+
+/// A `pages.insert` source: a payload it names, or its bytes.
+fn source_bytes<'de, D: serde::Deserializer<'de>>(d: D) -> Result<ResourceBytes, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Source {
+        Bytes(Vec<u8>),
+        Payload(ResourceBytes),
+    }
+    Ok(match Source::deserialize(d)? {
+        Source::Bytes(bytes) => ResourceBytes::Bytes(bytes),
+        Source::Payload(payload) => payload,
+    })
 }
 
 /// The bytes beside an op, by role (`WireAnnotationResources`).
@@ -204,11 +254,26 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             ChangeOp::AttachmentsCreate { resources, .. }
             | ChangeOp::AnnotationsCreate { resources, .. }
             | ChangeOp::AnnotationsUpdate { resources, .. } => resources.resolve(payloads)?,
+            ChangeOp::PagesInsert { source, .. } => {
+                if let ResourceBytes::Payload(index) = source {
+                    let bytes = payloads.get(*index).ok_or_else(|| {
+                        malformed(format!(
+                            "source payload {index} is missing: the request carries {}",
+                            payloads.len()
+                        ))
+                    })?;
+                    *source = ResourceBytes::Bytes(bytes.clone());
+                }
+            }
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
             | ChangeOp::AttachmentsDelete { .. }
             | ChangeOp::AnnotationsDelete { .. }
-            | ChangeOp::AnnotationsReorder { .. } => {}
+            | ChangeOp::AnnotationsReorder { .. }
+            | ChangeOp::PagesRotate { .. }
+            | ChangeOp::PagesReorder { .. }
+            | ChangeOp::PagesDelete { .. }
+            | ChangeOp::PagesInsertBlank { .. } => {}
         }
     }
     Ok(())
@@ -249,6 +314,11 @@ impl ChangeOp {
             Self::AnnotationsUpdate { .. } => "annotations.update",
             Self::AnnotationsDelete { .. } => "annotations.delete",
             Self::AnnotationsReorder { .. } => "annotations.reorder",
+            Self::PagesRotate { .. } => "pages.rotate",
+            Self::PagesReorder { .. } => "pages.reorder",
+            Self::PagesDelete { .. } => "pages.delete",
+            Self::PagesInsertBlank { .. } => "pages.insertBlank",
+            Self::PagesInsert { .. } => "pages.insert",
         }
     }
 }
@@ -269,12 +339,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.18: page structure (119685ea4, b69c40377).
-    ("pages.rotate", "8.18"),
-    ("pages.reorder", "8.18"),
-    ("pages.delete", "8.18"),
-    ("pages.insertBlank", "8.18"),
-    ("pages.insert", "8.18"),
     // 8.20: form values and effects (98e5c270c).
     ("forms.setValue", "8.20"),
     ("forms.setDisplay", "8.20"),
@@ -375,7 +439,12 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::AnnotationsCreate { .. }
         | ChangeOp::AnnotationsUpdate { .. }
         | ChangeOp::AnnotationsDelete { .. }
-        | ChangeOp::AnnotationsReorder { .. } => {}
+        | ChangeOp::AnnotationsReorder { .. }
+        | ChangeOp::PagesRotate { .. }
+        | ChangeOp::PagesReorder { .. }
+        | ChangeOp::PagesDelete { .. }
+        | ChangeOp::PagesInsertBlank { .. }
+        | ChangeOp::PagesInsert { .. } => {}
     }
     Ok(parsed)
 }
@@ -418,11 +487,11 @@ mod tests {
     fn an_op_another_task_registers_refuses_the_whole_change_naming_its_owner() {
         let refused = parse_ops(&serde_json::json!([
             { "type": "metadata.update", "patch": {} },
-            { "type": "pages.rotate", "pages": [], "rotation": 90 },
+            { "type": "forms.setValue", "ref": {}, "value": "x" },
         ]))
         .unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::NotImplemented);
-        assert!(refused.message.contains("8.18"), "{refused}");
+        assert!(refused.message.contains("8.20"), "{refused}");
         assert_eq!(refused.details.unwrap()["opIndex"], 1);
     }
 
@@ -509,6 +578,11 @@ mod tests {
             "annotations.update",
             "annotations.delete",
             "annotations.reorder",
+            "pages.rotate",
+            "pages.reorder",
+            "pages.delete",
+            "pages.insertBlank",
+            "pages.insert",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

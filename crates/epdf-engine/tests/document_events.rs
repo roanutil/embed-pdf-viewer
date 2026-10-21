@@ -100,26 +100,50 @@ fn every_annotation_write_names_its_page() {
     assert_result_rides(&deleted);
 }
 
+/// One page op as a `document.apply` change under `op_id`, answering its
+/// one item and the one event the change publishes for it.
+fn page_op(host: &mut Host, doc: &str, op_id: &str, op: Value) -> (Value, Value) {
+    let answer = call(
+        host,
+        json!({ "kind": "document.apply", "docId": doc, "opId": op_id,
+                "change": { "ops": [op] } }),
+    );
+    let items = answer["result"]["items"].as_array().expect("items");
+    let events = answer["events"].as_array().expect("events");
+    assert_eq!((items.len(), events.len()), (1, 1), "{answer}");
+    assert_eq!(events[0]["origin"]["tx"], json!({ "id": op_id, "index": 0, "count": 1 }));
+    (items[0].clone(), events[0].clone())
+}
+
+/// The event carries the item, less its `type`, unchanged
+/// (`changeEvents`' `itemEvents`).
+fn assert_item_rides(item: &Value, event: &Value) {
+    for (key, value) in item.as_object().expect("an object item") {
+        if key != "type" {
+            assert_eq!(&event[key], value, "the event changed '{key}': {event}");
+        }
+    }
+}
+
 #[test]
-fn a_move_names_the_block_and_the_insertion_point() {
+fn a_reorder_names_the_block_in_the_callers_order() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, ROTATED);
     let pages = page_refs(&mut host, &doc);
     assert!(pages.len() >= 2, "the fixture needs two pages");
     // The caller's order, not the document's.
     let block = json!([pages[1], pages[0]]);
-    // Removed upstream; owner 8.18 (`document.apply`).
-    let moved = call_legacy(
+    let (item, event) = page_op(
         &mut host,
-        json!({ "kind": "pages.move", "docId": doc, "pages": block, "destIndex": 0 }),
+        &doc,
+        "op-reorder",
+        json!({ "type": "pages.reorder", "pages": block, "position": "start" }),
     );
-    assert_eq!(moved["event"]["type"], json!("pages.moved"), "{moved}");
-    assert_eq!(moved["event"]["pages"], block);
-    assert_eq!(moved["event"]["destIndex"], json!(0));
-    assert_eq!(moved["result"]["cache"], Value::Null);
-    assert!(moved["result"].as_object().unwrap().contains_key("cache"), "{moved}");
-    assert!(moved["result"].get("pages").is_none(), "the block leaked into the result");
-    assert_result_rides(&moved);
+    assert_eq!(event["type"], json!("pages.reordered"), "{event}");
+    assert_eq!(item["pages"], block);
+    assert_eq!(item["meta"]["affectedPages"], json!([]));
+    assert!(event.get("destIndex").is_none(), "{event}");
+    assert_item_rides(&item, &event);
 }
 
 #[test]
@@ -127,16 +151,17 @@ fn a_rotation_names_its_pages_and_its_rotation() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, ROTATED);
     let pages = page_refs(&mut host, &doc);
-    // Removed upstream; owner 8.18 (`document.apply`).
-    let rotated = call_legacy(
+    let (item, event) = page_op(
         &mut host,
-        json!({ "kind": "pages.rotate", "docId": doc, "pages": [pages[0]], "rotation": 90 }),
+        &doc,
+        "op-rotate",
+        json!({ "type": "pages.rotate", "pages": [pages[0]], "rotation": 90 }),
     );
-    assert_eq!(rotated["event"]["type"], json!("pages.rotated"), "{rotated}");
-    assert_eq!(rotated["event"]["pages"], json!([pages[0]]));
-    assert_eq!(rotated["event"]["rotation"], json!(90));
-    assert!(rotated["result"].as_object().unwrap().contains_key("cache"), "{rotated}");
-    assert_result_rides(&rotated);
+    assert_eq!(event["type"], json!("pages.rotated"), "{event}");
+    assert_eq!(event["pages"], json!([pages[0]]));
+    assert_eq!(event["rotation"], json!(90));
+    assert_eq!(event["layout"]["pages"][0]["rotation"], json!(90));
+    assert_item_rides(&item, &event);
 }
 
 #[test]
@@ -144,37 +169,46 @@ fn a_delete_names_the_retired_pages() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, ROTATED);
     let pages = page_refs(&mut host, &doc);
-    // Removed upstream; owner 8.18 (`document.apply`).
-    let deleted = call_legacy(
+    let (item, event) = page_op(
         &mut host,
-        json!({ "kind": "pages.delete", "docId": doc, "pages": [pages[0]] }),
+        &doc,
+        "op-delete",
+        json!({ "type": "pages.delete", "pages": [pages[0]] }),
     );
-    assert_eq!(deleted["event"]["type"], json!("pages.deleted"), "{deleted}");
-    assert_eq!(deleted["event"]["pages"], json!([pages[0]]));
-    assert!(deleted["result"].as_object().unwrap().contains_key("cache"), "{deleted}");
-    assert_result_rides(&deleted);
+    assert_eq!(event["type"], json!("pages.deleted"), "{event}");
+    assert_eq!(event["pages"], json!([pages[0]]));
+    assert_eq!(event["layout"]["pageCount"], json!(pages.len() - 1));
+    assert_item_rides(&item, &event);
 }
 
 #[test]
-fn an_insert_names_its_insertion_point_only_when_the_call_did() {
+fn an_insert_names_the_new_pages_and_no_insertion_point() {
+    // `destIndex` is gone with the neighbour positions (1233d1349): the
+    // event is the result, `{insertedPages, layout, meta}`, whatever the
+    // position said.
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, RICH);
     let size = json!({ "width": 200.0, "height": 300.0 });
-    // Removed upstream; owner 8.18 (`document.apply`).
-    let placed = call_legacy(
+    let (placed, event) = page_op(
         &mut host,
-        json!({ "kind": "pages.insertBlank", "docId": doc, "size": size, "destIndex": 0 }),
+        &doc,
+        "op-placed",
+        json!({ "type": "pages.insertBlank", "spec": { "size": size }, "position": "start" }),
     );
-    assert_eq!(placed["event"]["type"], json!("pages.inserted"), "{placed}");
-    assert_eq!(placed["event"]["destIndex"], json!(0));
-    assert!(placed["result"].get("destIndex").is_none(), "the index leaked into the result");
-    assert!(placed["result"].as_object().unwrap().contains_key("cache"), "{placed}");
-    assert_result_rides(&placed);
+    assert_eq!(event["type"], json!("pages.inserted"), "{event}");
+    assert!(event.get("destIndex").is_none(), "{event}");
+    assert_eq!(event["insertedPages"], json!([event["layout"]["pages"][0]["ref"]]));
+    assert_item_rides(&placed, &event);
 
-    let appended =
-        call_legacy(&mut host, json!({ "kind": "pages.insertBlank", "docId": doc, "size": size }));
-    assert_eq!(appended["event"]["type"], json!("pages.inserted"), "{appended}");
-    assert!(appended["event"].get("destIndex").is_none(), "{appended}");
+    let (_, appended) = page_op(
+        &mut host,
+        &doc,
+        "op-appended",
+        json!({ "type": "pages.insertBlank", "spec": { "size": size } }),
+    );
+    assert_eq!(appended["type"], json!("pages.inserted"), "{appended}");
+    let pages = appended["layout"]["pages"].as_array().expect("pages");
+    assert_eq!(appended["insertedPages"], json!([pages.last().expect("a page")["ref"]]));
 }
 
 #[test]

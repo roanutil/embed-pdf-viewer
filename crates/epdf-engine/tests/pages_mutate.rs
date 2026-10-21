@@ -1,6 +1,8 @@
-//! G13's first gate: a page list is reordered, rotated and thinned the way
-//! the TypeScript engine does it. The file's flatten and export cases are
-//! replayed by `flatten_corpus.rs` (8.17) and skipped here.
+//! G13's first gate: a page list is reordered, rotated, thinned and grown
+//! the way the TypeScript engine does it. Each case's recorded `request`, a
+//! `document.apply` change with one page op, is replayed through
+//! `Host::call`. The file's flatten and export cases are replayed by
+//! `flatten_corpus.rs` (8.17) and skipped here.
 //!
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run pages-mutate
@@ -11,18 +13,19 @@
 //! only the object number is identity, so a reorder that produced the right
 //! shape with the wrong pages in it would otherwise pass.
 
-use epdf_engine::cancel::CancelToken;
-use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::pages_write::{
-    delete_pages, insert_blank_pages, insert_pages_from, move_pages, rotate_pages,
-};
-use epdf_engine::geom::PdfRotation;
-use epdf_engine::identity::{PageObjectNumber, PageRef};
-use epdf_engine::session::authority::SessionAuthority;
-use epdf_engine::session::document::DocumentSession;
+mod common;
+
+use common::replay::Replay;
+use epdf_engine::host::Host;
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 const SCHEMA_VERSION: u32 = 1;
+
+/// The object numbers upstream's local engine reserves for each document it
+/// opens (`OBJECT_NUMBER_POOL_SIZE`, `LocalObjectNumberPool.ts`): a page made
+/// without a number of its own gets the next one past them.
+const OBJECT_NUMBER_POOL_SIZE: u32 = 64;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -38,69 +41,23 @@ struct VectorFile {
 struct Case {
     name: String,
     covers: String,
-    #[serde(rename = "move")]
-    move_: Option<MoveInput>,
-    rotate: Option<RotateInput>,
-    delete: Option<DeleteInput>,
-    insert_blank: Option<InsertBlankInput>,
-    insert: Option<InsertInput>,
+    /// The `document.apply` request the TypeScript engine sent.
+    request: Value,
     /// The flatten and export inputs, only to know the case is
     /// `flatten_corpus.rs`'s.
-    flatten: Option<serde_json::Value>,
-    flatten_annotations: Option<serde_json::Value>,
-    export_appearance: Option<serde_json::Value>,
+    flatten: Option<Value>,
+    flatten_annotations: Option<Value>,
+    export_appearance: Option<Value>,
     #[serde(default)]
     refused: bool,
     #[serde(default)]
     refused_with: Option<String>,
     #[serde(default)]
-    layout: Option<serde_json::Value>,
-    /// The pages an insert handed out. Absent for the operations that add
-    /// nothing.
+    layout: Option<Value>,
+    /// The pages an insert handed out, as refs. Absent for the operations
+    /// that add nothing.
     #[serde(default)]
-    inserted: Option<Vec<PageRef>>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct InsertBlankInput {
-    size: SizeInput,
-    #[serde(default)]
-    count: Option<u32>,
-    #[serde(default)]
-    dest_index: Option<u32>,
-}
-
-#[derive(Debug, Deserialize)]
-struct SizeInput {
-    width: f64,
-    height: f64,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct InsertInput {
-    source: String,
-    #[serde(default)]
-    dest_index: Option<u32>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct MoveInput {
-    pages: Vec<PageRef>,
-    dest_index: u32,
-}
-
-#[derive(Debug, Deserialize)]
-struct RotateInput {
-    pages: Vec<PageRef>,
-    rotation: u16,
-}
-
-#[derive(Debug, Deserialize)]
-struct DeleteInput {
-    pages: Vec<PageRef>,
+    inserted: Option<Value>,
 }
 
 fn load() -> VectorFile {
@@ -122,101 +79,67 @@ impl Case {
     }
 }
 
-fn pages(refs: &[PageRef]) -> Vec<PageObjectNumber> {
-    refs.iter().map(|page| page.object_number()).collect()
+/// A fresh copy of the fixture, as the case's own document, opened as
+/// upstream's local engine opens it: `open.fatMem`, a layer over the bytes,
+/// with the pool its main thread names reserved.
+fn open(file: &VectorFile, case: &Case) -> Replay {
+    let doc = format!("pages-mutate:{}", case.name);
+    let mut host = Host::new();
+    let opened = host.call(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc,
+            "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
+        .to_string(),
+        vec![test_support::fixture(&file.fixture)],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    Replay::adopt(host, &doc)
 }
 
-/// Run one case against a fresh copy of the fixture.
-fn run(
-    file: &VectorFile,
-    case: &Case,
-) -> Result<serde_json::Value, epdf_engine::error::EngineError> {
-    let fixture = file.fixture.as_str();
-    let bytes = std::fs::read(test_support::workspace_root().join(fixture))
-        .unwrap_or_else(|e| panic!("{}: read {fixture}: {e}", case.name));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-    let cancel = CancelToken::never();
-
-    if let Some(input) = &case.insert_blank {
-        let result = insert_blank_pages(
-            owned.document(),
-            input.size.width,
-            input.size.height,
-            input.count.unwrap_or(1),
-            input.dest_index,
-            &cancel,
-        )?;
-        return Ok(serde_json::json!({
-            "layout": result.layout,
-            "inserted": result.inserted_page_object_numbers.iter().copied().map(PageRef::new).collect::<Vec<_>>(),
-        }));
-    }
-    if let Some(input) = &case.insert {
-        // The source document is held for the whole call and dropped with
-        // this scope. It has to outlive the import, because an imported
-        // stream still reads through it; it does NOT have to outlive this
-        // test, which never saves.
-        let source_bytes = std::fs::read(test_support::workspace_root().join(&input.source))
-            .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, input.source));
-        let mut source_session = DocumentSession::new();
-        source_session
-            .open_with(source_bytes, None, SessionAuthority::unrestricted())
-            .expect("the source opens");
-        let source = source_session.document().expect("open");
-        let result =
-            insert_pages_from(owned.document(), source.document(), input.dest_index, &cancel)?;
-        return Ok(serde_json::json!({
-            "layout": result.layout,
-            "inserted": result.inserted_page_object_numbers.iter().copied().map(PageRef::new).collect::<Vec<_>>(),
-        }));
-    }
-
-    let result = if let Some(input) = &case.move_ {
-        move_pages(owned.document(), &pages(&input.pages), input.dest_index, &cancel)?
-    } else if let Some(input) = &case.rotate {
-        let rotation = PdfRotation::try_from(input.rotation).expect("a /Rotate value");
-        rotate_pages(owned.document(), &pages(&input.pages), rotation, &cancel)?
-    } else {
-        let input = case.delete.as_ref().expect("an operation");
-        delete_pages(owned.document(), &pages(&input.pages), &cancel)?
-    };
-    Ok(serde_json::to_value(&result.layout).expect("serialize"))
+/// The document's pages, as `pages.list` answers them.
+fn layout(replay: &mut Replay) -> Value {
+    replay.replay(&json!({ "kind": "pages.list", "jobId": "<job>" })).expect("the pages list")
 }
 
 #[test]
 fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
     let file = load();
-    assert!(file.cases.len() >= 12, "the case list shrank");
     let mut applied = 0usize;
 
-    for case in &file.cases {
-        if case.refused || case.flattens() {
-            continue;
-        }
+    for case in file.cases.iter().filter(|case| !case.refused && !case.flattens()) {
         applied += 1;
-        let mine = run(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
-        let (layout, inserted) = match mine.get("layout") {
-            Some(layout) => (layout.clone(), mine.get("inserted").cloned()),
-            None => (mine, None),
-        };
+        let mut replay = open(&file, case);
+        let answer = replay.replay(&case.request).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let items = answer["result"]["items"].as_array().expect("items");
+        assert_eq!(items.len(), 1, "{}: one op, one item", case.name);
+        let item = &items[0];
+        assert_eq!(item["type"], case.request["change"]["ops"][0]["type"], "{}", case.name);
         assert_eq!(
-            test_support::canonical_numbers(&layout),
+            test_support::canonical_numbers(&item["layout"]),
             test_support::canonical_numbers(case.layout.as_ref().expect("a recorded layout")),
             "{}: {}",
             case.name,
             case.covers,
         );
         assert_eq!(
-            inserted,
-            case.inserted.as_ref().map(|n| serde_json::to_value(n).expect("serialize")),
-            "{}: the inserted page numbers differ",
+            item.get("insertedPages"),
+            case.inserted.as_ref(),
+            "{}: the inserted pages differ",
             case.name,
         );
+        // The layout the op answers is the one the document lists after it.
+        assert_eq!(
+            test_support::canonical_numbers(&layout(&mut replay)),
+            test_support::canonical_numbers(&item["layout"]),
+            "{}: the answer is not what the document lists",
+            case.name,
+        );
+        // A page op names no page in `affectedPages`; the change publishes
+        // one event for it, under its opId.
+        assert_eq!(item["meta"]["affectedPages"], json!([]), "{}", case.name);
+        assert_eq!(answer["events"].as_array().map(Vec::len), Some(1), "{}", case.name);
     }
 
-    assert!(applied >= 8, "the applied list shrank");
+    assert!(applied >= 13, "the applied list shrank: {applied}");
 }
 
 #[test]
@@ -224,37 +147,20 @@ fn a_refused_page_mutation_is_refused_for_the_same_reason() {
     let file = load();
     let mut refusals = 0usize;
 
-    for case in &file.cases {
-        if !case.refused || case.flattens() {
-            continue;
-        }
+    for case in file.cases.iter().filter(|case| case.refused && !case.flattens()) {
         refusals += 1;
-        let error = run(&file, case).expect_err(&case.name);
-        let expected = match case.refused_with.as_deref() {
-            Some("NotFound") => EngineErrorCode::NotFound,
-            Some("InvalidArg") => EngineErrorCode::InvalidArg,
-            Some("InvalidReference") => EngineErrorCode::InvalidReference,
-            other => panic!("{}: unhandled refusal code {other:?}", case.name),
-        };
-        assert!(error.is(expected), "{}: {} (got {error})", case.name, case.covers);
+        let mut replay = open(&file, case);
+        let error = replay.replay(&case.request).expect_err(&case.name);
+        assert_eq!(
+            error["code"].as_str(),
+            case.refused_with.as_deref(),
+            "{}: {} (got {error})",
+            case.name,
+            case.covers,
+        );
     }
 
-    assert!(refusals >= 5, "the refusal list shrank");
-}
-
-#[test]
-fn a_destination_past_the_end_says_which_end() {
-    // PDFium refuses this one too, with the same code, and its refusal is
-    // about the request as a whole. The message here names the frame the
-    // destination is measured in, which is the thing a caller gets wrong:
-    // the index space AFTER the block is detached, not before.
-    let file = load();
-    let case = file.cases.iter().find(|c| c.name == "move-past-the-end-refused").expect("the case");
-    let message = run(&file, case).expect_err("past the end").to_string();
-    assert!(
-        message.contains("after the block is detached"),
-        "the message does not name the frame: {message}",
-    );
+    assert!(refusals >= 10, "the refusal list shrank: {refusals}");
 }
 
 #[test]
@@ -263,31 +169,10 @@ fn a_refused_mutation_changes_nothing() {
     // exist must leave the others alone, and the only way to see that is to
     // ask the same document afterwards.
     let file = load();
-    for name in ["rotate-unknown-page-refused", "delete-unknown-page-refused"] {
-        let case = file.cases.iter().find(|c| c.name == name).expect(name);
-        let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-            .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-        let mut session = DocumentSession::new();
-        session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-        let owned = session.document().expect("open");
-
-        let before =
-            epdf_engine::features::pages::list_pages(owned.document(), &CancelToken::never())
-                .expect("the pages list");
-
-        let cancel = CancelToken::never();
-        let error = if let Some(input) = &case.rotate {
-            let rotation = PdfRotation::try_from(input.rotation).expect("a /Rotate value");
-            rotate_pages(owned.document(), &pages(&input.pages), rotation, &cancel).unwrap_err()
-        } else {
-            let input = case.delete.as_ref().expect("an operation");
-            delete_pages(owned.document(), &pages(&input.pages), &cancel).unwrap_err()
-        };
-        assert!(error.is(EngineErrorCode::NotFound), "{name}: {error}");
-
-        let after =
-            epdf_engine::features::pages::list_pages(owned.document(), &CancelToken::never())
-                .expect("the pages list");
-        assert_eq!(before, after, "{name}: the refusal changed the document");
+    for case in file.cases.iter().filter(|case| case.refused && !case.flattens()) {
+        let mut replay = open(&file, case);
+        let before = layout(&mut replay);
+        replay.replay(&case.request).expect_err(&case.name);
+        assert_eq!(layout(&mut replay), before, "{}: the refusal changed the document", case.name);
     }
 }

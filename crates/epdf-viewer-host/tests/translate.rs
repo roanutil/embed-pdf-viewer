@@ -644,27 +644,40 @@ fn host_text_field(number: u32, widget: u32) -> Value {
     })
 }
 
+/// The one op of a kernel page edit's `document.apply` change.
+fn page_op(call: &epdf_viewer_host::translate::WireCall) -> Value {
+    assert_eq!(call.request["kind"], "document.apply", "{}", call.request);
+    assert_eq!(call.request["effect"], "write");
+    assert!(matches!(call.decode, Decode::PageMutation));
+    let ops = call.request["change"]["ops"].as_array().expect("ops");
+    assert_eq!(ops.len(), 1, "{}", call.request);
+    ops[0].clone()
+}
+
 #[test]
 fn a_rotation_travels_as_a_whole_number() {
     let args = [json!([page_ref(3), page_ref(4)]), json!(90.0)];
     let call = translate("d1", "pages.rotate", None, &args, 11).unwrap();
+    assert_eq!(call.request["jobId"], 11);
+    assert_eq!(call.request["docId"], "d1");
+    let op = page_op(&call);
     assert_eq!(
-        call.request,
-        json!({
-            "kind": "pages.rotate", "jobId": 11, "docId": "d1",
-            "pages": [wire_page(3), wire_page(4)], "rotation": 90
-        })
+        op,
+        json!({ "type": "pages.rotate", "pages": [wire_page(3), wire_page(4)], "rotation": 90 })
     );
-    assert!(call.request["rotation"].is_u64());
-    assert!(matches!(call.decode, Decode::PageMutation));
+    assert!(op["rotation"].is_u64());
 }
 
 #[test]
 fn a_move_carries_its_destination() {
+    // As a reorder whose `position` the kernel's index stands in for, until
+    // `call_host` finds the neighbour at it.
     let args = [json!([page_ref(3)]), json!(0.0)];
     let call = translate("d1", "pages.move", None, &args, 12).unwrap();
-    assert_eq!(call.request["pages"], json!([wire_page(3)]));
-    assert_eq!(call.request["destIndex"], json!(0));
+    let op = page_op(&call);
+    assert_eq!(op["type"], "pages.reorder");
+    assert_eq!(op["pages"], json!([wire_page(3)]));
+    assert_eq!(op["destIndex"], json!(0));
 }
 
 #[test]
@@ -682,11 +695,9 @@ fn an_absent_destination_is_left_out() {
     let call =
         translate("d1", "pages.insertBlank", None, &[spec, epdf_kernel::undefined()], 14).unwrap();
     assert_eq!(
-        call.request,
-        json!({
-            "kind": "pages.insertBlank", "jobId": 14, "docId": "d1",
-            "size": { "width": 612.0, "height": 792.0 }, "count": 2
-        })
+        page_op(&call),
+        json!({ "type": "pages.insertBlank",
+            "spec": { "size": { "width": 612.0, "height": 792.0 }, "count": 2 } })
     );
 }
 
@@ -695,8 +706,10 @@ fn an_insert_moves_its_pdf_into_the_payload() {
     let bytes = epdf_kernel::bytes::Bytes(b"%PDF-1.7".to_vec()).to_json();
     let call = translate("d1", "pages.insert", None, &[bytes, json!(1.0)], 15).unwrap();
     assert_eq!(call.payloads, vec![b"%PDF-1.7".to_vec()]);
-    assert_eq!(call.request["destIndex"], json!(1));
-    assert!(call.request.get("bytes").is_none());
+    assert_eq!(
+        page_op(&call),
+        json!({ "type": "pages.insert", "source": { "payload": 0 }, "destIndex": 1 })
+    );
 }
 
 #[test]
@@ -1729,16 +1742,129 @@ fn opened_host() -> epdf_engine::host::Host {
 #[test]
 fn a_removed_kind_goes_through_the_legacy_entry() {
     let mut host = opened_host();
-    let pages =
-        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
-    let first = pages["result"]["pages"][0]["ref"].clone();
-    let rotate = json!({ "kind": "pages.rotate", "jobId": 3, "docId": "d",
-        "pages": [first], "rotation": 90 });
+    let abort = json!({ "kind": "signatures.abort", "jobId": 3, "docId": "d",
+        "signingId": "nothing-parked" });
     let wire: Value =
-        serde_json::from_str(&host.call(&rotate.to_string(), Vec::new()).json).unwrap();
-    assert_eq!(wire["error"]["message"], "unknown request kind: pages.rotate", "{wire}");
-    let legacy = call_host_json(&mut host, rotate);
+        serde_json::from_str(&host.call(&abort.to_string(), Vec::new()).json).unwrap();
+    assert_eq!(wire["error"]["message"], "unknown request kind: signatures.abort", "{wire}");
+    let legacy = call_host_json(&mut host, abort);
     assert!(legacy.get("error").is_none(), "{legacy}");
+}
+
+/// A kernel page edit through `call_host`: translated, sent as a change,
+/// and decoded as the kernel reads a page mutation.
+fn kernel_page_edit(
+    host: &mut epdf_engine::host::Host,
+    path: &str,
+    args: &[Value],
+    payloads: Vec<Vec<u8>>,
+) -> Result<epdf_viewer_host::translate::Decoded, epdf_kernel::Error> {
+    let call = translate("d", path, None, args, 5).unwrap();
+    let payloads = if payloads.is_empty() { call.payloads } else { payloads };
+    let response =
+        epdf_viewer_host::translate::call_host(host, &call.request.to_string(), payloads);
+    decode(&call.decode, response)
+}
+
+fn kernel_order(host: &mut epdf_engine::host::Host) -> Vec<u64> {
+    let pages = call_host_json(host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    pages["result"]["pages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|page| page["ref"]["objectNumber"].as_u64().unwrap())
+        .collect()
+}
+
+fn rotated_host() -> epdf_engine::host::Host {
+    let mut host = epdf_engine::host::Host::new();
+    let bytes = test_support::fixture("tooling/engine-conformance/fixtures/rotated_pages.pdf");
+    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    host
+}
+
+#[test]
+fn a_kernel_move_lands_at_its_index_among_the_pages_left() {
+    let mut host = rotated_host();
+    let order = kernel_order(&mut host);
+    // Page 0 to index 2 of the three pages left: after the third of them.
+    let moved = kernel_page_edit(
+        &mut host,
+        "pages.move",
+        &[json!([page_ref(order[0] as u32)]), json!(2.0)],
+        Vec::new(),
+    )
+    .expect("move");
+    assert_eq!(kernel_order(&mut host), [order[1], order[2], order[0], order[3]]);
+    let event = moved.event.expect("an event");
+    // The kernel's name for upstream's `pages.reordered`.
+    assert_eq!(event["type"], "pages.moved", "{event}");
+    assert_eq!(event["layout"]["pages"][2]["ref"], page_ref(order[0] as u32));
+    assert_eq!(moved.value["layout"]["pages"][2]["ref"], page_ref(order[0] as u32));
+
+    let past = kernel_page_edit(
+        &mut host,
+        "pages.move",
+        &[json!([page_ref(order[0] as u32)]), json!(4.0)],
+        Vec::new(),
+    )
+    .expect_err("past the end");
+    assert!(past.to_string().contains("after the block is detached"), "{past}");
+}
+
+#[test]
+fn a_kernel_insert_lands_at_its_index_and_names_its_pages() {
+    let mut host = rotated_host();
+    let order = kernel_order(&mut host);
+    let spec = json!({ "size": { "width": 200.0, "height": 300.0 } });
+    let placed =
+        kernel_page_edit(&mut host, "pages.insertBlank", &[spec.clone(), json!(1.0)], Vec::new())
+            .expect("insert");
+    let fresh = placed.value["insertedPages"][0]["pageObjectNumber"].as_u64().expect("a page");
+    assert_eq!(kernel_order(&mut host), [order[0], fresh, order[1], order[2], order[3]]);
+    assert_eq!(placed.event.expect("an event")["type"], "pages.inserted");
+    let appended = kernel_page_edit(
+        &mut host,
+        "pages.insertBlank",
+        &[spec, epdf_kernel::undefined()],
+        Vec::new(),
+    )
+    .expect("append");
+    let last = appended.value["insertedPages"][0]["pageObjectNumber"].as_u64().unwrap();
+    assert_eq!(kernel_order(&mut host).last(), Some(&last));
+}
+
+#[test]
+fn a_kernel_layout_is_in_the_files_coordinates() {
+    // The kernel reads a mutation's layout as it reads `pages.list`: each
+    // box in the file's coordinates.
+    let mut host = rotated_host();
+    let order = kernel_order(&mut host);
+    let listed =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let rotated = kernel_page_edit(
+        &mut host,
+        "pages.rotate",
+        &[json!([page_ref(order[1] as u32)]), json!(0.0)],
+        Vec::new(),
+    )
+    .expect("rotate");
+    assert_eq!(rotated.value["layout"]["pages"][0]["boxes"], listed["result"]["pages"][0]["boxes"]);
+    let named = translate(
+        "d",
+        "pages.setName",
+        None,
+        &[json!({ "name": "a=A", "page": page_ref(order[0] as u32) })],
+        6,
+    )
+    .unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &named.request.to_string(), Vec::new());
+    let decoded = decode(&named.decode, response).expect("named");
+    assert_eq!(decoded.value["layout"]["pages"][0]["boxes"], listed["result"]["pages"][0]["boxes"]);
+    let event = decoded.event.expect("an event");
+    assert_eq!(event["layout"]["pages"][0]["boxes"], listed["result"]["pages"][0]["boxes"]);
 }
 
 /// The listing still names an inline annotation by `nm`, and the kernel

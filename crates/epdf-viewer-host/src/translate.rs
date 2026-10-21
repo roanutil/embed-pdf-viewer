@@ -22,7 +22,9 @@
 //!
 //! A kernel path that maps onto a kind upstream removed goes to the host
 //! through `Host::call_legacy` (see [`call_host`]), each until the sub-task
-//! named beside it in `route` moves it to the kind that replaced it.
+//! named beside it in `route` moves it to the kind that replaced it. The
+//! kernel's page structure edits are `document.apply` changes of one page
+//! op each ([`kernel_pages`]).
 //!
 //! Answers are read the host's way, which is not the TypeScript worker's in
 //! two respects: the host sends a result bare where the worker tags it
@@ -208,13 +210,11 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "redaction.apply" => ("redaction.apply", Decode::Mutation),
         "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
         "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
-        // Removed upstream; owner 8.18 (page structure through
-        // `document.apply`).
-        "pages.move" => ("pages.move", Decode::PageMutation),
-        "pages.rotate" => ("pages.rotate", Decode::PageMutation),
-        "pages.delete" => ("pages.delete", Decode::PageMutation),
-        "pages.insert" => ("pages.insert", Decode::PageMutation),
-        "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
+        // Page structure: one page op of a `document.apply` change each
+        // (119685ea4), answered in the kernel's shape by `kernel_pages`.
+        "pages.move" | "pages.rotate" | "pages.delete" | "pages.insert" | "pages.insertBlank" => {
+            ("document.apply", Decode::PageMutation)
+        }
         "pages.extract" => ("pages.extract", Decode::HostBytes),
         "actions.read" => ("actions.read", Decode::Result),
         "forms.list" => ("forms.list", Decode::FormResult),
@@ -273,6 +273,15 @@ pub fn translate(
     };
     let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
     let mut payloads = Vec::new();
+    if kind == "document.apply" {
+        let op = kernel_pages::op(path, args, &mut payloads)?;
+        let mut request = serde_json::json!({
+            "kind": kind, "effect": "write", "jobId": job, "docId": doc,
+            "change": { "ops": [op] },
+        });
+        to_wire_refs(&mut request);
+        return Ok(WireCall { request, payloads, decode });
+    }
     let extra: Vec<(&str, Value)> = match kind {
         "metadata.update" => vec![("patch", arg(0))],
         "pages.text" | "pages.geometry" => vec![("page", page()?)],
@@ -299,27 +308,7 @@ pub fn translate(
         "redaction.apply" => vec![("scope", redaction_scope_out(path, arg(0))?)],
         "measure.viewports" => vec![("page", page()?)],
         "measure.setScale" => vec![("page", page()?)],
-        "pages.move" => vec![
-            ("pages", page_refs(path, &arg(0))?),
-            ("destIndex", whole(path, "destIndex", &arg(1))?),
-        ],
-        "pages.rotate" => vec![
-            ("pages", page_refs(path, &arg(0))?),
-            ("rotation", whole(path, "rotation", &arg(1))?),
-        ],
-        "pages.delete" | "pages.extract" => vec![("pages", page_refs(path, &arg(0))?)],
-        "pages.insertBlank" => {
-            let spec = arg(0);
-            vec![
-                ("size", spec.get("size").cloned().unwrap_or(Value::Null)),
-                ("count", optional_whole(path, "count", spec.get("count"))?),
-                ("destIndex", optional_whole(path, "destIndex", args.get(1))?),
-            ]
-        }
-        "pages.insert" => {
-            payloads.push(pdf_bytes(path, &arg(0))?);
-            vec![("destIndex", optional_whole(path, "destIndex", args.get(1))?)]
-        }
+        "pages.extract" => vec![("pages", page_refs(path, &arg(0))?)],
         "forms.setValue" => {
             vec![("ref", wire_field_ref(path, arg(0))?), ("value", arg(1))]
         }
@@ -488,6 +477,11 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if epdf_engine::host::LEGACY_KINDS.contains(&kind.as_str()) {
         return host.call_legacy(json, payloads);
     }
+    // `translate` builds a `document.apply` for the kernel's page edits
+    // only.
+    if kind == "document.apply" {
+        return kernel_pages::call(host, &request, payloads);
+    }
     if let Some(response) = metadata::kernel_call(host, &kind, &request) {
         return response;
     }
@@ -627,6 +621,187 @@ mod metadata {
                 json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin });
         }
         Ok((json!({ "result": answer }), response.payloads))
+    }
+}
+
+/// The kernel's page structure edits (Task 8.18).
+///
+/// Upstream runs them as ops of `document.apply` (119685ea4): `pages.move`
+/// is `pages.reorder`, and every position names a neighbour page or an end
+/// (`ListPosition`, 1233d1349). The kernel still names an index, as this
+/// branch's wire did: `pages.move`'s in the pages left once the block is
+/// out, an insert's among the pages there are. [`op`] builds the page op
+/// with the kernel's `destIndex` where its `position` goes, and [`call`]
+/// turns it into the neighbour at that index of the document as it is now,
+/// sends the change, and answers it as the kernel decodes a page mutation:
+/// the op's item as the result (its layout in the file's coordinates) and
+/// its one event under the kernel's name (`pages.moved` for upstream's
+/// `pages.reordered`). Dead once Task 13 ports the kernel.
+mod kernel_pages {
+    use epdf_engine::error::{EngineError, EngineErrorCode};
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::session::registry::SessionKey;
+    use epdf_kernel::Error;
+    use serde_json::{Value, json};
+
+    /// The page op a kernel page path names, its bytes moved into
+    /// `payloads`.
+    pub(super) fn op(
+        path: &str,
+        args: &[Value],
+        payloads: &mut Vec<Vec<u8>>,
+    ) -> Result<Value, Error> {
+        let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
+        let mut op = match path {
+            "pages.rotate" => json!({
+                "type": "pages.rotate",
+                "pages": super::page_refs(path, &arg(0))?,
+                "rotation": super::whole(path, "rotation", &arg(1))?,
+            }),
+            "pages.move" => json!({
+                "type": "pages.reorder",
+                "pages": super::page_refs(path, &arg(0))?,
+                "destIndex": super::whole(path, "destIndex", &arg(1))?,
+            }),
+            "pages.delete" => {
+                json!({ "type": "pages.delete", "pages": super::page_refs(path, &arg(0))? })
+            }
+            "pages.insertBlank" => {
+                let spec = arg(0);
+                let mut wire = json!({ "size": spec.get("size").cloned().unwrap_or(Value::Null) });
+                let count = super::optional_whole(path, "count", spec.get("count"))?;
+                if !count.is_null() {
+                    wire["count"] = count;
+                }
+                json!({ "type": "pages.insertBlank", "spec": wire })
+            }
+            "pages.insert" => {
+                payloads.push(super::pdf_bytes(path, &arg(0))?);
+                json!({ "type": "pages.insert", "source": { "payload": 0 } })
+            }
+            _ => unreachable!("routed to document.apply: {path}"),
+        };
+        if matches!(path, "pages.insertBlank" | "pages.insert") {
+            let at = super::optional_whole(path, "destIndex", args.get(1))?;
+            if !at.is_null() {
+                op["destIndex"] = at;
+            }
+        }
+        Ok(op)
+    }
+
+    /// Send the change, its op's `destIndex` turned into a `position`, and
+    /// answer it as the kernel decodes a page mutation.
+    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
+        match send(host, request, payloads) {
+            Ok(response) => response,
+            Err(error) => HostResponse {
+                json: json!({ "error": error.to_wire() }).to_string(),
+                payloads: Vec::new(),
+            },
+        }
+    }
+
+    fn send(
+        host: &mut Host,
+        request: &Value,
+        payloads: Vec<Vec<u8>>,
+    ) -> Result<HostResponse, EngineError> {
+        let mut request = request.clone();
+        let index = request
+            .pointer_mut("/change/ops/0")
+            .and_then(Value::as_object_mut)
+            .and_then(|op| op.remove("destIndex"));
+        if let Some(at) = index {
+            let order = page_order(host, &request)?;
+            let at = at.as_u64().ok_or_else(|| malformed("destIndex is a whole number"))? as usize;
+            let op = &mut request["change"]["ops"][0];
+            op["position"] = position_at(op, &order, at)?;
+        }
+        let response = host.call(&request.to_string(), payloads);
+        let mut envelope: Value =
+            serde_json::from_str(&response.json).map_err(|e| malformed(e.to_string()))?;
+        if envelope.get("error").is_some() {
+            return Ok(response);
+        }
+        let answer = &mut envelope["result"];
+        let mut item = answer["result"]["items"][0].take();
+        let mut event = answer["events"][0].take();
+        if let Some(fields) = item.as_object_mut() {
+            fields.remove("type");
+        }
+        super::page_space::layout_in_file_space(&mut item)?;
+        if !event.is_null() {
+            super::page_space::layout_in_file_space(&mut event)?;
+            if event["type"] == "pages.reordered" {
+                event["type"] = json!("pages.moved");
+            }
+        }
+        let kernel = json!({ "result": {
+            "result": item,
+            "mutationSequence": answer["mutationSequence"].take(),
+            "event": event,
+        } });
+        Ok(HostResponse { json: kernel.to_string(), payloads: response.payloads })
+    }
+
+    /// The neighbour at the kernel's index: for a move, among the pages left
+    /// once the block is out; for an insert, among the pages there are. 0
+    /// is the start; an index past the end is refused, as this branch's
+    /// wire refused it.
+    fn position_at(op: &Value, order: &[Value], at: usize) -> Result<Value, EngineError> {
+        let moving = op["type"] == "pages.reorder";
+        let left: Vec<&Value> = if moving {
+            let block: Vec<&Value> =
+                op["pages"].as_array().map(|p| p.iter().collect()).unwrap_or_default();
+            let number = |page: &Value| page.get("objectNumber").cloned();
+            order.iter().filter(|page| !block.iter().any(|b| number(b) == number(page))).collect()
+        } else {
+            order.iter().collect()
+        };
+        if at > left.len() {
+            let message = if moving {
+                format!(
+                    "pages.move destination {at} is past the end: {} pages remain after the \
+                     block is detached",
+                    left.len()
+                )
+            } else {
+                format!(
+                    "{} destination {at} is outside 0..={}",
+                    op["type"].as_str().unwrap_or("pages.insert"),
+                    left.len()
+                )
+            };
+            return Err(EngineError::with_message(EngineErrorCode::InvalidArg, message));
+        }
+        Ok(match at {
+            0 => json!("start"),
+            at => json!({ "after": left[at - 1] }),
+        })
+    }
+
+    /// The document's pages, as refs, in display order.
+    fn page_order(host: &mut Host, request: &Value) -> Result<Vec<Value>, EngineError> {
+        let doc = request
+            .get("docId")
+            .and_then(Value::as_str)
+            .ok_or_else(|| malformed("the change names no document"))?;
+        let key = match request.get("layerName").and_then(Value::as_str) {
+            Some(layer) => SessionKey::layer(doc, layer),
+            None => SessionKey::document(doc),
+        };
+        let records = host.sessions_mut().session_mut(&key)?.all_records()?;
+        Ok(records
+            .iter()
+            .map(|record| {
+                json!({ "kind": "objectNumber", "objectNumber": record.page_object_number.get() })
+            })
+            .collect())
+    }
+
+    fn malformed(message: impl Into<String>) -> EngineError {
+        EngineError::with_message(EngineErrorCode::WireFormat, message)
     }
 }
 
@@ -1376,6 +1551,9 @@ mod page_space {
         request: &Value,
         response: HostResponse,
     ) -> HostResponse {
+        if matches!(kind, "pages.setName" | "pages.removeName") {
+            return names_in_file_space(response);
+        }
         if !matches!(
             kind,
             "pages.list" | "actions.read" | "pages.geometry" | "search.query" | "forms.list"
@@ -1688,6 +1866,48 @@ mod page_space {
             "scannedPages": slice.pages_searched,
             "totalPages": slice.page_count,
         }))
+    }
+
+    /// A page name write's answer with its result's and its event's layout
+    /// in the file's coordinates.
+    fn names_in_file_space(response: HostResponse) -> HostResponse {
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        let converted =
+            ["/result/result", "/result/event"].iter().try_for_each(|at| {
+                match envelope.pointer_mut(at).filter(|answer| answer.get("layout").is_some()) {
+                    Some(answer) => layout_in_file_space(answer),
+                    None => Ok(()),
+                }
+            });
+        let envelope = match converted {
+            Ok(()) => envelope,
+            Err(error) => serde_json::json!({ "error": error.to_wire() }),
+        };
+        HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// `answer.layout`, a page list in page space, in the file's
+    /// coordinates, as the kernel reads a layout.
+    pub(super) fn layout_in_file_space(answer: &mut Value) -> Result<(), EngineError> {
+        let Some(layout) = answer.get_mut("layout") else {
+            return Ok(());
+        };
+        let list: PageListSnapshot<PageCoordinates> = serde_json::from_value(layout.take())
+            .map_err(|e| {
+                EngineError::with_message(
+                    epdf_engine::error::EngineErrorCode::WireFormat,
+                    format!("a layout is not in page space: {e}"),
+                )
+            })?;
+        *layout = serde_json::to_value(page_list_in_file_space(list)?).map_err(|e| {
+            EngineError::with_message(
+                epdf_engine::error::EngineErrorCode::WireFormat,
+                format!("a layout did not serialize: {e}"),
+            )
+        })?;
+        Ok(())
     }
 
     fn page_list_in_file_space(

@@ -382,14 +382,24 @@ pub fn result_in_page_space(
             })
         }
 
+        // The new layout (`pageListOf`), in the result and in the event that
+        // carries it.
+        K::PagesSetName | K::PagesRemoveName => {
+            convert_result(response, |mut answer: serde_json::Value| {
+                for at in ["/result/layout", "/event/layout"] {
+                    if let Some(layout) = answer.pointer_mut(at) {
+                        *layout = page_layout_value(layout.take())?;
+                    }
+                }
+                Ok(answer)
+            })
+        }
+
         // re-port (Task 8): these answer places in PDF space until their
-        // owners add the conversion here: page names' layouts (8.18),
-        // the outline (8.24), viewports (8.25),
-        // form fields and widgets of the writes (8.20 to 8.22, 8.26), and
-        // imports (8.22).
-        K::PagesSetName
-        | K::PagesRemoveName
-        | K::AnnotationsImport
+        // owners add the conversion here: the outline (8.24), viewports
+        // (8.25), form fields and widgets of the writes (8.20 to 8.22,
+        // 8.26), and imports (8.22).
+        K::AnnotationsImport
         | K::OutlineRead
         | K::MeasureViewports
         | K::FormsImport
@@ -511,7 +521,12 @@ pub fn change_op_in_file_space(
         | ChangeOp::MetadataUpdateCustom { .. }
         | ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
-        | ChangeOp::AnnotationsReorder { .. }) => Ok(op),
+        | ChangeOp::AnnotationsReorder { .. }
+        | ChangeOp::PagesRotate { .. }
+        | ChangeOp::PagesReorder { .. }
+        | ChangeOp::PagesDelete { .. }
+        | ChangeOp::PagesInsertBlank { .. }
+        | ChangeOp::PagesInsert { .. }) => Ok(op),
     }
 }
 
@@ -549,6 +564,32 @@ pub fn change_item_in_page_space(
                 meta,
             })
         }
+        // The new layout (`pageListOf`), which carries every page's box.
+        ChangeItem::PagesRotate { pages, rotation, layout, meta } => Ok(ChangeItem::PagesRotate {
+            pages,
+            rotation,
+            layout: page_layout_value(layout)?,
+            meta,
+        }),
+        ChangeItem::PagesReorder { pages, layout, meta } => {
+            Ok(ChangeItem::PagesReorder { pages, layout: page_layout_value(layout)?, meta })
+        }
+        ChangeItem::PagesDelete { pages, layout, meta } => {
+            Ok(ChangeItem::PagesDelete { pages, layout: page_layout_value(layout)?, meta })
+        }
+        ChangeItem::PagesInsertBlank { inserted_pages, layout, meta } => {
+            Ok(ChangeItem::PagesInsertBlank {
+                inserted_pages,
+                layout: page_layout_value(layout)?,
+                meta,
+            })
+        }
+        ChangeItem::PagesInsert { inserted_pages, layout, meta } => {
+            Ok(ChangeItem::PagesInsert { inserted_pages, layout: page_layout_value(layout)?, meta })
+        }
+        ChangeItem::PagesRestore { pages, layout, meta } => {
+            Ok(ChangeItem::PagesRestore { pages, layout: page_layout_value(layout)?, meta })
+        }
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
@@ -559,6 +600,13 @@ pub fn change_item_in_page_space(
         | ChangeItem::AnnotationsReorder { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
+}
+
+/// A page list, sent as JSON in the file's coordinates, in page space
+/// (`pageListOf`).
+fn page_layout_value(layout: serde_json::Value) -> Result<serde_json::Value, EngineError> {
+    let snapshot: PageListSnapshot<PdfCoordinates> = from_value(layout)?;
+    to_value(&page_list_of(snapshot)?)
 }
 
 /// `options.target` in the file's coordinates, measured on the request's

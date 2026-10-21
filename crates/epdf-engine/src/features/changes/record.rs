@@ -44,6 +44,102 @@ pub enum ReverseStep {
     AnnotationReorder(AnnotationReorderStep),
     #[serde(rename = "objects.revert")]
     ObjectsRevert(ObjectsRevertStep),
+    #[serde(rename = "pages.rotate")]
+    PagesRotate(PageRotateStep),
+    #[serde(rename = "pages.reorder")]
+    PagesReorder(PageReorderStep),
+    #[serde(rename = "pages.restore")]
+    PagesRestore(PageRestoreStep),
+    #[serde(rename = "pages.remove")]
+    PagesRemove(PageRemoveStep),
+}
+
+/// Turns pages back to `rotation` while each still has the rotation the
+/// change left (`PageRotateStep`); the pages by object number.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRotateStep {
+    pub pages: Vec<u32>,
+    pub rotation: crate::geom::PdfRotation,
+    pub left: crate::geom::PdfRotation,
+}
+
+/// Where a page goes back to, or was left: right after `after`, by object
+/// number, or first for 0.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PagePlacement {
+    pub page: u32,
+    pub after: u32,
+}
+
+/// Puts pages back where they were before a move: its reverse, and, the
+/// other way round, its redo (`PageReorderStep`). Each page goes only while
+/// it still follows the page the move left it after, and the page it goes
+/// after is still there. `placements` is in display order, so an anchor is
+/// placed before what follows it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageReorderStep {
+    pub placements: Vec<PagePlacement>,
+    pub left: Vec<PagePlacement>,
+}
+
+/// One page a delete removed, and the fork's capture of it
+/// (`EPDFPage_ExportRawToOwnedBuffer`): the page, what it reaches, its
+/// names and the page it followed.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CapturedPage {
+    pub page: u32,
+    #[serde(with = "hex_vec")]
+    pub capture: Vec<u8>,
+}
+
+/// Brings back what a page delete removed: the same pages, at the same
+/// numbers, each after the page it followed while that is still there,
+/// else first, with their annotations and names (`PageRestoreStep`). In the
+/// display order they had.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRestoreStep {
+    pub pages: Vec<CapturedPage>,
+}
+
+/// One page an insert or a restore brought, and the digest of how the
+/// change left it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LeftPage {
+    pub page: u32,
+    pub left: String,
+}
+
+/// Deletes pages an insert or a restore brought, each while it reads as the
+/// change left it: the page and what the layer holds of its annotations,
+/// contents and resources (`PageRemoveStep`). Undoing an insert never
+/// deletes a page someone annotated, or turned, since. A step that would
+/// delete every page is left alone: a document keeps one.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageRemoveStep {
+    pub pages: Vec<LeftPage>,
+}
+
+/// Bytes as hex, as a record crosses the wire here.
+mod hex_vec {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    use crate::features::files::attachments::hex_bytes;
+
+    pub fn serialize<S: Serializer>(bytes: &[u8], s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&hex_bytes::encode(bytes))
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        hex_bytes::decode(&String::deserialize(d)?)
+            .ok_or_else(|| serde::de::Error::custom("not hex bytes"))
+    }
 }
 
 /// Puts back what an annotation update wrote (`ObjectsRevertStep`).
@@ -212,7 +308,7 @@ pub struct MetadataRevertStep {
 /// The bytes of captures a record holds, which the ledger budgets
 /// (`recordBytes`). A metadata step captures no bytes, and neither does an
 /// attachment remove here: its guard is a read, not canonical bytes. An
-/// annotation restore holds its capture.
+/// annotation restore and a page restore hold their captures.
 pub fn record_bytes(record: &ChangeRecord) -> usize {
     record
         .steps
@@ -226,7 +322,13 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
                 step.capture.bytes.as_ref().map_or(0, Vec::len)
             }
             ReverseStep::AnnotationRestore(step) => step.capture.as_ref().map_or(0, Vec::len),
-            ReverseStep::AnnotationReorder(_) => 0,
+            ReverseStep::AnnotationReorder(_)
+            | ReverseStep::PagesRotate(_)
+            | ReverseStep::PagesReorder(_)
+            | ReverseStep::PagesRemove(_) => 0,
+            ReverseStep::PagesRestore(step) => {
+                step.pages.iter().map(|page| page.capture.len()).sum()
+            }
         })
         .sum()
 }

@@ -18,9 +18,9 @@
 //! a refused change back and what `{ undoOf }` runs later. The session keeps
 //! every answer under its `opId` ([`ledger`]).
 //!
-//! The op table ([`op`]) runs the metadata and attachment ops; every other
-//! op type answers `NotImplemented` naming the sub-task that registers it
-//! ([`op::OP_OWNERS`]).
+//! The op table ([`op`]) runs the metadata, attachment, annotation and page
+//! ops; every other op type answers `NotImplemented` naming the sub-task
+//! that registers it ([`op::OP_OWNERS`]).
 //!
 //! # Events
 //!
@@ -55,5 +55,6 @@ pub mod item;
 pub mod ledger;
 pub mod metadata;
 pub mod op;
+pub mod pages;
 pub mod record;
 pub mod transaction;

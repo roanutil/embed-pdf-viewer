@@ -491,7 +491,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Creates and closes its own FPDF_CreateNewDocument scratch document (PagesExtractor.ts:56-89), a named exception to Stage A "retains nothing, closes nothing".',
+    note: 'Creates and closes its own scratch document (PagesExtractor.ts:73-112), a named exception to Stage A "retains nothing, closes nothing": FPDF_CreateNewDocument with FPDF_ImportPagesByIndex for a plain copy, EPDFDoc_ExportPagesFlattened with flatten (what it paints arrives already checked against the caller\'s rights, resolvePageExtract), either keeping the title. Takes PageRefs in the caller\'s order. Gated by vectors/pages/extract.json, which records the sources sent, through crates/epdf-engine/tests/page_extract_corpus.rs; page_extract.rs ports the extract conformance suite.',
   },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
@@ -594,7 +594,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata and attachment ops (features/changes, tests/document_apply.rs, tests/files_write.rs) and answers NotImplemented naming the owner sub-task for every other op type; an attachment op's bytes ride as a request payload its resources name, { payload: n }, and an undo of a delete puts the file back from the file as the API reads it, where upstream imports a raw capture only a layer transaction allows; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation and page ops (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
   },
   {
     kind: 'document.applyChanges',
@@ -831,7 +831,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'routed',
+    rustStatus: 'ported',
+    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page. Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
   },
   {
     kind: 'pages.removeName',
@@ -839,7 +840,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'routed',
+    rustStatus: 'ported',
+    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page (null once removed). Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
   },
 
   // --- G14. Remaining mutators.

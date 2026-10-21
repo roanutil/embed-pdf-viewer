@@ -144,9 +144,10 @@ pub enum OriginKind {
 ///
 /// Some events add what the CALL named beside the result, as the
 /// TypeScript's `packages/engine/main` services publish them: the page an
-/// annotation write addressed, the pages a page-structure write took, a
-/// move's insertion point, a rotation. Those are the struct variants, with
-/// the result flattened beside the added fields.
+/// annotation write addressed, the name a page name write took. Those are
+/// the struct variants, with the result flattened beside the added fields.
+/// The page-structure writes are ops of a change now, whose events the
+/// change's items make (`features::changes::item::ChangeItem::events`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum DocumentEventInit {
@@ -168,41 +169,6 @@ pub enum DocumentEventInit {
     /// `annotations.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "annotations.flattened")]
     AnnotationsFlattened(serde_json::Value),
-    /// `LocalDocumentPagesService.move`: the moved block, in the caller's
-    /// order, and the insertion point it named.
-    #[serde(rename = "pages.moved", rename_all = "camelCase")]
-    PagesMoved {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        dest_index: u32,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    #[serde(rename = "pages.rotated")]
-    PagesRotated {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        rotation: crate::geom::PdfRotation,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// The RETIRED pages, which the surviving layout cannot say.
-    #[serde(rename = "pages.deleted")]
-    PagesDeleted {
-        #[serde(rename = "pages", with = "crate::identity::page_refs")]
-        page_object_numbers: Vec<PageObjectNumber>,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    /// The insertion point the call named. Absent when it named none, as
-    /// the TypeScript's `destIndex: undefined` leaves it off the wire.
-    #[serde(rename = "pages.inserted", rename_all = "camelCase")]
-    PagesInserted {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        dest_index: Option<u32>,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
     /// `pages.flatten`, published only when it wrote (`wrote`).
     #[serde(rename = "pages.flattened")]
     PagesFlattened(serde_json::Value),
@@ -292,10 +258,6 @@ impl DocumentEventInit {
             | Self::SignatureCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
             | Self::AnnotationUpdated { result, .. }
-            | Self::PagesMoved { result, .. }
-            | Self::PagesRotated { result, .. }
-            | Self::PagesDeleted { result, .. }
-            | Self::PagesInserted { result, .. }
             | Self::PagesNamed { result, .. } => Some(result),
             Self::SignaturePrepared { .. } | Self::SignatureAborted { .. } => None,
         }
@@ -307,10 +269,6 @@ impl DocumentEventInit {
             Self::AnnotationCreated { .. } => "annotation.created",
             Self::AnnotationUpdated { .. } => "annotation.updated",
             Self::AnnotationsFlattened(_) => "annotations.flattened",
-            Self::PagesMoved { .. } => "pages.moved",
-            Self::PagesRotated { .. } => "pages.rotated",
-            Self::PagesDeleted { .. } => "pages.deleted",
-            Self::PagesInserted { .. } => "pages.inserted",
             Self::PagesFlattened(_) => "pages.flattened",
             Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
