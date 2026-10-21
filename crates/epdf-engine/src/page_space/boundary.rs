@@ -24,7 +24,7 @@ use serde::de::DeserializeOwned;
 use super::destinations::page_document_actions_of;
 use super::pages::page_list_of;
 use super::rendering::{page_render_area_of, pdf_render_target_of};
-use super::text::page_geometry_of;
+use super::text::{page_geometry_of, page_search_slice_of};
 use super::{PdfCoordinates, VisibleBoxOf};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::document::DocumentActionsSnapshot;
@@ -33,6 +33,7 @@ use crate::features::changes::op::ChangeOp;
 use crate::features::geometry::PageGeometrySnapshot;
 use crate::features::pages::PageListSnapshot;
 use crate::features::render::geometry::RenderTarget;
+use crate::features::search::reader::SearchSlice;
 use crate::geom::{PageRect, PdfRect};
 use crate::host::HostResponse;
 use crate::identity::{PageObjectNumber, PageRef};
@@ -311,16 +312,18 @@ pub fn result_in_page_space(
                 Ok(page_geometry_of(snapshot, box_of(page.object_number())?))
             })
         }
+        K::SearchQuery => convert_result(response, |slice: SearchSlice<PdfCoordinates>| {
+            page_search_slice_of(slice, box_of)
+        }),
 
         // re-port (Task 8): these answer places in PDF space until their
-        // owners add the conversion here: page names' layouts (8.18), search
-        // slices (8.11), annotation reads and writes (8.12, 8.14, 8.15),
+        // owners add the conversion here: page names' layouts (8.18),
+        // annotation reads and writes (8.12, 8.14, 8.15),
         // appearance rects (8.13), the outline (8.24), viewports (8.25),
         // form snapshots, fields and widgets (8.19 to 8.22, 8.26), and
         // imports (8.22).
         K::PagesSetName
         | K::PagesRemoveName
-        | K::SearchQuery
         | K::AnnotationsList
         | K::AnnotationsCreate
         | K::AnnotationsUpdate
@@ -651,6 +654,66 @@ mod tests {
                 "start": 0,
                 "glyphs": [{ "loose": page_box, "space": true }],
             }] })
+        );
+    }
+
+    #[test]
+    fn a_search_answer_measures_each_match_on_its_own_page() {
+        let segment = serde_json::json!({
+            "quad": {
+                "upperLeft": { "x": 60.0, "y": 712.0 }, "upperRight": { "x": 160.0, "y": 712.0 },
+                "lowerLeft": { "x": 60.0, "y": 662.0 }, "lowerRight": { "x": 160.0, "y": 662.0 },
+            },
+            "rect": { "left": 60.0, "bottom": 662.0, "right": 160.0, "top": 712.0 },
+            "advance": 1,
+        });
+        let hit = |page: u32| {
+            serde_json::json!({
+                "page": { "kind": "objectNumber", "objectNumber": page },
+                "start": 3, "count": 4, "segments": [segment.clone()],
+                "snippet": { "before": "a ", "match": "word", "after": " here" },
+            })
+        };
+        let response = HostResponse {
+            json: serde_json::json!({ "result": {
+                "matches": [hit(4), hit(6)],
+                "nextCursor": "c", "pagesSearched": 2, "pageCount": 9,
+            } })
+            .to_string(),
+            payloads: Vec::new(),
+        };
+        let mut box_of = |page: PageObjectNumber| {
+            Ok(match page.get() {
+                4 => PdfRect { left: 50.0, bottom: 60.0, right: 562.0, top: 732.0 },
+                _ => PdfRect { left: 0.0, bottom: 0.0, right: 612.0, top: 792.0 },
+            })
+        };
+        let converted = result_in_page_space(
+            WireKind::SearchQuery,
+            &serde_json::Value::Null,
+            response,
+            &mut box_of,
+        )
+        .unwrap();
+        let envelope: serde_json::Value = serde_json::from_str(&converted.json).unwrap();
+        let result = &envelope["result"];
+        assert_eq!(
+            result["matches"][0]["segments"][0]["rect"],
+            serde_json::json!({ "x": 10.0, "y": 20.0, "width": 100.0, "height": 50.0 })
+        );
+        assert_eq!(
+            result["matches"][0]["segments"][0]["quad"]["lowerRight"],
+            serde_json::json!({ "x": 110.0, "y": 70.0 })
+        );
+        assert_eq!(
+            result["matches"][1]["segments"][0]["rect"],
+            serde_json::json!({ "x": 60.0, "y": 80.0, "width": 100.0, "height": 50.0 })
+        );
+        assert_eq!(result["matches"][1]["snippet"]["match"], "word");
+        assert_eq!(result["matches"][1]["start"], 3);
+        assert_eq!(
+            (&result["nextCursor"], &result["pagesSearched"], &result["pageCount"]),
+            (&serde_json::json!("c"), &serde_json::json!(2), &serde_json::json!(9))
         );
     }
 

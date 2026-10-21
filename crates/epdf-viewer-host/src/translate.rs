@@ -599,6 +599,7 @@ mod page_space {
     use epdf_engine::features::actions::document::DocumentActionsSnapshot;
     use epdf_engine::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
     use epdf_engine::features::pages::{PageLayout, PageListSnapshot};
+    use epdf_engine::features::search::reader::SearchSlice;
     use epdf_engine::geom::{PageBoxes, PageQuad, PageRect, PdfRect, normalize_pdf_rect};
     use epdf_engine::host::{Host, HostResponse};
     use epdf_engine::identity::{PageObjectNumber, PageRef};
@@ -674,16 +675,16 @@ mod page_space {
     }
 
     /// The host's page-space answer as the kernel reads it: `pages.list`'s
-    /// boxes and page actions, `actions.read`'s destinations, and
-    /// `pages.geometry`'s runs, in the file's coordinates. Every other answer
-    /// goes as it came.
+    /// boxes and page actions, `actions.read`'s destinations,
+    /// `pages.geometry`'s runs and `search.query`'s match segments, in the
+    /// file's coordinates. Every other answer goes as it came.
     pub(super) fn answer_to_file_space(
         host: &Host,
         kind: &str,
         request: &Value,
         response: HostResponse,
     ) -> HostResponse {
-        if kind != "pages.list" && kind != "actions.read" && kind != "pages.geometry" {
+        if !matches!(kind, "pages.list" | "actions.read" | "pages.geometry" | "search.query") {
             return response;
         }
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
@@ -705,6 +706,11 @@ mod page_space {
                         .map_err(|e| e.message)?;
                     Ok(kernel_geometry_of(snapshot, visible))
                 })
+        } else if kind == "search.query" {
+            let mut boxes = visible_boxes(host, request);
+            serde_json::from_value::<SearchSlice<PageCoordinates>>(result.take())
+                .map_err(|e| e.to_string())
+                .and_then(|slice| kernel_search_slice_of(slice, &mut boxes).map_err(|e| e.message))
         } else if kind == "pages.list" {
             serde_json::from_value::<PageListSnapshot<PageCoordinates>>(result.take())
                 .map_err(|e| e.to_string())
@@ -809,6 +815,57 @@ mod page_space {
             })
             .collect::<Vec<_>>();
         serde_json::json!({ "runs": runs })
+    }
+
+    /// A search slice as the kernel's search plugin reads it: segments in the
+    /// file's coordinates with corners `p1` to `p4`, and the spelling before
+    /// upstream's a10ed2659 (`charStart`/`charCount`, a snippet as `text`
+    /// with the match at `matchStart` for `matchLength` UTF-16 units,
+    /// `scannedPages`/`totalPages`). Each match is measured on its own page.
+    fn kernel_search_slice_of(
+        slice: SearchSlice<PageCoordinates>,
+        box_of: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
+    ) -> Result<Value, EngineError> {
+        let utf16 = |text: &str| text.encode_utf16().count();
+        let matches = slice
+            .matches
+            .into_iter()
+            .map(|found| {
+                let visible = box_of(found.page)?;
+                let segments = found
+                    .segments
+                    .iter()
+                    .map(|segment| {
+                        let q = pdf_quad_of(segment.quad, visible);
+                        serde_json::json!({
+                            "quad": { "p1": q.p1, "p2": q.p2, "p3": q.p3, "p4": q.p4 },
+                            "rect": pdf_rect_of(segment.rect, visible),
+                            "advance": segment.advance,
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                let mut hit = serde_json::json!({
+                    "page": PageRef::from(found.page),
+                    "charStart": found.start,
+                    "charCount": found.count,
+                    "segments": segments,
+                });
+                if let Some(snippet) = found.snippet {
+                    hit["snippet"] = serde_json::json!({
+                        "text": format!("{}{}{}", snippet.before, snippet.matched, snippet.after),
+                        "matchStart": utf16(&snippet.before),
+                        "matchLength": utf16(&snippet.matched),
+                    });
+                }
+                Ok(hit)
+            })
+            .collect::<Result<Vec<_>, EngineError>>()?;
+        Ok(serde_json::json!({
+            "matches": matches,
+            "nextCursor": slice.next_cursor,
+            "scannedPages": slice.pages_searched,
+            "totalPages": slice.page_count,
+        }))
     }
 
     fn page_list_in_file_space(
@@ -1092,14 +1149,43 @@ fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
     })
 }
 
-/// A `SearchRequest` as the plugin sends it, its `startPage` a `PageRef`
-/// with a whole object number. The rest goes as it is.
-fn search_request(mut request: Value) -> Result<Value, Error> {
-    let Some(start) = request.get_mut("startPage").filter(|s| !s.is_null()) else {
-        return Ok(request);
+/// A `SearchRequest` as the plugin sends it (`{query, mode, startPage,
+/// cursor, skip, budget}`, the spelling before upstream's a10ed2659), as the
+/// host's `search.query` reads it: the flattened `SearchScanRequest`, with
+/// the query's text and flags at the top level, `snippets` for any mode but
+/// `rects`, `from` for `startPage` as a `PageRef` with a whole object number,
+/// and `limit` for `budget`.
+fn search_request(request: Value) -> Result<Value, Error> {
+    let invalid = |what: &str| {
+        coded("invalid-input", format!("[epdf-viewer-host] search.query {what}: {request}"))
     };
-    *start = page_ref("search.query's startPage", start)?;
-    Ok(request)
+    let Value::Object(mut old) = request.clone() else {
+        return Err(invalid("takes a SearchRequest"));
+    };
+    let Some(Value::Object(mut flat)) = old.remove("query") else {
+        return Err(invalid("needs a query"));
+    };
+    let mode = old.remove("mode");
+    let snippets = mode.as_ref().and_then(Value::as_str) != Some("rects");
+    flat.insert("snippets".into(), Value::Bool(snippets));
+    if let Some(start) = old.remove("startPage").filter(|s| !s.is_null()) {
+        flat.insert("from".into(), page_ref("search.query's startPage", &start)?);
+    }
+    for key in ["cursor", "skip"] {
+        if let Some(value) = old.remove(key).filter(|v| !v.is_null()) {
+            flat.insert(key.into(), value);
+        }
+    }
+    if let Some(Value::Object(budget)) = old.remove("budget") {
+        let mut limit = Map::new();
+        for (from, to) in [("maxMatches", "matches"), ("maxPages", "pages")] {
+            if let Some(value) = budget.get(from).filter(|v| !v.is_null()) {
+                limit.insert(to.into(), value.clone());
+            }
+        }
+        flat.insert("limit".into(), Value::Object(limit));
+    }
+    Ok(Value::Object(flat))
 }
 
 /// `PageImageOptions` as `pages.render` reads them. The viewport, target and

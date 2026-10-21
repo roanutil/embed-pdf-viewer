@@ -36,6 +36,7 @@
 use super::TextRange;
 use crate::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
 use crate::geom::{PdfPoint, PdfQuad, PdfRect};
+use crate::page_space::{Coordinates, PdfCoordinates};
 
 const FLAG_SPACE: u32 = 1;
 const FLAG_EMPTY: u32 = 2;
@@ -218,18 +219,20 @@ pub struct PageTextLayout {
     pub frames: Vec<TextLayoutFrame>,
 }
 
-/// One merged visual line of a text range, in PDF user space.
+/// One merged visual line of a text range (`PdfTextSegment<C>`), in the
+/// file's coordinates or in page space.
 ///
-/// `quad` is the geometric authority, in frame-geometric slot order: upper
-/// start, upper end, lower start, lower end. Those are visual semantics and
-/// not reading order. `rect` is its axis-aligned bounds from the same
-/// constructor, and `advance` is the reading direction along the baseline,
-/// taken from the glyph sequence rather than inferred from geometry.
+/// `quad` is the geometric authority, its corners named in the line's own
+/// frame: upper start, upper end, lower start, lower end. Those are visual
+/// semantics and not reading order. `rect` is its axis-aligned bounds from
+/// the same constructor, and `advance` is the reading direction along the
+/// baseline, taken from the glyph sequence rather than inferred from
+/// geometry.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PdfTextSegment {
-    pub quad: PdfQuad,
-    pub rect: PdfRect,
+#[serde(bound = "")]
+pub struct PdfTextSegment<C: Coordinates = PdfCoordinates> {
+    pub quad: C::Quad,
+    pub rect: C::Rect,
     pub advance: i8,
 }
 
@@ -758,7 +761,7 @@ fn materialize_segment(layout: &PageTextLayout, m: MergedSubRun) -> PdfTextSegme
             top: ys.iter().copied().fold(f64::NEG_INFINITY, f64::max),
         }
     };
-    PdfTextSegment { quad, rect, advance: if m.last_x >= m.first_x { 1 } else { -1 } }
+    PdfTextSegment { quad: quad.into(), rect, advance: if m.last_x >= m.first_x { 1 } else { -1 } }
 }
 
 fn should_merge(a: &SubRun, b: &SubRun) -> bool {
@@ -980,7 +983,7 @@ mod tests {
 
     fn expect_rect_equals_bounds(segments: &[PdfTextSegment]) {
         for s in segments {
-            let b = frame_box_of_quad(&IDENTITY_FRAME, s.quad);
+            let b = frame_box_of_quad(&IDENTITY_FRAME, s.quad.into());
             close(s.rect.left, b.left, 6);
             close(s.rect.right, b.right, 6);
             close(s.rect.bottom, b.bottom, 6);
@@ -1012,8 +1015,8 @@ mod tests {
         assert_eq!(segments.len(), 1);
         assert_eq!(segments[0].rect, rect(10.0, 100.0, 110.0, 110.0));
         // Upright quads are the rect's own corners (y up: upper is larger y).
-        assert_eq!(segments[0].quad.p1, point(10.0, 110.0));
-        assert_eq!(segments[0].quad.p4, point(110.0, 100.0));
+        assert_eq!(segments[0].quad.upper_left, point(10.0, 110.0));
+        assert_eq!(segments[0].quad.lower_right, point(110.0, 100.0));
         assert_eq!(segments[0].advance, 1);
         expect_rect_equals_bounds(&segments);
     }
@@ -1079,7 +1082,7 @@ mod tests {
     fn a_90_degree_column_is_one_exact_oriented_segment() {
         let segments = layout_of(vec![column(0)]).segments(range(0, 3));
         assert_eq!(segments.len(), 1);
-        let q = segments[0].quad;
+        let q: PdfQuad = segments[0].quad.into();
         close(q.p1.x, 88.0, 6);
         close(q.p1.y, 20.0, 6);
         close(q.p2.x, 88.0, 6);
@@ -1105,7 +1108,7 @@ mod tests {
         let (first, last) = (glyphs[0].loose, glyphs[3].loose);
         let segments = layout_of(vec![diagonal.clone()]).segments(range(0, 4));
         assert_eq!(segments.len(), 1);
-        let q = segments[0].quad;
+        let q: PdfQuad = segments[0].quad.into();
         close(q.p1.x, first.upper_left.x, 5);
         close(q.p1.y, first.upper_left.y, 5);
         close(q.p2.x, last.upper_right.x, 5);
@@ -1128,7 +1131,7 @@ mod tests {
         );
         let segments = layout_of(vec![mirrored]).segments(range(0, 3));
         assert_eq!(segments.len(), 1);
-        let q = segments[0].quad;
+        let q: PdfQuad = segments[0].quad.into();
         // Upper-left sits at the visual right: the mirror is part of the frame.
         close(q.p1.x, 90.0, 6);
         close(q.p2.x, 66.0, 6);

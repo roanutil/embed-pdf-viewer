@@ -8,7 +8,8 @@
 //! toggle means one thing in both modes: "caf" never whole-word matches inside
 //! "café", regex or not.
 
-use super::fold::{FoldOptions, FoldedText, OriginalRange, fold_text, to_original_range};
+use super::fold::{FoldOptions, FoldedText, fold_text, to_original_range};
+use crate::features::text::TextRange;
 
 /// A literal query.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -115,7 +116,7 @@ fn is_whole_word_hit(
     let Some(range) = to_original_range(haystack, at, needle_length) else {
         return false;
     };
-    let (start, end) = (range.start as usize, (range.start + range.length) as usize);
+    let (start, end) = (range.start as usize, (range.start + range.count) as usize);
     !word_before(&haystack.original, start) && !word_at(&haystack.original, end)
 }
 
@@ -124,7 +125,7 @@ fn is_whole_word_hit(
 /// `haystack` must have been folded with [`LiteralQuery::fold_options`] for
 /// this query. Folding it differently is not a wrong answer, it is an answer
 /// to a different question, and nothing here can detect the mismatch.
-pub fn match_literal(haystack: &FoldedText, query: &LiteralQuery) -> Vec<OriginalRange> {
+pub fn match_literal(haystack: &FoldedText, query: &LiteralQuery) -> Vec<TextRange> {
     let needle = fold_text(&query.text, query.fold_options()).folded;
     // A needle that is empty or only whitespace would match every collapsed
     // space on the page, which is not what anybody typed it for.

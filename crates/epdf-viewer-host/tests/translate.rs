@@ -99,26 +99,37 @@ fn a_missing_member_is_an_error_not_the_whole_result() {
 }
 
 #[test]
-fn a_search_start_page_travels_as_a_whole_page_ref() {
+fn a_search_request_goes_flat_with_its_start_page_as_a_whole_page_ref() {
+    // The plugin's `{query, mode, startPage, budget}` is the host's flattened
+    // `SearchScanRequest` (upstream's a10ed2659): the query at the top
+    // level, `snippets` for the full mode, `from` and `limit`.
     let request = json!({
-        "query": {"text": "the"},
+        "query": {"text": "the", "matchCase": true},
         "mode": "full",
-        "startPage": {"kind": "objectNumber", "pageObjectNumber": 43.0}
+        "startPage": {"kind": "objectNumber", "pageObjectNumber": 43.0},
+        "cursor": "c",
+        "skip": 2.0,
+        "budget": {"maxPages": 3.0, "maxMatches": 7.0}
     });
     let call = translate("d1", "search.query", None, &[request], 11).unwrap();
     assert_eq!(
         call.request,
         json!({
             "kind": "search.query", "jobId": 11, "docId": "d1",
-            "request": {"query": {"text": "the"}, "mode": "full",
-                "startPage": {"kind": "objectNumber", "objectNumber": 43}}
+            "request": {"text": "the", "matchCase": true, "snippets": true,
+                "from": {"kind": "objectNumber", "objectNumber": 43},
+                "cursor": "c", "skip": 2.0, "limit": {"pages": 3.0, "matches": 7.0}}
         })
     );
-    assert!(call.request["request"]["startPage"]["objectNumber"].is_u64());
+    assert!(call.request["request"]["from"]["objectNumber"].is_u64());
     assert!(matches!(call.decode, Decode::SearchSlice));
-    let plain = json!({"query": {"text": "the"}, "mode": "full"});
-    let call = translate("d1", "search.query", None, std::slice::from_ref(&plain), 12).unwrap();
-    assert_eq!(call.request["request"], plain);
+
+    let rects = json!({"query": {"text": "the"}, "mode": "rects"});
+    let call = translate("d1", "search.query", None, std::slice::from_ref(&rects), 12).unwrap();
+    assert_eq!(call.request["request"], json!({"text": "the", "snippets": false}));
+    let plain = json!({"query": {"text": "the"}});
+    let call = translate("d1", "search.query", None, std::slice::from_ref(&plain), 13).unwrap();
+    assert_eq!(call.request["request"], json!({"text": "the", "snippets": true}));
 }
 
 #[test]
@@ -126,9 +137,14 @@ fn a_search_start_page_that_is_not_a_page_ref_is_invalid_input() {
     let request = json!({"query": {"text": "the"}, "startPage": {"index": 1}});
     let error = translate("d1", "search.query", None, &[request], 13).err().unwrap();
     assert_eq!(error.code(), Some("invalid-input"));
+    let error =
+        translate("d1", "search.query", None, &[json!({"mode": "full"})], 14).err().unwrap();
+    assert_eq!(error.code(), Some("invalid-input"));
 }
 
-/// The host's `search.query` answer for "Report" over the report fixture.
+/// The `search.query` answer for "Report" over the report fixture, as
+/// `call_host` hands it to `decode`: the kernel's spelling, in the file's
+/// coordinates.
 const SEARCH_SLICE: &str = r#"{"result":{"matches":[{"charCount":6,"charStart":6156,"page":{"kind":"objectNumber","objectNumber":202},"segments":[{"advance":1,"quad":{"p1":{"x":354.4305114746094,"y":196.280029296875},"p2":{"x":375.85125732421875,"y":196.280029296875},"p3":{"x":354.4305114746094,"y":185.4755096435547},"p4":{"x":375.85125732421875,"y":185.4755096435547}},"rect":{"bottom":185.4755096435547,"left":354.4305114746094,"right":375.85125732421875,"top":196.280029296875}}],"snippet":{"matchLength":6,"matchStart":47,"text":"then loads and runs each program 10  times and reports the average time taken by each. We ran 4"}}],"nextCursor":null,"scannedPages":14,"totalPages":14}}"#;
 
 #[test]
@@ -140,6 +156,66 @@ fn a_search_slice_answers_each_hit_with_its_page() {
     assert_eq!(hit["snippet"]["matchStart"], 47);
     assert_eq!(slice["nextCursor"], Value::Null);
     assert_eq!(slice["totalPages"], 14);
+}
+
+#[test]
+fn a_search_answer_reaches_the_kernel_in_the_files_coordinates_and_its_spelling() {
+    // The host answers upstream's `SearchSlice` in page space (`start`,
+    // `count`, named corners, a three-part snippet, `pagesSearched`);
+    // `call_host` measures each segment back on its page and respells the
+    // slice, so the kernel reads what it read before.
+    use epdf_viewer_host::translate::call_host;
+
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let opened =
+        call_host(&mut host, &open.to_string(), vec![test_support::fixture(test_support::REPORT)]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let request = json!({ "query": { "text": "Report" }, "mode": "full" });
+    let call = translate("d1", "search.query", None, &[request], 2).unwrap();
+    let wire: Value =
+        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+    let hit = &wire["result"]["matches"][0];
+    assert_eq!((&hit["start"], &hit["count"]), (&json!(6156), &json!(6)), "{wire}");
+    assert_eq!(hit["snippet"]["match"], "report");
+    assert!(hit["segments"][0]["quad"]["upperLeft"].is_object(), "{hit}");
+    assert_eq!(wire["result"]["pageCount"], 14);
+
+    let response = call_host(&mut host, &call.request.to_string(), Vec::new());
+    let slice = decode(&call.decode, response).unwrap().value;
+
+    // The segments are the reader's own, in the file's coordinates, to the
+    // bit: the page-space round trip is exact. `SEARCH_SLICE` was recorded
+    // before the geometry reader took upstream's loose boxes (878f58585), so
+    // its segments are compared against the reader rather than kept.
+    let reader = {
+        use epdf_engine::features::search::matcher::SearchQuery;
+        use epdf_engine::features::search::reader::{SearchRequest, search};
+        let mut session = epdf_engine::session::document::DocumentSession::new();
+        session
+            .open_with(
+                test_support::fixture(test_support::REPORT),
+                None,
+                epdf_engine::session::authority::SessionAuthority::unrestricted(),
+            )
+            .unwrap();
+        let request = SearchRequest {
+            query: SearchQuery { text: "Report".into(), ..Default::default() },
+            ..Default::default()
+        };
+        search(&mut session, &request, &epdf_engine::cancel::CancelToken::never()).unwrap()
+    };
+    let segment = reader.matches[0].segments[0];
+    let quad = segment.quad;
+    let mut expected = decode(&Decode::SearchSlice, answer(SEARCH_SLICE)).unwrap().value;
+    expected["matches"][0]["segments"] = json!([{
+        "quad": { "p1": quad.upper_left, "p2": quad.upper_right,
+            "p3": quad.lower_left, "p4": quad.lower_right },
+        "rect": segment.rect,
+        "advance": segment.advance,
+    }]);
+    assert_eq!(slice, expected);
 }
 
 #[test]
@@ -384,6 +460,10 @@ fn every_routed_path_is_listed() {
         "signatures.revisionBytes",
         "signatures.complete",
         "forms.setSignatureAppearance",
+        // A query, which the flattened request lifts to its top level,
+        // covered by `a_search_request_goes_flat_with_its_start_page_as_a_whole_page_ref`
+        // and `a_search_start_page_that_is_not_a_page_ref_is_invalid_input`.
+        "search.query",
     ];
     for path in PATHS.iter().filter(|p| !NEEDS_REAL_ARGS.contains(p)) {
         assert!(translate("d1", path, Some(1), &[json!({}), json!({})], 0).is_ok(), "{path}");

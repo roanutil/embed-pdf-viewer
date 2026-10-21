@@ -1,14 +1,16 @@
-//! A page's text geometry and layout in page space
+//! A page's text geometry, layout and search matches in page space
 //! (`core/src/pageSpace/text.ts`: `pageGeometryOf`, `mirroredRun`,
-//! `createTextLayout`).
+//! `pageTextSegmentOf`, `pageSearchSliceOf`, `createTextLayout`).
 
 use super::{
-    PageCoordinates, PdfCoordinates, mirrored_point, mirrored_quad, mirrored_rect, page_quad_of,
-    page_rect_of, unmirrored_quad, unmirrored_rect,
+    PageCoordinates, PdfCoordinates, VisibleBoxOf, mirrored_point, mirrored_quad, mirrored_rect,
+    page_quad_of, page_rect_of, unmirrored_quad, unmirrored_rect,
 };
+use crate::error::EngineError;
 use crate::features::geometry::{
     PageGeometryGlyph, PageGeometryRun, PageGeometrySnapshot, RotatedGeometryGlyph,
 };
+use crate::features::search::reader::{SearchMatch, SearchSlice};
 use crate::features::text::TextRange;
 use crate::features::text::layout::{PdfTextLayout, PdfTextSegment, TextAt};
 use crate::geom::{NamedPdfQuad, PagePoint, PageQuad, PageRect, PdfPoint, PdfRect};
@@ -135,14 +137,49 @@ pub fn mirrored_run(run: &PageGeometryRun<PageCoordinates>) -> PageGeometryRun<P
 }
 
 /// One merged visual line of a text range, in page space
-/// (`PdfTextSegment<PageCoordinates>`). `quad` names its corners in the
-/// line's own frame; `rect` is its axis-aligned bounds; `advance` is the
-/// reading direction along the baseline.
-#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct PageTextSegment {
-    pub quad: PageQuad,
-    pub rect: PageRect,
-    pub advance: i8,
+/// (`PdfTextSegment<PageCoordinates>`).
+pub type PageTextSegment = PdfTextSegment<PageCoordinates>;
+
+/// A text segment in the file's coordinates, in page space
+/// (`pageTextSegmentOf`). `visible` is the page's visible box.
+pub fn page_text_segment_of(segment: PdfTextSegment, visible: PdfRect) -> PageTextSegment {
+    PageTextSegment {
+        quad: page_quad_of(segment.quad.into(), visible),
+        rect: page_rect_of(segment.rect, visible),
+        advance: segment.advance,
+    }
+}
+
+/// A search slice in page space, each match measured on its own page
+/// (`pageSearchSliceOf`).
+pub fn page_search_slice_of(
+    slice: SearchSlice<PdfCoordinates>,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<SearchSlice<PageCoordinates>, EngineError> {
+    let matches = slice
+        .matches
+        .into_iter()
+        .map(|found| {
+            let visible = box_of(found.page)?;
+            Ok(SearchMatch {
+                page: found.page,
+                start: found.start,
+                count: found.count,
+                segments: found
+                    .segments
+                    .into_iter()
+                    .map(|segment| page_text_segment_of(segment, visible))
+                    .collect(),
+                snippet: found.snippet,
+            })
+        })
+        .collect::<Result<_, EngineError>>()?;
+    Ok(SearchSlice {
+        matches,
+        next_cursor: slice.next_cursor,
+        pages_searched: slice.pages_searched,
+        page_count: slice.page_count,
+    })
 }
 
 impl From<PagePoint> for TextAt<PagePoint> {
@@ -231,7 +268,7 @@ fn mirrored_at(at: TextAt<PagePoint>) -> TextAt<PdfPoint> {
 
 fn unmirrored_segment(segment: PdfTextSegment) -> PageTextSegment {
     PageTextSegment {
-        quad: unmirrored_quad(segment.quad),
+        quad: unmirrored_quad(segment.quad.into()),
         rect: unmirrored_rect(segment.rect),
         advance: segment.advance,
     }
@@ -352,6 +389,54 @@ mod tests {
         assert_eq!(glyphs[0].loose.lower_right, PagePoint { x: 40.0, y: 110.0 });
         assert_eq!(glyphs[0].tight, Some(glyphs[0].loose));
         assert_eq!(glyphs[1].loose, NO_QUAD);
+    }
+
+    #[test]
+    fn a_search_batch_measures_each_match_on_its_own_page() {
+        use crate::features::search::reader::{SearchMatch, SearchSlice};
+        use crate::identity::PageObjectNumber;
+
+        let visible = PdfRect { left: 50.0, bottom: 60.0, right: 562.0, top: 732.0 };
+        let other = rect(0.0, 0.0, 612.0, 792.0);
+        let pdf_segment = PdfTextSegment {
+            quad: NamedPdfQuad {
+                upper_left: PdfPoint { x: 0.0, y: 12.0 },
+                upper_right: PdfPoint { x: 10.0, y: 12.0 },
+                lower_left: PdfPoint { x: 0.0, y: 0.0 },
+                lower_right: PdfPoint { x: 10.0, y: 0.0 },
+            },
+            rect: rect(0.0, 0.0, 10.0, 12.0),
+            advance: 1,
+        };
+        let page = |n| PageObjectNumber::new(n).unwrap();
+        let found = |n| SearchMatch {
+            page: page(n),
+            start: 0,
+            count: 1,
+            segments: vec![pdf_segment],
+            snippet: None,
+        };
+        let slice = SearchSlice::<PdfCoordinates> {
+            matches: vec![found(4), found(6)],
+            next_cursor: None,
+            pages_searched: 2,
+            page_count: 2,
+        };
+        let slice = page_search_slice_of(slice, &mut |p: PageObjectNumber| {
+            Ok(if p.get() == 4 { visible } else { other })
+        })
+        .unwrap();
+        assert_eq!(slice.matches[0].segments[0].rect, page_rect_of(pdf_segment.rect, visible));
+        assert_eq!(
+            slice.matches[1].segments[0].rect,
+            PageRect { x: 0.0, y: 780.0, width: 10.0, height: 12.0 }
+        );
+        assert_eq!(
+            slice.matches[1].segments[0].quad.upper_left,
+            PagePoint { x: 0.0, y: 780.0 },
+            "the quad is measured on its page too",
+        );
+        assert_eq!((slice.pages_searched, slice.page_count), (2, 2));
     }
 
     // ── text in page space (`test/pageSpace/text.test.ts`) ──
@@ -578,7 +663,7 @@ mod tests {
                     assert_eq!(actual.len(), expected.len(), "{range:?}");
                     for (a, e) in actual.iter().zip(&expected) {
                         assert_eq!(a.advance, e.advance, "{range:?}");
-                        close_quad(a.quad, page_quad_of(e.quad, VISIBLE));
+                        close_quad(a.quad, page_quad_of(e.quad.into(), VISIBLE));
                         let r = page_rect_of(e.rect, VISIBLE);
                         close(a.rect.x, r.x);
                         close(a.rect.y, r.y);

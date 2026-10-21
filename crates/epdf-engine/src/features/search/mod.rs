@@ -55,6 +55,8 @@ pub mod snippet;
 
 use std::sync::OnceLock;
 
+use crate::features::text::TextRange;
+
 /// Longest accepted pattern, matching `SEARCH_REGEX_MAX_LENGTH` in
 /// `core/src/search/regex.ts`. Measured in UTF-16 code units, because that is
 /// what `pattern.length` counts in JavaScript.
@@ -173,14 +175,6 @@ pub fn compile(pattern: &str, match_case: bool) -> Result<regex::Regex, SearchRe
         .map_err(|_| SearchRegexIssue::Syntax)
 }
 
-/// A half-open match range in UTF-16 code units of the original text, which is
-/// what `SearchMatchRange` carries and what `PageTextSnapshot` addresses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SearchMatchRange {
-    pub start: usize,
-    pub length: usize,
-}
-
 /// One definition of "word character" for the whole search subsystem: Unicode
 /// letters, numbers and underscore, never `\b`'s ASCII set.
 ///
@@ -197,7 +191,8 @@ fn is_word_char(ch: char) -> bool {
     word_test().is_match(ch.encode_utf8(&mut buffer))
 }
 
-/// All matches of a dialect-valid pattern over raw page text.
+/// All matches of a dialect-valid pattern over raw page text, as ranges of
+/// its UTF-16 code units (`matchRegex`).
 ///
 /// A port of `matchRegex`, with its three rules intact:
 ///
@@ -241,7 +236,7 @@ pub fn match_regex(
     pattern: &str,
     match_case: bool,
     whole_word: bool,
-) -> Result<Vec<SearchMatchRange>, SearchRegexIssue> {
+) -> Result<Vec<TextRange>, SearchRegexIssue> {
     validate_search_regex(pattern)?;
     let regex = compile(pattern, match_case)?;
 
@@ -292,9 +287,9 @@ pub fn match_regex(
                 continue;
             }
         }
-        out.push(SearchMatchRange {
-            start: utf16_at[start],
-            length: utf16_at[end] - utf16_at[start],
+        out.push(TextRange {
+            start: utf16_at[start] as u32,
+            count: (utf16_at[end] - utf16_at[start]) as u32,
         });
     }
     Ok(out)
@@ -336,7 +331,7 @@ mod tests {
     fn offsets_come_back_in_utf16_units() {
         // "a😀b": the b starts at UTF-16 index 3 and UTF-8 offset 5.
         let found = match_regex("a\u{1F600}b", "b", true, false).unwrap();
-        assert_eq!(found, vec![SearchMatchRange { start: 3, length: 1 }]);
+        assert_eq!(found, vec![TextRange { start: 3, count: 1 }]);
     }
 
     #[test]
