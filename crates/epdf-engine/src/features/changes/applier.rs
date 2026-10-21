@@ -404,6 +404,31 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
                 resources,
             )
         }
+        ChangeOp::AnnotationsImport { bundle, pages, attribution, actor, limits } => {
+            super::annotations::import_annotations(
+                ctx,
+                bundle,
+                pages.as_ref(),
+                *attribution,
+                actor.as_ref(),
+                limits,
+            )
+        }
+        ChangeOp::FormsImport { bundle, pages, attribution, values, actor, limits, may_script } => {
+            super::fields::import_form(
+                ctx,
+                bundle,
+                pages.as_ref(),
+                *attribution,
+                values.unwrap_or(true),
+                actor.as_ref(),
+                limits,
+                may_script.unwrap_or(false),
+            )
+        }
+        ChangeOp::FormsImportValues { bundle, attribution, actor, limits } => {
+            super::forms::import_form_values(ctx, bundle, *attribution, actor.as_ref(), limits)
+        }
         ChangeOp::AnnotationsUpdate { reference, patch, resources, expect } => {
             super::annotations::update_annotation(
                 ctx,

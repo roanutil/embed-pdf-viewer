@@ -758,25 +758,38 @@ impl Host {
                 let model = d.form_model().ok_or_else(form_model_missing)?;
                 Ok(ok(value(&f::forms::widgets::read_form(d, &model, cancel)?)?))
             }
+            // `WorkerHost.handleFormsExport`: the fields a selection takes,
+            // as a bundle in page space (7f0b73a3c, which removed FDF and
+            // XFDF). A read; the bundle answers as `{ bundle }`, each
+            // resource a payload.
             "forms.export" => {
-                let format: f::forms::write::FormDataFormat = field(body, "format")?;
-                let d = self.document(&key)?;
-                let bytes = d.export_form_data(format.native()).map_err(|e| {
-                    EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        format!("exporting the form data failed: {e}"),
-                    )
-                })?;
-                // The format goes back beside the bytes. A caller that asked
-                // for FDF and got XFDF would write the wrong extension, and
-                // nothing in the bytes themselves says which it is.
-                Ok(HostResponse {
-                    json: envelope(serde_json::json!({
-                        "format": format,
-                        "size": bytes.len(),
-                    })),
-                    payloads: vec![bytes],
-                })
+                let selection: f::transfer::form_export::FormExportSelection =
+                    field(body, "selection")?;
+                let limits: f::transfer::BundleLimits =
+                    optional(body, "limits")?.unwrap_or_default();
+                let bundle = f::forms::transfer::export_form(
+                    self.sessions.session(&key)?,
+                    &selection,
+                    &limits,
+                    cancel,
+                )?;
+                Ok(bundle_response(bundle))
+            }
+            // `WorkerHost.handleAnnotationsExport`: the annotations a
+            // selection takes and the bytes beside them, as one bundle. A
+            // read.
+            "annotations.export" => {
+                let selection: f::transfer::export_selection::AnnotationExportSelection =
+                    field(body, "selection")?;
+                let limits: f::transfer::BundleLimits =
+                    optional(body, "limits")?.unwrap_or_default();
+                let bundle = f::annotation::transfer::export_annotations(
+                    self.sessions.session(&key)?,
+                    &selection,
+                    &limits,
+                    cancel,
+                )?;
+                Ok(bundle_response(bundle))
             }
             // `AttachmentList`, `{ tag: 'attachments.list'; attachments }`
             // without its tag (a9434c0e2).
@@ -1320,6 +1333,36 @@ impl Host {
                 }
                 Ok(HostResponse { json: envelope(answer), payloads })
             }
+            // `WorkerHost.handleAnnotationsImport`: a bundle's annotations as
+            // a one-op change, its caller's `actor` stamped and nothing else
+            // checked (`checkedAuthority`). The bundle stays page space: the
+            // import measures each create on the page it goes to. Answered
+            // `{result, mutationSequence, events}`: one `annotations.created`
+            // per annotation.
+            "annotations.import" => {
+                let mut bundle: f::changes::op::WireBundle = field(body, "bundle")?;
+                bundle.resolve(&payloads)?;
+                let actor: Option<f::annotation::write::draft::AnnotationActor> =
+                    optional(body, "actor")?;
+                let op = f::changes::op::ChangeOp::AnnotationsImport {
+                    bundle,
+                    pages: optional(body, "pages")?,
+                    attribution: field(body, "attribution")?,
+                    actor: actor.clone(),
+                    limits: optional(body, "limits")?.unwrap_or_default(),
+                };
+                let job = JobEnvelope::parse(&header.kind, body)?;
+                let identity = actor
+                    .map(|actor| IdentityClaims {
+                        user_id: actor.user_id,
+                        group_id: actor.group_id,
+                        groups: Vec::new(),
+                        display_name: actor.display_name,
+                    })
+                    .unwrap_or_default();
+                let authority = f::changes::applier::ChangeAuthority::checked(identity);
+                self.import_verb(&key, &job, op, authority, cancel)
+            }
             // `WorkerHost.handleAnnotationsUpdate`: the single verb as a
             // one-op change, checked against the request's authority with no
             // protection (`{ ...req.authority, protection: null }`). The
@@ -1443,13 +1486,49 @@ impl Host {
                 let op = f::changes::op::ChangeOp::FormsReset { fields };
                 self.form_verb(&key, &header.kind, body, op, cancel)
             }
-            // re-port (Task 8): FDF and XFDF import went with the runtime
-            // 1461b0c51 API (69e229992) and upstream's form bundles
-            // (7f0b73a3c); 8.22 ports the bundle import.
-            "forms.import" => Err(EngineError::with_message(
-                EngineErrorCode::NotImplemented,
-                "form import takes a form bundle now, which is not ported yet (Task 8.22)",
-            )),
+            // `WorkerHost.handleFormsImport` and `handleFormsImportValues`: a
+            // bundle's design, or its values, as a one-op change, under the
+            // request's authority (the session's without one), its identity
+            // the actor (`actorOf`). Answered `{result, mutationSequence,
+            // events}`: one `forms.created` or `forms.valueSet` per field.
+            "forms.import" | "forms.importValues" => {
+                let mut bundle: f::changes::op::WireBundle = field(body, "bundle")?;
+                bundle.resolve(&payloads)?;
+                let attribution: f::changes::op::Attribution = field(body, "attribution")?;
+                let limits: f::transfer::BundleLimits =
+                    optional(body, "limits")?.unwrap_or_default();
+                let job = JobEnvelope::parse(&header.kind, body)?;
+                let authority = match &job.authority {
+                    Some(wire) => change_authority(wire)?,
+                    None => f::changes::applier::ChangeAuthority::of_session(
+                        self.sessions.session(&key)?,
+                    ),
+                };
+                let actor = Some(f::annotation::write::draft::AnnotationActor {
+                    display_name: authority.identity.display_name.clone(),
+                    user_id: authority.identity.user_id.clone(),
+                    group_id: authority.identity.group_id.clone(),
+                });
+                let op = if header.kind == "forms.import" {
+                    f::changes::op::ChangeOp::FormsImport {
+                        bundle,
+                        pages: optional(body, "pages")?,
+                        attribution,
+                        values: Some(field(body, "values")?),
+                        actor,
+                        limits,
+                        may_script: Some(field(body, "mayScript")?),
+                    }
+                } else {
+                    f::changes::op::ChangeOp::FormsImportValues {
+                        bundle,
+                        attribution,
+                        actor,
+                        limits,
+                    }
+                };
+                self.import_verb(&key, &job, op, authority, cancel)
+            }
             // `WorkerHost.handleFormsRepair`: not a change. A final change
             // (`FINAL_CHANGES`): it ends undo, and its meta says it can't be
             // undone.
@@ -2096,6 +2175,41 @@ impl Host {
         Ok(HostResponse { json: envelope(answer), payloads })
     }
 
+    /// An import verb as a one-op change (`handleAnnotationsImport`,
+    /// `handleFormsImport`, `handleFormsImportValues`): kept under its
+    /// `opId` with the record that undoes it, so a retry under it gets the
+    /// first answer. One that left everything out wrote nothing: it answers
+    /// its result with no mutation finished and no events.
+    fn import_verb(
+        &mut self,
+        key: &SessionKey,
+        job: &JobEnvelope,
+        op: crate::features::changes::op::ChangeOp,
+        authority: crate::features::changes::applier::ChangeAuthority,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        let op_id = self.op_id_of(job)?;
+        let item = self.apply_one_item(key, &op_id, op, Some(authority), cancel)?;
+        if !item.wrote() {
+            let sequence = self.sessions.session(key)?.mutation_sequence();
+            let answer = serde_json::json!({
+                "result": strip_item(item)?,
+                "mutationSequence": sequence,
+                "events": [],
+            });
+            return Ok(HostResponse { json: envelope(answer), payloads: Vec::new() });
+        }
+        let events = item.events()?;
+        let (result, sequence, events, payloads) =
+            self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
+        let answer = serde_json::json!({
+            "result": result,
+            "mutationSequence": sequence,
+            "events": events,
+        });
+        Ok(HostResponse { json: envelope(answer), payloads })
+    }
+
     /// `applyOne`: a single verb as a one-op change in the file's own
     /// coordinates (the host's boundary converts its request and answer),
     /// answering the op's item.
@@ -2107,10 +2221,28 @@ impl Host {
         authority: Option<crate::features::changes::applier::ChangeAuthority>,
         cancel: &CancelToken,
     ) -> Result<crate::features::changes::item::ChangeItem, EngineError> {
+        let kind = op.type_name();
+        match self.apply_one_item(key, op_id, op, authority, cancel)? {
+            item if item.wrote() => Ok(item),
+            _ => Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("{kind} wrote nothing"),
+            )),
+        }
+    }
+
+    /// The op's item of a one-op change, whether or not it wrote.
+    fn apply_one_item(
+        &mut self,
+        key: &SessionKey,
+        op_id: &str,
+        op: crate::features::changes::op::ChangeOp,
+        authority: Option<crate::features::changes::applier::ChangeAuthority>,
+        cancel: &CancelToken,
+    ) -> Result<crate::features::changes::item::ChangeItem, EngineError> {
         use crate::features::changes::op::{self, Change};
         use crate::features::changes::{applier, fingerprint, transaction};
 
-        let kind = op.type_name();
         let change = Change::Ops(vec![op]);
         let fingerprint = fingerprint::change_fingerprint(&op::change_value(&change)?);
         let session = self.sessions.session_mut(key)?;
@@ -2130,13 +2262,9 @@ impl Host {
             services,
             applier::ChangeSpace::File,
         )?;
-        match answered.result.items.into_iter().next() {
-            Some(item) if item.wrote() => Ok(item),
-            _ => Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                format!("{kind} wrote nothing"),
-            )),
-        }
+        answered.result.items.into_iter().next().ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::Unknown, "a one-op change answered no item")
+        })
     }
 
     /// Finish a write that ran as a change: the sequence bumps, a layer
@@ -2558,6 +2686,21 @@ fn attachment_response(
 ///
 /// The JSON carries the length so a host can size its copy before reading
 /// the payload, which is what a transferable buffer on the other side wants.
+/// A bundle as a read answers it (`{ tag, bundle }` without its tag): its
+/// manifest, and each resource a payload of the response, `{ "payload": n }`,
+/// in order.
+fn bundle_response(bundle: crate::features::transfer::Bundle) -> HostResponse {
+    let mut answer = bundle.manifest;
+    let mut payloads = Vec::with_capacity(bundle.resources.len());
+    let mut resources = serde_json::Map::new();
+    for (id, bytes) in bundle.resources {
+        resources.insert(id, serde_json::json!({ "payload": payloads.len() }));
+        payloads.push(bytes);
+    }
+    answer.insert("resources".into(), serde_json::Value::Object(resources));
+    HostResponse { json: envelope(serde_json::json!({ "bundle": answer })), payloads }
+}
+
 fn bytes_response(bytes: Vec<u8>) -> HostResponse {
     HostResponse {
         json: envelope(serde_json::json!({ "size": bytes.len() })),
@@ -2747,7 +2890,10 @@ fn strip_item(
         | ChangeItem::FormsRestoreWidget { .. }
         | ChangeItem::FormsReorderWidgets { .. }
         | ChangeItem::FormsReorderCalculations { .. }
-        | ChangeItem::FormsUpdateWidget { .. }) => {
+        | ChangeItem::FormsUpdateWidget { .. }
+        | ChangeItem::AnnotationsImport { .. }
+        | ChangeItem::FormsImport { .. }
+        | ChangeItem::FormsImportValues { .. }) => {
             let mut result = value(&item)?;
             if let Some(fields) = result.as_object_mut() {
                 fields.remove("type");
@@ -2783,9 +2929,11 @@ const MUTATING_KINDS: &[&str] = &[
     "annotations.delete",
     "annotations.reorder",
     "annotations.flatten",
+    "annotations.import",
     "forms.setValue",
     "forms.reset",
     "forms.import",
+    "forms.importValues",
     "forms.repair",
     "forms.createField",
     "forms.updateField",

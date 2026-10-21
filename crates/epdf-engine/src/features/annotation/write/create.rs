@@ -303,11 +303,7 @@ fn claim_name(
     nm: Option<&str>,
 ) -> Result<(), EngineError> {
     let Some(nm) = nm else { return Ok(()) };
-    let count = document.raw_annotation_count(page_index).unwrap_or(0);
-    let taken = (0..count)
-        .filter_map(|index| document.raw_annotation(page_index, index))
-        .any(|annotation| annotation.string_value("NM").ok().flatten().as_deref() == Some(nm));
-    if taken {
+    if name_taken(document, page_index, nm) {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
             format!("nm '{nm}' is already used on page {}", page.get()),
@@ -315,6 +311,16 @@ fn claim_name(
         .with_details(serde_json::json!({ "field": "nm" })));
     }
     Ok(())
+}
+
+/// Whether an annotation of the page at `page_index` is named `nm`
+/// (`annotationIndexByName`), read from the page's `/Annots` without loading
+/// the page.
+pub fn name_taken(document: &Document, page_index: u32, nm: &str) -> bool {
+    let count = document.raw_annotation_count(page_index).unwrap_or(0);
+    (0..count)
+        .filter_map(|index| document.raw_annotation(page_index, index))
+        .any(|annotation| annotation.string_value("NM").ok().flatten().as_deref() == Some(nm))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -929,4 +935,314 @@ mod tests {
         assert!(matches!(&name[19..20], "8" | "9" | "a" | "b"), "the variant: {name}");
         assert_eq!(name.len(), 36);
     }
+}
+
+// ── A change set's creates ─────────────────────────────────────────────────
+
+/// What a link of one create of a batch points at: another create of the
+/// same batch, by its place in it, so creates can refer to each other
+/// before any exists (`BatchLinkTarget`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Planned(pub usize);
+
+/// The attribution a restoring import writes: the fields a read returned,
+/// as they are (`RestoredAttribution`).
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct RestoredAttribution {
+    pub author: Option<String>,
+    /// ISO 8601, as a read gives it.
+    pub created_at: Option<String>,
+    pub modified_at: Option<String>,
+    pub user_id: Option<String>,
+    pub created_by: Option<String>,
+    pub modified_by: Option<String>,
+    pub group_id: Option<String>,
+}
+
+impl RestoredAttribution {
+    /// The attribution of a read, as JSON.
+    pub fn of(data: &Value) -> Self {
+        let text = |key: &str| data.get(key).and_then(Value::as_str).map(str::to_owned);
+        Self {
+            author: text("author"),
+            created_at: text("createdAt"),
+            modified_at: text("modifiedAt"),
+            user_id: text("userId"),
+            created_by: text("createdBy"),
+            modified_by: text("modifiedBy"),
+            group_id: text("groupId"),
+        }
+    }
+}
+
+/// Who wrote one create of a batch, and when (`BatchCreate.attribution`):
+/// the session now, as `create` stamps it, or the attribution it already
+/// had, restored as it is.
+#[derive(Debug, Clone, PartialEq)]
+pub enum BatchAttribution {
+    /// A new annotation: without an `nm` in its data it gets a fresh name.
+    Stamp(Option<AnnotationActor>),
+    /// It keeps the name it had, or none; `imported_by` is the importing
+    /// session's user.
+    Restore { from: RestoredAttribution, imported_by: Option<String> },
+}
+
+/// One create of a batch (`BatchCreate`).
+#[derive(Debug)]
+pub struct BatchCreate<'a> {
+    /// The page it goes on.
+    pub page: PageObjectNumber,
+    /// Its data, in the file's coordinates, without its links, which are
+    /// the two fields below.
+    pub draft: Map<String, Value>,
+    /// The create it replies to, on the same page.
+    pub reply_to: Option<(Planned, AnnotationReplyType)>,
+    /// For a popup: the create it shows, on the same page.
+    pub parent: Option<Planned>,
+    pub resources: DraftResources<'a>,
+    pub attribution: BatchAttribution,
+    /// A copied file attachment's file dates (ISO), kept in either
+    /// attribution.
+    pub file_dates: Option<(Option<String>, Option<String>)>,
+    /// Names the create in an error, such as `import: item 3`.
+    pub label: String,
+}
+
+/// What a batch made (`BatchCreateResult`): in the order of the creates,
+/// each as it is now, and one envelope for the change.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BatchCreateResult {
+    pub created: Vec<AnnotationRecord>,
+    pub meta: AnnotationMutationMeta,
+}
+
+/// Where a created annotation is: enough to open it again without loading
+/// its page.
+#[derive(Debug, Clone, Copy)]
+struct Placed {
+    page_index: u32,
+    page: PageObjectNumber,
+    index: u32,
+    object_number: u32,
+}
+
+/// Run `body`, naming `label` in the error it answers (`labelled`).
+fn labelled<T>(
+    label: &str,
+    body: impl FnOnce() -> Result<T, EngineError>,
+) -> Result<T, EngineError> {
+    body().map_err(|error| EngineError { message: format!("{label}: {}", error.message), ..error })
+}
+
+/// A batch of creates as one unit (`AnnotationBatchApplier.create`): every
+/// item is checked before the first write, and the writes run inside the
+/// change's transaction, which takes them back on any failure. No page is
+/// loaded: each annotation is made on a raw handle and opened again by its
+/// place in its page's `/Annots`, for each pass: every create in order,
+/// with its data and appearance; then the links of replies and popups;
+/// then each one's attribution, last, so no later write touches `/M`.
+pub fn create_batch(
+    owned: &crate::access::OwnedDocument,
+    stamp: &WriteStamp,
+    creates: Vec<BatchCreate<'_>>,
+    services: &CreateServices<'_>,
+    cancel: &CancelToken,
+) -> Result<BatchCreateResult, EngineError> {
+    cancel.check()?;
+    let document = owned.document();
+    let count = creates.len();
+    let mut claimed: Vec<(u32, String)> = Vec::new();
+    let mut prepared = Vec::with_capacity(count);
+    for create in &creates {
+        let page_index = owned.page_index(create.page)?;
+        let mut draft = labelled(&create.label, || {
+            prepare_create(create.draft.clone(), &create.resources, services.context, document)
+        })?;
+        if let Some(nm) = draft.nm().map(str::to_owned) {
+            labelled(&create.label, || {
+                if claimed.iter().any(|(at, name)| *at == page_index && *name == nm) {
+                    return Err(EngineError::with_message(
+                        EngineErrorCode::InvalidArg,
+                        format!("nm '{nm}' is already used on page {}", create.page.get()),
+                    )
+                    .with_details(serde_json::json!({ "field": "nm" })));
+                }
+                claim_name(document, page_index, create.page, Some(&nm))
+            })?;
+            claimed.push((page_index, nm));
+        } else if matches!(create.attribution, BatchAttribution::Stamp(_)) {
+            // A fresh name is never taken: no claim needed.
+            draft.fields.nm = Some(Some(uuid_v7(services.clock.now().epoch_millis, services.ids)));
+        }
+        for Planned(at) in create.reply_to.map(|(to, _)| to).into_iter().chain(create.parent) {
+            if at >= count {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    format!("{}: no create {at} to link to", create.label),
+                ));
+            }
+        }
+        if draft.subtype == AnnotationSubtype::Popup && create.parent.is_none() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("{}: a popup needs the annotation it shows (parent)", create.label),
+            )
+            .with_details(serde_json::json!({ "field": "parent" })));
+        }
+        prepared.push((page_index, draft));
+    }
+    cancel.check()?;
+    if creates.is_empty() {
+        return Ok(BatchCreateResult {
+            created: Vec::new(),
+            meta: AnnotationMutationMeta {
+                meta: MutationMeta::local(Vec::new(), stamp),
+                changed: Vec::new(),
+            },
+        });
+    }
+
+    let mut placed = Vec::with_capacity(count);
+    for (create, (page_index, draft)) in creates.iter().zip(&prepared) {
+        cancel.check()?;
+        let annotation =
+            document.create_annotation_raw(*page_index, draft.subtype.code(), 0).ok_or_else(
+                || unknown(format!("{}: EPDFPage_CreateAnnotRaw returned NULL", create.label)),
+            )?;
+        labelled(&create.label, || {
+            apply_draft(document, &annotation, draft, &create.resources, services)
+        })?;
+        generate_appearance(&annotation, draft.fields.blend_mode.map(|mode| mode.code()));
+        let object_number = annotation.object_number();
+        if object_number == 0 {
+            return Err(unknown(format!(
+                "{}: EPDFPage_CreateAnnotRaw made a direct object",
+                create.label
+            )));
+        }
+        drop(annotation);
+        let index = document
+            .raw_annotation_count(*page_index)
+            .and_then(|n| n.checked_sub(1))
+            .ok_or_else(|| unknown("a created annotation is not where it was"))?;
+        placed.push(Placed { page_index: *page_index, page: create.page, index, object_number });
+    }
+    let open = |at: &Placed| -> Result<Annotation<'_>, EngineError> {
+        document
+            .raw_annotation(at.page_index, at.index)
+            .filter(|created| created.object_number() == at.object_number)
+            .ok_or_else(|| unknown("a created annotation is not where it was"))
+    };
+
+    // A reply writes only itself; a popup's parent gains its `/Popup`.
+    for (create, at) in creates.iter().zip(&placed) {
+        if let Some((Planned(to), reply_type)) = create.reply_to {
+            link_reply(&open(at)?, &open(&placed[to])?, reply_type)?;
+        }
+        if let Some(Planned(parent)) = create.parent {
+            link_popup(&open(at)?, &open(&placed[parent])?)?;
+        }
+    }
+
+    for (create, at) in creates.iter().zip(&placed) {
+        let annotation = open(at)?;
+        labelled(&create.label, || {
+            match &create.attribution {
+                BatchAttribution::Stamp(actor) => {
+                    stamp_creation(&annotation, actor.as_ref(), services.clock)?;
+                }
+                BatchAttribution::Restore { from, imported_by } => {
+                    restore_attribution(&annotation, from, imported_by.as_deref())?;
+                }
+            }
+            if let Some((created, modified)) = &create.file_dates {
+                restore_file_dates(&annotation, created.as_deref(), modified.as_deref())?;
+            }
+            Ok(())
+        })?;
+    }
+
+    let mut created = Vec::with_capacity(count);
+    for at in &placed {
+        let annotation = open(at)?;
+        let mut budget = crate::features::actions::vocabulary::ActionReadBudgetTracker::default();
+        let base =
+            read_annotation_record_base(document, &annotation, at.page, at.index, &mut budget)?;
+        let kind =
+            read_annotation_record_kind(document, &annotation, &base, annotation.subtype_code())?;
+        created.push(AnnotationRecord { base, kind });
+    }
+    let mut pages: Vec<PageRef> = Vec::new();
+    for at in &placed {
+        if !pages.contains(&PageRef::new(at.page)) {
+            pages.push(PageRef::new(at.page));
+        }
+    }
+    let changed = placed
+        .iter()
+        .map(|at| AnnotationRef::ObjectNumber { page: at.page, annot: at.object_number })
+        .collect();
+    Ok(BatchCreateResult {
+        created,
+        meta: AnnotationMutationMeta { meta: MutationMeta::local(pages, stamp), changed },
+    })
+}
+
+/// `restoreAttribution`: `/T`, `/CreationDate` and `/M` as the read had
+/// them, an absent one removed, and `/EMBD_Metadata` with `importedBy`. It
+/// runs last, so `/M` is the date the annotation had, not the time of the
+/// import.
+fn restore_attribution(
+    annotation: &Annotation<'_>,
+    from: &RestoredAttribution,
+    imported_by: Option<&str>,
+) -> Result<(), EngineError> {
+    match from.author.as_deref() {
+        None => p::remove_key(annotation, "T")?,
+        Some("") => {}
+        Some(author) => p::set_string(annotation, "T", author)?,
+    }
+    for (key, date) in [("CreationDate", &from.created_at), ("M", &from.modified_at)] {
+        match date {
+            None => p::remove_key(annotation, key)?,
+            Some(date) => p::set_string(annotation, key, &crate::clock::format_pdf_date(date)?)?,
+        }
+    }
+    // `applyEmbedMetadataOnRestore`.
+    let fields = [
+        ("UserID", from.user_id.as_deref()),
+        ("CreatedBy", from.created_by.as_deref()),
+        ("UpdatedBy", from.modified_by.as_deref()),
+        ("GroupID", from.group_id.as_deref()),
+        ("ImportedBy", imported_by),
+    ];
+    if fields.iter().all(|(_, value)| value.is_none_or(str::is_empty)) {
+        return Ok(());
+    }
+    p::written(
+        annotation.set_embed_metadata_number("SchemaVersion", p::EMBD_METADATA_SCHEMA_VERSION),
+        "EPDFAnnot_SetEmbedMetadataNumber",
+    )?;
+    for (key, value) in fields {
+        if let Some(value) = value.filter(|v| !v.is_empty()) {
+            p::set_embed_string(annotation, key, value)?;
+        }
+    }
+    Ok(())
+}
+
+/// `restoreFileDates`: an attached file's `/Params` dates as the copy had
+/// them. A date the copy doesn't have stays the one the create wrote.
+fn restore_file_dates(
+    annotation: &Annotation<'_>,
+    created: Option<&str>,
+    modified: Option<&str>,
+) -> Result<(), EngineError> {
+    let Some(attachment) = annotation.file_attachment_for_write() else { return Ok(()) };
+    for (key, value) in [("CreationDate", created), ("ModDate", modified)] {
+        let Some(value) = value.filter(|v| !v.is_empty()) else { continue };
+        // Upstream leaves this call's answer unread.
+        let _ = attachment.set_string_value(key, &crate::clock::format_pdf_date(value)?);
+    }
+    Ok(())
 }

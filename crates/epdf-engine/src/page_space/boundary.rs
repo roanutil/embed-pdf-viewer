@@ -423,15 +423,30 @@ pub fn result_in_page_space(
             })
         }
 
+        // What an import made, each on its page (`pageAnnotationOf`), in the
+        // result and in each event that carries one.
+        K::AnnotationsImport => convert_result(response, |mut answer: serde_json::Value| {
+            if let Some(annotations) =
+                answer.pointer_mut("/result/annotations").and_then(serde_json::Value::as_array_mut)
+            {
+                for annotation in annotations.iter_mut() {
+                    *annotation = page_annotation_of(annotation.take(), box_of)?;
+                }
+            }
+            if let Some(serde_json::Value::Array(events)) = answer.get_mut("events") {
+                for event in events.iter_mut() {
+                    if let Some(annotation) = event.get_mut("annotation") {
+                        *annotation = page_annotation_of(annotation.take(), box_of)?;
+                    }
+                }
+            }
+            Ok(answer)
+        }),
+
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: the outline (8.24), viewports
-        // (8.25), a signature's look (8.26), and imports (8.22).
-        K::AnnotationsImport
-        | K::OutlineRead
-        | K::MeasureViewports
-        | K::FormsImport
-        | K::FormsImportValues
-        | K::FormsSetSignatureAppearance => Ok(response),
+        // (8.25) and a signature's look (8.26).
+        K::OutlineRead | K::MeasureViewports | K::FormsSetSignatureAppearance => Ok(response),
 
         // The field or fields and the widget rows (`pageFormFieldOf`,
         // `pageWidgetOf`), in the result and in each event that carries
@@ -443,7 +458,9 @@ pub fn result_in_page_space(
         | K::FormsAddWidget
         | K::FormsDetachWidget
         | K::FormsUpdateWidget
-        | K::FormsDeleteWidget => convert_result(response, |mut answer: serde_json::Value| {
+        | K::FormsDeleteWidget
+        | K::FormsImport
+        | K::FormsImportValues => convert_result(response, |mut answer: serde_json::Value| {
             if let Some(result) = answer.get_mut("result") {
                 super::forms::page_form_result_value(result, box_of)?;
             }
@@ -597,6 +614,11 @@ pub fn change_op_in_file_space(
             };
             Ok(ChangeOp::FormsDeleteWidget { widget, expect })
         }
+        // A bundle is page space: the import converts each create on the
+        // page it goes to.
+        op @ (ChangeOp::AnnotationsImport { .. }
+        | ChangeOp::FormsImport { .. }
+        | ChangeOp::FormsImportValues { .. }) => Ok(op),
         // No places.
         op @ (ChangeOp::MetadataUpdate { .. }
         | ChangeOp::MetadataUpdateCustom { .. }
@@ -642,6 +664,41 @@ pub fn change_item_in_page_space(
                 appearance,
                 meta,
                 skipped,
+            })
+        }
+        ChangeItem::AnnotationsImport { annotations, ref_map, dropped, meta } => {
+            Ok(ChangeItem::AnnotationsImport {
+                annotations: annotations
+                    .into_iter()
+                    .map(|annotation| page_annotation_of(annotation, box_of))
+                    .collect::<Result<_, _>>()?,
+                ref_map,
+                dropped,
+                meta,
+            })
+        }
+        ChangeItem::FormsImport { fields, widgets, ref_map, dropped, calculation_order, meta } => {
+            Ok(ChangeItem::FormsImport {
+                fields: fields
+                    .into_iter()
+                    .map(|field| super::forms::page_form_field_value(field, box_of))
+                    .collect::<Result<_, _>>()?,
+                widgets: page_widgets(widgets, box_of)?,
+                ref_map,
+                dropped,
+                calculation_order,
+                meta,
+            })
+        }
+        ChangeItem::FormsImportValues { fields, widgets, dropped, meta } => {
+            Ok(ChangeItem::FormsImportValues {
+                fields: fields
+                    .into_iter()
+                    .map(|field| super::forms::page_form_field_value(field, box_of))
+                    .collect::<Result<_, _>>()?,
+                widgets: page_widgets(widgets, box_of)?,
+                dropped,
+                meta,
             })
         }
         ChangeItem::AnnotationsRestore { page, annotations, meta } => {

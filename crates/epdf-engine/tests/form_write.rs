@@ -16,7 +16,7 @@
 //! wrong set would otherwise pass.
 //!
 //! The import cases went with FDF and XFDF (7f0b73a3c): form bundles
-//! replaced them, and 8.22 ports their import.
+//! replaced them, which `form_transfer.rs` covers.
 
 mod common;
 

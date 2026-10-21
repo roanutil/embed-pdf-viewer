@@ -148,6 +148,55 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         position: Option<crate::features::pages_write::PagePosition>,
     },
+    /// A bundle's annotations, created as one change (`AnnotationImportOp`).
+    /// Only its verb, `annotations.import`, and a server's change make one:
+    /// `document.apply` takes no import ([`assert_no_import`]). The bundle
+    /// is page space whichever space the change runs in: the import
+    /// measures each create on the page it goes to.
+    #[serde(rename = "annotations.import", rename_all = "camelCase")]
+    AnnotationsImport {
+        bundle: WireBundle,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pages: Option<crate::features::transfer::BundleImportPages>,
+        attribution: Attribution,
+        /// Who `stamp` attributes each annotation to, and whose user
+        /// `restore` records as `importedBy`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        actor: Option<crate::features::annotation::write::draft::AnnotationActor>,
+        #[serde(default)]
+        limits: crate::features::transfer::BundleLimits,
+    },
+    /// A bundle's fields, copied in as one change (`FormImportOp`, the
+    /// design). Only its verb and a server's change make one.
+    #[serde(rename = "forms.import", rename_all = "camelCase")]
+    FormsImport {
+        bundle: WireBundle,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pages: Option<crate::features::transfer::BundleImportPages>,
+        attribution: Attribution,
+        /// Whether each field gets the bundle's value; `true` when absent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        values: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        actor: Option<crate::features::annotation::write::draft::AnnotationActor>,
+        #[serde(default)]
+        limits: crate::features::transfer::BundleLimits,
+        /// Whether the caller holds `doc.forms.script`, which the verb
+        /// checked: without it, scripts, submits and links are left out.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        may_script: Option<bool>,
+    },
+    /// A bundle's values, filled into the fields of the same name, as one
+    /// change (`FormImportOp`, the values).
+    #[serde(rename = "forms.importValues", rename_all = "camelCase")]
+    FormsImportValues {
+        bundle: WireBundle,
+        attribution: Attribution,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        actor: Option<crate::features::annotation::write::draft::AnnotationActor>,
+        #[serde(default)]
+        limits: crate::features::transfer::BundleLimits,
+    },
     /// The field's value, as a read of it returns one (`FormFieldValue`).
     /// `expect` is the value it assumes the field holds now.
     #[serde(rename = "forms.setValue")]
@@ -246,6 +295,103 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expect: Option<serde_json::Map<String, serde_json::Value>>,
     },
+}
+
+/// Whose an import's rows are (`attribution`): `restore` writes the
+/// authors, dates and names the bundle has, and takes an import's rights;
+/// `stamp` makes them the session's, as a create does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Attribution {
+    #[default]
+    Restore,
+    Stamp,
+}
+
+/// A bundle as a request carries it (`WireAnnotationBundle`,
+/// `WireFormBundle`): its manifest as the JSON sent, and each resource a
+/// payload of the request, `{ "payload": n }`, until the host puts the
+/// bytes in ([`resolve_payloads`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct WireBundle {
+    /// Every key but `resources`, in the order sent.
+    pub manifest: serde_json::Map<String, serde_json::Value>,
+    pub resources: Vec<(String, ResourceBytes)>,
+}
+
+impl Serialize for WireBundle {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = s.serialize_map(Some(self.manifest.len() + 1))?;
+        for (key, value) in &self.manifest {
+            map.serialize_entry(key, value)?;
+        }
+        let resources: Vec<(&String, &ResourceBytes)> =
+            self.resources.iter().map(|(id, bytes)| (id, bytes)).collect();
+        map.serialize_entry("resources", &ResourceMap(&resources))?;
+        map.end()
+    }
+}
+
+/// The resources of a [`WireBundle`], serialized in their order.
+struct ResourceMap<'a>(&'a [(&'a String, &'a ResourceBytes)]);
+
+impl Serialize for ResourceMap<'_> {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_map(self.0.iter().map(|(id, bytes)| (*id, *bytes)))
+    }
+}
+
+impl<'de> Deserialize<'de> for WireBundle {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        use serde::de::Error;
+        let serde_json::Value::Object(mut manifest) = serde_json::Value::deserialize(d)? else {
+            return Err(D::Error::custom("a bundle is an object"));
+        };
+        let resources = match manifest.remove("resources") {
+            None | Some(serde_json::Value::Null) => Vec::new(),
+            Some(serde_json::Value::Object(resources)) => resources
+                .into_iter()
+                .map(|(id, bytes)| {
+                    ResourceBytes::deserialize(bytes)
+                        .map(|bytes| (id.clone(), bytes))
+                        .map_err(|_| D::Error::custom(format!("resource {id} is not bytes")))
+                })
+                .collect::<Result<_, _>>()?,
+            Some(_) => return Err(D::Error::custom("a bundle's resources are an object")),
+        };
+        Ok(Self { manifest, resources })
+    }
+}
+
+impl WireBundle {
+    /// Each resource's bytes from the request's payloads.
+    pub fn resolve(&mut self, payloads: &[Vec<u8>]) -> Result<(), EngineError> {
+        for (id, slot) in &mut self.resources {
+            if let ResourceBytes::Payload(index) = slot {
+                let bytes = payloads.get(*index).ok_or_else(|| {
+                    malformed(format!(
+                        "resource {id} names payload {index}: the request carries {}",
+                        payloads.len()
+                    ))
+                })?;
+                *slot = ResourceBytes::Bytes(bytes.clone());
+            }
+        }
+        Ok(())
+    }
+
+    /// The bundle, its resources as bytes.
+    pub fn bundle(&self) -> Result<crate::features::transfer::Bundle, EngineError> {
+        Ok(crate::features::transfer::Bundle {
+            manifest: self.manifest.clone(),
+            resources: self
+                .resources
+                .iter()
+                .map(|(id, bytes)| Ok((id.clone(), bytes.bytes()?.to_vec())))
+                .collect::<Result<_, EngineError>>()?,
+        })
+    }
 }
 
 /// A `pages.insert` source: a payload it names, or its bytes.
@@ -365,6 +511,9 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
                     *source = ResourceBytes::Bytes(bytes.clone());
                 }
             }
+            ChangeOp::AnnotationsImport { bundle, .. }
+            | ChangeOp::FormsImport { bundle, .. }
+            | ChangeOp::FormsImportValues { bundle, .. } => bundle.resolve(payloads)?,
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
             | ChangeOp::AttachmentsDelete { .. }
@@ -432,6 +581,9 @@ impl ChangeOp {
             Self::PagesDelete { .. } => "pages.delete",
             Self::PagesInsertBlank { .. } => "pages.insertBlank",
             Self::PagesInsert { .. } => "pages.insert",
+            Self::AnnotationsImport { .. } => "annotations.import",
+            Self::FormsImport { .. } => "forms.import",
+            Self::FormsImportValues { .. } => "forms.importValues",
             Self::FormsSetValue { .. } => "forms.setValue",
             Self::FormsSetDisplay { .. } => "forms.setDisplay",
             Self::FormsSetAppearanceText { .. } => "forms.setAppearanceText",
@@ -465,11 +617,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.22: the imports, which only their own verbs run as a one-op change
-    // (`RecordedOp`); `document.apply` refuses them (`assertNoImport`).
-    ("annotations.import", "8.22"),
-    ("forms.import", "8.22"),
-    ("forms.importValues", "8.22"),
     // 8.24: the outline.
     ("outline.create", "8.24"),
     ("outline.update", "8.24"),
@@ -507,9 +654,9 @@ pub fn parse_ops(ops: &serde_json::Value) -> Result<Vec<ChangeOp>, EngineError> 
 }
 
 /// `document.apply` takes no import (`assertNoImport`, which only
-/// `handleDocumentApply` runs): an import is its own verb's one-op change.
-/// A server request's change may hold one; until 8.22 ports the imports,
-/// it answers `NotImplemented` there like any op owned elsewhere.
+/// `handleDocumentApply` runs): an import is its own verb's one-op change,
+/// which alone may write restored attribution. A server request's change
+/// may hold one (`document.applyChanges`).
 pub fn assert_no_import(change: &serde_json::Value) -> Result<(), EngineError> {
     let Some(ops) = change.get("ops").and_then(serde_json::Value::as_array) else {
         return Ok(());
@@ -548,6 +695,9 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
         | ChangeOp::AnnotationsCreate { .. }
+        | ChangeOp::AnnotationsImport { .. }
+        | ChangeOp::FormsImport { .. }
+        | ChangeOp::FormsImportValues { .. }
         | ChangeOp::AnnotationsUpdate { .. }
         | ChangeOp::AnnotationsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
@@ -620,14 +770,29 @@ mod tests {
     }
 
     #[test]
-    fn document_apply_refuses_an_import_as_its_own_verbs_and_a_server_change_as_unported() {
-        let change = serde_json::json!({ "ops": [{ "type": "forms.importValues", "bundle": {} }] });
+    fn document_apply_refuses_an_import_naming_its_verb_and_a_server_change_reads_it() {
+        let change = serde_json::json!({ "ops": [{ "type": "forms.importValues",
+            "bundle": { "format": "embedpdf/form", "resources": { "sha256-x": { "payload": 0 } } },
+            "attribution": "stamp" }] });
         let refused = assert_no_import(&change).unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::InvalidArg);
         assert!(refused.message.contains("doc.forms.importValues"), "{refused}");
-        let unported = parse_change(&change).unwrap_err();
-        assert_eq!(unported.code, EngineErrorCode::NotImplemented);
-        assert!(unported.message.contains("8.22"), "{unported}");
+        let mut parsed = parse_change(&change).unwrap();
+        resolve_payloads(&mut parsed, &[b"bytes".to_vec()]).unwrap();
+        let Change::Ops(ops) = &parsed else { panic!("ops") };
+        let ChangeOp::FormsImportValues { bundle, attribution, .. } = &ops[0] else {
+            panic!("import")
+        };
+        assert_eq!(*attribution, Attribution::Stamp);
+        assert_eq!(
+            bundle.bundle().unwrap().resources,
+            [("sha256-x".to_owned(), b"bytes".to_vec())]
+        );
+        // Fingerprinted with its bytes, its manifest keys in the order sent.
+        let value = change_value(&parsed).unwrap();
+        let keys: Vec<&String> = value["ops"][0]["bundle"].as_object().unwrap().keys().collect();
+        assert_eq!(keys, ["format", "resources"]);
+        assert!(value["ops"][0]["bundle"]["resources"]["sha256-x"]["$bytes"].is_string());
     }
 
     #[test]
@@ -720,6 +885,9 @@ mod tests {
             "forms.reorderCalculations",
             "forms.reorderWidgets",
             "forms.updateWidget",
+            "annotations.import",
+            "forms.import",
+            "forms.importValues",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

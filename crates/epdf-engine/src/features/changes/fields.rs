@@ -26,7 +26,7 @@ use super::objects::{
 };
 use super::record::{
     CalculationOrderStep, FieldRemoveStep, FieldRestoreStep, ReverseStep, RevertFallback,
-    WidgetDeleteStep, WidgetRestoreStep,
+    StepRights, WidgetDeleteStep, WidgetRestoreStep,
 };
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
@@ -104,7 +104,11 @@ pub fn create_field(
             calculation_order: order_result(written.calculation_order.as_ref()),
             meta,
         },
-        reverse: vec![ReverseStep::FieldRemove(FieldRemoveStep { object_number, left })],
+        reverse: vec![ReverseStep::FieldRemove(FieldRemoveStep {
+            object_number,
+            left,
+            rights: None,
+        })],
     })
 }
 
@@ -310,13 +314,17 @@ pub fn delete_field(
     if let Some(expect) = expect {
         assert_expected(at, &object(to_value(&before.field)?)?, expect)?;
     }
-    write_delete(ctx, &before)
+    write_delete(ctx, &before, None)
 }
 
 /// A delete of the field `before` reads, capturing it first
 /// (`writeDelete`). Its undo brings the field back first, then into the
-/// calculation order.
-fn write_delete(ctx: &mut ChangeContext<'_>, before: &ReadField) -> Result<Done, EngineError> {
+/// calculation order, and takes `rights` too.
+fn write_delete(
+    ctx: &mut ChangeContext<'_>,
+    before: &ReadField,
+    rights: Option<StepRights>,
+) -> Result<Done, EngineError> {
     let owned = ctx.session.document()?;
     let capture = owned.document().export_field_raw(before.object_number).ok_or_else(|| {
         EngineError::with_message(
@@ -345,6 +353,7 @@ fn write_delete(ctx: &mut ChangeContext<'_>, before: &ReadField) -> Result<Done,
             name: before.field.base.name.clone(),
             pages,
             capture,
+            rights,
         })],
     };
     Ok(with_order_change(done, deleted.calculation_order))
@@ -357,13 +366,16 @@ pub fn remove_field(
     step: &FieldRemoveStep,
 ) -> Result<Done, EngineError> {
     ctx.authority.require(DocCapability::DocFormsModify)?;
+    if step.rights.is_some() {
+        ctx.authority.require(DocCapability::DocFormsImport)?;
+    }
     let Some(current) = try_read_field_by_number(ctx, step.object_number) else {
         return left_alone(ctx, "forms.delete");
     };
     if !values_equal(Some(&to_value(&current.field)?), Some(&step.left)) {
         return left_alone(ctx, "forms.delete");
     }
-    write_delete(ctx, &current)
+    write_delete(ctx, &current, step.rights)
 }
 
 /// Brings back a field a delete removed. Left alone when another field took
@@ -373,6 +385,9 @@ pub fn restore_field(
     step: &FieldRestoreStep,
 ) -> Result<Done, EngineError> {
     ctx.authority.require(DocCapability::DocFormsModify)?;
+    if step.rights.is_some() {
+        ctx.authority.require(DocCapability::DocFormsImport)?;
+    }
     if try_read_field(ctx, &FormFieldRef::Fqn { name: step.name.clone() }).is_some() {
         return left_alone(ctx, "forms.restore");
     }
@@ -400,6 +415,7 @@ pub fn restore_field(
         reverse: vec![ReverseStep::FieldRemove(FieldRemoveStep {
             object_number: step.object_number,
             left,
+            rights: step.rights,
         })],
     })
 }
@@ -1000,6 +1016,253 @@ fn writes_scripts(actions: &Value) -> bool {
             action.is_object() && action.get("root").is_none() && needs_script_right(action)
         })
     })
+}
+
+/// `forms.import`: a bundle's fields, copied in (`importForm` and
+/// `FormImporter.import`). Each field `plan_form_import` keeps is created
+/// with its widgets on their mapped pages, their flags and, with `values`,
+/// the value the bundle holds; then the calculation order among them,
+/// appended to the form's in bundle order; then who made and filled each,
+/// restored or stamped. Its reverse deletes each field it made, the last
+/// made first, when nobody changed it since; a restoring import's steps
+/// take `doc.forms.import` too.
+#[allow(clippy::too_many_arguments)]
+pub fn import_form(
+    ctx: &mut ChangeContext<'_>,
+    bundle: &super::op::WireBundle,
+    pages: Option<&crate::features::transfer::BundleImportPages>,
+    attribution: super::op::Attribution,
+    values: bool,
+    actor: Option<&crate::features::annotation::write::draft::AnnotationActor>,
+    limits: &crate::features::transfer::BundleLimits,
+    may_script: bool,
+) -> Result<Done, EngineError> {
+    use crate::features::transfer::bundle::{BundleKind, bundle_pages_of};
+    use crate::features::transfer::plan_form::{FormPlanInput, plan_form_import};
+    use crate::features::transfer::resources::{check_wire_bundle, import_targets};
+    ctx.cancel.check()?;
+    ctx.authority.require(DocCapability::DocFormsModify)?;
+    let rights = import_rights(ctx, attribution)?;
+    let may_script = may_script
+        && ctx.authority.grants.as_ref().is_none_or(|g| g.allows(DocCapability::DocFormsScript));
+    let bundle = bundle.bundle()?;
+    check_wire_bundle(BundleKind::Form, &bundle, limits)?;
+    let list =
+        |key: &str| bundle.manifest.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
+    let (fields, widgets, order) = (list("fields"), list("widgets"), list("calculationOrder"));
+    let names = field_names(ctx)?;
+    let same = crate::features::transfer::BundleImportPages::Same;
+    let plan = plan_form_import(FormPlanInput {
+        pages: &bundle_pages_of(&bundle.manifest)?,
+        fields: &fields,
+        widgets: &widgets,
+        calculation_order: &order,
+        page_mapping: pages.unwrap_or(&same),
+        target: &import_targets(ctx.session.document()?),
+        name_taken: &|name| name_conflicts(&names, name),
+        may_script,
+        values,
+    })?;
+
+    let identity = actor_identity(actor);
+    let imported_by = identity.user_id.clone().filter(|id| !id.is_empty());
+    let order_before = f::calculation_order_now(ctx.session.document()?.document())?;
+    let mut created = Vec::with_capacity(plan.creates.len());
+    for planned in &plan.creates {
+        ctx.cancel.check()?;
+        let source = &fields[planned.field]["data"];
+        let mut box_of =
+            crate::features::pages::visible_box_reader(ctx.session.document()?.document());
+        let mut draft =
+            crate::page_space::forms::pdf_form_field_draft_of(planned.draft.clone(), &mut box_of)?;
+        drop(box_of);
+        let bundle_group = draft.remove("groupId").and_then(|g| g.as_str().map(str::to_owned));
+        // A restoring import keeps each field's group, under the import's
+        // rights; a copy is the caller's own create.
+        let group =
+            if rights.is_some() { bundle_group } else { new_field_group(ctx, bundle_group)? };
+        if let Some(group) = group {
+            draft.insert("groupId".into(), Value::String(group));
+        }
+        let draft: FormFieldDraft = serde_json::from_value(Value::Object(draft)).map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("import: field {}: {e}", planned.field),
+            )
+        })?;
+        let plan_create = f::plan_create(ctx.session.document()?, &draft, None)?;
+        let written = {
+            let writer = field_writer(ctx)?;
+            f::create_field(&writer, &draft, &plan_create, None, None, &identity, ctx.cancel)?
+        };
+        let object_number = written.field.base.field_object_number();
+        // A create writes no flags: each widget gets its row's.
+        for (widget, flags) in written.field.widgets().zip(&planned.flags) {
+            write_widget_flags(ctx, widget, flags)?;
+        }
+        let reference = FormFieldRef::ObjectNumber { field: object_number };
+        if let Some(value) = &planned.value {
+            let now = crate::clock::format_pdf_timestamp(ctx.clock.now());
+            mutator(ctx)?.set_value(&reference, value, &identity, now.as_deref(), ctx.cancel)?;
+        }
+        if rights.is_some() {
+            let document = ctx.session.document()?.document();
+            let text = |key: &str| source[key].as_str();
+            f::restore_field_creation(
+                document,
+                object_number,
+                text("createdBy"),
+                text("createdAt"),
+                imported_by.as_deref(),
+            )?;
+            if planned.value.is_some() {
+                f::restore_field_fill(
+                    document,
+                    object_number,
+                    text("filledBy"),
+                    text("filledByName"),
+                    text("filledAt"),
+                    imported_by.as_deref(),
+                )?;
+            }
+        }
+        created.push(object_number);
+    }
+    // Each create with a calculate script joined the order at its end; the
+    // bundle's order among them is put back there.
+    let calculating: Vec<FormFieldRef> = plan
+        .calculation_order
+        .iter()
+        .map(|at| FormFieldRef::ObjectNumber { field: created[*at] })
+        .collect();
+    if !calculating.is_empty() {
+        f::reorder_calculations(
+            ctx.session.document()?.document(),
+            &calculating,
+            &FieldPosition::END,
+            ctx.cancel,
+        )?;
+    }
+    let order_after = f::calculation_order_now(ctx.session.document()?.document())?;
+
+    let read: Vec<FormFieldDto> = created
+        .iter()
+        .map(|object_number| read_field_by_number(ctx, *object_number).map(|read| read.field))
+        .collect::<Result<_, _>>()?;
+    let meta = form_mutation_meta(
+        &ctx.session.write_stamp()?,
+        read.iter().map(|field| field.base.field_ref.clone()).collect(),
+        read.iter().flat_map(MetaWidget::of_field).collect(),
+        None,
+    );
+    let rows = rows(ctx, &meta)?;
+    let ref_map = plan
+        .creates
+        .iter()
+        .zip(&read)
+        .map(|(planned, field)| {
+            Ok(serde_json::json!({ "from": fields[planned.field]["data"]["ref"],
+                "to": to_value(&field.base.field_ref)? }))
+        })
+        .collect::<Result<_, EngineError>>()?;
+    let reverse = read
+        .iter()
+        .rev()
+        .map(|field| {
+            Ok(ReverseStep::FieldRemove(FieldRemoveStep {
+                object_number: field.base.field_object_number(),
+                left: to_value(field)?,
+                rights,
+            }))
+        })
+        .collect::<Result<_, EngineError>>()?;
+    let calculation_order = (!same_order(&order_before, &order_after))
+        .then(|| order_after.iter().map(|n| FormFieldRef::ObjectNumber { field: *n }).collect());
+    Ok(Done {
+        item: ChangeItem::FormsImport {
+            fields: read.iter().map(to_value).collect::<Result<_, _>>()?,
+            widgets: rows,
+            ref_map,
+            dropped: plan.dropped,
+            calculation_order,
+            meta,
+        },
+        reverse,
+    })
+}
+
+/// A restoring import's rights, checked: `doc.forms.import`, which its undo
+/// and redo take too. A stamping import takes none (`importRights`).
+pub(super) fn import_rights(
+    ctx: &ChangeContext<'_>,
+    attribution: super::op::Attribution,
+) -> Result<Option<StepRights>, EngineError> {
+    if attribution != super::op::Attribution::Restore {
+        return Ok(None);
+    }
+    ctx.authority.require(DocCapability::DocFormsImport)?;
+    Ok(Some(StepRights::Import))
+}
+
+/// The session an import acts for, as a create and a value write stamp it.
+pub(super) fn actor_identity(
+    actor: Option<&crate::features::annotation::write::draft::AnnotationActor>,
+) -> crate::auth::scope::IdentityClaims {
+    let actor = actor.cloned().unwrap_or_default();
+    crate::auth::scope::IdentityClaims {
+        user_id: actor.user_id,
+        group_id: actor.group_id,
+        groups: Vec::new(),
+        display_name: actor.display_name,
+    }
+}
+
+/// The full name of every field of the form (`fieldNames`).
+fn field_names(ctx: &ChangeContext<'_>) -> Result<Vec<String>, EngineError> {
+    let document = ctx.session.document()?.document();
+    let Some(model) = document.form_model() else { return Ok(Vec::new()) };
+    let mut names = Vec::new();
+    for index in 0..model.field_count() {
+        if let Some(name) = model
+            .field(index)
+            .and_then(|field| crate::features::forms::snapshot::text(field.name()).ok().flatten())
+        {
+            names.push(name);
+        }
+    }
+    Ok(names)
+}
+
+/// Whether a new field named `name` can't join a form whose fields are
+/// `names`: one has that name, one sits under it, or one is its parent
+/// (`nameConflicts`).
+fn name_conflicts(names: &[String], name: &str) -> bool {
+    names.iter().any(|other| {
+        other == name
+            || other.starts_with(&format!("{name}."))
+            || name.starts_with(&format!("{other}."))
+    })
+}
+
+/// A new widget's flags, as its row in the bundle has them: a create writes
+/// none (`writeFlags`).
+fn write_widget_flags(
+    ctx: &ChangeContext<'_>,
+    widget: &FormWidgetRef,
+    flags: &[Option<bool>; 10],
+) -> Result<(), EngineError> {
+    let Ok(page) = PageObjectNumber::new(widget.page_object_number) else { return Ok(()) };
+    let owned = ctx.session.document()?;
+    let page_index = owned.page_index(page)?;
+    let document = owned.document();
+    let reference = AnnotationRef::ObjectNumber { page, annot: widget.annot_object_number };
+    let index = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+        document, page_index, &reference,
+    )?;
+    let annotation = document.raw_annotation(page_index, index).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "a created widget is not where it was")
+    })?;
+    crate::features::annotation::write::primitives::set_flags(&annotation, flags)
 }
 
 #[cfg(test)]

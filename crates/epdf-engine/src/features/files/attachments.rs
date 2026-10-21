@@ -223,7 +223,7 @@ fn attachment_key(document: &Document, index: u32) -> Result<Option<String>, Eng
 
 /// Each extraction failure means something different about the document, so
 /// each gets the code that says what a caller can do about it.
-fn extract_error(error: AttachmentExtractError) -> EngineError {
+pub(crate) fn extract_error(error: AttachmentExtractError) -> EngineError {
     let code = match error {
         // The filespec names a file the document does not embed. A caller
         // asked for bytes that were never there, which is their argument

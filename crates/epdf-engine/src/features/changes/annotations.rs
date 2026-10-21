@@ -18,7 +18,7 @@ use super::item::ChangeItem;
 use super::op::OpResources;
 use super::record::{
     AnnotationRemoveStep, AnnotationReorderStep, AnnotationRestoreStep, ObjectsRevertStep,
-    ReverseStep, RevertFallback, RevertSubject, UnlinkedPopup,
+    ReverseStep, RevertFallback, RevertSubject, StepRights, UnlinkedPopup,
 };
 use crate::auth::scope::{CollabAction, CollabEntity, CollabTarget, DocCapability};
 use crate::cancel::CancelToken;
@@ -171,11 +171,127 @@ pub fn create_annotation(
         },
         left: vec![annotation.clone()],
         parent: result.parent_before,
+        rights: None,
     });
     Ok(Done {
         item: ChangeItem::AnnotationsCreate { page, annotation, meta: result.meta },
         reverse: vec![reverse],
     })
+}
+
+/// `annotations.import`: a bundle's annotations, created as the import
+/// plans them, each checked as its create would be
+/// (`importAnnotations`). Its reverse removes what the import made, thread
+/// by thread, as a create's undo does. A restoring import's steps take the
+/// import's rights.
+pub fn import_annotations(
+    ctx: &mut ChangeContext<'_>,
+    bundle: &super::op::WireBundle,
+    pages: Option<&crate::features::transfer::BundleImportPages>,
+    attribution: super::op::Attribution,
+    actor: Option<&AnnotationActor>,
+    limits: &crate::features::transfer::BundleLimits,
+) -> Result<Done, EngineError> {
+    use crate::features::annotation::transfer::{
+        AnnotationImportRequest, import_annotations as import,
+    };
+    let rights = (attribution == super::op::Attribution::Restore).then_some(StepRights::Import);
+    if rights.is_some() {
+        authorize_import_rights(ctx)?;
+    }
+    let bundle = bundle.bundle()?;
+    let same = crate::features::transfer::BundleImportPages::Same;
+    let session = &*ctx.session;
+    let context = AnnotationWriteContext { fonts: ctx.fonts, resources: None };
+    let services = CreateServices {
+        context: &context,
+        drawings: session.drawing_index()?,
+        clock: ctx.clock,
+        ids: ctx.ids,
+    };
+    let ctx_ref = &*ctx;
+    let mut authorize = |draft: &Map<String, Value>| -> Result<(), EngineError> {
+        ctx_ref.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
+        // A restoring import writes attribution that isn't the caller's,
+        // under the rights checked above; a copy is the caller's own create.
+        if rights.is_none() {
+            authorize_create(ctx_ref, draft.get("groupId").and_then(Value::as_str))?;
+        }
+        Ok(())
+    };
+    let result = import(
+        session,
+        AnnotationImportRequest {
+            bundle: &bundle,
+            pages: pages.unwrap_or(&same),
+            attribution,
+            actor,
+            limits,
+        },
+        &mut authorize,
+        &services,
+        ctx.cancel,
+    )?;
+    let reverse = import_reverse(ctx, &result.annotations, rights)?;
+    Ok(Done {
+        item: ChangeItem::AnnotationsImport {
+            annotations: result.annotations,
+            ref_map: result.ref_map,
+            dropped: result.dropped,
+            meta: result.meta,
+        },
+        reverse,
+    })
+}
+
+/// The undo of an import (`importReverse`): one remove per imported
+/// annotation that no other imported one takes with it (a note takes its
+/// popup and its imported replies), the last made first, each holding its
+/// thread as the import left it. An imported reply to an annotation that was
+/// there goes alone.
+fn import_reverse(
+    ctx: &ChangeContext<'_>,
+    created: &[Value],
+    rights: Option<StepRights>,
+) -> Result<Vec<ReverseStep>, EngineError> {
+    let owned = ctx.session.document()?;
+    let mut threads: Vec<(AnnotationRef, Vec<Value>)> = Vec::new();
+    for annotation in created {
+        let reference = delete::member_ref(annotation)?;
+        let page_index = owned.page_index(reference.page())?;
+        let left = delete::members_of(owned.document(), page_index, &reference, ctx.cancel)?;
+        threads.push((reference, left));
+    }
+    // What goes with an annotation, apart from the annotation itself.
+    let taken_with: std::collections::HashSet<String> = threads
+        .iter()
+        .flat_map(|(reference, left)| {
+            left.iter()
+                .filter_map(|member| delete::member_ref(member).ok())
+                .map(|member| member.key())
+                .filter(move |key| *key != reference.key())
+        })
+        .collect();
+    Ok(threads
+        .into_iter()
+        .filter(|(reference, _)| !taken_with.contains(&reference.key()))
+        .rev()
+        .map(|(reference, left)| {
+            ReverseStep::AnnotationRemove(AnnotationRemoveStep {
+                reference,
+                left,
+                parent: None,
+                rights,
+            })
+        })
+        .collect())
+}
+
+/// A restoring import's rights: `doc.annotate.modify` and
+/// `doc.annotate.import` (`authorizeImportRights`).
+fn authorize_import_rights(ctx: &ChangeContext<'_>) -> Result<(), EngineError> {
+    ctx.authority.require(DocCapability::DocAnnotateModify)?;
+    ctx.authority.require(DocCapability::DocAnnotateImport)
 }
 
 /// `PermissionDenied` for a write that covers several annotations: the
@@ -235,16 +351,18 @@ pub fn delete_annotation(
     if let Some(expect) = expect {
         super::applier::assert_expected(at, &current, expect)?;
     }
-    write_delete(ctx, reference)
+    write_delete(ctx, reference, None)
 }
 
 /// A delete of `reference` and what goes with it, capturing them first
 /// (`writeDelete`). Its reverse brings them back at the same numbers and
 /// positions, and links again each annotation that stayed to the popup it
-/// showed.
+/// showed. `rights` is what a step under an import's rights checked: the
+/// per-annotation rules give way to them (`underImportRights`).
 fn write_delete(
     ctx: &mut ChangeContext<'_>,
     reference: &AnnotationRef,
+    rights: Option<StepRights>,
 ) -> Result<Done, EngineError> {
     let page = reference.page();
     let session = &*ctx.session;
@@ -291,7 +409,7 @@ fn write_delete(
         document,
         page_index,
         reference,
-        &|members| authorize_delete(ctx, members),
+        &|members| if rights.is_some() { Ok(()) } else { authorize_delete(ctx, members) },
         &session.write_stamp()?,
         ctx.cancel,
     )?;
@@ -300,6 +418,7 @@ fn write_delete(
         members: result.meta.changed.clone(),
         capture,
         unlinked,
+        rights,
     });
     Ok(Done {
         item: ChangeItem::AnnotationsDelete { page, meta: result.meta },
@@ -336,7 +455,10 @@ pub fn remove_annotation(
         return left_alone(ctx, "annotations.delete");
     }
     ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
-    let done = write_delete(ctx, &step.reference)?;
+    if step.rights.is_some() {
+        authorize_import_rights(ctx)?;
+    }
+    let done = write_delete(ctx, &step.reference, step.rights)?;
     // A popup's parent, when it stays, gets back what the popup's create
     // changed on it.
     if let Some(before) = &step.parent {
@@ -459,7 +581,11 @@ pub fn restore_annotations(
     // What comes back is checked once it is read; a refusal takes the
     // import back with the rest of the change.
     ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
-    authorize_delete(ctx, &restored)?;
+    if step.rights.is_some() {
+        authorize_import_rights(ctx)?;
+    } else {
+        authorize_delete(ctx, &restored)?;
+    }
     let meta = AnnotationMutationMeta::of(&session.write_stamp()?, page, step.members.clone());
     Ok(Done {
         item: ChangeItem::AnnotationsRestore { page, annotations: restored.clone(), meta },
@@ -467,6 +593,7 @@ pub fn restore_annotations(
             reference: root.clone(),
             left: restored,
             parent: None,
+            rights: step.rights,
         })],
     })
 }
@@ -842,6 +969,7 @@ pub(super) fn write_update(
         subject: RevertSubject::Annotation { annotation: reference.clone() },
         appearance_changed: Some(result.appearance.changed),
         fallback: Some(values_changed(&before, &after, &written)),
+        rights: None,
     });
     Ok(Done { item: updated_item(ctx, reports, reference, after, result)?, reverse: vec![reverse] })
 }

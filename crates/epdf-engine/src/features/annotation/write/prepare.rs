@@ -914,7 +914,7 @@ fn read_target(
 }
 
 /// The data fields a kind requires on a create.
-fn required_fields(subtype: AnnotationSubtype) -> &'static [&'static str] {
+pub(crate) fn required_fields(subtype: AnnotationSubtype) -> &'static [&'static str] {
     use AnnotationSubtype as S;
     match subtype {
         S::Highlight | S::Underline | S::Squiggly | S::Strikeout => &["quadPoints"],

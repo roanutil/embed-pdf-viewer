@@ -85,6 +85,16 @@ pub enum ChangeItem {
         order: Vec<crate::identity::AnnotationRef>,
         meta: AnnotationMutationMeta,
     },
+    /// `AnnotationImportResult`: what an import made, in bundle order, each
+    /// read back; each bundle ref and its ref here; and what it left out.
+    /// Only the import verb and a server's change answer one.
+    #[serde(rename = "annotations.import", rename_all = "camelCase")]
+    AnnotationsImport {
+        annotations: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        meta: AnnotationMutationMeta,
+    },
     /// Only in an undo: what a delete removed, back, in `/Annots` order,
     /// each read as a listing reads it.
     #[serde(rename = "annotations.restore")]
@@ -249,6 +259,28 @@ pub enum ChangeItem {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         skipped: Vec<String>,
     },
+    /// `FormImportResult`: the fields a design import made, in bundle
+    /// order, their widget rows, each bundle ref and its ref here, what it
+    /// left out, and the calculation order when it changed.
+    #[serde(rename = "forms.import", rename_all = "camelCase")]
+    FormsImport {
+        fields: Vec<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+    },
+    /// `FormValuesImportResult`: the fields a values import filled, the
+    /// rows of the widgets whose look changed, and what it left out.
+    #[serde(rename = "forms.importValues")]
+    FormsImportValues {
+        fields: Vec<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -268,6 +300,7 @@ impl ChangeItem {
             | Self::AnnotationsUpdate { meta, .. }
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
+            | Self::AnnotationsImport { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &meta.meta,
             Self::PagesRotate { meta, .. }
             | Self::PagesReorder { meta, .. }
@@ -290,6 +323,8 @@ impl ChangeItem {
             | Self::FormsRestoreWidget { meta, .. }
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
+            | Self::FormsImport { meta, .. }
+            | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &meta.meta,
         }
     }
@@ -305,6 +340,7 @@ impl ChangeItem {
             | Self::AnnotationsUpdate { meta, .. }
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
+            | Self::AnnotationsImport { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
             Self::PagesRotate { meta, .. }
             | Self::PagesReorder { meta, .. }
@@ -327,13 +363,24 @@ impl ChangeItem {
             | Self::FormsRestoreWidget { meta, .. }
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
+            | Self::FormsImport { meta, .. }
+            | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &mut meta.meta,
         }
     }
 
-    /// Whether the item wrote to the document (`itemWrote`).
+    /// Whether the item wrote to the document (`itemWrote`): not an op an
+    /// undo left alone, nor an import that left every row of its bundle
+    /// out.
     pub fn wrote(&self) -> bool {
-        !matches!(self, Self::Skipped { .. })
+        match self {
+            Self::Skipped { .. } => false,
+            Self::AnnotationsImport { annotations, .. } => !annotations.is_empty(),
+            Self::FormsImport { fields, .. } | Self::FormsImportValues { fields, .. } => {
+                !fields.is_empty()
+            }
+            _ => true,
+        }
     }
 
     /// The events its single verb publishes (`changeEvents`' `itemEvents`):
@@ -381,6 +428,25 @@ impl ChangeItem {
                 serde_json::json!({ "page": crate::identity::PageRef::new(*page),
                     "order": to_value(order)?, "meta": to_value(meta)? }),
             ),
+            // One `annotations.created` per annotation (`annotationImportFacts`).
+            Self::AnnotationsImport { annotations, meta, .. } => {
+                return Ok(crate::features::transfer::plan_annotation::annotation_import_facts(
+                    annotations,
+                    &to_value(meta)?,
+                ));
+            }
+            // One `forms.created` per field (`formImportFacts`).
+            Self::FormsImport { .. } => {
+                return Ok(crate::features::transfer::plan_form::form_import_facts(&to_value(
+                    self,
+                )?));
+            }
+            // One `forms.valueSet` per field filled (`formValuesImportFacts`).
+            Self::FormsImportValues { .. } => {
+                return Ok(crate::features::transfer::plan_form::form_values_import_facts(
+                    &to_value(self)?,
+                ));
+            }
             Self::AnnotationsRestore { page, annotations, meta } => (
                 "annotations.restored",
                 serde_json::json!({ "page": crate::identity::PageRef::new(*page),

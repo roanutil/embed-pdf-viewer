@@ -64,6 +64,18 @@ pub enum ReverseStep {
     CalculationsRestore(CalculationOrderStep),
 }
 
+/// The rights a step takes as a restoring import's undo or redo: what the
+/// import took (`StepRights`). For annotations, `doc.annotate.modify` and
+/// `doc.annotate.import` instead of the per-annotation rules: a restoring
+/// import gives annotations other people's `userId`, which a delete's rules
+/// would never let the importer remove. For forms, `doc.forms.import`
+/// beside `doc.forms.modify` or `doc.forms.fill`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum StepRights {
+    Import,
+}
+
 /// Deletes a field a create made, when nobody changed it since
 /// (`FieldRemoveStep`). `left` is the field as the change left it, in the
 /// file's coordinates.
@@ -72,6 +84,9 @@ pub enum ReverseStep {
 pub struct FieldRemoveStep {
     pub object_number: u32,
     pub left: serde_json::Value,
+    /// The rights it takes: a restoring import's (see [`StepRights`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rights: Option<StepRights>,
 }
 
 /// Brings back a field a delete removed, its widgets and the parents it
@@ -88,6 +103,9 @@ pub struct FieldRestoreStep {
     pub pages: Vec<crate::identity::PageRef>,
     #[serde(with = "hex_vec")]
     pub capture: Vec<u8>,
+    /// The rights it takes: a restoring import's (see [`StepRights`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rights: Option<StepRights>,
 }
 
 /// Brings back a widget a delete removed: onto its page at its place, and
@@ -240,6 +258,9 @@ pub struct ObjectsRevertStep {
     pub appearance_changed: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fallback: Option<RevertFallback>,
+    /// The rights it takes: a restoring import's (see [`StepRights`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rights: Option<StepRights>,
 }
 
 /// A dictionary an op wrote (`CapturedObject`): what the layer held of it
@@ -315,6 +336,9 @@ pub struct AnnotationRemoveStep {
     /// popup was linked to it, put back when the popup goes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent: Option<crate::features::annotation::write::create::ParentBefore>,
+    /// The rights it takes: a restoring import's (see [`StepRights`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rights: Option<StepRights>,
 }
 
 /// Brings back what a delete removed, at the same numbers and positions
@@ -340,6 +364,9 @@ pub struct AnnotationRestoreStep {
     pub capture: Option<Vec<u8>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub unlinked: Vec<UnlinkedPopup>,
+    /// The rights it takes: a restoring import's (see [`StepRights`]).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rights: Option<StepRights>,
 }
 
 /// An annotation that stayed when the popup it showed went with a delete.

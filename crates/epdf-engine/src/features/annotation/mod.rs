@@ -36,5 +36,6 @@ pub mod read;
 pub mod rich_text;
 pub mod state;
 pub mod subtype;
+pub mod transfer;
 pub mod vocabulary;
 pub mod write;

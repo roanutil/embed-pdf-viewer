@@ -556,6 +556,14 @@ impl FormMutator<'_> {
         locks.assert_not_locked(&name)
     }
 
+    /// Whether a signature locked the field named `name`, by the locks read
+    /// once (`readFieldLocks`): the check a values import makes before its
+    /// first write.
+    pub(crate) fn lock_check(&self) -> impl Fn(&str) -> bool + use<> {
+        let locks = self.field_locks();
+        move |name| locks.as_ref().is_some_and(|locks| locks.lock_for(name).is_some())
+    }
+
     /// `readFieldLocks`: the field locks earlier signatures declared, read
     /// once for a write; `None` when there are none, under `'permit'`, or
     /// for a document whose signature model cannot be built.
@@ -831,41 +839,4 @@ pub fn repair(
         needs_appearances_cleared: report.need_appearances_cleared,
         meta: MutationMeta::local(Vec::new(), stamp),
     })
-}
-
-/// Which serialization a form import or export speaks.
-///
-/// A wire enum over [`pdfium::FormDataFormat`], on the same terms as
-/// [`crate::features::save::SaveMode`]: the `pdfium` crate is the FFI
-/// boundary and carries no serde, so the spellings that cross the wire live
-/// here. They are `FormDataFormat` in `core/src/forms/value.ts`, lower case,
-/// and a caller that asked for one gets the same string back beside the
-/// bytes so it knows which extension to write.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum FormDataFormat {
-    Fdf,
-    Xfdf,
-}
-
-impl FormDataFormat {
-    pub fn native(self) -> pdfium::FormDataFormat {
-        match self {
-            Self::Fdf => pdfium::FormDataFormat::Fdf,
-            Self::Xfdf => pdfium::FormDataFormat::Xfdf,
-        }
-    }
-}
-
-#[cfg(test)]
-mod format_tests {
-    use super::*;
-
-    #[test]
-    fn the_wire_names_are_the_typescript_ones() {
-        // Two strings that cross the wire, so a rename here is a protocol
-        // change rather than a refactor.
-        assert_eq!(serde_json::to_value(FormDataFormat::Fdf).unwrap(), "fdf");
-        assert_eq!(serde_json::to_value(FormDataFormat::Xfdf).unwrap(), "xfdf");
-    }
 }

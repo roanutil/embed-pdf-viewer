@@ -458,25 +458,28 @@ fn a_server_request_answers_one_outcome_per_change() {
 }
 
 #[test]
-fn a_server_change_holding_an_import_is_not_ported_yet() {
+fn a_server_change_holding_an_import_runs_it_and_document_apply_refuses_it() {
     // `document.apply` refuses an import as its own verb's (`assertNoImport`);
-    // a server request's change may hold one, and until 8.22 ports it the
-    // whole job answers `NotImplemented`, which no change keeps.
+    // a server request's change may hold one, which runs as its op: a bundle
+    // that isn't one is the change's kept refusal.
     let mut host = open();
-    let import = json!({ "type": "forms.importValues", "bundle": {} });
-    let refused = send(
+    let import = json!({ "type": "forms.importValues", "bundle": {}, "attribution": "stamp" });
+    let answered = send(
         &mut host,
         json!({ "kind": "document.applyChanges", "changes": [
             { "opId": "i1", "authority": { "identity": {}, "grants": null },
               "change": { "ops": [import] } },
         ] }),
     )
-    .expect_err("an import is 8.22's");
-    assert_eq!(refused["code"], "NotImplemented", "{refused}");
-    assert!(refused["message"].as_str().unwrap().contains("8.22"), "{refused}");
+    .expect("the job runs");
+    let outcome = &answered["outcomes"][0];
+    assert_eq!(outcome["status"], "refused", "{answered}");
+    assert_eq!(outcome["error"]["code"], "InvalidArg", "{answered}");
+    assert!(outcome["error"]["message"].as_str().unwrap().contains("form bundle"), "{answered}");
 
     let refused = apply(&mut host, json!({ "ops": [import] }), None).expect_err("no import");
     assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert!(refused["message"].as_str().unwrap().contains("doc.forms.importValues"), "{refused}");
 }
 
 #[test]

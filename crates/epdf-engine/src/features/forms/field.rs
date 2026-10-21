@@ -1031,6 +1031,7 @@ const KEY_SCHEMA_VERSION: &str = "SchemaVersion";
 const KEY_GROUP_ID: &str = "GroupID";
 const KEY_CREATED_BY: &str = "CreatedBy";
 const KEY_CREATED_AT: &str = "CreatedAt";
+const KEY_IMPORTED_BY: &str = "ImportedBy";
 
 /// `writeAttribution`: each entry written, the ones with no value cleared.
 fn write_attribution(
@@ -1081,6 +1082,52 @@ fn stamp_field_creation(
         document,
         object_number,
         &[(KEY_CREATED_BY, Some(user_id)), (KEY_CREATED_AT, now)],
+    )
+}
+
+/// `restoreFieldCreation`: who created a field and when, as a restoring
+/// import has it (`created_at` ISO 8601), and the importing session's user
+/// as `importedBy`. An absent one clears the entry.
+pub fn restore_field_creation(
+    document: &Document,
+    object_number: u32,
+    created_by: Option<&str>,
+    created_at: Option<&str>,
+    imported_by: Option<&str>,
+) -> Result<(), EngineError> {
+    let created_at = created_at.map(crate::clock::format_pdf_date).transpose()?;
+    write_attribution(
+        document,
+        object_number,
+        &[
+            (KEY_CREATED_BY, created_by),
+            (KEY_CREATED_AT, created_at.as_deref()),
+            (KEY_IMPORTED_BY, imported_by),
+        ],
+    )
+}
+
+/// `restoreFieldFill`: who filled a field in and when, as a restoring import
+/// has it, and the importing session's user as `importedBy`. An absent one
+/// clears the entry.
+pub fn restore_field_fill(
+    document: &Document,
+    object_number: u32,
+    filled_by: Option<&str>,
+    filled_by_name: Option<&str>,
+    filled_at: Option<&str>,
+    imported_by: Option<&str>,
+) -> Result<(), EngineError> {
+    let filled_at = filled_at.map(crate::clock::format_pdf_date).transpose()?;
+    write_attribution(
+        document,
+        object_number,
+        &[
+            ("FilledBy", filled_by),
+            ("FilledByName", filled_by_name),
+            ("FilledAt", filled_at.as_deref()),
+            (KEY_IMPORTED_BY, imported_by),
+        ],
     )
 }
 

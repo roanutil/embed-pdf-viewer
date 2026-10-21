@@ -479,7 +479,22 @@ pub fn read_appearance(
             format!("a {} annotation has no 'appearance' resource", subtype.as_str()),
         ));
     }
-    let exported = match read_annotation_turn(&annotation) {
+    unturned_appearance(&annotation)?.ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the annotation has no normal appearance to read",
+        )
+    })
+}
+
+/// An annotation's normal appearance as a one-page drawing document, saved
+/// (`EPDFAnnot_ExportAppearance`), without the turn the annotation reads: a
+/// copy made from its data turns it again (`exportUnturnedAppearance`).
+/// `None` when there is no normal appearance.
+pub fn unturned_appearance(
+    annotation: &pdfium::Annotation<'_>,
+) -> Result<Option<Vec<u8>>, EngineError> {
+    let exported = match read_annotation_turn(annotation) {
         None => annotation.export_appearance(0.0, None),
         Some(turn) => annotation.export_appearance(
             pdf_from_clockwise(turn.rotation) as f32,
@@ -491,17 +506,9 @@ pub fn read_appearance(
             }),
         ),
     };
-    match exported {
-        Ok(Some(bytes)) => Ok(bytes),
-        Ok(None) => Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "the annotation has no normal appearance to read",
-        )),
-        Err(_) => Err(EngineError::with_message(
-            EngineErrorCode::DocOpenFailed,
-            "failed to save the appearance",
-        )),
-    }
+    exported.map_err(|_| {
+        EngineError::with_message(EngineErrorCode::DocOpenFailed, "failed to save the appearance")
+    })
 }
 
 /// The scale the page has at `viewport`, as a full-page render would use it

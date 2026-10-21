@@ -6,7 +6,7 @@
 //! `runWidgetRotationConformance` (`widget-rotation.test.ts`), each sent as
 //! the worker requests `LocalDocumentFormsService` sends.
 //!
-//! The rotation suite's form bundle case is 8.22's (form bundles), and
+//! The rotation suite's form bundle case is in `form_transfer.rs`, and
 //! `widget-painter-parity.test.ts` compares the engine's appearances with
 //! `@embedpdf/core-form`'s widget painter, which has no Rust port yet.
 

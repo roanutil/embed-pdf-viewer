@@ -195,6 +195,26 @@ pub fn field_value_write_of<C: Coordinates>(
     )))
 }
 
+/// Whether `write` would leave `field` as it is (`isNoOpWrite`).
+pub fn is_no_op_write<C: Coordinates>(field: &FormFieldDto<C>, write: &FieldValueWrite) -> bool {
+    match (write, &field.kind) {
+        (FieldValueWrite::Text(text), FormFieldKind::Text { value, .. }) => value == text,
+        (
+            FieldValueWrite::Toggle(state),
+            FormFieldKind::Checkbox { widgets, .. } | FormFieldKind::Radio { widgets, .. },
+        ) => widgets
+            .iter()
+            .all(|widget| widget.checked == (Some(&widget.on_state) == state.as_ref())),
+        (FieldValueWrite::Choice(values), FormFieldKind::Combobox { value, .. }) => {
+            values.first().map_or(value.is_empty(), |first| first == value)
+        }
+        (FieldValueWrite::Choice(values), FormFieldKind::Listbox { selected_values, .. }) => {
+            selected_values == values
+        }
+        _ => false,
+    }
+}
+
 /// Whether a reset would leave `field` as it is: its value is its default,
 /// and a checkbox's or radio group's buttons show that default
 /// (`isAtDefault`).

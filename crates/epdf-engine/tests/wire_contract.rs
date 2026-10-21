@@ -41,20 +41,14 @@ const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf"
 
 /// The kinds of upstream's union this host does not route yet, each with the
 /// sub-task that routes it. That sub-task removes its rows.
-const NOT_YET_ROUTED: &[(&str, &str)] = &[
-    ("annotations.export", "8.22"),
-    ("annotations.import", "8.22"),
-    ("forms.importValues", "8.22"),
-    ("outline.read", "8.24"),
-    ("signatures.cancel", "8.26"),
-];
+const NOT_YET_ROUTED: &[(&str, &str)] = &[("outline.read", "8.24"), ("signatures.cancel", "8.26")];
 
 /// Routed kinds whose arm answers `NotImplemented` for the request this
 /// test sends, each with the sub-task that ports it. Task 6 stubbed them
-/// against the runtime 1461b0c51 API (`// re-port (Task 8):`): `forms.import`
-/// with no format reads FDF, which that runtime removed. The owner removes
-/// its row; a row whose kind stops answering `NotImplemented` fails.
-const STUBBED: &[(&str, &str)] = &[("forms.import", "8.22")];
+/// against the runtime 1461b0c51 API (`// re-port (Task 8):`); 8.22 ported
+/// the last, `forms.import`. The owner removes its row; a row whose kind
+/// stops answering `NotImplemented` fails.
+const STUBBED: &[(&str, &str)] = &[];
 
 #[derive(Debug)]
 struct Case {

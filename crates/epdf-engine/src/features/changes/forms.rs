@@ -155,6 +155,7 @@ pub fn reset(
             subject: RevertSubject::Fields { fields: changed },
             appearance_changed: None,
             fallback: Some(RevertFallback::Value { fields: fallback }),
+            rights: None,
         })],
     })
 }
@@ -174,6 +175,9 @@ pub fn revert_form(
         authorize_reverted_fills(ctx, fields)?;
     } else {
         ctx.authority.require(DocCapability::DocFormsModify)?;
+    }
+    if step.rights.is_some() {
+        ctx.authority.require(DocCapability::DocFormsImport)?;
     }
     let document = ctx.session.document()?.document();
     if unchanged_since(document, &step.objects) {
@@ -353,6 +357,7 @@ fn write_value(
                     left,
                 }],
             }),
+            rights: None,
         })],
     })
 }
@@ -392,6 +397,7 @@ pub(super) fn revert_step(
         subject: RevertSubject::Fields { fields },
         appearance_changed: None,
         fallback: None,
+        rights: None,
     })
 }
 
@@ -589,4 +595,132 @@ fn object(value: &FormFieldValue) -> Result<serde_json::Map<String, Value>, Engi
 
 pub(super) fn unreadable(e: impl std::fmt::Display) -> EngineError {
     EngineError::with_message(EngineErrorCode::Unknown, format!("a form write's item: {e}"))
+}
+
+/// `forms.importValues`: a bundle's values, filled into the fields of the
+/// same name (`importFormValues`, `FormImporter.planValues` and
+/// `writeValue`). Everything left out is decided before the first write: a
+/// field the document doesn't have, one of another family, a value the
+/// field can't take, a field a signature locked, a field the caller may not
+/// fill in. A write that changes nothing is not made. Each field's reverse
+/// puts back its value and who filled it, as a `setValue`'s does; a
+/// restoring import's steps take `doc.forms.import` too.
+pub fn import_form_values(
+    ctx: &mut ChangeContext<'_>,
+    bundle: &super::op::WireBundle,
+    attribution: super::op::Attribution,
+    actor: Option<&crate::features::annotation::write::draft::AnnotationActor>,
+    limits: &crate::features::transfer::BundleLimits,
+) -> Result<Done, EngineError> {
+    use crate::features::forms::value::{field_value_write_of, is_no_op_write};
+    use crate::features::transfer::bundle::BundleKind;
+    use crate::features::transfer::plan_form::plan_form_values_import;
+    ctx.cancel.check()?;
+    authorize_some_fill(ctx)?;
+    let rights = super::fields::import_rights(ctx, attribution)?;
+    let bundle = bundle.bundle()?;
+    crate::features::transfer::resources::check_wire_bundle(BundleKind::Form, &bundle, limits)?;
+    let fields =
+        bundle.manifest.get("fields").and_then(Value::as_array).cloned().unwrap_or_default();
+    let identity = super::fields::actor_identity(actor);
+    let imported_by = identity.user_id.clone().filter(|id| !id.is_empty());
+
+    // Every field of the form, as it is now, direct ones included.
+    let targets: Vec<FormFieldDto> = {
+        let document = ctx.session.document()?.document();
+        let model = load_model(document)?;
+        (0..model.field_count()).map(|index| read_at(&model, index)).collect::<Result<_, _>>()?
+    };
+    let target_values = to_values(&targets)?;
+    let locked = mutator(ctx)?.lock_check();
+    let mut refusal =
+        |at: usize, value: &FormFieldValue| -> Result<Option<&'static str>, EngineError> {
+            let target = &targets[at];
+            // A field stored as a direct object can't be written.
+            if target.base.field_object_number() == 0 {
+                return Ok(Some("value-not-allowed"));
+            }
+            match field_value_write_of(target, value) {
+                Ok(_) => {}
+                Err(e) if e.code == EngineErrorCode::InvalidArg => {
+                    return Ok(Some("value-not-allowed"));
+                }
+                Err(e) => return Err(e),
+            }
+            if locked(&target.base.name) {
+                return Ok(Some("locked"));
+            }
+            let group = target.base.group_id.as_deref();
+            Ok((!ctx.authority.allows_field_write(FieldWriteAction::Fill, group))
+                .then_some("fill-not-allowed"))
+        };
+    let plan = plan_form_values_import(&fields, &target_values, &mut refusal)?;
+    let writes: Vec<_> = plan
+        .writes
+        .into_iter()
+        .filter(|write| {
+            let target = &targets[write.target];
+            field_value_write_of(target, &write.value).is_ok_and(|w| !is_no_op_write(target, &w))
+        })
+        .collect();
+
+    let mut filled = Vec::with_capacity(writes.len());
+    let mut reverse = Vec::with_capacity(writes.len());
+    for write in &writes {
+        ctx.cancel.check()?;
+        let before = ReadField {
+            object_number: targets[write.target].base.field_object_number(),
+            field: targets[write.target].clone(),
+        };
+        let reference = FormFieldRef::ObjectNumber { field: before.object_number };
+        let document = ctx.session.document()?.document();
+        let pending = capture_before(document, &objects_of(&before));
+        let now = crate::clock::format_pdf_timestamp(ctx.clock.now());
+        mutator(ctx)?.set_value(&reference, &write.value, &identity, now.as_deref(), ctx.cancel)?;
+        if rights.is_some() {
+            let source = &fields[write.field]["data"];
+            let text = |key: &str| source[key].as_str();
+            crate::features::forms::field::restore_field_fill(
+                document,
+                before.object_number,
+                text("filledBy"),
+                text("filledByName"),
+                text("filledAt"),
+                imported_by.as_deref(),
+            )?;
+        }
+        let objects = capture_after(document, pending)?;
+        let field = read_field_by_number(ctx, before.object_number)?.field;
+        reverse.push(ReverseStep::ObjectsRevert(ObjectsRevertStep {
+            reports: "forms.setValue".into(),
+            objects,
+            subject: RevertSubject::Fields { fields: vec![before.object_number] },
+            appearance_changed: None,
+            fallback: Some(RevertFallback::Value {
+                fields: vec![FieldValueChange {
+                    object_number: before.object_number,
+                    before: value_of(&before.field),
+                    left: value_of(&field),
+                }],
+            }),
+            rights,
+        }));
+        filled.push(field);
+    }
+    let meta = form_mutation_meta(
+        &ctx.session.write_stamp()?,
+        filled.iter().map(|field| field.base.field_ref.clone()).collect(),
+        filled.iter().flat_map(MetaWidget::of_field).collect(),
+        None,
+    );
+    reverse.reverse();
+    Ok(Done {
+        item: ChangeItem::FormsImportValues {
+            fields: to_values(&filled)?,
+            widgets: rows(ctx, &meta)?,
+            dropped: plan.dropped,
+            meta,
+        },
+        reverse,
+    })
 }

@@ -728,7 +728,7 @@ fn read_field_actions(
 /// Every string on a field is optional in the file, so an absent one is
 /// `Ok(None)` rather than an error; this is for the runtime declining to
 /// answer, which is not a fact about the document.
-pub(super) fn text(
+pub(crate) fn text(
     result: Result<Option<String>, pdfium::PdfiumError>,
 ) -> Result<Option<String>, EngineError> {
     result.map_err(|e| {

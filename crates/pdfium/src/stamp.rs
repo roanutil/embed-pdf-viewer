@@ -368,6 +368,15 @@ pub fn sha256(bytes: &[u8]) -> Option<[u8; 32]> {
 }
 
 impl Annotation<'_> {
+    /// The drawing this stamp places under our wrapper, by object number
+    /// (`EPDFAnnot_GetStampDrawing`); `None` for a stamp without one, or an
+    /// annotation that is not a stamp.
+    pub fn stamp_drawing(&self) -> Option<u32> {
+        // SAFETY: the handle is live.
+        let drawing = unsafe { pdfium_sys::EPDFAnnot_GetStampDrawing(self.as_raw()) };
+        (drawing != 0).then_some(drawing)
+    }
+
     /// Place a drawing of the document in this stamp, under a wrapper of its
     /// own that fits it into the box (`EPDFAnnot_SetStampDrawing`), honouring
     /// any `/EMBD_Metadata` turn. The old appearance is replaced whole.
