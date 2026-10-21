@@ -223,3 +223,168 @@ fn a_file_probe_answers_its_security_under_a_key() {
     assert_eq!(envelope["result"]["security"]["encryptionRequiresPassword"], json!(true));
     assert!(envelope["result"].get("encryptionState").is_none(), "{envelope}");
 }
+
+// --- Field scopes (upstream `test/auth/scope/fields.test.ts`, 4b2cdb395).
+
+mod fields {
+    use epdf_engine::auth::scope::{
+        CollabEntity, DocCapability, FieldAction, FieldActionPattern, FieldFilter, FieldGroupRight,
+        FieldWriteAction, IdentityClaims, ParsedScope, check_any_field_action, check_capability,
+        check_field_action, check_set_group, decode_pdf_bits, expand_raw_scope, field_rights_of,
+        parse_all, parse_scope,
+    };
+    use epdf_engine::session::authority::SessionAuthority;
+
+    use FieldWriteAction::{Fill, Sign};
+
+    fn scope(entries: &[&str]) -> Vec<ParsedScope> {
+        parse_all(&entries.iter().map(|s| s.to_string()).collect::<Vec<_>>()).unwrap()
+    }
+
+    fn none() -> epdf_engine::auth::scope::PdfBits {
+        decode_pdf_bits(Some(0))
+    }
+
+    #[test]
+    fn parse_with_fill_sign_set_group_and_wildcard_by_all_or_group() {
+        for (raw, action) in [
+            ("fill", FieldActionPattern::One(FieldAction::Fill)),
+            ("sign", FieldActionPattern::One(FieldAction::Sign)),
+            ("set-group", FieldActionPattern::One(FieldAction::SetGroup)),
+            ("*", FieldActionPattern::Any),
+        ] {
+            assert_eq!(
+                parse_scope(&format!("fields:{raw}:all")).unwrap(),
+                ParsedScope::FieldCollab { action, filter: FieldFilter::All },
+            );
+            assert_eq!(
+                parse_scope(&format!("fields:{raw}:group=buyer")).unwrap(),
+                ParsedScope::FieldCollab { action, filter: FieldFilter::Group("buyer".into()) },
+            );
+        }
+    }
+
+    #[test]
+    fn refuse_filters_about_who_made_a_field_and_actions_fields_have_not() {
+        for raw in [
+            "fields:fill:self",
+            "fields:sign:createdBy=alice",
+            "fields:create:all",
+            "fields:update:group=buyer",
+            "fields:fill:group=",
+        ] {
+            assert!(parse_scope(raw).is_err(), "{raw} parsed");
+        }
+    }
+
+    #[test]
+    fn let_the_holder_see_the_form_groups_limit_writes_never_reads() {
+        let granted = expand_raw_scope(&["fields:fill:group=buyer".into()], none()).unwrap();
+        assert!(granted.contains(&DocCapability::DocFormsRead));
+        assert!(!granted.contains(&DocCapability::DocFormsFill));
+    }
+
+    #[test]
+    fn a_group_scope_reaches_its_group_only() {
+        let buyer = scope(&["doc.open", "fields:fill:group=buyer", "fields:sign:group=buyer"]);
+        assert!(check_field_action(Fill, Some("buyer"), &buyer, none()));
+        assert!(check_field_action(Sign, Some("buyer"), &buyer, none()));
+        assert!(!check_field_action(Fill, Some("seller"), &buyer, none()));
+        // A field in no group is filled only by an unrestricted filler.
+        assert!(!check_field_action(Fill, None, &buyer, none()));
+    }
+
+    #[test]
+    fn narrows_per_action_a_fill_scope_says_nothing_about_signing() {
+        let parsed = scope(&["doc.forms.fill", "doc.sign", "fields:fill:group=buyer"]);
+        assert!(!check_field_action(Fill, Some("seller"), &parsed, none()));
+        assert!(check_field_action(Sign, Some("seller"), &parsed, none()));
+    }
+
+    #[test]
+    fn without_a_fields_scope_the_broad_capability_decides_for_every_field() {
+        let fill = scope(&["doc.forms.fill"]);
+        assert!(check_field_action(Fill, Some("seller"), &fill, none()));
+        assert!(check_field_action(Fill, None, &fill, none()));
+        assert!(!check_field_action(Sign, Some("seller"), &fill, none()));
+        assert!(check_field_action(Fill, Some("seller"), &scope(&["*"]), none()));
+    }
+
+    #[test]
+    fn pdf_permissions_stays_what_the_file_allows_design_is_never_narrowed() {
+        let bits = decode_pdf_bits(Some((1 << 3) | (1 << 5)));
+        let parsed = scope(&["pdf.permissions", "fields:*:group=buyer"]);
+        assert!(check_field_action(Fill, Some("buyer"), &parsed, bits));
+        assert!(!check_field_action(Fill, Some("seller"), &parsed, bits));
+        assert!(check_capability(DocCapability::DocFormsModify, &parsed, bits));
+    }
+
+    #[test]
+    fn some_field_a_fields_scope_or_the_broad_capability() {
+        let buyer = scope(&["doc.open", "fields:fill:group=buyer", "fields:sign:group=buyer"]);
+        assert!(check_any_field_action(Fill, &buyer, none()));
+        assert!(check_any_field_action(Fill, &scope(&["doc.forms.fill"]), none()));
+        assert!(!check_any_field_action(Fill, &scope(&["doc.open"]), none()));
+        assert!(!check_any_field_action(Sign, &scope(&["fields:fill:group=buyer"]), none()));
+    }
+
+    #[test]
+    fn your_own_default_group_always_another_with_fields_set_group_for_it() {
+        use CollabEntity::{Annotations, Fields};
+        assert!(check_set_group(Fields, "legal", Some("legal"), &[]));
+        let buyer = scope(&["fields:set-group:group=buyer"]);
+        assert!(check_set_group(Fields, "buyer", Some("legal"), &buyer));
+        assert!(!check_set_group(Fields, "seller", Some("legal"), &buyer));
+        // Each entity's set-group is its own.
+        assert!(!check_set_group(
+            Fields,
+            "buyer",
+            Some("legal"),
+            &scope(&["annotations:set-group:all"])
+        ));
+        assert!(!check_set_group(
+            Annotations,
+            "buyer",
+            Some("legal"),
+            &scope(&["fields:set-group:all"])
+        ));
+    }
+
+    #[test]
+    fn field_rights_list_the_groups_with_the_callers_own_for_set_group() {
+        let parsed = scope(&["fields:fill:group=buyer", "fields:set-group:group=seller"]);
+        let rights = field_rights_of(&parsed, none(), Some("legal"));
+        assert_eq!(rights.fill, FieldGroupRight::Groups(vec!["buyer".into()]));
+        assert_eq!(rights.sign, FieldGroupRight::none());
+        assert_eq!(
+            rights.set_group,
+            FieldGroupRight::Groups(vec!["seller".into(), "legal".into()])
+        );
+        assert!(rights.fill.covers(Some("buyer")));
+        assert!(!rights.fill.covers(None));
+        assert_eq!(field_rights_of(&scope(&["*"]), none(), None).sign, FieldGroupRight::All);
+    }
+
+    #[test]
+    fn the_authority_refuses_another_group_without_the_scope() {
+        let identity = IdentityClaims { group_id: Some("legal".into()), ..Default::default() };
+        let authority =
+            SessionAuthority::new(&["doc.forms.modify".into()], identity, none()).unwrap();
+        assert!(authority.allows_field_group("legal"));
+        assert!(!authority.allows_field_group("buyer"));
+
+        let buyer = SessionAuthority::new(
+            &[
+                "doc.open".into(),
+                "fields:fill:group=buyer".into(),
+                "fields:sign:group=buyer".into(),
+            ],
+            IdentityClaims::default(),
+            none(),
+        )
+        .unwrap();
+        assert!(buyer.allows_field_write(Fill, Some("buyer")));
+        assert!(!buyer.allows_field_write(Fill, Some("seller")));
+        assert!(buyer.allows_some_field_write(Sign));
+    }
+}

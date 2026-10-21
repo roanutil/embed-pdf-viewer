@@ -25,11 +25,12 @@ pub mod types;
 pub use parser::{InvalidScope, parse_scope, validate_scope_array};
 pub use pdf_bits::decode_pdf_bits;
 pub use resolver::{
-    Capabilities, check_any_capability, check_capability, check_collab, check_set_group,
-    expand_raw_scope, expanded_capabilities, filter_matches, materialize_pdf_permissions,
-    parse_all,
+    Capabilities, check_any_capability, check_any_field_action, check_capability, check_collab,
+    check_field_action, check_set_group, expand_raw_scope, expanded_capabilities, field_rights_of,
+    filter_matches, materialize_pdf_permissions, parse_all,
 };
 pub use types::{
     CollabAction, CollabActionPattern, CollabEntity, CollabFilter, CollabTarget, DocCapability,
+    FieldAction, FieldActionPattern, FieldFilter, FieldGroupRight, FieldRights, FieldWriteAction,
     IdentityClaims, ParsedScope, PdfBits,
 };

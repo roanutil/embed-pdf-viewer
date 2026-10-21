@@ -22,9 +22,10 @@
 //! So after open, PDFium is not enforcing anything. This is what is.
 
 use crate::auth::scope::{
-    Capabilities, CollabAction, CollabTarget, DocCapability, IdentityClaims, InvalidScope,
-    ParsedScope, PdfBits, check_capability, check_collab, check_set_group, expanded_capabilities,
-    parse_all,
+    Capabilities, CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight,
+    FieldRights, FieldWriteAction, IdentityClaims, InvalidScope, ParsedScope, PdfBits,
+    check_any_field_action, check_capability, check_collab, check_field_action, check_set_group,
+    expanded_capabilities, field_rights_of, parse_all,
 };
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::signature::protection::protected_capabilities;
@@ -136,7 +137,52 @@ impl SessionAuthority {
 
     /// `ScopeGuard.canSetGroup`: assigning `group_id` to an annotation.
     pub fn allows_set_group(&self, group_id: &str) -> bool {
-        check_set_group(group_id, self.identity.group_id.as_deref(), &self.scope)
+        check_set_group(
+            CollabEntity::Annotations,
+            group_id,
+            self.identity.group_id.as_deref(),
+            &self.scope,
+        )
+    }
+
+    /// `allowsFieldWrite`: filling in or signing the field in `group_id`
+    /// (`None`: in no group). What the signatures forbid comes first
+    /// (`checkFieldAction`'s `protection`).
+    pub fn allows_field_write(&self, action: FieldWriteAction, group_id: Option<&str>) -> bool {
+        !self.protected().contains(&action.broad())
+            && check_field_action(action, group_id, &self.scope, self.pdf_bits)
+    }
+
+    /// `allowsSomeFieldWrite`: what a form verb checks before its fields
+    /// are known; each field is checked in the write.
+    pub fn allows_some_field_write(&self, action: FieldWriteAction) -> bool {
+        !self.protected().contains(&action.broad())
+            && check_any_field_action(action, &self.scope, self.pdf_bits)
+    }
+
+    /// `authorizeFieldGroup`'s check: putting a field in `group_id`.
+    pub fn allows_field_group(&self, group_id: &str) -> bool {
+        check_set_group(
+            CollabEntity::Fields,
+            group_id,
+            self.identity.group_id.as_deref(),
+            &self.scope,
+        )
+    }
+
+    /// `fieldRightsOf`, with the signatures' protection applied as
+    /// upstream applies it: a protected action is no field at all.
+    pub fn field_rights(&self) -> FieldRights {
+        let mut rights =
+            field_rights_of(&self.scope, self.pdf_bits, self.identity.group_id.as_deref());
+        let protected = self.protected();
+        if protected.contains(&FieldWriteAction::Fill.broad()) {
+            rights.fill = FieldGroupRight::none();
+        }
+        if protected.contains(&FieldWriteAction::Sign.broad()) {
+            rights.sign = FieldGroupRight::none();
+        }
+        rights
     }
 
     /// Everything this caller may do, for an `/access`-style report.

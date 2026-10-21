@@ -3,7 +3,8 @@
 //! A transcription of `packages/engine/core/src/auth/scope/parser.ts`.
 
 use super::types::{
-    CollabAction, CollabActionPattern, CollabEntity, CollabFilter, DocCapability, ParsedScope,
+    CollabAction, CollabActionPattern, CollabEntity, CollabFilter, DocCapability, FieldAction,
+    FieldActionPattern, FieldFilter, ParsedScope,
 };
 
 /// A scope string that matches no known shape.
@@ -80,6 +81,9 @@ fn parse_collab(raw: &str) -> Result<ParsedScope, InvalidScope> {
     let action = &raw[idx1 + 1..idx2];
     let filter_str = &raw[idx2 + 1..];
 
+    if entity == "fields" {
+        return parse_field_scope(raw, action, filter_str);
+    }
     if entity != "annotations" {
         return Err(InvalidScope::new(raw, format!("unknown collab entity: {entity}")));
     }
@@ -109,6 +113,34 @@ fn parse_collab(raw: &str) -> Result<ParsedScope, InvalidScope> {
     }
 
     Ok(ParsedScope::Collab { entity: CollabEntity::Annotations, action, filter })
+}
+
+/// `fields:<fill|sign|set-group|*>:<all|group=NAME>` (`parseFieldScope`).
+/// A field's group is who fills it, and a field records no creator, so
+/// `self` and `createdBy=` are refused.
+fn parse_field_scope(
+    raw: &str,
+    action: &str,
+    filter_str: &str,
+) -> Result<ParsedScope, InvalidScope> {
+    let action = match action {
+        "fill" => FieldActionPattern::One(FieldAction::Fill),
+        "sign" => FieldActionPattern::One(FieldAction::Sign),
+        "set-group" => FieldActionPattern::One(FieldAction::SetGroup),
+        "*" => FieldActionPattern::Any,
+        other => return Err(InvalidScope::new(raw, format!("unknown fields action: {other}"))),
+    };
+    let filter = match parse_filter(filter_str, raw)? {
+        CollabFilter::All => FieldFilter::All,
+        CollabFilter::Group(group) => FieldFilter::Group(group),
+        other => {
+            return Err(InvalidScope::new(
+                raw,
+                format!("fields only support :all or :group=<id> filters (got :{})", other.kind()),
+            ));
+        }
+    };
+    Ok(ParsedScope::FieldCollab { action, filter })
 }
 
 fn parse_filter(s: &str, raw: &str) -> Result<CollabFilter, InvalidScope> {

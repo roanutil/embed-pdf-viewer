@@ -121,10 +121,12 @@ impl fmt::Display for DocCapability {
     }
 }
 
-/// Single-entity collaboration vocabulary. Only annotations today.
+/// What a collab scope is about. Both follow one grammar,
+/// `entity:action:filter`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CollabEntity {
     Annotations,
+    Fields,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -193,6 +195,117 @@ impl CollabFilter {
     }
 }
 
+/// What a field scope lets the holder do to a field (`FieldAction`): fill
+/// it in, sign it, or put it in a group. A field's group is who fills it,
+/// not who made it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FieldAction {
+    Fill,
+    Sign,
+    SetGroup,
+}
+
+impl FieldAction {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Fill => "fill",
+            Self::Sign => "sign",
+            Self::SetGroup => "set-group",
+        }
+    }
+}
+
+/// The action slot of a field scope, which may be the wildcard.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FieldActionPattern {
+    Any,
+    One(FieldAction),
+}
+
+impl FieldActionPattern {
+    pub fn covers(self, action: FieldAction) -> bool {
+        match self {
+            Self::Any => true,
+            Self::One(one) => one == action,
+        }
+    }
+}
+
+/// A field filter (`FieldFilter`): every field, or the fields of one group.
+/// Fields record no owner, so there is no `self` or `createdBy`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum FieldFilter {
+    All,
+    Group(String),
+}
+
+/// The two writes a field scope narrows (`FieldWriteAction`, `'fill' |
+/// 'sign'`), each with the broad capability that decides when no field
+/// scope names the action.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FieldWriteAction {
+    Fill,
+    Sign,
+}
+
+impl FieldWriteAction {
+    pub fn action(self) -> FieldAction {
+        match self {
+            Self::Fill => FieldAction::Fill,
+            Self::Sign => FieldAction::Sign,
+        }
+    }
+
+    /// `doc.forms.fill` to fill, `doc.sign` to sign.
+    pub fn broad(self) -> DocCapability {
+        match self {
+            Self::Fill => DocCapability::DocFormsFill,
+            Self::Sign => DocCapability::DocSign,
+        }
+    }
+}
+
+/// The form fields a session may act on, by group (`FieldGroupRight`):
+/// every field (`{ all: true }`), or only the fields of the listed groups
+/// (`{ all: false, groups }`, none when the list is empty). A field in no
+/// group counts only under `All`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FieldGroupRight {
+    All,
+    Groups(Vec<String>),
+}
+
+impl FieldGroupRight {
+    pub fn none() -> Self {
+        Self::Groups(Vec::new())
+    }
+
+    /// Whether a field in `group_id` (`None`: in no group) is covered.
+    pub fn covers(&self, group_id: Option<&str>) -> bool {
+        match self {
+            Self::All => true,
+            Self::Groups(groups) => group_id.is_some_and(|g| groups.iter().any(|x| x == g)),
+        }
+    }
+}
+
+/// What a session may do with form fields, per action (`FieldRights`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FieldRights {
+    /// The fields it may fill in.
+    pub fill: FieldGroupRight,
+    /// The fields it may sign.
+    pub sign: FieldGroupRight,
+    /// The groups it may put a field in: its own default group always among
+    /// them.
+    pub set_group: FieldGroupRight,
+}
+
+/// A parsed scope (`ParsedScope`).
+///
+/// TypeScript's `ParsedCollab` is a union on `entity`; here the two
+/// entities are two variants, because their actions and filters differ.
+/// `Collab` is always `entity: Annotations`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedScope {
     Capability(DocCapability),
@@ -200,6 +313,11 @@ pub enum ParsedScope {
         entity: CollabEntity,
         action: CollabActionPattern,
         filter: CollabFilter,
+    },
+    /// `fields:<fill|sign|set-group|*>:<all|group=X>`.
+    FieldCollab {
+        action: FieldActionPattern,
+        filter: FieldFilter,
     },
     /// The one virtual scope, `pdf.permissions`.
     Virtual,
