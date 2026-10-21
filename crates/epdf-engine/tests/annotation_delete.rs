@@ -160,8 +160,8 @@ fn a_delete_removes_the_annotation_the_typescript_engine_removed() {
     assert!(threads > 0, "no case deletes a thread");
 }
 
-/// Upstream answers a ref that names nothing `NotFound`
-/// (`resolveAnnotIndexRaw`), probed before anything is removed.
+/// The name is historical: upstream answers a ref that names nothing
+/// `NotFound` (`resolveAnnotIndexRaw`), probed before anything is removed.
 #[test]
 fn a_reference_that_names_nothing_is_an_invalid_reference() {
     let file = load();
@@ -440,6 +440,43 @@ fn a_popup_deleted_alone_unlinks_its_note_and_its_undo_links_it_again() {
     .expect("deleted");
     assert_eq!(deleted["result"]["items"][0]["meta"]["changed"], json!([note, popup]));
     assert!(read(&mut replay, &popup).is_none());
+}
+
+/// On a plain document a delete beside other ops can't be taken back if a
+/// later op refuses, so the change is refused before anything runs, and so
+/// is an undo that would delete beside other steps.
+#[test]
+fn a_plain_documents_change_that_deletes_beside_other_ops_is_refused_whole() {
+    let file = load();
+    let case = file.cases.iter().find(|c| c.name == "by-object-number").expect("a case");
+    let pon = case.page_object_number;
+    let mut replay = Replay::open(&file.fixture, DOC);
+    let before = listed(&mut replay, pon);
+    let refused = apply(
+        &mut replay,
+        "refused-1",
+        json!({ "ops": [
+            { "type": "annotations.delete", "ref": case.annotation_ref },
+            { "type": "annotations.delete",
+              "ref": { "kind": "objectNumber", "page": page_ref(pon), "objectNumber": 9_999 } },
+        ] }),
+    )
+    .expect_err("refused up front");
+    assert_eq!(refused["code"], "NotImplemented", "{refused}");
+    assert!(refused["message"].as_str().unwrap_or_default().contains("8.29"), "{refused}");
+    assert_eq!(listed(&mut replay, pon), before, "the delete ran");
+
+    // The undo of a two-create change deletes twice: refused before either.
+    let square = |x: f64| {
+        json!({ "type": "annotations.create", "page": page_ref(pon),
+        "data": { "subtype": "square", "box": { "x": x, "y": 10, "width": 20, "height": 20 } } })
+    };
+    apply(&mut replay, "create-2", json!({ "ops": [square(10.0), square(40.0)] }))
+        .expect("created");
+    let with_them = listed(&mut replay, pon);
+    let refused = apply(&mut replay, "undo-2", json!({ "undoOf": "create-2" })).expect_err("undo");
+    assert_eq!(refused["code"], "NotImplemented", "{refused}");
+    assert_eq!(listed(&mut replay, pon), with_them, "the undo deleted something");
 }
 
 // ── Ported from `runAnnotationMutationConformance` ─────────────────────────

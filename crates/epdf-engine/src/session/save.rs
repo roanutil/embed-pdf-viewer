@@ -165,20 +165,6 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    #[serde(rename = "annotation.deleted")]
-    AnnotationDeleted {
-        #[serde(rename = "page", with = "crate::identity::page_ref")]
-        page_object_number: PageObjectNumber,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
-    #[serde(rename = "annotation.moved")]
-    AnnotationMoved {
-        #[serde(rename = "page", with = "crate::identity::page_ref")]
-        page_object_number: PageObjectNumber,
-        #[serde(flatten)]
-        result: serde_json::Value,
-    },
     /// `annotations.flatten`, published only when something was applied.
     #[serde(rename = "annotations.flattened")]
     AnnotationsFlattened(serde_json::Value),
@@ -307,8 +293,6 @@ impl DocumentEventInit {
             | Self::SignatureCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
             | Self::AnnotationUpdated { result, .. }
-            | Self::AnnotationDeleted { result, .. }
-            | Self::AnnotationMoved { result, .. }
             | Self::PagesMoved { result, .. }
             | Self::PagesRotated { result, .. }
             | Self::PagesDeleted { result, .. }
@@ -323,8 +307,6 @@ impl DocumentEventInit {
         match self {
             Self::AnnotationCreated { .. } => "annotation.created",
             Self::AnnotationUpdated { .. } => "annotation.updated",
-            Self::AnnotationDeleted { .. } => "annotation.deleted",
-            Self::AnnotationMoved { .. } => "annotation.moved",
             Self::AnnotationsFlattened(_) => "annotations.flattened",
             Self::PagesMoved { .. } => "pages.moved",
             Self::PagesRotated { .. } => "pages.rotated",

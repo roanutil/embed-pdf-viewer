@@ -110,8 +110,6 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     let every: Vec<DocumentEventInit> = vec![
         DocumentEventInit::AnnotationCreated { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationUpdated { page_object_number: page(3), result: empty() },
-        DocumentEventInit::AnnotationDeleted { page_object_number: page(3), result: empty() },
-        DocumentEventInit::AnnotationMoved { page_object_number: page(3), result: empty() },
         DocumentEventInit::AnnotationsFlattened(nothing.clone()),
         DocumentEventInit::PagesMoved {
             page_object_numbers: vec![page(3)],
@@ -153,8 +151,9 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     // `signature.completed` from `epdf-viewer-host`'s publisher, because a
     // host answer carries one event. The attachment events are not here
     // either: they are a change's (`ChangeItem::events`), since attachment
-    // writes run only as `document.apply` ops (c2d7a5194).
-    assert_eq!(every.len(), 26, "the event list and the TypeScript union disagree");
+    // writes run only as `document.apply` ops (c2d7a5194). Nor are the
+    // annotation delete and reorder events, for the same reason (8.16).
+    assert_eq!(every.len(), 24, "the event list and the TypeScript union disagree");
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");
