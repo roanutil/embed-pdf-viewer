@@ -143,8 +143,8 @@ fn require_refs(
 /// nothing on the page answers to.
 ///
 /// Upstream resolves after promoting the page and finds a promoted inline
-/// annotation through the layer's births. A plain session has none (8.29),
-/// so the flatten resolves first; the promotion keeps every position.
+/// annotation through the layer's births. The flatten resolves first,
+/// which finds the same positions: the promotion keeps every position.
 fn positions_of(
     document: &pdfium::Document,
     page_index: u32,
@@ -183,8 +183,9 @@ fn open_all<'page>(
 /// in the session's open write transaction, whose stamp its `meta` carries.
 ///
 /// A refusal after the promotion leaves the page promoted, which a layer
-/// transaction would take back; this engine's plain sessions can't (8.29),
-/// so the sequence moves for it, as `after-first-write` asks.
+/// transaction would take back; this engine opens none around its writes
+/// until Task 8.30, so the sequence moves for it, as `after-first-write`
+/// asks.
 pub fn flatten(
     session: &DocumentSession,
     page_object_number: PageObjectNumber,

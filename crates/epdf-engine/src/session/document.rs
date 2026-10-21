@@ -43,9 +43,12 @@ use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
 /// How the underlying document was opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpenKind {
-    /// The whole file in memory, which is every open today.
+    /// The whole file in memory, opened plain (`openFatMemoryDocument`).
+    /// No open here makes one: `open.fatMem` opens its bytes as a layer
+    /// (`openBytesAsLayer`).
     FatMemory,
-    /// A base document plus a layer delta. Reserved; see the module docs.
+    /// A base document plus a layer delta: every open, including
+    /// `open.fatMem`, whose base is private to the session.
     Layer,
 }
 
@@ -148,6 +151,10 @@ pub struct DocumentSession {
     /// What this session keeps of its changes: every answer under its
     /// `opId`, and the records that undo them (`changeLedgerOf`).
     ledger: ChangeLedger,
+    /// Whether a write on a layer session also answers the layer artifact
+    /// (`persistLayerArtifact`). False for a session opened from bytes,
+    /// whose caller holds the document and never asked for artifacts.
+    persist_layer_artifact: bool,
 }
 
 /// What every meta of a write carries: its id, and whether it can be undone
@@ -161,9 +168,9 @@ pub struct WriteStamp {
 /// The write transaction a session is running (`OpenTransaction`).
 ///
 /// Upstream runs every write inside an `EPDFLayer` transaction that its
-/// abort drops whole. This engine opens `open.fatMem` as a plain document
-/// (Task 8.29), which has none, so a transaction here keeps a journal of the
-/// reverse steps of what it wrote instead, and an abort runs them backwards
+/// abort drops whole. This engine opens no layer transaction around its
+/// writes yet, so a transaction here keeps a journal of the reverse steps of
+/// what it wrote instead, and an abort runs them backwards
 /// ([`crate::features::changes::transaction`]). Task 8.30 extends it to
 /// every write kind, with the layer ceiling check at commit.
 #[derive(Debug)]
@@ -189,6 +196,36 @@ pub fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
         "reason": reason }))
 }
 
+/// `bytes` as a fresh layer over a private memory base
+/// (`WorkerHost.openBytesAsLayer`), with the base the layer reads through. The
+/// base must outlive the layer document, so the caller retains it until the
+/// session closes.
+///
+/// A missing password reports `DocPasswordRequired` and a wrong one
+/// `DocPasswordIncorrect`, as a plain open does, so a locked document parks
+/// and unlocks the same way.
+fn open_bytes_as_layer(
+    bytes: &[u8],
+    password: Option<&str>,
+) -> Result<(Document, Rc<BaseDocument>), EngineError> {
+    let base =
+        BaseDocument::from_bytes(Library::acquire(), bytes, password).map_err(|e| match e {
+            PdfiumError::Password if password.is_some() => EngineError::with_message(
+                EngineErrorCode::DocPasswordIncorrect,
+                "incorrect document password",
+            ),
+            PdfiumError::Password => EngineError::with_message(
+                EngineErrorCode::DocPasswordRequired,
+                "document requires a password",
+            ),
+            other => EngineError::with_message(EngineErrorCode::DocOpenFailed, other.to_string()),
+        })?;
+    let layer = Rc::new(base)
+        .open_layer()
+        .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string()))?;
+    Ok(layer.into_parts())
+}
+
 impl DocumentSession {
     pub fn new() -> Self {
         Self::with_id(next_session_id())
@@ -211,6 +248,7 @@ impl DocumentSession {
             held_object_numbers: Vec::new(),
             transaction: None,
             ledger: ChangeLedger::new(),
+            persist_layer_artifact: true,
         }
     }
 
@@ -220,6 +258,12 @@ impl DocumentSession {
 
     pub fn kind(&self) -> Option<OpenKind> {
         self.open.as_ref().map(|state| state.kind)
+    }
+
+    /// Whether a write answers the layer artifact (`persistLayerArtifact`):
+    /// a layer session that was not opened from bytes.
+    pub fn persists_layer_artifact(&self) -> bool {
+        self.kind() == Some(OpenKind::Layer) && self.persist_layer_artifact
     }
 
     pub fn is_open(&self) -> bool {
@@ -262,6 +306,13 @@ impl DocumentSession {
     }
 
     /// Open under a caller's authority.
+    ///
+    /// The bytes open as a fresh layer over a private memory base
+    /// (`WorkerHost.openBytesAsLayer`): reads fall through to the base, a
+    /// write promotes only what it touches, and the session hands out object
+    /// numbers past the file's. The session's kind is [`OpenKind::Layer`],
+    /// but a write answers no artifact: the caller holds the document, not
+    /// a layer (`persistLayerArtifact = false`).
     pub fn open_with(
         &mut self,
         bytes: Vec<u8>,
@@ -274,20 +325,7 @@ impl DocumentSession {
                 "document already open",
             ));
         }
-        let document =
-            Document::from_bytes(Library::acquire(), &bytes, password).map_err(|e| match e {
-                PdfiumError::Password if password.is_some() => EngineError::with_message(
-                    EngineErrorCode::DocPasswordIncorrect,
-                    "incorrect document password",
-                ),
-                PdfiumError::Password => EngineError::with_message(
-                    EngineErrorCode::DocPasswordRequired,
-                    "document requires a password",
-                ),
-                other => {
-                    EngineError::with_message(EngineErrorCode::DocOpenFailed, other.to_string())
-                }
-            })?;
+        let (document, base) = open_bytes_as_layer(&bytes, password)?;
 
         // PDFium's own subsystems, forms especially, consult the permission
         // bits and would otherwise refuse work this engine has already
@@ -309,7 +347,7 @@ impl DocumentSession {
 
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
-            kind: OpenKind::FatMemory,
+            kind: OpenKind::Layer,
             pages: PagePtrPool::new(),
             revisions: RevisionAuthority::new(self.session_id.clone()),
             records: Vec::new(),
@@ -319,7 +357,11 @@ impl DocumentSession {
         self.authority = authority;
         self.parked_bytes = None;
         self.password = password.map(str::to_owned);
+        self.persist_layer_artifact = false;
         self.loaded_sequence.set(self.mutation_sequence.get());
+        // Runs after `close` has dropped the layer document, which is the
+        // order the base's lifetime requires.
+        self.retain_until_close(move || drop(base));
         Ok(())
     }
 
@@ -711,11 +753,17 @@ impl DocumentSession {
     /// `DocumentSession.install`: move the session onto new bytes (a sealed
     /// signature), opened under its password. Every page it had is re-pinned
     /// (its revision bumped) and the bytes count as loaded.
+    ///
+    /// The sealed bytes open as a fresh layer over their own memory base, as
+    /// upstream's candidate does, so the session stays a layer. A session
+    /// that was not one persists no artifact from here on
+    /// (`SignatureMutator.verifySealed`); a layer keeps what it had.
     pub fn install(&mut self, bytes: Vec<u8>) -> Result<(), EngineError> {
-        let document = Document::from_bytes(Library::acquire(), &bytes, self.password.as_deref())
-            .map_err(|e| {
-            EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string())
-        })?;
+        let (document, base) = open_bytes_as_layer(&bytes, self.password.as_deref())
+            .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.message))?;
+        if self.kind() != Some(OpenKind::Layer) {
+            self.persist_layer_artifact = false;
+        }
         if document.is_encrypted() {
             document.set_runtime_owner_permissions(true);
         }
@@ -728,7 +776,7 @@ impl DocumentSession {
         state.pages.close_all();
         state.pages = PagePtrPool::new();
         state.document = document;
-        state.kind = OpenKind::FatMemory;
+        state.kind = OpenKind::Layer;
         state.records.clear();
         state.fully_enumerated = false;
         state.drawings.get_mut().forget();
@@ -737,6 +785,14 @@ impl DocumentSession {
         }
         self.mutation_sequence.set(self.mutation_sequence.get().saturating_add(1));
         self.loaded_sequence.set(self.mutation_sequence.get());
+        // The new version's objects may sit at numbers this session held.
+        self.held_object_numbers.clear();
+        if let Some(open) = self.transaction.as_mut() {
+            open.numbers_in_use.clear();
+        }
+        // The old document is closed; its base, retained at its open, goes at
+        // close with this one.
+        self.retain_until_close(move || drop(base));
         Ok(())
     }
 
@@ -935,9 +991,8 @@ fn no_transaction() -> EngineError {
     EngineError::with_message(EngineErrorCode::Unknown, "no transaction is open")
 }
 
-/// Object numbers (`DocumentSession.ts`, "object numbers"): only a layer
-/// has a last object number to read and raise, so a session whose document
-/// is not one has none.
+/// Object numbers (`DocumentSession.ts`, "object numbers"): the layer's last
+/// object number, read, raised and handed out.
 impl DocumentSession {
     pub fn object_number_authority(&self) -> ObjectNumberAuthority {
         self.object_number_authority
@@ -956,9 +1011,8 @@ impl DocumentSession {
     }
 
     /// `lastObjectNumber()`: every object the layer has is at or below it.
-    /// `None` for a session whose document is not a layer, which this engine
-    /// opens `open.fatMem` as (upstream opens those bytes as a layer,
-    /// `WorkerHost.openBytesAsLayer`).
+    /// `None` for a session whose document is not a layer, which no open
+    /// makes.
     pub fn last_object_number(&self) -> Result<Option<u32>, EngineError> {
         let state = self.state()?;
         if state.kind != OpenKind::Layer {
@@ -970,15 +1024,9 @@ impl DocumentSession {
     /// `raiseLastObjectNumber`: raise the layer's last object number to at
     /// least `last`, so the objects the next write makes for itself land
     /// above it. A raise outlives an abort. Refused with `LayerFull` past the
-    /// parser's limit. A session that is not a layer has no number to raise,
-    /// and nothing it hands out to protect, so this does nothing there.
+    /// parser's limit.
     pub fn raise_last_object_number(&self, last: u32) -> Result<(), EngineError> {
         let state = self.state()?;
-        // re-port (Task 8): 8.29 opens open.fatMem as a layer, after which
-        // every session has a number to raise.
-        if state.kind != OpenKind::Layer {
-            return Ok(());
-        }
         let document = state.document.document();
         if !document.raise_layer_last_object_number(last) {
             return Err(EngineError::with_message(
@@ -1010,16 +1058,6 @@ impl DocumentSession {
             .with_details(serde_json::json!({ "field": "count" })));
         }
         let state = self.state()?;
-        // re-port (Task 8): 8.29 opens open.fatMem as a layer; until then a
-        // fat-memory session is a plain document with no numbers to hand out.
-        if state.kind != OpenKind::Layer {
-            return Err(EngineError::with_message(
-                EngineErrorCode::NotImplemented,
-                "this session's document is not a layer, so it has no object numbers to hand \
-                 out: open.fatMem opens a plain document here, where upstream opens a layer \
-                 (Task 8.29)",
-            ));
-        }
         let document = state.document.document();
         let last = document.layer_last_object_number();
         if u64::from(last).saturating_add(count) > u64::from(OBJECT_NUMBER_ISSUE_LIMIT) {

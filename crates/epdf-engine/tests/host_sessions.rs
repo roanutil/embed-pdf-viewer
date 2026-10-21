@@ -77,7 +77,8 @@ fn a_document_that_needs_a_password_parks_rather_than_failing() {
     assert_eq!(security["encryptionRequiresPassword"], true);
 
     // The session exists and holds the key, which is what "parked" means.
-    let json = call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "locked" }), Vec::new());
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "locked" }), Vec::new());
     assert_eq!(
         json["error"]["code"],
         format!("{:?}", EngineErrorCode::DocPasswordRequired),
@@ -91,11 +92,7 @@ fn opening_the_same_key_twice_is_refused_rather_than_replacing() {
     // Silently dropping the first session would close a document another
     // caller is still reading through.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
     let json = call(
         &mut host,
         serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
@@ -110,11 +107,8 @@ fn an_open_without_its_bytes_is_refused_before_a_session_exists() {
     // The bytes are a payload, never a field, and an open that arrived
     // without them has to leave no half-made session behind.
     let mut host = Host::new();
-    let json = call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        Vec::new(),
-    );
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), Vec::new());
     assert_eq!(json["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat));
     assert_eq!(host.sessions().len(), 0, "a failed open left a session behind");
 }
@@ -124,11 +118,7 @@ fn a_close_reports_what_it_closed_and_a_second_one_reports_nothing() {
     // The count is how a host tells "closed it" from "there was nothing to
     // close", which a pool reconciling its own bookkeeping needs.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
 
     let json = call(&mut host, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
     assert_eq!(json["result"]["closedSessions"], 1);
@@ -165,11 +155,7 @@ fn a_shutdown_refuses_new_work_rather_than_serving_it() {
     // away, and an engine that quietly came back would let a supervisor keep
     // using one it had decided to discard.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
     call(&mut host, serde_json::json!({ "kind": "shutdown" }), Vec::new());
     assert_eq!(host.sessions().len(), 0);
 
@@ -186,11 +172,7 @@ fn checking_a_password_answers_without_changing_the_session() {
     // "Would this password help?" is what a prompt asks before it commits to
     // a reopen, so it must not unlock anything on the way.
     let mut host = Host::new();
-    call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
-        vec![bytes(PLAIN)],
-    );
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
 
     let json = call(
         &mut host,
@@ -206,7 +188,8 @@ fn checking_a_password_answers_without_changing_the_session() {
     // that the session is still readable afterwards.
     assert!(json["result"].is_object() || json["error"].is_object(), "no answer: {json}");
 
-    let json = call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    let json =
+        call(&mut host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
     assert!(json["result"]["pages"].is_array(), "the check disturbed the session: {json}");
 }
 
@@ -281,8 +264,8 @@ fn open_layer(host: &mut Host, doc: &str, extra: serde_json::Value) -> serde_jso
 fn an_open_answers_its_document_and_a_layers_last_object_number() {
     // `{ tag: 'open', docId, security, protection, objectNumbers?,
     // lastObjectNumber? }` (`WorkerHost.handleOpen`). A layer knows its last
-    // object number; this engine's fat-memory session is a plain document,
-    // which has none, so its answer carries none.
+    // object number, and `open.fatMem` opens its bytes as one
+    // (`openBytesAsLayer`), so its answer carries the same number.
     let mut host = Host::new();
     let layer = open_layer(&mut host, "layered", serde_json::json!({}));
     assert_eq!(layer["result"]["docId"], "layered", "{layer}");
@@ -301,7 +284,7 @@ fn an_open_answers_its_document_and_a_layers_last_object_number() {
         vec![bytes(PLAIN)],
     );
     assert_eq!(plain["result"]["docId"], "plain", "{plain}");
-    assert!(plain["result"].get("lastObjectNumber").is_none(), "{plain}");
+    assert_eq!(plain["result"]["lastObjectNumber"], layer["result"]["lastObjectNumber"], "{plain}");
 }
 
 #[test]
@@ -414,38 +397,73 @@ fn a_session_the_caller_numbers_hands_out_nothing() {
 }
 
 #[test]
-fn a_fat_memory_session_has_no_numbers_to_hand_out() {
-    // Upstream opens `open.fatMem` bytes as a layer (`openBytesAsLayer`);
-    // this engine opens a plain document, which has no last object number.
-    // Asked for numbers, it says so rather than inventing one.
+fn a_fat_memory_session_hands_out_numbers_past_its_file() {
+    // `open.fatMem` opens its bytes as a fresh layer (`openBytesAsLayer`),
+    // so the numbers it hands out start past the file's last one.
     let mut host = Host::new();
-    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
-    let refused = call(
-        &mut host,
-        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
-        vec![],
-    );
-    assert_eq!(refused["error"]["code"], "NotImplemented", "{refused}");
-}
-
-#[test]
-fn a_fat_memory_open_that_asks_for_numbers_is_refused_before_it_takes_the_key() {
-    // Refused before a session exists, so the `docId` stays free for an
-    // open that does not ask (re-port (Task 8): 8.29).
-    let mut host = Host::new();
-    let refused = call(
-        &mut host,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d", "reserveObjectNumbers": 2 }),
-        vec![bytes(PLAIN)],
-    );
-    assert_eq!(refused["error"]["code"], "NotImplemented", "{refused}");
-    assert_eq!(host.sessions().len(), 0);
     let opened = call(
         &mut host,
         serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
         vec![bytes(PLAIN)],
     );
-    assert!(opened.get("error").is_none(), "{opened}");
+    let last = opened["result"]["lastObjectNumber"].as_u64().expect("a layer's number");
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 2 }),
+        vec![],
+    );
+    assert_eq!(json["result"]["range"], serde_json::json!({ "first": last + 1, "count": 2 }));
+}
+
+#[test]
+fn a_fat_memory_open_hands_out_the_numbers_it_asked_for() {
+    let mut host = Host::new();
+    let plain = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "a" }),
+        vec![bytes(PLAIN)],
+    );
+    let file_last = plain["result"]["lastObjectNumber"].as_u64().expect("a number");
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "b", "reserveObjectNumbers": 2 }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(
+        json["result"]["objectNumbers"],
+        serde_json::json!({ "first": file_last + 1, "count": 2 }),
+        "{json}",
+    );
+    assert_eq!(json["result"]["lastObjectNumber"], file_last + 2, "{json}");
+}
+
+#[test]
+fn a_fat_memory_write_honours_its_floor_and_answers_no_artifact() {
+    // `objectNumberFloor` raises a fat-memory session's last object number
+    // as it does a layer's. The write answers no artifact
+    // (`persistLayerArtifact = false`), where a layer's carries one.
+    let mut host = Host::new();
+    call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
+    open_layer(&mut host, "l", serde_json::json!({}));
+    let write = |doc: &str| {
+        serde_json::json!({ "kind": "metadata.update", "docId": doc, "opId": "op-1",
+            "objectNumberFloor": 5000, "patch": { "title": "Floored" } })
+        .to_string()
+    };
+    let written = host.call(&write("d"), vec![]);
+    assert!(!written.json.contains("\"error\""), "{}", written.json);
+    assert!(written.payloads.is_empty(), "a fat-memory write answered an artifact");
+    let layered = host.call(&write("l"), vec![]);
+    assert!(!layered.json.contains("\"error\""), "{}", layered.json);
+    assert_eq!(layered.payloads.len(), 1, "a layer's write answers its artifact");
+
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
+        vec![],
+    );
+    let first = json["result"]["range"]["first"].as_u64().expect("a range");
+    assert!(first >= 5000, "{json}");
 }
 
 #[test]

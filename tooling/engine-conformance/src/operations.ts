@@ -198,7 +198,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: "A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. Rust hands numbers out on a layer session only: it opens open.fatMem bytes as a plain document, where WorkerHost.openBytesAsLayer opens a layer, so a fat-memory session answers NotImplemented (wire_contract STUBBED) until Task 8.29 opens it as a layer.",
+    note: "A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. Every session is a layer: open.fatMem opens its bytes as a fresh layer over a private base, as WorkerHost.openBytesAsLayer does.",
   },
   {
     kind: 'pages.workingSet',
@@ -557,7 +557,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A one-op change (applyOne) and an op of document.apply: the annotation goes with its thread and popups in one change (deletedWith), each checked against the authority before the first write, the page's inline annotations promoted first so a baseIndex keeps naming them. Answers only meta, the annotation first in meta.changed; the annotations.deleted event lists them all. A widget is refused for the form's ops. Its reverse brings everything back from the fork's capture at the same numbers and positions (annotation.restore), and that restore's reverse deletes it again, so an undone create can be redone. Only a layer can capture: until 8.29 opens open.fatMem as one, a plain session's delete runs but its undo is refused NotImplemented. Gated by vectors/annotation/delete.json through crates/epdf-engine/tests/annotation_delete.rs.",
+    note: "A one-op change (applyOne) and an op of document.apply: the annotation goes with its thread and popups in one change (deletedWith), each checked against the authority before the first write, the page's inline annotations promoted first so a baseIndex keeps naming them. Answers only meta, the annotation first in meta.changed; the annotations.deleted event lists them all. A widget is refused for the form's ops. Its reverse brings everything back from the fork's capture at the same numbers and positions (annotation.restore), and that restore's reverse deletes it again, so an undone create can be redone. Only a layer can capture, and open.fatMem opens one, so a change that deletes beside other ops is taken back whole when a later op refuses. Gated by vectors/annotation/delete.json through crates/epdf-engine/tests/annotation_delete.rs.",
   },
   // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.reorder (and the reorder op of document.apply).
   // {
@@ -804,7 +804,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call; a plain session keeps the pages already flattened (8.29). Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs.",
+    note: "A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call and keeps the pages already flattened, with no layer transaction around the write until 8.30. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs.",
   },
   {
     kind: 'redaction.apply',

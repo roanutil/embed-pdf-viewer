@@ -58,9 +58,9 @@ pub struct MutationFinalization {
     /// The session's sequence after the mutation. A consumer keying a
     /// cache on it re-reads when it moves.
     pub mutation_sequence: u64,
-    /// The layer artifact, for a layer session. `None` for a base session,
-    /// which has nothing to persist separately: its writes are in the
-    /// document and go out with the next save.
+    /// The layer artifact, for a layer session that persists one. `None` for
+    /// a session opened from bytes (`open.fatMem`), whose caller holds the
+    /// document: its writes go out with the next save.
     pub artifact: Option<Vec<u8>>,
 }
 
@@ -74,11 +74,11 @@ pub fn finish_mutation(
         session.note_mutation();
     }
 
-    let artifact = match session.kind() {
-        Some(super::document::OpenKind::Layer) => {
-            Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?)
-        }
-        _ => None,
+    // `saveLayerArtifact`: only a layer session that persists one.
+    let artifact = if session.persists_layer_artifact() {
+        Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?)
+    } else {
+        None
     };
 
     Ok(MutationFinalization { mutation_sequence: session.mutation_sequence(), artifact })

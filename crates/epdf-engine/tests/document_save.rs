@@ -281,19 +281,30 @@ fn an_encrypted_document_saves_to_one_that_needs_the_same_password() {
 }
 
 #[test]
-fn a_base_session_refuses_to_produce_a_layer_artifact() {
-    // The one precondition this engine checks that the wrapper cannot:
-    // PDFium has no way to tell a layer handle from a base one, and an
-    // artifact written from a base is not a thing anyone wants.
+fn a_session_opened_from_bytes_writes_a_layer_artifact_over_those_bytes() {
+    // `open.fatMem` opens its bytes as a fresh layer (`openBytesAsLayer`),
+    // so `document.saveLayerBuffer` writes an artifact, as upstream's does,
+    // and that artifact opens over the same bytes as a base.
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+    use epdf_engine::session::document::LayerOpenSource;
+
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "rotated").expect("rotated");
     let session = session(fixture(case), None);
+    let artifact =
+        save_layer_to_buffer(&session, LayerArtifactKind::Artifact, &CancelToken::never())
+            .expect("a fat-memory session is a layer");
 
-    for output in [LayerArtifactKind::Artifact, LayerArtifactKind::Delta] {
-        let refused = save_layer_to_buffer(&session, output, &CancelToken::never())
-            .expect_err("a base session is not a layer");
-        assert!(refused.is(EngineErrorCode::InvalidArg));
-    }
+    let registry = BaseDocumentRegistry::new();
+    let mut reopened = DocumentSession::new();
+    reopened
+        .open_layer_from(
+            registry.acquire_memory("rotated", &fixture(case), None).expect("base"),
+            &LayerOpenSource::Artifact(artifact),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("the artifact opens over the bytes");
+    assert_eq!(reopened.page_count().unwrap(), session.page_count().unwrap());
 }
 
 #[test]

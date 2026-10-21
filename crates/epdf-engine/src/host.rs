@@ -2485,11 +2485,6 @@ impl Host {
         let password = body.get("password").and_then(serde_json::Value::as_str);
         let key = header.key()?;
         let options = OpenOptions::parse(body)?;
-        // re-port (Task 8): 8.29. A plain document has no object numbers to
-        // hand out, so the open is refused before a session takes the key.
-        if options.reserve_object_numbers.is_some() {
-            return Err(fat_memory_has_no_object_numbers());
-        }
         // A native extension of the wire: the TypeScript enforces scope in
         // `engine/main`, above the worker, and a native host has no such
         // layer. Absent is `["*"]`, everything.
@@ -2525,9 +2520,7 @@ impl Host {
     /// and signed-document policy before it loads, so a parked session keeps
     /// them; and only an open that loaded hands out the numbers it asked
     /// for and reports the layer's last object number. A failed reserve
-    /// fails the open and leaves the session open, as upstream's does. A
-    /// session whose document is not a layer has no last object number
-    /// (`DocumentSession::last_object_number`), so its answer has none.
+    /// fails the open and leaves the session open, as upstream's does.
     fn open_answer(
         &mut self,
         key: &SessionKey,
@@ -2984,17 +2977,6 @@ fn object_number_count(body: &serde_json::Value, name: &str) -> Result<u64, Engi
         )
         .with_details(serde_json::json!({ "field": "count" }))),
     }
-}
-
-/// re-port (Task 8): 8.29. Upstream opens `open.fatMem` bytes as a layer
-/// (`WorkerHost.openBytesAsLayer`); this engine opens a plain document,
-/// which has no object numbers to hand out.
-fn fat_memory_has_no_object_numbers() -> EngineError {
-    EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        "this session's document is not a layer, so it has no object numbers to hand out: \
-         open.fatMem opens a plain document here, where upstream opens a layer (Task 8.29)",
-    )
 }
 
 /// `LayerOpenSource`, its bytes from payload `index`.

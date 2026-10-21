@@ -117,15 +117,13 @@ fn host() -> Host {
     )
 }
 
-/// `bytes` open as upstream's `open.fatMem` opens them: a layer over the
-/// bytes, whose new objects are numbered past the base file's
-/// (`annotation_create`'s `open`).
+/// `bytes` open through `open.fatMem`, a layer over the bytes whose new
+/// objects are numbered past the base file's (`annotation_create`'s `open`).
 fn open_bytes(bytes: Vec<u8>) -> Replay {
     let mut host = host();
     let opened = host.call(
-        &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": DOC,
-            "baseKey": "base", "layer": { "kind": "fresh" }, "password": null,
-            "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
+            "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),
         vec![bytes],
     );

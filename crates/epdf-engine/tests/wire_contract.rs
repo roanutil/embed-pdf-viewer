@@ -59,13 +59,7 @@ const NOT_YET_ROUTED: &[(&str, &str)] = &[
 /// against the runtime 1461b0c51 API (`// re-port (Task 8):`): `forms.import`
 /// with no format reads FDF, which that runtime removed. The owner removes
 /// its row; a row whose kind stops answering `NotImplemented` fails.
-///
-/// `objectNumbers.reserve` is routed (8.3) and hands out numbers on a layer
-/// session, but this test opens `open.fatMem`, which this engine opens as a
-/// plain document where upstream opens a layer (`openBytesAsLayer`), and a
-/// plain document has no object numbers to hand out. 8.29 opens it as a
-/// layer and removes the row.
-const STUBBED: &[(&str, &str)] = &[("forms.import", "8.22"), ("objectNumbers.reserve", "8.29")];
+const STUBBED: &[(&str, &str)] = &[("forms.import", "8.22")];
 
 #[derive(Debug)]
 struct Case {

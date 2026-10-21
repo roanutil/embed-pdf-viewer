@@ -63,7 +63,7 @@ fn opening_twice_is_refused_rather_than_leaking_the_first_document() {
     );
     // And the first document is still the one that is open.
     assert_eq!(session.page_count().expect("still open"), 14);
-    assert_eq!(session.kind(), Some(OpenKind::FatMemory));
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
 }
 
 #[test]
@@ -110,6 +110,9 @@ fn unlocking_consumes_the_parked_bytes() {
     assert!(session.is_open());
     assert!(!session.is_locked());
     assert_eq!(session.page_count().expect("open"), 1);
+    // The unlock loads the way the open would have: a layer over the bytes.
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
+    assert!(session.last_object_number().expect("open").is_some_and(|last| last > 0));
 }
 
 #[test]
@@ -614,22 +617,16 @@ fn a_layer_opens_from_its_raw_delta_and_not_its_artifact_against_another_base() 
 }
 
 #[test]
-fn a_layer_session_reserves_numbers_and_a_plain_one_has_none() {
+fn a_session_opened_from_bytes_reserves_numbers_past_the_file() {
     use epdf_engine::identity::ObjectNumberRange;
-    use epdf_engine::session::authority::SessionAuthority;
-    use epdf_engine::session::base_registry::BaseDocumentRegistry;
 
-    // `DocumentSession.reserveObjectNumbers`: the layer's last object number
-    // moves up by `count`, and the numbers passed are the session's.
-    let registry = BaseDocumentRegistry::new();
-    let mut session = DocumentSession::new();
-    session
-        .open_layer(
-            registry.acquire_memory("report", &report(), None).expect("base"),
-            SessionAuthority::unrestricted(),
-        )
-        .expect("open");
+    // `openBytesAsLayer`: the bytes open as a fresh layer over a private
+    // base, so the session has the file's last object number and hands out
+    // numbers past it (`DocumentSession.reserveObjectNumbers`).
+    let mut session = opened();
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
     let last = session.last_object_number().expect("open").expect("a layer has one");
+    assert!(last > 0, "a fresh layer starts at its file's last object number");
     let range = session.reserve_object_numbers(4).expect("reserve");
     assert_eq!(range, ObjectNumberRange { first: last + 1, count: 4 });
     assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
@@ -639,12 +636,26 @@ fn a_layer_session_reserves_numbers_and_a_plain_one_has_none() {
     // A raise never lowers, and outlives what it was for.
     session.raise_last_object_number(last).expect("raise");
     assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
+    session.raise_last_object_number(last + 10).expect("raise");
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 10));
+    assert_eq!(session.reserve_object_numbers(1).expect("reserve").first, last + 11);
+}
 
-    let mut plain = opened();
-    assert_eq!(plain.last_object_number().expect("open"), None);
-    assert_eq!(
-        plain.reserve_object_numbers(1).expect_err("no layer").code,
-        EngineErrorCode::NotImplemented,
-    );
-    plain.raise_last_object_number(10).expect("nothing to raise");
+#[test]
+fn a_session_opened_from_bytes_persists_no_artifact_and_a_layer_does() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    // `persistLayerArtifact`: false for `openBytesAsLayer`, whose caller
+    // holds the document, true for a layer opened over a shared base.
+    assert!(!opened().persists_layer_artifact());
+    let registry = BaseDocumentRegistry::new();
+    let mut layer = DocumentSession::new();
+    layer
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    assert!(layer.persists_layer_artifact());
 }

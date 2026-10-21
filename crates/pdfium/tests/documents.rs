@@ -227,7 +227,7 @@ fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
         .render_rgba_with_matrix(612, 792, identity, true, false)
         .expect("render the layer's page");
     assert!(
-        from_layer.bgra.chunks_exact(4).any(|pixel| pixel[..3] != [255, 255, 255]),
+        from_layer.bgra.as_chunks::<4>().0.iter().any(|pixel| pixel[..3] != [255, 255, 255]),
         "the layer's page draws something"
     );
 

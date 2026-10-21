@@ -111,8 +111,8 @@ pub struct AnnotationRemoveStep {
 ///
 /// `capture` is the fork's capture of the members as the delete removed
 /// them (`EPDFPage_ExportAnnotsRawToOwnedBuffer`), which only a layer can
-/// take: `None` for a session that is not one, which this engine opens
-/// `open.fatMem` as until Task 8.29, and whose delete can't be brought back.
+/// take, and every session is one: `None` only for a delete that removed
+/// nothing.
 /// `unlinked` is where upstream keeps a capture of each annotation that
 /// stayed and stopped naming a popup that went (`captureAfter`), which the
 /// fork exports only in a layer transaction (Task 8.30): here each is named,

@@ -523,11 +523,11 @@ fn require_unique_pages(pages: &[PageObjectNumber]) -> Result<(), EngineError> {
 /// flatten removes from `/Annots` leave every other position alone.
 ///
 /// Upstream is all or nothing: a page that fails, or a cancel, throws, and
-/// the layer transaction takes back every page before it. A plain session
-/// has no layer transaction (8.29), so the pages already changed stay
-/// changed, and the sequence moves for them before the refusal goes out
-/// (`after-first-write`: bookkeeping completes, and a refusal is no
-/// evidence of rollback).
+/// the layer transaction takes back every page before it. This engine opens
+/// no layer transaction around its writes until Task 8.30, so the pages
+/// already changed stay changed, and the sequence moves for them before the
+/// refusal goes out (`after-first-write`: bookkeeping completes, and a
+/// refusal is no evidence of rollback).
 pub fn flatten_pages(
     session: &DocumentSession,
     pages: &[PageObjectNumber],

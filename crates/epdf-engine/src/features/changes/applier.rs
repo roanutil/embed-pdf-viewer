@@ -198,8 +198,6 @@ pub fn apply(
     services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let deletes = ops.iter().any(|op| matches!(op, ChangeOp::AnnotationsDelete { .. }));
-    refuse_unrecoverable_delete(session, ops.len() > 1 && deletes)?;
     let ChangeServices { clock, ids, fonts } = services;
     let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
     let mut collected = Collected::default();
@@ -222,8 +220,6 @@ pub fn undo(
     services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let deletes = record.steps.iter().any(|step| matches!(step, ReverseStep::AnnotationRemove(_)));
-    refuse_unrecoverable_delete(session, record.steps.len() > 1 && deletes)?;
     let ChangeServices { clock, ids, fonts } = services;
     let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
     let mut collected = Collected::default();
@@ -233,27 +229,6 @@ pub fn undo(
         collected.push(&mut ctx, done, space)?;
     }
     Ok(collected.finish(authority))
-}
-
-/// A delete on a session that is not a layer captures nothing, so it can't
-/// be taken back: a change that deletes and has another op or step after
-/// or before it, which could be refused once the delete ran, is refused
-/// before anything runs. A delete alone has nothing to take it back from.
-fn refuse_unrecoverable_delete(
-    session: &DocumentSession,
-    could_need_taking_back: bool,
-) -> Result<(), EngineError> {
-    // re-port (Task 8): 8.29 opens open.fatMem as a layer, which captures
-    // what a delete removes; then this guard goes.
-    if could_need_taking_back && session.last_object_number()?.is_none() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::NotImplemented,
-            "a change that deletes an annotation beside other writes can't be taken back on \
-             this session: it is not a layer, so the delete captures nothing (open.fatMem opens \
-             a plain document here, where upstream opens a layer; Task 8.29)",
-        ));
-    }
-    Ok(())
 }
 
 /// Each run's item, measured as soon as it ran, and its reverse

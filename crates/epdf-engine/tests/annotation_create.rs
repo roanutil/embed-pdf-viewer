@@ -113,17 +113,14 @@ struct Created {
     event: Option<Value>,
 }
 
-/// The fixture open as upstream's `open.fatMem` opens it: a layer over the
-/// bytes (`openBytesAsLayer`), whose new objects are numbered past the base
-/// file's. This engine opens `open.fatMem` as a plain document until Task
-/// 8.29, which numbers a new object from the file's first free number, so
-/// the layer is opened by name here.
+/// The fixture open as upstream's local engine opens it: `open.fatMem`, a
+/// layer over the bytes (`openBytesAsLayer`) whose new objects are numbered
+/// past the base file's, with the pool its main thread names reserved.
 fn open(file: &VectorFile) -> Replay {
     let mut host = Host::new();
     let opened = host.call(
-        &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": DOC,
-            "baseKey": "base", "layer": { "kind": "fresh" }, "password": null,
-            "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
+            "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),
         vec![test_support::fixture(&file.fixture)],
     );

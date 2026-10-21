@@ -14,18 +14,15 @@
 //! annotation left on the page in order. That last one is what catches a
 //! delete that removed the wrong entry: the names would still look right.
 //!
-//! The fixture opens as upstream's `open.fatMem` opens it, a layer over the
-//! bytes (`openBytesAsLayer`): only a layer records where an inline
-//! annotation was born when a delete promotes its page, which is what keeps
-//! naming it by `baseIndex`, and only a layer can capture what a delete
-//! removes. This engine opens `open.fatMem` as a plain document until Task
-//! 8.29, so the layer is opened by name here.
+//! The fixture opens through `open.fatMem`, a layer over the bytes
+//! (`openBytesAsLayer`): only a layer records where an inline annotation was
+//! born when a delete promotes its page, which is what keeps naming it by
+//! `baseIndex`, and only a layer can capture what a delete removes.
 
 mod common;
 
 use common::page_ref;
 use common::replay::Replay;
-use epdf_engine::host::Host;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -71,19 +68,6 @@ fn load() -> VectorFile {
     file
 }
 
-/// `fixture` open as a fresh layer.
-fn open_layer(fixture: &str) -> Replay {
-    let mut host = Host::new();
-    let opened = host.call(
-        &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": DOC,
-            "baseKey": "base", "layer": { "kind": "fresh" }, "password": null })
-        .to_string(),
-        vec![test_support::fixture(fixture)],
-    );
-    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
-    Replay::adopt(host, DOC)
-}
-
 /// The page's annotations as `annotations.list` answers them.
 fn listed(replay: &mut Replay, pon: u32) -> Vec<Value> {
     let listing = replay
@@ -114,7 +98,7 @@ fn a_delete_removes_the_annotation_the_typescript_engine_removed() {
     let mut threads = 0usize;
 
     for case in &file.cases {
-        let mut replay = open_layer(&file.fixture);
+        let mut replay = Replay::open(&file.fixture, DOC);
         let answer =
             replay.replay(&case.request).unwrap_or_else(|e| panic!("{}: delete: {e}", case.name));
         let result = &answer["result"];
@@ -166,7 +150,7 @@ fn a_delete_removes_the_annotation_the_typescript_engine_removed() {
 fn a_reference_that_names_nothing_is_an_invalid_reference() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     for (reference, what) in [
         (
@@ -203,7 +187,7 @@ fn a_reference_that_names_nothing_is_an_invalid_reference() {
 #[test]
 fn an_attached_widget_is_not_deleted_through_the_annotation_plane() {
     let fixture = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
-    let mut replay = open_layer(fixture);
+    let mut replay = Replay::open(fixture, DOC);
     let pages = replay
         .replay(&json!({ "kind": "pages.list", "jobId": "<job>", "docId": DOC }))
         .expect("pages");
@@ -251,7 +235,7 @@ fn a_delete_takes_its_thread_and_its_undo_brings_it_back_where_it_was() {
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "by-object-number").expect("the thread case");
     let pon = case.page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
 
     let applied = apply(
@@ -290,7 +274,7 @@ fn a_delete_takes_its_thread_and_its_undo_brings_it_back_where_it_was() {
 fn an_undone_create_can_be_redone() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     let created = apply(
         &mut replay,
@@ -323,7 +307,7 @@ fn a_refused_change_takes_its_delete_back() {
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "by-object-number").expect("the thread case");
     let pon = case.page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     let refused = apply(
         &mut replay,
@@ -346,7 +330,7 @@ fn a_delete_that_expects_otherwise_is_refused() {
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "the-last-annotation").expect("a case");
     let pon = case.page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     let target = before.iter().find(|a| a["ref"] == case.annotation_ref).expect("the target");
     let refused = apply(
@@ -368,27 +352,6 @@ fn a_delete_that_expects_otherwise_is_refused() {
     assert_eq!(names(&listed(&mut replay, pon)), case.remaining);
 }
 
-/// On a document that is not a layer the delete still runs, but nothing
-/// captures what it removes, so its undo is refused rather than claimed.
-#[test]
-fn a_delete_on_a_plain_document_runs_and_its_undo_says_why_it_cannot() {
-    let file = load();
-    let case = file.cases.iter().find(|c| c.name == "the-last-annotation").expect("a case");
-    let pon = case.page_object_number;
-    let mut replay = Replay::open(&file.fixture, DOC);
-    apply(
-        &mut replay,
-        "delete-1",
-        json!({ "ops": [{ "type": "annotations.delete", "ref": case.annotation_ref }] }),
-    )
-    .expect("applied");
-    assert_eq!(names(&listed(&mut replay, pon)), case.remaining);
-    let refused = apply(&mut replay, "undo-1", json!({ "undoOf": "delete-1" })).expect_err("undo");
-    assert_eq!(refused["code"], "NotImplemented", "{refused}");
-    assert!(refused["message"].as_str().unwrap_or_default().contains("8.29"), "{refused}");
-    assert_eq!(names(&listed(&mut replay, pon)), case.remaining, "the undo wrote something");
-}
-
 /// A popup deleted without the note it shows leaves the note, which stops
 /// naming it; the delete's undo brings the popup back and the note names
 /// it again. Deleting the note takes its popup with it.
@@ -396,7 +359,7 @@ fn a_delete_on_a_plain_document_runs_and_its_undo_says_why_it_cannot() {
 fn a_popup_deleted_alone_unlinks_its_note_and_its_undo_links_it_again() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let created = apply(
         &mut replay,
         "create-1",
@@ -442,41 +405,49 @@ fn a_popup_deleted_alone_unlinks_its_note_and_its_undo_links_it_again() {
     assert!(read(&mut replay, &popup).is_none());
 }
 
-/// On a plain document a delete beside other ops can't be taken back if a
-/// later op refuses, so the change is refused before anything runs, and so
-/// is an undo that would delete beside other steps.
+/// A delete beside other ops on an `open.fatMem` session is all or none:
+/// a later op's refusal takes the delete back, and the inline annotations
+/// its promotion turned into objects still answer to their `baseIndex`
+/// names through their births. The undo of a two-create change deletes
+/// both.
 #[test]
-fn a_plain_documents_change_that_deletes_beside_other_ops_is_refused_whole() {
+fn a_fat_memory_change_that_deletes_beside_other_ops_is_all_or_none() {
     let file = load();
-    let case = file.cases.iter().find(|c| c.name == "by-object-number").expect("a case");
-    let pon = case.page_object_number;
+    let pon = file.cases[0].page_object_number;
     let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
+    let inline: Vec<Value> =
+        refs(&before).into_iter().filter(|r| r["kind"] == "baseIndex").collect();
+    assert!(inline.len() > 1, "the fixture has inline annotations");
     let refused = apply(
         &mut replay,
         "refused-1",
         json!({ "ops": [
-            { "type": "annotations.delete", "ref": case.annotation_ref },
+            { "type": "annotations.delete", "ref": inline[0] },
             { "type": "annotations.delete",
               "ref": { "kind": "objectNumber", "page": page_ref(pon), "objectNumber": 9_999 } },
         ] }),
     )
-    .expect_err("refused up front");
-    assert_eq!(refused["code"], "NotImplemented", "{refused}");
-    assert!(refused["message"].as_str().unwrap_or_default().contains("8.29"), "{refused}");
-    assert_eq!(listed(&mut replay, pon), before, "the delete ran");
+    .expect_err("the second op is refused");
+    assert_eq!(refused["code"], "NotFound", "{refused}");
+    assert_eq!(listed(&mut replay, pon), before, "the delete was left behind");
+    for (at, reference) in inline.iter().enumerate() {
+        replay
+            .replay(&json!({ "kind": "annotations.update", "jobId": "<job>", "opId": "<op>",
+                "docId": DOC, "ref": reference, "patch": { "contents": format!("still {at}") } }))
+            .unwrap_or_else(|e| panic!("{reference} no longer resolves: {e}"));
+    }
 
-    // The undo of a two-create change deletes twice: refused before either.
     let square = |x: f64| {
         json!({ "type": "annotations.create", "page": page_ref(pon),
         "data": { "subtype": "square", "box": { "x": x, "y": 10, "width": 20, "height": 20 } } })
     };
+    let without_them = listed(&mut replay, pon);
     apply(&mut replay, "create-2", json!({ "ops": [square(10.0), square(40.0)] }))
         .expect("created");
-    let with_them = listed(&mut replay, pon);
-    let refused = apply(&mut replay, "undo-2", json!({ "undoOf": "create-2" })).expect_err("undo");
-    assert_eq!(refused["code"], "NotImplemented", "{refused}");
-    assert_eq!(listed(&mut replay, pon), with_them, "the undo deleted something");
+    assert_eq!(listed(&mut replay, pon).len(), without_them.len() + 2);
+    apply(&mut replay, "undo-2", json!({ "undoOf": "create-2" })).expect("undone");
+    assert_eq!(listed(&mut replay, pon), without_them, "the undo left a square behind");
 }
 
 // ── Ported from `runAnnotationMutationConformance` ─────────────────────────
@@ -486,7 +457,7 @@ fn a_plain_documents_change_that_deletes_beside_other_ops_is_refused_whole() {
 fn a_created_annotation_deleted_by_its_number_is_named_and_gone() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let created = replay
         .replay(&json!({ "kind": "annotations.create", "jobId": "<job>", "docId": DOC,
             "page": page_ref(pon), "draft": { "subtype": "highlight",
@@ -514,7 +485,7 @@ fn a_created_annotation_deleted_by_its_number_is_named_and_gone() {
 fn an_inline_annotation_deleted_is_named_by_its_birth_and_the_others_keep_theirs() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     let inline = before.iter().find(|a| a["ref"]["kind"] == "baseIndex").expect("an inline one");
     let deleted = replay

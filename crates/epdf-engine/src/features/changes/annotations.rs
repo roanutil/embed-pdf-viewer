@@ -246,7 +246,6 @@ fn write_delete(
     reference: &AnnotationRef,
 ) -> Result<Done, EngineError> {
     let page = reference.page();
-    let is_layer = ctx.session.last_object_number()?.is_some();
     let session = &*ctx.session;
     let owned = session.document()?;
     let page_index = owned.page_index(page)?;
@@ -269,10 +268,7 @@ fn write_delete(
                 .then(|| UnlinkedPopup { reference: parent, popup: popup.clone() })
         })
         .collect();
-    let capture = if members.is_empty() || !is_layer {
-        // re-port (Task 8): 8.29 opens open.fatMem as a layer; a session
-        // that is not one has nothing to capture with, and its delete
-        // can't be brought back.
+    let capture = if members.is_empty() {
         None
     } else {
         let indexes = refs
@@ -394,10 +390,8 @@ pub fn restore_annotations(
     }
     let Some(capture) = &step.capture else {
         return Err(EngineError::with_message(
-            EngineErrorCode::NotImplemented,
-            "this delete can't be brought back: its session is not a layer, so nothing was \
-             captured (open.fatMem opens a plain document here, where upstream opens a layer; \
-             Task 8.29)",
+            EngineErrorCode::InvalidArg,
+            "this delete can't be brought back: its record carries no capture of what it removed",
         ));
     };
     // An import runs inside a layer transaction. This engine opens none

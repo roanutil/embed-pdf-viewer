@@ -395,10 +395,9 @@ pub fn delete_attachment(
 ///
 /// Upstream captures the file's objects (`EPDFAttachment_ExportRawToOwnedBuffer`)
 /// and imports them back (`EPDFAttachment_ImportRaw`), which the fork allows
-/// only inside a layer transaction. This engine opens a plain document and
-/// takes back a refused change through reverse steps, with no layer
-/// transaction (8.30), so the capture is the file as the API reads and
-/// writes it: its name, type, description, `/Params` dates and checksum,
+/// only inside a layer transaction. This engine takes back a refused change
+/// through reverse steps, with no layer transaction (8.30), so the capture
+/// is the file as the API reads and writes it: its name, type, description, `/Params` dates and checksum,
 /// and decoded bytes. What it does not keep: the filespec's object number,
 /// whether a stream was shared with another entry, `/Params /Size` (which
 /// the restore derives from the bytes), a `/CheckSum` that is not hex (a

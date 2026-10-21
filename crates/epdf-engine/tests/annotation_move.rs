@@ -12,16 +12,13 @@
 //!
 //! A reorder names nothing (bc0057f3a): an annotation with no `/NM` still
 //! has none after it, and an inline one keeps its `baseIndex` name. That
-//! needs the layer upstream opens `open.fatMem` as (`openBytesAsLayer`),
-//! which records where a promoted page's inline annotations were born; this
-//! engine opens `open.fatMem` as a plain document until Task 8.29, so the
-//! layer is opened by name here.
+//! needs the layer `open.fatMem` opens (`openBytesAsLayer`), which records
+//! where a promoted page's inline annotations were born.
 
 mod common;
 
 use common::page_ref;
 use common::replay::Replay;
-use epdf_engine::host::Host;
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -67,19 +64,6 @@ fn load() -> VectorFile {
     file
 }
 
-/// `fixture` open as a fresh layer.
-fn open_layer(fixture: &str) -> Replay {
-    let mut host = Host::new();
-    let opened = host.call(
-        &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": DOC,
-            "baseKey": "base", "layer": { "kind": "fresh" }, "password": null })
-        .to_string(),
-        vec![test_support::fixture(fixture)],
-    );
-    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
-    Replay::adopt(host, DOC)
-}
-
 /// The page's annotations as `annotations.list` answers them.
 fn listed(replay: &mut Replay, pon: u32) -> Vec<Value> {
     let listing = replay
@@ -105,7 +89,7 @@ struct Reordered {
 }
 
 fn run(file: &VectorFile, case: &Case) -> Reordered {
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let answer = replay.replay(&case.request).unwrap_or_else(|e| panic!("{}: {e}", case.name));
     Reordered {
         result: answer["result"].clone(),
@@ -126,7 +110,7 @@ fn a_move_leaves_the_order_the_typescript_engine_left() {
     for case in &file.cases {
         // The starting order, so a case whose fixture drifted fails here
         // rather than being blamed on the reorder.
-        let mut fresh = open_layer(&file.fixture);
+        let mut fresh = Replay::open(&file.fixture, DOC);
         assert_eq!(
             names(&listed(&mut fresh, case.page_object_number)),
             case.before_order,
@@ -275,7 +259,7 @@ fn a_move_refuses_what_it_cannot_do_and_changes_nothing() {
         (json!([row(5)]), json!({ "before": gone }), "NotFound", "a neighbour not on the page"),
         (json!([gone]), json!("start"), "NotFound", "a row not on the page"),
     ] {
-        let mut replay = open_layer(&file.fixture);
+        let mut replay = Replay::open(&file.fixture, DOC);
         let start = listed(&mut replay, pon);
         let refused = replay
             .replay(&json!({ "kind": "annotations.reorder", "jobId": "<job>", "opId": "<op>",
@@ -286,7 +270,7 @@ fn a_move_refuses_what_it_cannot_do_and_changes_nothing() {
     }
 
     // A position the wire doesn't have is not a position.
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let refused = replay
         .replay(&json!({ "kind": "annotations.reorder", "jobId": "<job>", "opId": "<op>",
             "docId": DOC, "page": page_ref(pon), "refs": [row(5)], "toIndex": 3 }))
@@ -301,7 +285,7 @@ fn a_reorder_is_undone_beside_its_old_neighbours() {
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "a-scattered-block").expect("a case");
     let pon = case.page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = refs(&listed(&mut replay, pon));
     let applied = replay
         .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
@@ -336,7 +320,7 @@ fn an_undo_leaves_a_row_that_moved_since() {
     let file = load();
     let pon = file.cases[0].page_object_number;
     let row = |n: u32| json!({ "kind": "objectNumber", "page": page_ref(pon), "objectNumber": n });
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let reorder = |replay: &mut Replay, op_id: &str, refs: Value, position: Value| {
         replay
             .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
@@ -366,7 +350,7 @@ fn an_undo_leaves_a_row_that_moved_since() {
 #[test]
 fn a_widget_is_ordered_by_the_forms_verb() {
     let fixture = "tooling/engine-conformance/fixtures/annotation_appearances.pdf";
-    let mut replay = open_layer(fixture);
+    let mut replay = Replay::open(fixture, DOC);
     let forms = replay
         .replay(&json!({ "kind": "forms.list", "jobId": "<job>", "docId": DOC }))
         .expect("forms");
@@ -413,7 +397,7 @@ fn reorder(replay: &mut Replay, pon: u32, refs: Value, position: Value) -> Value
 fn an_inline_annotation_reordered_keeps_its_birth_name() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let before = listed(&mut replay, pon);
     let inline = before.iter().find(|a| a["ref"]["kind"] == "baseIndex").expect("an inline one");
     let at_bottom = before[0]["ref"] == inline["ref"];
@@ -437,7 +421,7 @@ fn an_inline_annotation_reordered_keeps_its_birth_name() {
 fn a_reorder_puts_rows_right_after_or_before_their_neighbour() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let [a, b, c] =
         ["order-a", "order-b", "order-c"].map(|label| highlight(&mut replay, pon, label));
     let before = refs(&listed(&mut replay, pon));
@@ -462,7 +446,7 @@ fn a_reorder_puts_rows_right_after_or_before_their_neighbour() {
 fn a_reorder_keeps_the_order_given_at_the_bottom_or_the_top() {
     let file = load();
     let pon = file.cases[0].page_object_number;
-    let mut replay = open_layer(&file.fixture);
+    let mut replay = Replay::open(&file.fixture, DOC);
     let ids = ["multi-1", "multi-2", "multi-3"].map(|label| highlight(&mut replay, pon, label));
     let given = json!([ids[2], ids[0], ids[1]]);
     let bottom = reorder(&mut replay, pon, given.clone(), json!("start"));
