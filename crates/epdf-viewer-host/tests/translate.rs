@@ -1338,6 +1338,79 @@ fn a_refused_kernel_batch_rejects_every_effect_and_writes_nothing() {
 }
 
 #[test]
+fn a_kernel_field_edit_runs_as_upstreams_change_and_answers_in_the_kernels_shape() {
+    // The kernel's draft (a `widget` in the file's coordinates, its look
+    // under `appearance` with `{r, g, b}` colours) goes as upstream's v3
+    // draft; each edit answers `{field, meta}` and the kernel's event.
+    let mut host = form_host();
+    let draft = json!({ "family": "text", "name": "kernel.made",
+        "widget": { "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
+            "rect": { "left": 72, "bottom": 300, "right": 300, "top": 340 },
+            "appearance": { "interiorColor": { "r": 250, "g": 250, "b": 240 } } } });
+    let created = kernel_call(&mut host, "forms.createField", &[draft]).unwrap();
+    let field = created.value["field"].clone();
+    assert_eq!(field["name"], "kernel.made", "{}", created.value);
+    assert_eq!(created.event.expect("an event")["type"], "form.fieldCreated");
+    let widget = field["widgets"][0]["annotObjectNumber"].as_u64().expect("a widget");
+    // The widget sits where the kernel's rect put it, and wears its colour.
+    let form =
+        call_host_json(&mut host, json!({ "kind": "forms.list", "jobId": 41, "docId": "d1" }));
+    let row = form["result"]["widgets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["ref"]["objectNumber"] == widget)
+        .cloned()
+        .expect("the widget's row");
+    assert_eq!(row["interiorColor"], "#fafaf0", "{row}");
+    // The kernel reads the form in the file's coordinates.
+    let rect = &row["rect"];
+    let edges = ["left", "bottom", "right", "top"].map(|edge| rect[edge].as_f64().unwrap_or(-1.0));
+    assert_eq!(edges, [72.0, 300.0, 300.0, 340.0], "{row}");
+
+    let reference = kernel_field(field["fieldObjectNumber"].as_u64().unwrap() as u32);
+    let updated = kernel_call(
+        &mut host,
+        "forms.updateField",
+        &[reference.clone(), json!({ "family": "text", "required": true })],
+    )
+    .unwrap();
+    assert_eq!(updated.value["field"]["required"], true, "{}", updated.value);
+    assert_eq!(updated.event.expect("an event")["type"], "form.fieldUpdated");
+
+    let deleted = kernel_call(&mut host, "forms.deleteField", &[reference]).unwrap();
+    assert_eq!(deleted.value["deletedFieldObjectNumber"], field["fieldObjectNumber"]);
+    assert_eq!(
+        deleted.value["removedWidgets"][0]["annotObjectNumber"], widget,
+        "{}",
+        deleted.value
+    );
+    assert_eq!(deleted.event.expect("an event")["type"], "form.fieldDeleted");
+}
+
+#[test]
+fn a_kernel_widget_detach_answers_its_field_and_an_attach_is_refused() {
+    // `forms.removeWidget` answers the field without the widget;
+    // `forms.attachWidget` went upstream (d7bd2d277), so the kernel's call
+    // is refused rather than routed.
+    let mut host = form_host();
+    let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 7,
+        "page": { "kind": "objectNumber", "pageObjectNumber": 3 } });
+    let detached =
+        kernel_call(&mut host, "forms.detachWidget", &[kernel_field(9), widget.clone()]).unwrap();
+    let left: Vec<&Value> = detached.value["field"]["widgets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|w| &w["annotObjectNumber"])
+        .collect();
+    assert_eq!(left, [&json!(8)], "{}", detached.value);
+    assert_eq!(detached.event.expect("an event")["type"], "form.widgetDetached");
+    let attached = kernel_call(&mut host, "forms.attachWidget", &[kernel_field(9), widget]);
+    assert!(attached.is_err(), "an attach is refused");
+}
+
+#[test]
 fn a_kernel_repair_answers_its_counters_in_the_kernels_spelling() {
     let mut host = form_host();
     let decoded = kernel_call(&mut host, "forms.repair", &[json!({})]).unwrap();

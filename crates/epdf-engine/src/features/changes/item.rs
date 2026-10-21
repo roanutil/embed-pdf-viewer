@@ -154,6 +154,101 @@ pub enum ChangeItem {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         skipped: Vec<String>,
     },
+    /// `FormFieldCreateResult`: the new field read back, its widget rows,
+    /// and the calculation order when its calculate script changed it.
+    #[serde(rename = "forms.create", rename_all = "camelCase")]
+    FormsCreate {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+    },
+    /// `FormFieldUpdateResult` of a field update; in an undo, the
+    /// properties it left alone.
+    #[serde(rename = "forms.update", rename_all = "camelCase")]
+    FormsUpdate {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<String>,
+    },
+    /// `FormFieldDeleteResult`: nothing exists after it, so only `meta`
+    /// (the field in `changedFields`, its widgets in `changedWidgets`), and
+    /// the calculation order when the field was in it.
+    #[serde(rename = "forms.delete", rename_all = "camelCase")]
+    FormsDelete {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+    },
+    /// Only in an undo: a field a delete removed, back, with its widget
+    /// rows.
+    #[serde(rename = "forms.restore")]
+    FormsRestore {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormWidgetLinkResult` of `addWidget`: the field read back, and the
+    /// new widget's row.
+    #[serde(rename = "forms.addWidget")]
+    FormsAddWidget {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormWidgetLinkResult` of `removeWidget`: the field read back, and
+    /// the widget's row, in no field.
+    #[serde(rename = "forms.removeWidget")]
+    FormsRemoveWidget {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormWidgetDeleteResult`: the widget gone, its page, and its field
+    /// read back (`null` for a widget in no field).
+    #[serde(rename = "forms.deleteWidget")]
+    FormsDeleteWidget {
+        widget: crate::identity::AnnotationRef,
+        page: PageRef,
+        field: Option<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// Only in an undo: a widget a delete removed, back on its page and in
+    /// its field (`FormWidgetRestoreResult`).
+    #[serde(rename = "forms.restoreWidget")]
+    FormsRestoreWidget {
+        field: Option<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
+    /// `FormWidgetsReorderResult`: every widget of the page, bottom to top.
+    #[serde(rename = "forms.reorderWidgets")]
+    FormsReorderWidgets {
+        page: PageRef,
+        order: Vec<crate::identity::AnnotationRef>,
+        meta: FormMutationMeta,
+    },
+    /// `FormCalculationsReorderResult`: the calculation order, whole.
+    #[serde(rename = "forms.reorderCalculations", rename_all = "camelCase")]
+    FormsReorderCalculations {
+        calculation_order: Vec<crate::features::forms::snapshot::FormFieldRef>,
+        meta: FormMutationMeta,
+    },
+    /// `FormWidgetUpdateResult`: the widget's row read back and the
+    /// appearance verdict; in an undo, the fields it left alone.
+    #[serde(rename = "forms.updateWidget")]
+    FormsUpdateWidget {
+        widget: serde_json::Value,
+        appearance: crate::features::annotation::write::update::AppearanceOutcome,
+        meta: FormMutationMeta,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<String>,
+    },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -184,7 +279,18 @@ impl ChangeItem {
             Self::FormsSetValue { meta, .. }
             | Self::FormsSetDisplay { meta, .. }
             | Self::FormsSetAppearanceText { meta, .. }
-            | Self::FormsReset { meta, .. } => &meta.meta,
+            | Self::FormsReset { meta, .. }
+            | Self::FormsCreate { meta, .. }
+            | Self::FormsUpdate { meta, .. }
+            | Self::FormsDelete { meta, .. }
+            | Self::FormsRestore { meta, .. }
+            | Self::FormsAddWidget { meta, .. }
+            | Self::FormsRemoveWidget { meta, .. }
+            | Self::FormsDeleteWidget { meta, .. }
+            | Self::FormsRestoreWidget { meta, .. }
+            | Self::FormsReorderWidgets { meta, .. }
+            | Self::FormsReorderCalculations { meta, .. }
+            | Self::FormsUpdateWidget { meta, .. } => &meta.meta,
         }
     }
 
@@ -210,7 +316,18 @@ impl ChangeItem {
             Self::FormsSetValue { meta, .. }
             | Self::FormsSetDisplay { meta, .. }
             | Self::FormsSetAppearanceText { meta, .. }
-            | Self::FormsReset { meta, .. } => &mut meta.meta,
+            | Self::FormsReset { meta, .. }
+            | Self::FormsCreate { meta, .. }
+            | Self::FormsUpdate { meta, .. }
+            | Self::FormsDelete { meta, .. }
+            | Self::FormsRestore { meta, .. }
+            | Self::FormsAddWidget { meta, .. }
+            | Self::FormsRemoveWidget { meta, .. }
+            | Self::FormsDeleteWidget { meta, .. }
+            | Self::FormsRestoreWidget { meta, .. }
+            | Self::FormsReorderWidgets { meta, .. }
+            | Self::FormsReorderCalculations { meta, .. }
+            | Self::FormsUpdateWidget { meta, .. } => &mut meta.meta,
         }
     }
 
@@ -316,6 +433,17 @@ impl ChangeItem {
                     })
                     .collect();
             }
+            Self::FormsCreate { .. }
+            | Self::FormsUpdate { .. }
+            | Self::FormsDelete { .. }
+            | Self::FormsRestore { .. }
+            | Self::FormsAddWidget { .. }
+            | Self::FormsRemoveWidget { .. }
+            | Self::FormsDeleteWidget { .. }
+            | Self::FormsRestoreWidget { .. }
+            | Self::FormsReorderWidgets { .. }
+            | Self::FormsReorderCalculations { .. }
+            | Self::FormsUpdateWidget { .. } => return self.field_events(),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };
         let mut event_value = serde_json::json!({ "type": event });
@@ -325,6 +453,41 @@ impl ChangeItem {
             object.extend(fields);
         }
         Ok(vec![event_value])
+    }
+}
+
+impl ChangeItem {
+    /// A field or widget op's one event (`itemEvents`): the item without its
+    /// `type` and `skipped`, under the event's type; a delete names the field
+    /// it removed (`deletedFieldOf`).
+    fn field_events(&self) -> Result<Vec<serde_json::Value>, EngineError> {
+        let event = match self {
+            Self::FormsCreate { .. } => "forms.created",
+            Self::FormsUpdate { .. } => "forms.updated",
+            Self::FormsDelete { .. } => "forms.deleted",
+            Self::FormsRestore { .. } => "forms.restored",
+            Self::FormsAddWidget { .. } => "forms.widgetAdded",
+            Self::FormsRemoveWidget { .. } => "forms.widgetRemoved",
+            Self::FormsDeleteWidget { .. } => "forms.widgetDeleted",
+            Self::FormsRestoreWidget { .. } => "forms.widgetRestored",
+            Self::FormsReorderWidgets { .. } => "forms.widgetsReordered",
+            Self::FormsReorderCalculations { .. } => "forms.calculationsReordered",
+            Self::FormsUpdateWidget { .. } => "forms.widgetUpdated",
+            _ => return Ok(Vec::new()),
+        };
+        let mut value = to_value(self)?;
+        let Some(fields) = value.as_object_mut() else {
+            return Ok(Vec::new());
+        };
+        fields.remove("type");
+        fields.remove("skipped");
+        let mut out = serde_json::Map::new();
+        out.insert("type".into(), serde_json::Value::String(event.to_owned()));
+        if let Self::FormsDelete { meta, .. } = self {
+            out.insert("deleted".into(), to_value(&meta.changed_fields.first())?);
+        }
+        out.extend(std::mem::take(fields));
+        Ok(vec![serde_json::Value::Object(out)])
     }
 }
 

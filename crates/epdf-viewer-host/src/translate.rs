@@ -229,7 +229,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "forms.createField" => ("forms.createField", Decode::FormMutation),
         "forms.updateField" => ("forms.updateField", Decode::FormMutation),
         "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
-        // Removed upstream; owner 8.21 (`forms.addWidget`).
+        // Removed upstream (d7bd2d277): `kernel_forms` refuses it.
         "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
         "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
         "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
@@ -651,8 +651,17 @@ mod kernel_forms {
     use serde_json::{Value, json};
 
     /// The kinds [`call`] answers.
-    pub(super) const KINDS: &[&str] =
-        &["forms.setValue", "forms.reset", "forms.applyEffects", "forms.repair"];
+    pub(super) const KINDS: &[&str] = &[
+        "forms.setValue",
+        "forms.reset",
+        "forms.applyEffects",
+        "forms.repair",
+        "forms.createField",
+        "forms.updateField",
+        "forms.deleteField",
+        "forms.attachWidget",
+        "forms.detachWidget",
+    ];
 
     /// The kernel's call `kind`, one of [`KINDS`], answered in its shape.
     pub(super) fn call(
@@ -665,6 +674,11 @@ mod kernel_forms {
             "forms.setValue" => set_value(host, request),
             "forms.reset" => reset(host, request),
             "forms.applyEffects" => apply_effects(host, request),
+            "forms.createField" => create_field(host, request),
+            "forms.updateField" => field_edit(host, request, "forms.updateField"),
+            "forms.deleteField" => delete_field(host, request),
+            "forms.attachWidget" => Err(attach_retired()),
+            "forms.detachWidget" => field_edit(host, request, "forms.detachWidget"),
             _ => repair(host, request, payloads),
         };
         match answer {
@@ -903,6 +917,140 @@ mod kernel_forms {
         let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
         let event = if wrote { kernel_event("form.effectsApplied", origin, &result) } else { None };
         Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    /// The kernel's draft (a `widget` or `widgets`, each placement's `rect`
+    /// in the file's coordinates, a toggle's `onState`, its look under
+    /// `appearance` with `{r, g, b}` colours) as upstream's v3 draft: every
+    /// placement under `widgets`, in page space, its `exportValue`, its look
+    /// flat on it as `#rrggbb`.
+    fn v3_draft(host: &Host, request: &Value, draft: &Value) -> Result<Value, HostResponse> {
+        let Some(map) = draft.as_object() else { return Ok(draft.clone()) };
+        let mut draft = map.clone();
+        let mut placements: Vec<Value> = Vec::new();
+        if let Some(widget) = draft.remove("widget") {
+            placements.push(widget);
+        }
+        if let Some(Value::Array(widgets)) = draft.remove("widgets") {
+            placements.extend(widgets);
+        }
+        if placements.is_empty() {
+            return Ok(Value::Object(draft));
+        }
+        let mut box_of = super::page_space::visible_boxes(host, request);
+        let mut converted = Vec::new();
+        for placement in placements {
+            let Value::Object(mut placement) = placement else {
+                return Err(refusal("a widget placement is an object"));
+            };
+            if let Some(state) = placement.remove("onState") {
+                placement.insert("exportValue".into(), state);
+            }
+            if let Some(Value::Object(look)) = placement.remove("appearance") {
+                for (key, value) in look {
+                    placement.insert(key.clone(), style_value(&key, value));
+                }
+            }
+            let rect: Option<epdf_engine::geom::PdfRect> =
+                placement.get("rect").and_then(|r| serde_json::from_value(r.clone()).ok());
+            let page: Option<epdf_engine::identity::PageRef> =
+                placement.get("page").and_then(|p| serde_json::from_value(p.clone()).ok());
+            if let (Some(rect), Some(page)) = (rect, page) {
+                let visible = box_of(page.object_number()).map_err(|e| refusal(&e.message))?;
+                let rect = epdf_engine::geom::normalize_pdf_rect(rect);
+                placement.insert(
+                    "rect".into(),
+                    json!(epdf_engine::page_space::page_rect_of(rect, visible)),
+                );
+            }
+            converted.push(Value::Object(placement));
+        }
+        draft.insert("widgets".into(), Value::Array(converted));
+        Ok(Value::Object(draft))
+    }
+
+    /// A kernel style value as upstream's write takes it: a colour as
+    /// `#rrggbb`, an alignment by name.
+    fn style_value(key: &str, value: Value) -> Value {
+        let channel = |key: &str| value.get(key).and_then(Value::as_f64);
+        if let (Some(r), Some(g), Some(b)) = (channel("r"), channel("g"), channel("b")) {
+            return Value::String(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8));
+        }
+        if key == "textAlign"
+            && let Some(code) = value.as_u64()
+        {
+            return json!(
+                ["left", "center", "right"].get(code as usize).copied().unwrap_or("left")
+            );
+        }
+        value
+    }
+
+    /// The kernel's `{field, meta}`, the field in the file's coordinates,
+    /// and its event under the kernel's name.
+    fn kernel_field_answer(
+        host: &Host,
+        request: &Value,
+        answer: &Value,
+        kernel_event_type: &str,
+    ) -> Result<Value, HostResponse> {
+        let field = field_in_file_space(host, request, answer["result"]["field"].clone())?;
+        let result = json!({ "field": field, "meta": answer["result"]["meta"] });
+        let event = kernel_event(kernel_event_type, answer["event"].get("origin"), &result);
+        Ok(mutation(result, &answer["mutationSequence"], event))
+    }
+
+    /// `forms.createField`: the kernel's draft as upstream's.
+    fn create_field(host: &mut Host, request: &Value) -> Answer {
+        let mut call = request.clone();
+        call["draft"] = v3_draft(host, request, &request["draft"])?;
+        call["effect"] = json!("write");
+        let (answer, response) = send(host, &call)?;
+        Ok((kernel_field_answer(host, request, &answer, "form.fieldCreated")?, response.payloads))
+    }
+
+    /// `forms.updateField` and `forms.detachWidget`: the request as it came,
+    /// the answer as the kernel reads it.
+    fn field_edit(host: &mut Host, request: &Value, kind: &str) -> Answer {
+        let mut call = request.clone();
+        call["effect"] = json!("write");
+        if let Some(map) = call.as_object_mut() {
+            map.remove("onState");
+        }
+        let (answer, response) = send(host, &call)?;
+        let event =
+            if kind == "forms.updateField" { "form.fieldUpdated" } else { "form.widgetDetached" };
+        Ok((kernel_field_answer(host, request, &answer, event)?, response.payloads))
+    }
+
+    /// `forms.deleteField`: the kernel reads what went as
+    /// `deletedFieldObjectNumber` and `removedWidgets`.
+    fn delete_field(host: &mut Host, request: &Value) -> Answer {
+        let mut call = request.clone();
+        call["effect"] = json!("write");
+        let (answer, response) = send(host, &call)?;
+        let meta = &answer["result"]["meta"];
+        let result = json!({
+            "deletedFieldObjectNumber": meta["changedFields"][0]["objectNumber"],
+            "removedWidgets": meta["changedWidgets"],
+            "meta": meta,
+        });
+        let event = kernel_event("form.fieldDeleted", answer["event"].get("origin"), &result);
+        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
+    }
+
+    /// Upstream removed `forms.attachWidget` (d7bd2d277): a field gains a
+    /// widget with `forms.addWidget`, which makes a new one. An inert
+    /// widget can't join a field, so the kernel's call is refused until
+    /// Task 13 moves the kernel to `addWidget`.
+    fn attach_retired() -> HostResponse {
+        HostResponse {
+            json: json!({ "error": { "name": "EngineError", "code": "NotImplemented",
+                "message": "forms.attachWidget went upstream (d7bd2d277): add a widget to a \
+                    field with forms.addWidget" } })
+            .to_string(),
+            payloads: Vec::new(),
+        }
     }
 
     fn repair(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {

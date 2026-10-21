@@ -468,12 +468,6 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert!(nothing.get("event").is_none(), "{nothing}");
 }
 
-/// `EMPTY_FORM_META`: a field edit is non-structural at the page-list
-/// level, so a local engine pins nothing.
-fn empty_meta() -> Value {
-    json!({ "affectedPages": [], "cacheDelta": null })
-}
-
 /// Answer a form write, pinning what every one of them shares: the
 /// event that spreads the result beside its type, and a sequence that moved
 /// past `last`.
@@ -484,13 +478,7 @@ fn form_write(
     payloads: Vec<Vec<u8>>,
     event: &str,
 ) -> Value {
-    // `forms.attachWidget` was removed upstream; owner 8.21 (`forms.addWidget`).
-    let answer = if request["kind"] == "forms.attachWidget" {
-        legacy_envelope(host, request.clone(), payloads)
-    } else {
-        envelope(host, request.clone(), payloads)
-    }["result"]
-        .clone();
+    let answer = envelope(host, request.clone(), payloads)["result"].clone();
     assert_eq!(answer["event"]["type"], json!(event), "{answer}");
     assert_result_rides(&answer);
     let sequence = answer["mutationSequence"].as_u64().expect("a mutation sequence");
@@ -566,82 +554,123 @@ fn every_form_write_carries_meta() {
 
 #[test]
 fn every_field_edit_carries_meta() {
-    // The field edits answer `{field, meta}`, not the bare field. Their
-    // move to upstream's ops and `FormMutationMeta` is 8.21's.
+    // The field and widget verbs are one-op changes (2445caba7, 1233d1349):
+    // each answers its item with `FormMutationMeta` (its `opId`, and that it
+    // can be undone) and publishes its one event.
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
     let mut last = 0;
     let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
-    let check = |answer: &Value| assert_eq!(answer["result"]["meta"], empty_meta(), "{answer}");
+    let check = |answer: &Value, op_id: &str| {
+        assert_eq!(answer["result"]["meta"]["opId"], json!(op_id), "{answer}");
+        assert_eq!(answer["result"]["meta"]["undoable"], json!(true), "{answer}");
+        assert_eq!(answer["event"]["origin"]["tx"], json!({ "id": op_id, "index": 0, "count": 1 }));
+    };
     let created = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.createField", "docId": doc,
+        json!({ "kind": "forms.createField", "docId": doc, "opId": "create-1",
                 "draft": { "family": "text", "name": "new.plain" } }),
         Vec::new(),
-        "form.fieldCreated",
+        "forms.created",
     );
-    check(&created);
+    check(&created, "create-1");
     assert_eq!(created["result"]["field"]["name"], json!("new.plain"), "{created}");
+    let plain = created["result"]["field"]["ref"].clone();
+    assert_eq!(created["result"]["meta"]["changedFields"], json!([plain]), "{created}");
     let updated = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.updateField", "docId": doc, "ref": text,
-                "patch": { "family": "text", "readOnly": false } }),
+        json!({ "kind": "forms.updateField", "docId": doc, "opId": "update-1", "ref": text,
+                "patch": { "family": "text", "readOnly": true } }),
         Vec::new(),
-        "form.fieldUpdated",
+        "forms.updated",
     );
-    check(&updated);
-    assert_eq!(updated["result"]["field"]["ref"]["objectNumber"], json!(4), "{updated}");
+    check(&updated, "update-1");
+    assert_eq!(updated["result"]["field"]["readOnly"], json!(true), "{updated}");
+    assert_eq!(updated["result"]["meta"]["changedFields"], json!([text]), "{updated}");
 
     let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
     let widget = |annot: u64| json!({ "kind": "objectNumber", "page": page_ref(3u64), "objectNumber": annot });
     let detached = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.detachWidget", "docId": doc, "ref": radio, "widget": widget(7) }),
+        json!({ "kind": "forms.detachWidget", "docId": doc, "opId": "detach-1", "ref": radio,
+                "widget": widget(7) }),
         Vec::new(),
-        "form.widgetDetached",
+        "forms.widgetRemoved",
     );
-    check(&detached);
-    let attached = form_write(
+    check(&detached, "detach-1");
+    assert_eq!(detached["result"]["widgets"][0]["field"], Value::Null, "{detached}");
+    let added = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.attachWidget", "docId": doc, "ref": radio, "widget": widget(7),
-                "onState": "Red" }),
+        json!({ "kind": "forms.addWidget", "docId": doc, "opId": "add-1", "ref": radio,
+                "placement": { "page": page_ref(3u64), "exportValue": "Green",
+                    "rect": { "x": 300, "y": 20, "width": 20, "height": 20 } } }),
         Vec::new(),
-        "form.widgetAttached",
+        "forms.widgetAdded",
     );
-    check(&attached);
+    check(&added, "add-1");
+    let new_widget = added["result"]["meta"]["changedWidgets"][0]["ref"].clone();
+    assert_eq!(added["result"]["widgets"][0]["ref"], new_widget, "{added}");
+    let restyled = form_write(
+        &mut host,
+        &mut last,
+        json!({ "kind": "forms.updateWidget", "docId": doc, "opId": "style-1",
+                "widget": new_widget, "patch": { "interiorColor": "#ffeeaa" } }),
+        Vec::new(),
+        "forms.widgetUpdated",
+    );
+    check(&restyled, "style-1");
+    assert_eq!(restyled["result"]["widget"]["interiorColor"], json!("#ffeeaa"), "{restyled}");
+    let reordered = form_write(
+        &mut host,
+        &mut last,
+        json!({ "kind": "forms.reorderWidgets", "docId": doc, "opId": "order-1",
+                "page": page_ref(3u64), "widgets": [new_widget], "position": "start" }),
+        Vec::new(),
+        "forms.widgetsReordered",
+    );
+    check(&reordered, "order-1");
+    assert_eq!(reordered["result"]["order"][0], new_widget, "{reordered}");
+    let deleted = form_write(
+        &mut host,
+        &mut last,
+        json!({ "kind": "forms.deleteWidget", "docId": doc, "opId": "drop-1",
+                "widget": new_widget }),
+        Vec::new(),
+        "forms.widgetDeleted",
+    );
+    check(&deleted, "drop-1");
+    assert_eq!(deleted["result"]["field"]["ref"], radio, "{deleted}");
 }
 
 #[test]
 fn a_field_delete_removes_its_widgets_and_names_them() {
-    // `WorkerHost.handleFormsDeleteField` deletes the widgets the field
-    // let go of through the annotation plane, and answers them as
-    // `removedWidgets`, which the render plugin reads to repaint.
+    // `forms.delete` takes the field's widgets off their pages in the same
+    // write, and its meta names them, which the render plugin reads to
+    // repaint; its event names the field it removed (`deletedFieldOf`).
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
     let before = on_page(&mut host, &doc);
     assert!(before.contains(&7) && before.contains(&8), "the fixture's radio widgets: {before:?}");
     let mut last = 0;
+    let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
     let deleted = form_write(
         &mut host,
         &mut last,
-        json!({ "kind": "forms.deleteField", "docId": doc,
-                "ref": { "kind": "objectNumber", "objectNumber": 9 } }),
+        json!({ "kind": "forms.deleteField", "docId": doc, "ref": radio }),
         Vec::new(),
-        "form.fieldDeleted",
+        "forms.deleted",
     );
-    assert_eq!(deleted["result"]["deletedFieldObjectNumber"], json!(9), "{deleted}");
-    let removed = deleted["result"]["removedWidgets"].as_array().expect("removedWidgets");
+    let result = deleted["result"].as_object().expect("a result");
+    assert_eq!(result.keys().collect::<Vec<_>>(), vec!["meta"], "{deleted}");
+    assert_eq!(deleted["result"]["meta"]["changedFields"], json!([radio]), "{deleted}");
+    let removed = deleted["result"]["meta"]["changedWidgets"].as_array().expect("widgets");
     let removed: Vec<_> = removed.iter().map(|w| w["objectNumber"].clone()).collect();
     assert_eq!(removed, vec![json!(7), json!(8)], "{deleted}");
-    assert!(deleted["result"].get("detachedWidgets").is_none(), "{deleted}");
-    // `FormMutator.deleteField`'s bump and the one after the cascade: the
-    // widget deletes add none, as `AnnotationMutator.delete` leaves the
-    // bump to `finishMutation`.
-    assert_eq!(last, 2, "{deleted}");
+    assert_eq!(deleted["event"]["deleted"], radio, "{deleted}");
 
     let after = on_page(&mut host, &doc);
     assert!(!after.contains(&7) && !after.contains(&8), "the widgets are still there: {after:?}");

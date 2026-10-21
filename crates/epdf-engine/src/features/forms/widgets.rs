@@ -128,3 +128,20 @@ pub fn read_widget_rows(
     }
     Ok(rows)
 }
+
+/// One widget's row, read at `index` of its page and joined to its field
+/// (`readAnnotationFromPtr` with `joinWidgetFieldNumbers`).
+pub fn read_widget_row(
+    document: &Document,
+    annotation: &pdfium::Annotation<'_>,
+    page: PageObjectNumber,
+    index: u32,
+) -> Result<WidgetAnnotation, EngineError> {
+    let mut budget = ActionReadBudgetTracker::default();
+    let base = read_annotation_record_base(document, annotation, page, index, &mut budget)?;
+    let mut row = read_widget_annotation(annotation, base)?;
+    if let Some(model) = document.form_model() {
+        join_widget_field(&model, &mut row);
+    }
+    Ok(row)
+}

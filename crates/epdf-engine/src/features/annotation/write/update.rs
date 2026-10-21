@@ -93,7 +93,8 @@ pub struct AppearanceOutcome {
 /// it.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct AnnotationUpdateResult {
-    pub annotation: AnnotationRecord,
+    /// As a listing reads it; a widget as the form reads its row.
+    pub annotation: Map<String, Value>,
     pub appearance: AppearanceOutcome,
     pub meta: AnnotationMutationMeta,
     /// The patch as it was written, resolved. Not on the wire: the change
@@ -139,6 +140,27 @@ pub fn read_record(
     Ok(AnnotationRecord { base, kind })
 }
 
+/// The annotation at `index`, as the JSON object the resolution reads: a
+/// widget as the form reads its row, joined to its field
+/// (`joinWidgetFieldNumbers`), every other kind as a listing reads it.
+pub fn read_record_json(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    page: PageObjectNumber,
+    index: u32,
+) -> Result<Map<String, Value>, EngineError> {
+    if annotation.subtype_code() == AnnotationSubtype::Widget.code() {
+        let row =
+            crate::features::forms::widgets::read_widget_row(document, annotation, page, index)?;
+        return match serde_json::to_value(row) {
+            Ok(Value::Object(fields)) => Ok(fields),
+            Ok(_) => Err(unknown("a widget row serialized to no object")),
+            Err(e) => Err(unknown(format!("a widget row did not serialize: {e}"))),
+        };
+    }
+    record_json(&read_record(document, annotation, page, index)?)
+}
+
 /// A record as the JSON object the resolution reads.
 pub fn record_json(record: &AnnotationRecord) -> Result<Map<String, Value>, EngineError> {
     match serde_json::to_value(record) {
@@ -171,8 +193,7 @@ pub fn update_annotation(
     };
     let annotation = open()?;
     let previous_blend = BlendMode::from_code(annotation.blend_mode_code());
-    let current_record = read_record(document, &annotation, page, index)?;
-    let current = record_json(&current_record)?;
+    let current = read_record_json(document, &annotation, page, index)?;
 
     assert_caption_metadata_writable(&annotation, &current, &patch)?;
     let describe = |key: &str| services.context.describe_font(key);
@@ -277,7 +298,14 @@ pub fn update_annotation(
         }
         AppearanceImpact::Regenerate => {
             let blend = resolved.fields.blend_mode.unwrap_or(previous_blend);
-            if annotation.generate_appearance(Some(blend.code())) {
+            // A widget is drawn as its field's family draws it; a widget in
+            // no field has no generator.
+            let drawn = if resolved.subtype == AnnotationSubtype::Widget {
+                annotation.generate_form_field_appearance()
+            } else {
+                annotation.generate_appearance(Some(blend.code()))
+            };
+            if drawn {
                 AppearanceOutcome { action: AppearanceAction::Regenerated, changed: true }
             } else {
                 // No generator for this kind (a stamp keeps the appearance
@@ -291,8 +319,10 @@ pub fn update_annotation(
     // reopening is what makes the read describe the new stream.
     drop(annotation);
     let after = open()?;
-    let record = read_record(document, &after, page, index)?;
-    let mut changed = vec![record.base.annotation_ref.clone()];
+    let record = read_record_json(document, &after, page, index)?;
+    let own: AnnotationRef = serde_json::from_value(record.get("ref").cloned().unwrap_or_default())
+        .map_err(|e| unknown(format!("an annotation read back with no ref: {e}")))?;
+    let mut changed = vec![own];
     for other in linked {
         if !changed.iter().any(|seen| same_ref(Some(seen), Some(&other))) {
             changed.push(other);
@@ -574,7 +604,19 @@ fn apply_patch(
                 p::set_boolean(annotation, "Open", open)?;
             }
         }
-        S::Widget | S::Unsupported => {
+        // `applyWidgetPatch`: its place, its look and its actions.
+        S::Widget => {
+            super::widget::apply_widget_box_patch(annotation, f.r#box, f.widget_rotation)?;
+            super::widget::apply_widget_style(annotation, &f.widget, services.context)?;
+            if let Some(actions) = &f.widget_actions {
+                crate::features::actions::write::write_widget_actions(
+                    document,
+                    annotation,
+                    actions.as_ref(),
+                )?;
+            }
+        }
+        S::Unsupported => {
             return Err(EngineError::with_message(
                 EngineErrorCode::NotImplemented,
                 format!("no writer registered for subtype='{}'", resolved.subtype.as_str()),

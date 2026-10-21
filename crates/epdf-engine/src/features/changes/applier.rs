@@ -141,6 +141,23 @@ impl ChangeAuthority {
     }
 }
 
+impl ChangeAuthority {
+    /// `authorizeFieldGroup`: putting a field in `group_id` takes
+    /// `fields:set-group` for it, unless it is the caller's own group.
+    pub fn require_field_group(&self, group_id: &str) -> Result<(), EngineError> {
+        match &self.grants {
+            Some(grants) if !grants.allows_field_group(group_id) => {
+                Err(EngineError::permission_denied(
+                    &format!("fields:set-group:group={group_id}"),
+                    Some("target"),
+                    None,
+                ))
+            }
+            _ => Ok(()),
+        }
+    }
+}
+
 /// What a change fills in that its caller may fill (`fillsOwnField`), asked
 /// only when a field outside the caller's groups is written, and answered
 /// once, from the fields as they are then: the fields its value and text
@@ -431,6 +448,44 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
             super::forms::set_appearance_text(ctx, field, text)
         }
         ChangeOp::FormsReset { fields } => super::forms::reset(ctx, fields.as_deref()),
+        ChangeOp::FormsCreate { draft, object_number, widget_object_numbers } => {
+            super::fields::create_field(
+                ctx,
+                draft,
+                object_number.as_ref(),
+                widget_object_numbers.as_deref(),
+            )
+        }
+        ChangeOp::FormsUpdate { field, patch, expect } => {
+            super::fields::update_field(ctx, field, patch, expect.as_ref(), at)
+        }
+        ChangeOp::FormsDelete { field, expect } => {
+            super::fields::delete_field(ctx, field, expect.as_ref(), at)
+        }
+        ChangeOp::FormsAddWidget { field, placement, object_number, split_object_number } => {
+            super::fields::add_widget(
+                ctx,
+                field,
+                placement,
+                object_number.as_ref(),
+                split_object_number.as_ref(),
+            )
+        }
+        ChangeOp::FormsRemoveWidget { field, widget } => {
+            super::fields::remove_widget(ctx, field, widget)
+        }
+        ChangeOp::FormsDeleteWidget { widget, expect } => {
+            super::fields::delete_widget(ctx, widget, expect.as_ref(), at)
+        }
+        ChangeOp::FormsReorderCalculations { fields, position } => {
+            super::fields::reorder_calculations(ctx, fields, position)
+        }
+        ChangeOp::FormsReorderWidgets { page, widgets, position } => {
+            super::fields::reorder_widgets(ctx, *page, widgets, position)
+        }
+        ChangeOp::FormsUpdateWidget { widget, patch, expect } => {
+            super::fields::update_widget(ctx, widget, patch, expect.as_ref(), at)
+        }
     }
 }
 
@@ -456,6 +511,13 @@ pub(super) fn run_step(
         ReverseStep::PagesReorder(step) => super::pages::reorder_pages_back(ctx, step),
         ReverseStep::PagesRestore(step) => super::pages::restore_pages(ctx, step),
         ReverseStep::PagesRemove(step) => super::pages::remove_pages(ctx, step),
+        ReverseStep::FieldRemove(step) => super::fields::remove_field(ctx, step),
+        ReverseStep::FieldRestore(step) => super::fields::restore_field(ctx, step),
+        ReverseStep::WidgetRestore(step) => super::fields::restore_widget(ctx, step),
+        ReverseStep::WidgetDelete(step) => super::fields::delete_restored_widget(ctx, step),
+        ReverseStep::CalculationsRestore(step) => {
+            super::fields::restore_calculation_order(ctx, step)
+        }
     }
 }
 

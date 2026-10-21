@@ -330,6 +330,24 @@ impl Annotation<'_> {
         }
     }
 
+    /// A widget's `/MK /R`, degrees counterclockwise, a multiple of 90; 0
+    /// removes it (`EPDFAnnot_SetMKRotation`). The appearance is not drawn
+    /// again.
+    pub fn set_mk_rotation(&self, degrees: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetMKRotation(self.as_raw(), degrees) != 0 }
+    }
+
+    /// A widget's `/MK` caption `which` (`EPDF_MK_TEXT_*`), or none
+    /// (`EPDFAnnot_SetMKText`). The appearance is not drawn again.
+    pub fn set_mk_text(&self, which: i32, text: Option<&str>) -> bool {
+        let wide: Option<Vec<u16>> =
+            text.map(|text| text.encode_utf16().chain(std::iter::once(0)).collect());
+        let pointer = wide.as_ref().map_or(std::ptr::null(), |w| w.as_ptr());
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAnnot_SetMKText(self.as_raw(), which, pointer) != 0 }
+    }
+
     /// Remove one `/MK` colour entry.
     pub fn clear_mk_color(&self, which: i32) -> bool {
         // SAFETY: the handle is live.

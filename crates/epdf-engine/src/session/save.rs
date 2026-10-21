@@ -196,16 +196,8 @@ pub enum DocumentEventInit {
     /// `forms.repair` (`publishWrite(opId, { type: 'forms.repaired' })`).
     #[serde(rename = "forms.repaired")]
     FormRepaired(serde_json::Value),
-    #[serde(rename = "form.fieldCreated")]
-    FormFieldCreated(serde_json::Value),
     #[serde(rename = "form.fieldUpdated")]
     FormFieldUpdated(serde_json::Value),
-    #[serde(rename = "form.fieldDeleted")]
-    FormFieldDeleted(serde_json::Value),
-    #[serde(rename = "form.widgetAttached")]
-    FormWidgetAttached(serde_json::Value),
-    #[serde(rename = "form.widgetDetached")]
-    FormWidgetDetached(serde_json::Value),
     /// `measure.setScale`. The TypeScript publishes it from
     /// `LocalPageMeasureService` rather than the worker, with the same
     /// `PageScaleResult` the call answers.
@@ -242,11 +234,7 @@ impl DocumentEventInit {
             | Self::MetadataCustomUpdated(v)
             | Self::FormImported(v)
             | Self::FormRepaired(v)
-            | Self::FormFieldCreated(v)
             | Self::FormFieldUpdated(v)
-            | Self::FormFieldDeleted(v)
-            | Self::FormWidgetAttached(v)
-            | Self::FormWidgetDetached(v)
             | Self::PageViewportsChanged(v)
             | Self::SignatureCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
@@ -269,11 +257,7 @@ impl DocumentEventInit {
             Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
             Self::FormImported(_) => "form.imported",
             Self::FormRepaired(_) => "forms.repaired",
-            Self::FormFieldCreated(_) => "form.fieldCreated",
             Self::FormFieldUpdated(_) => "form.fieldUpdated",
-            Self::FormFieldDeleted(_) => "form.fieldDeleted",
-            Self::FormWidgetAttached(_) => "form.widgetAttached",
-            Self::FormWidgetDetached(_) => "form.widgetDetached",
             Self::PageViewportsChanged(_) => "page.viewportsChanged",
             Self::SignaturePrepared { .. } => "signature.prepared",
             Self::SignatureCompleted(_) => "signature.completed",
@@ -306,11 +290,7 @@ impl DocumentEventInit {
             Self::RedactionApplied(_)
             | Self::FormImported(_)
             | Self::FormRepaired(_)
-            | Self::FormFieldCreated(_)
             | Self::FormFieldUpdated(_)
-            | Self::FormFieldDeleted(_)
-            | Self::FormWidgetAttached(_)
-            | Self::FormWidgetDetached(_)
             // The install already advanced the sequence.
             | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,

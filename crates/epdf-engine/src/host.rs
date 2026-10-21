@@ -120,8 +120,6 @@ enum Route {
 /// the sub-task named beside it moves its callers to the kind that replaced
 /// it.
 pub const LEGACY_KINDS: &[&str] = &[
-    // 8.21: `forms.addWidget` (d7bd2d277).
-    "forms.attachWidget",
     // 8.26: renamed `signatures.cancel` (7bccc4f35).
     "signatures.abort",
 ];
@@ -1469,92 +1467,83 @@ impl Host {
                     crate::session::save::DocumentEventInit::FormRepaired(value(&result)?),
                 )
             }
+            // `WorkerHost.handleFormsCreateField` and the other field and
+            // widget verbs: each a one-op change, so its `opId` undoes it and
+            // a retry under it gets the first answer, answered `{result,
+            // mutationSequence, event}` with the item's `type` (and an
+            // update's `skipped`) stripped. A create and an update check the
+            // request's authority; the rest run unchecked
+            // (`checkedAuthority()`), as upstream's do.
             "forms.createField" => {
-                let draft: f::forms::field::FormFieldDraft = field(body, "draft")?;
-                let result = {
-                    let owned = self.sessions.session(&key)?.document()?;
-                    let source = f::forms::field::OwnedPageWidgets::new(owned);
-                    f::forms::field::create_field(owned.document(), &source, &draft, cancel)?
+                let draft: serde_json::Map<String, serde_json::Value> = field(body, "draft")?;
+                let object_number: Option<serde_json::Number> = optional(body, "objectNumber")?;
+                let widget_object_numbers: Option<Vec<serde_json::Number>> =
+                    optional(body, "widgetObjectNumbers")?;
+                let op = f::changes::op::ChangeOp::FormsCreate {
+                    draft,
+                    object_number,
+                    widget_object_numbers,
                 };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormFieldCreated(field_result(
-                        &result,
-                    )?),
-                )
+                self.field_verb(&key, &header.kind, body, op, true, cancel)
             }
             "forms.updateField" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let patch: f::forms::field::FormFieldPatch = field(body, "patch")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::field::update_field(d, &reference, &patch, cancel)?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormFieldUpdated(field_result(
-                        &result,
-                    )?),
-                )
+                let patch: serde_json::Map<String, serde_json::Value> = field(body, "patch")?;
+                let op =
+                    f::changes::op::ChangeOp::FormsUpdate { field: reference, patch, expect: None };
+                self.field_verb(&key, &header.kind, body, op, true, cancel)
             }
             "forms.deleteField" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::field::delete_field(d, &reference, cancel)?
+                let op = f::changes::op::ChangeOp::FormsDelete { field: reference, expect: None };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
+            }
+            "forms.addWidget" => {
+                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
+                let placement: serde_json::Map<String, serde_json::Value> =
+                    field(body, "placement")?;
+                let object_number: Option<serde_json::Number> = optional(body, "objectNumber")?;
+                let split_object_number: Option<serde_json::Number> =
+                    optional(body, "splitObjectNumber")?;
+                let op = f::changes::op::ChangeOp::FormsAddWidget {
+                    field: reference,
+                    placement,
+                    object_number,
+                    split_object_number,
                 };
-                self.note_form_write(&key)?;
-                // `WorkerHost.handleFormsDeleteField`: the field let its
-                // widgets go, and the annotation plane deletes them, so the
-                // page's `/Annots` and revision move in one place. A widget
-                // with no ref (direct, or on no page) has nothing to delete.
-                for widget in &result.detached_widgets {
-                    let (Ok(page), true) = (
-                        crate::identity::PageObjectNumber::new(widget.page_object_number),
-                        widget.annot_object_number > 0,
-                    ) else {
-                        continue;
-                    };
-                    let owned = self.sessions.session(&key)?.document()?;
-                    f::annotation::write::delete::delete_released_widget(
-                        owned.document(),
-                        owned.page_index(page)?,
-                        &crate::identity::AnnotationRef::ObjectNumber {
-                            page,
-                            annot: widget.annot_object_number,
-                        },
-                    )?;
-                }
-                // The deletes above wrote `/Annots` after the field's own
-                // note, so note again, as the TypeScript does.
-                self.note_form_write(&key)?;
-                // `FormFieldDeleteResult`: the widgets are `removedWidgets`,
-                // which the render plugin reads to repaint their pages.
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormFieldDeleted(serde_json::json!({
-                        "deletedFieldObjectNumber": result.deleted_field_object_number,
-                        "removedWidgets": value(&result.detached_widgets)?,
-                        "meta": empty_meta(),
-                    })),
-                )
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
             }
             "forms.detachWidget" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let widget = widget_field(body)?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::field::detach_widget(d, &reference, widget, cancel)?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormWidgetDetached(field_result(
-                        &result,
-                    )?),
-                )
+                let widget: crate::identity::AnnotationRef = field(body, "widget")?;
+                let op = f::changes::op::ChangeOp::FormsRemoveWidget { field: reference, widget };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
+            }
+            "forms.updateWidget" => {
+                let widget: crate::identity::AnnotationRef = field(body, "widget")?;
+                let patch: serde_json::Map<String, serde_json::Value> = field(body, "patch")?;
+                let op =
+                    f::changes::op::ChangeOp::FormsUpdateWidget { widget, patch, expect: None };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
+            }
+            "forms.deleteWidget" => {
+                let widget: crate::identity::AnnotationRef = field(body, "widget")?;
+                let op = f::changes::op::ChangeOp::FormsDeleteWidget { widget, expect: None };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
+            }
+            "forms.reorderCalculations" => {
+                let fields: Vec<f::forms::snapshot::FormFieldRef> = field(body, "fields")?;
+                let position: f::forms::field::FieldPosition = field(body, "position")?;
+                let op = f::changes::op::ChangeOp::FormsReorderCalculations { fields, position };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
+            }
+            "forms.reorderWidgets" => {
+                let page = page_field(body)?;
+                let widgets: Vec<crate::identity::AnnotationRef> = field(body, "widgets")?;
+                let position: crate::mutation::list_position::AnnotationPosition =
+                    field(body, "position")?;
+                let op = f::changes::op::ChangeOp::FormsReorderWidgets { page, widgets, position };
+                self.field_verb(&key, &header.kind, body, op, false, cancel)
             }
 
             // `WorkerHost.handlePagesSetName` and `handlePagesRemoveName`: a
@@ -1765,7 +1754,7 @@ impl Host {
         header: &RequestHeader,
         body: &serde_json::Value,
         payloads: Payloads,
-        cancel: &CancelToken,
+        _cancel: &CancelToken,
     ) -> Result<HostResponse, EngineError> {
         use crate::features as f;
 
@@ -1790,30 +1779,6 @@ impl Host {
                 let notice =
                     crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
                 self.answer_with_notice(&key, result, notice, Vec::new())
-            }
-
-            // Owner: 8.21 (`forms.addWidget`, d7bd2d277).
-            "forms.attachWidget" => {
-                let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let widget = widget_field(body)?;
-                let on_state: Option<String> = optional(body, "onState")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::forms::field::attach_widget(
-                        d,
-                        &reference,
-                        widget,
-                        on_state.as_deref(),
-                        cancel,
-                    )?
-                };
-                self.note_form_write(&key)?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormWidgetAttached(field_result(
-                        &result,
-                    )?),
-                )
             }
 
             other => {
@@ -2051,6 +2016,43 @@ impl Host {
         if kind == "forms.reset" {
             answer["events"] = serde_json::Value::Array(events);
         } else if let Some(event) = events.pop() {
+            answer["event"] = event;
+        }
+        Ok(HostResponse { json: envelope(answer), payloads })
+    }
+
+    /// A single field or widget verb as a one-op change
+    /// (`handleFormsCreateField` and its siblings): checked against the
+    /// request's authority when `checked` (a create and an update), else
+    /// run unchecked as `checkedAuthority()` runs it. Answered `{result,
+    /// mutationSequence, event}`, the item's `type` and `skipped` stripped.
+    fn field_verb(
+        &mut self,
+        key: &SessionKey,
+        kind: &str,
+        body: &serde_json::Value,
+        op: crate::features::changes::op::ChangeOp,
+        checked: bool,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        let job = JobEnvelope::parse(kind, body)?;
+        let op_id = self.op_id_of(&job)?;
+        let authority = match (checked, job.authority.as_ref()) {
+            (true, Some(wire)) => Some(change_authority(wire)?),
+            (true, None) => None,
+            (false, _) => Some(crate::features::changes::applier::ChangeAuthority::checked(
+                crate::auth::scope::IdentityClaims::default(),
+            )),
+        };
+        let item = self.apply_one(key, &op_id, op, authority, cancel)?;
+        let events = item.events()?;
+        let (result, sequence, mut events, payloads) =
+            self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
+        let mut answer = serde_json::json!({
+            "result": result,
+            "mutationSequence": sequence,
+        });
+        if let Some(event) = events.pop() {
             answer["event"] = event;
         }
         Ok(HostResponse { json: envelope(answer), payloads })
@@ -2500,14 +2502,6 @@ fn empty_meta() -> serde_json::Value {
     serde_json::json!({ "affectedPages": [], "cacheDelta": null })
 }
 
-/// A field edit's result (`FormFieldCreateResult`, `FormFieldUpdateResult`,
-/// `FormWidgetLinkResult`): the field read back, and `meta`.
-fn field_result(
-    field: &crate::features::forms::snapshot::FormFieldDto,
-) -> Result<serde_json::Value, EngineError> {
-    Ok(serde_json::json!({ "field": value(field)?, "meta": empty_meta() }))
-}
-
 /// Serialize an operation's result into the envelope's `result`.
 fn value<T: Serialize>(result: &T) -> Result<serde_json::Value, EngineError> {
     serde_json::to_value(result).map_err(|e| {
@@ -2741,6 +2735,26 @@ fn strip_item(
         ChangeItem::FormsReset { fields, widgets, meta, .. } => {
             Ok(serde_json::json!({ "fields": fields, "widgets": widgets, "meta": value(&meta)? }))
         }
+        // The rest of the form's ops: the item without its `type` and
+        // `skipped`.
+        item @ (ChangeItem::FormsCreate { .. }
+        | ChangeItem::FormsUpdate { .. }
+        | ChangeItem::FormsDelete { .. }
+        | ChangeItem::FormsRestore { .. }
+        | ChangeItem::FormsAddWidget { .. }
+        | ChangeItem::FormsRemoveWidget { .. }
+        | ChangeItem::FormsDeleteWidget { .. }
+        | ChangeItem::FormsRestoreWidget { .. }
+        | ChangeItem::FormsReorderWidgets { .. }
+        | ChangeItem::FormsReorderCalculations { .. }
+        | ChangeItem::FormsUpdateWidget { .. }) => {
+            let mut result = value(&item)?;
+            if let Some(fields) = result.as_object_mut() {
+                fields.remove("type");
+                fields.remove("skipped");
+            }
+            Ok(result)
+        }
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }
@@ -2777,8 +2791,12 @@ const MUTATING_KINDS: &[&str] = &[
     "forms.updateField",
     "forms.setSignatureAppearance",
     "forms.deleteField",
-    "forms.attachWidget",
+    "forms.addWidget",
     "forms.detachWidget",
+    "forms.updateWidget",
+    "forms.deleteWidget",
+    "forms.reorderCalculations",
+    "forms.reorderWidgets",
     "pages.setName",
     "pages.removeName",
     "pages.flatten",
@@ -2913,19 +2931,6 @@ fn pages_field(
     list.iter()
         .map(|page| Ok(crate::identity::PageRef::from_value(page, "pages")?.object_number()))
         .collect()
-}
-
-/// The widget a field link names: its `AnnotationRef`, which must be by
-/// object number (`FormMutator.widgetObjectNumber`). A name or an index
-/// cannot join a field, because the field tree holds widgets by reference.
-fn widget_field(body: &serde_json::Value) -> Result<u32, EngineError> {
-    match field(body, "widget")? {
-        crate::identity::AnnotationRef::ObjectNumber { annot, .. } => Ok(annot),
-        _ => Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "widget must be addressed by object number",
-        )),
-    }
 }
 
 /// The name-tree key an embedded-file reference names.

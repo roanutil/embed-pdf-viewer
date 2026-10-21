@@ -98,7 +98,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 0,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Answers PageGeometrySnapshot in page space: the reader answers the file\'s coordinates (runs with start, loose/tight boxes or quads, space/empty, rotation in degrees clockwise) and the host boundary converts them (pageGeometryOf). The C ABI export epdf_page_geometry answers the file\'s coordinates, which RustPageGeometryReader.ts reads as PageGeometrySnapshot<PdfCoordinates>. Gated by tooling/engine-conformance/vectors/pages.geometry through Host::call in crates/epdf-engine/tests/geometry_corpus.rs, and crates/epdf-wasm/tests/borrowed_page.rs.',
+    note: "Answers PageGeometrySnapshot in page space: the reader answers the file's coordinates (runs with start, loose/tight boxes or quads, space/empty, rotation in degrees clockwise) and the host boundary converts them (pageGeometryOf). The C ABI export epdf_page_geometry answers the file's coordinates, which RustPageGeometryReader.ts reads as PageGeometrySnapshot<PdfCoordinates>. Gated by tooling/engine-conformance/vectors/pages.geometry through Host::call in crates/epdf-engine/tests/geometry_corpus.rs, and crates/epdf-wasm/tests/borrowed_page.rs.",
   },
 
   // --- G3. Session core and security. Native-only owner until the G3w
@@ -291,7 +291,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Takes the flattened SearchScanRequest (query fields at the top level, snippets, from as a PageRef, cursor, limit) and answers SearchSlice: matches as page ranges (start, count) with a snippet of before, match and after, pagesSearched and pageCount. The cursor key is searchQueryKey, mode spelled snippets or matches. The reader answers segments in the file\'s coordinates and the host boundary converts them (pageSearchSliceOf). Gated by vectors/search through crates/epdf-engine/tests/search_dialect.rs, search_slice_protocol.rs, search_reader.rs and search_ignore_whitespace.rs.',
+    note: "Takes the flattened SearchScanRequest (query fields at the top level, snippets, from as a PageRef, cursor, limit) and answers SearchSlice: matches as page ranges (start, count) with a snippet of before, match and after, pagesSearched and pageCount. The cursor key is searchQueryKey, mode spelled snippets or matches. The reader answers segments in the file's coordinates and the host boundary converts them (pageSearchSliceOf). Gated by vectors/search through crates/epdf-engine/tests/search_dialect.rs, search_slice_protocol.rs, search_reader.rs and search_ignore_whitespace.rs.",
   },
 
   // --- G6. Document structure reads.
@@ -435,7 +435,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer\'s births.',
+    note: "Byte equality with the TypeScript path, not a semantic comparison. Its ref resolves as upstream resolveAnnotIndexRaw does, a baseIndex on a promoted page through the layer's births.",
   },
   {
     kind: 'pieceInfo.read',
@@ -594,7 +594,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation, page and form value ops (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs, tests/form_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation, page and form value ops, and the form's design ops: fields, widgets and the calculation order (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs, tests/form_apply.rs, tests/form_widgets.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
   },
   {
     kind: 'document.applyChanges',
@@ -614,7 +614,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: 'A one-op change (forms.setValue, features/changes/forms.rs): the value as a read returns it ({ value }, { checked }, { selectedValues }), written as the field\'s rules leave it (fieldAfterValue) through the fork\'s value writers, answered { field, widgets, meta } with FormMutationMeta and a forms.valueSet event; its reverse puts back the field\'s and widgets\' dictionaries from the fork\'s captures, else the value. Gated by vectors/forms/write.json (tests/form_write.rs) and vectors/forms/apply.json (tests/form_apply.rs).',
+    note: "A one-op change (forms.setValue, features/changes/forms.rs): the value as a read returns it ({ value }, { checked }, { selectedValues }), written as the field's rules leave it (fieldAfterValue) through the fork's value writers, answered { field, widgets, meta } with FormMutationMeta and a forms.valueSet event; its reverse puts back the field's and widgets' dictionaries from the fork's captures, else the value. Gated by vectors/forms/write.json (tests/form_write.rs) and vectors/forms/apply.json (tests/form_apply.rs).",
   },
   {
     kind: 'forms.reset',
@@ -658,6 +658,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: 'A one-op change (forms.create, features/changes/fields.rs): the v3 draft in page space, each widget placement converted on its page (pdfFormFieldDraftOf), checked before the first write (placedWidgetOf, onStateOf, defaultEntryOfDraft, maxLength), then the field, its settings and /DV, who made it and its group, its widgets born through the annotation plane and adopted, and its place in the calculation order when it has a calculate script, all in one layer transaction. Answered { field, widgets, meta } with a forms.created event; its reverse deletes the field while nobody changed it since (field.remove). Gated by vectors/forms/field.json through crates/epdf-engine/tests/form_field.rs, and tests/form_widgets.rs.',
   },
   {
     kind: 'forms.updateField',
@@ -666,6 +667,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A one-op change (forms.update): the patch checked against the field's family (assertPatchFitsFamily), its default against the field as the patch leaves it (formFieldAfter), then each setting written, /DV through EPDFForm_SetFieldDefaultValue, new options with the selection that goes with them. Its reverse puts the field's and widgets' dictionaries back from the fork's captures, else each property still holding what the update set (revertProperties). Gated by vectors/forms/field.json through crates/epdf-engine/tests/form_field.rs.",
   },
   {
     kind: 'forms.deleteField',
@@ -674,6 +676,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A one-op change (forms.delete): the field leaves the calculation order, the tree, and its widgets their pages, in one write; a merged field/widget goes in the same cascade (60602f579). Answers only meta (the field in changedFields, its widgets in changedWidgets) and a forms.deleted event; its reverse brings the field back from the fork's capture (EPDFForm_ExportFieldRawToOwnedBuffer, field.restore), then into the calculation order. Gated by vectors/forms/field.json through crates/epdf-engine/tests/form_field.rs.",
   },
   // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by forms.addWidget.
   // {
@@ -691,17 +694,18 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A one-op change (forms.removeWidget): the widget leaves its field and stays on its page; a merged field/widget is refused. Answers { field, widgets, meta }, the widget's row in no field; its reverse puts the field's and the widget's dictionaries back from the fork's captures. Gated by vectors/forms/field.json through crates/epdf-engine/tests/form_field.rs.",
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'forms.addWidget',
     group: 'G12',
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
-    note: 'Replaces forms.attachWidget.',
+    rustStatus: 'ported',
+    note: "A one-op change (forms.addWidget, replacing forms.attachWidget, d7bd2d277): the placement in page space converted on its page (pdfWidgetPlacementOf), the widget born, styled and added to the field in one layer transaction; a merged field splits, its widget half at splitObjectNumber. Answers { field, widgets, meta }; its reverse puts back the field's and the pages' dictionaries. Gated by crates/epdf-engine/tests/form_widgets.rs.",
   },
   {
     kind: 'forms.updateWidget',
@@ -709,7 +713,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
+    note: "A one-op change (forms.updateWidget): the widget patch written as an annotation update writes it (place, turn, /MK, /BS, /DA, /Q, caption or check style, actions), a caption only on a push button's and a check style only on a toggle's (fitWidgetToFamily), drawn again as its field's family draws it. Its reverse puts back by value what still shows the update, until 8.30 brings the dictionary captures. Gated by crates/epdf-engine/tests/form_widgets.rs.",
   },
   {
     kind: 'forms.deleteWidget',
@@ -717,7 +722,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
+    note: "A one-op change (forms.deleteWidget): the widget leaves its field (its dictionaries captured) and its page (the fork's annotation capture); a merged field/widget is refused for forms.delete. Its reverse brings it back at its place and into its field (widget.restore). Gated by crates/epdf-engine/tests/form_widgets.rs.",
   },
   {
     kind: 'forms.reorderWidgets',
@@ -725,7 +731,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
+    note: "A one-op change (forms.reorderWidgets): the page's widgets in their own stacking order, apart from its annotations. Its reverse puts them back beside their old neighbours (annotation.reorder, family widgets). Gated by crates/epdf-engine/tests/form_widgets.rs.",
   },
   {
     kind: 'forms.reorderCalculations',
@@ -733,7 +740,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
+    rustStatus: 'ported',
+    note: 'A one-op change (forms.reorderCalculations, 98718b780): the fields go together to a position in /AcroForm /CO. Its reverse takes back what it did where nobody changed it since (orderBack). Gated by crates/epdf-engine/tests/form_widgets.rs.',
   },
   {
     kind: 'forms.importValues',
@@ -835,7 +843,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page. Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
+    note: 'A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page. Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.',
   },
   {
     kind: 'pages.removeName',
@@ -844,7 +852,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page (null once removed). Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.",
+    note: 'A write in its own transaction answering PageNameResult: the new layout, with namedPages, and MutationMeta naming no page; its pages.named event names the key and the page (null once removed). Gated by crates/epdf-engine/tests/named_pages.rs, which ports the named pages conformance suite.',
   },
 
   // --- G14. Remaining mutators.

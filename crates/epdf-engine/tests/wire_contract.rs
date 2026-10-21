@@ -44,11 +44,6 @@ const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf"
 const NOT_YET_ROUTED: &[(&str, &str)] = &[
     ("annotations.export", "8.22"),
     ("annotations.import", "8.22"),
-    ("forms.addWidget", "8.21"),
-    ("forms.updateWidget", "8.21"),
-    ("forms.deleteWidget", "8.21"),
-    ("forms.reorderWidgets", "8.21"),
-    ("forms.reorderCalculations", "8.21"),
     ("forms.importValues", "8.22"),
     ("outline.read", "8.24"),
     ("signatures.cancel", "8.26"),
@@ -291,15 +286,16 @@ fn every_wire_kind_routes_to_an_implementation() {
 
 #[test]
 fn every_removed_kind_is_unknown_to_the_wire_and_known_to_the_legacy_entry() {
-    // The 2 kinds upstream removed that are still parked (`signatures.abort`
+    // The kind upstream removed that is still parked (`signatures.abort`
     // renamed `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers
     // a kind it has no case for, and reach their old arm only through
     // `call_legacy`, until each owner sub-task retires it. 8.8 retired
     // `attachments.create`, `attachments.delete` and `pieceInfo.clear`; 8.12
     // the three annotation listings; 8.16 `annotations.move`; 8.18 the five
     // page structure kinds, now `document.apply` ops; 8.20
-    // `forms.applyEffects`, whose effects are `document.apply` ops.
-    assert_eq!(LEGACY_KINDS.len(), 2);
+    // `forms.applyEffects`, whose effects are `document.apply` ops; 8.21
+    // `forms.attachWidget`, which `forms.addWidget` replaced (d7bd2d277).
+    assert_eq!(LEGACY_KINDS.len(), 1);
     let cases = cases();
     for kind in LEGACY_KINDS {
         assert!(!cases.iter().any(|c| c.kind == *kind), "{kind} is in upstream's union");
@@ -615,10 +611,15 @@ fn an_annotation_is_named_by_object_number_or_base_index_only() {
 fn a_widget_link_names_its_widget_by_annotation_ref() {
     // `forms.detachWidget` takes the widget's `AnnotationRef` (`40c96e5ab`).
     // A bare number is the old wire, the `nm` kind is gone, and a
-    // `baseIndex` cannot join a field, as `FormMutator` refuses it: the
-    // field tree holds widgets by reference.
-    let mut host = open();
-    let field = serde_json::json!({ "kind": "objectNumber", "objectNumber": 1 });
+    // `baseIndex` cannot join a field, as `FormMutator` refuses it once the
+    // field resolves: the field tree holds widgets by reference.
+    let mut host = Host::new();
+    let response = host.call(
+        &serde_json::json!({ "kind": "open.fatMem", "docId": DOC_ID }).to_string(),
+        vec![test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf")],
+    );
+    assert!(!response.json.contains("\"error\""), "{}", response.json);
+    let field = serde_json::json!({ "kind": "objectNumber", "objectNumber": 9 });
     let bare = send(
         &mut host,
         serde_json::json!({ "kind": "forms.detachWidget", "ref": field, "widget": 9 }),
@@ -633,9 +634,13 @@ fn a_widget_link_names_its_widget_by_annotation_ref() {
     let by_position = send(
         &mut host,
         serde_json::json!({ "kind": "forms.detachWidget", "ref": field,
-            "widget": { "kind": "baseIndex", "page": page_ref(1), "baseIndex": 0 } }),
+            "widget": { "kind": "baseIndex", "page": page_ref(3), "baseIndex": 0 } }),
     );
     assert_eq!(by_position["error"]["code"], "InvalidArg", "{by_position}");
+    assert_eq!(
+        by_position["error"]["message"], "widget must be addressed by object number",
+        "{by_position}"
+    );
 }
 
 #[test]

@@ -159,18 +159,24 @@ pub fn delete_annotation(
     Ok(AnnotationDeleteResult { meta: AnnotationMutationMeta::of(stamp, page, changed) })
 }
 
-/// `deleteReleasedWidget`: remove a widget of the field `forms.deleteField`
-/// has just unlinked from the field tree. The cascade runs past that
+/// `deleteReleasedWidget`: remove a widget of the field `forms.delete` has
+/// just unlinked from the field tree (`released_field`; 0 for a widget
+/// `forms.deleteWidget` took out of its field). The cascade runs past that
 /// write's apply boundary, so it takes no cancel token. A widget still
 /// attached to another field is refused, as `assertNotAttachedWidget`
-/// refuses it.
+/// refuses it; the released field's own merged dictionary goes.
 pub fn delete_released_widget(
     document: &Document,
     page_index: u32,
     reference: &AnnotationRef,
+    released_field: u32,
 ) -> Result<(), EngineError> {
     let index = resolve_annotation_index_raw(document, page_index, reference)?;
-    if let Some(Some(merged)) = widget_attachment(document, page_index, index) {
+    if let Some(field) = attached_field(document, page_index, index)
+        && field != released_field
+    {
+        let annotation = document.raw_annotation(page_index, index);
+        let merged = annotation.is_some_and(|a| a.object_number() == field);
         return Err(widget_attached(merged));
     }
     promote_inline_annotations(document, page_index, reference.page())?;
@@ -214,6 +220,23 @@ pub fn missing_annotation(reference: &AnnotationRef) -> EngineError {
         EngineErrorCode::NotFound,
         format!("no annotation {} on page {}", reference.key(), reference.page().get()),
     )
+}
+
+/// The field the widget at `index` of the page is attached to, by object
+/// number (`resolveWidgetFieldObjectNumber`); `None` for one in no field, or
+/// an annotation that is not a widget.
+fn attached_field(document: &Document, page_index: u32, index: u32) -> Option<u32> {
+    let annotation = document.raw_annotation(page_index, index)?;
+    if !is_widget_code(annotation.subtype_code()) {
+        return None;
+    }
+    let object_number = annotation.object_number();
+    if object_number == 0 {
+        return None;
+    }
+    let model = document.form_model()?;
+    let at = model.field_index_for_widget(object_number)?;
+    model.field(at).map(|field| field.object_number()).filter(|field| *field > 0)
 }
 
 /// The widget at `index` of the page, as `widgetDeleteRefused` names it:

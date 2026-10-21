@@ -140,6 +140,12 @@ impl WidgetCheckStyle {
         (Self::Diamond, 'u'),
     ];
 
+    /// The `/MK /CA` character the symbol is written as
+    /// (`checkStyleCharacter`).
+    pub fn character(self) -> char {
+        Self::CHARACTERS.iter().find(|(style, _)| *style == self).map_or('4', |(_, c)| *c)
+    }
+
     /// The symbol a `/MK /CA` names, or `None` when it names none the
     /// appearance generator knows (`checkStyleOfCaption`).
     pub fn of_caption(caption: Option<&str>) -> Option<Self> {

@@ -16,7 +16,8 @@ use super::destinations::{PageDestination, page_destination_of, pdf_destination_
 use super::{VisibleBoxOf, page_point_of, page_rect_of, pdf_point_of, pdf_rect_of};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::destination::PdfDestination;
-use crate::features::annotation::read::base::AnnotationActions;
+use crate::features::actions::reader::ActionTree;
+use crate::features::actions::write::ActionWrite;
 use crate::geom::{PagePoint, PageRect, PdfPoint, PdfRect};
 use crate::identity::PageRef;
 
@@ -209,22 +210,58 @@ fn convert_field(
             }
             Ok(Value::Object(target))
         }
-        S::Actions => match direction {
-            Direction::ToPage => {
-                let actions: AnnotationActions<PdfDestination> = read(name, value)?;
-                write(
-                    name,
-                    &actions.try_map_destinations(&mut |d| page_destination_of(d, &mut *box_of))?,
-                )
+        // `mapTriggerActions`: each trigger's read tree, or the action a
+        // write sets it to (a widget's actions on an update); `null` stays.
+        S::Actions => {
+            let Value::Object(triggers) = value else {
+                return Err(malformed(name, "actions are an object"));
+            };
+            let mut out = Map::with_capacity(triggers.len());
+            for (trigger, action) in triggers {
+                let tree = action.get("root").is_some();
+                let converted = match (action.is_null(), tree, direction) {
+                    (true, _, _) => action,
+                    (false, true, Direction::ToPage) => {
+                        let tree: ActionTree<PdfDestination> = read(name, action)?;
+                        write(
+                            name,
+                            &tree.try_map_destinations(&mut |d| {
+                                page_destination_of(d, &mut *box_of)
+                            })?,
+                        )?
+                    }
+                    (false, true, Direction::ToPdf) => {
+                        let tree: ActionTree<PageDestination> = read(name, action)?;
+                        write(
+                            name,
+                            &tree.try_map_destinations(&mut |d| {
+                                pdf_destination_of(d, &mut *box_of)
+                            })?,
+                        )?
+                    }
+                    (false, false, Direction::ToPage) => {
+                        let written: ActionWrite<PdfDestination> = read(name, action)?;
+                        write(
+                            name,
+                            &written.try_map_destinations(&mut |d| {
+                                page_destination_of(d, &mut *box_of)
+                            })?,
+                        )?
+                    }
+                    (false, false, Direction::ToPdf) => {
+                        let written: ActionWrite<PageDestination> = read(name, action)?;
+                        write(
+                            name,
+                            &written.try_map_destinations(&mut |d| {
+                                pdf_destination_of(d, &mut *box_of)
+                            })?,
+                        )?
+                    }
+                };
+                out.insert(trigger, converted);
             }
-            Direction::ToPdf => {
-                let actions: AnnotationActions<PageDestination> = read(name, value)?;
-                write(
-                    name,
-                    &actions.try_map_destinations(&mut |d| pdf_destination_of(d, &mut *box_of))?,
-                )
-            }
-        },
+            Ok(Value::Object(out))
+        }
     }
 }
 

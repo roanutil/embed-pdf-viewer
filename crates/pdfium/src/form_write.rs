@@ -150,44 +150,58 @@ impl Document {
         })
     }
 
-    /// Make a field, and return its object number.
+    /// Make a field at `object_number` (0: the next free one), and return
+    /// its object number (`EPDFForm_CreateField`).
     ///
-    /// Zero is a refusal: a name that collides with a sibling, or one a
-    /// field cannot have. The call makes the FIELD only; its widgets are
+    /// `None` is a refusal: a name that collides with a sibling, or one a
+    /// field cannot have, or a number taken. A number other than 0 needs a
+    /// layer transaction. The call makes the FIELD only; its widgets are
     /// born through the annotation plane and adopted with
     /// [`Document::attach_widget`].
-    pub fn create_field(&self, family: CreatableFieldFamily, full_name: &str) -> Option<u32> {
+    pub fn create_field(
+        &self,
+        family: CreatableFieldFamily,
+        full_name: &str,
+        object_number: u32,
+    ) -> Option<u32> {
         let name: Vec<u16> = full_name.encode_utf16().chain(std::iter::once(0)).collect();
         // SAFETY: the handle is live and the name outlives the call.
-        let object_number = unsafe {
-            // Zero is "the next free object number"; a chosen number needs a
-            // layer transaction, which this layer does not open.
-            pdfium_sys::EPDFForm_CreateField(self.as_raw(), family as i32, name.as_ptr(), 0)
+        let created = unsafe {
+            pdfium_sys::EPDFForm_CreateField(
+                self.as_raw(),
+                family as i32,
+                name.as_ptr(),
+                object_number,
+            )
         };
-        (object_number > 0).then_some(object_number)
+        (created > 0).then_some(created)
     }
 
-    /// Adopt an existing widget annotation into a field.
+    /// Adopt an existing widget annotation into a field
+    /// (`EPDFForm_AttachWidget`).
     ///
     /// `on_state` names the appearance a toggle turns on with, and is empty
-    /// for the families that have none.
+    /// for the families that have none. A merged field splits: its widget
+    /// half becomes a new kid at `split_object_number` (0: the next free
+    /// one), which needs a layer transaction when it is not 0.
     pub fn attach_widget(
         &self,
         field_object_number: u32,
         widget_object_number: u32,
         on_state: &str,
+        split_object_number: u32,
     ) -> Result<bool, PdfiumError> {
         let state = CString::new(on_state).map_err(|_| PdfiumError::InvalidArgument("on state"))?;
+        // A family with no state takes none.
+        let state_ptr = if on_state.is_empty() { std::ptr::null() } else { state.as_ptr() };
         // SAFETY: the handle is live and the string outlives the call.
         Ok(unsafe {
             pdfium_sys::EPDFForm_AttachWidget(
                 self.as_raw(),
                 field_object_number,
                 widget_object_number,
-                state.as_ptr(),
-                // Zero: a merged field split by the adoption gives its old
-                // widget the next free object number.
-                0,
+                state_ptr,
+                split_object_number,
             ) != 0
         })
     }
@@ -265,6 +279,43 @@ impl Document {
         let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
         // SAFETY: the handle is live and the string outlives the call.
         unsafe { setter(self.as_raw(), field_object_number, value.as_ptr()) != 0 }
+    }
+
+    /// The field's action for `event` (`EPDF_FORM_ACTION_*`: keystroke,
+    /// format, validate, calculate); `None` removes it
+    /// (`EPDFForm_SetFieldEventAction`).
+    pub fn set_field_event_action(
+        &self,
+        field_object_number: u32,
+        event: i32,
+        action: Option<crate::Action>,
+    ) -> bool {
+        let handle = action.map_or(std::ptr::null_mut(), crate::Action::as_raw);
+        // SAFETY: both handles are live; a null action removes the entry.
+        unsafe {
+            pdfium_sys::EPDFForm_SetFieldEventAction(
+                self.as_raw(),
+                field_object_number,
+                event,
+                handle,
+            ) != 0
+        }
+    }
+
+    /// `/AcroForm /CO`, the fields whose calculate scripts run, in order, by
+    /// object number; none removes it (`EPDFForm_SetCalculationOrder`).
+    /// `false`, writing nothing, when a number names no field or repeats.
+    pub fn set_calculation_order(&self, field_object_numbers: &[u32]) -> bool {
+        let Ok(count) = i32::try_from(field_object_numbers.len()) else {
+            return false;
+        };
+        let pointer = if field_object_numbers.is_empty() {
+            std::ptr::null()
+        } else {
+            field_object_numbers.as_ptr()
+        };
+        // SAFETY: the handle is live and the array outlives the call.
+        unsafe { pdfium_sys::EPDFForm_SetCalculationOrder(self.as_raw(), pointer, count) != 0 }
     }
 
     /// `/Ff`, as bits to set and bits to clear.

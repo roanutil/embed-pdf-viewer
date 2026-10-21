@@ -172,6 +172,80 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         fields: Option<Vec<FormFieldRef>>,
     },
+    /// A field from its draft (`FormFieldDraft`), at `objectNumber` and its
+    /// widgets at `widgetObjectNumbers`, in `draft.widgets` order, when
+    /// given. The draft stays the object sent: its places convert as it
+    /// runs, and the create reads it.
+    #[serde(rename = "forms.create", rename_all = "camelCase")]
+    FormsCreate {
+        draft: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_number: Option<serde_json::Number>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        widget_object_numbers: Option<Vec<serde_json::Number>>,
+    },
+    /// The settings `patch` names (`FormFieldPatch`). `expect` is the
+    /// properties it assumes the field has now.
+    #[serde(rename = "forms.update")]
+    FormsUpdate {
+        field: FormFieldRef,
+        patch: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// The field, its widgets, and the parents it leaves empty.
+    #[serde(rename = "forms.delete")]
+    FormsDelete {
+        field: FormFieldRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// One more widget for the field, where `placement` says, at
+    /// `objectNumber` when given; a merged field's widget half moves to
+    /// `splitObjectNumber`.
+    #[serde(rename = "forms.addWidget", rename_all = "camelCase")]
+    FormsAddWidget {
+        field: FormFieldRef,
+        placement: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_number: Option<serde_json::Number>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        split_object_number: Option<serde_json::Number>,
+    },
+    /// The widget leaves the field, and stays on its page.
+    #[serde(rename = "forms.removeWidget")]
+    FormsRemoveWidget { field: FormFieldRef, widget: crate::identity::AnnotationRef },
+    /// The widget leaves its page, and its field when it has one.
+    #[serde(rename = "forms.deleteWidget")]
+    FormsDeleteWidget {
+        widget: crate::identity::AnnotationRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// The calculation order: the fields go together to `position` in it.
+    #[serde(rename = "forms.reorderCalculations")]
+    FormsReorderCalculations {
+        fields: Vec<FormFieldRef>,
+        position: crate::features::forms::field::FieldPosition,
+    },
+    /// Stacking order: the widgets go together to `position` among the
+    /// page's widgets.
+    #[serde(rename = "forms.reorderWidgets")]
+    FormsReorderWidgets {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        widgets: Vec<crate::identity::AnnotationRef>,
+        position: crate::mutation::list_position::AnnotationPosition,
+    },
+    /// A widget's place and look: what `annotations.update` takes for a
+    /// widget (`WidgetPatch`). The patch stays the object sent.
+    #[serde(rename = "forms.updateWidget")]
+    FormsUpdateWidget {
+        widget: crate::identity::AnnotationRef,
+        patch: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
 }
 
 /// A `pages.insert` source: a payload it names, or its bytes.
@@ -303,7 +377,16 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::FormsSetValue { .. }
             | ChangeOp::FormsSetDisplay { .. }
             | ChangeOp::FormsSetAppearanceText { .. }
-            | ChangeOp::FormsReset { .. } => {}
+            | ChangeOp::FormsReset { .. }
+            | ChangeOp::FormsCreate { .. }
+            | ChangeOp::FormsUpdate { .. }
+            | ChangeOp::FormsDelete { .. }
+            | ChangeOp::FormsAddWidget { .. }
+            | ChangeOp::FormsRemoveWidget { .. }
+            | ChangeOp::FormsDeleteWidget { .. }
+            | ChangeOp::FormsReorderCalculations { .. }
+            | ChangeOp::FormsReorderWidgets { .. }
+            | ChangeOp::FormsUpdateWidget { .. } => {}
         }
     }
     Ok(())
@@ -353,6 +436,15 @@ impl ChangeOp {
             Self::FormsSetDisplay { .. } => "forms.setDisplay",
             Self::FormsSetAppearanceText { .. } => "forms.setAppearanceText",
             Self::FormsReset { .. } => "forms.reset",
+            Self::FormsCreate { .. } => "forms.create",
+            Self::FormsUpdate { .. } => "forms.update",
+            Self::FormsDelete { .. } => "forms.delete",
+            Self::FormsAddWidget { .. } => "forms.addWidget",
+            Self::FormsRemoveWidget { .. } => "forms.removeWidget",
+            Self::FormsDeleteWidget { .. } => "forms.deleteWidget",
+            Self::FormsReorderCalculations { .. } => "forms.reorderCalculations",
+            Self::FormsReorderWidgets { .. } => "forms.reorderWidgets",
+            Self::FormsUpdateWidget { .. } => "forms.updateWidget",
         }
     }
 }
@@ -373,16 +465,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.21: the other form ops.
-    ("forms.create", "8.21"),
-    ("forms.update", "8.21"),
-    ("forms.delete", "8.21"),
-    ("forms.addWidget", "8.21"),
-    ("forms.removeWidget", "8.21"),
-    ("forms.deleteWidget", "8.21"),
-    ("forms.reorderCalculations", "8.21"),
-    ("forms.reorderWidgets", "8.21"),
-    ("forms.updateWidget", "8.21"),
     // 8.22: the imports, which only their own verbs run as a one-op change
     // (`RecordedOp`); `document.apply` refuses them (`assertNoImport`).
     ("annotations.import", "8.22"),
@@ -477,7 +559,16 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
-        | ChangeOp::FormsReset { .. } => {}
+        | ChangeOp::FormsReset { .. }
+        | ChangeOp::FormsCreate { .. }
+        | ChangeOp::FormsUpdate { .. }
+        | ChangeOp::FormsDelete { .. }
+        | ChangeOp::FormsAddWidget { .. }
+        | ChangeOp::FormsRemoveWidget { .. }
+        | ChangeOp::FormsDeleteWidget { .. }
+        | ChangeOp::FormsReorderCalculations { .. }
+        | ChangeOp::FormsReorderWidgets { .. }
+        | ChangeOp::FormsUpdateWidget { .. } => {}
     }
     Ok(parsed)
 }
@@ -520,11 +611,11 @@ mod tests {
     fn an_op_another_task_registers_refuses_the_whole_change_naming_its_owner() {
         let refused = parse_ops(&serde_json::json!([
             { "type": "metadata.update", "patch": {} },
-            { "type": "forms.create", "draft": {} },
+            { "type": "outline.create", "data": {} },
         ]))
         .unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::NotImplemented);
-        assert!(refused.message.contains("8.21"), "{refused}");
+        assert!(refused.message.contains("8.24"), "{refused}");
         assert_eq!(refused.details.unwrap()["opIndex"], 1);
     }
 
@@ -620,6 +711,15 @@ mod tests {
             "forms.setDisplay",
             "forms.setAppearanceText",
             "forms.reset",
+            "forms.create",
+            "forms.update",
+            "forms.delete",
+            "forms.addWidget",
+            "forms.removeWidget",
+            "forms.deleteWidget",
+            "forms.reorderCalculations",
+            "forms.reorderWidgets",
+            "forms.updateWidget",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

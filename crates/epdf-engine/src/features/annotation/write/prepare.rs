@@ -322,6 +322,11 @@ impl Rgb {
     pub const RED: Self = Self(255, 0, 0);
     pub const YELLOW: Self = Self(255, 255, 0);
 
+    /// `#rrggbb`, read into its components.
+    pub fn parse_hex(text: &str) -> Option<Self> {
+        Self::parse(text)
+    }
+
     fn parse(text: &str) -> Option<Self> {
         let hex = text
             .strip_prefix('#')
@@ -456,6 +461,13 @@ pub struct DraftFields {
     /// Whether the draft names any caption field (`touchesCaption`).
     pub caption_touched: bool,
     pub caption_enabled: Nullable<bool>,
+    // A widget.
+    /// Its style fields, nullable where the widget kind's are.
+    pub widget: super::widget::WidgetStyle,
+    /// Its turn, a quarter turn clockwise; `null` and 0 upright.
+    pub widget_rotation: Nullable<crate::geom::PdfRotation>,
+    /// Its actions, by event; `null` removes them all.
+    pub widget_actions: Nullable<crate::features::actions::write::WidgetActionsPatch>,
 }
 
 /// The `/F` flag fields, in `ANNOT_FLAG_BITS` order (bit 0 first).
@@ -599,6 +611,33 @@ pub(crate) fn read_field(
     if let Some(bit) = FLAG_NAMES.iter().position(|flag| *flag == name) {
         fields.flags[bit] = Some(read(kind, name, value)?);
         return Ok(());
+    }
+    // A widget's own fields (`WidgetDeclaration`): its style, nullable where
+    // a shape's isn't, its quarter turn and its actions.
+    if subtype == S::Widget {
+        if super::widget::read_style_field(kind, name, value, &mut fields.widget)? {
+            return Ok(());
+        }
+        match name {
+            "rotation" => {
+                let degrees: Option<f64> = read_nullable(kind, name, value)?;
+                let turn = match degrees {
+                    None => None,
+                    Some(degrees) => super::widget::quarter_turn(degrees)
+                        .filter(|_| [0.0, 90.0, 180.0, 270.0].contains(&degrees))
+                        .ok_or_else(|| {
+                            invalid(kind, name, "expected a quarter turn: 0, 90, 180 or 270")
+                        })?,
+                };
+                fields.widget_rotation = Some(turn);
+                return Ok(());
+            }
+            "actions" => {
+                fields.widget_actions = Some(read_nullable(kind, name, value)?);
+                return Ok(());
+            }
+            _ => {}
+        }
     }
     match name {
         "nm" => fields.nm = Some(read_nullable(kind, name, value)?),

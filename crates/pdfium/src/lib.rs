@@ -47,7 +47,7 @@ pub use action::{
     ActionModel, ActionNodeId, AnnotationActionEvent, DestinationLocation, DestinationView,
     DocumentActionEvent, PageActionEvent, RawDestination,
 };
-pub use action_write::{Action, Destination, view};
+pub use action_write::{Action, ActionTarget, Destination, view};
 pub use annot::{
     Annotation, AppearanceMode, Attachment, AttachmentExtractError, BorderStyle, DefaultAppearance,
     LineCaption, RectangleDifferences, ShapeCaption,

@@ -19,8 +19,10 @@
 //! every answer under its `opId` ([`ledger`]).
 //!
 //! The op table ([`op`]) runs the metadata, attachment, annotation, page
-//! and form value ops ([`forms`]); every other op type answers `NotImplemented` naming the sub-task
-//! that registers it ([`op::OP_OWNERS`]).
+//! and form value ops ([`forms`]), and the form's design: its fields, their
+//! widgets and the calculation order ([`fields`]); every other op type
+//! answers `NotImplemented` naming the sub-task that registers it
+//! ([`op::OP_OWNERS`]).
 //!
 //! # Events
 //!
@@ -50,6 +52,7 @@
 pub mod annotations;
 pub mod applier;
 pub mod attachments;
+pub mod fields;
 pub mod fingerprint;
 pub mod forms;
 pub mod item;

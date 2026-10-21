@@ -21,3 +21,4 @@ pub mod document;
 pub mod reader;
 pub mod submit_flags;
 pub mod vocabulary;
+pub mod write;

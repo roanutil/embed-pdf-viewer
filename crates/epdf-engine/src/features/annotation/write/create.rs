@@ -905,9 +905,9 @@ pub(super) fn write_link_target(
     let action = match target {
         LinkTargetWrite::Uri(uri) => document.create_uri_action(uri),
         LinkTargetWrite::Named(name) => document.create_named_action(name),
-        LinkTargetWrite::Goto(destination) => {
-            document.create_goto_action(super::legacy::build_destination(document, destination)?)
-        }
+        LinkTargetWrite::Goto(destination) => document.create_goto_action(
+            crate::features::actions::write::build_destination(document, destination)?,
+        ),
     }
     .map_err(|e| unknown(format!("failed to create the link's action: {e}")))?;
     if !annotation.set_action(action) {

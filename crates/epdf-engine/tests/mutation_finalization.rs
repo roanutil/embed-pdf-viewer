@@ -89,8 +89,7 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormFieldCreated(nothing.clone()), MutationFamily::SelfSequenced),
-        (DocumentEventInit::FormWidgetDetached(nothing.clone()), MutationFamily::SelfSequenced),
+        (DocumentEventInit::FormFieldUpdated(nothing.clone()), MutationFamily::SelfSequenced),
     ] {
         assert_eq!(event.family(), expected, "{}", event.type_name());
     }
@@ -118,11 +117,7 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         DocumentEventInit::MetadataUpdated(nothing.clone()),
         DocumentEventInit::FormImported(nothing.clone()),
         DocumentEventInit::FormRepaired(nothing.clone()),
-        DocumentEventInit::FormFieldCreated(nothing.clone()),
         DocumentEventInit::FormFieldUpdated(nothing.clone()),
-        DocumentEventInit::FormFieldDeleted(nothing.clone()),
-        DocumentEventInit::FormWidgetAttached(nothing.clone()),
-        DocumentEventInit::FormWidgetDetached(nothing.clone()),
         DocumentEventInit::PageViewportsChanged(nothing.clone()),
         DocumentEventInit::SignaturePrepared { signing_id: String::from("s"), field: empty() },
         DocumentEventInit::SignatureCompleted(nothing),
@@ -140,8 +135,11 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     // `pages.deleted`, `pages.inserted` and `pages.restored`, whose writes
     // are `document.apply` ops (8.18), nor the form value events,
     // `forms.valueSet` and `forms.updated`, a change's too (8.20), which
-    // also retired `form.effectsApplied` with `forms.applyEffects`.
-    assert_eq!(every.len(), 18, "the event list and the TypeScript union disagree");
+    // also retired `form.effectsApplied` with `forms.applyEffects`, nor the
+    // field and widget events (`forms.created`, `forms.deleted`,
+    // `forms.widgetAdded` and the rest), whose writes run as changes too
+    // (8.21), which retired `forms.attachWidget`'s.
+    assert_eq!(every.len(), 14, "the event list and the TypeScript union disagree");
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");

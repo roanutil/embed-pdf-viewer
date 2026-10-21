@@ -171,9 +171,13 @@ pub fn assert_annotation_patch(
         let Some(value) = prepared.get(*name) else { continue };
         let writable = match *name {
             "parent" => read_parent(value).is_ok(),
-            // A widget's actions are the form's (Task 8.21); a widget never
-            // reaches an annotation update.
-            "actions" => false,
+            // A widget's actions write as a patch by event; a read's trees
+            // sent back unchanged were left out by preparation.
+            "actions" => value.is_null()
+                || serde_json::from_value::<crate::features::actions::write::WidgetActionsPatch>(
+                    value.clone(),
+                )
+                .is_ok(),
             _ => read_field("update", subtype, name, value, &mut DraftFields::default()).is_ok(),
         };
         if !writable {

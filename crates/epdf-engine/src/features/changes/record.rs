@@ -52,6 +52,79 @@ pub enum ReverseStep {
     PagesRestore(PageRestoreStep),
     #[serde(rename = "pages.remove")]
     PagesRemove(PageRemoveStep),
+    #[serde(rename = "field.remove")]
+    FieldRemove(FieldRemoveStep),
+    #[serde(rename = "field.restore")]
+    FieldRestore(FieldRestoreStep),
+    #[serde(rename = "widget.restore")]
+    WidgetRestore(WidgetRestoreStep),
+    #[serde(rename = "widget.delete")]
+    WidgetDelete(WidgetDeleteStep),
+    #[serde(rename = "calculations.restore")]
+    CalculationsRestore(CalculationOrderStep),
+}
+
+/// Deletes a field a create made, when nobody changed it since
+/// (`FieldRemoveStep`). `left` is the field as the change left it, in the
+/// file's coordinates.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldRemoveStep {
+    pub object_number: u32,
+    pub left: serde_json::Value,
+}
+
+/// Brings back a field a delete removed, its widgets and the parents it
+/// pruned, from the fork's capture (`EPDFForm_ExportFieldRawToOwnedBuffer`)
+/// (`FieldRestoreStep`). Left alone when another field took its name, or a
+/// page its widgets were on is gone.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldRestoreStep {
+    pub object_number: u32,
+    /// Its fully qualified name.
+    pub name: String,
+    /// The pages its widgets were on.
+    pub pages: Vec<crate::identity::PageRef>,
+    #[serde(with = "hex_vec")]
+    pub capture: Vec<u8>,
+}
+
+/// Brings back a widget a delete removed: onto its page at its place, and
+/// into its field again when it had one (`WidgetRestoreStep`). Left alone
+/// when the page is gone, the widget is back already, or its field changed
+/// since.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WidgetRestoreStep {
+    pub page: crate::identity::PageRef,
+    pub widget: crate::identity::AnnotationRef,
+    /// The widget as it was on its page, out of its field.
+    #[serde(with = "hex_vec")]
+    pub capture: Vec<u8>,
+    /// The field it was in; `None` for a widget in no field.
+    pub field_object_number: Option<u32>,
+    /// The field's dictionary and the widget's, before and after it left
+    /// the field.
+    pub detached: Vec<CapturedObject>,
+}
+
+/// Deletes a widget a restore brought back, when nobody changed it since:
+/// the redo of a delete (`WidgetDeleteStep`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WidgetDeleteStep {
+    pub widget: crate::identity::AnnotationRef,
+    pub left: serde_json::Value,
+}
+
+/// Takes back what a change did to the form's calculation order, by field
+/// object number, where nobody changed it since (`CalculationOrderStep`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CalculationOrderStep {
+    pub before: Vec<u32>,
+    pub after: Vec<u32>,
 }
 
 /// Turns pages back to `rotation` while each still has the rotation the
@@ -208,6 +281,15 @@ pub enum RevertFallback {
     /// value it left. A field still holding that value gets its old one
     /// back.
     Value { fields: Vec<FieldValueChange> },
+    /// The properties a field update changed, as a patch: their old values
+    /// (`restore`) and the values it left (`left`). A property still
+    /// holding its value is put back.
+    #[serde(rename_all = "camelCase")]
+    Properties {
+        object_number: u32,
+        restore: serde_json::Map<String, serde_json::Value>,
+        left: serde_json::Map<String, serde_json::Value>,
+    },
 }
 
 /// One field of a [`RevertFallback::Value`].
@@ -368,6 +450,13 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
             ReverseStep::PagesRestore(step) => {
                 step.pages.iter().map(|page| page.capture.len()).sum()
             }
+            // As upstream counts them: a widget's restore and the guards
+            // of a field's remove hold no counted capture.
+            ReverseStep::FieldRemove(_)
+            | ReverseStep::WidgetDelete(_)
+            | ReverseStep::WidgetRestore(_)
+            | ReverseStep::CalculationsRestore(_) => 0,
+            ReverseStep::FieldRestore(step) => step.capture.len(),
         })
         .sum()
 }

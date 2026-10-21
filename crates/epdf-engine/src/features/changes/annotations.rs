@@ -31,7 +31,7 @@ use crate::features::annotation::write::create::{
 use crate::features::annotation::write::draft::AnnotationActor;
 use crate::features::annotation::write::prepare::DraftResources;
 use crate::features::annotation::write::update::{
-    UpdateRequest, UpdateServices, read_record, record_json, update_annotation as update,
+    UpdateRequest, UpdateServices, update_annotation as update,
 };
 use crate::features::annotation::write::{delete, reorder};
 use crate::identity::{AnnotationRef, PageObjectNumber};
@@ -83,7 +83,7 @@ fn authorize_create(
 }
 
 /// An object number as sent: a whole number from 1 (`claimObjectNumber`).
-fn object_number_of(number: &serde_json::Number) -> Result<u32, EngineError> {
+pub(super) fn object_number_of(number: &serde_json::Number) -> Result<u32, EngineError> {
     // `Number.isInteger`: 70.0 is a whole number too.
     let whole = number.as_u64().or_else(|| {
         number
@@ -491,14 +491,14 @@ pub fn reorder_annotations(
 }
 
 /// A reorder's item, and the step that puts its rows back (`reordered`).
-fn reordered(
+pub(super) fn reordered(
     ctx: &ChangeContext<'_>,
     plan: &reorder::PlannedReorder,
     refs: &[AnnotationRef],
 ) -> Result<Done, EngineError> {
     let page = plan.stack.page;
     Ok(Done {
-        item: reorder_item(ctx, page, plan.after.clone(), refs)?,
+        item: reorder_item(ctx, plan.family, page, plan.after.clone(), refs)?,
         reverse: vec![ReverseStep::AnnotationReorder(AnnotationReorderStep {
             page,
             family: plan.family,
@@ -510,15 +510,51 @@ fn reordered(
 }
 
 /// A reorder's item: the family's new order on the page, and the rows that
-/// moved (`reorderItem`).
+/// moved (`reorderItem`): an annotation reorder's, or the form's
+/// `forms.reorderWidgets` with the form's meta.
 fn reorder_item(
     ctx: &ChangeContext<'_>,
+    family: AnnotationFamily,
     page: PageObjectNumber,
     order: Vec<AnnotationRef>,
     moved: &[AnnotationRef],
 ) -> Result<ChangeItem, EngineError> {
-    let meta = AnnotationMutationMeta::of(&ctx.session.write_stamp()?, page, moved.to_vec());
-    Ok(ChangeItem::AnnotationsReorder { page, order, meta })
+    let stamp = ctx.session.write_stamp()?;
+    if family == AnnotationFamily::Annotations {
+        let meta = AnnotationMutationMeta::of(&stamp, page, moved.to_vec());
+        return Ok(ChangeItem::AnnotationsReorder { page, order, meta });
+    }
+    let widgets = moved
+        .iter()
+        .map(|reference| {
+            Ok(crate::features::forms::write::MetaWidget::Plain(
+                crate::features::forms::snapshot::FormWidgetRef {
+                    annot_object_number: annotation_object_number(ctx, reference)?,
+                    page_object_number: page.get(),
+                },
+            ))
+        })
+        .collect::<Result<Vec<_>, EngineError>>()?;
+    Ok(ChangeItem::FormsReorderWidgets {
+        page: crate::identity::PageRef::new(page),
+        order,
+        meta: crate::features::forms::write::form_mutation_meta(&stamp, Vec::new(), widgets, None),
+    })
+}
+
+/// `objectNumberOf`: the object number of the annotation `reference` names
+/// on its page (0 for an inline one).
+pub(super) fn annotation_object_number(
+    ctx: &ChangeContext<'_>,
+    reference: &AnnotationRef,
+) -> Result<u32, EngineError> {
+    let owned = ctx.session.document()?;
+    let page_index = owned.page_index(reference.page())?;
+    let document = owned.document();
+    let index = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+        document, page_index, reference,
+    )?;
+    Ok(document.raw_annotation(page_index, index).map_or(0, |a| a.object_number()))
 }
 
 /// A reorder may move these rows: each annotation's kind, or the form's
@@ -603,7 +639,7 @@ pub fn reorder_back(
     }
     let after = reorder::family_order(&current, step.family);
     Ok(Done {
-        item: reorder_item(ctx, step.page, after.clone(), &back)?,
+        item: reorder_item(ctx, step.family, step.page, after.clone(), &back)?,
         reverse: vec![ReverseStep::AnnotationReorder(AnnotationReorderStep {
             refs: back,
             before: now,
@@ -712,8 +748,9 @@ fn authorize_update(
 }
 
 /// The annotation `reference` names as it reads now, in the file's
-/// coordinates (`readAnnotation`): `NotFound` when there is none.
-fn read_annotation(
+/// coordinates (`readAnnotation`): `NotFound` when there is none. A widget
+/// reads as the form reads its row.
+pub(super) fn read_annotation(
     ctx: &ChangeContext<'_>,
     reference: &AnnotationRef,
 ) -> Result<Map<String, Value>, EngineError> {
@@ -727,7 +764,7 @@ fn read_annotation(
     let annotation = document.raw_annotation(page_index, index).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "an annotation is not where it was")
     })?;
-    record_json(&read_record(document, &annotation, page, index)?)
+    crate::features::annotation::write::update::read_record_json(document, &annotation, page, index)
 }
 
 /// `annotations.update`. Its reverse puts back the fields it changed
@@ -755,8 +792,9 @@ pub fn update_annotation(
 }
 
 /// An update of `reference` with `patch`, recording its reverse
-/// (`writeUpdate`).
-fn write_update(
+/// (`writeUpdate`), reported as `reports`: an annotation's update, or a
+/// widget's `forms.updateWidget`.
+pub(super) fn write_update(
     ctx: &mut ChangeContext<'_>,
     reference: &AnnotationRef,
     patch: Map<String, Value>,
@@ -764,6 +802,15 @@ fn write_update(
     reports: &str,
 ) -> Result<Done, EngineError> {
     let before = read_annotation(ctx, reference)?;
+    // A widget's patch as its field's family takes it (`fitWidgetToFamily`).
+    let patch = if before.get("subtype").and_then(Value::as_str) == Some("widget") {
+        let family: crate::features::forms::snapshot::FormFieldFamily =
+            serde_json::from_value(before.get("fieldFamily").cloned().unwrap_or_default())
+                .unwrap_or(crate::features::forms::snapshot::FormFieldFamily::Unknown);
+        crate::features::forms::field::fit_widget_to_family(family, patch)?
+    } else {
+        patch
+    };
     let actor = authorize_update(ctx, &before, patch.get("groupId"))?;
     let appearance = resources.appearance.as_ref().map(|r| r.bytes()).transpose()?;
     let file = resources.file.as_ref().map(|r| r.bytes()).transpose()?;
@@ -788,7 +835,7 @@ fn write_update(
         &services,
         ctx.cancel,
     )?;
-    let after = record_json(&result.annotation)?;
+    let after = result.annotation.clone();
     let reverse = ReverseStep::ObjectsRevert(ObjectsRevertStep {
         reports: reports.to_owned(),
         objects: Vec::new(),
@@ -796,15 +843,53 @@ fn write_update(
         appearance_changed: Some(result.appearance.changed),
         fallback: Some(values_changed(&before, &after, &written)),
     });
-    Ok(Done {
-        item: ChangeItem::AnnotationsUpdate {
+    Ok(Done { item: updated_item(ctx, reports, reference, after, result)?, reverse: vec![reverse] })
+}
+
+/// The item of an in-place update (`updatedItem`): an annotation's, with
+/// its page; or a widget's form op, with the form's meta.
+fn updated_item(
+    ctx: &ChangeContext<'_>,
+    reports: &str,
+    reference: &AnnotationRef,
+    after: Map<String, Value>,
+    result: crate::features::annotation::write::update::AnnotationUpdateResult,
+) -> Result<ChangeItem, EngineError> {
+    use crate::features::forms::write::{MetaWidget, form_mutation_meta};
+    let page = reference.page();
+    if reports == "annotations.update" {
+        return Ok(ChangeItem::AnnotationsUpdate {
             page,
             annotation: Value::Object(after),
             appearance: result.appearance,
             meta: result.meta,
             skipped: Vec::new(),
-        },
-        reverse: vec![reverse],
+        });
+    }
+    if after.get("subtype").and_then(Value::as_str) != Some("widget") {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "a widget update read back no widget",
+        ));
+    }
+    let changed = MetaWidget::Plain(crate::features::forms::snapshot::FormWidgetRef {
+        annot_object_number: annotation_object_number(ctx, reference)?,
+        page_object_number: page.get(),
+    });
+    let field: Option<crate::features::forms::snapshot::FormFieldRef> =
+        serde_json::from_value(after.get("field").cloned().unwrap_or_default()).ok().flatten();
+    // A move keeps the widget's look: its picture is the one it had.
+    let redrawn = if result.appearance.changed { vec![changed.clone()] } else { Vec::new() };
+    Ok(ChangeItem::FormsUpdateWidget {
+        widget: Value::Object(after),
+        appearance: result.appearance,
+        meta: form_mutation_meta(
+            &ctx.session.write_stamp()?,
+            field.into_iter().collect(),
+            vec![changed],
+            Some(redrawn),
+        ),
+        skipped: Vec::new(),
     })
 }
 
@@ -842,7 +927,14 @@ pub fn revert_annotation(
     let Ok(current) = read_annotation(ctx, reference) else {
         return left_alone(ctx, &step.reports);
     };
-    ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
+    // `annotationWriteCapability`: a widget is the form's.
+    ctx.authority.require_unprotected(
+        if current.get("subtype").and_then(Value::as_str) == Some("widget") {
+            DocCapability::DocFormsModify
+        } else {
+            DocCapability::DocAnnotateModify
+        },
+    )?;
     // re-port (Task 8): 8.30 puts the dictionaries back exactly from their
     // captures while they read as the update left them; until then every
     // revert takes the value path below.
@@ -858,14 +950,27 @@ pub fn revert_annotation(
     if kept.is_empty() {
         return left_alone(ctx, &step.reports);
     }
+    // A widget's actions are kept as read (trees) and written as a patch.
+    let widget = current.get("subtype").and_then(Value::as_str) == Some("widget");
+    let writable = |key: &str, value: &Value| -> Value {
+        if key != "actions" || !widget {
+            return value.clone();
+        }
+        let actions: Option<crate::features::annotation::read::base::AnnotationActions> =
+            serde_json::from_value(value.clone()).ok().flatten();
+        serde_json::to_value(crate::features::actions::write::widget_actions_of(actions.as_ref()))
+            .unwrap_or(Value::Null)
+    };
     let patch: Map<String, Value> = kept
         .iter()
-        .filter_map(|key| restore.get(*key).map(|value| ((*key).clone(), value.clone())))
+        .filter_map(|key| restore.get(*key).map(|value| ((*key).clone(), writable(key, value))))
         .collect();
     let mut done = write_update(ctx, reference, patch, &OpResources::default(), &step.reports)?;
     let skipped: Vec<String> =
         keys.into_iter().filter(|key| !kept.contains(key)).cloned().collect();
-    if let ChangeItem::AnnotationsUpdate { skipped: item_skipped, .. } = &mut done.item {
+    if let ChangeItem::AnnotationsUpdate { skipped: item_skipped, .. }
+    | ChangeItem::FormsUpdateWidget { skipped: item_skipped, .. } = &mut done.item
+    {
         *item_skipped = skipped;
     }
     Ok(done)

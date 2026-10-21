@@ -109,6 +109,39 @@ impl Document {
         unsafe { pdfium_sys::EPDFPage_ImportRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0 }
     }
 
+    /// `EPDFForm_ExportFieldRawToOwnedBuffer`: the terminal field
+    /// `field_object_number` as `EPDFForm_DeleteField` removes it, with its
+    /// widgets, their pages and positions, the ancestors the delete prunes,
+    /// and every object the layer holds a version of that they reach.
+    /// `None` for a field that isn't terminal, or a document that is not a
+    /// layer.
+    pub fn export_field_raw(&self, field_object_number: u32) -> Option<Vec<u8>> {
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFForm_ExportFieldRawToOwnedBuffer(
+                self.as_raw(),
+                field_object_number,
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFForm_ImportFieldRaw`: put the field of `capture` back, its
+    /// ancestors and each widget at the positions they had. `false` outside
+    /// a layer transaction, for a malformed capture, or when a container or
+    /// a widget's page is gone.
+    pub fn import_field_raw(&self, capture: &[u8]) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(capture.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and `capture` outlives the call.
+        unsafe {
+            pdfium_sys::EPDFForm_ImportFieldRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0
+        }
+    }
+
     /// `EPDFDoc_ExportDictCanonicalToOwnedBuffer`: the dictionary
     /// `object_number` as bytes a guard compares, without the keys in
     /// `skip_keys` and with every object the layer holds under `deep_keys`,

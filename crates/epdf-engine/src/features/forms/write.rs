@@ -535,7 +535,7 @@ impl FormMutator<'_> {
 
     /// `assertWritable`: a field stored as a direct object can't be written,
     /// and one an earlier signature locked refuses every write.
-    fn assert_writable(
+    pub(crate) fn assert_writable(
         &self,
         model: &FormModel<'_>,
         resolved: &ResolvedField,
@@ -573,7 +573,7 @@ impl FormMutator<'_> {
     /// pictures (also with `redraw`). Answers the widgets whose pictures
     /// changed, or `None` when the field already held it all and nothing
     /// was written.
-    fn write_field_after(
+    pub(crate) fn write_field_after(
         &self,
         object_number: u32,
         before: &FormFieldDto,

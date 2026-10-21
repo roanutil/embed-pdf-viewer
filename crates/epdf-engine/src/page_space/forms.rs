@@ -157,6 +157,11 @@ pub fn page_form_result_value(
     if let Some(field) = result.get_mut("field").filter(|field| !field.is_null()) {
         *field = page_form_field_value(field.take(), box_of)?;
     }
+    // `forms.updateWidget`'s row; a widget delete names its widget by ref.
+    if let Some(widget) = result.get_mut("widget").filter(|widget| widget.get("subtype").is_some())
+    {
+        *widget = page_widget_value(widget.take(), box_of)?;
+    }
     for list in ["fields", "widgets"] {
         if let Some(serde_json::Value::Array(items)) = result.get_mut(list) {
             for item in items.iter_mut() {
@@ -169,6 +174,91 @@ pub fn page_form_result_value(
         }
     }
     Ok(())
+}
+
+/// `pdfWidgetPlacementOf`: a page-space widget placement in the file's
+/// coordinates, measured on its page, its actions' destinations on theirs.
+pub fn pdf_widget_placement_of(
+    placement: serde_json::Map<String, serde_json::Value>,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Map<String, serde_json::Value>, EngineError> {
+    use crate::features::forms::field::WidgetPlacement;
+    let placement: WidgetPlacement<PageCoordinates> = from_wire("placement", placement)?;
+    let visible = box_of(placement.page)?;
+    let actions = placement
+        .actions
+        .map(|actions| {
+            actions.try_map_destinations(&mut |destination| {
+                super::destinations::pdf_destination_of(destination, &mut *box_of)
+            })
+        })
+        .transpose()?;
+    let converted = WidgetPlacement::<PdfCoordinates> {
+        page: placement.page,
+        rect: placement.rect.map(|rect| super::pdf_rect_of(rect, visible)),
+        content_box: placement.content_box.map(|rect| super::pdf_rect_of(rect, visible)),
+        rotation: placement.rotation,
+        export_value: placement.export_value,
+        actions,
+        style: placement.style,
+    };
+    match to_json(&converted)? {
+        serde_json::Value::Object(map) => Ok(map),
+        _ => Err(EngineError::with_message(
+            crate::error::EngineErrorCode::Unknown,
+            "a placement converted to no object",
+        )),
+    }
+}
+
+/// `pdfFormFieldDraftOf`: a field draft in the file's coordinates, each
+/// widget measured on its own page.
+pub fn pdf_form_field_draft_of(
+    mut draft: serde_json::Map<String, serde_json::Value>,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Map<String, serde_json::Value>, EngineError> {
+    let Some(serde_json::Value::Array(widgets)) = draft.remove("widgets") else {
+        return Ok(draft);
+    };
+    let converted = widgets
+        .into_iter()
+        .map(|widget| match widget {
+            serde_json::Value::Object(placement) => {
+                pdf_widget_placement_of(placement, box_of).map(serde_json::Value::Object)
+            }
+            _ => Err(EngineError::with_message(
+                crate::error::EngineErrorCode::WireFormat,
+                "a widget placement is an object",
+            )),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    draft.insert("widgets".into(), serde_json::Value::Array(converted));
+    Ok(draft)
+}
+
+/// `pdfWidgetPatchOf`: a widget patch in the file's coordinates, on the
+/// widget's page, as an annotation patch of the widget kind.
+pub fn pdf_widget_patch_of(
+    mut patch: serde_json::Map<String, serde_json::Value>,
+    visible: crate::geom::PdfRect,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Map<String, serde_json::Value>, EngineError> {
+    patch.insert("subtype".into(), serde_json::Value::String("widget".into()));
+    super::annotations::pdf_annotation_patch_of(patch, visible, box_of)
+}
+
+/// A request member read as the type its conversion takes: a shape that
+/// isn't is the caller's `WireFormat`.
+fn from_wire<T: serde::de::DeserializeOwned>(
+    name: &str,
+    value: serde_json::Map<String, serde_json::Value>,
+) -> Result<T, EngineError> {
+    serde_json::from_value(serde_json::Value::Object(value)).map_err(|e| {
+        EngineError::with_message(
+            crate::error::EngineErrorCode::WireFormat,
+            format!("the {name} is not the shape it takes: {e}"),
+        )
+    })
 }
 
 fn from_json<T: serde::de::DeserializeOwned>(value: serde_json::Value) -> Result<T, EngineError> {

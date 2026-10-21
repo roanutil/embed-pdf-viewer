@@ -221,12 +221,40 @@ pub fn request_in_file_space(
             Ok(())
         }
 
-        // re-port (Task 8): these take places in page space upstream and
-        // convert here once their owners move them: widget placements and
-        // patches and field drafts (8.21), a measure (8.25).
-        K::FormsUpdateWidget | K::FormsCreateField | K::FormsAddWidget | K::MeasureSetScale => {
+        // A field draft, each widget on its page (`pdfFormFieldDraftOf`).
+        K::FormsCreateField => {
+            if let Some(serde_json::Value::Object(draft)) = body.get_mut("draft") {
+                let converted =
+                    super::forms::pdf_form_field_draft_of(std::mem::take(draft), box_of)?;
+                *draft = converted;
+            }
             Ok(())
         }
+        // The placement on its page (`pdfWidgetPlacementOf`).
+        K::FormsAddWidget => {
+            if let Some(serde_json::Value::Object(placement)) = body.get_mut("placement") {
+                let converted =
+                    super::forms::pdf_widget_placement_of(std::mem::take(placement), box_of)?;
+                *placement = converted;
+            }
+            Ok(())
+        }
+        // The patch on the widget's page (`pdfWidgetPatchOf`).
+        K::FormsUpdateWidget => {
+            let widget: crate::identity::AnnotationRef =
+                from_value(body.get("widget").cloned().unwrap_or_default())?;
+            let visible = box_of(widget.page())?;
+            if let Some(serde_json::Value::Object(patch)) = body.get_mut("patch") {
+                let converted =
+                    super::forms::pdf_widget_patch_of(std::mem::take(patch), visible, box_of)?;
+                *patch = converted;
+            }
+            Ok(())
+        }
+
+        // re-port (Task 8): a measure takes its places in page space
+        // upstream, and converts here once 8.25 moves it.
+        K::MeasureSetScale => Ok(()),
 
         // No places.
         K::Abort
@@ -397,40 +425,38 @@ pub fn result_in_page_space(
 
         // re-port (Task 8): these answer places in PDF space until their
         // owners add the conversion here: the outline (8.24), viewports
-        // (8.25), form fields and widgets of the writes (8.21, 8.22, 8.26),
-        // and imports (8.22).
+        // (8.25), a signature's look (8.26), and imports (8.22).
         K::AnnotationsImport
         | K::OutlineRead
         | K::MeasureViewports
         | K::FormsImport
         | K::FormsImportValues
-        | K::FormsCreateField
-        | K::FormsUpdateField
-        | K::FormsSetSignatureAppearance
-        | K::FormsAddWidget
-        | K::FormsDetachWidget
-        | K::FormsUpdateWidget
-        | K::FormsDeleteWidget => Ok(response),
+        | K::FormsSetSignatureAppearance => Ok(response),
 
         // The field or fields and the widget rows (`pageFormFieldOf`,
         // `pageWidgetOf`), in the result and in each event that carries
         // them.
-        K::FormsSetValue | K::FormsReset => {
-            convert_result(response, |mut answer: serde_json::Value| {
-                if let Some(result) = answer.get_mut("result") {
-                    super::forms::page_form_result_value(result, box_of)?;
-                }
-                if let Some(event) = answer.get_mut("event").filter(|event| !event.is_null()) {
+        K::FormsSetValue
+        | K::FormsReset
+        | K::FormsCreateField
+        | K::FormsUpdateField
+        | K::FormsAddWidget
+        | K::FormsDetachWidget
+        | K::FormsUpdateWidget
+        | K::FormsDeleteWidget => convert_result(response, |mut answer: serde_json::Value| {
+            if let Some(result) = answer.get_mut("result") {
+                super::forms::page_form_result_value(result, box_of)?;
+            }
+            if let Some(event) = answer.get_mut("event").filter(|event| !event.is_null()) {
+                super::forms::page_form_result_value(event, box_of)?;
+            }
+            if let Some(serde_json::Value::Array(events)) = answer.get_mut("events") {
+                for event in events.iter_mut() {
                     super::forms::page_form_result_value(event, box_of)?;
                 }
-                if let Some(serde_json::Value::Array(events)) = answer.get_mut("events") {
-                    for event in events.iter_mut() {
-                        super::forms::page_form_result_value(event, box_of)?;
-                    }
-                }
-                Ok(answer)
-            })
-        }
+            }
+            Ok(answer)
+        }),
 
         // A change answers page space already: each item converts right
         // after its op ran ([`change_item_in_page_space`]).
@@ -534,6 +560,43 @@ pub fn change_op_in_file_space(
             };
             Ok(ChangeOp::AnnotationsDelete { reference, expect })
         }
+        // The draft, each widget on its page.
+        ChangeOp::FormsCreate { draft, object_number, widget_object_numbers } => {
+            Ok(ChangeOp::FormsCreate {
+                draft: super::forms::pdf_form_field_draft_of(draft, box_of)?,
+                object_number,
+                widget_object_numbers,
+            })
+        }
+        // The placement on its page.
+        ChangeOp::FormsAddWidget { field, placement, object_number, split_object_number } => {
+            Ok(ChangeOp::FormsAddWidget {
+                field,
+                placement: super::forms::pdf_widget_placement_of(placement, box_of)?,
+                object_number,
+                split_object_number,
+            })
+        }
+        // The patch, and what it expects, on the widget's page.
+        ChangeOp::FormsUpdateWidget { widget, patch, expect } => {
+            let visible = box_of(widget.page())?;
+            let patch = super::forms::pdf_widget_patch_of(patch, visible, box_of)?;
+            let expect = expect
+                .map(|expect| super::forms::pdf_widget_patch_of(expect, visible, box_of))
+                .transpose()?;
+            Ok(ChangeOp::FormsUpdateWidget { widget, patch, expect })
+        }
+        // What it expects, on the widget's page.
+        ChangeOp::FormsDeleteWidget { widget, expect } => {
+            let expect = match expect {
+                Some(expect) => {
+                    let visible = box_of(widget.page())?;
+                    Some(super::forms::pdf_widget_patch_of(expect, visible, box_of)?)
+                }
+                None => None,
+            };
+            Ok(ChangeOp::FormsDeleteWidget { widget, expect })
+        }
         // No places.
         op @ (ChangeOp::MetadataUpdate { .. }
         | ChangeOp::MetadataUpdateCustom { .. }
@@ -548,7 +611,12 @@ pub fn change_op_in_file_space(
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
-        | ChangeOp::FormsReset { .. }) => Ok(op),
+        | ChangeOp::FormsReset { .. }
+        | ChangeOp::FormsUpdate { .. }
+        | ChangeOp::FormsDelete { .. }
+        | ChangeOp::FormsRemoveWidget { .. }
+        | ChangeOp::FormsReorderCalculations { .. }
+        | ChangeOp::FormsReorderWidgets { .. }) => Ok(op),
     }
 }
 
@@ -640,6 +708,63 @@ pub fn change_item_in_page_space(
             meta,
             skipped,
         }),
+        ChangeItem::FormsCreate { field, widgets, calculation_order, meta } => {
+            Ok(ChangeItem::FormsCreate {
+                field: super::forms::page_form_field_value(field, box_of)?,
+                widgets: page_widgets(widgets, box_of)?,
+                calculation_order,
+                meta,
+            })
+        }
+        ChangeItem::FormsUpdate { field, widgets, calculation_order, meta, skipped } => {
+            Ok(ChangeItem::FormsUpdate {
+                field: super::forms::page_form_field_value(field, box_of)?,
+                widgets: page_widgets(widgets, box_of)?,
+                calculation_order,
+                meta,
+                skipped,
+            })
+        }
+        ChangeItem::FormsRestore { field, widgets, meta } => Ok(ChangeItem::FormsRestore {
+            field: super::forms::page_form_field_value(field, box_of)?,
+            widgets: page_widgets(widgets, box_of)?,
+            meta,
+        }),
+        ChangeItem::FormsAddWidget { field, widgets, meta } => Ok(ChangeItem::FormsAddWidget {
+            field: super::forms::page_form_field_value(field, box_of)?,
+            widgets: page_widgets(widgets, box_of)?,
+            meta,
+        }),
+        ChangeItem::FormsRemoveWidget { field, widgets, meta } => {
+            Ok(ChangeItem::FormsRemoveWidget {
+                field: super::forms::page_form_field_value(field, box_of)?,
+                widgets: page_widgets(widgets, box_of)?,
+                meta,
+            })
+        }
+        ChangeItem::FormsDeleteWidget { widget, page, field, meta } => {
+            Ok(ChangeItem::FormsDeleteWidget {
+                widget,
+                page,
+                field: field.map(|f| super::forms::page_form_field_value(f, box_of)).transpose()?,
+                meta,
+            })
+        }
+        ChangeItem::FormsRestoreWidget { field, widgets, meta } => {
+            Ok(ChangeItem::FormsRestoreWidget {
+                field: field.map(|f| super::forms::page_form_field_value(f, box_of)).transpose()?,
+                widgets: page_widgets(widgets, box_of)?,
+                meta,
+            })
+        }
+        ChangeItem::FormsUpdateWidget { widget, appearance, meta, skipped } => {
+            Ok(ChangeItem::FormsUpdateWidget {
+                widget: super::forms::page_widget_value(widget, box_of)?,
+                appearance,
+                meta,
+                skipped,
+            })
+        }
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
@@ -648,6 +773,9 @@ pub fn change_item_in_page_space(
         | ChangeItem::AttachmentsRestore { .. }
         | ChangeItem::AnnotationsDelete { .. }
         | ChangeItem::AnnotationsReorder { .. }
+        | ChangeItem::FormsDelete { .. }
+        | ChangeItem::FormsReorderWidgets { .. }
+        | ChangeItem::FormsReorderCalculations { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
 }

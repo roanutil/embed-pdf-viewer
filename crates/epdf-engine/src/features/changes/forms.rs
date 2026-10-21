@@ -29,7 +29,7 @@ use crate::features::forms::write::{
 
 /// What a value write may write in a widget: its appearance and its look
 /// (`WIDGET_KEYS`).
-const WIDGET_KEYS: &[&str] = &["AP", "MK"];
+pub(super) const WIDGET_KEYS: &[&str] = &["AP", "MK"];
 
 /// The ops that fill a form; the rest change its design (`FILLS`).
 const FILLS: &[&str] = &[
@@ -41,9 +41,9 @@ const FILLS: &[&str] = &[
 ];
 
 /// A field as an op found it (`ReadField`).
-struct ReadField {
-    object_number: u32,
-    field: FormFieldDto,
+pub(super) struct ReadField {
+    pub(super) object_number: u32,
+    pub(super) field: FormFieldDto,
 }
 
 /// `forms.setValue`; its reverse puts back the value, and the widgets as
@@ -190,6 +190,9 @@ pub fn revert_form(
                 ..step.clone()
             })],
         });
+    }
+    if let Some(RevertFallback::Properties { object_number, restore, left }) = &step.fallback {
+        return super::fields::revert_properties(ctx, *object_number, restore, left);
     }
     let Some(RevertFallback::Value { fields: changes }) = &step.fallback else {
         return left_alone(ctx, &step.reports);
@@ -378,7 +381,11 @@ fn write_effect(
     Ok(Done { item, reverse: vec![revert_step(reports, objects, vec![before.object_number])] })
 }
 
-fn revert_step(reports: &str, objects: Vec<CapturedObject>, fields: Vec<u32>) -> ReverseStep {
+pub(super) fn revert_step(
+    reports: &str,
+    objects: Vec<CapturedObject>,
+    fields: Vec<u32>,
+) -> ReverseStep {
     ReverseStep::ObjectsRevert(ObjectsRevertStep {
         reports: reports.to_owned(),
         objects,
@@ -405,11 +412,16 @@ fn swap_fallback(fallback: &RevertFallback) -> RevertFallback {
         RevertFallback::Annotation { restore, left } => {
             RevertFallback::Annotation { restore: left.clone(), left: restore.clone() }
         }
+        RevertFallback::Properties { object_number, restore, left } => RevertFallback::Properties {
+            object_number: *object_number,
+            restore: left.clone(),
+            left: restore.clone(),
+        },
     }
 }
 
 /// The item a form write reports, with the fields read back (`formItem`).
-fn form_item(
+pub(super) fn form_item(
     ctx: &ChangeContext<'_>,
     reports: &str,
     mut fields: Vec<FormFieldDto>,
@@ -465,7 +477,7 @@ fn redrawn_by(reports: &str, field: &FormFieldDto, widgets: &[MetaWidget]) -> Ve
 
 /// One field's item, with the rows of the widgets it changed, read now
 /// (`rows`).
-fn field_item(
+pub(super) fn field_item(
     ctx: &ChangeContext<'_>,
     reports: &str,
     result: FieldWriteResult,
@@ -476,12 +488,24 @@ fn field_item(
     Ok(match reports {
         "forms.setDisplay" => ChangeItem::FormsSetDisplay { field, widgets, meta },
         "forms.setAppearanceText" => ChangeItem::FormsSetAppearanceText { field, widgets, meta },
+        "forms.update" => ChangeItem::FormsUpdate {
+            field,
+            widgets,
+            calculation_order: None,
+            meta,
+            skipped: Vec::new(),
+        },
+        "forms.addWidget" => ChangeItem::FormsAddWidget { field, widgets, meta },
+        "forms.removeWidget" => ChangeItem::FormsRemoveWidget { field, widgets, meta },
         _ => ChangeItem::FormsSetValue { field, widgets, meta },
     })
 }
 
 /// The rows of the widgets `meta` names as changed (`withWidgetRows`).
-fn rows(ctx: &ChangeContext<'_>, meta: &FormMutationMeta) -> Result<Vec<Value>, EngineError> {
+pub(super) fn rows(
+    ctx: &ChangeContext<'_>,
+    meta: &FormMutationMeta,
+) -> Result<Vec<Value>, EngineError> {
     let widgets: Vec<FormWidgetRef> =
         meta.changed_widgets.iter().map(|widget| *widget.widget()).collect();
     let rows =
@@ -489,7 +513,7 @@ fn rows(ctx: &ChangeContext<'_>, meta: &FormMutationMeta) -> Result<Vec<Value>, 
     to_values(&rows)
 }
 
-fn mutator<'a>(ctx: &'a ChangeContext<'_>) -> Result<FormMutator<'a>, EngineError> {
+pub(super) fn mutator<'a>(ctx: &'a ChangeContext<'_>) -> Result<FormMutator<'a>, EngineError> {
     Ok(FormMutator {
         document: ctx.session.document()?.document(),
         signed_document_policy: ctx.session.signed_document_policy(),
@@ -499,13 +523,16 @@ fn mutator<'a>(ctx: &'a ChangeContext<'_>) -> Result<FormMutator<'a>, EngineErro
 
 /// The dictionaries a field write may change: the field and each widget,
 /// with their appearances (`objectsOf`).
-fn objects_of(target: &ReadField) -> Vec<(u32, &'static [&'static str])> {
+pub(super) fn objects_of(target: &ReadField) -> Vec<(u32, &'static [&'static str])> {
     std::iter::once((target.object_number, WIDGET_KEYS))
         .chain(target.field.widgets().map(|widget| (widget.annot_object_number, WIDGET_KEYS)))
         .collect()
 }
 
-fn read_field(ctx: &ChangeContext<'_>, reference: &FormFieldRef) -> Result<ReadField, EngineError> {
+pub(super) fn read_field(
+    ctx: &ChangeContext<'_>,
+    reference: &FormFieldRef,
+) -> Result<ReadField, EngineError> {
     let document = ctx.session.document()?.document();
     let model = load_model(document)?;
     let resolved = resolve(&model, reference)?;
@@ -513,18 +540,24 @@ fn read_field(ctx: &ChangeContext<'_>, reference: &FormFieldRef) -> Result<ReadF
     Ok(ReadField { object_number: resolved.object_number, field })
 }
 
-fn read_field_by_number(
+pub(super) fn read_field_by_number(
     ctx: &ChangeContext<'_>,
     object_number: u32,
 ) -> Result<ReadField, EngineError> {
     read_field(ctx, &FormFieldRef::ObjectNumber { field: object_number })
 }
 
-fn try_read_field(ctx: &ChangeContext<'_>, reference: &FormFieldRef) -> Option<ReadField> {
+pub(super) fn try_read_field(
+    ctx: &ChangeContext<'_>,
+    reference: &FormFieldRef,
+) -> Option<ReadField> {
     read_field(ctx, reference).ok()
 }
 
-fn try_read_field_by_number(ctx: &ChangeContext<'_>, object_number: u32) -> Option<ReadField> {
+pub(super) fn try_read_field_by_number(
+    ctx: &ChangeContext<'_>,
+    object_number: u32,
+) -> Option<ReadField> {
     try_read_field(ctx, &FormFieldRef::ObjectNumber { field: object_number })
 }
 
@@ -543,7 +576,7 @@ fn all_fields(ctx: &ChangeContext<'_>) -> Result<Vec<ReadField>, EngineError> {
     Ok(fields)
 }
 
-fn to_values<T: serde::Serialize>(values: &[T]) -> Result<Vec<Value>, EngineError> {
+pub(super) fn to_values<T: serde::Serialize>(values: &[T]) -> Result<Vec<Value>, EngineError> {
     values.iter().map(|value| serde_json::to_value(value).map_err(unreadable)).collect()
 }
 
@@ -554,6 +587,6 @@ fn object(value: &FormFieldValue) -> Result<serde_json::Map<String, Value>, Engi
     }
 }
 
-fn unreadable(e: impl std::fmt::Display) -> EngineError {
+pub(super) fn unreadable(e: impl std::fmt::Display) -> EngineError {
     EngineError::with_message(EngineErrorCode::Unknown, format!("a form write's item: {e}"))
 }

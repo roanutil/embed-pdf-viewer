@@ -9,7 +9,9 @@
 //! (1,120) and `core/src/forms/{draft,patch,effects,submission,schema}.ts`
 //! (527). Operations: `forms.setValue`, `forms.reset`, `forms.repair`,
 //! `forms.import`, `forms.createField`, `forms.updateField`,
-//! `forms.deleteField`, `forms.attachWidget`, `forms.detachWidget`.
+//! `forms.deleteField`, `forms.addWidget`, `forms.detachWidget`,
+//! `forms.updateWidget`, `forms.deleteWidget`, `forms.reorderWidgets`,
+//! `forms.reorderCalculations`.
 //!
 //! Form JavaScript is a capability, not a port target: web keeps
 //! `packages/core/js-sandbox` and mobile reports unsupported.
@@ -22,7 +24,11 @@
 //! a field holding; [`write`], the writes themselves, which the change ops
 //! of [`crate::features::changes::forms`] run (`forms.applyEffects` went in
 //! 98e5c270c: a script's effects are one `document.apply` change).
+//! [`field`] makes, changes and removes fields and their widgets, and
+//! [`calculation`] keeps the calculation order, for the change ops of
+//! [`crate::features::changes::fields`].
 
+pub mod calculation;
 pub mod field;
 pub mod snapshot;
 pub mod value;

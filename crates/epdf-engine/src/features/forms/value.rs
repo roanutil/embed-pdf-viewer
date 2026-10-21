@@ -403,7 +403,7 @@ fn toggled<C: Coordinates>(field: &FormFieldDto<C>, target: Option<usize>) -> Fo
 }
 
 /// Whether every value is one of the options' values.
-fn choice_matches(options: &[FormFieldOption], values: &[String]) -> bool {
+pub(crate) fn choice_matches(options: &[FormFieldOption], values: &[String]) -> bool {
     values.iter().all(|value| options.iter().any(|option| &option.value == value))
 }
 
@@ -413,7 +413,7 @@ fn free_text_allowed<C: Coordinates>(field: &FormFieldDto<C>, values: &[String])
 
 /// The option indexes `values` name, each the first option with that
 /// value, in option order (`matchedIndexes`).
-fn matched_indexes(options: &[FormFieldOption], values: &[String]) -> Vec<usize> {
+pub(crate) fn matched_indexes(options: &[FormFieldOption], values: &[String]) -> Vec<usize> {
     let mut indexes: Vec<usize> = values
         .iter()
         .filter_map(|value| options.iter().position(|option| &option.value == value))
@@ -425,7 +425,7 @@ fn matched_indexes(options: &[FormFieldOption], values: &[String]) -> Vec<usize>
 
 /// A choice field holding `values`: its options' selection, its value and
 /// `/V` (`choiceFieldWith`).
-fn choice_field_with<C: Coordinates>(
+pub(crate) fn choice_field_with<C: Coordinates>(
     field: &FormFieldDto<C>,
     values: &[String],
 ) -> FormFieldDto<C> {
@@ -458,7 +458,7 @@ fn choice_field_with<C: Coordinates>(
 
 /// How `/V` (or `/DV`) holds choice values: none, one string, or an array
 /// (`choiceEntryOf`).
-fn choice_entry_of(values: &[String]) -> FormValueEntry {
+pub(crate) fn choice_entry_of(values: &[String]) -> FormValueEntry {
     match values {
         [] => FormValueEntry::None,
         [one] => FormValueEntry::Scalar { value: one.clone() },
