@@ -953,6 +953,25 @@ impl<'owner> Attachment<'owner> {
         Ok(unsafe { pdfium_sys::EPDFAttachment_SetSubtype(self.handle, mime.as_ptr()) != 0 })
     }
 
+    /// `/UF` and `/F`, the file name. Every other entry is kept. PDFium
+    /// refuses an empty name.
+    pub fn set_name(&self, name: &str) -> bool {
+        let name: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAttachment_SetName(self.handle, name.as_ptr()) != 0 }
+    }
+
+    /// One `/Params` string entry, written as a text string.
+    pub fn set_string_value(&self, key: &str, value: &str) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and both strings outlive the call.
+        Ok(unsafe {
+            pdfium_sys::FPDFAttachment_SetStringValue(self.handle, key.as_ptr(), value.as_ptr())
+                != 0
+        })
+    }
+
     /// `/Desc`.
     pub fn set_description(&self, description: &str) -> bool {
         let description: Vec<u16> = description.encode_utf16().chain(std::iter::once(0)).collect();

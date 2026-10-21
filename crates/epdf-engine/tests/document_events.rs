@@ -215,52 +215,81 @@ fn a_piece_info_write_publishes_nothing() {
     let written = call(
         &mut host,
         json!({ "kind": "pieceInfo.update", "docId": doc, "application": "Epdf",
-                "patch": { "Flag": true } }),
+                "opId": "op-update", "patch": { "Flag": true } }),
     );
     assert!(written.get("event").is_none(), "{written}");
     assert_eq!(written["mutationSequence"], json!(1), "the write is still a mutation");
-    // `pieceInfo.update` and `pieceInfo.clear` resolve `void`.
-    assert_eq!(written["result"], Value::Null, "{written}");
-    assert!(written.as_object().unwrap().contains_key("result"), "{written}");
-
-    // Removed upstream; owner 8.8 (`pieceInfo.delete`).
-    let cleared = call_legacy(
-        &mut host,
-        json!({ "kind": "pieceInfo.clear", "docId": doc, "application": "Epdf" }),
+    // `PieceInfoUpdateResult`: the application's data read back, and `meta`.
+    assert_eq!(
+        written["result"]["pieceInfo"]["entries"]["Flag"],
+        json!({ "type": "boolean", "value": true }),
+        "{written}"
     );
-    assert!(cleared.get("event").is_none(), "{cleared}");
-    assert_eq!(cleared["mutationSequence"], json!(2), "{cleared}");
-    assert_eq!(cleared["result"], Value::Null, "{cleared}");
+    assert_eq!(
+        written["result"]["meta"],
+        json!({ "affectedPages": [], "cacheDelta": null, "opId": "op-update",
+                "undoable": false }),
+        "{written}"
+    );
+
+    // `pieceInfo.delete` (a9434c0e2): only `meta`.
+    let deleted = call(
+        &mut host,
+        json!({ "kind": "pieceInfo.delete", "docId": doc, "application": "Epdf",
+                "opId": "op-delete" }),
+    );
+    assert!(deleted.get("event").is_none(), "{deleted}");
+    assert_eq!(deleted["mutationSequence"], json!(2), "{deleted}");
+    assert_eq!(
+        deleted["result"],
+        json!({ "meta": { "affectedPages": [], "cacheDelta": null, "opId": "op-delete",
+                          "undoable": false } }),
+    );
+    let read =
+        call(&mut host, json!({ "kind": "pieceInfo.read", "docId": doc, "application": "Epdf" }));
+    assert_eq!(read, Value::Null, "the application is gone");
 }
 
 #[test]
-fn attachment_writes_answer_the_typescript_results() {
+fn attachment_writes_publish_the_typescript_events() {
+    // `document.apply` answers each item's events beside its result, as
+    // `LocalDocumentChanges.apply` publishes them (`changeEvents`).
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, RICH);
-    // Both removed upstream; owner 8.8 (change ops through `document.apply`).
-    let created = legacy_envelope(
+    let created = envelope(
         &mut host,
-        json!({ "kind": "attachments.create", "docId": doc,
-                "file": { "name": "notes.txt", "mimeType": "text/plain" } }),
+        json!({ "kind": "document.apply", "docId": doc, "opId": "op-create",
+                "change": { "ops": [{ "type": "attachments.create",
+                    "file": { "name": "notes.txt", "mimeType": "text/plain" },
+                    "resources": { "file": { "payload": 0 } } }] } }),
         vec![b"hello".to_vec()],
     )["result"]
         .clone();
-    assert_eq!(created["event"]["type"], json!("attachment.created"), "{created}");
-    assert_eq!(created["result"]["created"]["key"], json!("notes.txt"));
-    assert!(created["result"].as_object().unwrap().contains_key("cache"), "{created}");
-    assert_result_rides(&created);
+    let item = &created["result"]["items"][0];
+    assert_eq!(item["type"], json!("attachments.create"), "{created}");
+    assert_eq!(item["attachment"]["ref"], json!({ "kind": "key", "key": "notes.txt" }));
+    assert_eq!(item["meta"]["changed"], json!([{ "kind": "key", "key": "notes.txt" }]));
+    let event = &created["events"][0];
+    assert_eq!(event["type"], json!("attachments.created"), "{created}");
+    assert_eq!(event["attachment"], item["attachment"], "{created}");
+    assert_eq!(event["meta"], item["meta"], "{created}");
 
-    let deleted = call_legacy(
+    let deleted = envelope(
         &mut host,
-        json!({ "kind": "attachments.delete", "docId": doc,
-                "ref": { "kind": "key", "key": "notes.txt" } }),
-    );
-    assert_eq!(deleted["event"]["type"], json!("attachment.deleted"), "{deleted}");
-    assert_eq!(
-        deleted["result"],
-        json!({ "deleted": { "kind": "key", "key": "notes.txt" }, "cache": null }),
-    );
-    assert_result_rides(&deleted);
+        json!({ "kind": "document.apply", "docId": doc, "opId": "op-delete",
+                "change": { "ops": [{ "type": "attachments.delete",
+                    "ref": { "kind": "key", "key": "notes.txt" } }] } }),
+        Vec::new(),
+    )["result"]
+        .clone();
+    let item = &deleted["result"]["items"][0];
+    assert_eq!(item["type"], json!("attachments.delete"), "{deleted}");
+    assert!(item.get("attachment").is_none(), "{deleted}");
+    let event = &deleted["events"][0];
+    assert_eq!(event["type"], json!("attachments.deleted"), "{deleted}");
+    // `deletedAttachmentOf`: what the delete removed.
+    assert_eq!(event["deleted"], json!({ "kind": "key", "key": "notes.txt" }), "{deleted}");
+    assert_eq!(event["meta"], item["meta"], "{deleted}");
 }
 
 #[test]

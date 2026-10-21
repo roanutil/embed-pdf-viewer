@@ -409,7 +409,10 @@ pub fn change_op_in_file_space(
 ) -> Result<ChangeOp, EngineError> {
     match op {
         // No places.
-        op @ (ChangeOp::MetadataUpdate { .. } | ChangeOp::MetadataUpdateCustom { .. }) => Ok(op),
+        op @ (ChangeOp::MetadataUpdate { .. }
+        | ChangeOp::MetadataUpdateCustom { .. }
+        | ChangeOp::AttachmentsCreate { .. }
+        | ChangeOp::AttachmentsDelete { .. }) => Ok(op),
     }
 }
 
@@ -424,6 +427,9 @@ pub fn change_item_in_page_space(
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
+        | ChangeItem::AttachmentsCreate { .. }
+        | ChangeItem::AttachmentsDelete { .. }
+        | ChangeItem::AttachmentsRestore { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
 }

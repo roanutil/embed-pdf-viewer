@@ -8,10 +8,17 @@
 //! deflate stream has one correct decoding on every build. There is no
 //! rasterizer in the path and so no reason for two engines to differ.
 //!
+//! The listing goes through `Host::call` as `attachments.list`, which
+//! answers `{ attachments }` (a9434c0e2). The vector records no request,
+//! so the test sends upstream's `AttachmentsListWorkerRequest`.
+//!
 //! What is NOT compared is the message on a failed download. The code is the
 //! contract and the message is diagnosis, and holding the two implementations
 //! to the same English would make every clearer error message a test failure.
 
+mod common;
+
+use common::replay::Replay;
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::files::attachments::{list_attachments, read_attachment_file};
@@ -81,9 +88,15 @@ fn the_listing_agrees_with_the_typescript_engine() {
     let mut listed = 0usize;
 
     for case in &file.cases {
-        let document = open(case);
-        let items = list_attachments(&document, &CancelToken::never())
+        let mut replay = Replay::open(&case.fixture, "attachments");
+        let answer = replay
+            .replay(&serde_json::json!({
+                "kind": "attachments.list", "effect": "read", "jobId": "<job>",
+            }))
             .unwrap_or_else(|e| panic!("{}: list: {e}", case.name));
+        let items = answer["attachments"]
+            .as_array()
+            .unwrap_or_else(|| panic!("{}: a listing without attachments: {answer}", case.name));
         assert_eq!(
             items.len(),
             case.items.len(),
@@ -92,13 +105,7 @@ fn the_listing_agrees_with_the_typescript_engine() {
             case.covers,
         );
         for (index, (mine, theirs)) in items.iter().zip(&case.items).enumerate() {
-            assert_eq!(
-                serde_json::to_value(mine).expect("serialize"),
-                *theirs,
-                "{}: entry {index}: {}",
-                case.name,
-                case.covers,
-            );
+            assert_eq!(mine, theirs, "{}: entry {index}: {}", case.name, case.covers);
         }
         listed += items.len();
     }
@@ -217,14 +224,16 @@ fn a_key_is_the_address_and_a_name_is_not() {
     let document = open(case);
     let items = list_attachments(&document, &CancelToken::never()).expect("list");
 
-    let first = items.iter().find(|i| i.key == "aaa-first").expect("aaa-first");
-    let last = items.iter().find(|i| i.key == "zzz-last").expect("zzz-last");
-    assert_ne!(first.key, last.key);
+    let first = items.iter().find(|i| i.reference.as_key() == "aaa-first").expect("aaa-first");
+    let last = items.iter().find(|i| i.reference.as_key() == "zzz-last").expect("zzz-last");
+    assert_ne!(first.reference, last.reference);
     assert_ne!(first.file.name, last.file.name, "the two entries display differently");
 
     // And the same bytes come out of both, because they name one stream.
-    let a = read_attachment_file(&document, &first.key, None, &CancelToken::never()).expect("a");
-    let b = read_attachment_file(&document, &last.key, None, &CancelToken::never()).expect("b");
+    let a = read_attachment_file(&document, first.reference.as_key(), None, &CancelToken::never())
+        .expect("a");
+    let b = read_attachment_file(&document, last.reference.as_key(), None, &CancelToken::never())
+        .expect("b");
     assert_eq!(a.bytes, b.bytes);
     assert_ne!(a.name, b.name);
 

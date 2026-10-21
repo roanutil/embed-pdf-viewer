@@ -87,7 +87,6 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
             MutationFamily::Ordinary,
         ),
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::AttachmentCreated(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::SelfSequenced),
         (DocumentEventInit::FormValueChanged(nothing.clone()), MutationFamily::SelfSequenced),
@@ -133,8 +132,6 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         },
         DocumentEventInit::RedactionApplied(nothing.clone()),
         DocumentEventInit::MetadataUpdated(nothing.clone()),
-        DocumentEventInit::AttachmentCreated(nothing.clone()),
-        DocumentEventInit::AttachmentDeleted(nothing.clone()),
         DocumentEventInit::FormValueChanged(nothing.clone()),
         DocumentEventInit::FormImported(nothing.clone()),
         DocumentEventInit::FormRepaired(nothing.clone()),
@@ -149,12 +146,14 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         DocumentEventInit::SignatureCompleted(nothing),
         DocumentEventInit::SignatureAborted { signing_id: String::from("s") },
     ];
-    // The TypeScript union (`core/src/events/DocumentEvent.ts`) has thirty
+    // The TypeScript union (`core/src/events/DocumentEvent.ts`) had thirty
     // members. Two are not here: `stream.desynced` is a transport notice no
     // engine publishes locally, and `document.versioned` follows
     // `signature.completed` from `epdf-viewer-host`'s publisher, because a
-    // host answer carries one event.
-    assert_eq!(every.len(), 28, "the event list and the TypeScript union disagree");
+    // host answer carries one event. The attachment events are not here
+    // either: they are a change's (`ChangeItem::events`), since attachment
+    // writes run only as `document.apply` ops (c2d7a5194).
+    assert_eq!(every.len(), 26, "the event list and the TypeScript union disagree");
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");

@@ -1,8 +1,8 @@
 //! `/PieceInfo`: an application's private data on a page or the catalog.
 //!
-//! G8. Ports the read half of
-//! `services/src/features/pieceinfo/PieceInfoAccessor.ts`. Operations:
-//! `pieceInfo.read`, `pieceInfo.applications`.
+//! G8 and G14. Ports `services/src/features/pieceinfo/PieceInfoAccessor.ts`.
+//! Operations: `pieceInfo.read`, `pieceInfo.applications`,
+//! `pieceInfo.update`, `pieceInfo.delete`.
 //!
 //! §14.5 lets an application stash whatever it likes under its own name, and
 //! most of what is there was written by software nobody here controls. So the
@@ -55,8 +55,9 @@ pub struct PieceInfoSnapshot {
     /// map: `/Private` is a dictionary, dictionaries are unordered, and
     /// sorting makes two reads of one document compare equal.
     pub entries: std::collections::BTreeMap<String, PieceInfoEntry>,
-    /// The application dictionary's `/LastModified`, as ISO 8601.
-    pub last_modified: Option<String>,
+    /// The application dictionary's `/LastModified`, as ISO 8601 with the
+    /// offset it was written with and no fraction of a second (fd175ba50).
+    pub modified_at: Option<String>,
 }
 
 /// Every application the holder carries data for, in file order.
@@ -116,7 +117,7 @@ pub fn read_piece_info(
         // A `/LastModified` the date parser refuses reads as absent rather
         // than failing the whole snapshot. It is bookkeeping about the data,
         // not the data.
-        last_modified: last_modified.as_deref().and_then(pdf_date_to_iso),
+        modified_at: last_modified.as_deref().and_then(pdf_date_to_iso),
     }))
 }
 
@@ -291,8 +292,8 @@ pub fn update_piece_info(
     Ok(())
 }
 
-/// Remove an application's data entirely.
-pub fn clear_piece_info(
+/// Remove an application's data entirely (`PieceInfoAccessor.delete`).
+pub fn delete_piece_info(
     document: &Document,
     holder: PieceInfoHolder,
     application: &str,
@@ -314,7 +315,7 @@ pub fn clear_piece_info(
     if !cleared {
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
-            format!("PDFium refused to clear the piece-info application '{application}'"),
+            format!("pieceInfo delete rejected for application '{application}'"),
         ));
     }
     Ok(())

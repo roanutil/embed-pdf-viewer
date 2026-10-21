@@ -240,10 +240,6 @@ pub enum DocumentEventInit {
     /// `metadata.updateCustom` (a4b8259f7).
     #[serde(rename = "metadata.customUpdated")]
     MetadataCustomUpdated(serde_json::Value),
-    #[serde(rename = "attachment.created")]
-    AttachmentCreated(serde_json::Value),
-    #[serde(rename = "attachment.deleted")]
-    AttachmentDeleted(serde_json::Value),
     #[serde(rename = "form.valueChanged")]
     FormValueChanged(serde_json::Value),
     #[serde(rename = "form.imported")]
@@ -298,8 +294,6 @@ impl DocumentEventInit {
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
             | Self::MetadataCustomUpdated(v)
-            | Self::AttachmentCreated(v)
-            | Self::AttachmentDeleted(v)
             | Self::FormValueChanged(v)
             | Self::FormImported(v)
             | Self::FormRepaired(v)
@@ -341,8 +335,6 @@ impl DocumentEventInit {
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
             Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
-            Self::AttachmentCreated(_) => "attachment.created",
-            Self::AttachmentDeleted(_) => "attachment.deleted",
             Self::FormValueChanged(_) => "form.valueChanged",
             Self::FormImported(_) => "form.imported",
             Self::FormRepaired(_) => "form.repaired",

@@ -126,11 +126,6 @@ pub const LEGACY_KINDS: &[&str] = &[
     "annotations.listRawPage",
     // 8.16: `annotations.reorder` (1233d1349).
     "annotations.move",
-    // 8.8: change ops through `document.apply` (c2d7a5194), and
-    // `pieceInfo.delete` (a9434c0e2).
-    "attachments.create",
-    "attachments.delete",
-    "pieceInfo.clear",
     // 8.20: `document.apply` (98e5c270c).
     "forms.applyEffects",
     // 8.21: `forms.addWidget` (d7bd2d277).
@@ -784,9 +779,12 @@ impl Host {
                     payloads: vec![bytes],
                 })
             }
+            // `AttachmentList`, `{ tag: 'attachments.list'; attachments }`
+            // without its tag (a9434c0e2).
             "attachments.list" => {
                 let d = self.document(&key)?;
-                Ok(ok(value(&f::files::attachments::list_attachments(d, cancel)?)?))
+                let attachments = f::files::attachments::list_attachments(d, cancel)?;
+                Ok(ok(serde_json::json!({ "attachments": value(&attachments)? })))
             }
             "pieceInfo.read" | "pieceInfo.applications" => {
                 let holder = piece_info_holder(body)?;
@@ -1148,7 +1146,8 @@ impl Host {
                     )
                 })?;
                 f::changes::op::assert_no_import(raw)?;
-                let change = f::changes::op::parse_change(raw)?;
+                let mut change = f::changes::op::parse_change(raw)?;
+                f::changes::op::resolve_payloads(&mut change, &payloads)?;
                 let op_id = self.op_id_of(&job)?;
                 let fingerprint = f::changes::fingerprint::change_fingerprint(
                     &f::changes::op::change_value(&change)?,
@@ -1169,6 +1168,7 @@ impl Host {
                     change,
                     &authority,
                     cancel,
+                    self.clock.as_ref(),
                     f::changes::applier::ChangeSpace::Page,
                 )?;
                 let result = value(&answered.result)?;
@@ -1208,12 +1208,13 @@ impl Host {
                 let entries: Vec<serde_json::Value> = field(body, "changes")?;
                 let mut changes = Vec::with_capacity(entries.len());
                 for entry in &entries {
-                    changes.push(self.server_change(&key, entry)?);
+                    changes.push(self.server_change(&key, entry, &payloads)?);
                 }
                 let outcomes = f::changes::transaction::run_server_changes(
                     self.sessions.session_mut(&key)?,
                     changes,
                     cancel,
+                    self.clock.as_ref(),
                 )?;
                 let wire = outcomes
                     .iter()
@@ -1620,27 +1621,65 @@ impl Host {
                     ),
                 )
             }
+            // `WorkerHost.handlePieceInfoUpdate`: the write in its own
+            // transaction, answering `PieceInfoUpdateResult`, the
+            // application's data read back and `meta`. `LocalPieceInfoService`
+            // publishes nothing: `/PieceInfo` is private application data.
             "pieceInfo.update" => {
                 let holder = piece_info_holder(body)?;
                 let application = string_field(body, "application")?;
                 let patch: f::files::piece_info::PieceInfoPatch = field(body, "patch")?;
-                {
-                    let d = self.document(&key)?;
-                    f::files::piece_info::update_piece_info(
-                        d,
-                        holder,
-                        &application,
-                        &patch,
-                        self.clock.as_ref(),
-                        cancel,
-                    )?;
-                }
-                // `LocalPieceInfoService` publishes nothing: `/PieceInfo` is
-                // private application data, and the event this once sent as
-                // `metadata.updated` carried no `metadata` for the metadata
-                // plugin to read. Nor is there a result: `WorkerHost` answers
-                // `{tag}` alone, and the call resolves `void`.
-                self.finish_quietly(&key, serde_json::Value::Null)
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| {
+                        let d = session.document()?.document();
+                        f::files::piece_info::update_piece_info(
+                            d,
+                            holder,
+                            &application,
+                            &patch,
+                            clock,
+                            cancel,
+                        )?;
+                        let piece_info =
+                            f::files::piece_info::read_piece_info(d, holder, &application, cancel)?;
+                        let meta = crate::mutation::MutationMeta::local(
+                            Vec::new(),
+                            &session.write_stamp()?,
+                        );
+                        Ok(serde_json::json!({ "pieceInfo": value(&piece_info)?,
+                            "meta": value(&meta)? }))
+                    },
+                )?;
+                self.finish_quietly(&key, result)
+            }
+            // `WorkerHost.handlePieceInfoDelete` (a9434c0e2, in place of
+            // `pieceInfo.clear`): nothing exists after it, so only `meta`.
+            // No event, as for an update.
+            "pieceInfo.delete" => {
+                let holder = piece_info_holder(body)?;
+                let application = string_field(body, "application")?;
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| {
+                        let d = session.document()?.document();
+                        f::files::piece_info::delete_piece_info(d, holder, &application, cancel)?;
+                        let meta = crate::mutation::MutationMeta::local(
+                            Vec::new(),
+                            &session.write_stamp()?,
+                        );
+                        Ok(serde_json::json!({ "meta": value(&meta)? }))
+                    },
+                )?;
+                self.finish_quietly(&key, result)
             }
 
             // `WorkerHost`'s `default:` arm, word for word.
@@ -1925,57 +1964,6 @@ impl Host {
                 )
             }
 
-            // Owner: 8.8 (`document.apply`, c2d7a5194).
-            "attachments.create" => {
-                let file: WireAttachmentFile = field(body, "file")?;
-                let bytes = payload(&payloads, 0, "the file to embed")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::files::attachments::create_attachment(
-                        d,
-                        &file.name,
-                        bytes,
-                        file.mime_type.as_deref(),
-                        file.description.as_deref(),
-                        cancel,
-                    )?
-                };
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AttachmentCreated(with_local_cache(
-                        value(&result)?,
-                    )),
-                )
-            }
-
-            // Owner: 8.8 (`document.apply`, c2d7a5194).
-            "attachments.delete" => {
-                let name = embedded_file_key(body)?;
-                {
-                    let d = self.document(&key)?;
-                    f::files::attachments::delete_attachment(d, &name, cancel)?;
-                }
-                self.finish(
-                    &key,
-                    // `AttachmentDeleteResult`: the ref the call named.
-                    crate::session::save::DocumentEventInit::AttachmentDeleted(serde_json::json!({
-                        "deleted": { "kind": "key", "key": name },
-                        "cache": null,
-                    })),
-                )
-            }
-
-            // Owner: 8.8 (`pieceInfo.delete`, a9434c0e2). Answers as
-            // `pieceInfo.update` does: no event and no result.
-            "pieceInfo.clear" => {
-                let holder = piece_info_holder(body)?;
-                let application = string_field(body, "application")?;
-                {
-                    let d = self.document(&key)?;
-                    f::files::piece_info::clear_piece_info(d, holder, &application, cancel)?;
-                }
-                self.finish_quietly(&key, serde_json::Value::Null)
-            }
             other => {
                 let _ = payloads;
                 Err(unknown_kind(other))
@@ -2031,7 +2019,7 @@ impl Host {
     }
 
     /// [`Host::finish`] for a mutation the TypeScript publishes no event
-    /// for (`pieceInfo.update`, `pieceInfo.clear`): the sequence still
+    /// for (`pieceInfo.update`, `pieceInfo.delete`): the sequence still
     /// bumps and a layer still persists, but nobody is told.
     fn finish_quietly(
         &mut self,
@@ -2164,6 +2152,7 @@ impl Host {
             change,
             &authority,
             cancel,
+            self.clock.as_ref(),
             applier::ChangeSpace::File,
         )?;
         match answered.result.items.into_iter().next() {
@@ -2236,14 +2225,18 @@ impl Host {
         &self,
         key: &SessionKey,
         entry: &serde_json::Value,
+        payloads: &[Vec<u8>],
     ) -> Result<crate::features::changes::transaction::ServerChange, EngineError> {
         use crate::features::changes::{applier, op, record, transaction};
 
         let op_id: String = field(entry, "opId")?;
         check_op_id(&op_id)?;
-        let change = op::parse_change(entry.get("change").ok_or_else(|| {
+        let mut change = op::parse_change(entry.get("change").ok_or_else(|| {
             EngineError::with_message(EngineErrorCode::WireFormat, "a change has no 'change'")
         })?)?;
+        // A resource names a payload of the request, whichever change it
+        // is in.
+        op::resolve_payloads(&mut change, payloads)?;
         let authority = match optional::<WireAuthority>(entry, "authority")? {
             Some(wire) => change_authority(&wire)?,
             None => applier::ChangeAuthority::of_session(self.sessions.session(key)?),
@@ -2587,20 +2580,6 @@ fn value<T: Serialize>(result: &T) -> Result<serde_json::Value, EngineError> {
     })
 }
 
-/// What `attachments.create` says about the file it is embedding.
-///
-/// The bytes are not here: they ride as a payload. A name, a type and a
-/// description are metadata a JSON field can carry; a file is not.
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct WireAttachmentFile {
-    name: String,
-    #[serde(default)]
-    mime_type: Option<String>,
-    #[serde(default)]
-    description: Option<String>,
-}
-
 /// What a raster's JSON says about the pixels in its payload.
 fn raster_json(raster: &crate::features::render::raster::PageRaster) -> serde_json::Value {
     serde_json::json!({
@@ -2784,6 +2763,11 @@ fn strip_item(
     match item {
         ChangeItem::MetadataUpdate { result, .. } => value(&result),
         ChangeItem::MetadataUpdateCustom { result, .. } => value(&result),
+        ChangeItem::AttachmentsCreate { attachment, meta }
+        | ChangeItem::AttachmentsRestore { attachment, meta } => {
+            Ok(serde_json::json!({ "attachment": value(&attachment)?, "meta": value(&meta)? }))
+        }
+        ChangeItem::AttachmentsDelete { meta } => Ok(serde_json::json!({ "meta": value(&meta)? })),
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }
@@ -2822,11 +2806,9 @@ const MUTATING_KINDS: &[&str] = &[
     "pages.insert",
     "pages.insertBlank",
     "redaction.apply",
-    "attachments.create",
-    "attachments.delete",
     "measure.setScale",
     "pieceInfo.update",
-    "pieceInfo.clear",
+    "pieceInfo.delete",
 ];
 
 /// What the three open kinds ask of the session beside the document
@@ -2986,14 +2968,8 @@ fn widget_field(body: &serde_json::Value) -> Result<u32, EngineError> {
 /// decoded as one rather than reached into: a second arm would then be a
 /// compile error here instead of a key silently read as empty.
 fn embedded_file_key(body: &serde_json::Value) -> Result<String, EngineError> {
-    #[derive(Deserialize)]
-    #[serde(tag = "kind", rename_all = "camelCase")]
-    enum EmbeddedFileRef {
-        Key { key: String },
-    }
-    let reference: EmbeddedFileRef = field(body, "ref")?;
-    let EmbeddedFileRef::Key { key } = reference;
-    Ok(key)
+    let reference: crate::features::files::attachments::AttachmentRef = field(body, "ref")?;
+    Ok(reference.as_key().to_owned())
 }
 
 /// Which `/PieceInfo` holder a request means.

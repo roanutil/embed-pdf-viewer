@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::dto::{CustomMetadataPatch, MetadataPatch};
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::files::attachments::{AttachmentFileBase, AttachmentRef};
 
 /// One change (`Change`): its ops in order, all of them or none; or the
 /// reverse of an earlier change, named by its `opId`.
@@ -46,6 +47,102 @@ pub enum ChangeOp {
         #[serde(skip)]
         keys: PatchKeys,
     },
+    /// A file embedded in the document (`/EmbeddedFiles`), under its name:
+    /// the name is its key, and a name another file has is refused.
+    #[serde(rename = "attachments.create", rename_all = "camelCase")]
+    AttachmentsCreate {
+        file: AttachmentFileBase,
+        /// Its bytes, as the `file` resource.
+        #[serde(default)]
+        resources: OpResources,
+    },
+    #[serde(rename = "attachments.delete")]
+    AttachmentsDelete {
+        #[serde(rename = "ref")]
+        reference: AttachmentRef,
+    },
+}
+
+/// The bytes beside an op, by role (`WireAnnotationResources`).
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct OpResources {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub file: Option<ResourceBytes>,
+}
+
+/// One resource's bytes. On this wire a resource names the request payload
+/// that holds it, `{ "payload": n }`, as an annotation write's resources do;
+/// the host puts the bytes in before the change runs or is fingerprinted
+/// ([`resolve_payloads`]), and they then fingerprint as upstream's typed
+/// array does, `{ "$bytes": ... }`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ResourceBytes {
+    Payload(usize),
+    Bytes(Vec<u8>),
+}
+
+impl Serialize for ResourceBytes {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        let mut map = s.serialize_map(Some(1))?;
+        match self {
+            Self::Payload(index) => map.serialize_entry("payload", index)?,
+            Self::Bytes(bytes) => {
+                map.serialize_entry("$bytes", &super::fingerprint::bytes_token(bytes))?;
+            }
+        }
+        map.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for ResourceBytes {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(deny_unknown_fields)]
+        struct PayloadRef {
+            payload: usize,
+        }
+        Ok(Self::Payload(PayloadRef::deserialize(d)?.payload))
+    }
+}
+
+impl ResourceBytes {
+    /// The bytes, once the host put them in.
+    pub fn bytes(&self) -> Result<&[u8], EngineError> {
+        match self {
+            Self::Bytes(bytes) => Ok(bytes),
+            Self::Payload(index) => {
+                Err(malformed(format!("resource payload {index} was never put in")))
+            }
+        }
+    }
+}
+
+/// Put each op's resource bytes in from the request's payloads, by the
+/// payload each names.
+pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(), EngineError> {
+    let Change::Ops(ops) = change else {
+        return Ok(());
+    };
+    for op in ops {
+        match op {
+            ChangeOp::AttachmentsCreate { resources, .. } => {
+                if let Some(ResourceBytes::Payload(index)) = resources.file {
+                    let bytes = payloads.get(index).ok_or_else(|| {
+                        malformed(format!(
+                            "resource payload {index} is missing: the request carries {}",
+                            payloads.len()
+                        ))
+                    })?;
+                    resources.file = Some(ResourceBytes::Bytes(bytes.clone()));
+                }
+            }
+            ChangeOp::MetadataUpdate { .. }
+            | ChangeOp::MetadataUpdateCustom { .. }
+            | ChangeOp::AttachmentsDelete { .. } => {}
+        }
+    }
+    Ok(())
 }
 
 /// A patch's keys in wire order. Compares equal whatever it holds, so two
@@ -77,6 +174,8 @@ impl ChangeOp {
         match self {
             Self::MetadataUpdate { .. } => "metadata.update",
             Self::MetadataUpdateCustom { .. } => "metadata.updateCustom",
+            Self::AttachmentsCreate { .. } => "attachments.create",
+            Self::AttachmentsDelete { .. } => "attachments.delete",
         }
     }
 }
@@ -97,9 +196,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.8: attachment writes (c2d7a5194).
-    ("attachments.create", "8.8"),
-    ("attachments.delete", "8.8"),
     // 8.14 to 8.16: the annotation ops.
     ("annotations.create", "8.14"),
     ("annotations.update", "8.15"),
@@ -206,6 +302,7 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         ChangeOp::MetadataUpdate { keys, .. } | ChangeOp::MetadataUpdateCustom { keys, .. } => {
             *keys = PatchKeys::of(op);
         }
+        ChangeOp::AttachmentsCreate { .. } | ChangeOp::AttachmentsDelete { .. } => {}
     }
     Ok(parsed)
 }
@@ -294,12 +391,45 @@ mod tests {
     }
 
     #[test]
+    fn an_attachment_op_takes_its_bytes_from_the_payload_it_names() {
+        let mut change = parse_change(&serde_json::json!({ "ops": [
+            { "type": "attachments.create", "file": { "name": "a.txt" },
+              "resources": { "file": { "payload": 1 } } },
+            { "type": "attachments.delete", "ref": { "kind": "key", "key": "b.txt" } },
+        ] }))
+        .unwrap();
+        let unresolved = change_value(&change).unwrap();
+        assert_eq!(unresolved["ops"][0]["resources"]["file"], serde_json::json!({ "payload": 1 }));
+        resolve_payloads(&mut change, &[Vec::new(), b"hello".to_vec()]).unwrap();
+        let Change::Ops(ops) = &change else { panic!("ops") };
+        let ChangeOp::AttachmentsCreate { resources, .. } = &ops[0] else { panic!("create") };
+        assert_eq!(resources.file.as_ref().unwrap().bytes().unwrap(), b"hello");
+        // Fingerprinted as upstream's typed array: `$bytes`, length and hash.
+        let resolved = change_value(&change).unwrap();
+        assert_eq!(
+            resolved["ops"][0]["resources"]["file"],
+            serde_json::json!({ "$bytes": "5-19jqrdkps12" })
+        );
+        assert_eq!(resolved["ops"][1]["ref"], serde_json::json!({ "kind": "key", "key": "b.txt" }));
+
+        let mut missing = parse_change(&serde_json::json!({ "ops": [
+            { "type": "attachments.create", "file": { "name": "a.txt" },
+              "resources": { "file": { "payload": 2 } } },
+        ] }))
+        .unwrap();
+        let refused = resolve_payloads(&mut missing, &[]).unwrap_err();
+        assert_eq!(refused.code, EngineErrorCode::WireFormat);
+    }
+
+    #[test]
     fn every_owned_op_is_named_once() {
         let mut names: Vec<&str> = OP_OWNERS.iter().map(|(name, _)| *name).collect();
         names.sort_unstable();
         names.dedup();
         assert_eq!(names.len(), OP_OWNERS.len());
-        for ported in ["metadata.update", "metadata.updateCustom"] {
+        for ported in
+            ["metadata.update", "metadata.updateCustom", "attachments.create", "attachments.delete"]
+        {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }
     }

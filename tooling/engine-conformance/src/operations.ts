@@ -417,6 +417,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
+    note: 'Answers { attachments } (AttachmentList, a9434c0e2): each entry carries its ref, createdAt and modifiedAt as ISO dates, and null for every field the PDF has no value for. Gated by vectors/files/attachments.json through Host::call.',
   },
   {
     kind: 'attachments.readFile',
@@ -590,7 +591,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata ops (features/changes, tests/document_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata and attachment ops (features/changes, tests/document_apply.rs, tests/files_write.rs) and answers NotImplemented naming the owner sub-task for every other op type; an attachment op's bytes ride as a request payload its resources name, { payload: n }, and an undo of a delete puts the file back from the file as the API reads it, where upstream imports a raw capture only a layer transaction allows; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
   },
   {
     kind: 'document.applyChanges',
@@ -863,6 +864,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: 'Answers PieceInfoUpdateResult, { pieceInfo, meta }, as WorkerHost.handlePieceInfoUpdate does, and publishes no event.',
   },
   // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by pieceInfo.delete.
   // {
@@ -899,8 +901,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
-    note: 'Replaces pieceInfo.clear.',
+    rustStatus: 'ported',
+    note: 'Replaces pieceInfo.clear. Answers { meta } and publishes no event.',
   },
   {
     kind: 'measure.setScale',

@@ -141,7 +141,7 @@ fn the_two_holders_are_read_separately() {
     .expect("the page has data");
 
     assert_ne!(catalog.entries, page.entries);
-    assert_ne!(catalog.last_modified, page.last_modified);
+    assert_ne!(catalog.modified_at, page.modified_at);
     assert!(catalog.entries.contains_key("aString"));
     assert!(!catalog.entries.contains_key("pageOnly"));
     assert!(page.entries.contains_key("pageOnly"));

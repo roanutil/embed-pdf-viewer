@@ -54,7 +54,6 @@ const NOT_YET_ROUTED: &[(&str, &str)] = &[
     ("forms.reorderCalculations", "8.21"),
     ("forms.importValues", "8.22"),
     ("outline.read", "8.24"),
-    ("pieceInfo.delete", "8.8"),
     ("signatures.cancel", "8.26"),
 ];
 
@@ -301,11 +300,12 @@ fn every_wire_kind_routes_to_an_implementation() {
 
 #[test]
 fn every_removed_kind_is_unknown_to_the_wire_and_known_to_the_legacy_entry() {
-    // The 15 kinds upstream removed (`signatures.abort` renamed
-    // `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers a kind
-    // it has no case for, and reach their old arm only through
-    // `call_legacy`, until each owner sub-task retires it.
-    assert_eq!(LEGACY_KINDS.len(), 15);
+    // The 12 kinds upstream removed that are still parked (`signatures.abort`
+    // renamed `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers
+    // a kind it has no case for, and reach their old arm only through
+    // `call_legacy`, until each owner sub-task retires it. 8.8 retired
+    // `attachments.create`, `attachments.delete` and `pieceInfo.clear`.
+    assert_eq!(LEGACY_KINDS.len(), 12);
     let cases = cases();
     for kind in LEGACY_KINDS {
         assert!(!cases.iter().any(|c| c.kind == *kind), "{kind} is in upstream's union");

@@ -8,10 +8,13 @@
 //! records the step that reverses it in turn, so the undo of an undo is a
 //! redo.
 //!
-//! Only the metadata step is here; each family adds its own step kinds with
-//! its ops ([`super::op::OP_OWNERS`]).
+//! The metadata and attachment steps are here; each other family adds its
+//! own step kinds with its ops ([`super::op::OP_OWNERS`]).
 
 use serde::{Deserialize, Serialize};
+
+use crate::features::annotation::read::file_attachment::AttachmentFileInfo;
+use crate::features::files::attachments::{AttachmentCapture, AttachmentRef};
 
 /// A change's record (`ChangeRecord`), and what crosses the wire as a
 /// `ChangeRecordPayload`.
@@ -29,6 +32,35 @@ pub struct ChangeRecord {
 pub enum ReverseStep {
     #[serde(rename = "metadata.revert")]
     MetadataRevert(MetadataRevertStep),
+    #[serde(rename = "attachments.remove")]
+    AttachmentsRemove(AttachmentRemoveStep),
+    #[serde(rename = "attachments.restore")]
+    AttachmentsRestore(AttachmentRestoreStep),
+}
+
+/// Deletes the embedded file a create or a restore brought, while it is
+/// still that file, as the change left it (`AttachmentRemoveStep`): undoing
+/// an upload never deletes a file someone put under its name since.
+///
+/// `left` is the file as it read ([`AttachmentFileInfo`]) where upstream
+/// keeps its canonical bytes, which the fork exports only from a layer
+/// (`features::changes::attachments`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentRemoveStep {
+    #[serde(rename = "ref")]
+    pub reference: AttachmentRef,
+    pub left: AttachmentFileInfo,
+}
+
+/// Brings back the file a delete removed, under its key
+/// (`AttachmentRestoreStep`). Left alone when another file has the key now.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentRestoreStep {
+    #[serde(rename = "ref")]
+    pub reference: AttachmentRef,
+    pub capture: AttachmentCapture,
 }
 
 /// Which metadata write a revert puts back.
@@ -62,13 +94,17 @@ pub struct MetadataRevertStep {
 }
 
 /// The bytes of captures a record holds, which the ledger budgets
-/// (`recordBytes`). A metadata step captures no bytes.
+/// (`recordBytes`). A metadata step captures no bytes, and neither does an
+/// attachment remove here: its guard is a read, not canonical bytes.
 pub fn record_bytes(record: &ChangeRecord) -> usize {
     record
         .steps
         .iter()
         .map(|step| match step {
-            ReverseStep::MetadataRevert(_) => 0,
+            ReverseStep::MetadataRevert(_) | ReverseStep::AttachmentsRemove(_) => 0,
+            ReverseStep::AttachmentsRestore(step) => {
+                step.capture.bytes.as_ref().map_or(0, Vec::len)
+            }
         })
         .sum()
 }

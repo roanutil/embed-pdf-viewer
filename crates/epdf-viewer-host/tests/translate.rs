@@ -1194,9 +1194,15 @@ fn piece_info_paths_carry_their_holder() {
     assert_eq!(page.request["kind"], json!("pieceInfo.update"));
     assert_eq!(page.request["page"], wire_page(4));
     assert_eq!(page.request["patch"], json!({ "set": {} }));
-    // `void`, as the TypeScript resolves an update, with no event.
-    let decoded =
-        decode(&page.decode, answer(r#"{"result":{"result":null,"mutationSequence":1}}"#)).unwrap();
+    // `void` to the kernel, whatever the host answers (upstream's
+    // `PieceInfoUpdateResult` until Task 13 ports the kernel), and no event.
+    let decoded = decode(
+        &page.decode,
+        answer(
+            r#"{"result":{"result":{"pieceInfo":null,"meta":{"affectedPages":[],"cacheDelta":null,"opId":"op","undoable":false}},"mutationSequence":1}}"#,
+        ),
+    )
+    .unwrap();
     assert!(epdf_kernel::is_undefined(&decoded.value), "{:?}", decoded.value);
     assert!(decoded.event.is_none());
 }

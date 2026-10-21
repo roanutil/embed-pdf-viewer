@@ -14,6 +14,7 @@ use super::op::ChangeOp;
 use super::record::{ChangeRecord, ReverseStep};
 use crate::auth::scope::DocCapability;
 use crate::cancel::CancelToken;
+use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::mutation::MutationMeta;
 use crate::session::authority::SessionAuthority;
@@ -58,6 +59,8 @@ pub struct ChangeContext<'a> {
     pub session: &'a mut DocumentSession,
     pub authority: &'a ChangeAuthority,
     pub cancel: &'a CancelToken,
+    /// What a write stamps a date from (an attachment's creation date).
+    pub clock: &'a dyn Clock,
 }
 
 /// What running an op or a step did: its item, and the steps that reverse
@@ -127,9 +130,10 @@ pub fn apply(
     ops: Vec<ChangeOp>,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
+    clock: &dyn Clock,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let mut ctx = ChangeContext { session, authority, cancel };
+    let mut ctx = ChangeContext { session, authority, cancel, clock };
     let mut collected = Collected::default();
     for (at, op) in ops.into_iter().enumerate() {
         cancel.check()?;
@@ -147,9 +151,10 @@ pub fn undo(
     record: &ChangeRecord,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
+    clock: &dyn Clock,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let mut ctx = ChangeContext { session, authority, cancel };
+    let mut ctx = ChangeContext { session, authority, cancel, clock };
     let mut collected = Collected::default();
     for step in &record.steps {
         cancel.check()?;
@@ -202,6 +207,13 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::MetadataUpdateCustom { patch, keys } => {
             super::metadata::update_custom_metadata(ctx, patch, keys)
         }
+        ChangeOp::AttachmentsCreate { file, resources } => {
+            let bytes = resources.file.as_ref().map(|file| file.bytes()).transpose()?;
+            super::attachments::create_attachment(ctx, file, bytes)
+        }
+        ChangeOp::AttachmentsDelete { reference } => {
+            super::attachments::delete_attachment(ctx, reference)
+        }
     }
 }
 
@@ -212,6 +224,8 @@ pub(super) fn run_step(
 ) -> Result<Done, EngineError> {
     match step {
         ReverseStep::MetadataRevert(step) => super::metadata::revert_metadata(ctx, step),
+        ReverseStep::AttachmentsRemove(step) => super::attachments::remove_attachment(ctx, step),
+        ReverseStep::AttachmentsRestore(step) => super::attachments::restore_attachment(ctx, step),
     }
 }
 

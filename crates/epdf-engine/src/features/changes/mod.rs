@@ -2,11 +2,13 @@
 //!
 //! G11. Ports `services/src/features/changes/` (`ChangeApplier.ts`,
 //! `ChangeLedger.ts`, `ChangeRecord.ts`, `internal/changeContext.ts`,
-//! `internal/metadataChanges.ts`) and the change types of
-//! `core/src/mutation/Change.ts` and `changeOutcome.ts`, for upstream's
-//! 2445caba7, b69c40377 and 119685ea4. Operations: `document.apply`,
-//! `document.applyChanges`, and every single verb that upstream runs as a
-//! one-op change (here `metadata.update` and `metadata.updateCustom`).
+//! `internal/metadataChanges.ts`, `internal/attachmentChanges.ts`) and the
+//! change types of `core/src/mutation/Change.ts` and `changeOutcome.ts`, for
+//! upstream's 2445caba7, b69c40377, 119685ea4 and c2d7a5194. Operations:
+//! `document.apply`, `document.applyChanges`, and every single verb that
+//! upstream runs as a one-op change (here `metadata.update` and
+//! `metadata.updateCustom`; the attachment ops have no single verb of their
+//! own, c2d7a5194).
 //!
 //! A change is its ops in order, all of them or none: one refused op
 //! refuses the whole change, and what the ops before it wrote is taken back
@@ -16,8 +18,8 @@
 //! a refused change back and what `{ undoOf }` runs later. The session keeps
 //! every answer under its `opId` ([`ledger`]).
 //!
-//! The op table ([`op`]) runs the metadata ops; every other op type answers
-//! `NotImplemented` naming the sub-task that registers it
+//! The op table ([`op`]) runs the metadata and attachment ops; every other
+//! op type answers `NotImplemented` naming the sub-task that registers it
 //! ([`op::OP_OWNERS`]).
 //!
 //! # Events
@@ -46,6 +48,7 @@
 //! `document.apply`), and neither do most of `tests/document_apply.rs`'s.
 
 pub mod applier;
+pub mod attachments;
 pub mod fingerprint;
 pub mod item;
 pub mod ledger;

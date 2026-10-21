@@ -2,10 +2,10 @@
 //! `core/src/mutation/changeOutcome.ts`).
 //!
 //! The same ops give the same fingerprint whatever the order of their keys.
-//! Bytes travel as payloads on this wire, not inside the change, so the
-//! `$bytes` branch upstream has for a typed array has nothing to see here;
-//! an op that carries resources folds their payload hashes in when its
-//! owner registers it.
+//! Bytes travel as payloads on this wire, not inside the change; an op that
+//! carries them writes them where upstream's typed array sat, as the
+//! `{"$bytes": ...}` its `canonicalJson` writes ([`bytes_token`]), once the
+//! host has put the payloads in (`op::resolve_payloads`).
 
 /// The fingerprint of a change as the wire sent it: its canonical JSON's
 /// length and a 53-bit hash of it, both in base 36.
@@ -13,6 +13,13 @@ pub fn change_fingerprint(change: &serde_json::Value) -> String {
     let text = canonical_json(change);
     let units: Vec<u16> = text.encode_utf16().collect();
     format!("{}-{}", base36(units.len() as u64), hash_units(&units))
+}
+
+/// What `canonicalJson` writes for bytes, under `$bytes`: their length and
+/// the same hash over them, both in base 36.
+pub fn bytes_token(bytes: &[u8]) -> String {
+    let units: Vec<u16> = bytes.iter().map(|byte| u16::from(*byte)).collect();
+    format!("{}-{}", base36(bytes.len() as u64), hash_units(&units))
 }
 
 /// `value` as JSON with every object's keys sorted (`canonicalJson`).
@@ -80,6 +87,14 @@ mod tests {
         let c = serde_json::json!({ "ops": [{ "type": "metadata.update", "patch": { "title": "C", "author": "B" } }] });
         assert_eq!(change_fingerprint(&a), change_fingerprint(&b));
         assert_ne!(change_fingerprint(&a), change_fingerprint(&c));
+    }
+
+    #[test]
+    fn bytes_hash_as_hash_bytes_does() {
+        // Reference values from the TypeScript `hashBytes` run under node.
+        assert_eq!(bytes_token(&[]), "0-wvjl67o803");
+        assert_eq!(bytes_token(b"hello"), "5-19jqrdkps12");
+        assert_eq!(bytes_token(&[0, 255, 128]), "3-1sqkae7qpd8");
     }
 
     #[test]

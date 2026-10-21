@@ -19,27 +19,71 @@
 //! unique within the tree by construction (§7.9.6) and therefore needs no
 //! revision token and no weak tier: unlike an annotation, an embedded file
 //! cannot be addressed ambiguously. `index` rides on the DTO as metadata, and
-//! `read_file` takes a key.
+//! every call takes an [`AttachmentRef`] (a9434c0e2).
+//!
+//! # Writes
+//!
+//! The write half of `AttachmentMutator.ts` and `writeAttachmentFilePayload`
+//! is here too: [`create_attachment`] and [`delete_attachment`], which the
+//! `attachments.create` and `attachments.delete` change ops run
+//! (`features::changes::attachments`), and the capture an undo of a delete
+//! puts back ([`capture_attachment`], [`restore_attachment`]).
 
 use pdfium::{AttachmentExtractError, Document};
 use serde::{Deserialize, Serialize};
 
 use crate::cancel::CancelToken;
+use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::read::file_attachment::{
     AttachmentFileInfo, read_attachment_info,
 };
 
-/// One entry of the `/EmbeddedFiles` name tree.
+/// Durable address of a document-level attachment: its name-tree key
+/// (`AttachmentRef`). A tagged union so other ref kinds can follow.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum AttachmentRef {
+    Key { key: String },
+}
+
+impl AttachmentRef {
+    /// `toAttachmentRef`.
+    pub fn key(key: impl Into<String>) -> Self {
+        Self::Key { key: key.into() }
+    }
+
+    /// The name-tree key it names.
+    pub fn as_key(&self) -> &str {
+        match self {
+            Self::Key { key } => key,
+        }
+    }
+}
+
+/// One entry of the `/EmbeddedFiles` name tree (`Attachment`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmbeddedFileItem {
     #[serde(flatten)]
     pub file: AttachmentFileInfo,
-    /// The tree key: the durable address for a read or a remove.
-    pub key: String,
+    /// The attachment's address, for download and delete.
+    #[serde(rename = "ref")]
+    pub reference: AttachmentRef,
     /// Position in tree order. Display metadata, NOT an address.
     pub index: u32,
+}
+
+/// The metadata fields a write takes (`AttachmentFileBase`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentFileBase {
+    /// The file name, which becomes the tree key.
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
 }
 
 /// A decoded embedded file.
@@ -87,7 +131,7 @@ pub fn list_attachments(
             // The entry exists and its metadata is worth reporting; what a
             // caller loses is the ability to address it, which is what an
             // empty key says.
-            key: attachment_key(document, index)?.unwrap_or_default(),
+            reference: AttachmentRef::key(attachment_key(document, index)?.unwrap_or_default()),
             index,
         });
     }
@@ -195,103 +239,132 @@ fn extract_error(error: AttachmentExtractError) -> EngineError {
     EngineError::with_message(code, error.to_string())
 }
 
-/// What creating an embedded file produced.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AttachmentCreateResult {
-    /// The entry, read back. The size, the checksum and the creation date
-    /// are PDFium's, derived from the bytes, so the read is the only way to
-    /// know them.
-    pub created: EmbeddedFileItem,
+/// The entry under `key` as it reads now; `None` when no file has the key
+/// (`AttachmentMutator.find`).
+pub fn find_attachment(
+    document: &Document,
+    key: &str,
+) -> Result<Option<EmbeddedFileItem>, EngineError> {
+    let Some(index) = document.attachment_index_by_key(key) else {
+        return Ok(None);
+    };
+    let Some(entry) = document.attachment(index) else {
+        return Ok(None);
+    };
+    Ok(Some(EmbeddedFileItem {
+        file: read_attachment_info(&entry)?,
+        reference: AttachmentRef::key(key),
+        index,
+    }))
 }
 
-/// Add an embedded file to the catalog's name tree.
+/// Add an embedded file to the catalog's name tree
+/// (`AttachmentMutator.create`), and read it back.
 ///
 /// The name becomes the tree KEY, which is the entry's identity. A duplicate
 /// is refused rather than replacing: two files with one key would leave the
-/// document with an address that names two things.
+/// document with an address that names two things. `bytes` is the op's
+/// `file` resource, which it must carry.
 pub fn create_attachment(
     document: &Document,
-    name: &str,
-    bytes: &[u8],
-    mime_type: Option<&str>,
-    description: Option<&str>,
+    file: &AttachmentFileBase,
+    bytes: Option<&[u8]>,
+    clock: &dyn Clock,
     cancel: &CancelToken,
-) -> Result<AttachmentCreateResult, EngineError> {
+) -> Result<EmbeddedFileItem, EngineError> {
     cancel.check()?;
-    if name.is_empty() {
+    let Some(bytes) = bytes else {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
-            "an embedded file needs a name: the name is its key",
+            "an attachments.create op needs its bytes as its file resource",
+        )
+        .with_details(serde_json::json!({ "field": "resources.file" })));
+    };
+    if file.name.is_empty() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "attachment file requires a name",
         ));
     }
     // Probed rather than left to PDFium, which refuses a duplicate too but
     // with a failure that says nothing about which name collided.
-    if document.attachment_index_by_key(name).is_some() {
+    if document.attachment_index_by_key(&file.name).is_some() {
         return Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
-            format!("an embedded file with the key '{name}' already exists: keys are unique"),
+            format!(
+                "an embedded file with key '{}' already exists: keys are unique; rename and retry",
+                file.name
+            ),
         ));
     }
 
     cancel.check()?;
-    let attachment = document.add_attachment(name).ok_or_else(|| {
-        EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "FPDFDoc_AddAttachment returned nothing",
-        )
+    let attachment = document.add_attachment(&file.name).ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "FPDFDoc_AddAttachment returned NULL")
     })?;
-    // Made whatever the length: a zero-byte attachment is a real one, and
-    // skipping this would leave a tree entry naming a stream that does not
-    // exist.
-    if !attachment.set_file(document, bytes) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "FPDFAttachment_SetFile refused the bytes",
-        ));
-    }
-    let mime = mime_type.unwrap_or("application/octet-stream");
-    match attachment.set_mime_type(mime) {
-        Ok(true) => {}
-        _ => {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                format!("EPDFAttachment_SetSubtype refused '{mime}'"),
-            ));
-        }
-    }
-    if let Some(description) = description
-        && !attachment.set_description(description)
-    {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFAttachment_SetDescription refused the description",
-        ));
-    }
+    write_file_payload(document, &attachment, bytes, file, clock)?;
 
     // Read back through a fresh lookup: the tree is key-sorted, so the new
     // entry's INDEX depends on what was already there and cannot be known
     // before the insert.
-    cancel.check()?;
-    let index = document.attachment_index_by_key(name).ok_or_else(|| {
+    find_attachment(document, &file.name)?.ok_or_else(|| {
         EngineError::with_message(
             EngineErrorCode::Unknown,
-            "the embedded file vanished after it was added",
+            "created attachment did not resolve by key after the write",
         )
-    })?;
-    let entry = document.attachment(index).ok_or_else(|| {
-        EngineError::with_message(EngineErrorCode::Unknown, "the embedded file cannot be read back")
-    })?;
-    Ok(AttachmentCreateResult {
-        created: EmbeddedFileItem {
-            file: read_attachment_info(&entry)?,
-            key: name.to_owned(),
-            index,
-        },
     })
 }
 
-/// Remove an embedded file by key.
+/// `writeAttachmentFilePayload`: the bytes, the creation date in UTC, the
+/// declared type when there is one, and the description when given.
+fn write_file_payload(
+    document: &Document,
+    attachment: &pdfium::Attachment<'_>,
+    bytes: &[u8],
+    file: &AttachmentFileBase,
+    clock: &dyn Clock,
+) -> Result<(), EngineError> {
+    // Made whatever the length: a zero-byte attachment is a real one, and
+    // skipping this would leave a tree entry naming a stream that does not
+    // exist.
+    if !attachment.set_file(document, bytes) {
+        return Err(unknown("FPDFAttachment_SetFile returned false"));
+    }
+    // `FPDFAttachment_SetFile` dates the file in local time without an
+    // offset; a date the engine makes is UTC, unambiguous across zones.
+    let created = crate::clock::format_pdf_timestamp(clock.now())
+        .ok_or_else(|| unknown("the clock produced no PDF date"))?;
+    set_param(attachment, "CreationDate", &created)?;
+    // A file without a declared type has none: the engine never guesses one.
+    if let Some(mime) = file.mime_type.as_deref().filter(|mime| !mime.is_empty())
+        && !matches!(attachment.set_mime_type(mime), Ok(true))
+    {
+        return Err(unknown("EPDFAttachment_SetSubtype returned false"));
+    }
+    if let Some(description) = &file.description
+        && !attachment.set_description(description)
+    {
+        return Err(unknown("EPDFAttachment_SetDescription returned false"));
+    }
+    Ok(())
+}
+
+fn set_param(
+    attachment: &pdfium::Attachment<'_>,
+    key: &str,
+    value: &str,
+) -> Result<(), EngineError> {
+    match attachment.set_string_value(key, value) {
+        Ok(true) => Ok(()),
+        _ => Err(unknown(&format!("FPDFAttachment_SetStringValue refused /{key}"))),
+    }
+}
+
+fn unknown(message: &str) -> EngineError {
+    EngineError::with_message(EngineErrorCode::Unknown, message)
+}
+
+/// Remove an embedded file by key (`AttachmentMutator.delete`).
 ///
 /// Unlinks the tree entry. The stream it named goes when the document is
 /// next written whole; an incremental save leaves it in the file and
@@ -305,14 +378,165 @@ pub fn delete_attachment(
     let index = document.attachment_index_by_key(key).ok_or_else(|| {
         EngineError::with_message(
             EngineErrorCode::NotFound,
-            format!("no embedded file with the key '{key}'"),
+            format!("no embedded file with key '{key}' in the document"),
         )
     })?;
     if !document.delete_attachment(index) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            format!("PDFium refused to delete the embedded file '{key}'"),
-        ));
+        return Err(unknown("FPDFDoc_DeleteAttachment returned false"));
     }
     Ok(())
+}
+
+/// What an undo of a delete puts back: the file under its key, as it read
+/// before the delete.
+///
+/// Upstream captures the file's objects (`EPDFAttachment_ExportRawToOwnedBuffer`)
+/// and imports them back (`EPDFAttachment_ImportRaw`), which the fork allows
+/// only inside a layer transaction. This engine opens a plain document and
+/// takes back a refused change through reverse steps, with no layer
+/// transaction (8.30), so the capture is the file as the API reads and
+/// writes it: its name, type, description, `/Params` dates and checksum,
+/// and decoded bytes. What it does not keep: the filespec's object number,
+/// whether a stream was shared with another entry, `/Params /Size` (which
+/// the restore derives from the bytes), entries the API has no setter for,
+/// and the absence of a `/Params` entry the restore's `FPDFAttachment_SetFile`
+/// writes (`Size`, `CheckSum`, `CreationDate`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentCapture {
+    /// `/UF`, which can differ from the key.
+    pub name: String,
+    pub mime_type: Option<String>,
+    pub description: Option<String>,
+    /// `/Params /CreationDate`, `/ModDate` and `/CheckSum`, as the PDF
+    /// wrote them.
+    pub creation_date: Option<String>,
+    pub mod_date: Option<String>,
+    pub checksum: Option<String>,
+    /// The decoded file; `None` for an entry with no embedded stream.
+    #[serde(with = "hex_bytes")]
+    pub bytes: Option<Vec<u8>>,
+}
+
+/// Capture the file under `key` before a delete removes it.
+pub fn capture_attachment(
+    document: &Document,
+    key: &str,
+) -> Result<AttachmentCapture, EngineError> {
+    let index = document.attachment_index_by_key(key).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::NotFound,
+            format!("no embedded file with key '{key}' in the document"),
+        )
+    })?;
+    let attachment = document
+        .attachment(index)
+        .ok_or_else(|| unknown(&format!("attachment '{key}' could not be captured")))?;
+    let info = read_attachment_info(&attachment)?;
+    let read = |key: &str| attachment.string_value(key).ok().flatten().filter(|v| !v.is_empty());
+    let bytes = match attachment.extract(0) {
+        Ok(bytes) => Some(bytes),
+        Err(AttachmentExtractError::NoFileStream) => None,
+        Err(e) => return Err(extract_error(e)),
+    };
+    Ok(AttachmentCapture {
+        name: info.name,
+        mime_type: info.mime_type,
+        description: info.description,
+        creation_date: read("CreationDate"),
+        mod_date: read("ModDate"),
+        checksum: read("CheckSum"),
+        bytes,
+    })
+}
+
+/// Put a captured file back under `key`, which no file may hold now.
+pub fn restore_attachment(
+    document: &Document,
+    key: &str,
+    capture: &AttachmentCapture,
+) -> Result<(), EngineError> {
+    if document.attachment_index_by_key(key).is_some() {
+        return Err(unknown(&format!("attachment '{key}' is held by another file")));
+    }
+    let attachment = document
+        .add_attachment(key)
+        .ok_or_else(|| unknown("FPDFDoc_AddAttachment returned NULL"))?;
+    if let Some(bytes) = &capture.bytes
+        && !attachment.set_file(document, bytes)
+    {
+        return Err(unknown("FPDFAttachment_SetFile returned false"));
+    }
+    // PDFium names the file after its key; a foreign file's `/UF` can differ.
+    if !capture.name.is_empty() && capture.name != key && !attachment.set_name(&capture.name) {
+        return Err(unknown("EPDFAttachment_SetName returned false"));
+    }
+    if let Some(date) = &capture.creation_date {
+        set_param(&attachment, "CreationDate", date)?;
+    }
+    if let Some(date) = &capture.mod_date {
+        set_param(&attachment, "ModDate", date)?;
+    }
+    if let Some(checksum) = &capture.checksum {
+        set_param(&attachment, "CheckSum", checksum)?;
+    }
+    if let Some(mime) = &capture.mime_type
+        && !matches!(attachment.set_mime_type(mime), Ok(true))
+    {
+        return Err(unknown("EPDFAttachment_SetSubtype returned false"));
+    }
+    if let Some(description) = &capture.description
+        && !attachment.set_description(description)
+    {
+        return Err(unknown("EPDFAttachment_SetDescription returned false"));
+    }
+    Ok(())
+}
+
+/// Bytes in a record as lowercase hex: a record crosses the wire as JSON
+/// (`ChangeRecordPayload`), which has no byte type.
+pub(crate) mod hex_bytes {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(bytes: &Option<Vec<u8>>, s: S) -> Result<S::Ok, S::Error> {
+        match bytes {
+            None => s.serialize_none(),
+            Some(bytes) => s.serialize_str(&encode(bytes)),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Vec<u8>>, D::Error> {
+        Option::<String>::deserialize(d)?
+            .map(|text| decode(&text).ok_or_else(|| serde::de::Error::custom("not hex bytes")))
+            .transpose()
+    }
+
+    pub fn encode(bytes: &[u8]) -> String {
+        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    pub fn decode(text: &str) -> Option<Vec<u8>> {
+        if !text.len().is_multiple_of(2) {
+            return None;
+        }
+        (0..text.len())
+            .step_by(2)
+            .map(|at| text.get(at..at + 2).and_then(|pair| u8::from_str_radix(pair, 16).ok()))
+            .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::hex_bytes;
+
+    #[test]
+    fn hex_bytes_round_trip_and_refuse_what_is_not_hex() {
+        let bytes = vec![0u8, 1, 0xab, 0xff];
+        assert_eq!(hex_bytes::encode(&bytes), "0001abff");
+        assert_eq!(hex_bytes::decode("0001abff"), Some(bytes));
+        assert_eq!(hex_bytes::decode(""), Some(Vec::new()));
+        assert_eq!(hex_bytes::decode("abc"), None);
+        assert_eq!(hex_bytes::decode("zz"), None);
+    }
 }

@@ -15,6 +15,7 @@ use super::ledger::KeptRecord;
 use super::op::Change;
 use super::record::ChangeRecord;
 use crate::cancel::CancelToken;
+use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
@@ -24,6 +25,7 @@ use crate::session::document::DocumentSession;
 pub fn in_transaction<T>(
     session: &mut DocumentSession,
     op_id: &str,
+    clock: &dyn Clock,
     write: impl FnOnce(&mut DocumentSession) -> Result<T, EngineError>,
 ) -> Result<T, EngineError> {
     session.begin_transaction(op_id)?;
@@ -33,7 +35,7 @@ pub fn in_transaction<T>(
             Ok(answer)
         }
         Err(refused) => {
-            roll_back(session)?;
+            roll_back(session, clock)?;
             Err(refused)
         }
     }
@@ -44,11 +46,11 @@ pub fn in_transaction<T>(
 /// the write left it, so none is left alone. A step that fails leaves the
 /// document holding part of the write, which is reported rather than the
 /// write's own refusal.
-fn roll_back(session: &mut DocumentSession) -> Result<(), EngineError> {
+fn roll_back(session: &mut DocumentSession, clock: &dyn Clock) -> Result<(), EngineError> {
     let journal = session.take_journal();
     let authority = ChangeAuthority::rollback();
     let cancel = CancelToken::never();
-    let mut ctx = ChangeContext { session, authority: &authority, cancel: &cancel };
+    let mut ctx = ChangeContext { session, authority: &authority, cancel: &cancel, clock };
     let mut failed = None;
     for step in journal.iter().rev() {
         if let Err(e) = super::applier::run_step(&mut ctx, step) {
@@ -98,6 +100,7 @@ pub struct Answered {
 /// and a different change under it is `IdempotencyKeyReused`. An undo runs
 /// the record its change left, when the same user asks and nothing ended
 /// undo since.
+#[allow(clippy::too_many_arguments)]
 pub fn run_change(
     session: &mut DocumentSession,
     op_id: &str,
@@ -105,15 +108,18 @@ pub fn run_change(
     change: Change,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
+    clock: &dyn Clock,
     space: ChangeSpace,
 ) -> Result<Answered, EngineError> {
     if let Some(prior) = session.ledger().outcome(op_id) {
         return Ok(Answered { result: prior.replay(&fingerprint, op_id)?, replayed: true });
     }
-    let ran = in_transaction(session, op_id, |session| {
+    let ran = in_transaction(session, op_id, clock, |session| {
         let applied = match change {
-            Change::Ops(ops) => apply(session, ops, authority, cancel, space)?,
-            Change::UndoOf(undo_of) => undo_kept(session, &undo_of, authority, cancel, space)?,
+            Change::Ops(ops) => apply(session, ops, authority, cancel, clock, space)?,
+            Change::UndoOf(undo_of) => {
+                undo_kept(session, &undo_of, authority, cancel, clock, space)?
+            }
         };
         result_of(session, applied)
     });
@@ -137,6 +143,7 @@ fn undo_kept(
     undo_of: &str,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
+    clock: &dyn Clock,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
     let record = match session.ledger().record(undo_of) {
@@ -156,7 +163,7 @@ fn undo_kept(
             "permission denied: changes:undo",
         ));
     }
-    undo(session, &record, authority, cancel, space)
+    undo(session, &record, authority, cancel, clock, space)
 }
 
 fn nothing_to_undo(authority: &ChangeAuthority) -> AppliedChange {
@@ -248,14 +255,17 @@ pub fn run_server_changes(
     session: &mut DocumentSession,
     changes: Vec<ServerChange>,
     cancel: &CancelToken,
+    clock: &dyn Clock,
 ) -> Result<Vec<ServerChangeOutcome>, EngineError> {
     let mut records: Vec<(String, Option<ChangeRecord>)> = Vec::new();
     let mut outcomes = Vec::with_capacity(changes.len());
     for entry in changes {
         let ServerChange { op_id, change, authority, record } = entry;
-        let ran = in_transaction(session, &op_id, |session| {
+        let ran = in_transaction(session, &op_id, clock, |session| {
             let applied = match change {
-                Change::Ops(ops) => apply(session, ops, &authority, cancel, ChangeSpace::Page)?,
+                Change::Ops(ops) => {
+                    apply(session, ops, &authority, cancel, clock, ChangeSpace::Page)?
+                }
                 Change::UndoOf(undo_of) => {
                     let kept = match records.iter().find(|(id, _)| *id == undo_of) {
                         Some((_, kept)) => Some(kept.clone()),
@@ -265,7 +275,7 @@ pub fn run_server_changes(
                         None => return Err(undo_unavailable(&undo_of, "expired")),
                         Some(None) => nothing_to_undo(&authority),
                         Some(Some(kept)) => {
-                            undo(session, &kept, &authority, cancel, ChangeSpace::Page)?
+                            undo(session, &kept, &authority, cancel, clock, ChangeSpace::Page)?
                         }
                     }
                 }

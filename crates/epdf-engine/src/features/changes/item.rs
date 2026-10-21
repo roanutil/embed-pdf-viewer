@@ -3,7 +3,9 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::attachments::AttachmentMutationMeta;
 use crate::error::EngineError;
+use crate::features::files::attachments::EmbeddedFileItem;
 use crate::features::metadata_write::{CustomMetadataUpdateResult, MetadataUpdateResult};
 use crate::identity::PageRef;
 use crate::mutation::MutationMeta;
@@ -30,6 +32,16 @@ pub enum ChangeItem {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         skipped: Vec<String>,
     },
+    /// `AttachmentCreateResult`: the new attachment, read back.
+    #[serde(rename = "attachments.create")]
+    AttachmentsCreate { attachment: EmbeddedFileItem, meta: AttachmentMutationMeta },
+    /// `AttachmentDeleteResult`: nothing exists after it, so only `meta`.
+    #[serde(rename = "attachments.delete")]
+    AttachmentsDelete { meta: AttachmentMutationMeta },
+    /// `AttachmentRestoreResult`, only in an undo: the file a delete removed,
+    /// back under its key.
+    #[serde(rename = "attachments.restore")]
+    AttachmentsRestore { attachment: EmbeddedFileItem, meta: AttachmentMutationMeta },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -42,6 +54,9 @@ impl ChangeItem {
         match self {
             Self::MetadataUpdate { result, .. } => &result.meta,
             Self::MetadataUpdateCustom { result, .. } => &result.meta,
+            Self::AttachmentsCreate { meta, .. }
+            | Self::AttachmentsDelete { meta }
+            | Self::AttachmentsRestore { meta, .. } => &meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -50,6 +65,9 @@ impl ChangeItem {
         match self {
             Self::MetadataUpdate { result, .. } => &mut result.meta,
             Self::MetadataUpdateCustom { result, .. } => &mut result.meta,
+            Self::AttachmentsCreate { meta, .. }
+            | Self::AttachmentsDelete { meta }
+            | Self::AttachmentsRestore { meta, .. } => &mut meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -68,6 +86,20 @@ impl ChangeItem {
             Self::MetadataUpdateCustom { result, .. } => {
                 ("metadata.customUpdated", to_value(result)?)
             }
+            Self::AttachmentsCreate { attachment, meta } => (
+                "attachments.created",
+                serde_json::json!({ "attachment": to_value(attachment)?, "meta": to_value(meta)? }),
+            ),
+            // `deleted` is what the delete removed (`deletedAttachmentOf`).
+            Self::AttachmentsDelete { meta } => (
+                "attachments.deleted",
+                serde_json::json!({ "deleted": to_value(&meta.changed.first())?,
+                    "meta": to_value(meta)? }),
+            ),
+            Self::AttachmentsRestore { attachment, meta } => (
+                "attachments.restored",
+                serde_json::json!({ "attachment": to_value(attachment)?, "meta": to_value(meta)? }),
+            ),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };
         let mut event_value = serde_json::json!({ "type": event });

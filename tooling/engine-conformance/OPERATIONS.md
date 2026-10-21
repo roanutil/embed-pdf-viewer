@@ -74,7 +74,7 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `attachments.list` | A | 2 | cooperative | ported |  |
+| `attachments.list` | A | 2 | cooperative | ported | Answers { attachments } (AttachmentList, a9434c0e2): each entry carries its ref, createdAt and modifiedAt as ISO dates, and null for every field the PDF has no value for. Gated by vectors/files/attachments.json through Host::call. |
 | `attachments.readFile` | A | 2 | cooperative | ported |  |
 | `annotations.readFile` | A | 2 | cooperative | ported | Byte equality with the TypeScript path, not a semantic comparison. |
 | `pieceInfo.read` | A | 2 | cooperative | ported |  |
@@ -107,7 +107,7 @@ cancellation case it has to document. Group assignments come from
 | `annotations.delete` | C | 4 | after-first-write | ported |  |
 | `annotations.import` | C | 4 | after-first-write | planned |  |
 | `annotations.reorder` | C | 4 | after-first-write | planned | Replaces annotations.move. |
-| `document.apply` | C | 4 | after-first-write | routed | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata ops (features/changes, tests/document_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. |
+| `document.apply` | C | 4 | after-first-write | routed | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata and attachment ops (features/changes, tests/document_apply.rs, tests/files_write.rs) and answers NotImplemented naming the owner sub-task for every other op type; an attachment op's bytes ride as a request payload its resources name, { payload: n }, and an undo of a delete puts the file back from the file as the API reads it, where upstream imports a raw capture only a layer transaction allows; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. |
 | `document.applyChanges` | C | 4 | after-first-write | routed | A server request's changes as one job, each in its own layer transaction. Rust runs the metadata ops, as document.apply does. |
 
 ## G12
@@ -146,8 +146,8 @@ cancellation case it has to document. Group assignments come from
 | --- | --- | --- | --- | --- | --- |
 | `metadata.update` | C | 4 | after-first-write | ported | MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep \| Clear \| Set(T). Gated by vectors/metadata/update.json through crates/epdf-engine/tests/metadata_write.rs, which replays the recorded request. Runs as a one-op change, so its opId undoes it. |
 | `metadata.updateCustom` | C | 4 | after-first-write | ported | Gated with metadata.update by vectors/metadata/update.json. A standard key, a leading slash or a key outside printable ASCII is InvalidArg before anything is written; answers the custom keys alone. |
-| `pieceInfo.update` | C | 4 | after-first-write | ported |  |
-| `pieceInfo.delete` | C | 4 | after-first-write | planned | Replaces pieceInfo.clear. |
+| `pieceInfo.update` | C | 4 | after-first-write | ported | Answers PieceInfoUpdateResult, { pieceInfo, meta }, as WorkerHost.handlePieceInfoUpdate does, and publishes no event. |
+| `pieceInfo.delete` | C | 4 | after-first-write | ported | Replaces pieceInfo.clear. Answers { meta } and publishes no event. |
 | `measure.setScale` | C | 4 | after-first-write | routed |  |
 
 ## G15
