@@ -634,6 +634,8 @@ Kept divergences to re-check: the three rich-text choices listed in 8.12 (`818eb
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+**Note from 8.4's review:** `PageDestination`'s `#[serde(default)]` axes turn an omitted axis into `null` on the way back to PDF space, where upstream keeps it absent. Check how the native writer treats absent and null before writing destinations.
+
 #### Task 8.15: Annotation update and the write verdicts
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.14. Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push. The per-file notes are in `docs/research/catchup-engine-vector-diffs.md`, "Annotation" (`update.json` and `write.json`).
@@ -732,6 +734,8 @@ Kept divergences to re-check: an absent `destIndex` is omitted on the page event
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+**Note from 8.4:** add the page-space boundary arm for `pages.setName`/`removeName` (`layout`); its tag is in `crates/epdf-engine/src/page_space/boundary.rs`.
+
 #### Task 8.19: Form read
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.4 and 8.5. Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push. The per-file notes are in `docs/research/catchup-engine-vector-diffs.md`, "Forms" (`snapshot.json`, and the field record notes under `field.json`).
@@ -807,6 +811,8 @@ Kept divergences to re-check: the no-op `applyEffects` answer carrying `mutation
 - [ ] Record the baseline before you start: `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-viewer-host -p epdf-wasm --no-fail-fast 2>&1 | grep -E '^test .* FAILED'`. At the end the same command lists no test the baseline did not.
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
+
+**Note from 8.4:** add the page-space boundary arm for `forms.setValue`/`reset`; its tag is in `crates/epdf-engine/src/page_space/boundary.rs`.
 
 #### Task 8.21: Form fields and widgets
 
@@ -906,6 +912,8 @@ Kept divergences to re-check: none recorded in this area.
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p pdfium --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host -p pdfium`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+**Note from 8.4's review:** `PageDestination`'s `#[serde(default)]` axes turn an omitted axis into `null` on the way back to PDF space, where upstream keeps it absent. Check how the native writer treats absent and null before writing destinations.
+
 #### Task 8.25: Measure
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.4, 8.6 (`MutationMeta`) and 8.12. Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push.
@@ -951,6 +959,8 @@ Kept divergences to re-check (kept by the user; keep each unless upstream now do
 - [ ] Record the baseline before you start: `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-viewer-host -p epdf-wasm --no-fail-fast 2>&1 | grep -E '^test .* FAILED'`. At the end the same command lists no test the baseline did not.
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
+
+**Note from 8.4:** add the page-space boundary arm for `forms.setSignatureAppearance`; its tag is in `crates/epdf-engine/src/page_space/boundary.rs`.
 
 #### Task 8.29: Layer-backed fat-memory open
 
