@@ -25,8 +25,8 @@ use epdf_engine::cancel::CancelToken;
 use epdf_engine::clock::{FixedClock, Timestamp};
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::files::piece_info::{
-    PieceInfoPatch, delete_piece_info, read_piece_info, read_piece_info_applications,
-    update_piece_info,
+    PieceInfoPatch, PieceInfoPatchValue, delete_piece_info, read_piece_info,
+    read_piece_info_applications, update_piece_info,
 };
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -471,4 +471,65 @@ fn an_undo_leaves_alone_a_file_someone_put_under_the_name_since() {
     let listed = listing(&mut replay);
     let entry = listed.iter().find(|e| e["ref"]["key"] == "added.txt").expect("still there");
     assert_eq!(entry["size"], 14);
+}
+
+/// `pieceinfo.test.ts`, "pieceInfo update preflight": an invalid value
+/// refuses the whole patch with `InvalidArg` before the first write.
+#[test]
+fn an_invalid_piece_info_patch_is_refused_before_anything_is_written() {
+    let mut replay = Replay::open(PIECE_INFO_FIXTURE, "pieceinfo-preflight");
+    let application = "EMBD_PreflightTest";
+    let update = |patch: serde_json::Value| {
+        serde_json::json!({ "kind": "pieceInfo.update", "effect": "write", "jobId": "<job>",
+            "opId": "<op>", "application": application, "patch": patch })
+    };
+    replay.replay(&update(serde_json::json!({ "seed": "before" }))).expect("the seed lands");
+    let seeded = serde_json::json!({ "seed": { "type": "string", "value": "before" } });
+
+    // Upstream's first patch, `invalid: Infinity`, has no JSON spelling: it
+    // is checked below, where a Rust patch can hold it.
+    for patch in [
+        serde_json::json!({ "candidate": "must-not-land", "invalid": { "name": "" } }),
+        serde_json::json!({ "candidate": "must-not-land", "invalid": ["valid", 42] }),
+        serde_json::json!({ "candidate": "must-not-land", "invalid": { "unsupported": true } }),
+        serde_json::json!({ "candidate": "must-not-land", "": "invalid-key" }),
+    ] {
+        let refused = replay.replay(&update(patch.clone())).expect_err("an invalid patch");
+        assert_eq!(refused["code"], "InvalidArg", "{patch}: {refused}");
+        let read = replay
+            .replay(&serde_json::json!({ "kind": "pieceInfo.read", "effect": "read",
+                "jobId": "<job>", "application": application }))
+            .expect("read");
+        assert_eq!(read["entries"], seeded, "{patch} wrote something");
+    }
+
+    let bytes = std::fs::read(test_support::workspace_root().join(PIECE_INFO_FIXTURE))
+        .expect("the fixture");
+    let mut session = DocumentSession::new();
+    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
+    let owned = session.document().expect("open");
+    let patch: PieceInfoPatch = [
+        ("candidate".to_owned(), PieceInfoPatchValue::String("must-not-land".into())),
+        ("invalid".to_owned(), PieceInfoPatchValue::Number(f64::INFINITY)),
+    ]
+    .into_iter()
+    .collect();
+    let refused = update_piece_info(
+        owned.document(),
+        PieceInfoHolder::Catalog,
+        application,
+        &patch,
+        &FixedClock(Timestamp::utc(1_700_000_000_000)),
+        &CancelToken::never(),
+    )
+    .expect_err("an infinite number");
+    assert!(refused.is(EngineErrorCode::InvalidArg), "{refused}");
+    let read = read_piece_info(
+        owned.document(),
+        PieceInfoHolder::Catalog,
+        application,
+        &CancelToken::never(),
+    )
+    .expect("read");
+    assert!(read.is_none(), "the infinite patch wrote something: {read:?}");
 }

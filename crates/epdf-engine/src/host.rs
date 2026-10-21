@@ -1628,7 +1628,12 @@ impl Host {
             "pieceInfo.update" => {
                 let holder = piece_info_holder(body)?;
                 let application = string_field(body, "application")?;
-                let patch: f::files::piece_info::PieceInfoPatch = field(body, "patch")?;
+                // Read as a value and checked as upstream checks it, so a
+                // patch value outside the vocabulary is `InvalidArg` rather
+                // than a decode failure.
+                let patch = f::files::piece_info::patch_from_wire(
+                    body.get("patch").unwrap_or(&serde_json::Value::Null),
+                )?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
                 let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(

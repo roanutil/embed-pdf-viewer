@@ -332,9 +332,11 @@ fn write_file_payload(
     }
     // `FPDFAttachment_SetFile` dates the file in local time without an
     // offset; a date the engine makes is UTC, unambiguous across zones.
-    let created = crate::clock::format_pdf_timestamp(clock.now())
-        .ok_or_else(|| unknown("the clock produced no PDF date"))?;
-    set_param(attachment, "CreationDate", &created)?;
+    // Best effort, as upstream's (`attachmentPrimitives.ts:89-91`) ignores a
+    // refusal: the file is written either way, with SetFile's own date.
+    if let Some(created) = crate::clock::format_pdf_timestamp(clock.now()) {
+        let _ = attachment.set_string_value("CreationDate", &created);
+    }
     // A file without a declared type has none: the engine never guesses one.
     if let Some(mime) = file.mime_type.as_deref().filter(|mime| !mime.is_empty())
         && !matches!(attachment.set_mime_type(mime), Ok(true))
@@ -398,7 +400,10 @@ pub fn delete_attachment(
 /// writes it: its name, type, description, `/Params` dates and checksum,
 /// and decoded bytes. What it does not keep: the filespec's object number,
 /// whether a stream was shared with another entry, `/Params /Size` (which
-/// the restore derives from the bytes), entries the API has no setter for,
+/// the restore derives from the bytes), a `/CheckSum` that is not hex (a
+/// literal string the setter would write back in another form, so the
+/// restore keeps the digest `FPDFAttachment_SetFile` computes), entries the
+/// API has no setter for,
 /// and the absence of a `/Params` entry the restore's `FPDFAttachment_SetFile`
 /// writes (`Size`, `CheckSum`, `CreationDate`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -408,8 +413,8 @@ pub struct AttachmentCapture {
     pub name: String,
     pub mime_type: Option<String>,
     pub description: Option<String>,
-    /// `/Params /CreationDate`, `/ModDate` and `/CheckSum`, as the PDF
-    /// wrote them.
+    /// `/Params /CreationDate` and `/ModDate` as the PDF wrote them, and
+    /// `/CheckSum` when it reads as hex.
     pub creation_date: Option<String>,
     pub mod_date: Option<String>,
     pub checksum: Option<String>,
@@ -445,9 +450,15 @@ pub fn capture_attachment(
         description: info.description,
         creation_date: read("CreationDate"),
         mod_date: read("ModDate"),
-        checksum: read("CheckSum"),
+        // Only a hex checksum round-trips through the setter; the restore
+        // leaves any other to `FPDFAttachment_SetFile`'s digest.
+        checksum: read("CheckSum").filter(|_| info.checksum.as_deref().is_some_and(is_hex)),
         bytes,
     })
+}
+
+fn is_hex(text: &str) -> bool {
+    !text.is_empty() && text.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 /// Put a captured file back under `key`, which no file may hold now.

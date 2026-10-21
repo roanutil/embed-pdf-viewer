@@ -222,6 +222,63 @@ pub enum PieceInfoPatchValue {
 /// A set of keys to write, under one application.
 pub type PieceInfoPatch = std::collections::BTreeMap<String, PieceInfoPatchValue>;
 
+/// A patch as the wire sent it, checked the way `requirePatch`,
+/// `validatePatch` and `validatePatchValue` check it
+/// (`PieceInfoAccessor.ts:376-427`): anything a caller can get wrong is
+/// `InvalidArg`, never a decode failure. An object with a `name` is a PDF
+/// name whatever else it holds, as upstream's `'name' in value` reads it.
+pub fn patch_from_wire(patch: &serde_json::Value) -> Result<PieceInfoPatch, EngineError> {
+    let invalid = |message: String| EngineError::with_message(EngineErrorCode::InvalidArg, message);
+    let object =
+        patch.as_object().ok_or_else(|| invalid("pieceInfo patch must be an object".into()))?;
+    let mut out = PieceInfoPatch::new();
+    for (key, value) in object {
+        if key.is_empty() {
+            return Err(invalid("pieceInfo keys must be non-empty".into()));
+        }
+        let value = match value {
+            serde_json::Value::Null => PieceInfoPatchValue::Clear,
+            serde_json::Value::String(text) => PieceInfoPatchValue::String(text.clone()),
+            serde_json::Value::Bool(flag) => PieceInfoPatchValue::Boolean(*flag),
+            serde_json::Value::Number(number) => match number.as_f64() {
+                Some(number) if number.is_finite() => PieceInfoPatchValue::Number(number),
+                _ => return Err(invalid(format!("pieceInfo number for '{key}' must be finite"))),
+            },
+            serde_json::Value::Array(items) => PieceInfoPatchValue::StringArray(
+                items
+                    .iter()
+                    .map(|item| item.as_str().map(str::to_owned))
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or_else(|| {
+                        invalid(format!(
+                            "pieceInfo string array for '{key}' must contain only strings"
+                        ))
+                    })?,
+            ),
+            serde_json::Value::Object(fields) if fields.contains_key("name") => {
+                match fields.get("name").and_then(serde_json::Value::as_str) {
+                    Some(name) if !name.is_empty() => {
+                        PieceInfoPatchValue::Name { name: name.to_owned() }
+                    }
+                    _ => {
+                        return Err(invalid(format!(
+                            "pieceInfo PDF name for '{key}' must be a non-empty string"
+                        )));
+                    }
+                }
+            }
+            serde_json::Value::Object(_) => {
+                return Err(invalid(format!(
+                    "unsupported pieceInfo value for '{key}': string | number | boolean | \
+                     string[] | {{ name }} | null"
+                )));
+            }
+        };
+        out.insert(key.clone(), value);
+    }
+    Ok(out)
+}
+
 /// Write a patch.
 ///
 /// # This is not a transaction
