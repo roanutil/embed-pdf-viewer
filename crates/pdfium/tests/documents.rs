@@ -226,6 +226,10 @@ fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
         .expect("load page 12 of the layer")
         .render_rgba_with_matrix(612, 792, identity, true, false)
         .expect("render the layer's page");
+    assert!(
+        from_layer.bgra.chunks_exact(4).any(|pixel| pixel[..3] != [255, 255, 255]),
+        "the layer's page draws something"
+    );
 
     let plain = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
     let from_plain = plain

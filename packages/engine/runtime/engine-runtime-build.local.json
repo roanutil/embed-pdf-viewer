@@ -7,8 +7,8 @@
       "sha256": "74bd66a1e52f05459a422f58443b5489938dad591821cd4004cdee2d666a065f"
     },
     "darwin-arm64": {
-      "url": "file://runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-darwin-arm64-854175aa8.tar.gz",
-      "sha256": "c16d1bff1348071e59e49f43dd93cf11f0f404a15f74409ef1da1c0ef6a5da26"
+      "url": "file://runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-darwin-arm64-926c126b2.tar.gz",
+      "sha256": "f5aa382a561dc0e06d27daa1cae9cda9b1707030db98a5784bbb360ccfd0ee06"
     },
     "ios-arm64": {
       "url": "file://runtime-src/out/embedpdf-runtime-artifacts/libembedpdf-runtime-ios-arm64-7c7b600b1.tar.gz",
