@@ -206,3 +206,32 @@ fn a_layer_hands_out_object_numbers_and_a_plain_document_has_none() {
     assert_eq!(plain.layer_last_object_number(), 0);
     assert!(!plain.raise_layer_last_object_number(10));
 }
+
+/// report.pdf's page index 12 is its first page that paints an image through a
+/// tiling pattern. A fresh layer used to share the base's parsed pattern, whose
+/// images belong to the base; the layer page's image cache refused them and
+/// PDFium read the entry it never started (task 8.29's SIGSEGV). A layer page
+/// renders as the plain document's does.
+#[test]
+fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
+    let bytes = test_support::fixture(test_support::REPORT);
+    let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+    let base = std::rc::Rc::new(
+        pdfium::BaseDocument::from_bytes(Library::acquire(), &bytes, None).expect("base"),
+    );
+    let layer = base.open_layer().expect("fresh layer");
+    let from_layer = layer
+        .document()
+        .page(12)
+        .expect("load page 12 of the layer")
+        .render_rgba_with_matrix(612, 792, identity, true, false)
+        .expect("render the layer's page");
+
+    let plain = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
+    let from_plain = plain
+        .page(12)
+        .expect("load page 12")
+        .render_rgba_with_matrix(612, 792, identity, true, false)
+        .expect("render the plain page");
+    assert!(from_layer.bgra == from_plain.bgra, "the layer's page renders as the plain page");
+}
