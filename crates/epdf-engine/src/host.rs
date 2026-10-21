@@ -120,8 +120,6 @@ enum Route {
 /// the sub-task named beside it moves its callers to the kind that replaced
 /// it.
 pub const LEGACY_KINDS: &[&str] = &[
-    // 8.16: `annotations.reorder` (1233d1349).
-    "annotations.move",
     // 8.20: `document.apply` (98e5c270c).
     "forms.applyEffects",
     // 8.21: `forms.addWidget` (d7bd2d277).
@@ -1369,20 +1367,22 @@ impl Host {
                 }
                 Ok(HostResponse { json: envelope(answer), payloads })
             }
+            // `WorkerHost.handleAnnotationsDelete`: the single verb as a
+            // one-op change, checked against the request's authority with no
+            // protection (`{ ...req.authority, protection: null }`).
             "annotations.delete" => {
-                let annotation_ref: crate::identity::AnnotationRef = field(body, "ref")?;
-                let result = f::annotation::write::mutator::delete(
-                    self.sessions.session_mut(&key)?,
-                    &annotation_ref,
-                    cancel,
-                )?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AnnotationDeleted {
-                        page_object_number: annotation_ref.page(),
-                        result: value(&result)?,
-                    },
-                )
+                let reference: crate::identity::AnnotationRef = field(body, "ref")?;
+                let op = f::changes::op::ChangeOp::AnnotationsDelete { reference, expect: None };
+                self.annotation_verb(&key, &header.kind, body, op, cancel)
+            }
+            // `WorkerHost.handleAnnotationsReorder`, as the delete.
+            "annotations.reorder" => {
+                let page = page_field(body)?;
+                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
+                let position: crate::mutation::list_position::AnnotationPosition =
+                    field(body, "position")?;
+                let op = f::changes::op::ChangeOp::AnnotationsReorder { page, refs, position };
+                self.annotation_verb(&key, &header.kind, body, op, cancel)
             }
 
             // `WorkerHost.handleAnnotationsFlatten`. Nothing applied is no
@@ -1533,13 +1533,14 @@ impl Host {
                     ) else {
                         continue;
                     };
-                    f::annotation::write::mutator::delete_unnoted(
-                        self.sessions.session_mut(&key)?,
+                    let owned = self.sessions.session(&key)?.document()?;
+                    f::annotation::write::delete::delete_released_widget(
+                        owned.document(),
+                        owned.page_index(page)?,
                         &crate::identity::AnnotationRef::ObjectNumber {
                             page,
                             annot: widget.annot_object_number,
                         },
-                        cancel,
                     )?;
                 }
                 // The deletes above wrote `/Annots` after the field's own
@@ -1804,28 +1805,6 @@ impl Host {
                 let notice =
                     crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
                 self.answer_with_notice(&key, result, notice, Vec::new())
-            }
-
-            // Owner: 8.16 (`annotations.reorder`, 1233d1349).
-            "annotations.move" => {
-                let page = page_field(body)?;
-                let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
-                let to_index: u32 = field(body, "toIndex")?;
-                let result = f::annotation::write::mutator::move_to(
-                    self.sessions.session_mut(&key)?,
-                    page,
-                    &refs,
-                    to_index,
-                    self.ids.as_ref(),
-                    cancel,
-                )?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AnnotationMoved {
-                        page_object_number: page,
-                        result: value(&result)?,
-                    },
-                )
             }
 
             // Owner: 8.20 (`document.apply`, 98e5c270c).
@@ -2167,6 +2146,44 @@ impl Host {
                 Ok(op_id.clone())
             }
         }
+    }
+
+    /// A single annotation verb as a one-op change, checked against the
+    /// request's authority with no protection (`{ ...req.authority,
+    /// protection: null }`), answered `{result, mutationSequence, event}`
+    /// with the item's `type` and `page` stripped (`handleAnnotationsDelete`,
+    /// `handleAnnotationsReorder`).
+    fn annotation_verb(
+        &mut self,
+        key: &SessionKey,
+        kind: &str,
+        body: &serde_json::Value,
+        op: crate::features::changes::op::ChangeOp,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        let job = JobEnvelope::parse(kind, body)?;
+        let op_id = self.op_id_of(&job)?;
+        let authority = match job.authority {
+            Some(mut wire) => {
+                wire.protection = None;
+                Some(change_authority(&wire)?)
+            }
+            None => None,
+        };
+        let item = self.apply_one(key, &op_id, op, authority, cancel)?;
+        let event = item.events()?.into_iter().next().ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
+        })?;
+        let (result, sequence, mut events, payloads) =
+            self.finish_change(key, &op_id, None, vec![event], strip_item(item)?)?;
+        let mut answer = serde_json::json!({
+            "result": result,
+            "mutationSequence": sequence,
+        });
+        if let Some(event) = events.pop() {
+            answer["event"] = event;
+        }
+        Ok(HostResponse { json: envelope(answer), payloads })
     }
 
     /// `applyOne`: a single verb as a one-op change in the file's own
@@ -2835,6 +2852,13 @@ fn strip_item(
         ChangeItem::AnnotationsDelete { meta, .. } => {
             Ok(serde_json::json!({ "meta": value(&meta)? }))
         }
+        ChangeItem::AnnotationsReorder { order, meta, .. } => {
+            Ok(serde_json::json!({ "order": value(&order)?, "meta": value(&meta)? }))
+        }
+        // Only an undo answers a restore; a single verb never does.
+        ChangeItem::AnnotationsRestore { annotations, meta, .. } => {
+            Ok(serde_json::json!({ "annotations": annotations, "meta": value(&meta)? }))
+        }
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }
@@ -2851,7 +2875,7 @@ const MUTATING_KINDS: &[&str] = &[
     "annotations.create",
     "annotations.update",
     "annotations.delete",
-    "annotations.move",
+    "annotations.reorder",
     "annotations.flatten",
     "forms.setValue",
     "forms.reset",

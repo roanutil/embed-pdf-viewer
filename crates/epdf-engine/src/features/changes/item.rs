@@ -68,12 +68,29 @@ pub enum ChangeItem {
         skipped: Vec<String>,
     },
     /// `AnnotationDeleteResult`, with its page: nothing exists after it, so
-    /// only `meta`, whose `changed` names what went. Here only as the undo
-    /// of a create; Task 8.16 runs it as an op.
+    /// only `meta`, whose `changed` names what went, the annotation first.
     #[serde(rename = "annotations.delete")]
     AnnotationsDelete {
         #[serde(with = "crate::identity::page_ref")]
         page: crate::identity::PageObjectNumber,
+        meta: AnnotationMutationMeta,
+    },
+    /// `AnnotationReorderResult`, with its page: the page's annotations in
+    /// their new paint order, bottom to top, widgets excepted.
+    #[serde(rename = "annotations.reorder")]
+    AnnotationsReorder {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        order: Vec<crate::identity::AnnotationRef>,
+        meta: AnnotationMutationMeta,
+    },
+    /// Only in an undo: what a delete removed, back, in `/Annots` order,
+    /// each read as a listing reads it.
+    #[serde(rename = "annotations.restore")]
+    AnnotationsRestore {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        annotations: Vec<serde_json::Value>,
         meta: AnnotationMutationMeta,
     },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
@@ -93,7 +110,9 @@ impl ChangeItem {
             | Self::AttachmentsRestore { meta, .. } => &meta.meta,
             Self::AnnotationsCreate { meta, .. }
             | Self::AnnotationsUpdate { meta, .. }
-            | Self::AnnotationsDelete { meta, .. } => &meta.meta,
+            | Self::AnnotationsDelete { meta, .. }
+            | Self::AnnotationsReorder { meta, .. }
+            | Self::AnnotationsRestore { meta, .. } => &meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -107,7 +126,9 @@ impl ChangeItem {
             | Self::AttachmentsRestore { meta, .. } => &mut meta.meta,
             Self::AnnotationsCreate { meta, .. }
             | Self::AnnotationsUpdate { meta, .. }
-            | Self::AnnotationsDelete { meta, .. } => &mut meta.meta,
+            | Self::AnnotationsDelete { meta, .. }
+            | Self::AnnotationsReorder { meta, .. }
+            | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -156,6 +177,16 @@ impl ChangeItem {
                 "annotations.deleted",
                 serde_json::json!({ "deleted": to_value(&meta.changed)?,
                     "page": crate::identity::PageRef::new(*page), "meta": to_value(meta)? }),
+            ),
+            Self::AnnotationsReorder { page, order, meta } => (
+                "annotations.reordered",
+                serde_json::json!({ "page": crate::identity::PageRef::new(*page),
+                    "order": to_value(order)?, "meta": to_value(meta)? }),
+            ),
+            Self::AnnotationsRestore { page, annotations, meta } => (
+                "annotations.restored",
+                serde_json::json!({ "page": crate::identity::PageRef::new(*page),
+                    "annotations": annotations, "meta": to_value(meta)? }),
             ),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };

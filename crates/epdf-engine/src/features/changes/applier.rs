@@ -300,6 +300,12 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
                 at,
             )
         }
+        ChangeOp::AnnotationsDelete { reference, expect } => {
+            super::annotations::delete_annotation(ctx, reference, expect.as_ref(), at)
+        }
+        ChangeOp::AnnotationsReorder { page, refs, position } => {
+            super::annotations::reorder_annotations(ctx, *page, refs, position)
+        }
     }
 }
 
@@ -314,6 +320,8 @@ pub(super) fn run_step(
         ReverseStep::AttachmentsRestore(step) => super::attachments::restore_attachment(ctx, step),
         ReverseStep::AnnotationRemove(step) => super::annotations::remove_annotation(ctx, step),
         ReverseStep::ObjectsRevert(step) => super::annotations::revert_annotation(ctx, step),
+        ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
+        ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
     }
 }
 

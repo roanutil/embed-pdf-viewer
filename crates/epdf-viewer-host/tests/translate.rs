@@ -2172,3 +2172,56 @@ fn a_pages_text_geometry_reaches_the_kernel_in_the_files_coordinates_and_its_spe
     assert!(rotated > 0, "rotated_text.pdf has turned runs");
     assert!(kernel["runs"][0].get("charStart").is_some(), "{}", kernel["runs"][0]);
 }
+
+/// The kernel's delete: the host answers upstream's `{meta}` and an
+/// `annotations.deleted` event, and the kernel gets back the previous
+/// shape, the durable id of what it deleted under `deleted`, with an
+/// `annotation.deleted` event carrying it (Task 8.16).
+#[test]
+fn the_kernels_delete_keeps_its_shape_while_the_wire_takes_upstreams() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let draft = json!({ "subtype": "square", "nm": "kernel-square",
+        "rect": { "left": 100.0, "bottom": 100.0, "right": 160.0, "top": 140.0 },
+        "color": { "r": 255, "g": 0, "b": 0 }, "interiorColor": null, "opacity": 1,
+        "strokeWidth": 2, "rotation": 0, "flags": { "print": true, "hidden": false } });
+    let call =
+        translate("d", "page.annotations.create", Some(pon), std::slice::from_ref(&draft), 3)
+            .unwrap();
+    let created = decode(
+        &call.decode,
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads),
+    )
+    .unwrap()
+    .value["created"]
+        .clone();
+    let object_number = created["ref"]["annotObjectNumber"].clone();
+    assert!(object_number.is_u64(), "{created}");
+
+    let call =
+        translate("d", "page.annotations.delete", Some(pon), &[created["ref"].clone()], 4).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    let deleted = json!({ "kind": "objectNumber", "value": object_number });
+    assert_eq!(decoded.value["deleted"], deleted, "{}", decoded.value);
+    assert!(decoded.value["meta"]["changed"].is_array(), "{}", decoded.value);
+    let event = decoded.event.expect("an event");
+    assert_eq!(event["type"], "annotation.deleted");
+    assert_eq!(event["deleted"], deleted);
+    assert!(event["page"].is_object(), "{event}");
+
+    // It is gone from the kernel's listing.
+    let call = translate("d", "page.annotations.list", Some(pon), &[], 5).unwrap();
+    let listed = decode(
+        &call.decode,
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads),
+    )
+    .unwrap()
+    .value;
+    let refs: Vec<&Value> =
+        listed["annotations"].as_array().unwrap().iter().map(|a| &a["ref"]).collect();
+    assert!(!refs.contains(&&created["ref"]), "{listed}");
+}

@@ -80,20 +80,23 @@ fn every_annotation_write_names_its_page() {
     assert_result_rides(&updated);
     let annotation = updated["result"]["annotation"]["ref"].clone();
 
-    // Removed upstream; owner 8.16 (`annotations.reorder`).
-    let moved = call_legacy(
+    // A reorder and a delete are one-op changes too (Task 8.16).
+    let moved = call(
         &mut host,
-        json!({ "kind": "annotations.move", "docId": doc, "page": page,
-                "refs": [annotation], "toIndex": 0 }),
+        json!({ "kind": "annotations.reorder", "docId": doc, "page": page,
+                "refs": [annotation], "position": "start" }),
     );
-    assert_eq!(moved["event"]["type"], json!("annotation.moved"), "{moved}");
+    assert_eq!(moved["event"]["type"], json!("annotations.reordered"), "{moved}");
     assert_eq!(moved["event"]["page"], page, "{moved}");
+    assert!(moved["result"].get("page").is_none(), "the page leaked into the result");
     assert_result_rides(&moved);
 
     let deleted =
         call(&mut host, json!({ "kind": "annotations.delete", "docId": doc, "ref": annotation }));
-    assert_eq!(deleted["event"]["type"], json!("annotation.deleted"), "{deleted}");
+    assert_eq!(deleted["event"]["type"], json!("annotations.deleted"), "{deleted}");
     assert_eq!(deleted["event"]["page"], page, "{deleted}");
+    // `deletedAnnotationsOf`: what went, beside the result.
+    assert_eq!(deleted["event"]["deleted"], json!([annotation]), "{deleted}");
     assert_result_rides(&deleted);
 }
 

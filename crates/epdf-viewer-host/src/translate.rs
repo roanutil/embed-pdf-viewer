@@ -501,6 +501,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if kind == "annotations.update" {
         return kernel_update::call(host, &request, payloads);
     }
+    if kind == "annotations.delete" {
+        return kernel_delete::call(host, &request, payloads);
+    }
     let moved = page_space::render_target_to_page_space(host, &mut request);
     let response = if respelled || moved {
         host.call(&request.to_string(), payloads)
@@ -1191,6 +1194,81 @@ mod kernel_update {
             event.insert("updated".into(), updated);
         }
         Ok(())
+    }
+}
+
+/// The kernel's annotation delete, on the host's (Task 8.16).
+///
+/// The host now answers upstream's delete: `{meta}`, the thread and popups
+/// gone with the annotation and named in `meta.changed`, and an
+/// `annotations.deleted` event listing them. The kernel's sync takes the
+/// previous answer: the durable id of what it asked to delete under
+/// `deleted` (its object number, else its non-empty `/NM`, else `null`), in
+/// the result and in an `annotation.deleted` event. [`call`] reads that id
+/// before the delete and answers it so. Dead once Task 13 ports the kernel.
+mod kernel_delete {
+    use epdf_engine::error::EngineError;
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::identity::AnnotationRef;
+    use serde_json::{Value, json};
+
+    use super::kernel_create::{malformed, refused};
+
+    /// The kernel's delete, answered in the kernel's shape.
+    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
+        let deleted = match durable_id(host, request) {
+            Ok(id) => id,
+            Err(error) => return refused(error),
+        };
+        let response = host.call(&request.to_string(), payloads);
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        if envelope.get("error").is_some() {
+            return response;
+        }
+        let answer = &mut envelope["result"];
+        let meta = answer["result"]["meta"].take();
+        answer["result"] = json!({ "deleted": deleted, "meta": meta });
+        if let Some(Value::Object(event)) = answer.get_mut("event") {
+            event.insert("type".into(), json!("annotation.deleted"));
+            event.insert("deleted".into(), deleted);
+        }
+        HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// The durable id of the annotation `request` names, as the previous
+    /// delete answered it. A ref that names nothing answers `null`, and the
+    /// host's own refusal follows.
+    fn durable_id(host: &mut Host, request: &Value) -> Result<Value, EngineError> {
+        let reference: AnnotationRef =
+            serde_json::from_value(request.get("ref").cloned().unwrap_or_default())
+                .map_err(|e| malformed(format!("the delete names no annotation: {e}")))?;
+        let base_index = match reference {
+            AnnotationRef::ObjectNumber { annot, .. } => {
+                return Ok(json!({ "kind": "objectNumber", "value": annot }));
+            }
+            AnnotationRef::BaseIndex { base_index, .. } => base_index,
+            AnnotationRef::Nm { .. } | AnnotationRef::Index { .. } => return Ok(Value::Null),
+        };
+        // Still inline: its name, if it has one, from the kernel's listing.
+        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
+        let mut list = json!({ "kind": "annotations.list", "docId": request.get("docId"),
+            "pages": [page] });
+        if let Some(layer) = request.get("layerName") {
+            list["layerName"] = layer.clone();
+        }
+        let listing = super::kernel_annotations::listing(host, &list);
+        let listed: Value = serde_json::from_str(&listing.json)
+            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
+        let name = listed
+            .pointer("/result/pages/0/annotations")
+            .and_then(Value::as_array)
+            .and_then(|all| all.iter().find(|a| a["index"] == json!(base_index)))
+            .and_then(|a| a["nm"].as_str())
+            .filter(|nm| !nm.is_empty())
+            .map(str::to_owned);
+        Ok(name.map_or(Value::Null, |nm| json!({ "kind": "nm", "value": nm })))
     }
 }
 

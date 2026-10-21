@@ -31,18 +31,14 @@
 //! epoch where it was would tell every client that nothing had changed,
 //! which is the one thing that is certainly untrue.
 
-use crate::access::{DocumentAccess, OwnedDocument, PageAccess};
+use crate::access::{DocumentAccess, PageAccess};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::pages_write::FlattenUsage;
 use crate::identity::{AnnotationRef, PageObjectNumber};
-use crate::ids::IdSource;
 use crate::mutation::PageStateMeta;
-use crate::revision::WeakAnnotationState;
 use crate::session::document::DocumentSession;
 
-use super::delete::{AnnotationDeleteResult, WidgetAttachment, delete_annotation};
-use super::move_::{AnnotationMoveResult, move_annotations};
 use super::resolve::resolve_annotation;
 
 /// Whether this page holds an annotation nothing can address durably.
@@ -69,25 +65,6 @@ fn has_weak_annotations(page: &dyn PageAccess) -> Result<bool, EngineError> {
     Ok(false)
 }
 
-/// Learn the page's weak state if the session does not already know it.
-///
-/// Only when unknown, because the scan walks every annotation on the page and
-/// a mutation that already recorded the answer has not invalidated it. The
-/// writers that DO invalidate it re-record afterwards.
-fn ensure_weak_state(
-    session: &mut DocumentSession,
-    page_object_number: PageObjectNumber,
-) -> Result<(), EngineError> {
-    if matches!(
-        session.weak_annotation_state(page_object_number)?,
-        WeakAnnotationState::Known { .. }
-    ) {
-        return Ok(());
-    }
-    let has_weak = scan_weak(session, page_object_number)?;
-    session.record_weak_flag(page_object_number, has_weak)
-}
-
 /// Scan the page and drop it again before the session is touched.
 ///
 /// A separate function because the scan borrows the document out of the
@@ -101,138 +78,6 @@ fn scan_weak(
     let owned = session.document()?;
     let page = owned.page(page_object_number)?;
     has_weak_annotations(&page)
-}
-
-/// Where a page sits in the document today.
-///
-/// Resolved per call rather than cached, because a page insert or a reorder
-/// moves it and the writers address `/Annots` through a loaded page whose
-/// index is the one the document has now.
-fn page_index_of(document: &pdfium::Document, page: PageObjectNumber) -> Result<u32, EngineError> {
-    (0..document.page_count())
-        .find(|index| document.page_object_number_by_index(*index) == page.get())
-        .ok_or_else(|| {
-            EngineError::with_message(
-                crate::error::EngineErrorCode::NotFound,
-                format!("no page with object number {}", page.get()),
-            )
-        })
-}
-
-/// Which widgets on this document belong to a form field.
-///
-/// Consulted only when the thing being deleted is a widget. An attached
-/// widget is a VIEW of a field, and removing it here would leave the field's
-/// `/Kids` pointing at nothing: the corruption class `forms.repair` exists to
-/// clean up. A document with no form model at all has no attached widgets by
-/// definition, so everything is deletable.
-fn widget_resolver(owned: &OwnedDocument) -> impl Fn(u32) -> WidgetAttachment + '_ {
-    let model = owned.document().form_model();
-    move |widget: u32| match model.as_ref().and_then(|m| m.field_index_for_widget(widget)) {
-        Some(_) => WidgetAttachment::Attached,
-        None => WidgetAttachment::Deletable,
-    }
-}
-
-/// Remove one annotation.
-///
-/// Structural: the epoch advances whether or not the write succeeds, because
-/// a partial delete has already moved indices.
-pub fn delete(
-    session: &mut DocumentSession,
-    annotation_ref: &AnnotationRef,
-    cancel: &CancelToken,
-) -> Result<AnnotationDeleteResult, EngineError> {
-    let result = delete_unnoted(session, annotation_ref, cancel)?;
-    session.note_mutation();
-    Ok(result)
-}
-
-/// [`delete`] without noting the mutation, for a caller that notes it once
-/// for a whole cascade: `AnnotationMutator.delete` leaves the bump to
-/// `finishMutation`, so `forms.deleteField`'s widget deletes add none.
-pub(crate) fn delete_unnoted(
-    session: &mut DocumentSession,
-    annotation_ref: &AnnotationRef,
-    cancel: &CancelToken,
-) -> Result<AnnotationDeleteResult, EngineError> {
-    cancel.check()?;
-    let page_object_number = annotation_ref.page();
-    ensure_weak_state(session, page_object_number)?;
-    let before = session.page_state(page_object_number)?;
-
-    let outcome = {
-        let owned = session.document()?;
-        let page = owned.page(page_object_number)?;
-        let resolve = widget_resolver(owned);
-        delete_annotation(
-            owned.document(),
-            page.view(),
-            annotation_ref,
-            &before,
-            &before,
-            &resolve,
-            cancel,
-        )
-    };
-
-    // Bumped on both paths. A refusal that never touched `/Annots` costs one
-    // wasted refetch; a partial write that is not reported costs a client
-    // resolving index references into a page that moved underneath it.
-    session.bump_revision(page_object_number)?;
-    let mut result = outcome?;
-
-    let has_weak = scan_weak(session, page_object_number)?;
-    session.record_weak_flag(page_object_number, has_weak)?;
-    let after = session.page_state(page_object_number)?;
-    result.meta.affected_pages = vec![after];
-    Ok(result)
-}
-
-/// Reorder a contiguous block of a page's annotations.
-pub fn move_to(
-    session: &mut DocumentSession,
-    page_object_number: PageObjectNumber,
-    refs: &[AnnotationRef],
-    to_index: u32,
-    ids: &dyn IdSource,
-    cancel: &CancelToken,
-) -> Result<AnnotationMoveResult, EngineError> {
-    cancel.check()?;
-    ensure_weak_state(session, page_object_number)?;
-    let before = session.page_state(page_object_number)?;
-
-    // Bumped BEFORE the write rather than after, because the moved
-    // annotations are read back against the new epoch: a caller comparing the
-    // returned DTOs against the returned page state has to see one revision,
-    // not a mixture.
-    session.bump_revision(page_object_number)?;
-    let after_bump = session.page_state(page_object_number)?;
-
-    let outcome = {
-        let owned = session.document()?;
-        let index = page_index_of(owned.document(), page_object_number)?;
-        let page = owned.page(page_object_number)?;
-        move_annotations(
-            owned.document(),
-            page.view(),
-            index,
-            page_object_number,
-            refs,
-            to_index,
-            &before,
-            &after_bump,
-            ids,
-            cancel,
-        )
-    };
-    let mut result = outcome?;
-
-    let has_weak = scan_weak(session, page_object_number)?;
-    session.record_weak_flag(page_object_number, has_weak)?;
-    result.meta.affected_pages = vec![session.page_state(page_object_number)?];
-    session.note_mutation();
-    Ok(result)
 }
 
 /// One ref's outcome in [`flatten`]: `AnnotationFlattenItemResult`.

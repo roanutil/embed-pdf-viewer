@@ -92,6 +92,24 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expect: Option<serde_json::Map<String, serde_json::Value>>,
     },
+    /// The annotation `ref` names, with its thread and popups. `expect` is
+    /// the values it assumes the annotation reads now.
+    #[serde(rename = "annotations.delete", rename_all = "camelCase")]
+    AnnotationsDelete {
+        #[serde(rename = "ref")]
+        reference: crate::identity::AnnotationRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// Stacking order: the annotations go together to `position` among the
+    /// page's annotations.
+    #[serde(rename = "annotations.reorder", rename_all = "camelCase")]
+    AnnotationsReorder {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        refs: Vec<crate::identity::AnnotationRef>,
+        position: crate::mutation::list_position::AnnotationPosition,
+    },
 }
 
 /// The bytes beside an op, by role (`WireAnnotationResources`).
@@ -188,7 +206,9 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::AnnotationsUpdate { resources, .. } => resources.resolve(payloads)?,
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
-            | ChangeOp::AttachmentsDelete { .. } => {}
+            | ChangeOp::AttachmentsDelete { .. }
+            | ChangeOp::AnnotationsDelete { .. }
+            | ChangeOp::AnnotationsReorder { .. } => {}
         }
     }
     Ok(())
@@ -227,6 +247,8 @@ impl ChangeOp {
             Self::AttachmentsDelete { .. } => "attachments.delete",
             Self::AnnotationsCreate { .. } => "annotations.create",
             Self::AnnotationsUpdate { .. } => "annotations.update",
+            Self::AnnotationsDelete { .. } => "annotations.delete",
+            Self::AnnotationsReorder { .. } => "annotations.reorder",
         }
     }
 }
@@ -247,9 +269,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.16: the other annotation ops.
-    ("annotations.delete", "8.16"),
-    ("annotations.reorder", "8.16"),
     // 8.18: page structure (119685ea4, b69c40377).
     ("pages.rotate", "8.18"),
     ("pages.reorder", "8.18"),
@@ -354,7 +373,9 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
         | ChangeOp::AnnotationsCreate { .. }
-        | ChangeOp::AnnotationsUpdate { .. } => {}
+        | ChangeOp::AnnotationsUpdate { .. }
+        | ChangeOp::AnnotationsDelete { .. }
+        | ChangeOp::AnnotationsReorder { .. } => {}
     }
     Ok(parsed)
 }
@@ -486,6 +507,8 @@ mod tests {
             "attachments.delete",
             "annotations.create",
             "annotations.update",
+            "annotations.delete",
+            "annotations.reorder",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

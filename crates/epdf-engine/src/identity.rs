@@ -360,6 +360,19 @@ impl AnnotationRef {
         }
     }
 
+    /// The key two refs to one annotation share (`annotationKey`): an
+    /// object number names one object in the whole document, so its key has
+    /// no page; a birth name is its page's. The two names the wire no longer
+    /// has key apart from both.
+    pub fn key(&self) -> String {
+        match self {
+            Self::ObjectNumber { annot, .. } => format!("obj:{annot}"),
+            Self::BaseIndex { page, base_index } => format!("base:{}:{base_index}", page.get()),
+            Self::Nm { page, nm } => format!("nm:{}:{nm}", page.get()),
+            Self::Index { page, index, .. } => format!("index:{}:{index}", page.get()),
+        }
+    }
+
     /// A reference by index is weak by construction; the others are
     /// durable. A `baseIndex` is a name for life (`AnnotationRef.ts`), not a
     /// position that shifts.
@@ -523,5 +536,17 @@ mod tests {
         ] {
             assert!(serde_json::from_value::<AnnotationRef>(gone.clone()).is_err(), "{gone}");
         }
+    }
+
+    #[test]
+    fn an_object_number_keys_the_same_on_any_page_and_a_birth_name_by_its_page() {
+        let page = |n| PageObjectNumber::new(n).unwrap();
+        let object = |p, annot| AnnotationRef::ObjectNumber { page: page(p), annot };
+        let born = |p, base_index| AnnotationRef::BaseIndex { page: page(p), base_index };
+        assert_eq!(object(3, 5).key(), "obj:5");
+        assert_eq!(object(3, 5).key(), object(4, 5).key());
+        assert_eq!(born(3, 2).key(), "base:3:2");
+        assert_ne!(born(3, 2).key(), born(4, 2).key());
+        assert_ne!(object(3, 2).key(), born(3, 2).key());
     }
 }

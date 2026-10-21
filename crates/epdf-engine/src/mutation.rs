@@ -11,6 +11,8 @@
 //! (`{result, mutationSequence, event}`), never inside this type, so the two
 //! stay independent.
 
+pub mod list_position;
+
 use serde::{Deserialize, Serialize};
 
 use crate::dto::CachePins;

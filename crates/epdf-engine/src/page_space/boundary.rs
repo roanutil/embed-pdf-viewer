@@ -495,11 +495,23 @@ pub fn change_op_in_file_space(
                 .transpose()?;
             Ok(ChangeOp::AnnotationsUpdate { reference, patch, resources, expect })
         }
+        // What it expects, on the annotation's page.
+        ChangeOp::AnnotationsDelete { reference, expect } => {
+            let expect = match expect {
+                Some(expect) => {
+                    let visible = box_of(reference.page())?;
+                    Some(super::annotations::pdf_annotation_patch_of(expect, visible, box_of)?)
+                }
+                None => None,
+            };
+            Ok(ChangeOp::AnnotationsDelete { reference, expect })
+        }
         // No places.
         op @ (ChangeOp::MetadataUpdate { .. }
         | ChangeOp::MetadataUpdateCustom { .. }
         | ChangeOp::AttachmentsCreate { .. }
-        | ChangeOp::AttachmentsDelete { .. }) => Ok(op),
+        | ChangeOp::AttachmentsDelete { .. }
+        | ChangeOp::AnnotationsReorder { .. }) => Ok(op),
     }
 }
 
@@ -527,6 +539,16 @@ pub fn change_item_in_page_space(
                 skipped,
             })
         }
+        ChangeItem::AnnotationsRestore { page, annotations, meta } => {
+            Ok(ChangeItem::AnnotationsRestore {
+                page,
+                annotations: annotations
+                    .into_iter()
+                    .map(|annotation| page_annotation_of(annotation, box_of))
+                    .collect::<Result<_, _>>()?,
+                meta,
+            })
+        }
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
@@ -534,6 +556,7 @@ pub fn change_item_in_page_space(
         | ChangeItem::AttachmentsDelete { .. }
         | ChangeItem::AttachmentsRestore { .. }
         | ChangeItem::AnnotationsDelete { .. }
+        | ChangeItem::AnnotationsReorder { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
 }

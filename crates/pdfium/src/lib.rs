@@ -18,6 +18,7 @@ mod annot;
 mod annot_write;
 mod base;
 mod bitmap;
+mod capture;
 mod document;
 mod error;
 mod extract;

@@ -70,3 +70,136 @@ fn parent_ref(
     let nm = dictionary_read("NM", parent.string_value("NM"))?;
     Ok(nm.filter(|name| !name.is_empty()).map(|nm| AnnotationRef::Nm { page, nm }))
 }
+
+/// The key of the ref a record field holds (`annotationKey`), or `None`
+/// when it holds no ref.
+fn key_at(value: Option<&serde_json::Value>) -> Option<String> {
+    let reference: AnnotationRef = serde_json::from_value(value?.clone()).ok()?;
+    Some(reference.key())
+}
+
+/// An annotation and everything deleted with it (`deletedWith`,
+/// `core/src/annotation/relationships.ts`), from a page's records as a
+/// listing reads them: every annotation whose `reply.to` leads to it
+/// (replies, their replies, grouped parts, review states) and every popup of
+/// these. Children come before their parent and a popup before the
+/// annotation it shows, so the annotation itself is last. Empty when
+/// `reference` names nothing in `annotations`.
+pub fn deleted_with(
+    annotations: &[serde_json::Value],
+    reference: &AnnotationRef,
+) -> Vec<serde_json::Value> {
+    let keys: Vec<Option<String>> =
+        annotations.iter().map(|annotation| key_at(annotation.get("ref"))).collect();
+    let find =
+        |key: Option<String>| key.and_then(|key| keys.iter().position(|k| *k == Some(key.clone())));
+    let Some(target) = find(Some(reference.key())) else { return Vec::new() };
+    let is_popup = |annotation: &serde_json::Value| {
+        annotation.get("subtype").and_then(|s| s.as_str()) == Some("popup")
+    };
+    let mut children: Vec<Vec<usize>> = vec![Vec::new(); annotations.len()];
+    let mut popups: Vec<Vec<usize>> = vec![Vec::new(); annotations.len()];
+    for (at, annotation) in annotations.iter().enumerate() {
+        if let Some(parent) = find(key_at(annotation.pointer("/reply/to")))
+            && parent != at
+        {
+            children[parent].push(at);
+        }
+        // A popup belongs to the annotation it shows, by its `/Parent` or by
+        // that annotation's `/Popup`.
+        if is_popup(annotation)
+            && let Some(shows) = find(key_at(annotation.get("parent")))
+            && shows != at
+        {
+            popups[shows].push(at);
+        }
+        if let Some(own) = find(key_at(annotation.get("popup")))
+            && own != at
+            && is_popup(&annotations[own])
+        {
+            popups[at].push(own);
+        }
+    }
+    let mut members = Vec::new();
+    let mut seen = vec![false; annotations.len()];
+    fn visit(
+        at: usize,
+        children: &[Vec<usize>],
+        popups: &[Vec<usize>],
+        seen: &mut [bool],
+        members: &mut Vec<usize>,
+    ) {
+        if seen[at] {
+            return;
+        }
+        seen[at] = true;
+        for child in &children[at] {
+            visit(*child, children, popups, seen, members);
+        }
+        for popup in &popups[at] {
+            if seen[*popup] {
+                continue;
+            }
+            seen[*popup] = true;
+            members.push(*popup);
+        }
+        members.push(at);
+    }
+    visit(target, &children, &popups, &mut seen, &mut members);
+    members.into_iter().map(|at| annotations[at].clone()).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::{Value, json};
+
+    use super::*;
+
+    fn object(annot: u32) -> Value {
+        json!({ "kind": "objectNumber", "page": { "kind": "objectNumber", "objectNumber": 3 },
+            "objectNumber": annot })
+    }
+
+    fn born(base_index: u32) -> Value {
+        json!({ "kind": "baseIndex", "page": { "kind": "objectNumber", "objectNumber": 3 },
+            "baseIndex": base_index })
+    }
+
+    fn names(members: &[Value]) -> Vec<Value> {
+        members.iter().map(|member| member["ref"].clone()).collect()
+    }
+
+    #[test]
+    fn a_thread_goes_whole_children_before_their_parent_and_a_popup_before_what_it_shows() {
+        let annotations = [
+            json!({ "ref": object(5), "subtype": "text", "popup": object(6) }),
+            json!({ "ref": object(6), "subtype": "popup", "parent": object(5) }),
+            json!({ "ref": object(7), "subtype": "text", "reply": { "to": object(5) } }),
+            // A reply named by the birth name of what it replies to.
+            json!({ "ref": object(8), "subtype": "text", "reply": { "to": object(7) } }),
+            json!({ "ref": born(4), "subtype": "square" }),
+            json!({ "ref": object(9), "subtype": "popup", "parent": born(4) }),
+        ];
+        let reference: AnnotationRef = serde_json::from_value(object(5)).unwrap();
+        assert_eq!(
+            names(&deleted_with(&annotations, &reference)),
+            [object(8), object(7), object(6), object(5)]
+        );
+        let reference: AnnotationRef = serde_json::from_value(born(4)).unwrap();
+        assert_eq!(names(&deleted_with(&annotations, &reference)), [object(9), born(4)]);
+        let reference: AnnotationRef = serde_json::from_value(object(7)).unwrap();
+        assert_eq!(names(&deleted_with(&annotations, &reference)), [object(8), object(7)]);
+    }
+
+    #[test]
+    fn a_ref_that_names_nothing_takes_nothing_and_a_cycle_ends() {
+        let annotations = [
+            json!({ "ref": object(5), "subtype": "text", "reply": { "to": object(7) } }),
+            json!({ "ref": object(7), "subtype": "text", "reply": { "to": object(5) } }),
+        ];
+        let nothing: AnnotationRef = serde_json::from_value(object(99)).unwrap();
+        assert!(deleted_with(&annotations, &nothing).is_empty());
+        let reference: AnnotationRef = serde_json::from_value(object(5)).unwrap();
+        assert_eq!(names(&deleted_with(&annotations, &reference)), [object(7), object(5)]);
+    }
+}

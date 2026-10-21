@@ -11,7 +11,7 @@
 //! Writes replace `AnnotationMutator.ts` (784), `internal/write/*` (22 files,
 //! 3,496), `computeMutationImpact.ts` (141) and the appearance, normalize,
 //! patch and draft bases (1,183). Operations: `annotations.create`,
-//! `annotations.update`, `annotations.delete`, `annotations.move`.
+//! `annotations.update`, `annotations.delete`, `annotations.reorder`.
 //!
 //! In Stage A, Rust neither creates nor retains the form model that
 //! `internal/read/joinWidgetField.ts:23` needs: TypeScript lends the pointer.

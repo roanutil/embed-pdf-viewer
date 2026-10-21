@@ -557,6 +557,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
+    note: "A one-op change (applyOne) and an op of document.apply: the annotation goes with its thread and popups in one change (deletedWith), each checked against the authority before the first write, the page's inline annotations promoted first so a baseIndex keeps naming them. Answers only meta, the annotation first in meta.changed; the annotations.deleted event lists them all. A widget is refused for the form's ops. Its reverse brings everything back from the fork's capture at the same numbers and positions (annotation.restore), and that restore's reverse deletes it again, so an undone create can be redone. Only a layer can capture: until 8.29 opens open.fatMem as one, a plain session's delete runs but its undo is refused NotImplemented. Gated by vectors/annotation/delete.json through crates/epdf-engine/tests/annotation_delete.rs.",
   },
   // Not a WorkerRequest kind after the catch-up to upstream b456ee4fd: replaced by annotations.reorder (and the reorder op of document.apply).
   // {
@@ -583,8 +584,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
-    note: 'Replaces annotations.move.',
+    rustStatus: 'ported',
+    note: "Replaces annotations.move (1233d1349). A one-op change and an op of document.apply: the rows go together, in the order given, beside a neighbour of their own family or at the start or the end (ListPosition), as one block move in /Annots; widgets have their own order. Nothing is renamed (bc0057f3a). Answers the page's whole new order. Its reverse puts each row back beside its old neighbours while it is still where the reorder left it. Gated by vectors/annotation/move.json through crates/epdf-engine/tests/annotation_move.rs.",
   },
   {
     kind: 'document.apply',

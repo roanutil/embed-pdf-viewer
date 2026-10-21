@@ -19,7 +19,6 @@
 use epdf_engine::features::annotation::write::appearance::{
     AppearanceImpact, appearance_impact_of,
 };
-use epdf_engine::features::annotation::write::impact::AnnotationMutationKind;
 use epdf_engine::features::annotation::write::shape_for_rect::pdf_resolve_rect_command;
 use serde::Deserialize;
 
@@ -105,17 +104,6 @@ fn the_appearance_verdicts_agree_with_the_typescript_engine() {
         "the case list no longer produces every verdict",
     );
     assert_eq!(resolved, 3, "the cases that resolve a rect moved");
-}
-
-#[test]
-fn only_delete_and_move_shift_an_index() {
-    // The doctrine the whole envelope rests on, stated where it can be read
-    // rather than inferred from six cases. A create APPENDS, so the new
-    // annotation lands past everything that was already there.
-    assert!(!AnnotationMutationKind::Create.shifts_existing_indices());
-    assert!(!AnnotationMutationKind::Update.shifts_existing_indices());
-    assert!(AnnotationMutationKind::Delete.shifts_existing_indices());
-    assert!(AnnotationMutationKind::Move.shifts_existing_indices());
 }
 
 #[test]

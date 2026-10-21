@@ -38,6 +38,10 @@ pub enum ReverseStep {
     AttachmentsRestore(AttachmentRestoreStep),
     #[serde(rename = "annotation.remove")]
     AnnotationRemove(AnnotationRemoveStep),
+    #[serde(rename = "annotation.restore")]
+    AnnotationRestore(AnnotationRestoreStep),
+    #[serde(rename = "annotation.reorder")]
+    AnnotationReorder(AnnotationReorderStep),
     #[serde(rename = "objects.revert")]
     ObjectsRevert(ObjectsRevertStep),
 }
@@ -85,10 +89,10 @@ pub struct RevertFallback {
     pub left: serde_json::Map<String, serde_json::Value>,
 }
 
-/// Deletes what a create made, with its thread and popups, while it all
-/// reads as the change left it (`AnnotationRemoveStep`): undoing a create
-/// never deletes an annotation someone changed since. `left` is each, as it
-/// read in the file's coordinates, the annotation first.
+/// Deletes what a create or a restore brought, with its thread and popups,
+/// while it all reads as the change left it (`AnnotationRemoveStep`):
+/// undoing a create never deletes an annotation someone changed since.
+/// `left` is each, as it read in the file's coordinates.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationRemoveStep {
@@ -99,6 +103,55 @@ pub struct AnnotationRemoveStep {
     /// popup was linked to it, put back when the popup goes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub parent: Option<crate::features::annotation::write::create::ParentBefore>,
+}
+
+/// Brings back what a delete removed, at the same numbers and positions
+/// (`AnnotationRestoreStep`). Skipped when its page is gone or it is back
+/// already.
+///
+/// `capture` is the fork's capture of the members as the delete removed
+/// them (`EPDFPage_ExportAnnotsRawToOwnedBuffer`), which only a layer can
+/// take: `None` for a session that is not one, which this engine opens
+/// `open.fatMem` as until Task 8.29, and whose delete can't be brought back.
+/// `unlinked` is where upstream keeps a capture of each annotation that
+/// stayed and stopped naming a popup that went (`captureAfter`), which the
+/// fork exports only in a layer transaction (Task 8.30): here each is named,
+/// with the popup it showed, and linked again while it names none.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationRestoreStep {
+    #[serde(with = "crate::identity::page_ref")]
+    pub page: crate::identity::PageObjectNumber,
+    /// What the delete removed, the annotation first.
+    pub members: Vec<crate::identity::AnnotationRef>,
+    #[serde(with = "crate::features::files::attachments::hex_bytes")]
+    pub capture: Option<Vec<u8>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unlinked: Vec<UnlinkedPopup>,
+}
+
+/// An annotation that stayed when the popup it showed went with a delete.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnlinkedPopup {
+    #[serde(rename = "ref")]
+    pub reference: crate::identity::AnnotationRef,
+    pub popup: crate::identity::AnnotationRef,
+}
+
+/// Puts the rows of a reorder back beside their old neighbours
+/// (`AnnotationReorderStep`). A row goes back only while it is where the
+/// reorder left it, above the same row. `before` and `after` are the
+/// family's rows, bottom to top, on each side of the reorder.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationReorderStep {
+    #[serde(with = "crate::identity::page_ref")]
+    pub page: crate::identity::PageObjectNumber,
+    pub family: crate::features::annotation::appearance::AnnotationFamily,
+    pub refs: Vec<crate::identity::AnnotationRef>,
+    pub before: Vec<crate::identity::AnnotationRef>,
+    pub after: Vec<crate::identity::AnnotationRef>,
 }
 
 /// Deletes the embedded file a create or a restore brought, while it is
@@ -158,7 +211,8 @@ pub struct MetadataRevertStep {
 
 /// The bytes of captures a record holds, which the ledger budgets
 /// (`recordBytes`). A metadata step captures no bytes, and neither does an
-/// attachment remove here: its guard is a read, not canonical bytes.
+/// attachment remove here: its guard is a read, not canonical bytes. An
+/// annotation restore holds its capture.
 pub fn record_bytes(record: &ChangeRecord) -> usize {
     record
         .steps
@@ -171,6 +225,8 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
             ReverseStep::AttachmentsRestore(step) => {
                 step.capture.bytes.as_ref().map_or(0, Vec::len)
             }
+            ReverseStep::AnnotationRestore(step) => step.capture.as_ref().map_or(0, Vec::len),
+            ReverseStep::AnnotationReorder(_) => 0,
         })
         .sum()
 }

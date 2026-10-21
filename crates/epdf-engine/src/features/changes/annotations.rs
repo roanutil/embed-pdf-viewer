@@ -1,13 +1,15 @@
 //! The annotation ops and their reverse
 //! (`services/src/features/changes/internal/annotationChanges.ts`).
 //!
-//! `annotations.create` is here; its reverse deletes what it made while it
-//! still reads as the create left it. `annotations.update` is here; its
-//! reverse puts back, by value, the fields it changed that still show what it
-//! set (`objects.revert`, see [`super::record::ObjectsRevertStep`]). Task
-//! 8.16 adds the delete and the reorder, with the restore that undoes a
-//! delete: until then the delete an undo of a create runs leaves nothing to
-//! redo it with.
+//! `annotations.create`: its reverse deletes what it made while it still
+//! reads as the create left it. `annotations.update`: its reverse puts back,
+//! by value, the fields it changed that still show what it set
+//! (`objects.revert`, see [`super::record::ObjectsRevertStep`]).
+//! `annotations.delete`: it takes the annotation's thread and popups with
+//! it, captured first, and its reverse brings them all back
+//! (`annotation.restore`), whose reverse deletes them again. So an undone
+//! create can be redone. `annotations.reorder`: its reverse puts the rows
+//! back beside their old neighbours (`annotation.reorder`).
 
 use serde_json::{Map, Value};
 
@@ -15,10 +17,13 @@ use super::applier::{ChangeContext, Done, left_alone};
 use super::item::ChangeItem;
 use super::op::OpResources;
 use super::record::{
-    AnnotationRemoveStep, ObjectsRevertStep, ReverseStep, RevertFallback, RevertSubject,
+    AnnotationRemoveStep, AnnotationReorderStep, AnnotationRestoreStep, ObjectsRevertStep,
+    ReverseStep, RevertFallback, RevertSubject, UnlinkedPopup,
 };
 use crate::auth::scope::{CollabAction, CollabEntity, CollabTarget, DocCapability};
+use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::annotation::appearance::AnnotationFamily;
 use crate::features::annotation::write::context::AnnotationWriteContext;
 use crate::features::annotation::write::create::{
     AnnotationMutationMeta, CreateRequest, CreateServices, create_annotation as create,
@@ -28,7 +33,9 @@ use crate::features::annotation::write::prepare::DraftResources;
 use crate::features::annotation::write::update::{
     UpdateRequest, UpdateServices, read_record, record_json, update_annotation as update,
 };
+use crate::features::annotation::write::{delete, reorder};
 use crate::identity::{AnnotationRef, PageObjectNumber};
+use crate::mutation::list_position::{AnnotationPosition, ListPosition};
 
 fn forbidden(what: &str) -> EngineError {
     EngineError::with_message(EngineErrorCode::Forbidden, format!("permission denied: {what}"))
@@ -170,152 +177,453 @@ pub fn create_annotation(
     })
 }
 
-/// The key two refs to one annotation share (`annotationKey`).
-fn key_of(value: &Value) -> Option<String> {
-    let reference: AnnotationRef = serde_json::from_value(value.clone()).ok()?;
-    Some(match reference {
-        AnnotationRef::ObjectNumber { page, annot } => format!("{}:o{annot}", page.get()),
-        AnnotationRef::BaseIndex { page, base_index } => format!("{}:b{base_index}", page.get()),
-        AnnotationRef::Nm { page, nm } => format!("{}:n{nm}", page.get()),
-        AnnotationRef::Index { page, index, .. } => format!("{}:i{index}", page.get()),
+/// `PermissionDenied` for a write that covers several annotations: the
+/// refs it was refused for in `details.refs`.
+fn denied_for(required: &str, refs: &[AnnotationRef]) -> EngineError {
+    let count = refs.len();
+    EngineError::with_message(
+        EngineErrorCode::Forbidden,
+        format!(
+            "permission denied (target): {required} for {count} annotation{}",
+            if count == 1 { "" } else { "s" }
+        ),
+    )
+    .with_details(serde_json::json!({ "required": required, "context": "target", "refs": refs }))
+}
+
+/// `authorizeAnnotationDelete`: each member checked against the scope's
+/// collab rules for its owner, every check before the first write.
+fn authorize_delete(ctx: &ChangeContext<'_>, members: &[Value]) -> Result<(), EngineError> {
+    let Some(grants) = &ctx.authority.grants else { return Ok(()) };
+    let owner = |member: &Value, name: &str| {
+        member.get(name).and_then(Value::as_str).filter(|v| !v.is_empty()).map(str::to_owned)
+    };
+    let mut refused = Vec::new();
+    for member in members {
+        let target =
+            CollabTarget { user_id: owner(member, "userId"), group_id: owner(member, "groupId") };
+        if !grants.allows_collab(CollabAction::Delete, &target) {
+            refused.push(delete::member_ref(member)?);
+        }
+    }
+    if refused.is_empty() { Ok(()) } else { Err(denied_for("annotations:delete", &refused)) }
+}
+
+/// `annotations.delete`; its reverse brings back everything it removed
+/// (`deleteAnnotation`). A widget is the form's, refused naming the form op
+/// that removes it.
+pub fn delete_annotation(
+    ctx: &mut ChangeContext<'_>,
+    reference: &AnnotationRef,
+    expect: Option<&Map<String, Value>>,
+    at: usize,
+) -> Result<Done, EngineError> {
+    {
+        let owned = ctx.session.document()?;
+        let page_index = owned.page_index(reference.page())?;
+        let document = owned.document();
+        let index = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+            document, page_index, reference,
+        )?;
+        if let Some(attached) = delete::widget_attachment(document, page_index, index) {
+            return Err(delete::widget_delete_refused(attached));
+        }
+    }
+    let current = read_annotation(ctx, reference)?;
+    ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
+    if let Some(expect) = expect {
+        super::applier::assert_expected(at, &current, expect)?;
+    }
+    write_delete(ctx, reference)
+}
+
+/// A delete of `reference` and what goes with it, capturing them first
+/// (`writeDelete`). Its reverse brings them back at the same numbers and
+/// positions, and links again each annotation that stayed to the popup it
+/// showed.
+fn write_delete(
+    ctx: &mut ChangeContext<'_>,
+    reference: &AnnotationRef,
+) -> Result<Done, EngineError> {
+    let page = reference.page();
+    let is_layer = ctx.session.last_object_number()?.is_some();
+    let session = &*ctx.session;
+    let owned = session.document()?;
+    let page_index = owned.page_index(page)?;
+    let document = owned.document();
+    // A capture holds objects: whatever was born inline becomes one first.
+    delete::promote_inline_annotations(document, page_index, page)?;
+    let members = delete::members_of(document, page_index, reference, ctx.cancel)?;
+    let refs: Vec<AnnotationRef> =
+        members.iter().map(delete::member_ref).collect::<Result<_, _>>()?;
+    let going: Vec<String> = refs.iter().map(AnnotationRef::key).collect();
+    // A popup that goes without its annotation unlinks it.
+    let unlinked: Vec<UnlinkedPopup> = members
+        .iter()
+        .zip(&refs)
+        .filter(|(member, _)| member.get("subtype").and_then(Value::as_str) == Some("popup"))
+        .filter_map(|(member, popup)| {
+            let parent: AnnotationRef =
+                serde_json::from_value(member.get("parent").cloned()?).ok()?;
+            (!going.contains(&parent.key()))
+                .then(|| UnlinkedPopup { reference: parent, popup: popup.clone() })
+        })
+        .collect();
+    let capture = if members.is_empty() || !is_layer {
+        // re-port (Task 8): 8.29 opens open.fatMem as a layer; a session
+        // that is not one has nothing to capture with, and its delete
+        // can't be brought back.
+        None
+    } else {
+        let indexes = refs
+            .iter()
+            .map(|member| {
+                crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+                    document, page_index, member,
+                )
+            })
+            .collect::<Result<Vec<u32>, _>>()?;
+        Some(document.export_annotations_raw(page_index, &indexes).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("the capture of the annotations of page {} failed", page.get()),
+            )
+        })?)
+    };
+    let result = delete::delete_annotation(
+        document,
+        page_index,
+        reference,
+        &|members| authorize_delete(ctx, members),
+        &session.write_stamp()?,
+        ctx.cancel,
+    )?;
+    let reverse = ReverseStep::AnnotationRestore(AnnotationRestoreStep {
+        page,
+        members: result.meta.changed.clone(),
+        capture,
+        unlinked,
+    });
+    Ok(Done {
+        item: ChangeItem::AnnotationsDelete { page, meta: result.meta },
+        reverse: vec![reverse],
     })
 }
 
-/// `deletedWith`: what deleting `reference` deletes with it, its replies
-/// and their popups and its own, children before their parent and a popup
-/// before what it shows, the annotation itself last. Empty when nothing on
-/// the page is `reference`.
-fn deleted_with(annotations: &[Value], reference: &Value) -> Vec<Value> {
-    let keys: Vec<Option<String>> =
-        annotations.iter().map(|a| a.get("ref").and_then(key_of)).collect();
-    let find =
-        |key: Option<String>| key.and_then(|key| keys.iter().position(|k| *k == Some(key.clone())));
-    let Some(target) = find(key_of(reference)) else { return Vec::new() };
-    let mut children: Vec<Vec<usize>> = vec![Vec::new(); annotations.len()];
-    let mut popups: Vec<Vec<usize>> = vec![Vec::new(); annotations.len()];
-    for (at, annotation) in annotations.iter().enumerate() {
-        if let Some(parent) = find(annotation.pointer("/reply/to").and_then(key_of))
-            && parent != at
-        {
-            children[parent].push(at);
-        }
-        let is_popup = annotation.get("subtype").and_then(Value::as_str) == Some("popup");
-        if is_popup
-            && let Some(shows) = find(annotation.get("parent").and_then(key_of))
-            && shows != at
-        {
-            popups[shows].push(at);
-        }
-        if let Some(own) = find(annotation.get("popup").and_then(key_of))
-            && own != at
-            && annotations[own].get("subtype").and_then(Value::as_str) == Some("popup")
-        {
-            popups[at].push(own);
-        }
-    }
-    let mut members = Vec::new();
-    let mut seen = vec![false; annotations.len()];
-    fn visit(
-        at: usize,
-        children: &[Vec<usize>],
-        popups: &[Vec<usize>],
-        seen: &mut [bool],
-        members: &mut Vec<usize>,
-    ) {
-        if seen[at] {
-            return;
-        }
-        seen[at] = true;
-        for child in &children[at] {
-            visit(*child, children, popups, seen, members);
-        }
-        for popup in &popups[at] {
-            if seen[*popup] {
-                continue;
-            }
-            seen[*popup] = true;
-            members.push(*popup);
-        }
-        members.push(at);
-    }
-    visit(target, &children, &popups, &mut seen, &mut members);
-    members.into_iter().map(|at| annotations[at].clone()).collect()
-}
-
-/// Deletes what a create made while it reads as the change left it
-/// (`removeAnnotation`); left alone when its page is gone or anything of it
-/// changed.
+/// Deletes what a create or a restore brought, when nobody changed it
+/// since (`removeAnnotation`); left alone when its page is gone or anything
+/// of it changed. Its reverse brings it back, so an undone create can be
+/// redone.
 pub fn remove_annotation(
     ctx: &mut ChangeContext<'_>,
     step: &AnnotationRemoveStep,
 ) -> Result<Done, EngineError> {
     let page = step.reference.page();
-    let session = &*ctx.session;
-    let owned = session.document()?;
-    let Ok(page_index) = owned.page_index(page) else {
-        return left_alone(ctx, "annotations.delete");
+    let members = {
+        let owned = ctx.session.document()?;
+        let Ok(page_index) = owned.page_index(page) else {
+            return left_alone(ctx, "annotations.delete");
+        };
+        delete::members_of(owned.document(), page_index, &step.reference, ctx.cancel)?
     };
-    let document = owned.document();
-    let listed = crate::features::annotation::read::list::read_page_annotation_records(
-        document, page_index, page, ctx.cancel,
-    )?;
-    let annotations: Vec<Value> = listed
-        .iter()
-        .map(serde_json::to_value)
-        .collect::<Result<_, _>>()
-        .map_err(|e| EngineError::with_message(EngineErrorCode::Unknown, e.to_string()))?;
-    let reference = serde_json::to_value(step.reference.clone())
-        .map_err(|e| EngineError::with_message(EngineErrorCode::Unknown, e.to_string()))?;
-    let members = deleted_with(&annotations, &reference);
+    let key = |value: &Value| delete::member_ref(value).ok().map(|r| r.key());
     let unchanged = !members.is_empty()
         && members.len() == step.left.len()
         && members.iter().all(|member| {
-            let key = member.get("ref").and_then(key_of);
-            step.left.iter().any(|left| left.get("ref").and_then(key_of) == key && left == member)
+            let member_key = key(member);
+            step.left.iter().any(|left| {
+                key(left) == member_key && super::applier::values_equal(Some(left), Some(member))
+            })
         });
     if !unchanged {
         return left_alone(ctx, "annotations.delete");
     }
     ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
-    // Highest place first, so each removal leaves the others where they are.
-    let mut places: Vec<(u32, AnnotationRef)> = Vec::with_capacity(members.len());
-    for member in &members {
-        let reference: AnnotationRef =
-            serde_json::from_value(member.get("ref").cloned().unwrap_or_default())
-                .map_err(|e| EngineError::with_message(EngineErrorCode::Unknown, e.to_string()))?;
-        let index = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
-            document, page_index, &reference,
-        )?;
-        places.push((index, reference));
-    }
-    let mut order: Vec<&(u32, AnnotationRef)> = places.iter().collect();
-    order.sort_by_key(|place| std::cmp::Reverse(place.0));
-    for (index, _) in order {
-        if !document.remove_annotation_raw(page_index, *index) {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFPage_RemoveAnnotRaw returned false",
-            ));
-        }
-    }
+    let done = write_delete(ctx, &step.reference)?;
     // A popup's parent, when it stays, gets back what the popup's create
     // changed on it.
-    if let Some(before) = &step.parent
-        && !places.iter().any(|(_, r)| *r == before.reference)
-        && let Ok(at) = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+    if let Some(before) = &step.parent {
+        let session = &*ctx.session;
+        let owned = session.document()?;
+        let page_index = owned.page_index(page)?;
+        let document = owned.document();
+        if let Ok(at) = crate::features::annotation::write::resolve::resolve_annotation_index_raw(
             document,
             page_index,
             &before.reference,
-        )
-        && let Some(parent) = document.raw_annotation(page_index, at)
-    {
-        restore_parent(document, page_index, &parent, before)?;
+        ) && let Some(parent) = document.raw_annotation(page_index, at)
+        {
+            restore_parent(document, page_index, &parent, before)?;
+        }
     }
-    // The annotation first, then what went with it.
-    let mut changed = vec![step.reference.clone()];
-    changed.extend(places.into_iter().map(|(_, r)| r).filter(|r| *r != step.reference));
-    let meta = AnnotationMutationMeta::of(&session.write_stamp()?, page, changed);
-    Ok(Done { item: ChangeItem::AnnotationsDelete { page, meta }, reverse: Vec::new() })
+    Ok(done)
+}
+
+/// Brings back what a delete removed, at the same numbers and positions
+/// (`restoreAnnotations`). Skipped when its page is gone or it is back
+/// already. It takes the authority its delete took over each owner of what
+/// comes back.
+pub fn restore_annotations(
+    ctx: &mut ChangeContext<'_>,
+    step: &AnnotationRestoreStep,
+) -> Result<Done, EngineError> {
+    let page = step.page;
+    let Some(root) = step.members.first() else {
+        return left_alone(ctx, "annotations.restore");
+    };
+    let session = &*ctx.session;
+    let owned = session.document()?;
+    let Ok(page_index) = owned.page_index(page) else {
+        return left_alone(ctx, "annotations.restore");
+    };
+    let document = owned.document();
+    let listed = |cancel| -> Result<Vec<Value>, EngineError> {
+        crate::features::annotation::read::list::read_page_annotation_records(
+            document, page_index, page, cancel,
+        )?
+        .iter()
+        .map(|record| {
+            serde_json::to_value(record)
+                .map_err(|e| EngineError::with_message(EngineErrorCode::Unknown, e.to_string()))
+        })
+        .collect()
+    };
+    let key_of = |value: &Value| delete::member_ref(value).ok().map(|r| r.key());
+    if listed(ctx.cancel)?.iter().any(|annotation| key_of(annotation) == Some(root.key())) {
+        return left_alone(ctx, "annotations.restore");
+    }
+    let Some(capture) = &step.capture else {
+        return Err(EngineError::with_message(
+            EngineErrorCode::NotImplemented,
+            "this delete can't be brought back: its session is not a layer, so nothing was \
+             captured (open.fatMem opens a plain document here, where upstream opens a layer; \
+             Task 8.29)",
+        ));
+    };
+    // An import runs inside a layer transaction. This engine opens none
+    // around its writes yet (Task 8.30), so the import has its own.
+    let own_transaction = !document.layer_in_transaction();
+    if own_transaction && !document.layer_begin_transaction() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFLayer_BeginTransaction refused",
+        ));
+    }
+    if !document.import_annotations_raw(page_index, capture) {
+        if own_transaction {
+            document.layer_abort_transaction();
+        }
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFPage_ImportAnnotsRaw refused a capture",
+        ));
+    }
+    if own_transaction && !document.layer_commit_transaction() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFLayer_CommitTransaction refused",
+        ));
+    }
+    // A popup the delete took from an annotation that stayed links to it
+    // again, while that annotation names no popup, as the delete left it.
+    for link in &step.unlinked {
+        let resolve = |reference| {
+            crate::features::annotation::write::resolve::resolve_annotation_index_raw(
+                document, page_index, reference,
+            )
+            .ok()
+            .and_then(|at| document.raw_annotation(page_index, at))
+        };
+        if let (Some(parent), Some(popup)) = (resolve(&link.reference), resolve(&link.popup))
+            && matches!(parent.linked_annotation("Popup"), Ok(None))
+            && !matches!(parent.set_linked_annotation("Popup", &popup), Ok(true))
+        {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "restoring /Popup failed",
+            ));
+        }
+    }
+    let after = listed(&CancelToken::never())?;
+    let restored = step
+        .members
+        .iter()
+        .map(|member| {
+            after
+                .iter()
+                .find(|annotation| key_of(annotation) == Some(member.key()))
+                .cloned()
+                .ok_or_else(|| {
+                    EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        format!("a restored annotation is missing: {}", member.key()),
+                    )
+                })
+        })
+        .collect::<Result<Vec<Value>, _>>()?;
+    // What comes back is checked once it is read; a refusal takes the
+    // import back with the rest of the change.
+    ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
+    authorize_delete(ctx, &restored)?;
+    let meta = AnnotationMutationMeta::of(&session.write_stamp()?, page, step.members.clone());
+    Ok(Done {
+        item: ChangeItem::AnnotationsRestore { page, annotations: restored.clone(), meta },
+        reverse: vec![ReverseStep::AnnotationRemove(AnnotationRemoveStep {
+            reference: root.clone(),
+            left: restored,
+            parent: None,
+        })],
+    })
+}
+
+/// `annotations.reorder`; its reverse puts them back beside their old
+/// neighbours (`reorderAnnotations`).
+pub fn reorder_annotations(
+    ctx: &mut ChangeContext<'_>,
+    page: PageObjectNumber,
+    refs: &[AnnotationRef],
+    position: &AnnotationPosition,
+) -> Result<Done, EngineError> {
+    let plan = {
+        let owned = ctx.session.document()?;
+        let page_index = owned.page_index(page)?;
+        let stack = reorder::read_page_stack(owned.document(), page_index, page)?;
+        reorder::plan_reorder(stack, AnnotationFamily::Annotations, refs, position)?
+    };
+    authorize_reorder(ctx, plan.family, refs)?;
+    reorder::apply_reorder(ctx.session.document()?.document(), &plan)?;
+    reordered(ctx, &plan, refs)
+}
+
+/// A reorder's item, and the step that puts its rows back (`reordered`).
+fn reordered(
+    ctx: &ChangeContext<'_>,
+    plan: &reorder::PlannedReorder,
+    refs: &[AnnotationRef],
+) -> Result<Done, EngineError> {
+    let page = plan.stack.page;
+    Ok(Done {
+        item: reorder_item(ctx, page, plan.after.clone(), refs)?,
+        reverse: vec![ReverseStep::AnnotationReorder(AnnotationReorderStep {
+            page,
+            family: plan.family,
+            refs: refs.to_vec(),
+            before: plan.before.clone(),
+            after: plan.after.clone(),
+        })],
+    })
+}
+
+/// A reorder's item: the family's new order on the page, and the rows that
+/// moved (`reorderItem`).
+fn reorder_item(
+    ctx: &ChangeContext<'_>,
+    page: PageObjectNumber,
+    order: Vec<AnnotationRef>,
+    moved: &[AnnotationRef],
+) -> Result<ChangeItem, EngineError> {
+    let meta = AnnotationMutationMeta::of(&ctx.session.write_stamp()?, page, moved.to_vec());
+    Ok(ChangeItem::AnnotationsReorder { page, order, meta })
+}
+
+/// A reorder may move these rows: each annotation's kind, or the form's
+/// design (`authorizeReorder`).
+fn authorize_reorder(
+    ctx: &ChangeContext<'_>,
+    family: AnnotationFamily,
+    refs: &[AnnotationRef],
+) -> Result<(), EngineError> {
+    if family == AnnotationFamily::Widgets {
+        return ctx.authority.require(DocCapability::DocFormsModify);
+    }
+    for reference in refs {
+        read_annotation(ctx, reference)?;
+    }
+    if !refs.is_empty() {
+        ctx.authority.require(DocCapability::DocAnnotateModify)?;
+    }
+    Ok(())
+}
+
+/// Puts the rows of a reorder back beside their old neighbours
+/// (`reorderBack`). A row goes back only while it is where the reorder left
+/// it, above the same row; it goes above the nearest row that was below it
+/// before and is still there, or to the bottom.
+pub fn reorder_back(
+    ctx: &mut ChangeContext<'_>,
+    step: &AnnotationReorderStep,
+) -> Result<Done, EngineError> {
+    let reports = match step.family {
+        AnnotationFamily::Annotations => "annotations.reorder",
+        AnnotationFamily::Widgets => "forms.reorderWidgets",
+    };
+    let read_stack = |ctx: &ChangeContext<'_>| -> Result<reorder::PageStack, EngineError> {
+        let owned = ctx.session.document()?;
+        let page_index = owned.page_index(step.page)?;
+        reorder::read_page_stack(owned.document(), page_index, step.page)
+    };
+    let Ok(stack) = read_stack(ctx) else {
+        return left_alone(ctx, reports);
+    };
+    let now = reorder::family_order(&stack, step.family);
+    let back: Vec<AnnotationRef> = step
+        .refs
+        .iter()
+        .filter(|reference| {
+            let below = row_below(&now, reference);
+            below.is_some() && below == row_below(&step.after, reference)
+        })
+        .cloned()
+        .collect();
+    if back.is_empty() {
+        return left_alone(ctx, reports);
+    }
+    authorize_reorder(ctx, step.family, &back)?;
+
+    let going: Vec<String> = back.iter().map(AnnotationRef::key).collect();
+    let mut in_place: Vec<String> =
+        now.iter().map(AnnotationRef::key).filter(|key| !going.contains(key)).collect();
+    let mut current = stack;
+    // Lowest first, so a row's old neighbour that moves too is back before
+    // it.
+    for (at, reference) in step.before.iter().enumerate() {
+        if !going.contains(&reference.key()) {
+            continue;
+        }
+        let neighbour =
+            step.before[..at].iter().rev().find(|row| in_place.contains(&row.key())).cloned();
+        let position = match neighbour {
+            Some(after) => ListPosition::After { after },
+            None => ListPosition::START,
+        };
+        let plan = reorder::plan_reorder(
+            current,
+            step.family,
+            std::slice::from_ref(reference),
+            &position,
+        )?;
+        reorder::apply_reorder(ctx.session.document()?.document(), &plan)?;
+        in_place.push(reference.key());
+        current = read_stack(ctx)?;
+    }
+    let after = reorder::family_order(&current, step.family);
+    Ok(Done {
+        item: reorder_item(ctx, step.page, after.clone(), &back)?,
+        reverse: vec![ReverseStep::AnnotationReorder(AnnotationReorderStep {
+            refs: back,
+            before: now,
+            after,
+            ..step.clone()
+        })],
+    })
+}
+
+/// The key of the row right below `reference` in `order`: `Some(None)` at
+/// the bottom, `None` when `reference` isn't in it (`rowBelow`).
+fn row_below(order: &[AnnotationRef], reference: &AnnotationRef) -> Option<Option<String>> {
+    let key = reference.key();
+    let at = order.iter().position(|row| row.key() == key)?;
+    Some(at.checked_sub(1).map(|below| order[below].key()))
 }
 
 /// Put back a popup's parent's `/Popup` and `/Open` as they were before the
