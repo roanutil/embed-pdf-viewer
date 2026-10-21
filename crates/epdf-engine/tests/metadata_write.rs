@@ -4,17 +4,26 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run metadata-write
 //!
+//! Each case replays the request the generator recorded (`metadata.update`
+//! or `metadata.updateCustom`) through the host, then reads the dictionary
+//! back the way the generator did: `metadata.read` with the custom keys of
+//! `metadata.readCustom` folded in under `custom` (our 1b8c92a3f).
+//!
 //! # The whole dictionary is compared, not the patched fields
 //!
 //! A patch touching one field has to leave the other eight alone, and the
 //! only way to see that is to compare everything.
 
+mod common;
+
+use common::replay::Replay;
 use epdf_engine::cancel::CancelToken;
-use epdf_engine::dto::{CustomMetadataPatch, MetadataPatch};
-use epdf_engine::features::metadata_write::{update_custom_metadata, update_metadata};
+use epdf_engine::dto::MetadataPatch;
+use epdf_engine::features::metadata_write::update_metadata;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 const SCHEMA_VERSION: u32 = 1;
 
@@ -32,9 +41,12 @@ struct VectorFile {
 struct Case {
     name: String,
     covers: String,
-    patch: serde_json::Value,
+    request: Value,
     #[serde(default)]
-    metadata: Option<serde_json::Value>,
+    refused: bool,
+    #[serde(default)]
+    refused_with: Option<String>,
+    metadata: Value,
 }
 
 fn load() -> VectorFile {
@@ -47,30 +59,58 @@ fn load() -> VectorFile {
     file
 }
 
-/// Apply one case's patch to a fresh copy of the fixture.
-fn run(file: &VectorFile, case: &Case) -> serde_json::Value {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
-
-    let patch: MetadataPatch = serde_json::from_value(case.patch.clone())
-        .unwrap_or_else(|e| panic!("{}: the patch does not decode: {e}", case.name));
-    let result = update_metadata(owned.document(), &patch, &CancelToken::never())
-        .unwrap_or_else(|e| panic!("{}: {e}", case.name));
-    serde_json::to_value(&result.metadata).expect("serialize")
+/// The dictionary as the generator read it back: the standard fields with
+/// the custom keys under `custom`.
+fn read_back(replay: &mut Replay) -> Value {
+    let mut metadata = replay
+        .replay(&json!({ "kind": "metadata.read", "effect": "read", "jobId": "<job>" }))
+        .expect("metadata.read");
+    let custom = replay
+        .replay(&json!({ "kind": "metadata.readCustom", "effect": "read", "jobId": "<job>" }))
+        .expect("metadata.readCustom");
+    metadata["custom"] = custom;
+    metadata
 }
 
 #[test]
 fn an_updated_document_reads_back_as_the_typescript_engines_did() {
     let file = load();
-    assert!(file.cases.len() >= 12, "the case list shrank");
+    assert!(file.cases.len() >= 15, "the case list shrank");
 
     for case in &file.cases {
+        let doc_id = case.request["docId"].as_str().expect("a recorded docId");
+        let mut replay = Replay::open(&file.fixture, doc_id);
+        let answer = replay.replay(&case.request);
+        match (&answer, case.refused) {
+            (Err(error), true) => assert_eq!(
+                error["code"].as_str(),
+                case.refused_with.as_deref(),
+                "{}: refused for another reason: {error}",
+                case.name
+            ),
+            (Ok(answer), false) => {
+                // The single verb's answer is the part of the dictionary it
+                // writes: the standard fields, or the custom keys alone.
+                let result = &answer["result"];
+                if case.request["kind"] == "metadata.updateCustom" {
+                    assert_eq!(result["custom"], case.metadata["custom"], "{}", case.name);
+                    assert!(result.get("metadata").is_none(), "{}: {result}", case.name);
+                } else {
+                    let mut standard = case.metadata.clone();
+                    standard.as_object_mut().unwrap().remove("custom");
+                    assert_eq!(result["metadata"], standard, "{}", case.name);
+                }
+                assert_eq!(result["meta"]["opId"], answer["event"]["origin"]["tx"]["id"]);
+                assert_eq!(result["meta"]["affectedPages"], json!([]), "{}", case.name);
+                assert_eq!(result["meta"]["cacheDelta"], Value::Null, "{}", case.name);
+            }
+            (other, refused) => {
+                panic!("{}: refused is {refused} but the answer was {other:?}", case.name)
+            }
+        }
         assert_eq!(
-            test_support::canonical_numbers(&run(&file, case)),
-            test_support::canonical_numbers(case.metadata.as_ref().expect("recorded metadata")),
+            test_support::canonical_numbers(&read_back(&mut replay)),
+            test_support::canonical_numbers(&case.metadata),
             "{}: {}",
             case.name,
             case.covers,
@@ -95,54 +135,68 @@ fn a_patch_that_says_nothing_changes_nothing() {
         epdf_engine::features::metadata::read_metadata(owned.document(), &CancelToken::never())
             .expect("the metadata reads");
     let after = update_metadata(owned.document(), &MetadataPatch::default(), &CancelToken::never())
-        .expect("an empty patch is not an error")
-        .metadata;
+        .expect("an empty patch is not an error");
 
     assert_eq!(before, after, "an empty patch changed something");
 }
 
 #[test]
-fn a_clear_and_an_empty_value_are_the_same_edit() {
-    // Not what the TypeScript's comment claims, and this is what the claim
-    // was checked against. `EPDF_SetMetaText` removes the entry for an
-    // empty string as readily as for a null, so `{ title: "" }` and
-    // `{ title: null }` leave the same document: no `/Title` at all.
-    //
-    // Asserted against the DICTIONARY rather than the DTO, because the
-    // reader normalizes a present-but-empty entry to absent anyway and
-    // would agree either way. It is the fork that cannot tell them apart,
-    // so a caller has no way to say "the title is deliberately blank".
+fn a_clear_and_an_empty_value_are_different_edits() {
+    // `null` removes the entry and `''` writes a present-but-empty one,
+    // which reads back as `''` (`writeMetaText`): three states on the wire,
+    // three in the file. Asserted against the dictionary as well as the
+    // answer, so a reader that normalized `''` to absent would not hide a
+    // write that dropped the key.
     let file = load();
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-
-    let apply = |patch: serde_json::Value| -> Option<String> {
-        let mut session = DocumentSession::new();
-        session.open_with(bytes.clone(), None, SessionAuthority::unrestricted()).expect("open");
-        let owned = session.document().expect("open");
-        let patch: MetadataPatch = serde_json::from_value(patch).expect("the patch decodes");
-        update_metadata(owned.document(), &patch, &CancelToken::never()).expect("the patch lands");
-        owned.document().meta_text("Title").expect("a dictionary read")
+    let send = |request: Value, key: &str| -> (Value, Option<String>) {
+        let mut replay = Replay::open(&file.fixture, "empty-and-clear");
+        let answer = replay.replay(&request).expect("the patch lands");
+        let session = replay
+            .host
+            .sessions()
+            .session(&epdf_engine::session::registry::SessionKey::document("empty-and-clear"))
+            .expect("open");
+        let stored = session.document().expect("open").document().meta_text(key).expect("a read");
+        (answer["result"].clone(), stored)
     };
 
-    assert_eq!(apply(serde_json::json!({ "title": null })), None, "a clear left the key behind");
-    assert_eq!(apply(serde_json::json!({ "title": "" })), None, "an empty value kept the key");
+    let update = |title: Value| json!({ "kind": "metadata.update", "patch": { "title": title } });
+    let (cleared, stored) = send(update(Value::Null), "Title");
+    assert_eq!(cleared["metadata"]["title"], Value::Null);
+    assert_eq!(stored, None, "a clear left the key behind");
+    let (emptied, stored) = send(update(json!("")), "Title");
+    assert_eq!(emptied["metadata"]["title"], json!(""));
+    assert_eq!(stored.as_deref(), Some(""), "an empty value dropped the key");
 
-    // And the same for a custom key, which takes the two states per entry
-    // rather than through a patch field.
-    let custom = |value: serde_json::Value| -> Option<String> {
-        let mut session = DocumentSession::new();
-        session.open_with(bytes.clone(), None, SessionAuthority::unrestricted()).expect("open");
-        let owned = session.document().expect("open");
-        let patch: CustomMetadataPatch =
-            serde_json::from_value(serde_json::json!({ "Department": value }))
-                .expect("the patch decodes");
-        update_custom_metadata(owned.document(), &patch, &CancelToken::never())
-            .expect("the patch lands");
-        owned.document().meta_text("Department").expect("a dictionary read")
-    };
-    assert_eq!(custom(serde_json::Value::Null), None, "a custom clear left the key behind");
-    assert_eq!(custom(serde_json::json!("")), None, "a custom empty value kept the key");
+    // And the same for a custom key, which takes the two states per entry.
+    let custom =
+        |value: Value| json!({ "kind": "metadata.updateCustom", "patch": { "Department": value } });
+    let (cleared, stored) = send(custom(Value::Null), "Department");
+    assert_eq!(cleared["custom"].get("Department"), None);
+    assert_eq!(stored, None, "a custom clear left the key behind");
+    let (emptied, stored) = send(custom(json!("")), "Department");
+    assert_eq!(emptied["custom"]["Department"], json!(""));
+    assert_eq!(stored.as_deref(), Some(""), "a custom empty value dropped the key");
+}
+
+#[test]
+fn an_unwritable_custom_key_refuses_the_whole_patch() {
+    // `applyCustomMetadataPatch` checks every key before it writes any, so
+    // a good key beside a bad one is not written either.
+    let file = load();
+    let mut replay = Replay::open(&file.fixture, "bad-key");
+    let before = read_back(&mut replay);
+    let refused = replay
+        .replay(&json!({ "kind": "metadata.updateCustom",
+            "patch": { "Department": "Legal", "Title": "shadow" } }))
+        .expect_err("a standard key is refused");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "Title", "{refused}");
+    assert_eq!(
+        refused["message"], "'Title' is a standard key; set it with metadata.update",
+        "{refused}"
+    );
+    assert_eq!(read_back(&mut replay), before);
 }
 
 #[test]
@@ -151,21 +205,20 @@ fn a_date_the_wire_cannot_hold_is_refused() {
     // carries ISO 8601 and the file carries PDF dates, and a string that is
     // neither would otherwise become a `/CreationDate` nothing can read.
     let file = load();
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let owned = session.document().expect("open");
+    let mut replay = Replay::open(&file.fixture, "bad-date");
+    let before = read_back(&mut replay);
 
-    // The patch type validates on the way in, which is the first of the two
-    // gates: a string that is not ISO 8601 never becomes a patch at all.
+    // The patch type validates on the way in: a string that is not ISO 8601
+    // never becomes a patch at all.
     let decoded: Result<MetadataPatch, _> =
-        serde_json::from_value(serde_json::json!({ "createdAt": "not-a-date" }));
+        serde_json::from_value(json!({ "createdAt": "not-a-date" }));
     assert!(decoded.is_err(), "a malformed date decoded into a patch");
+    let refused = replay
+        .replay(&json!({ "kind": "metadata.update", "patch": { "createdAt": "not-a-date" } }))
+        .expect_err("a malformed date is refused");
+    assert_eq!(refused["code"], "WireFormat", "{refused}");
 
     // And the document is untouched, because nothing was applied.
-    let before =
-        epdf_engine::features::metadata::read_metadata(owned.document(), &CancelToken::never())
-            .expect("the metadata reads");
-    assert!(before.created.is_some(), "the fixture still has its creation date");
+    assert_eq!(read_back(&mut replay), before);
+    assert!(before["createdAt"].is_string(), "the fixture still has its creation date");
 }

@@ -171,17 +171,38 @@ fn an_insert_names_its_insertion_point_only_when_the_call_did() {
 }
 
 #[test]
-fn a_metadata_write_answers_a_local_cache() {
+fn a_metadata_write_answers_its_meta_and_publishes_one_fact_of_its_write() {
+    // `MetadataUpdateResult`: the re-read metadata and the write's meta,
+    // which names no page and has no cache delta locally. The event is one
+    // fact of the write, under its `opId` (`publishWrite`).
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, RICH);
     let updated = call(
         &mut host,
-        json!({ "kind": "metadata.update", "docId": doc, "patch": { "title": "x" } }),
+        json!({ "kind": "metadata.update", "docId": doc, "opId": "meta-1",
+                "patch": { "title": "x" } }),
     );
     assert_eq!(updated["event"]["type"], json!("metadata.updated"), "{updated}");
-    assert!(updated["result"].as_object().unwrap().contains_key("cache"), "{updated}");
-    assert_eq!(updated["result"]["cache"], Value::Null);
+    assert_eq!(
+        updated["result"]["meta"],
+        json!({ "affectedPages": [], "cacheDelta": null, "opId": "meta-1", "undoable": true }),
+        "{updated}"
+    );
+    assert!(updated["result"].get("cache").is_none(), "{updated}");
+    assert_eq!(
+        updated["event"]["origin"]["tx"],
+        json!({ "id": "meta-1", "index": 0, "count": 1 }),
+        "{updated}"
+    );
     assert_result_rides(&updated);
+
+    let custom = call(
+        &mut host,
+        json!({ "kind": "metadata.updateCustom", "docId": doc, "patch": { "Project": "x" } }),
+    );
+    assert_eq!(custom["event"]["type"], json!("metadata.customUpdated"), "{custom}");
+    assert_eq!(custom["result"]["custom"]["Project"], json!("x"), "{custom}");
+    assert_result_rides(&custom);
 }
 
 #[test]

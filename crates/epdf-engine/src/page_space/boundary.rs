@@ -27,6 +27,8 @@ use super::rendering::{page_render_area_of, pdf_render_target_of};
 use super::{PdfCoordinates, VisibleBoxOf};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::document::DocumentActionsSnapshot;
+use crate::features::changes::item::ChangeItem;
+use crate::features::changes::op::ChangeOp;
 use crate::features::pages::PageListSnapshot;
 use crate::features::render::geometry::RenderTarget;
 use crate::geom::{PageRect, PdfRect};
@@ -175,19 +177,22 @@ pub fn request_in_file_space(
         // in `handleDocumentRenderPageFile`).
         K::DocumentRenderPageFile | K::DocumentRenderPageFileEncoded => Ok(()),
 
+        // A change converts each op as it runs, against the document as the
+        // ops before it left it ([`change_op_in_file_space`], through
+        // `changes::applier::ChangeSpace`), so its request crosses here
+        // as it came.
+        K::DocumentApply | K::DocumentApplyChanges => Ok(()),
+
         // re-port (Task 8): these take places in page space upstream and
         // convert here once their owners move them: annotation drafts
         // (8.14), patches (8.15), widget placements and patches and field
-        // drafts (8.21), a measure (8.25), and each `document.apply` op as
-        // it runs (8.6, `ChangeSpace`).
+        // drafts (8.21), a measure (8.25).
         K::AnnotationsCreate
         | K::AnnotationsUpdate
         | K::FormsUpdateWidget
         | K::FormsCreateField
         | K::FormsAddWidget
-        | K::MeasureSetScale
-        | K::DocumentApply
-        | K::DocumentApplyChanges => Ok(()),
+        | K::MeasureSetScale => Ok(()),
 
         // No places.
         K::Abort
@@ -301,8 +306,7 @@ pub fn result_in_page_space(
         // geometry (8.9), search slices (8.11), annotation reads and writes
         // (8.12, 8.14, 8.15), appearance rects (8.13), the outline (8.24),
         // viewports (8.25), form snapshots, fields and widgets (8.19 to
-        // 8.22, 8.26), and imports (8.22). `document.apply` answers page
-        // space already, each op converting as it runs (8.6).
+        // 8.22, 8.26), and imports (8.22).
         K::PagesSetName
         | K::PagesRemoveName
         | K::PagesGeometry
@@ -326,9 +330,11 @@ pub fn result_in_page_space(
         | K::FormsDetachWidget
         | K::FormsReset
         | K::FormsUpdateWidget
-        | K::FormsDeleteWidget
-        | K::DocumentApply
-        | K::DocumentApplyChanges => Ok(response),
+        | K::FormsDeleteWidget => Ok(response),
+
+        // A change answers page space already: each item converts right
+        // after its op ran ([`change_item_in_page_space`]).
+        K::DocumentApply | K::DocumentApplyChanges => Ok(response),
 
         // No places: values, flags, names, bytes, pixels, metadata.
         K::Abort
@@ -391,6 +397,34 @@ pub fn result_in_page_space(
         | K::SignaturesList
         | K::SignaturesPrepare
         | K::SignaturesRevisionBytes => Ok(response),
+    }
+}
+
+/// A change op's places in the file's coordinates, measured right before it
+/// runs (`opInFileSpace`). Matched with no catch-all: an op type added to
+/// [`ChangeOp`] does not compile until it is placed here.
+pub fn change_op_in_file_space(
+    op: ChangeOp,
+    _box_of: &mut VisibleBoxOf<'_>,
+) -> Result<ChangeOp, EngineError> {
+    match op {
+        // No places.
+        op @ (ChangeOp::MetadataUpdate { .. } | ChangeOp::MetadataUpdateCustom { .. }) => Ok(op),
+    }
+}
+
+/// A change item's places in page space, measured right after its op ran
+/// (`itemInPageSpace`). Matched with no catch-all, as
+/// [`change_op_in_file_space`] is.
+pub fn change_item_in_page_space(
+    item: ChangeItem,
+    _box_of: &mut VisibleBoxOf<'_>,
+) -> Result<ChangeItem, EngineError> {
+    match item {
+        // No places.
+        item @ (ChangeItem::MetadataUpdate { .. }
+        | ChangeItem::MetadataUpdateCustom { .. }
+        | ChangeItem::Skipped { .. }) => Ok(item),
     }
 }
 

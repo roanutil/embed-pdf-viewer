@@ -213,6 +213,8 @@ fn an_event_carries_its_result_verbatim() {
             sub: None,
             ts: 1_700_000_000_000,
             server_id: None,
+            tx: None,
+            undo_of: None,
         },
     );
 
@@ -241,6 +243,8 @@ fn a_local_origin_has_no_subject_and_no_server_id() {
         sub: None,
         ts: 0,
         server_id: None,
+        tx: None,
+        undo_of: None,
     };
     let wire = serde_json::to_value(&origin).expect("serialize");
     assert_eq!(wire["sub"], serde_json::Value::Null);

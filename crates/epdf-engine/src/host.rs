@@ -745,6 +745,10 @@ impl Host {
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::metadata::read_metadata(d, cancel)?)?))
             }
+            "metadata.readCustom" => {
+                let d = self.document(&key)?;
+                Ok(ok(value(&f::metadata::read_custom_metadata(d, cancel)?)?))
+            }
             "pages.list" => {
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::pages::list_pages(d, cancel)?)?))
@@ -1093,19 +1097,159 @@ impl Host {
             }
 
             // ── Mutations ─────────────────────────────────────────────
-            "metadata.update" => {
-                self.sessions.session(&key)?.require(DocCapability::DocMetadataModify)?;
-                let patch: crate::dto::MetadataPatch = field(body, "patch")?;
-                let result = {
-                    let d = self.document(&key)?;
-                    f::metadata_write::update_metadata(d, &patch, cancel)?
+            // `WorkerHost.handleMetadataUpdate` and `handleMetadataUpdateCustom`:
+            // the single verb as a one-op change, so its `opId` undoes it and a
+            // retry under it gets the first answer.
+            "metadata.update" | "metadata.updateCustom" => {
+                let op = if header.kind == "metadata.update" {
+                    f::changes::op::ChangeOp::MetadataUpdate {
+                        patch: field(body, "patch")?,
+                        expect: None,
+                    }
+                } else {
+                    f::changes::op::ChangeOp::MetadataUpdateCustom { patch: field(body, "patch")? }
                 };
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::MetadataUpdated(with_local_cache(
-                        value(&result)?,
-                    )),
-                )
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let item = self.apply_one(&key, &op_id, op, cancel)?;
+                let event = item.events()?.into_iter().next().ok_or_else(|| {
+                    EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
+                })?;
+                let (result, sequence, mut events, payloads) =
+                    self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
+                let mut answer = serde_json::json!({
+                    "result": result,
+                    "mutationSequence": sequence,
+                });
+                if let Some(event) = events.pop() {
+                    answer["event"] = event;
+                }
+                Ok(HostResponse { json: envelope(answer), payloads })
+            }
+            // `WorkerHost.handleDocumentApply`: one change, in page space both
+            // ways, each op converting as it runs.
+            "document.apply" => {
+                let job = JobEnvelope::parse(&header.kind, body)?;
+                let raw = body.get("change").ok_or_else(|| {
+                    EngineError::with_message(
+                        EngineErrorCode::WireFormat,
+                        "the request has no 'change'",
+                    )
+                })?;
+                let change = f::changes::op::parse_change(raw)?;
+                let op_id = self.op_id_of(&job)?;
+                let fingerprint = f::changes::fingerprint::change_fingerprint(raw);
+                let undo_of = match &change {
+                    f::changes::op::Change::UndoOf(undone) => Some(undone.clone()),
+                    f::changes::op::Change::Ops(_) => None,
+                };
+                let session = self.sessions.session_mut(&key)?;
+                let authority = match &job.authority {
+                    Some(wire) => change_authority(wire)?,
+                    None => f::changes::applier::ChangeAuthority::of_session(session),
+                };
+                let answered = f::changes::transaction::run_change(
+                    session,
+                    &op_id,
+                    fingerprint,
+                    change,
+                    &authority,
+                    cancel,
+                    f::changes::applier::ChangeSpace::Page,
+                )?;
+                let result = value(&answered.result)?;
+                // A retry publishes nothing again, and a change that wrote
+                // nothing needs no save.
+                if answered.replayed || !answered.result.wrote() {
+                    let session = self.sessions.session(&key)?;
+                    return Ok(ok(serde_json::json!({
+                        "result": result,
+                        "replayed": answered.replayed,
+                        "mutationSequence": session.mutation_sequence(),
+                        "events": [],
+                    })));
+                }
+                let mut events = Vec::new();
+                for item in &answered.result.items {
+                    events.extend(item.events()?);
+                }
+                let (result, sequence, events, payloads) =
+                    self.finish_change(&key, &op_id, undo_of, events, result)?;
+                Ok(HostResponse {
+                    json: envelope(serde_json::json!({
+                        "result": result,
+                        "replayed": false,
+                        "mutationSequence": sequence,
+                        "events": events,
+                    })),
+                    payloads,
+                })
+            }
+            // `WorkerHost.handleDocumentApplyChanges`: a server request's
+            // changes as one job, each in its own transaction, with one
+            // outcome per change. One save for all that wrote.
+            "document.applyChanges" => {
+                let entries: Vec<serde_json::Value> = field(body, "changes")?;
+                let mut changes = Vec::with_capacity(entries.len());
+                for entry in &entries {
+                    changes.push(self.server_change(&key, entry)?);
+                }
+                let undone: Vec<Option<String>> = changes
+                    .iter()
+                    .map(|c| match &c.change {
+                        f::changes::op::Change::UndoOf(undone) => Some(undone.clone()),
+                        f::changes::op::Change::Ops(_) => None,
+                    })
+                    .collect();
+                let outcomes = f::changes::transaction::run_server_changes(
+                    self.sessions.session_mut(&key)?,
+                    changes,
+                    cancel,
+                )?;
+                let wire = outcomes
+                    .iter()
+                    .map(f::changes::transaction::ServerChangeOutcome::to_wire)
+                    .collect::<Result<Vec<_>, _>>()?;
+                let mut written = Vec::new();
+                for (outcome, undo_of) in outcomes.iter().zip(undone) {
+                    if let f::changes::transaction::ServerChangeOutcome::Applied {
+                        op_id,
+                        result,
+                        ..
+                    } = outcome
+                        && result.wrote()
+                    {
+                        let mut events = Vec::new();
+                        for item in &result.items {
+                            events.extend(item.events()?);
+                        }
+                        written.push((op_id.clone(), undo_of, events));
+                    }
+                }
+                if written.is_empty() {
+                    let session = self.sessions.session(&key)?;
+                    return Ok(ok(serde_json::json!({
+                        "outcomes": wire,
+                        "mutationSequence": session.mutation_sequence(),
+                        "events": [],
+                    })));
+                }
+                let finished = crate::session::save::finish_mutation(
+                    self.sessions.session(&key)?,
+                    crate::session::save::MutationFamily::Ordinary,
+                    &CancelToken::never(),
+                )?;
+                let mut events = Vec::new();
+                for (op_id, undo_of, change_events) in written {
+                    events.extend(self.stamp_change(&key, &op_id, undo_of, change_events)?);
+                }
+                Ok(HostResponse {
+                    json: envelope(serde_json::json!({
+                        "outcomes": wire,
+                        "mutationSequence": finished.mutation_sequence,
+                        "events": events,
+                    })),
+                    payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
+                })
             }
             "annotations.create" => {
                 let page = page_field(body)?;
@@ -1976,8 +2120,139 @@ impl Host {
                 sub: None,
                 ts: self.clock.now().epoch_millis,
                 server_id: None,
+                tx: None,
+                undo_of: None,
             },
         ))
+    }
+
+    /// The `opId` a write runs under (`opIdOf`): the request's, or a fresh
+    /// one. The request's must be 1 to 255 visible ASCII characters, or the
+    /// write is refused with `InvalidArg`.
+    fn op_id_of(&self, job: &JobEnvelope) -> Result<String, EngineError> {
+        match &job.op_id {
+            None => Ok(self.ids.next_uuid_v4()),
+            Some(op_id) => {
+                check_op_id(op_id)?;
+                Ok(op_id.clone())
+            }
+        }
+    }
+
+    /// `applyOne`: a single verb as a one-op change in the file's own
+    /// coordinates (the host's boundary converts its request and answer),
+    /// answering the op's item.
+    fn apply_one(
+        &mut self,
+        key: &SessionKey,
+        op_id: &str,
+        op: crate::features::changes::op::ChangeOp,
+        cancel: &CancelToken,
+    ) -> Result<crate::features::changes::item::ChangeItem, EngineError> {
+        use crate::features::changes::{applier, fingerprint, op::Change, transaction};
+
+        let kind = op.type_name();
+        let fingerprint =
+            fingerprint::change_fingerprint(&serde_json::json!({ "ops": [value(&op)?] }));
+        let session = self.sessions.session_mut(key)?;
+        let authority = applier::ChangeAuthority::of_session(session);
+        let answered = transaction::run_change(
+            session,
+            op_id,
+            fingerprint,
+            Change::Ops(vec![op]),
+            &authority,
+            cancel,
+            applier::ChangeSpace::File,
+        )?;
+        match answered.result.items.into_iter().next() {
+            Some(item) if item.wrote() => Ok(item),
+            _ => Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("{kind} wrote nothing"),
+            )),
+        }
+    }
+
+    /// Finish a write that ran as a change: the sequence bumps, a layer
+    /// saves its artifact, and each event is stamped as one fact of the
+    /// write `op_id` (`publishChange`). Answers the result as given, the
+    /// sequence, the stamped events and the artifact payload.
+    fn finish_change(
+        &mut self,
+        key: &SessionKey,
+        op_id: &str,
+        undo_of: Option<String>,
+        events: Vec<serde_json::Value>,
+        result: serde_json::Value,
+    ) -> Result<(serde_json::Value, u64, Vec<serde_json::Value>, Payloads), EngineError> {
+        let finished = crate::session::save::finish_mutation(
+            self.sessions.session(key)?,
+            crate::session::save::MutationFamily::Ordinary,
+            &CancelToken::never(),
+        )?;
+        let events = self.stamp_change(key, op_id, undo_of, events)?;
+        let payloads = finished.artifact.map(|a| vec![a]).unwrap_or_default();
+        Ok((result, finished.mutation_sequence, events, payloads))
+    }
+
+    /// Stamp a change's events as this engine's own, each one fact of the
+    /// write `op_id`: `origin.tx` counts them, and an undo's carry the
+    /// `opId` it undid.
+    fn stamp_change(
+        &self,
+        key: &SessionKey,
+        op_id: &str,
+        undo_of: Option<String>,
+        events: Vec<serde_json::Value>,
+    ) -> Result<Vec<serde_json::Value>, EngineError> {
+        use crate::session::save;
+
+        let session = self.sessions.session(key)?;
+        let ts = self.clock.now().epoch_millis;
+        let count = events.len();
+        events
+            .into_iter()
+            .enumerate()
+            .map(|(index, mut event)| {
+                let origin = save::EventOrigin {
+                    kind: save::OriginKind::Local,
+                    session_id: session.session_id().to_owned(),
+                    sub: None,
+                    ts,
+                    server_id: None,
+                    tx: Some(save::EventTx { id: op_id.to_owned(), index, count }),
+                    undo_of: undo_of.clone(),
+                };
+                event["origin"] = value(&origin)?;
+                Ok(event)
+            })
+            .collect()
+    }
+
+    /// One change of a `document.applyChanges` request (`ServerChange`).
+    fn server_change(
+        &self,
+        key: &SessionKey,
+        entry: &serde_json::Value,
+    ) -> Result<crate::features::changes::transaction::ServerChange, EngineError> {
+        use crate::features::changes::{applier, op, record, transaction};
+
+        let op_id: String = field(entry, "opId")?;
+        check_op_id(&op_id)?;
+        let change = op::parse_change(entry.get("change").ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::WireFormat, "a change has no 'change'")
+        })?)?;
+        let authority = match optional::<WireAuthority>(entry, "authority")? {
+            Some(wire) => change_authority(&wire)?,
+            None => applier::ChangeAuthority::of_session(self.sessions.session(key)?),
+        };
+        let record = match entry.get("record") {
+            None => None,
+            Some(serde_json::Value::Null) => Some(None),
+            Some(_) => Some(Some(field::<record::ChangeRecord>(entry, "record")?)),
+        };
+        Ok(transaction::ServerChange { op_id, change, authority, record })
     }
 
     /// Answer `result` with a notice beside it in the envelope: the
@@ -2454,10 +2729,73 @@ fn optional<T: for<'de> Deserialize<'de>>(
     }
 }
 
+/// What an `opId` may be: what an HTTP header carries (`OP_ID`, 1 to 255
+/// visible ASCII characters).
+fn check_op_id(op_id: &str) -> Result<(), EngineError> {
+    let visible = op_id.bytes().all(|byte| (0x21..=0x7e).contains(&byte));
+    if visible && (1..=255).contains(&op_id.len()) {
+        return Ok(());
+    }
+    Err(EngineError::with_message(
+        EngineErrorCode::InvalidArg,
+        "opId must be 1 to 255 visible ASCII characters",
+    )
+    .with_details(serde_json::json!({ "field": "opId" })))
+}
+
+/// A request's `ChangeAuthority`: who the change acts for, and the grants
+/// each op is checked against (`null`: nothing is checked).
+fn change_authority(
+    wire: &WireAuthority,
+) -> Result<crate::features::changes::applier::ChangeAuthority, EngineError> {
+    let user_id = wire.identity.user_id.clone();
+    let grants = match &wire.grants {
+        None => None,
+        Some(grants) => {
+            let identity = IdentityClaims {
+                user_id: user_id.clone(),
+                group_id: wire.identity.group_id.clone(),
+                groups: Vec::new(),
+                display_name: wire.identity.display_name.clone(),
+            };
+            let mut authority =
+                SessionAuthority::new(&grants.scope, identity, grants.pdf_bits.into()).map_err(
+                    |e| {
+                        EngineError::with_message(
+                            EngineErrorCode::InvalidArg,
+                            format!("the authority's scope is not valid: {e}"),
+                        )
+                    },
+                )?;
+            authority.set_protection(wire.protection.clone());
+            Some(authority)
+        }
+    };
+    Ok(crate::features::changes::applier::ChangeAuthority { user_id, grants })
+}
+
+/// A single verb's result: its item without the item's `type` and
+/// `skipped`, as `WorkerHost` strips them.
+fn strip_item(
+    item: crate::features::changes::item::ChangeItem,
+) -> Result<serde_json::Value, EngineError> {
+    use crate::features::changes::item::ChangeItem;
+    match item {
+        ChangeItem::MetadataUpdate { result, .. } => value(&result),
+        ChangeItem::MetadataUpdateCustom { result, .. } => value(&result),
+        ChangeItem::Skipped { .. } => {
+            Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
+        }
+    }
+}
+
 /// Every kind that writes to a session's document: refused while a signing
 /// is parked (`WorkerHost.ts` `MUTATING_KINDS`, the kinds this host routes).
 const MUTATING_KINDS: &[&str] = &[
     "metadata.update",
+    "metadata.updateCustom",
+    "document.apply",
+    "document.applyChanges",
     "annotations.create",
     "annotations.update",
     "annotations.delete",

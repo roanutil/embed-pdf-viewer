@@ -285,6 +285,48 @@ fn a_metadata_update_answers_its_result_after_publishing_its_event() {
 }
 
 #[test]
+fn the_kernels_metadata_folds_both_halves_and_its_patch_is_one_change() {
+    // The host reads and writes the standard fields and the custom keys
+    // apart (upstream's a4b8259f7); `call_host` folds them back into the
+    // kernel's one `DocumentMetadata`, with its `created` and `modified`.
+    use epdf_viewer_host::translate::call_host;
+
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let opened =
+        call_host(&mut host, &open.to_string(), vec![test_support::fixture(test_support::REPORT)]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let patch = json!({ "title": "Native", "created": "2021-03-04T05:06:07Z",
+        "custom": { "Department": "Legal" } });
+    let call = translate("d1", "metadata.update", None, &[patch], 2).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    assert_eq!(decoded.value["metadata"]["title"], "Native");
+    assert_eq!(decoded.value["metadata"]["created"], "2021-03-04T05:06:07Z");
+    assert_eq!(decoded.value["metadata"]["custom"]["Department"], "Legal");
+    let event = decoded.event.expect("one event");
+    assert_eq!(event["type"], "metadata.updated");
+    assert_eq!(event["metadata"], decoded.value["metadata"]);
+
+    let call = translate("d1", "metadata.read", None, &[], 3).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let read = decode(&call.decode, response).unwrap().value;
+    assert_eq!(read, decoded.value["metadata"]);
+    assert!(read.get("createdAt").is_none(), "{read}");
+
+    // A custom key the PDF cannot hold refuses the whole patch.
+    let bad = json!({ "title": "Not written", "custom": { "Title": "shadow" } });
+    let call = translate("d1", "metadata.update", None, &[bad], 4).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let error = decode(&call.decode, response).err().unwrap();
+    assert_eq!(error.code(), Some("InvalidArg"));
+    let call = translate("d1", "metadata.read", None, &[], 5).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    assert_eq!(decode(&call.decode, response).unwrap().value["title"], "Native");
+}
+
+#[test]
 fn a_locked_open_resolves_locked_and_keeps_its_session_on_the_host() {
     let worker = EngineWorker::spawn();
     let prompt = on_kernel(worker.clone(), |engine, tx| {

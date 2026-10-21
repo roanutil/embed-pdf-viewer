@@ -459,6 +459,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if epdf_engine::host::LEGACY_KINDS.contains(&kind.as_str()) {
         return host.call_legacy(json, payloads);
     }
+    if let Some(response) = metadata::kernel_call(host, &kind, &request) {
+        return response;
+    }
     let respelled = base_index_refs(host, &mut request);
     let moved = page_space::render_target_to_page_space(host, &mut request);
     let response = if respelled || moved {
@@ -467,6 +470,118 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
         host.call(json, payloads)
     };
     page_space::answer_to_file_space(host, &kind, &request, response)
+}
+
+/// The kernel's metadata, and the host's (Task 8.6).
+///
+/// The kernel reads one `DocumentMetadata` with the custom keys under
+/// `custom` and the dates as `created` and `modified`, and writes one patch
+/// in the same spelling. The host answers upstream's: `metadata.read` the
+/// standard fields with `createdAt` and `modifiedAt`, `metadata.readCustom`
+/// the custom keys, and the two writes apart (a4b8259f7, fd175ba50).
+/// [`call_host`] reads both and folds them, and runs a kernel patch as one
+/// `document.apply` change, so a patch touching both halves is still one
+/// write. Dead once Task 13 ports the kernel.
+mod metadata {
+    use epdf_engine::host::{Host, HostResponse};
+    use serde_json::{Map, Value, json};
+
+    /// The kernel's `metadata.read` and `metadata.update`, answered in the
+    /// kernel's spelling; `None` for any other kind.
+    pub(super) fn kernel_call(
+        host: &mut Host,
+        kind: &str,
+        request: &Value,
+    ) -> Option<HostResponse> {
+        let answer = match kind {
+            "metadata.read" => {
+                read(host, request).map(|metadata| (json!({ "result": metadata }), Vec::new()))
+            }
+            "metadata.update" => update(host, request),
+            _ => return None,
+        };
+        Some(match answer {
+            Ok((envelope, payloads)) => HostResponse { json: envelope.to_string(), payloads },
+            Err(response) => response,
+        })
+    }
+
+    /// The same document as `request`, and its job id.
+    fn on_document(request: &Value, kind: &str) -> Value {
+        let mut call = json!({ "kind": kind, "jobId": request.get("jobId").cloned() });
+        for key in ["docId", "layerName"] {
+            if let Some(value) = request.get(key) {
+                call[key] = value.clone();
+            }
+        }
+        call
+    }
+
+    /// One call, answering its `result`, or the whole response when it is
+    /// an error.
+    fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
+        let response = host.call(&call.to_string(), Vec::new());
+        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        match envelope.get("result") {
+            Some(result) if envelope.get("error").is_none() => Ok((result.clone(), response)),
+            _ => Err(response),
+        }
+    }
+
+    /// Both halves of the dictionary, in the kernel's spelling.
+    fn read(host: &mut Host, request: &Value) -> Result<Value, HostResponse> {
+        let (mut metadata, _) = send(host, &on_document(request, "metadata.read"))?;
+        let (custom, _) = send(host, &on_document(request, "metadata.readCustom"))?;
+        if let Some(fields) = metadata.as_object_mut() {
+            let created = fields.remove("createdAt").unwrap_or(Value::Null);
+            let modified = fields.remove("modifiedAt").unwrap_or(Value::Null);
+            fields.insert("created".into(), created);
+            fields.insert("modified".into(), modified);
+            fields.insert("custom".into(), custom);
+        }
+        Ok(metadata)
+    }
+
+    /// A kernel patch as one change: the standard fields as a
+    /// `metadata.update` op (the dates renamed), the custom keys as a
+    /// `metadata.updateCustom` op. Answers the mutation the kernel decodes:
+    /// the whole dictionary, the sequence, and one `metadata.updated` event,
+    /// with the change's payloads (a layer's artifact).
+    fn update(host: &mut Host, request: &Value) -> Result<(Value, Vec<Vec<u8>>), HostResponse> {
+        let mut standard = match request.get("patch") {
+            Some(Value::Object(patch)) => patch.clone(),
+            _ => Map::new(),
+        };
+        let custom = standard.remove("custom");
+        for (kernel, wire) in [("created", "createdAt"), ("modified", "modifiedAt")] {
+            if let Some(value) = standard.remove(kernel) {
+                standard.insert(wire.into(), value);
+            }
+        }
+        let mut ops = Vec::new();
+        if !standard.is_empty() || !matches!(custom, Some(Value::Object(_))) {
+            ops.push(json!({ "type": "metadata.update", "patch": standard }));
+        }
+        if let Some(custom @ Value::Object(_)) = custom {
+            ops.push(json!({ "type": "metadata.updateCustom", "patch": custom }));
+        }
+        let mut apply = on_document(request, "document.apply");
+        apply["effect"] = json!("write");
+        apply["change"] = json!({ "ops": ops });
+        let (applied, response) = send(host, &apply)?;
+        let metadata = read(host, request)?;
+        let mut answer = json!({
+            "result": { "metadata": metadata },
+            "mutationSequence": applied["mutationSequence"],
+        });
+        if let Some(origin) =
+            applied["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"])
+        {
+            answer["event"] =
+                json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin });
+        }
+        Ok((json!({ "result": answer }), response.payloads))
+    }
 }
 
 /// The kernel's places in the file's coordinates, and the host's in page

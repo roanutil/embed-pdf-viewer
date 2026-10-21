@@ -38,7 +38,7 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::features::pages_write::FlattenUsage;
 use crate::identity::{AnnotationRef, PageObjectNumber};
 use crate::ids::IdSource;
-use crate::mutation::MutationMeta;
+use crate::mutation::PageStateMeta;
 use crate::revision::WeakAnnotationState;
 use crate::session::document::DocumentSession;
 
@@ -336,7 +336,7 @@ pub struct AnnotationFlattenResult {
     pub page_object_number: PageObjectNumber,
     pub usage: FlattenUsage,
     pub results: Vec<AnnotationFlattenItem>,
-    pub meta: Option<MutationMeta>,
+    pub meta: Option<PageStateMeta>,
 }
 
 /// `AnnotationFlattener.requireRefs`.
@@ -449,7 +449,7 @@ pub fn flatten(
     if let Ok(has_weak) = scan_weak(session, page_object_number) {
         let _ = session.record_weak_flag(page_object_number, has_weak);
     }
-    let meta = MutationMeta {
+    let meta = PageStateMeta {
         affected_pages: vec![session.page_state(page_object_number)?],
         cache_delta: None,
     };
@@ -459,7 +459,7 @@ pub fn flatten(
 /// The bookkeeping `PagesFlattener` and `RedactionApplier` perform once
 /// their pages are written: one sequence bump, each changed page's revision
 /// bumped and its weak-annotation state re-read (a failed re-read is
-/// ignored, as the TypeScript ignores it), and the `MutationMeta` naming
+/// ignored, as the TypeScript ignores it), and the `PageStateMeta` naming
 /// the pages in the order given.
 ///
 /// `pages` is what the write CHANGED (applied or failed), not what it was
@@ -468,7 +468,7 @@ pub fn flatten(
 pub fn settle_rewritten_pages(
     session: &mut DocumentSession,
     pages: &[PageObjectNumber],
-) -> Result<MutationMeta, EngineError> {
+) -> Result<PageStateMeta, EngineError> {
     session.note_mutation();
     for page in pages {
         session.bump_revision(*page)?;
@@ -478,7 +478,7 @@ pub fn settle_rewritten_pages(
     }
     let affected_pages =
         pages.iter().map(|page| session.page_state(*page)).collect::<Result<_, _>>()?;
-    Ok(MutationMeta { affected_pages, cache_delta: None })
+    Ok(PageStateMeta { affected_pages, cache_delta: None })
 }
 
 /// `AnnotationFlattener.exportAppearance`: a chosen set of one page's

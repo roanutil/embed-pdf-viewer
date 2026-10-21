@@ -300,6 +300,16 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
+    note: 'Gated by vectors/metadata/read.json through crates/epdf-engine/tests/metadata_corpus.rs. The standard fields only: createdAt and modifiedAt keep the offset the file wrote (pdfDateToIso); the custom keys are metadata.readCustom.',
+  },
+  {
+    kind: 'metadata.readCustom',
+    group: 'G6',
+    stage: 'A',
+    phase: 2,
+    cancellation: 'cooperative',
+    rustStatus: 'ported',
+    note: 'Gated with metadata.read: the generator folds metadata.custom.get() into the read it records, and metadata_corpus.rs does the same.',
   },
   {
     kind: 'pages.list',
@@ -323,14 +333,6 @@ export const OPERATIONS: readonly OperationRow[] = [
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
   {
     kind: 'outline.read',
-    group: 'G6',
-    stage: 'A',
-    phase: 2,
-    cancellation: 'cooperative',
-    rustStatus: 'planned',
-  },
-  {
-    kind: 'metadata.readCustom',
     group: 'G6',
     stage: 'A',
     phase: 2,
@@ -585,8 +587,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
+    rustStatus: 'routed',
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata ops (features/changes, tests/document_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners.",
   },
   {
     kind: 'document.applyChanges',
@@ -594,8 +596,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'C',
     phase: 4,
     cancellation: 'after-first-write',
-    rustStatus: 'planned',
-    note: "A server request's changes as one job, each in its own layer transaction.",
+    rustStatus: 'routed',
+    note: "A server request's changes as one job, each in its own layer transaction. Rust runs the metadata ops, as document.apply does.",
   },
 
   // --- G12. Forms writes.
@@ -841,7 +843,16 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: 'MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep | Clear | Set(T). Operation parity lands here.',
+    note: 'MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep | Clear | Set(T). Gated by vectors/metadata/update.json through crates/epdf-engine/tests/metadata_write.rs, which replays the recorded request. Runs as a one-op change, so its opId undoes it.',
+  },
+  {
+    kind: 'metadata.updateCustom',
+    group: 'G14',
+    stage: 'C',
+    phase: 4,
+    cancellation: 'after-first-write',
+    rustStatus: 'ported',
+    note: 'Gated with metadata.update by vectors/metadata/update.json. A standard key, a leading slash or a key outside printable ASCII is InvalidArg before anything is written; answers the custom keys alone.',
   },
   {
     kind: 'pieceInfo.update',
@@ -880,14 +891,6 @@ export const OPERATIONS: readonly OperationRow[] = [
   // },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
-  {
-    kind: 'metadata.updateCustom',
-    group: 'G14',
-    stage: 'C',
-    phase: 4,
-    cancellation: 'after-first-write',
-    rustStatus: 'planned',
-  },
   {
     kind: 'pieceInfo.delete',
     group: 'G14',

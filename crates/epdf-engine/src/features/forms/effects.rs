@@ -49,7 +49,7 @@ use serde::{Deserialize, Serialize};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
-use crate::mutation::MutationMeta;
+use crate::mutation::PageStateMeta;
 
 use super::snapshot::{
     FormFieldDto, FormFieldFamily, FormFieldKind, FormFieldRef, FormValueEntry, FormWidgetRef,
@@ -150,7 +150,7 @@ pub struct FormEffectsResult {
     /// artifact, no event and no version bump: nothing happened, and saying
     /// otherwise would invalidate every cache downstream for a script run
     /// that changed nothing.
-    pub meta: Option<MutationMeta>,
+    pub meta: Option<PageStateMeta>,
 }
 
 fn empty(index: u32, status: FormEffectStatus) -> FormEffectResult {
@@ -299,7 +299,7 @@ pub fn apply(
         results,
         changed_widgets: all_changed.into_values().collect(),
         meta: must_finalize
-            .then(|| MutationMeta { affected_pages: Vec::new(), cache_delta: None }),
+            .then(|| PageStateMeta { affected_pages: Vec::new(), cache_delta: None }),
     })
 }
 

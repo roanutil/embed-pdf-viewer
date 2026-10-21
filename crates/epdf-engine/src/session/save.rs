@@ -105,6 +105,24 @@ pub struct EventOrigin {
     /// monotonic per document. `None` until the mutation has a server
     /// identity, which for a local engine is never.
     pub server_id: Option<i64>,
+    /// The write this event is one fact of: its `opId`, and where the event
+    /// stands among the write's events. Set on the writes that run as a
+    /// change (Task 8.6); Task 8.30 sets it on every write.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx: Option<EventTx>,
+    /// Set on the events of an undo: the `opId` of the change it undid.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub undo_of: Option<String>,
+}
+
+/// `origin.tx`: the write an event belongs to, and its place among the
+/// write's events, counting from 0 to `count - 1` in the order they were
+/// published.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EventTx {
+    pub id: String,
+    pub index: usize,
+    pub count: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -219,6 +237,9 @@ pub enum DocumentEventInit {
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
     MetadataUpdated(serde_json::Value),
+    /// `metadata.updateCustom` (a4b8259f7).
+    #[serde(rename = "metadata.customUpdated")]
+    MetadataCustomUpdated(serde_json::Value),
     #[serde(rename = "attachment.created")]
     AttachmentCreated(serde_json::Value),
     #[serde(rename = "attachment.deleted")]
@@ -276,6 +297,7 @@ impl DocumentEventInit {
             | Self::PagesFlattened(v)
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
+            | Self::MetadataCustomUpdated(v)
             | Self::AttachmentCreated(v)
             | Self::AttachmentDeleted(v)
             | Self::FormValueChanged(v)
@@ -318,6 +340,7 @@ impl DocumentEventInit {
             Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
+            Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
             Self::AttachmentCreated(_) => "attachment.created",
             Self::AttachmentDeleted(_) => "attachment.deleted",
             Self::FormValueChanged(_) => "form.valueChanged",

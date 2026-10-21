@@ -55,11 +55,11 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `metadata.read` | A | 2 | cooperative | ported |  |
+| `metadata.read` | A | 2 | cooperative | ported | Gated by vectors/metadata/read.json through crates/epdf-engine/tests/metadata_corpus.rs. The standard fields only: createdAt and modifiedAt keep the offset the file wrote (pdfDateToIso); the custom keys are metadata.readCustom. |
+| `metadata.readCustom` | A | 2 | cooperative | ported | Gated with metadata.read: the generator folds metadata.custom.get() into the read it records, and metadata_corpus.rs does the same. |
 | `pages.list` | A | 2 | cooperative | ported | Page identity must agree between lazy per-page lookup and full enumeration (DocumentSession.ts:41-44). Rust reads the boxes by pageBoxesOf and /Rotate by pageRotationOf, and answers them in page space at the host boundary (pageListOf). |
 | `actions.read` | A | 2 | cooperative | ported | Rust reads openDestination and answers every destination in page space at the host boundary (mapDocumentActions), triggers first. |
 | `outline.read` | A | 2 | cooperative | planned |  |
-| `metadata.readCustom` | A | 2 | cooperative | planned |  |
 | `measure.viewports` | A | 2 | cooperative | routed |  |
 
 ## G7
@@ -107,8 +107,8 @@ cancellation case it has to document. Group assignments come from
 | `annotations.delete` | C | 4 | after-first-write | ported |  |
 | `annotations.import` | C | 4 | after-first-write | planned |  |
 | `annotations.reorder` | C | 4 | after-first-write | planned | Replaces annotations.move. |
-| `document.apply` | C | 4 | after-first-write | planned | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. |
-| `document.applyChanges` | C | 4 | after-first-write | planned | A server request's changes as one job, each in its own layer transaction. |
+| `document.apply` | C | 4 | after-first-write | routed | One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata ops (features/changes, tests/document_apply.rs) and answers NotImplemented naming the owner sub-task for every other op type; a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants: page identity survives a pages.reorder op within the same live document, and a pages.insert op's source is retained on one owner (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. |
+| `document.applyChanges` | C | 4 | after-first-write | routed | A server request's changes as one job, each in its own layer transaction. Rust runs the metadata ops, as document.apply does. |
 
 ## G12
 
@@ -144,9 +144,9 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `metadata.update` | C | 4 | after-first-write | ported | MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep \| Clear \| Set(T). Operation parity lands here. |
+| `metadata.update` | C | 4 | after-first-write | ported | MetadataPatch is the Phase 0 DTO codegen proof: three-state Keep \| Clear \| Set(T). Gated by vectors/metadata/update.json through crates/epdf-engine/tests/metadata_write.rs, which replays the recorded request. Runs as a one-op change, so its opId undoes it. |
+| `metadata.updateCustom` | C | 4 | after-first-write | ported | Gated with metadata.update by vectors/metadata/update.json. A standard key, a leading slash or a key outside printable ASCII is InvalidArg before anything is written; answers the custom keys alone. |
 | `pieceInfo.update` | C | 4 | after-first-write | ported |  |
-| `metadata.updateCustom` | C | 4 | after-first-write | planned |  |
 | `pieceInfo.delete` | C | 4 | after-first-write | planned | Replaces pieceInfo.clear. |
 | `measure.setScale` | C | 4 | after-first-write | routed |  |
 

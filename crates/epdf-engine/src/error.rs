@@ -72,13 +72,24 @@ pub enum EngineErrorCode {
     /// The document would pass the highest object number a file should have
     /// (`OBJECT_NUMBER_CEILING`), or a session asked for numbers past
     /// `OBJECT_NUMBER_ISSUE_LIMIT`. `details.lastObjectNumber` is the
-    /// layer's last number. Upstream's other new codes come with Task 8.27.
+    /// layer's last number.
     LayerFull,
+    /// An op of a change found the document not holding what its `expect`
+    /// said it would: `details` names the op (`opIndex`) and the `fields`.
+    /// The whole change is refused.
+    ChangeConflict,
+    /// `{ undoOf }` named a change that can no longer be undone:
+    /// `details.reason` is `final-change` or `expired`.
+    UndoUnavailable,
+    /// An `opId` that already answered one change was sent with another.
+    /// Upstream's other new codes (`PayloadTooLarge`,
+    /// `ObjectNumberUnavailable`) come with Task 8.27.
+    IdempotencyKeyReused,
 }
 
 impl EngineErrorCode {
     /// Every code, in `EngineErrorCode.ts` declaration order.
-    pub const ALL: [EngineErrorCode; 26] = [
+    pub const ALL: [EngineErrorCode; 29] = [
         Self::Unknown,
         Self::InvalidArg,
         Self::DocNotOpen,
@@ -105,6 +116,9 @@ impl EngineErrorCode {
         Self::ProtectedDocument,
         Self::StaleBase,
         Self::LayerFull,
+        Self::ChangeConflict,
+        Self::UndoUnavailable,
+        Self::IdempotencyKeyReused,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -135,6 +149,9 @@ impl EngineErrorCode {
             Self::ProtectedDocument => "ProtectedDocument",
             Self::StaleBase => "StaleBase",
             Self::LayerFull => "LayerFull",
+            Self::ChangeConflict => "ChangeConflict",
+            Self::UndoUnavailable => "UndoUnavailable",
+            Self::IdempotencyKeyReused => "IdempotencyKeyReused",
         }
     }
 }
@@ -229,7 +246,7 @@ mod tests {
     /// A value that changes on either side has to change in both, and this is
     /// where the two are compared until the generated-DTO parity harness
     /// covers it.
-    const TYPESCRIPT_CODES: [&str; 26] = [
+    const TYPESCRIPT_CODES: [&str; 29] = [
         "Unknown",
         "InvalidArg",
         "DocNotOpen",
@@ -256,6 +273,9 @@ mod tests {
         "ProtectedDocument",
         "StaleBase",
         "LayerFull",
+        "ChangeConflict",
+        "UndoUnavailable",
+        "IdempotencyKeyReused",
     ];
 
     #[test]

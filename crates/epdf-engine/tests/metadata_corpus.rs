@@ -3,6 +3,10 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run metadata
 //!
+//! Each case reads through the host the way the generator did:
+//! `metadata.read`, with the keys of `metadata.readCustom` folded in under
+//! `custom` (our 1b8c92a3f; upstream reads them apart since a4b8259f7).
+//!
 //! The distinction the corpus is built around is three-state: a key that is
 //! absent, one that is present and empty, and one with a value. A reader that
 //! collapsed the first two would look correct on every other document in the
@@ -11,8 +15,8 @@
 use std::collections::BTreeMap;
 
 use epdf_engine::cancel::CancelToken;
-use epdf_engine::dto::DocumentMetadataTrapped;
-use epdf_engine::features::metadata::read_metadata;
+use epdf_engine::features::metadata::{read_custom_metadata, read_metadata};
+use epdf_engine::host::Host;
 use pdfium::{Document, Library};
 use serde::Deserialize;
 
@@ -46,8 +50,8 @@ struct WireMetadata {
     keywords: Option<String>,
     producer: Option<String>,
     creator: Option<String>,
-    created: Option<String>,
-    modified: Option<String>,
+    created_at: Option<String>,
+    modified_at: Option<String>,
     trapped: String,
     custom: BTreeMap<String, String>,
 }
@@ -69,12 +73,33 @@ fn open(case: &Case) -> Document {
         .unwrap_or_else(|e| panic!("{}: open: {e}", case.name))
 }
 
-fn trapped_name(trapped: DocumentMetadataTrapped) -> &'static str {
-    match trapped {
-        DocumentMetadataTrapped::True => "true",
-        DocumentMetadataTrapped::False => "false",
-        DocumentMetadataTrapped::Unknown => "unknown",
-    }
+/// The case's metadata as the host answers it, the custom keys folded in.
+fn read_through_host(case: &Case) -> serde_json::Value {
+    let mut host = Host::new();
+    let call = |host: &mut Host, request: serde_json::Value, payloads: Vec<Vec<u8>>| {
+        let response = host.call(&request.to_string(), payloads);
+        let mut envelope: serde_json::Value = serde_json::from_str(&response.json).unwrap();
+        assert!(envelope.get("error").is_none(), "{}: {request} failed: {envelope}", case.name);
+        envelope["result"].take()
+    };
+    call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "d",
+            "password": case.password }),
+        vec![test_support::fixture(&case.fixture)],
+    );
+    let mut metadata = call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.read", "effect": "read", "jobId": 2, "docId": "d" }),
+        Vec::new(),
+    );
+    metadata["custom"] = call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.readCustom", "effect": "read", "jobId": 3,
+            "docId": "d" }),
+        Vec::new(),
+    );
+    metadata
 }
 
 #[test]
@@ -83,21 +108,8 @@ fn metadata_agrees_with_the_typescript_engine() {
     assert!(file.cases.len() >= 4, "the corpus shrank");
 
     for case in &file.cases {
-        let document = open(case);
-        let actual = read_metadata(&document, &CancelToken::never())
-            .unwrap_or_else(|e| panic!("{}: read: {e}", case.name));
-        let actual = WireMetadata {
-            title: actual.title,
-            author: actual.author,
-            subject: actual.subject,
-            keywords: actual.keywords,
-            producer: actual.producer,
-            creator: actual.creator,
-            created: actual.created,
-            modified: actual.modified,
-            trapped: trapped_name(actual.trapped).to_string(),
-            custom: actual.custom,
-        };
+        let actual: WireMetadata = serde_json::from_value(read_through_host(case))
+            .unwrap_or_else(|e| panic!("{}: the answer is not the wire's shape: {e}", case.name));
         assert_eq!(actual, case.metadata, "{}: {}", case.name, case.covers);
     }
 }
@@ -142,14 +154,16 @@ fn custom_keys_exclude_the_reserved_ones() {
     let document = open(case);
     let metadata = read_metadata(&document, &CancelToken::never()).expect("read");
 
+    let custom = read_custom_metadata(&document, &CancelToken::never()).expect("read custom");
+    assert!(metadata.title.is_some());
     for reserved in ["Title", "Author", "Subject", "Producer", "Creator", "CreationDate", "ModDate"]
     {
-        assert!(!metadata.custom.contains_key(reserved), "/{reserved} was reported as custom data",);
+        assert!(!custom.contains_key(reserved), "/{reserved} was reported as custom data",);
     }
-    assert_eq!(metadata.custom.get("EmbedPDFCustom").map(String::as_str), Some("a custom value"));
+    assert_eq!(custom.get("EmbedPDFCustom").map(String::as_str), Some("a custom value"));
     // A custom key that is present and empty is carried, not dropped: the map
     // is of strings, and "" is a string.
-    assert_eq!(metadata.custom.get("EmbedPDFEmpty").map(String::as_str), Some(""));
+    assert_eq!(custom.get("EmbedPDFEmpty").map(String::as_str), Some(""));
 }
 
 #[test]
@@ -161,8 +175,9 @@ fn both_pdf_date_forms_convert() {
     let document = open(case);
     let metadata = read_metadata(&document, &CancelToken::never()).expect("read");
 
-    assert!(metadata.created.is_some(), "an offset date did not convert");
-    assert!(metadata.modified.is_some(), "a Z date did not convert");
+    // Each keeps the offset the file wrote (fd175ba50, `pdfDateToIso`).
+    assert_eq!(metadata.created_at.as_deref(), Some("2024-01-15T09:30:00+01:00"));
+    assert_eq!(metadata.modified_at.as_deref(), Some("2024-02-20T12:00:00Z"));
 }
 
 #[test]

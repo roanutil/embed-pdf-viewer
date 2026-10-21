@@ -8,6 +8,7 @@ pub mod actions;
 pub mod annotation;
 pub mod assembly;
 pub mod binary;
+pub mod changes;
 pub mod extract;
 pub mod files;
 pub mod fonts;

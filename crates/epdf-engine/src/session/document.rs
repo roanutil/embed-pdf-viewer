@@ -34,6 +34,8 @@ use super::revisions::RevisionAuthority;
 use crate::access::OwnedDocument;
 use crate::auth::scope::{DocCapability, decode_pdf_bits};
 use crate::error::{EngineError, EngineErrorCode};
+use crate::features::changes::ledger::ChangeLedger;
+use crate::features::changes::record::ReverseStep;
 use crate::features::signature::types::SignedDocumentPolicy;
 use crate::identity::{OBJECT_NUMBER_ISSUE_LIMIT, ObjectNumberRange, PageObjectNumber};
 use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
@@ -137,6 +139,34 @@ pub struct DocumentSession {
     /// (`heldObjectNumbers`), as the ranges they were handed out in: a
     /// reserve can hand out millions.
     held_object_numbers: Vec<ObjectNumberRange>,
+    /// The write transaction running, if any (see
+    /// [`DocumentSession::begin_transaction`]).
+    transaction: Option<OpenTransaction>,
+    /// What this session keeps of its changes: every answer under its
+    /// `opId`, and the records that undo them (`changeLedgerOf`).
+    ledger: ChangeLedger,
+}
+
+/// What every meta of a write carries: its id, and whether it can be undone
+/// (`WriteStamp`).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WriteStamp {
+    pub op_id: String,
+    pub undoable: bool,
+}
+
+/// The write transaction a session is running (`OpenTransaction`).
+///
+/// Upstream runs every write inside an `EPDFLayer` transaction that its
+/// abort drops whole. This engine opens `open.fatMem` as a plain document
+/// (Task 8.29), which has none, so a transaction here keeps a journal of the
+/// reverse steps of what it wrote instead, and an abort runs them backwards
+/// ([`crate::features::changes::transaction`]). Task 8.30 extends it to
+/// every write kind, with the layer ceiling check at commit.
+#[derive(Debug)]
+struct OpenTransaction {
+    stamp: WriteStamp,
+    journal: Vec<ReverseStep>,
 }
 
 impl DocumentSession {
@@ -159,6 +189,8 @@ impl DocumentSession {
             object_number_authority: ObjectNumberAuthority::default(),
             signed_document_policy: SignedDocumentPolicy::default(),
             held_object_numbers: Vec::new(),
+            transaction: None,
+            ledger: ChangeLedger::new(),
         }
     }
 
@@ -703,6 +735,8 @@ impl DocumentSession {
             // the PDFium handle, on this thread.
         }
         self.parked_bytes = None;
+        self.transaction = None;
+        self.ledger.clear();
         // Back to granting nothing, so a closed session cannot be read through
         // even if a caller holds a reference to it.
         self.authority = SessionAuthority::default();
@@ -727,6 +761,96 @@ impl std::fmt::Debug for DocumentSession {
             .field("retained", &self.retained.len())
             .finish()
     }
+}
+
+/// Transactions (`DocumentSession.ts`, "transactions") and the change
+/// ledger.
+impl DocumentSession {
+    /// Whether a write transaction is open.
+    pub fn in_transaction(&self) -> bool {
+        self.transaction.is_some()
+    }
+
+    /// Open a write transaction for the write `op_id` names. Until
+    /// [`DocumentSession::commit_transaction`] or
+    /// [`DocumentSession::abort_transaction`], what it writes can be taken
+    /// back. One at a time.
+    pub fn begin_transaction(&mut self, op_id: impl Into<String>) -> Result<(), EngineError> {
+        if self.transaction.is_some() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "a transaction is already open",
+            ));
+        }
+        self.document()?;
+        self.transaction = Some(OpenTransaction {
+            stamp: WriteStamp { op_id: op_id.into(), undoable: false },
+            journal: Vec::new(),
+        });
+        Ok(())
+    }
+
+    /// What every meta of the running write carries: its `opId`, and
+    /// whether it can be undone.
+    pub fn write_stamp(&self) -> Result<WriteStamp, EngineError> {
+        Ok(self.require_transaction()?.stamp.clone())
+    }
+
+    /// The running write records its reverse, so `{ undoOf: opId }` can
+    /// undo it.
+    pub fn mark_undoable(&mut self) -> Result<(), EngineError> {
+        self.require_transaction_mut()?.stamp.undoable = true;
+        Ok(())
+    }
+
+    /// Note the steps that reverse what the running write just wrote, in the
+    /// order they run. An abort runs every step noted, last first.
+    pub fn journal(&mut self, steps: &[ReverseStep]) -> Result<(), EngineError> {
+        self.require_transaction_mut()?.journal.extend_from_slice(steps);
+        Ok(())
+    }
+
+    /// Keep everything the open transaction wrote.
+    pub fn commit_transaction(&mut self) -> Result<(), EngineError> {
+        self.require_transaction()?;
+        self.transaction = None;
+        Ok(())
+    }
+
+    /// The steps that take back what the open transaction wrote, in the
+    /// order they were noted, leaving the transaction open with an empty
+    /// journal so the steps can run inside it. The caller runs them last
+    /// first, then aborts ([`crate::features::changes::transaction`]).
+    pub fn take_journal(&mut self) -> Vec<ReverseStep> {
+        self.transaction.as_mut().map(|open| std::mem::take(&mut open.journal)).unwrap_or_default()
+    }
+
+    /// Close the open transaction without keeping it. What it wrote must
+    /// already have been taken back ([`DocumentSession::take_journal`]).
+    pub fn abort_transaction(&mut self) {
+        self.transaction = None;
+    }
+
+    /// This session's change ledger.
+    pub fn ledger(&self) -> &ChangeLedger {
+        &self.ledger
+    }
+
+    pub fn ledger_mut(&mut self) -> &mut ChangeLedger {
+        &mut self.ledger
+    }
+
+    fn require_transaction(&self) -> Result<&OpenTransaction, EngineError> {
+        self.transaction.as_ref().ok_or_else(no_transaction)
+    }
+
+    fn require_transaction_mut(&mut self) -> Result<&mut OpenTransaction, EngineError> {
+        self.transaction.as_mut().ok_or_else(no_transaction)
+    }
+}
+
+fn no_transaction() -> EngineError {
+    EngineError::with_message(EngineErrorCode::Unknown, "no transaction is open")
 }
 
 /// Object numbers (`DocumentSession.ts`, "object numbers"): only a layer
