@@ -260,7 +260,7 @@ fn a_field_locked_by_a_signature_refuses_a_write() {
     let response = envelope(
         &mut host,
         json!({ "kind": "forms.setValue", "docId": doc,
-                "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 },
+                "ref": { "kind": "objectNumber", "objectNumber": 4 },
                 "value": { "type": "text", "value": "changed" } }),
         Vec::new(),
     );

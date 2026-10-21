@@ -762,7 +762,7 @@ impl Host {
             "forms.list" => {
                 let d = self.document(&key)?;
                 let model = d.form_model().ok_or_else(form_model_missing)?;
-                Ok(ok(value(&f::forms::snapshot::read_form_snapshot(&model, cancel)?)?))
+                Ok(ok(value(&f::forms::widgets::read_form(d, &model, cancel)?)?))
             }
             "forms.export" => {
                 let format: f::forms::write::FormDataFormat = field(body, "format")?;

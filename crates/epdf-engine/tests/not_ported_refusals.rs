@@ -205,7 +205,7 @@ fn a_field_update_touching_the_default_value_is_refused_before_the_rename() {
     let document = owned.document();
     let reference: FormFieldRef = serde_json::from_value(serde_json::json!({
         "kind": "objectNumber",
-        "fieldObjectNumber": 4,
+        "objectNumber": 4,
     }))
     .expect("the ref decodes");
 

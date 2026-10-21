@@ -122,21 +122,29 @@ pub struct SignatureSeedValue {
 #[serde(tag = "kind")]
 pub enum WireAnnotationRef {
     #[serde(rename = "objectNumber", rename_all = "camelCase")]
-    ObjectNumber { page: PageRef, annot_object_number: u32 },
+    ObjectNumber {
+        page: PageRef,
+        #[serde(rename = "objectNumber")]
+        annot_object_number: u32,
+    },
 }
 
-/// `FormWidget`, the shape `formWidget(annotObjectNumber, page)` builds.
+/// `FormWidget`, the shape `formWidget(objectNumber, page)` builds:
+/// `{ref, objectNumber, page}` (595bdc6c7).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FormWidget {
     #[serde(rename = "ref")]
     pub reference: Option<WireAnnotationRef>,
+    /// The widget annotation's object number, whether or not it is on a
+    /// page; `0` for a widget stored as a direct object.
+    #[serde(rename = "objectNumber")]
     pub annot_object_number: u32,
     pub page: Option<PageRef>,
 }
 
 impl FormWidget {
-    /// `formWidget(annotObjectNumber, widgetPageRef(pageObjectNumber))`.
+    /// `formWidget(objectNumber, widgetPageRef(pageObjectNumber))`.
     pub fn new(annot_object_number: u32, page_object_number: u32) -> FormWidget {
         let page = (page_object_number > 0).then(|| page_object_number.to_page_ref());
         FormWidget {

@@ -585,6 +585,67 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_HasAppearanceStream(self.handle, mode as i32) != 0 }
     }
 
+    /// `/AS`, the appearance state the annotation shows, as the name's bytes.
+    /// `None` when it names none.
+    pub fn appearance_state(&self) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the measure call.
+        let bytes = unsafe {
+            pdfium_sys::EPDFAnnot_GetAppearanceState(self.handle, std::ptr::null_mut(), 0)
+        };
+        if bytes == 0 {
+            return Ok(None);
+        }
+        let text = read_utf8(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer`.
+            unsafe { pdfium_sys::EPDFAnnot_GetAppearanceState(self.handle, buffer, len) }
+        })?;
+        Ok(Some(text.unwrap_or_default()))
+    }
+
+    /// `/MK /R`, the widget's turn in degrees counterclockwise, as the file
+    /// holds it; 0 when absent.
+    pub fn mk_rotation(&self) -> i32 {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_GetMKRotation(self.handle) }
+    }
+
+    /// One `/MK` text entry by `EPDF_MK_TEXT` (`/CA` is 0): `None` when
+    /// absent, `Some("")` when present and empty.
+    pub fn mk_text(&self, which: i32) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the measure call.
+        let bytes =
+            unsafe { pdfium_sys::EPDFAnnot_GetMKText(self.handle, which, std::ptr::null_mut(), 0) };
+        if bytes == 0 {
+            return Ok(None);
+        }
+        let text = read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer` in bytes.
+            unsafe { pdfium_sys::EPDFAnnot_GetMKText(self.handle, which, buffer, len) }
+        })?;
+        Ok(Some(text.unwrap_or_default()))
+    }
+
+    /// The face of the font `/DA` names
+    /// (`EPDFAnnot_GetDefaultAppearanceFontFace`): its family, weight and
+    /// italic, as the font's dictionary says. `None` when `/DA` names no font.
+    pub fn default_appearance_font_face(&self) -> Result<Option<(String, i32, bool)>, PdfiumError> {
+        let (mut weight, mut italic) = (0i32, 0i32);
+        let family = read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live, `len` describes `buffer` in bytes,
+            // and the two out-parameters are valid.
+            unsafe {
+                pdfium_sys::EPDFAnnot_GetDefaultAppearanceFontFace(
+                    self.handle,
+                    buffer,
+                    len,
+                    &raw mut weight,
+                    &raw mut italic,
+                )
+            }
+        })?;
+        Ok(family.filter(|family| !family.is_empty()).map(|family| (family, weight, italic != 0)))
+    }
+
     /// One `/MK` appearance-characteristics colour, by `EPDF_MK_COLORTYPE`.
     ///
     /// A widget's border and background live in `/MK`, not in `/C`, which is

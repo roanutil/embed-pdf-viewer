@@ -202,6 +202,49 @@ fn a_search_answer_reaches_the_kernel_in_the_files_coordinates_and_its_spelling(
 }
 
 #[test]
+fn a_form_reaches_the_kernel_in_the_files_coordinates_and_its_spelling() {
+    // The host answers upstream's `FormSnapshot` in page space, with every
+    // widget row; `call_host` measures each row back on its page and
+    // `decode` respells the field records, so the kernel reads the fields
+    // as it did before 595bdc6c7 and c3b90c3a4.
+    use epdf_viewer_host::translate::call_host;
+
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let fixture = test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf");
+    let opened = call_host(&mut host, &open.to_string(), vec![fixture]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let call = translate("d1", "forms.list", None, &[], 2).unwrap();
+    let wire: Value =
+        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+    let row = &wire["result"]["widgets"][0];
+    assert_eq!(row["rect"], json!({ "x": 72.0, "y": 62.0, "width": 228.0, "height": 30.0 }));
+
+    let response = call_host(&mut host, &call.request.to_string(), Vec::new());
+    let form = decode(&call.decode, response).unwrap().value;
+    let row = &form["widgets"][0];
+    let file = json!({ "left": 72.0, "bottom": 700.0, "right": 300.0, "top": 730.0 });
+    assert_eq!(row["rect"], file);
+    assert_eq!(row["box"], file);
+    assert_eq!(row["field"], kernel_field(4));
+
+    let name = &form["fields"][0];
+    assert_eq!(name["name"], "billing.name");
+    assert_eq!(name["ref"], kernel_field(4));
+    assert_eq!(name["fieldObjectNumber"], 4);
+    // required (bit 2), comb (bit 25).
+    assert_eq!(
+        name["flags"],
+        json!({ "readOnly": false, "required": true, "noExport": false,
+            "raw": (1 << 1) | (1 << 24) })
+    );
+    assert_eq!(name["widgets"][0]["annotObjectNumber"], 4);
+    assert_eq!(name["widgets"][0]["page"], page_ref(3));
+    assert_eq!(form["calculationOrder"], json!([kernel_field(4), null]));
+}
+
+#[test]
 fn a_search_hit_without_its_page_is_an_error() {
     let json = r#"{"result":{"matches":[{"charCount":1,"charStart":0,"segments":[]}],"nextCursor":null,"scannedPages":1,"totalPages":1}}"#;
     assert!(decode(&Decode::SearchSlice, answer(json)).is_err());
@@ -530,6 +573,31 @@ fn wire_annot(pon: u32, number: u32) -> Value {
     json!({ "kind": "objectNumber", "page": wire_page(pon), "objectNumber": number })
 }
 
+/// A form field ref by object number, as the kernel spells it.
+fn kernel_field(number: u32) -> Value {
+    json!({ "kind": "objectNumber", "fieldObjectNumber": number })
+}
+
+/// The same field ref as the host reads it (595bdc6c7).
+fn wire_field(number: u32) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": number })
+}
+
+/// A text field record as the host answers it (595bdc6c7, c3b90c3a4,
+/// b43963d12), with one widget on page 2.
+fn host_text_field(number: u32, widget: u32) -> Value {
+    json!({
+        "ref": wire_field(number), "name": "a", "family": "text", "origin": "acroform",
+        "readOnly": true, "required": false, "noExport": true, "alternateName": null,
+        "mappingName": null, "valueEntry": { "kind": "none" },
+        "defaultValueEntry": { "kind": "none" }, "groupId": null, "createdBy": null,
+        "createdAt": null, "filledBy": null, "filledByName": null, "filledAt": null,
+        "importedBy": null, "value": "", "defaultValue": "", "maxLength": null,
+        "multiline": true, "password": false, "comb": false,
+        "widgets": [{ "ref": wire_annot(2, widget), "objectNumber": widget, "page": wire_page(2) }]
+    })
+}
+
 #[test]
 fn a_rotation_travels_as_a_whole_number() {
     let args = [json!([page_ref(3), page_ref(4)]), json!(90.0)];
@@ -745,16 +813,64 @@ fn a_listed_snapshot_arrives_in_the_kernels_spelling() {
     assert_eq!(decoded["pageState"]["revision"]["page"], page_ref(5));
 }
 
-/// A form field ref keeps `fieldObjectNumber` both ways: the host still
-/// reads and answers that spelling.
+/// A form field ref is the kernel's `fieldObjectNumber` and the host's
+/// `objectNumber` (595bdc6c7), respelled each way.
 #[test]
-fn a_field_ref_keeps_its_spelling_both_ways() {
-    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
+fn a_field_ref_is_respelled_both_ways() {
+    let field = kernel_field(4);
     let call = translate("d1", "forms.reset", None, std::slice::from_ref(&field), 1).unwrap();
-    assert_eq!(call.request["ref"], field);
-    let json = r#"{"result":{"result":{"field":{"ref":{"kind":"objectNumber","fieldObjectNumber":4}}},"mutationSequence":1}}"#;
-    let decoded = decode(&call.decode, answer(json)).unwrap();
+    assert_eq!(call.request["ref"], wire_field(4));
+    let json = json!({ "result": { "result": { "field": host_text_field(4, 9) },
+        "mutationSequence": 1 } })
+    .to_string();
+    let decoded = decode(&call.decode, answer(&json)).unwrap();
     assert_eq!(decoded.value["field"]["ref"], field);
+    assert_eq!(decoded.value["field"]["fieldObjectNumber"], 4);
+}
+
+/// Upstream's field record (c3b90c3a4) answers its `/Ff` bits flat and no
+/// raw word; the kernel reads `flags`, with the raw word rebuilt from the
+/// bits the record reports.
+#[test]
+fn a_field_records_flags_go_back_to_the_kernel_as_one_object() {
+    let call = translate("d1", "forms.reset", None, &[kernel_field(4)], 1).unwrap();
+    let json = json!({ "result": { "result": { "field": host_text_field(4, 9) },
+        "mutationSequence": 1 } })
+    .to_string();
+    let field = decode(&call.decode, answer(&json)).unwrap().value["field"].clone();
+    // readOnly (bit 1), noExport (bit 3) and multiline (bit 13).
+    assert_eq!(
+        field["flags"],
+        json!({ "readOnly": true, "required": false, "noExport": true,
+            "raw": 1 | (1 << 2) | (1 << 12) })
+    );
+    assert_eq!(
+        field["widgets"][0],
+        json!({ "ref": { "kind": "objectNumber", "page": page_ref(2), "annotObjectNumber": 9 },
+            "annotObjectNumber": 9, "page": page_ref(2) })
+    );
+}
+
+/// A signature's `field` and a form's calculation order are field refs,
+/// though nothing beside them says so.
+#[test]
+fn a_field_ref_with_no_record_around_it_is_still_a_field_ref() {
+    let call = translate("d1", "forms.list", None, &[], 1).unwrap();
+    let json = json!({ "result": { "formKind": "acroform", "needsAppearances": false,
+        "fields": [], "widgets": [], "calculationOrder": [wire_field(4), null] } })
+    .to_string();
+    let decoded = decode(&call.decode, answer(&json)).unwrap().value;
+    assert_eq!(decoded["calculationOrder"], json!([kernel_field(4), null]));
+
+    let call = translate("d1", "signatures.list", None, &[], 2).unwrap();
+    let json = json!({ "result": { "signatures": [{ "field": wire_field(12),
+        "widget": { "ref": wire_annot(2, 13), "objectNumber": 13, "page": wire_page(2) } }] } })
+    .to_string();
+    let decoded = decode(&call.decode, answer(&json)).unwrap().value;
+    let signature = &decoded["signatures"][0];
+    assert_eq!(signature["field"], kernel_field(12));
+    assert_eq!(signature["widget"]["annotObjectNumber"], 13);
+    assert_eq!(signature["widget"]["page"], page_ref(2));
 }
 
 #[test]
@@ -893,7 +1009,7 @@ fn refs_inside_a_draft_or_patch_go_out_whole() {
 
 #[test]
 fn a_form_list_answers_each_widget_with_its_ref_and_page() {
-    let json = r#"{"result":{"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"family":"checkbox","widgets":[{"ref":{"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":2},"annotObjectNumber":9},"annotObjectNumber":9,"page":{"kind":"objectNumber","objectNumber":2},"onState":"On","exportValue":"Yes","checked":true}]}]}}"#;
+    let json = r#"{"result":{"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"widgets":[],"fields":[{"ref":{"kind":"objectNumber","objectNumber":4},"family":"checkbox","valueEntry":{"kind":"none"},"widgets":[{"ref":{"kind":"objectNumber","page":{"kind":"objectNumber","objectNumber":2},"objectNumber":9},"objectNumber":9,"page":{"kind":"objectNumber","objectNumber":2},"onState":"On","exportValue":"Yes","checked":true}]}]}}"#;
     let call = translate("d1", "forms.list", None, &[], 20).unwrap();
     let widget =
         decode(&call.decode, answer(json)).unwrap().value["fields"][0]["widgets"][0].clone();
@@ -909,19 +1025,16 @@ fn a_form_list_answers_each_widget_with_its_ref_and_page() {
 }
 
 #[test]
-fn a_field_ref_is_left_as_it_is() {
+fn a_field_ref_goes_out_in_the_hosts_spelling() {
     let call = translate(
         "d1",
         "forms.setValue",
         None,
-        &[
-            json!({ "kind": "objectNumber", "fieldObjectNumber": 4 }),
-            json!({ "type": "text", "value": "x" }),
-        ],
+        &[kernel_field(4), json!({ "type": "text", "value": "x" })],
         21,
     )
     .unwrap();
-    assert_eq!(call.request["ref"], json!({ "kind": "objectNumber", "fieldObjectNumber": 4 }));
+    assert_eq!(call.request["ref"], wire_field(4));
     assert_eq!(call.request["value"], json!({ "type": "text", "value": "x" }));
 }
 
@@ -990,7 +1103,7 @@ fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
     assert_eq!(
         call.request,
         json!({ "kind": "forms.reset", "jobId": 26, "docId": "d1",
-        "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 } })
+        "ref": { "kind": "objectNumber", "objectNumber": 4 } })
     );
     assert!(matches!(call.decode, Decode::Mutation));
 }
@@ -999,14 +1112,14 @@ fn a_field_ref_sent_as_a_javascript_number_goes_out_whole() {
 fn a_widget_link_sends_the_widgets_annotation_ref() {
     let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9.0,
         "page": { "kind": "objectNumber", "pageObjectNumber": 2 } });
-    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
+    let field = kernel_field(4);
     for (path, kind) in
         [("forms.attachWidget", "forms.attachWidget"), ("forms.detachWidget", "forms.detachWidget")]
     {
         let call = translate("d1", path, None, &[field.clone(), widget.clone()], 27).unwrap();
         assert_eq!(
             call.request,
-            json!({ "kind": kind, "jobId": 27, "docId": "d1", "ref": field,
+            json!({ "kind": kind, "jobId": 27, "docId": "d1", "ref": wire_field(4),
             "widget": wire_annot(2, 9) })
         );
     }
@@ -1026,7 +1139,7 @@ fn an_effects_batch_that_wrote_nothing_answers_its_result_and_no_event() {
 #[test]
 fn a_form_mutation_answers_the_widgets_of_its_result_and_event() {
     let call = translate("d1", "forms.setValue", None, &[json!({}), json!({})], 29).unwrap();
-    let field = r#"{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"widgets":[{"ref":{"kind":"objectNumber","annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}}]}"#;
+    let field = host_text_field(4, 9);
     let json = format!(
         r#"{{"result":{{"result":{{"field":{field}}},"mutationSequence":3,"event":{{"type":"form.valueChanged","field":{field}}}}}}}"#
     );
@@ -1047,7 +1160,10 @@ fn a_field_edit_answers_its_result_and_event_as_the_host_sent_them() {
     {
         let widget = json!({ "kind": "objectNumber", "annotObjectNumber": 9, "page": page_ref(2) });
         let call = translate("d1", path, None, &[json!({}), widget], 30).unwrap();
-        let field = r#""field":{"ref":{"kind":"objectNumber","fieldObjectNumber":4},"name":"a","widgets":[{"ref":{"kind":"objectNumber","annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}},"annotObjectNumber":9,"page":{"kind":"objectNumber","pageObjectNumber":2}}]},"meta":{"affectedPages":[],"cacheDelta":null}"#;
+        let field = format!(
+            r#""field":{},"meta":{{"affectedPages":[],"cacheDelta":null}}"#,
+            host_text_field(4, 9)
+        );
         let json = format!(
             r#"{{"result":{{"result":{{{field}}},"mutationSequence":3,"event":{{"type":"form.fieldCreated","origin":{{"kind":"local"}},{field}}}}}}}"#
         );
@@ -1447,7 +1563,7 @@ fn a_visual_fill_moves_the_pdf_into_a_payload() {
         1,
     )
     .unwrap();
-    assert_eq!(call.request["ref"], json!({ "kind": "objectNumber", "fieldObjectNumber": 12 }));
+    assert_eq!(call.request["ref"], wire_field(12));
     assert_eq!(call.request["pageIndex"], json!(0));
     assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
 }
@@ -1462,7 +1578,7 @@ fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
     });
     let call = translate("doc-1", "signatures.prepare", None, &[request], 1).unwrap();
     let input = &call.request["input"];
-    assert_eq!(input["field"]["fieldObjectNumber"], json!(12));
+    assert_eq!(input["field"], wire_field(12));
     assert_eq!(input["certify"]["permission"], json!(2));
     assert_eq!(input["lock"]["permission"], json!(1));
     assert_eq!(input["appearance"], json!({ "pageIndex": 0 }));
@@ -1477,10 +1593,10 @@ fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
 
 #[test]
 fn the_reads_carry_their_arguments() {
-    let field = json!({ "kind": "objectNumber", "fieldObjectNumber": 5 });
+    let field = kernel_field(5);
     let call =
         translate("d", "signatures.contents", None, std::slice::from_ref(&field), 1).unwrap();
-    assert_eq!(call.request["ref"], field);
+    assert_eq!(call.request["ref"], wire_field(5));
     let call =
         translate("d", "signatures.digest", None, &[field.clone(), json!("sha256")], 1).unwrap();
     assert_eq!(call.request["algorithm"], json!("sha256"));

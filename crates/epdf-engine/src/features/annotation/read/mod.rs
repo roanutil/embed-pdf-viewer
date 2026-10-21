@@ -19,6 +19,7 @@ pub mod identity;
 pub mod ink_line;
 pub mod link;
 pub mod page;
+pub mod record;
 pub mod redact;
 pub mod registry;
 pub mod relationship;

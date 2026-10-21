@@ -13,8 +13,9 @@
 //! them as they arrive.
 //!
 //! The kernel still spells refs as this branch's wire did before the
-//! catch-up: a `PageRef`'s number is `pageObjectNumber` and an annotation
-//! ref's is `annotObjectNumber`. The host spells both `objectNumber`, as
+//! catch-up: a `PageRef`'s number is `pageObjectNumber`, an annotation
+//! ref's is `annotObjectNumber` and a form field ref's is
+//! `fieldObjectNumber`. The host spells all three `objectNumber`, as
 //! upstream does (595bdc6c7). `translate` respells a request on the way out
 //! and `decode` respells an answer on the way back, so the kernel keeps its
 //! spelling until Task 13 ports it.
@@ -596,7 +597,10 @@ mod metadata {
 /// so the kernel keeps its space until Task 13 ports it. Dead then.
 mod page_space {
     use epdf_engine::error::EngineError;
+    use epdf_engine::features::actions::destination::PdfDestination;
     use epdf_engine::features::actions::document::DocumentActionsSnapshot;
+    use epdf_engine::features::annotation::read::base::AnnotationActions;
+    use epdf_engine::features::forms::snapshot::FieldActions;
     use epdf_engine::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
     use epdf_engine::features::pages::{PageLayout, PageListSnapshot};
     use epdf_engine::features::search::reader::SearchSlice;
@@ -676,15 +680,19 @@ mod page_space {
 
     /// The host's page-space answer as the kernel reads it: `pages.list`'s
     /// boxes and page actions, `actions.read`'s destinations,
-    /// `pages.geometry`'s runs and `search.query`'s match segments, in the
-    /// file's coordinates. Every other answer goes as it came.
+    /// `pages.geometry`'s runs, `search.query`'s match segments and
+    /// `forms.list`'s field actions and widget rows, in the file's
+    /// coordinates. Every other answer goes as it came.
     pub(super) fn answer_to_file_space(
         host: &Host,
         kind: &str,
         request: &Value,
         response: HostResponse,
     ) -> HostResponse {
-        if !matches!(kind, "pages.list" | "actions.read" | "pages.geometry" | "search.query") {
+        if !matches!(
+            kind,
+            "pages.list" | "actions.read" | "pages.geometry" | "search.query" | "forms.list"
+        ) {
             return response;
         }
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
@@ -693,7 +701,10 @@ mod page_space {
         let Some(result) = envelope.get_mut("result").filter(|r| r.is_object()) else {
             return response;
         };
-        let converted = if kind == "pages.geometry" {
+        let converted = if kind == "forms.list" {
+            let mut boxes = visible_boxes(host, request);
+            form_in_file_space(result.take(), &mut boxes)
+        } else if kind == "pages.geometry" {
             serde_json::from_value::<PageGeometrySnapshot<PageCoordinates>>(result.take())
                 .map_err(|e| e.to_string())
                 .and_then(|snapshot| {
@@ -741,6 +752,71 @@ mod page_space {
             } }),
         };
         HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// `forms.list`'s answer in the file's coordinates: each field's action
+    /// destinations on the pages they go to, and each widget row's `rect`,
+    /// `box` and action destinations, the inverse of the host's
+    /// `page_form_snapshot_of`.
+    fn form_in_file_space(
+        mut snapshot: Value,
+        boxes: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
+    ) -> Result<Value, String> {
+        fn actions_in_file_space<A, F>(
+            actions: &mut Value,
+            boxes: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
+            map: impl FnOnce(
+                A,
+                &mut dyn FnMut(PageDestination) -> Result<PdfDestination, EngineError>,
+            ) -> Result<F, EngineError>,
+        ) -> Result<(), String>
+        where
+            A: serde::de::DeserializeOwned,
+            F: serde::Serialize,
+        {
+            if actions.is_null() {
+                return Ok(());
+            }
+            let read: A = serde_json::from_value(actions.take()).map_err(|e| e.to_string())?;
+            let converted =
+                map(read, &mut |d| pdf_destination_of(d, &mut *boxes)).map_err(|e| e.message)?;
+            *actions = serde_json::to_value(converted).map_err(|e| e.to_string())?;
+            Ok(())
+        }
+
+        for field in snapshot.get_mut("fields").and_then(Value::as_array_mut).into_iter().flatten()
+        {
+            if let Some(actions) = field.get_mut("actions") {
+                actions_in_file_space(
+                    actions,
+                    boxes,
+                    |a: FieldActions<PageDestination>, mut convert| {
+                        a.try_map_destinations(&mut convert)
+                    },
+                )?;
+            }
+        }
+        for row in snapshot.get_mut("widgets").and_then(Value::as_array_mut).into_iter().flatten() {
+            let page = serde_json::from_value::<PageRef>(row["page"].clone())
+                .map_err(|e| format!("a widget row's page: {e}"))?;
+            let visible = boxes(page.object_number()).map_err(|e| e.message)?;
+            for key in ["rect", "box"] {
+                let place = serde_json::from_value::<PageRect>(row[key].take())
+                    .map_err(|e| format!("a widget row's {key}: {e}"))?;
+                row[key] =
+                    serde_json::to_value(pdf_rect_of(place, visible)).map_err(|e| e.to_string())?;
+            }
+            if let Some(actions) = row.get_mut("actions") {
+                actions_in_file_space(
+                    actions,
+                    boxes,
+                    |a: AnnotationActions<PageDestination>, mut convert| {
+                        a.try_map_destinations(&mut convert)
+                    },
+                )?;
+            }
+        }
+        Ok(snapshot)
     }
 
     /// A page's text geometry as the kernel's selection reads it: the file's
@@ -981,16 +1057,18 @@ fn base_index_refs(host: &mut Host, request: &mut Value) -> bool {
 }
 
 /// The kernel's ref spelling as the host reads it: in every object tagged
-/// `objectNumber`, a `PageRef`'s `pageObjectNumber` and an annotation ref's
-/// `annotObjectNumber` become `objectNumber`. A form field ref keeps
-/// `fieldObjectNumber`, which is still what the host reads.
+/// `objectNumber`, a `PageRef`'s `pageObjectNumber`, an annotation ref's
+/// `annotObjectNumber` and a form field ref's `fieldObjectNumber` become
+/// `objectNumber` (595bdc6c7).
 fn to_wire_refs(value: &mut Value) {
     match value {
         Value::Object(map) => {
             if map.get("kind").and_then(Value::as_str) == Some("objectNumber")
                 && !map.contains_key("objectNumber")
-                && let Some(number) =
-                    map.remove("pageObjectNumber").or_else(|| map.remove("annotObjectNumber"))
+                && let Some(number) = map
+                    .remove("pageObjectNumber")
+                    .or_else(|| map.remove("annotObjectNumber"))
+                    .or_else(|| map.remove("fieldObjectNumber"))
             {
                 map.insert("objectNumber".into(), number);
             }
@@ -1004,8 +1082,9 @@ fn to_wire_refs(value: &mut Value) {
 /// The host's ref spelling as the kernel reads it, the inverse of
 /// [`to_wire_refs`]: an `objectNumber` beside a `page` is an annotation
 /// ref's (`annotObjectNumber`), and one without is a `PageRef`'s
-/// (`pageObjectNumber`). That rule holds while the host answers form field
-/// refs as `fieldObjectNumber`; the sub-task that respells those changes it.
+/// (`pageObjectNumber`). Form field refs, which also have no `page`, are
+/// told apart by where they sit and respelled first
+/// ([`to_kernel_form_records`]).
 fn to_kernel_refs(value: &mut Value) {
     match value {
         Value::Object(map) => {
@@ -1019,6 +1098,99 @@ fn to_kernel_refs(value: &mut Value) {
             map.values_mut().for_each(to_kernel_refs);
         }
         Value::Array(items) => items.iter_mut().for_each(to_kernel_refs),
+        _ => {}
+    }
+}
+
+/// The host's form records as the kernel reads them, before
+/// [`to_kernel_refs`] respells the rest. Upstream's records (595bdc6c7,
+/// c3b90c3a4, bf7d4558e) differ from the kernel's in four ways, put back here until
+/// Task 13 ports the kernel:
+///
+/// - A form field ref is `{kind, fieldObjectNumber}`: a field record's
+///   `ref`, the ref under a `field` key (a signature's, a widget row's), and
+///   each slot of `calculationOrder` and of a reset's `refs`.
+/// - A field record (an object with a `family` and a `valueEntry`) carries
+///   `fieldObjectNumber` beside its ref, and its `/Ff` bits as `flags:
+///   {readOnly, required, noExport, raw}`. Upstream answers no raw word; it
+///   is rebuilt from the bits the record reports (its family's type bits,
+///   readOnly, required, noExport and the family's own flags), so a bit no
+///   record reports (`DoNotSpellCheck`, `Sort` and the like) reads clear.
+/// - A list box's record has no `defaultValue`: upstream's (bf7d4558e) is
+///   the option values a reset selects, where the kernel reads a text or
+///   combo box's string, so it is left out.
+/// - A field's widget (`FormWidget`, an object with `objectNumber` and
+///   `page` and no `kind`) names its number `annotObjectNumber`.
+fn to_kernel_form_records(value: &mut Value) {
+    fn field_ref(value: &mut Value) {
+        if let Value::Object(map) = value
+            && map.get("kind").and_then(Value::as_str) == Some("objectNumber")
+            && !map.contains_key("page")
+            && let Some(number) = map.remove("objectNumber")
+        {
+            map.insert("fieldObjectNumber".into(), number);
+        }
+    }
+    fn raw_flags(map: &Map<String, Value>) -> u64 {
+        let set = |key: &str| map.get(key).and_then(Value::as_bool) == Some(true);
+        let bit = |on: bool, at: u32| if on { 1u64 << at } else { 0 };
+        let family = map.get("family").and_then(Value::as_str).unwrap_or_default();
+        let mut raw = bit(set("readOnly"), 0) | bit(set("required"), 1) | bit(set("noExport"), 2);
+        raw |= match family {
+            "text" => bit(set("multiline"), 12) | bit(set("password"), 13) | bit(set("comb"), 24),
+            "radio" => {
+                bit(set("noToggleToOff"), 14) | bit(true, 15) | bit(set("radiosInUnison"), 25)
+            }
+            "pushbutton" => bit(true, 16),
+            "combobox" => bit(true, 17) | bit(set("edit"), 18),
+            "listbox" => bit(set("multiSelect"), 21),
+            _ => 0,
+        };
+        raw
+    }
+    match value {
+        Value::Object(map) => {
+            let is_field =
+                map.get("family").is_some_and(Value::is_string) && map.contains_key("valueEntry");
+            if is_field {
+                let number = map
+                    .get("ref")
+                    .filter(|r| r.get("kind").and_then(Value::as_str) == Some("objectNumber"))
+                    .and_then(|r| r.get("objectNumber"))
+                    .cloned()
+                    .unwrap_or(Value::from(0));
+                map.insert("fieldObjectNumber".into(), number);
+                let flags = serde_json::json!({
+                    "readOnly": map.get("readOnly").cloned().unwrap_or(Value::Bool(false)),
+                    "required": map.get("required").cloned().unwrap_or(Value::Bool(false)),
+                    "noExport": map.get("noExport").cloned().unwrap_or(Value::Bool(false)),
+                    "raw": raw_flags(map),
+                });
+                map.insert("flags".into(), flags);
+                if map.get("family").and_then(Value::as_str) == Some("listbox") {
+                    map.remove("defaultValue");
+                }
+                if let Some(reference) = map.get_mut("ref") {
+                    field_ref(reference);
+                }
+            }
+            if !map.contains_key("kind")
+                && map.contains_key("page")
+                && let Some(number) = map.remove("objectNumber")
+            {
+                map.insert("annotObjectNumber".into(), number);
+            }
+            if let Some(field) = map.get_mut("field") {
+                field_ref(field);
+            }
+            for key in ["calculationOrder", "refs"] {
+                if let Some(Value::Array(refs)) = map.get_mut(key) {
+                    refs.iter_mut().for_each(field_ref);
+                }
+            }
+            map.values_mut().for_each(to_kernel_form_records);
+        }
+        Value::Array(items) => items.iter_mut().for_each(to_kernel_form_records),
         _ => {}
     }
 }
@@ -1427,6 +1599,7 @@ fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
+    to_kernel_form_records(&mut envelope);
     to_kernel_refs(&mut envelope);
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");

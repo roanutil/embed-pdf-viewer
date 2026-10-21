@@ -27,9 +27,13 @@ use pdfium::{FieldActionEvent, FormField, FormModel};
 use serde::{Deserialize, Serialize};
 
 use crate::cancel::CancelToken;
+use crate::clock::pdf_date_to_iso;
 use crate::error::EngineError;
+use crate::features::actions::destination::PdfDestination;
 use crate::features::actions::reader::{ActionTree, read_action_model};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
+use crate::features::annotation::read::record::WidgetAnnotation;
+use crate::page_space::{Coordinates, PdfCoordinates};
 
 /// What kind of interactive form the document declares.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,33 +101,21 @@ pub enum FormFieldOrigin {
     Recovered,
 }
 
-/// How a field is addressed.
+/// How a field is addressed (`FormFieldRef`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum FormFieldRef {
+    /// The field dictionary's object number (595bdc6c7 folded
+    /// `fieldObjectNumber` into `objectNumber`).
     #[serde(rename = "objectNumber")]
     ObjectNumber {
-        #[serde(rename = "fieldObjectNumber")]
+        #[serde(rename = "objectNumber")]
         field: u32,
     },
     /// The fully qualified name, for a field the document stored as a direct
     /// object and which therefore has no object number.
     #[serde(rename = "fqn")]
     Fqn { name: String },
-}
-
-/// The `/Ff` bits every family shares.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FormFieldFlags {
-    /// The USER must not change the value. Programmatic writes are still
-    /// accepted, because a calculated field is read-only and script-written;
-    /// enforcing fill policy is the application's.
-    pub read_only: bool,
-    pub required: bool,
-    pub no_export: bool,
-    /// The raw word, for everything not surfaced.
-    pub raw: u32,
 }
 
 /// `/Ff` bit positions, ISO 32000 Tables 226, 228 and 230.
@@ -165,14 +157,33 @@ impl FormValueEntry {
             _ => String::new(),
         }
     }
+
+    /// The values the entry holds: a scalar is one, an array its members
+    /// (`entryValues`).
+    fn values(&self) -> Vec<String> {
+        match self {
+            Self::Scalar { value } => vec![value.clone()],
+            Self::Array { values } => values.clone(),
+            _ => Vec::new(),
+        }
+    }
+}
+
+/// A list box's top row: an option's position, the last one past the end
+/// (`topRowOf`).
+fn top_row_of(top_index: i32, option_count: usize) -> u32 {
+    let last = i64::try_from(option_count).unwrap_or(i64::MAX) - 1;
+    u32::try_from(i64::from(top_index).min(last).max(0)).unwrap_or(0)
 }
 
 /// Where a widget is.
 ///
 /// The raw facts the form model reports, `0` for a direct widget or an
 /// unplaced one. On the wire it is `FormWidget` (`formWidget()` in
-/// `core/src/identity/FormFieldRef.ts`): the page a `PageRef` or `null`, and
-/// the widget's annotation address computed beside them.
+/// `core/src/identity/FormFieldRef.ts`): `{ref, objectNumber, page}`, the
+/// page a `PageRef` or `null`, and the widget's annotation address computed
+/// beside them. Its place, look and state are its row in the snapshot's
+/// `widgets`, joined by `ref`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FormWidgetRef {
     pub annot_object_number: u32,
@@ -223,47 +234,104 @@ pub struct FormFieldOption {
     pub selected: bool,
 }
 
-/// A field's four JavaScript events.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FieldActions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub keystroke: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub format: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub validate: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub calculate: Option<ActionTree>,
+/// A field's four JavaScript events (`PdfFieldActions<D>`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", bound(deserialize = "D: Deserialize<'de>"))]
+pub struct FieldActions<D = PdfDestination> {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub keystroke: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub validate: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub calculate: Option<ActionTree<D>>,
 }
 
-impl FieldActions {
+impl<D> FieldActions<D> {
     fn is_empty(&self) -> bool {
-        *self == Self::default()
+        self.keystroke.is_none()
+            && self.format.is_none()
+            && self.validate.is_none()
+            && self.calculate.is_none()
+    }
+
+    /// The actions with every destination in them converted
+    /// (`mapFieldActions`).
+    pub fn try_map_destinations<E, Err>(
+        self,
+        convert: &mut impl FnMut(D) -> Result<E, Err>,
+    ) -> Result<FieldActions<E>, Err> {
+        let mut map = |tree: Option<ActionTree<D>>| {
+            tree.map(|tree| tree.try_map_destinations(&mut *convert)).transpose()
+        };
+        Ok(FieldActions {
+            keystroke: map(self.keystroke)?,
+            format: map(self.format)?,
+            validate: map(self.validate)?,
+            calculate: map(self.calculate)?,
+        })
     }
 }
 
-/// The trunk every family shares.
+/// The trunk every family shares (`FormFieldBase<C>`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FormFieldBase {
+#[serde(rename_all = "camelCase", bound = "")]
+pub struct FormFieldBase<C: Coordinates = PdfCoordinates> {
+    /// The field dictionary's object number, or its full name when the
+    /// dictionary is a direct object and has no number.
     #[serde(rename = "ref")]
     pub field_ref: FormFieldRef,
-    /// Zero for a direct, spec-violating field dictionary.
-    pub field_object_number: u32,
     /// The fully qualified name, such as `billing.name`.
     pub name: String,
     pub family: FormFieldFamily,
     pub origin: FormFieldOrigin,
-    pub flags: FormFieldFlags,
+    /// The USER must not change the value. Programmatic writes are still
+    /// accepted, because a calculated field is read-only and script-written;
+    /// enforcing fill policy is the application's.
+    pub read_only: bool,
+    pub required: bool,
+    pub no_export: bool,
     /// `/TU`, the tooltip.
     pub alternate_name: Option<String>,
     /// `/TM`, the name an export uses instead of the field's own.
     pub mapping_name: Option<String>,
     pub value_entry: FormValueEntry,
     pub default_value_entry: FormValueEntry,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub actions: Option<FieldActions>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actions: Option<FieldActions<C::Destination>>,
+    /// The group whose members fill the field in (`fields:` scopes grant
+    /// filling and signing by group); `None` in no group.
+    pub group_id: Option<String>,
+    #[serde(flatten)]
+    pub attribution: FieldAttribution,
+}
+
+impl<C: Coordinates> FormFieldBase<C> {
+    /// The field dictionary's object number; zero for a direct,
+    /// spec-violating field dictionary, which only a name addresses.
+    pub fn field_object_number(&self) -> u32 {
+        match self.field_ref {
+            FormFieldRef::ObjectNumber { field } => field,
+            FormFieldRef::Fqn { .. } => 0,
+        }
+    }
+}
+
+/// Who made a field and who last filled it in, from the field's own
+/// `/EMBD_Metadata` (`FieldAttribution`, `fieldAttribution.ts`). Each is
+/// `None` when nobody recorded it.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FieldAttribution {
+    pub created_by: Option<String>,
+    /// ISO 8601.
+    pub created_at: Option<String>,
+    pub filled_by: Option<String>,
+    pub filled_by_name: Option<String>,
+    /// ISO 8601.
+    pub filled_at: Option<String>,
+    pub imported_by: Option<String>,
 }
 
 /// The family-specific half.
@@ -310,8 +378,13 @@ pub enum FormFieldKind {
     Listbox {
         /// The selected options' export values, in option order.
         selected_values: Vec<String>,
+        /// `/DV`, the option values a reset selects.
+        default_value: Vec<String>,
         multi_select: bool,
         options: Vec<FormFieldOption>,
+        /// `/TI`, the option shown in the box's top row: its position in
+        /// `options`.
+        top_index: u32,
         widgets: Vec<FormWidgetRef>,
     },
     Pushbutton {
@@ -329,19 +402,21 @@ pub enum FormFieldKind {
     },
 }
 
-/// One field.
+/// One field (`FormFieldDTO<C>`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct FormFieldDto {
+#[serde(bound = "")]
+pub struct FormFieldDto<C: Coordinates = PdfCoordinates> {
     #[serde(flatten)]
-    pub base: FormFieldBase,
+    pub base: FormFieldBase<C>,
     #[serde(flatten)]
     pub kind: FormFieldKind,
 }
 
-/// The whole form.
+/// The form's fields as the model holds them, without the widget rows
+/// (`Omit<FormSnapshot, 'widgets'>`, what `readFormFields` answers).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FormSnapshot {
+pub struct FormFields {
     pub form_kind: FormKind,
     /// `/NeedAppearances`, which asks a viewer to draw the widgets itself.
     pub needs_appearances: bool,
@@ -351,11 +426,26 @@ pub struct FormSnapshot {
     pub calculation_order: Vec<Option<FormFieldRef>>,
 }
 
-/// Read a whole model.
-pub fn read_form_snapshot(
+/// The whole form (`FormSnapshot<C>`): the fields, and every widget the
+/// pages show with its place, look and state (1233d1349).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", bound = "")]
+pub struct FormSnapshot<C: Coordinates = PdfCoordinates> {
+    pub form_kind: FormKind,
+    pub needs_appearances: bool,
+    pub fields: Vec<FormFieldDto<C>>,
+    /// Every widget the document's pages show, in page order and `/Annots`
+    /// order within a page, each with its `field`. Join a field's widgets to
+    /// their rows by `ref`.
+    pub widgets: Vec<WidgetAnnotation<C>>,
+    pub calculation_order: Vec<Option<FormFieldRef>>,
+}
+
+/// Read a whole model's fields (`readFormFields`).
+pub fn read_form_fields(
     model: &FormModel<'_>,
     cancel: &CancelToken,
-) -> Result<FormSnapshot, EngineError> {
+) -> Result<FormFields, EngineError> {
     cancel.check()?;
     // One budget across the document, for the reason `pages.list` uses one:
     // PDFium's limits are per action model and a form with a script on every
@@ -381,7 +471,7 @@ pub fn read_form_snapshot(
         );
     }
 
-    Ok(FormSnapshot {
+    Ok(FormFields {
         form_kind: FormKind::from_code(model.form_kind()),
         needs_appearances: model.need_appearances(),
         fields,
@@ -409,7 +499,6 @@ pub fn read_field(
         } else {
             FormFieldRef::Fqn { name: name.clone() }
         },
-        field_object_number: object_number,
         name,
         family,
         origin: if field.origin_code() == 1 {
@@ -417,17 +506,16 @@ pub fn read_field(
         } else {
             FormFieldOrigin::Acroform
         },
-        flags: FormFieldFlags {
-            read_only: raw_flags & ff::READ_ONLY != 0,
-            required: raw_flags & ff::REQUIRED != 0,
-            no_export: raw_flags & ff::NO_EXPORT != 0,
-            raw: raw_flags,
-        },
+        read_only: raw_flags & ff::READ_ONLY != 0,
+        required: raw_flags & ff::REQUIRED != 0,
+        no_export: raw_flags & ff::NO_EXPORT != 0,
         alternate_name: text(field.alternate_name())?,
         mapping_name: text(field.mapping_name())?,
         value_entry,
         default_value_entry,
         actions: read_field_actions(model, index, budget)?,
+        group_id: read_field_group(field)?,
+        attribution: read_field_attribution(field)?,
     };
 
     let max_length = field.max_length();
@@ -481,7 +569,9 @@ pub fn read_field(
                     .filter(|o| o.selected)
                     .map(|o| o.value.clone())
                     .collect(),
+                default_value: base.default_value_entry.values(),
                 multi_select: raw_flags & ff::MULTI_SELECT != 0,
+                top_index: top_row_of(field.top_index(), options.len()),
                 options,
                 widgets: read_plain_widgets(field),
             }
@@ -570,6 +660,49 @@ fn read_options(field: &FormField<'_>) -> Result<Vec<FormFieldOption>, EngineErr
     Ok(options)
 }
 
+/// `/EMBD_Metadata` keys a field's attribution and group live under
+/// (`fieldAttribution.ts`).
+const KEY_GROUP_ID: &str = "GroupID";
+const KEY_CREATED_BY: &str = "CreatedBy";
+const KEY_CREATED_AT: &str = "CreatedAt";
+const KEY_FILLED_BY: &str = "FilledBy";
+const KEY_FILLED_BY_NAME: &str = "FilledByName";
+const KEY_FILLED_AT: &str = "FilledAt";
+const KEY_IMPORTED_BY: &str = "ImportedBy";
+
+/// One `/EMBD_Metadata` string of a field: an empty entry names nobody, as a
+/// missing one does.
+fn field_metadata(field: &FormField<'_>, key: &str) -> Result<Option<String>, EngineError> {
+    Ok(text(field.embed_metadata_string(key))?.filter(|value| !value.is_empty()))
+}
+
+/// The group a field belongs to; `None` in no group (`readFieldGroup`).
+fn read_field_group(field: &FormField<'_>) -> Result<Option<String>, EngineError> {
+    if !field.has_embed_metadata() {
+        return Ok(None);
+    }
+    field_metadata(field, KEY_GROUP_ID)
+}
+
+/// Who made the field and who last filled it in (`readFieldAttribution`),
+/// the dates as ISO 8601.
+fn read_field_attribution(field: &FormField<'_>) -> Result<FieldAttribution, EngineError> {
+    if !field.has_embed_metadata() {
+        return Ok(FieldAttribution::default());
+    }
+    let date = |key: &str| -> Result<Option<String>, EngineError> {
+        Ok(field_metadata(field, key)?.as_deref().and_then(pdf_date_to_iso))
+    };
+    Ok(FieldAttribution {
+        created_by: field_metadata(field, KEY_CREATED_BY)?,
+        created_at: date(KEY_CREATED_AT)?,
+        filled_by: field_metadata(field, KEY_FILLED_BY)?,
+        filled_by_name: field_metadata(field, KEY_FILLED_BY_NAME)?,
+        filled_at: date(KEY_FILLED_AT)?,
+        imported_by: field_metadata(field, KEY_IMPORTED_BY)?,
+    })
+}
+
 fn read_field_actions(
     model: &FormModel<'_>,
     index: u32,
@@ -606,7 +739,7 @@ pub(super) fn text(
     })
 }
 
-impl FormFieldDto {
+impl<C: Coordinates> FormFieldDto<C> {
     /// Every widget the field has, whatever its family.
     ///
     /// The families store them in two shapes: a toggle's widgets carry an
@@ -629,5 +762,42 @@ impl FormFieldDto {
             _ => &[],
         };
         plain.iter().chain(toggles.iter().map(|toggle| &toggle.widget))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_list_boxs_top_row_is_an_options_position_and_the_last_one_past_the_end() {
+        assert_eq!(top_row_of(0, 3), 0);
+        assert_eq!(top_row_of(2, 3), 2);
+        assert_eq!(top_row_of(7, 3), 2);
+        assert_eq!(top_row_of(-1, 3), 0);
+        assert_eq!(top_row_of(4, 0), 0);
+    }
+
+    #[test]
+    fn an_entry_holds_one_value_a_member_each_or_none() {
+        assert_eq!(FormValueEntry::Scalar { value: "a".into() }.values(), ["a"]);
+        assert_eq!(
+            FormValueEntry::Array { values: vec!["a".into(), "b".into()] }.values(),
+            ["a", "b"]
+        );
+        assert!(FormValueEntry::None.values().is_empty());
+        assert!(FormValueEntry::Unsupported.values().is_empty());
+    }
+
+    #[test]
+    fn a_field_ref_is_an_object_number_or_a_full_name() {
+        assert_eq!(
+            serde_json::to_value(FormFieldRef::ObjectNumber { field: 4 }).unwrap(),
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": 4 })
+        );
+        assert_eq!(
+            serde_json::to_value(FormFieldRef::Fqn { name: "a.b".into() }).unwrap(),
+            serde_json::json!({ "kind": "fqn", "name": "a.b" })
+        );
     }
 }

@@ -17,6 +17,7 @@ use super::identity::read_annotation_identity;
 use super::relationship::read_annotation_relationship;
 use crate::clock::pdf_date_to_iso;
 use crate::error::EngineError;
+use crate::features::actions::destination::PdfDestination;
 use crate::features::actions::reader::{ActionTree, read_action_model};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
 use crate::features::annotation::flags::AnnotationFlags;
@@ -27,36 +28,95 @@ use crate::revision::RevisionToken;
 
 /// `/A` and the ten `/AA` entries, with only the slots the annotation
 /// actually fills.
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotationActions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub activate: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cursor_enter: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub cursor_exit: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mouse_down: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mouse_up: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub focus: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blur: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page_open: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page_close: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page_visible: Option<ActionTree>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub page_invisible: Option<ActionTree>,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", bound(deserialize = "D: Deserialize<'de>"))]
+pub struct AnnotationActions<D = PdfDestination> {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub activate: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cursor_enter: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cursor_exit: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mouse_down: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mouse_up: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub focus: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub blur: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_open: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_close: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_visible: Option<ActionTree<D>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page_invisible: Option<ActionTree<D>>,
 }
 
-impl AnnotationActions {
+impl<D> Default for AnnotationActions<D> {
+    fn default() -> Self {
+        Self {
+            activate: None,
+            cursor_enter: None,
+            cursor_exit: None,
+            mouse_down: None,
+            mouse_up: None,
+            focus: None,
+            blur: None,
+            page_open: None,
+            page_close: None,
+            page_visible: None,
+            page_invisible: None,
+        }
+    }
+}
+
+impl<D> AnnotationActions<D> {
     fn is_empty(&self) -> bool {
-        *self == Self::default()
+        [
+            self.activate.is_none(),
+            self.cursor_enter.is_none(),
+            self.cursor_exit.is_none(),
+            self.mouse_down.is_none(),
+            self.mouse_up.is_none(),
+            self.focus.is_none(),
+            self.blur.is_none(),
+            self.page_open.is_none(),
+            self.page_close.is_none(),
+            self.page_visible.is_none(),
+            self.page_invisible.is_none(),
+        ]
+        .iter()
+        .all(|none| *none)
+    }
+
+    /// The actions with every destination in them converted
+    /// (`mapTriggerActions`).
+    pub fn try_map_destinations<E, Err>(
+        self,
+        convert: &mut impl FnMut(D) -> Result<E, Err>,
+    ) -> Result<AnnotationActions<E>, Err> {
+        fn map<D, E, Err>(
+            tree: Option<ActionTree<D>>,
+            convert: &mut impl FnMut(D) -> Result<E, Err>,
+        ) -> Result<Option<ActionTree<E>>, Err> {
+            tree.map(|tree| tree.try_map_destinations(convert)).transpose()
+        }
+        Ok(AnnotationActions {
+            activate: map(self.activate, convert)?,
+            cursor_enter: map(self.cursor_enter, convert)?,
+            cursor_exit: map(self.cursor_exit, convert)?,
+            mouse_down: map(self.mouse_down, convert)?,
+            mouse_up: map(self.mouse_up, convert)?,
+            focus: map(self.focus, convert)?,
+            blur: map(self.blur, convert)?,
+            page_open: map(self.page_open, convert)?,
+            page_close: map(self.page_close, convert)?,
+            page_visible: map(self.page_visible, convert)?,
+            page_invisible: map(self.page_invisible, convert)?,
+        })
     }
 }
 
@@ -163,7 +223,7 @@ pub fn read_annotation_base(
 }
 
 /// The eleven slots, with the whole struct dropped when every one is empty.
-fn read_annotation_actions(
+pub(crate) fn read_annotation_actions(
     document: &Document,
     annotation: &Annotation<'_>,
     budget: &mut ActionReadBudgetTracker,

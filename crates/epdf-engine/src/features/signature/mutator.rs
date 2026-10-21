@@ -736,7 +736,7 @@ pub fn set_signature_appearance(
                 ),
             ));
         }
-        let field_object_number = before.base.field_object_number;
+        let field_object_number = before.base.field_object_number();
         let signed = with_signature_model(doc, |model| {
             Ok(read_signatures_from_model(model)?
                 .iter()

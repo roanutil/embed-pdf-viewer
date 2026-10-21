@@ -52,7 +52,7 @@ fn an_unsigned_field_lists_unsigned() {
     assert_eq!(s["signed"], json!(false));
     assert_eq!(s["coverage"], Value::Null);
     assert_eq!(s["byteRange"], Value::Null);
-    assert!(s["widget"]["annotObjectNumber"].as_u64().unwrap() > 0, "{s}");
+    assert!(s["widget"]["objectNumber"].as_u64().unwrap() > 0, "{s}");
     assert_eq!(s["widget"]["page"]["kind"], json!("objectNumber"));
     assert_eq!(snapshot["protection"]["judged"], Value::Null);
 }

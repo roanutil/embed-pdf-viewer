@@ -33,7 +33,7 @@ fn seal() -> Sealed {
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
     let listed = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let field = listed["signatures"][0]["field"].clone();
-    let field_object_number = field["fieldObjectNumber"].as_u64().expect("an object-number field");
+    let field_object_number = field["objectNumber"].as_u64().expect("an object-number field");
     let (prepared, _) = sig_call_bytes_with(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc,

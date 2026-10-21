@@ -11,7 +11,7 @@ use pdfium::{Document, SignatureModel, field_list, string_key};
 
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_snapshot};
+use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_fields};
 use crate::session::document::{DocumentSession, OpenKind};
 
 use super::analysis::types::{RevisionField, RevisionStructure};
@@ -433,14 +433,16 @@ pub fn read_structure(doc: &Document) -> Result<RevisionStructure, EngineError> 
     let pages = (0..doc.page_count()).map(|i| doc.page_object_number_by_index(i)).collect();
     let mut fields = Vec::new();
     if let Some(model) = doc.form_model() {
-        let snapshot = read_form_snapshot(&model, &CancelToken::never())?;
-        for f in snapshot.fields {
+        let snapshot = read_form_fields(&model, &CancelToken::never())?;
+        // The snapshot lists the model's fields in model order; the raw
+        // `/Ff` word is the model's, as `readStructure` reads it.
+        for (index, f) in (0u32..).zip(snapshot.fields) {
             fields.push(RevisionField {
-                object_number: f.base.field_object_number,
+                object_number: f.base.field_object_number(),
                 name: f.base.name,
                 family: f.base.family,
                 widgets: widget_refs(&f.kind).into_iter().map(|(annot, _)| annot).collect(),
-                flags: Some(f.base.flags.raw),
+                flags: model.field(index).map(|field| field.flags()),
             });
         }
     }

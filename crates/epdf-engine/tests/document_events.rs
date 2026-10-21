@@ -296,7 +296,7 @@ fn attachment_writes_publish_the_typescript_events() {
 fn an_effects_batch_publishes_form_effects_applied() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
-    let effect = json!({ "kind": "setValue", "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 },
+    let effect = json!({ "kind": "setValue", "ref": { "kind": "objectNumber", "objectNumber": 4 },
                          "value": { "type": "text", "value": "Ada" } });
     // Removed upstream; owner 8.20 (`document.apply`).
     let applied = call_legacy(
@@ -467,7 +467,7 @@ fn every_form_write_carries_meta() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, FORMS);
     let mut last = 0;
-    let text = json!({ "kind": "objectNumber", "fieldObjectNumber": 4 });
+    let text = json!({ "kind": "objectNumber", "objectNumber": 4 });
 
     let set = form_write(
         &mut host,
@@ -524,9 +524,9 @@ fn every_form_write_carries_meta() {
         Vec::new(),
         "form.fieldUpdated",
     );
-    assert_eq!(updated["result"]["field"]["fieldObjectNumber"], json!(4), "{updated}");
+    assert_eq!(updated["result"]["field"]["ref"]["objectNumber"], json!(4), "{updated}");
 
-    let radio = json!({ "kind": "objectNumber", "fieldObjectNumber": 9 });
+    let radio = json!({ "kind": "objectNumber", "objectNumber": 9 });
     let widget = |annot: u64| json!({ "kind": "objectNumber", "page": page_ref(3u64), "objectNumber": annot });
     let detached = form_write(
         &mut host,
@@ -561,13 +561,13 @@ fn a_field_delete_removes_its_widgets_and_names_them() {
         &mut host,
         &mut last,
         json!({ "kind": "forms.deleteField", "docId": doc,
-                "ref": { "kind": "objectNumber", "fieldObjectNumber": 9 } }),
+                "ref": { "kind": "objectNumber", "objectNumber": 9 } }),
         Vec::new(),
         "form.fieldDeleted",
     );
     assert_eq!(deleted["result"]["deletedFieldObjectNumber"], json!(9), "{deleted}");
     let removed = deleted["result"]["removedWidgets"].as_array().expect("removedWidgets");
-    let removed: Vec<_> = removed.iter().map(|w| w["annotObjectNumber"].clone()).collect();
+    let removed: Vec<_> = removed.iter().map(|w| w["objectNumber"].clone()).collect();
     assert_eq!(removed, vec![json!(7), json!(8)], "{deleted}");
     assert!(deleted["result"].get("detachedWidgets").is_none(), "{deleted}");
     // `FormMutator.deleteField`'s bump and the one after the cascade: the

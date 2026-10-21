@@ -86,6 +86,11 @@ struct Case {
     refused_with: Option<String>,
     #[serde(default)]
     field: Option<serde_json::Value>,
+    /// The wire request the TypeScript sent. Its `ref` is in the wire's
+    /// spelling (`objectNumber`, 595bdc6c7); the case's own `ref` keeps the
+    /// generator's older `fieldObjectNumber`.
+    #[serde(default)]
+    request: Option<serde_json::Value>,
     #[serde(default)]
     changed_widgets: Vec<serde_json::Value>,
 }
@@ -98,6 +103,15 @@ fn load() -> VectorFile {
     assert_eq!(file.schema_version, SCHEMA_VERSION, "vector envelope moved");
     assert_eq!(file.kind, "forms.write");
     file
+}
+
+/// The case's field ref as the wire spells it: its recorded request's.
+fn wire_ref(case: &Case) -> serde_json::Value {
+    case.request
+        .as_ref()
+        .and_then(|request| request.get("ref"))
+        .cloned()
+        .unwrap_or_else(|| case.reference.clone())
 }
 
 /// Run one case against a fresh copy of the fixture.
@@ -116,7 +130,7 @@ fn run(
     session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
     let owned = session.document().expect("open");
 
-    let reference: FormFieldRef = serde_json::from_value(case.reference.clone())
+    let reference: FormFieldRef = serde_json::from_value(wire_ref(case))
         .unwrap_or_else(|e| panic!("{}: the ref does not decode: {e}", case.name));
     match &case.value {
         Some(value) => {
@@ -265,8 +279,7 @@ fn a_refused_write_leaves_the_field_alone() {
     let mut session = DocumentSession::new();
     session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
     let owned = session.document().expect("open");
-    let reference: FormFieldRef =
-        serde_json::from_value(case.reference.clone()).expect("the ref decodes");
+    let reference: FormFieldRef = serde_json::from_value(wire_ref(case)).expect("the ref decodes");
     let value: FormFieldValue =
         serde_json::from_value(case.value.clone().expect("a value")).expect("the value decodes");
 
@@ -280,7 +293,7 @@ fn a_refused_write_leaves_the_field_alone() {
 fn read_value(document: &pdfium::Document, reference: &FormFieldRef) -> serde_json::Value {
     let model = document.form_model().expect("a form model");
     let snapshot =
-        epdf_engine::features::forms::snapshot::read_form_snapshot(&model, &CancelToken::never())
+        epdf_engine::features::forms::snapshot::read_form_fields(&model, &CancelToken::never())
             .expect("the form lists");
     let field = snapshot
         .fields

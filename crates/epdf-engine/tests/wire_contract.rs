@@ -633,7 +633,7 @@ fn a_widget_link_names_its_widget_by_annotation_ref() {
     // `baseIndex` cannot join a field, as `FormMutator` refuses it: the
     // field tree holds widgets by reference.
     let mut host = open();
-    let field = serde_json::json!({ "kind": "objectNumber", "fieldObjectNumber": 1 });
+    let field = serde_json::json!({ "kind": "objectNumber", "objectNumber": 1 });
     let bare = send(
         &mut host,
         serde_json::json!({ "kind": "forms.detachWidget", "ref": field, "widget": 9 }),

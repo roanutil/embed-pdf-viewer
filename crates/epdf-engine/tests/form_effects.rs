@@ -135,7 +135,7 @@ fn every_effects_batch_agrees_with_the_oracle() {
             );
             for (field, expected_field) in got.fields.iter().zip(want_fields) {
                 assert_eq!(
-                    field.base.field_object_number,
+                    field.base.field_object_number(),
                     expected_field["fieldObjectNumber"].as_u64().expect("number") as u32,
                     "{name}: effect {at} read back a different field",
                 );
@@ -183,7 +183,7 @@ fn a_cancelled_batch_is_aborted_rather_than_half_reported() {
     // which is the opposite of what happened.
     let session = open();
     let effects: Vec<FormEffect> = serde_json::from_value(serde_json::json!([
-        { "kind": "setValue", "ref": { "kind": "objectNumber", "fieldObjectNumber": 4 },
+        { "kind": "setValue", "ref": { "kind": "objectNumber", "objectNumber": 4 },
           "value": { "type": "text", "value": "Ada" } }
     ]))
     .expect("the effects decode");

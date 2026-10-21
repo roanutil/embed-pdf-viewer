@@ -17,9 +17,11 @@
 //! # What is here
 //!
 //! [`snapshot`], the read: the detached field tree, its values and its
-//! widgets. The export and the writes are not ported.
+//! widgets. [`widgets`], the form as `forms.list` answers it: the fields and
+//! every widget's row.
 
 pub mod effects;
 pub mod field;
 pub mod snapshot;
+pub mod widgets;
 pub mod write;

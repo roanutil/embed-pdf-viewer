@@ -459,7 +459,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Filed by behaviour: a read despite the forms. prefix. Builds the widget rows (forms/internal/widgetRows.ts) and joins each to its field through the cached form model (joinWidgetField.ts, acquireFormModel), so it carries the repeated-read benchmark against that cache that annotations.listFullPage carried.',
+    note: "Filed by behaviour: a read despite the forms. prefix. Answers FormSnapshot: the fields in upstream's shape (ref by objectNumber, the /Ff bits as readOnly, required and noExport, groupId and attribution from the field's /EMBD_Metadata) and every widget row the pages' /Annots hold, each joined to its field (widgetRows.ts, joinWidgetField.ts). The reader answers the file's coordinates and the host boundary converts them (pageFormSnapshotOf). Upstream joins through its cached form model (acquireFormModel) and carries the repeated-read benchmark annotations.listFullPage carried; the Rust host has no form model cache and builds one model per read. Gated by vectors/forms/snapshot.json through crates/epdf-engine/tests/form_reader.rs.",
   },
   {
     kind: 'forms.export',
