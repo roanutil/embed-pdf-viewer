@@ -551,7 +551,12 @@ impl Host {
             Some(kind) => {
                 let mut box_of =
                     crate::page_space::boundary::session_boxes(&self.sessions, key, &header.kind);
-                crate::page_space::boundary::result_in_page_space(kind, response, &mut box_of)
+                crate::page_space::boundary::result_in_page_space(
+                    kind,
+                    &body,
+                    response,
+                    &mut box_of,
+                )
             }
             None => Ok(response),
         }

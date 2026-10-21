@@ -98,7 +98,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 0,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Gated by tooling/engine-conformance/vectors/pages.geometry and crates/epdf-engine/tests/geometry_corpus.rs.',
+    note: 'Answers PageGeometrySnapshot in page space: the reader answers the file\'s coordinates (runs with start, loose/tight boxes or quads, space/empty, rotation in degrees clockwise) and the host boundary converts them (pageGeometryOf). The C ABI export epdf_page_geometry answers the file\'s coordinates, which RustPageGeometryReader.ts reads as PageGeometrySnapshot<PdfCoordinates>. Gated by tooling/engine-conformance/vectors/pages.geometry through Host::call in crates/epdf-engine/tests/geometry_corpus.rs, and crates/epdf-wasm/tests/borrowed_page.rs.',
   },
 
   // --- G3. Session core and security. Native-only owner until the G3w
@@ -282,7 +282,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Already coarse (PageTextReader.ts:93). Gate on correctness, not on the boundary.',
+    note: 'Already coarse (PageTextReader.ts:93). Gate on correctness, not on the boundary. Answers PageTextSnapshot, which holds no places, so the boundary passes it through. Gated by vectors/pages.text in crates/epdf-engine/tests/text_corpus.rs.',
   },
   {
     kind: 'search.query',

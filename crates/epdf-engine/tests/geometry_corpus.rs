@@ -11,26 +11,59 @@
 //! Regenerate the vectors, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run vectors
 //!
+//! The vectors are page space, as the TypeScript engine's API answers, so
+//! each page is read through [`Host::call`]: the reader answers the file's
+//! coordinates and the host boundary turns them into page space
+//! (`pageGeometryOf`), which is the path the wire takes.
+//!
 //! Both sides compare quantized units rather than floats: the oracle reads
 //! PDFium compiled to WASM and this reads the same fork compiled natively, and
 //! the corpus is not the place to litigate the last bit of an f32. See
 //! `test_support::corpus`.
 
-use epdf_engine::access::{DocumentAccess, OwnedDocument};
-use epdf_engine::cancel::CancelToken;
-use epdf_engine::features::geometry::read_page_geometry;
-use epdf_engine::identity::PageObjectNumber;
+use epdf_engine::host::Host;
 use pdfium::{Document, Library};
+use serde_json::{Value, json};
 use test_support::corpus;
 
 const OPERATION: &str = "pages.geometry";
+const DOC_ID: &str = "corpus";
 
-fn open(case: &corpus::VectorFile) -> OwnedDocument {
-    let library = Library::acquire();
-    let bytes = test_support::fixture(&case.fixture);
-    let document = Document::from_bytes(library, &bytes, case.password.as_deref())
-        .unwrap_or_else(|e| panic!("{}: open {}: {e}", case.case_name, case.fixture));
-    OwnedDocument::new(document).unwrap_or_else(|e| panic!("{}: index pages: {e}", case.case_name))
+/// A host with the case's fixture open as [`DOC_ID`].
+fn open(case: &corpus::VectorFile) -> Host {
+    let mut host = Host::new();
+    let response = host.call(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC_ID,
+            "password": case.password })
+        .to_string(),
+        vec![test_support::fixture(&case.fixture)],
+    );
+    let envelope: Value = serde_json::from_str(&response.json).expect("the open answers JSON");
+    assert!(
+        envelope.get("error").is_none(),
+        "{}: open {}: {envelope}",
+        case.case_name,
+        case.fixture
+    );
+    host
+}
+
+/// One page's geometry as the wire answers it: its `result` or its `error`.
+fn geometry(host: &mut Host, job_id: u64, page_object_number: u32) -> Result<Value, Value> {
+    let request = json!({
+        "kind": "pages.geometry",
+        "effect": "read",
+        "jobId": job_id,
+        "docId": DOC_ID,
+        "page": { "kind": "objectNumber", "objectNumber": page_object_number },
+    });
+    let mut envelope: Value =
+        serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json)
+            .expect("every response is JSON");
+    match envelope.get_mut("error") {
+        Some(error) => Err(error.take()),
+        None => Ok(envelope.get_mut("result").map(Value::take).unwrap_or(Value::Null)),
+    }
 }
 
 /// Every glyph of every corpus page matches the TypeScript reader's snapshot.
@@ -48,14 +81,20 @@ fn every_corpus_page_matches_the_typescript_reader() {
     let mut failures: Vec<String> = Vec::new();
 
     for case in &cases {
-        let document = open(case);
-        for page_vector in &case.pages {
+        let mut host = open(case);
+        let document = Document::from_bytes(
+            Library::acquire(),
+            &test_support::fixture(&case.fixture),
+            case.password.as_deref(),
+        )
+        .unwrap_or_else(|e| panic!("{}: open {}: {e}", case.case_name, case.fixture));
+        for (job, page_vector) in case.pages.iter().enumerate() {
             let expected = corpus::quantized(&page_vector.snapshot);
 
             // Page identity first. If the two implementations disagree about
             // which object number sits at an index, comparing their geometry
             // compares two different pages and passes for the wrong reason.
-            let at_index = match document.document().page(page_vector.index) {
+            let at_index = match document.page(page_vector.index) {
                 Ok(page) => page.object_number(),
                 Err(e) => {
                     failures.push(format!(
@@ -73,33 +112,25 @@ fn every_corpus_page_matches_the_typescript_reader() {
                 continue;
             }
 
-            let number = PageObjectNumber::new(page_vector.page_object_number)
-                .expect("the corpus never carries a direct page object");
-            let page = match document.page(number) {
-                Ok(page) => page,
-                Err(e) => {
-                    failures.push(format!(
-                        "{} page {}: page by object number: {e}",
-                        case.case_name, page_vector.index
-                    ));
-                    continue;
-                }
-            };
-
-            let snapshot = match read_page_geometry(&page, &CancelToken::never()) {
+            let snapshot = match geometry(&mut host, job as u64 + 2, page_vector.page_object_number)
+            {
                 Ok(snapshot) => snapshot,
                 Err(e) => {
                     failures.push(format!(
-                        "{} page {}: read_page_geometry: {e}",
+                        "{} page {}: pages.geometry: {e}",
                         case.case_name, page_vector.index
                     ));
                     continue;
                 }
             };
-            compared_glyphs += snapshot.runs.iter().map(|run| run.glyph_count()).sum::<usize>();
+            compared_glyphs += snapshot["runs"]
+                .as_array()
+                .map(|runs| runs.iter().map(|run| run["glyphs"].as_array().map_or(0, Vec::len)))
+                .into_iter()
+                .flatten()
+                .sum::<usize>();
 
-            let actual =
-                corpus::quantized(&serde_json::to_value(&snapshot).expect("snapshot serializes"));
+            let actual = corpus::quantized(&snapshot);
             if let Some(difference) = corpus::first_difference(&expected, &actual) {
                 failures.push(format!(
                     "{} page {} ({}): {difference}",
@@ -137,15 +168,15 @@ fn the_corpus_exercises_both_run_variants_and_empty_glyphs() {
             for run in page.snapshot["runs"].as_array().expect("runs is an array") {
                 if run.get("rotation").is_some() {
                     rotated += 1;
-                    if run["ascentFlip"] == serde_json::Value::Bool(true) {
+                    if run["ascentFlip"] == Value::Bool(true) {
                         ascent_flipped += 1;
                     }
                 } else {
                     upright += 1;
                 }
                 for glyph in run["glyphs"].as_array().expect("glyphs is an array") {
-                    // Bit 2 is the empty flag; see GLYPH_FLAG_EMPTY.
-                    if glyph["flags"].as_u64().expect("flags is a number") & 2 != 0 {
+                    // `empty` is on the wire only when it holds.
+                    if glyph.get("empty") == Some(&Value::Bool(true)) {
                         empty_glyphs += 1;
                     }
                 }

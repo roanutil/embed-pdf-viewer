@@ -588,21 +588,24 @@ mod metadata {
 /// space (Task 8.4's boundary, `epdf_engine::page_space`).
 ///
 /// The kernel still reads and sends PDF space: a page list's boxes, a
-/// destination, a render target. The host now answers and takes page space,
-/// as upstream's worker does. [`call_host`] converts a render target on the
-/// way out and a page list's or the catalog actions' places on the way back,
-/// reading each page's visible box from the host's session (a page list
-/// carries its own), so the kernel keeps its space until Task 13 ports it.
-/// Dead then.
+/// destination, a render target, a page's text geometry. The host now
+/// answers and takes page space, as upstream's worker does. [`call_host`]
+/// converts a render target on the way out and a page list's, the catalog
+/// actions' or the text geometry's places on the way back, reading each
+/// page's visible box from the host's session (a page list carries its own),
+/// so the kernel keeps its space until Task 13 ports it. Dead then.
 mod page_space {
     use epdf_engine::error::EngineError;
     use epdf_engine::features::actions::document::DocumentActionsSnapshot;
+    use epdf_engine::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
     use epdf_engine::features::pages::{PageLayout, PageListSnapshot};
-    use epdf_engine::geom::{PageBoxes, PdfRect, normalize_pdf_rect};
+    use epdf_engine::geom::{PageBoxes, PageQuad, PageRect, PdfRect, normalize_pdf_rect};
     use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::PageObjectNumber;
+    use epdf_engine::identity::{PageObjectNumber, PageRef};
     use epdf_engine::page_space::destinations::{PageDestination, pdf_destination_of};
-    use epdf_engine::page_space::{PageCoordinates, PdfCoordinates, page_rect_of, pdf_rect_of};
+    use epdf_engine::page_space::{
+        PageCoordinates, PdfCoordinates, page_rect_of, pdf_quad_of, pdf_rect_of,
+    };
     use epdf_engine::session::registry::SessionKey;
     use serde_json::Value;
     use std::collections::HashMap;
@@ -671,15 +674,16 @@ mod page_space {
     }
 
     /// The host's page-space answer as the kernel reads it: `pages.list`'s
-    /// boxes and page actions, and `actions.read`'s destinations, in the
-    /// file's coordinates. Every other answer goes as it came.
+    /// boxes and page actions, `actions.read`'s destinations, and
+    /// `pages.geometry`'s runs, in the file's coordinates. Every other answer
+    /// goes as it came.
     pub(super) fn answer_to_file_space(
         host: &Host,
         kind: &str,
         request: &Value,
         response: HostResponse,
     ) -> HostResponse {
-        if kind != "pages.list" && kind != "actions.read" {
+        if kind != "pages.list" && kind != "actions.read" && kind != "pages.geometry" {
             return response;
         }
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
@@ -688,7 +692,20 @@ mod page_space {
         let Some(result) = envelope.get_mut("result").filter(|r| r.is_object()) else {
             return response;
         };
-        let converted = if kind == "pages.list" {
+        let converted = if kind == "pages.geometry" {
+            serde_json::from_value::<PageGeometrySnapshot<PageCoordinates>>(result.take())
+                .map_err(|e| e.to_string())
+                .and_then(|snapshot| {
+                    let page = request
+                        .get("page")
+                        .cloned()
+                        .and_then(|page| serde_json::from_value::<PageRef>(page).ok())
+                        .ok_or("the request names no page")?;
+                    let visible = visible_boxes(host, request)(page.object_number())
+                        .map_err(|e| e.message)?;
+                    Ok(kernel_geometry_of(snapshot, visible))
+                })
+        } else if kind == "pages.list" {
             serde_json::from_value::<PageListSnapshot<PageCoordinates>>(result.take())
                 .map_err(|e| e.to_string())
                 .and_then(|list| page_list_in_file_space(list).map_err(|e| e.message))
@@ -718,6 +735,80 @@ mod page_space {
             } }),
         };
         HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    /// A page's text geometry as the kernel's selection reads it: the file's
+    /// coordinates, and the spelling the wire had before upstream's a10ed2659
+    /// and 6153c181e (`charStart`, `looseBox`/`tightBox` or
+    /// `looseQuad`/`tightQuad` with corners `p1` to `p4`, flag bits, and a
+    /// rotated run's baseline angle in radians counter-clockwise). A glyph or
+    /// run with no box keeps the zeroed one.
+    fn kernel_geometry_of(
+        snapshot: PageGeometrySnapshot<PageCoordinates>,
+        visible: PdfRect,
+    ) -> Value {
+        const ZERO: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
+        let rect = |b: PageRect, empty: bool| if empty { ZERO } else { pdf_rect_of(b, visible) };
+        let quad = |q: PageQuad, empty: bool| {
+            if empty {
+                let zero = serde_json::json!({ "x": 0.0, "y": 0.0 });
+                return serde_json::json!({ "p1": zero, "p2": zero, "p3": zero, "p4": zero });
+            }
+            let q = pdf_quad_of(q, visible);
+            serde_json::json!({ "p1": q.p1, "p2": q.p2, "p3": q.p3, "p4": q.p4 })
+        };
+        let flags = |space: bool, empty: bool| u32::from(space) | (u32::from(empty) << 1);
+        let runs = snapshot
+            .runs
+            .into_iter()
+            .map(|run| {
+                let run_rect = rect(run.rect(), !run.has_box());
+                let font_size = run.font_size();
+                let mut out = match run {
+                    PageGeometryRun::Upright { start, glyphs, .. } => serde_json::json!({
+                        "rect": run_rect,
+                        "charStart": start,
+                        "glyphs": glyphs.into_iter().map(|g| {
+                            let mut glyph = serde_json::json!({
+                                "looseBox": rect(g.loose, g.empty),
+                                "flags": flags(g.space, g.empty),
+                            });
+                            if let Some(tight) = g.tight {
+                                glyph["tightBox"] = serde_json::json!(rect(tight, false));
+                            }
+                            glyph
+                        }).collect::<Vec<_>>(),
+                    }),
+                    PageGeometryRun::Rotated { start, glyphs, rotation, ascent_flip, .. } => {
+                        let mut radians = -rotation.to_radians();
+                        if radians <= -std::f64::consts::PI {
+                            radians += 2.0 * std::f64::consts::PI;
+                        }
+                        serde_json::json!({
+                            "rect": run_rect,
+                            "charStart": start,
+                            "glyphs": glyphs.into_iter().map(|g| {
+                                let mut glyph = serde_json::json!({
+                                    "looseQuad": quad(g.loose, g.empty),
+                                    "flags": flags(g.space, g.empty),
+                                });
+                                if let Some(tight) = g.tight {
+                                    glyph["tightQuad"] = quad(tight, false);
+                                }
+                                glyph
+                            }).collect::<Vec<_>>(),
+                            "rotation": radians,
+                            "ascentFlip": ascent_flip,
+                        })
+                    }
+                };
+                if let Some(size) = font_size {
+                    out["fontSize"] = serde_json::json!(size);
+                }
+                out
+            })
+            .collect::<Vec<_>>();
+        serde_json::json!({ "runs": runs })
     }
 
     fn page_list_in_file_space(

@@ -1691,3 +1691,73 @@ fn a_kernel_tile_after_a_page_insert_is_measured_on_its_page_as_it_now_sits() {
 
     assert_eq!(render(&mut host, 4), before, "page 3 moved to index 1 and kept its box");
 }
+
+#[test]
+fn a_pages_text_geometry_reaches_the_kernel_in_the_files_coordinates_and_its_spelling() {
+    // The host answers page space with upstream's names (Task 8.9);
+    // `call_host` turns it back into what the kernel's selection decodes
+    // until Task 13 ports it.
+    use epdf_plugin_selection::text_layout::{PageGeometryRun, PageGeometrySnapshot};
+    use epdf_viewer_host::translate::call_host;
+
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let opened = call_host(
+        &mut host,
+        &open.to_string(),
+        vec![test_support::fixture(test_support::ROTATED_TEXT)],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let list = json!({ "kind": "pages.list", "jobId": 2, "docId": "d1" });
+    let pages: Value =
+        serde_json::from_str(&host.call(&list.to_string(), Vec::new()).json).unwrap();
+    let first = &pages["result"]["pages"][0];
+    let pon = first["ref"]["objectNumber"].as_u64().expect("a first page") as u32;
+    let visible_top = first["pdfCropBox"]["top"].as_f64().expect("a crop box");
+
+    let wire = json!({ "kind": "pages.geometry", "jobId": 3, "docId": "d1",
+        "page": { "kind": "objectNumber", "objectNumber": pon } });
+    let in_page: Value =
+        serde_json::from_str(&host.call(&wire.to_string(), Vec::new()).json).unwrap();
+    let in_page = &in_page["result"];
+
+    let call = translate("d1", "page.geometry.read", Some(pon), &[], 4).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let kernel = decode(&call.decode, response).unwrap().value;
+    let snapshot: PageGeometrySnapshot =
+        serde_json::from_value(kernel.clone()).expect("the selection plugin decodes it");
+
+    assert_eq!(snapshot.runs.len(), in_page["runs"].as_array().unwrap().len());
+    let mut rotated = 0;
+    for (run, page_run) in snapshot.runs.iter().zip(in_page["runs"].as_array().unwrap()) {
+        match run {
+            PageGeometryRun::Upright(run) => {
+                assert_eq!(run.char_start as u64, page_run["start"].as_u64().unwrap());
+                if page_run["rect"] == json!({ "x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0 }) {
+                    // A run with no box keeps the zeroed box, not the page's
+                    // corner.
+                    assert_eq!(run.rect.top, 0.0);
+                    assert_eq!(run.rect.left, 0.0);
+                } else {
+                    // y-up again: the top edge is the visible top less the
+                    // page-space y.
+                    let y = page_run["rect"]["y"].as_f64().unwrap();
+                    assert!((run.rect.top - (visible_top - y)).abs() < 1e-9);
+                }
+            }
+            PageGeometryRun::Rotated(run) => {
+                rotated += 1;
+                assert_eq!(run.char_start as u64, page_run["start"].as_u64().unwrap());
+                // Radians counter-clockwise, (-π, π], from degrees clockwise.
+                let degrees = page_run["rotation"].as_f64().unwrap();
+                assert!(
+                    run.rotation > -std::f64::consts::PI && run.rotation <= std::f64::consts::PI
+                );
+                let back = (-run.rotation.to_degrees()).rem_euclid(360.0);
+                assert!((back - degrees).abs() < 1e-9 || (back - degrees).abs() > 360.0 - 1e-9);
+            }
+        }
+    }
+    assert!(rotated > 0, "rotated_text.pdf has turned runs");
+    assert!(kernel["runs"][0].get("charStart").is_some(), "{}", kernel["runs"][0]);
+}

@@ -20,7 +20,7 @@
 //! same number.
 
 use crate::error::EngineError;
-use crate::geom::{PagePoint, PageQuad, PageRect, PdfPoint, PdfQuad, PdfRect};
+use crate::geom::{NamedPdfQuad, PagePoint, PageQuad, PageRect, PdfPoint, PdfQuad, PdfRect};
 use crate::identity::PageObjectNumber;
 
 pub mod boundary;
@@ -28,6 +28,7 @@ pub mod destinations;
 pub mod helpers;
 pub mod pages;
 pub mod rendering;
+pub mod text;
 
 /// The types a value's positions take, for a type that exists in both spaces
 /// (`Coordinates`): the file's coordinates ([`PdfCoordinates`]) or page space
@@ -35,6 +36,13 @@ pub mod rendering;
 pub trait Coordinates: std::fmt::Debug + Clone + Copy + PartialEq + 'static {
     /// A box: [`PdfRect`] or [`PageRect`].
     type Rect: std::fmt::Debug
+        + Clone
+        + Copy
+        + PartialEq
+        + serde::Serialize
+        + serde::de::DeserializeOwned;
+    /// A quad: [`NamedPdfQuad`] or [`PageQuad`].
+    type Quad: std::fmt::Debug
         + Clone
         + Copy
         + PartialEq
@@ -56,6 +64,7 @@ pub struct PdfCoordinates;
 
 impl Coordinates for PdfCoordinates {
     type Rect = PdfRect;
+    type Quad = NamedPdfQuad;
     type Destination = crate::features::actions::destination::PdfDestination;
 }
 
@@ -65,6 +74,7 @@ pub struct PageCoordinates;
 
 impl Coordinates for PageCoordinates {
     type Rect = PageRect;
+    type Quad = PageQuad;
     type Destination = destinations::PageDestination;
 }
 

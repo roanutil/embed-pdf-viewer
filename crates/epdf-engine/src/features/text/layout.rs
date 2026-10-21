@@ -42,6 +42,11 @@ fn is_empty_glyph(flags: u32) -> bool {
     flags & FLAG_EMPTY != 0
 }
 
+/// A geometry glyph's `space` and `empty` states as this layout's flag bits.
+fn flags_of(space: bool, empty: bool) -> u32 {
+    (if space { FLAG_SPACE } else { 0 }) | (if empty { FLAG_EMPTY } else { 0 })
+}
+
 const CHAR_DISTANCE_FACTOR: f64 = 2.5;
 const FONT_SIZE_RATIO_THRESHOLD: f64 = 1.5;
 const VERTICAL_OVERLAP_THRESHOLD: f64 = 0.8;
@@ -150,10 +155,10 @@ fn frame_for_run(frames: &mut Vec<TextLayoutFrame>, run: &PageGeometryRun) -> us
     let PageGeometryRun::Rotated { glyphs, .. } = run else {
         return 0;
     };
-    let Some(seed) = glyphs.iter().find(|g| !is_empty_glyph(g.flags)) else {
+    let Some(seed) = glyphs.iter().find(|g| !g.empty) else {
         return 0;
     };
-    let q = seed.loose_quad;
+    let q = PdfQuad::from(seed.loose);
     let bx = q.p2.x - q.p1.x;
     let by = q.p2.y - q.p1.y;
     let len = bx.hypot(by);
@@ -189,38 +194,35 @@ pub fn build_page_text_layout(snapshot: &PageGeometrySnapshot) -> PageTextLayout
 
     for run in &snapshot.runs {
         match run {
-            PageGeometryRun::Upright { rect, char_start, glyphs: run_glyphs, font_size } => {
+            PageGeometryRun::Upright { rect, start, glyphs: run_glyphs, font_size } => {
                 for g in run_glyphs {
                     glyphs.push(TextLayoutGlyph {
-                        loose: g.loose_box,
-                        tight: g.tight_box,
-                        flags: g.flags,
+                        loose: g.loose,
+                        tight: g.tight,
+                        flags: flags_of(g.space, g.empty),
                     });
                 }
                 runs.push(TextLayoutRun {
-                    char_start: *char_start,
+                    char_start: *start,
                     count: run_glyphs.len() as u32,
                     rect: *rect,
                     font_size: *font_size,
                     frame: 0,
                 });
             }
-            PageGeometryRun::Rotated { char_start, glyphs: run_glyphs, font_size, .. } => {
+            PageGeometryRun::Rotated { start, glyphs: run_glyphs, font_size, .. } => {
                 let frame_index = frame_for_run(&mut frames, run);
                 let f = frames[frame_index];
                 let mut run_box: Option<PdfRect> = None;
                 for g in run_glyphs {
-                    if is_empty_glyph(g.flags) {
-                        glyphs.push(TextLayoutGlyph {
-                            loose: ZERO_RECT,
-                            tight: None,
-                            flags: g.flags,
-                        });
+                    let flags = flags_of(g.space, g.empty);
+                    if g.empty {
+                        glyphs.push(TextLayoutGlyph { loose: ZERO_RECT, tight: None, flags });
                         continue;
                     }
-                    let loose = frame_box_of_quad(&f, g.loose_quad);
-                    let tight = g.tight_quad.map(|q| frame_box_of_quad(&f, q));
-                    glyphs.push(TextLayoutGlyph { loose, tight, flags: g.flags });
+                    let loose = frame_box_of_quad(&f, g.loose.into());
+                    let tight = g.tight.map(|q| frame_box_of_quad(&f, q.into()));
+                    glyphs.push(TextLayoutGlyph { loose, tight, flags });
                     run_box = Some(match run_box {
                         Some(b) => PdfRect {
                             left: b.left.min(loose.left),
@@ -232,7 +234,7 @@ pub fn build_page_text_layout(snapshot: &PageGeometrySnapshot) -> PageTextLayout
                     });
                 }
                 runs.push(TextLayoutRun {
-                    char_start: *char_start,
+                    char_start: *start,
                     count: run_glyphs.len() as u32,
                     rect: run_box.unwrap_or(ZERO_RECT),
                     font_size: *font_size,

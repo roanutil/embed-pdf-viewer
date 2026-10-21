@@ -76,6 +76,33 @@ pub struct PdfQuad {
     pub p4: PdfPoint,
 }
 
+/// A quad in the file's coordinates as upstream's wire spells it
+/// (`PdfQuad` in `geometry/primitives.ts`): the corners named in the quad's
+/// own upright frame, which is the [`PdfQuad`] slot order (`p1` upper-left
+/// to `p4` lower-right). The text geometry answers it; the other quads in
+/// the file's coordinates still answer `p1` to `p4` until their families
+/// move to page space.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NamedPdfQuad {
+    pub upper_left: PdfPoint,
+    pub upper_right: PdfPoint,
+    pub lower_left: PdfPoint,
+    pub lower_right: PdfPoint,
+}
+
+impl From<PdfQuad> for NamedPdfQuad {
+    fn from(q: PdfQuad) -> Self {
+        Self { upper_left: q.p1, upper_right: q.p2, lower_left: q.p3, lower_right: q.p4 }
+    }
+}
+
+impl From<NamedPdfQuad> for PdfQuad {
+    fn from(q: NamedPdfQuad) -> Self {
+        Self { p1: q.upper_left, p2: q.upper_right, p3: q.lower_left, p4: q.lower_right }
+    }
+}
+
 /// Named corners of a quad, y-up. Valid only for upright quads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PdfQuadCorners {
