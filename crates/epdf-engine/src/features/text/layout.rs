@@ -9,10 +9,15 @@
 //! owns segmentation. Both consume this, so a text range has one canonical
 //! segmentation however it was produced.
 //!
-//! Everything here is PDF user space, y-up. The line merge is adapted from
-//! Chromium's `pdf/pdfium/pdfium_range.cc` `MergeAdjacentRects` (BSD, © 2010
-//! The Chromium Authors); hit testing mirrors PDFium's `GetIndexAtPos`, exact
-//! box first and then a tolerance pass.
+//! Everything here is PDF user space, y-up, as the engine reads it. The
+//! public layout, [`crate::page_space::text::create_text_layout`], runs this
+//! one on page-space geometry flipped top to bottom and flips its answers
+//! back.
+//!
+//! The line merge is adapted from Chromium's `pdf/pdfium/pdfium_range.cc`
+//! `MergeAdjacentRects` (BSD, © 2010 The Chromium Authors); hit testing
+//! mirrors PDFium's `GetIndexAtPos`, exact box first and then a tolerance
+//! pass.
 //!
 //! # Frames
 //!
@@ -28,6 +33,7 @@
 //! affine basis that preserved shear would either fragment mixed lines or make
 //! the roman body's geometry depend on whether an italic run came first.
 
+use super::TextRange;
 use crate::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
 use crate::geom::{PdfPoint, PdfQuad, PdfRect};
 
@@ -56,6 +62,104 @@ const EDGE_EPSILON: f64 = 1e-6;
 /// Baseline directions within about half a degree share a frame.
 fn frame_dot_tolerance() -> f64 {
     0.0087f64.cos()
+}
+
+/// How far from a glyph a point may be and still hit it, in average glyph
+/// heights: the TypeScript's default `toleranceFactor`.
+pub const DEFAULT_TOLERANCE_FACTOR: f64 = 1.5;
+
+/// Where a word or line is asked for: at a point, or around a character.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TextAt<P> {
+    Point(P),
+    Char(u32),
+}
+
+impl<P> From<u32> for TextAt<P> {
+    fn from(index: u32) -> Self {
+        Self::Char(index)
+    }
+}
+
+impl From<PdfPoint> for TextAt<PdfPoint> {
+    fn from(point: PdfPoint) -> Self {
+        Self::Point(point)
+    }
+}
+
+/// Where a page's text is, in the file's coordinates
+/// (`createPdfTextLayout`), for the engine's own readers. Everything else
+/// uses the page-space layout,
+/// [`crate::page_space::text::create_text_layout`].
+#[derive(Debug, Clone, PartialEq)]
+pub struct PdfTextLayout {
+    runs: Vec<PageGeometryRun>,
+    layout: PageTextLayout,
+}
+
+impl PdfTextLayout {
+    /// The layout of a page's geometry (`createPdfTextLayout`).
+    pub fn new(snapshot: PageGeometrySnapshot) -> Self {
+        let layout = build_page_text_layout(&snapshot);
+        Self { runs: snapshot.runs, layout }
+    }
+
+    /// How many characters the page has: they are numbered 0 to
+    /// `char_count - 1`.
+    pub fn char_count(&self) -> u32 {
+        self.layout.glyphs.len() as u32
+    }
+
+    /// The raw geometry it was built from.
+    pub fn runs(&self) -> &[PageGeometryRun] {
+        &self.runs
+    }
+
+    /// The flattened layout, frames and all.
+    pub fn layout(&self) -> &PageTextLayout {
+        &self.layout
+    }
+
+    /// The character at a point, or `None` when there's no text near it.
+    pub fn char_at(&self, point: PdfPoint) -> Option<u32> {
+        text_glyph_at(&self.layout, point, DEFAULT_TOLERANCE_FACTOR)
+    }
+
+    /// The word at a point or around a character, or `None` when there is
+    /// none.
+    pub fn word_at(&self, at: impl Into<TextAt<PdfPoint>>) -> Option<TextRange> {
+        let index = self.index_of(at.into())?;
+        Some(range_of(expand_text_range_to_word(&self.layout, index)))
+    }
+
+    /// The visual line at a point or around a character, or `None` when there
+    /// is none.
+    pub fn line_at(&self, at: impl Into<TextAt<PdfPoint>>) -> Option<TextRange> {
+        let index = self.index_of(at.into())?;
+        Some(range_of(expand_text_range_to_line(&self.layout, index)))
+    }
+
+    /// One segment per visual line the range covers.
+    pub fn segments(&self, range: TextRange) -> Vec<PdfTextSegment> {
+        text_segments_for_range(&self.layout, range.start, range.count)
+    }
+
+    /// One character's loose cell, or `None` for a character with no box.
+    pub fn char_quad(&self, index: u32) -> Option<PdfQuad> {
+        text_glyph_quad(&self.layout, index)
+    }
+
+    fn index_of(&self, at: TextAt<PdfPoint>) -> Option<u32> {
+        match at {
+            TextAt::Point(point) => self.char_at(point),
+            TextAt::Char(index) => (index < self.char_count()).then_some(index),
+        }
+    }
+}
+
+/// An inclusive `[from, to]` pair as a [`TextRange`].
+fn range_of((from, to): (u32, u32)) -> TextRange {
+    TextRange { start: from, count: to - from + 1 }
 }
 
 const ZERO_RECT: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
@@ -329,7 +433,10 @@ pub fn text_glyph_at(
             }
             let dx = (q.x - b.left).abs().min((q.x - b.right).abs());
             let dy = (q.y - b.bottom).abs().min((q.y - b.top).abs());
-            if dx + dy < best_dist {
+            // Neighbours share an edge, so a point nearest to it is as near
+            // to both: the first one wins, whatever the last bit of rounding
+            // says.
+            if dx + dy < best_dist - EDGE_EPSILON {
                 best_dist = dx + dy;
                 best = Some(run.char_start + i);
             }
@@ -451,7 +558,7 @@ pub fn text_segments_for_range(
         return Vec::new();
     }
     let lo = char_start;
-    let hi = (layout.glyphs.len() as u32 - 1).min(char_start + char_count - 1);
+    let hi = (layout.glyphs.len() as u32 - 1).min(char_start.saturating_add(char_count - 1));
     if hi < lo {
         return Vec::new();
     }
@@ -703,4 +810,551 @@ fn overlap_v(bottom1: f64, top1: f64, bottom2: f64, top2: f64) -> bool {
     }
     let i = 0.0f64.max(top1.min(top2) - bottom1.max(bottom2));
     i / u >= LINE_OVERLAP_THRESHOLD
+}
+
+/// `test/text/layout.test.ts`.
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::features::geometry::{PageGeometryGlyph, RotatedGeometryGlyph};
+    use crate::geom::NamedPdfQuad;
+
+    // ── fixture builders ──
+
+    #[derive(Default)]
+    struct GlyphOpts {
+        w: Option<f64>,
+        bottom: Option<f64>,
+        space: bool,
+        empty: bool,
+    }
+
+    fn upright_glyph(x: f64, opts: GlyphOpts) -> PageGeometryGlyph {
+        let bottom = opts.bottom.unwrap_or(100.0);
+        PageGeometryGlyph {
+            loose: PdfRect {
+                left: x,
+                right: x + opts.w.unwrap_or(10.0),
+                bottom,
+                top: bottom + 10.0,
+            },
+            tight: None,
+            space: opts.space,
+            empty: opts.empty,
+        }
+    }
+
+    fn glyph(x: f64) -> PageGeometryGlyph {
+        upright_glyph(x, GlyphOpts::default())
+    }
+
+    fn upright_run(
+        start: u32,
+        glyphs: Vec<PageGeometryGlyph>,
+        font_size: Option<f64>,
+    ) -> PageGeometryRun {
+        let rect = glyphs.iter().fold(
+            PdfRect {
+                left: f64::INFINITY,
+                right: f64::NEG_INFINITY,
+                bottom: f64::INFINITY,
+                top: f64::NEG_INFINITY,
+            },
+            |acc, g| PdfRect {
+                left: acc.left.min(g.loose.left),
+                right: acc.right.max(g.loose.right),
+                bottom: acc.bottom.min(g.loose.bottom),
+                top: acc.top.max(g.loose.top),
+            },
+        );
+        PageGeometryRun::Upright { rect, start, glyphs, font_size }
+    }
+
+    struct Oriented {
+        count: u32,
+        w: f64,
+        h: f64,
+        rotation: f64,
+        shear: f64,
+    }
+
+    impl Oriented {
+        fn turned(rotation: f64) -> Self {
+            Self { count: 3, w: 8.0, h: 12.0, rotation, shear: 0.0 }
+        }
+    }
+
+    /// A run of glyph cells along an arbitrary baseline. `origin` is the
+    /// first cell's lower-left corner, `u` the baseline unit, `n` the ascent
+    /// unit.
+    fn oriented_run(
+        start: u32,
+        origin: PdfPoint,
+        u: PdfPoint,
+        n: PdfPoint,
+        opts: Oriented,
+    ) -> PageGeometryRun {
+        let Oriented { count, w, h, rotation, shear } = opts;
+        let at = |t: f64, up: f64| PdfPoint {
+            x: origin.x + u.x * t + n.x * up + u.x * shear * (up / h),
+            y: origin.y + u.y * t + n.y * up + u.y * shear * (up / h),
+        };
+        let glyphs: Vec<RotatedGeometryGlyph> = (0..count)
+            .map(|i| {
+                let t = f64::from(i) * w;
+                RotatedGeometryGlyph {
+                    loose: NamedPdfQuad {
+                        upper_left: at(t, h),
+                        upper_right: at(t + w, h),
+                        lower_left: at(t, 0.0),
+                        lower_right: at(t + w, 0.0),
+                    },
+                    tight: None,
+                    space: false,
+                    empty: false,
+                }
+            })
+            .collect();
+        let rect = glyphs
+            .iter()
+            .flat_map(|g| {
+                [g.loose.upper_left, g.loose.upper_right, g.loose.lower_left, g.loose.lower_right]
+            })
+            .fold(
+                PdfRect {
+                    left: f64::INFINITY,
+                    right: f64::NEG_INFINITY,
+                    bottom: f64::INFINITY,
+                    top: f64::NEG_INFINITY,
+                },
+                |acc, p| PdfRect {
+                    left: acc.left.min(p.x),
+                    right: acc.right.max(p.x),
+                    bottom: acc.bottom.min(p.y),
+                    top: acc.top.max(p.y),
+                },
+            );
+        PageGeometryRun::Rotated {
+            rect,
+            start,
+            glyphs,
+            rotation,
+            ascent_flip: false,
+            font_size: None,
+        }
+    }
+
+    fn with_start(run: PageGeometryRun, start: u32) -> PageGeometryRun {
+        match run {
+            PageGeometryRun::Upright { rect, glyphs, font_size, .. } => {
+                PageGeometryRun::Upright { rect, start, glyphs, font_size }
+            }
+            PageGeometryRun::Rotated { rect, glyphs, rotation, ascent_flip, font_size, .. } => {
+                PageGeometryRun::Rotated { rect, start, glyphs, rotation, ascent_flip, font_size }
+            }
+        }
+    }
+
+    fn layout_of(runs: Vec<PageGeometryRun>) -> PdfTextLayout {
+        PdfTextLayout::new(PageGeometrySnapshot { runs })
+    }
+
+    fn range(start: u32, count: u32) -> TextRange {
+        TextRange { start, count }
+    }
+
+    fn point(x: f64, y: f64) -> PdfPoint {
+        PdfPoint { x, y }
+    }
+
+    fn rect(left: f64, bottom: f64, right: f64, top: f64) -> PdfRect {
+        PdfRect { left, bottom, right, top }
+    }
+
+    fn close(actual: f64, expected: f64, digits: i32) {
+        // `toBeCloseTo(expected, digits)`: within half a unit of the last
+        // digit.
+        let tolerance = 10f64.powi(-digits) / 2.0;
+        assert!((actual - expected).abs() < tolerance, "{actual} against {expected}");
+    }
+
+    fn expect_rect_equals_bounds(segments: &[PdfTextSegment]) {
+        for s in segments {
+            let b = frame_box_of_quad(&IDENTITY_FRAME, s.quad);
+            close(s.rect.left, b.left, 6);
+            close(s.rect.right, b.right, 6);
+            close(s.rect.bottom, b.bottom, 6);
+            close(s.rect.top, b.top, 6);
+        }
+    }
+
+    const R2: f64 = std::f64::consts::FRAC_1_SQRT_2;
+
+    // ── upright behavior ──
+
+    /// Five 10pt-wide glyphs on one line starting at `x`.
+    fn line(start: u32, x: f64, bottom: f64, font_size: Option<f64>) -> PageGeometryRun {
+        let glyphs = (0..5)
+            .map(|i| {
+                upright_glyph(
+                    x + f64::from(i) * 10.0,
+                    GlyphOpts { bottom: Some(bottom), ..GlyphOpts::default() },
+                )
+            })
+            .collect();
+        upright_run(start, glyphs, font_size)
+    }
+
+    #[test]
+    fn adjacent_text_objects_on_one_line_merge_into_one_segment() {
+        let layout = layout_of(vec![line(0, 10.0, 100.0, None), line(5, 60.0, 100.0, None)]);
+        let segments = layout.segments(range(0, 10));
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].rect, rect(10.0, 100.0, 110.0, 110.0));
+        // Upright quads are the rect's own corners (y up: upper is larger y).
+        assert_eq!(segments[0].quad.p1, point(10.0, 110.0));
+        assert_eq!(segments[0].quad.p4, point(110.0, 100.0));
+        assert_eq!(segments[0].advance, 1);
+        expect_rect_equals_bounds(&segments);
+    }
+
+    #[test]
+    fn large_intra_run_gaps_split_and_separate_lines_never_merge() {
+        let gappy =
+            upright_run(0, vec![glyph(10.0), glyph(20.0), glyph(200.0), glyph(210.0)], None);
+        let layout = layout_of(vec![gappy, line(4, 10.0, 60.0, None)]);
+        assert_eq!(layout.segments(range(0, 9)).len(), 3);
+    }
+
+    #[test]
+    fn empty_glyphs_contribute_nothing_and_the_range_is_half_open() {
+        let layout = layout_of(vec![upright_run(
+            0,
+            vec![
+                glyph(10.0),
+                upright_glyph(20.0, GlyphOpts { empty: true, ..GlyphOpts::default() }),
+                glyph(30.0),
+            ],
+            None,
+        )]);
+        assert!(layout.segments(range(0, 0)).is_empty());
+        let first_two = layout.segments(range(0, 2));
+        assert_eq!(first_two.len(), 1);
+        assert_eq!(first_two[0].rect.right, 20.0, "the empty glyph added nothing");
+        assert_eq!(layout.segments(range(0, 3))[0].rect, rect(10.0, 100.0, 40.0, 110.0));
+    }
+
+    #[test]
+    fn font_size_ratio_and_vertical_overlap_still_gate_merging() {
+        let big = upright_run(0, vec![glyph(10.0), glyph(20.0)], Some(20.0));
+        let small = upright_run(2, vec![glyph(40.0), glyph(50.0)], Some(8.0));
+        assert_eq!(layout_of(vec![big, small]).segments(range(0, 4)).len(), 2);
+    }
+
+    #[test]
+    fn rtl_glyph_sequences_report_advance_minus_one_with_unchanged_geometry() {
+        let narrow = |x| upright_glyph(x, GlyphOpts { w: Some(8.0), ..GlyphOpts::default() });
+        let rtl = upright_run(0, vec![glyph(50.0), narrow(42.0), narrow(34.0)], None);
+        let segments = layout_of(vec![rtl]).segments(range(0, 3));
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].advance, -1);
+        assert_eq!(segments[0].rect.left, 34.0);
+    }
+
+    // ── oriented behavior ──
+
+    /// A 90 degree CCW column: baseline +y, ascent -x. Cells x 88..100,
+    /// y 20..44.
+    fn column(start: u32) -> PageGeometryRun {
+        oriented_run(
+            start,
+            point(100.0, 20.0),
+            point(0.0, 1.0),
+            point(-1.0, 0.0),
+            Oriented::turned(270.0),
+        )
+    }
+
+    #[test]
+    fn a_90_degree_column_is_one_exact_oriented_segment() {
+        let segments = layout_of(vec![column(0)]).segments(range(0, 3));
+        assert_eq!(segments.len(), 1);
+        let q = segments[0].quad;
+        close(q.p1.x, 88.0, 6);
+        close(q.p1.y, 20.0, 6);
+        close(q.p2.x, 88.0, 6);
+        close(q.p2.y, 44.0, 6);
+        close(q.p3.x, 100.0, 6);
+        close(q.p3.y, 20.0, 6);
+        close(segments[0].rect.left, 88.0, 6);
+        close(segments[0].rect.top, 44.0, 6);
+        assert_eq!(segments[0].advance, 1);
+        expect_rect_equals_bounds(&segments);
+    }
+
+    #[test]
+    fn text_at_45_degrees_produces_the_exact_rotated_cell_union_not_an_aabb_blob() {
+        let diagonal = oriented_run(
+            0,
+            point(60.0, 20.0),
+            point(R2, R2),
+            point(-R2, R2),
+            Oriented { count: 4, ..Oriented::turned(315.0) },
+        );
+        let PageGeometryRun::Rotated { glyphs, .. } = &diagonal else { unreachable!() };
+        let (first, last) = (glyphs[0].loose, glyphs[3].loose);
+        let segments = layout_of(vec![diagonal.clone()]).segments(range(0, 4));
+        assert_eq!(segments.len(), 1);
+        let q = segments[0].quad;
+        close(q.p1.x, first.upper_left.x, 5);
+        close(q.p1.y, first.upper_left.y, 5);
+        close(q.p2.x, last.upper_right.x, 5);
+        close(q.p2.y, last.upper_right.y, 5);
+        close(q.p3.x, first.lower_left.x, 5);
+        close(q.p4.x, last.lower_right.x, 5);
+        expect_rect_equals_bounds(&segments);
+    }
+
+    #[test]
+    fn mirrored_text_keeps_semantic_corners_and_forward_advance() {
+        // Horizontal mirror: baseline -x, ascent +y. Logical order advances
+        // visually leftward; inside its frame that is still +x.
+        let mirrored = oriented_run(
+            0,
+            point(90.0, 100.0),
+            point(-1.0, 0.0),
+            point(0.0, 1.0),
+            Oriented::turned(180.0),
+        );
+        let segments = layout_of(vec![mirrored]).segments(range(0, 3));
+        assert_eq!(segments.len(), 1);
+        let q = segments[0].quad;
+        // Upper-left sits at the visual right: the mirror is part of the frame.
+        close(q.p1.x, 90.0, 6);
+        close(q.p2.x, 66.0, 6);
+        close(q.p1.y, 112.0, 6);
+        assert_eq!(segments[0].advance, 1);
+        expect_rect_equals_bounds(&segments);
+    }
+
+    #[test]
+    fn mixed_roman_and_fake_italic_on_one_line_merge_into_one_segment() {
+        let roman = upright_run(0, vec![glyph(10.0), glyph(20.0)], None);
+        // A shear-only run (rotation 0): baseline (1, 0) and a sheared ascent.
+        // It shares frame 0 with the roman text by design; the shear is
+        // in-frame residue.
+        let italic = oriented_run(
+            2,
+            point(30.0, 100.0),
+            point(1.0, 0.0),
+            point(0.0, 1.0),
+            Oriented { count: 2, w: 10.0, h: 10.0, rotation: 0.0, shear: 2.5 },
+        );
+        let segments = layout_of(vec![roman, italic]).segments(range(0, 4));
+        assert_eq!(segments.len(), 1);
+        assert_eq!(segments[0].rect.left, 10.0);
+        close(segments[0].rect.right, 52.5, 6); // shear residue included
+        expect_rect_equals_bounds(&segments);
+    }
+
+    #[test]
+    fn differently_oriented_runs_never_merge_and_near_angles_share_one_frame() {
+        let line = upright_run(0, vec![glyph(84.0), glyph(94.0)], None);
+        let segments = layout_of(vec![line, with_start(column(0), 2)]).segments(range(0, 5));
+        assert_eq!(segments.len(), 2);
+
+        let quarter = std::f64::consts::FRAC_PI_4;
+        let a = || {
+            oriented_run(
+                0,
+                point(60.0, 20.0),
+                point(R2, R2),
+                point(-R2, R2),
+                Oriented { count: 2, ..Oriented::turned(315.0) },
+            )
+        };
+        let delta = 0.005; // within the 0.5 degree cluster tolerance
+        let u2 = point((quarter + delta).cos(), (quarter + delta).sin());
+        let n2 = point(-u2.y, u2.x);
+        let b = oriented_run(
+            2,
+            point(71.4, 31.2),
+            u2,
+            n2,
+            Oriented { count: 2, ..Oriented::turned(315.0 - delta.to_degrees()) },
+        );
+        // One canonical frame: the two runs merge into one line.
+        assert_eq!(layout_of(vec![a(), b]).segments(range(0, 4)).len(), 1);
+
+        let far = oriented_run(
+            2,
+            point(75.0, 35.0),
+            point((quarter + 0.05).cos(), (quarter + 0.05).sin()),
+            point(-(quarter + 0.05).sin(), (quarter + 0.05).cos()),
+            Oriented { count: 2, ..Oriented::turned(315.0 - 0.05f64.to_degrees()) },
+        );
+        // Different frames never merge.
+        assert_eq!(layout_of(vec![a(), far]).segments(range(0, 4)).len(), 2);
+    }
+
+    // ── hit-testing and range expansion ──
+
+    fn interaction() -> PdfTextLayout {
+        layout_of(vec![
+            upright_run(
+                0,
+                vec![
+                    glyph(10.0),
+                    upright_glyph(18.0, GlyphOpts { space: true, ..GlyphOpts::default() }),
+                ],
+                None,
+            ),
+            column(2),
+        ])
+    }
+
+    #[test]
+    fn char_at_hits_upright_and_rotated_glyphs_in_their_own_frames() {
+        let layout = interaction();
+        assert_eq!(layout.char_at(point(14.0, 105.0)), Some(0));
+        // The middle column glyph: baseline span y 28..36, cell x 88..100.
+        assert_eq!(layout.char_at(point(94.0, 32.0)), Some(3));
+        assert_eq!(layout.char_at(point(300.0, 300.0)), None);
+    }
+
+    #[test]
+    fn a_near_miss_on_an_edge_two_characters_share_finds_the_first() {
+        // Not in upstream's suite: it pins `textGlyphAt`'s tie-break, which no
+        // corpus probe reaches. The first cell's right edge is 0.1 + 0.2, a
+        // rounding bit past the second's left edge at 0.3, so the point is
+        // nearer the second by that bit alone.
+        let cell = |left: f64, right: f64| PageGeometryGlyph {
+            loose: rect(left, 100.0, right, 110.0),
+            tight: None,
+            space: false,
+            empty: false,
+        };
+        let layout =
+            layout_of(vec![upright_run(0, vec![cell(0.1, 0.1 + 0.2), cell(0.3, 0.5)], None)]);
+        assert_eq!(layout.char_at(point(0.3, 110.0 + 1e-12)), Some(0));
+    }
+
+    #[test]
+    fn word_expansion_stops_at_spaces_and_empty_characters() {
+        let layout = interaction();
+        assert_eq!(layout.word_at(0), Some(range(0, 1)), "the space at 1 ends the word");
+        assert_eq!(layout.word_at(3), Some(range(2, 3)));
+    }
+
+    #[test]
+    fn line_expansion_stays_within_the_anchor_frame() {
+        assert_eq!(interaction().line_at(3), Some(range(2, 3)));
+    }
+
+    #[test]
+    fn char_quad_returns_the_oriented_cell_for_endpoints() {
+        let layout = interaction();
+        let q = layout.char_quad(2).expect("a quad");
+        close(q.p1.x, 88.0, 6);
+        close(q.p1.y, 20.0, 6);
+        close(q.p4.x, 100.0, 6);
+        close(q.p4.y, 28.0, 6);
+        assert!(layout.char_quad(1).is_some(), "spaces still have cells");
+    }
+
+    #[test]
+    fn a_point_works_where_a_character_number_does() {
+        let layout = interaction();
+        assert_eq!(layout.word_at(point(94.0, 32.0)), layout.word_at(3));
+        assert_eq!(layout.line_at(point(94.0, 32.0)), layout.line_at(3));
+        assert_eq!(layout.word_at(point(300.0, 300.0)), None);
+    }
+
+    #[test]
+    fn char_count_counts_every_character_and_a_number_outside_it_finds_nothing() {
+        // Upstream also asks `lineAt(-1)`; a `u32` can't be negative.
+        let layout = interaction();
+        assert_eq!(layout.char_count(), 5);
+        assert_eq!(layout.word_at(5), None);
+        assert_eq!(layout.line_at(5), None);
+        assert_eq!(layout.char_quad(9), None);
+    }
+
+    #[test]
+    fn runs_are_the_raw_geometry_it_was_built_from() {
+        let runs = vec![upright_run(0, vec![glyph(10.0)], None)];
+        assert_eq!(layout_of(runs.clone()).runs(), runs.as_slice());
+    }
+
+    // ── segmentation (search and selection share it) ──
+
+    fn rects_of(runs: Vec<PageGeometryRun>, start: u32, count: u32) -> Vec<PdfRect> {
+        layout_of(runs).segments(range(start, count)).into_iter().map(|s| s.rect).collect()
+    }
+
+    #[test]
+    fn a_within_run_range_yields_one_line_rect_covering_exactly_those_glyphs() {
+        assert_eq!(
+            rects_of(vec![line(0, 0.0, 100.0, None)], 1, 3),
+            [rect(10.0, 100.0, 40.0, 110.0)]
+        );
+    }
+
+    #[test]
+    fn adjacent_runs_on_the_same_line_merge_into_one_rect() {
+        // Two text objects, visually one line: per-glyph or per-run boxes
+        // would draw a fragmented highlight, so the merge must give one rect.
+        assert_eq!(
+            rects_of(vec![line(0, 0.0, 100.0, None), line(5, 50.0, 100.0, None)], 2, 6),
+            [rect(20.0, 100.0, 80.0, 110.0)]
+        );
+    }
+
+    #[test]
+    fn a_range_across_a_line_break_yields_one_rect_per_line() {
+        assert_eq!(
+            rects_of(vec![line(0, 0.0, 100.0, None), line(5, 0.0, 80.0, None)], 3, 4),
+            [rect(30.0, 100.0, 50.0, 110.0), rect(0.0, 80.0, 20.0, 90.0)]
+        );
+    }
+
+    #[test]
+    fn a_big_intra_run_gap_splits() {
+        // Columns can share a text object.
+        let columns =
+            upright_run(0, vec![glyph(0.0), glyph(10.0), glyph(300.0), glyph(310.0)], None);
+        assert_eq!(
+            rects_of(vec![columns], 0, 4),
+            [rect(0.0, 100.0, 20.0, 110.0), rect(300.0, 100.0, 320.0, 110.0)]
+        );
+    }
+
+    #[test]
+    fn wildly_different_font_sizes_on_one_line_do_not_merge() {
+        let runs = vec![line(0, 0.0, 100.0, Some(8.0)), line(5, 50.0, 100.0, Some(30.0))];
+        assert_eq!(rects_of(runs, 0, 10).len(), 2);
+    }
+
+    #[test]
+    fn empty_characters_contribute_nothing() {
+        let empty = |x| upright_glyph(x, GlyphOpts { empty: true, ..GlyphOpts::default() });
+        assert!(
+            rects_of(vec![upright_run(0, vec![empty(0.0), empty(10.0)], None)], 0, 2).is_empty()
+        );
+    }
+
+    #[test]
+    fn ranges_outside_the_page_and_zero_length_ranges_are_empty() {
+        assert!(rects_of(vec![line(0, 0.0, 100.0, None)], 50, 3).is_empty());
+        assert!(rects_of(vec![line(0, 0.0, 100.0, None)], 0, 0).is_empty());
+    }
+
+    #[test]
+    fn runs_are_clipped_to_the_requested_range() {
+        // The range starts mid-run A and ends mid-run B, on another line.
+        assert_eq!(
+            rects_of(vec![line(0, 0.0, 100.0, None), line(5, 0.0, 80.0, None)], 4, 3),
+            [rect(40.0, 100.0, 50.0, 110.0), rect(0.0, 80.0, 20.0, 90.0)]
+        );
+    }
 }
