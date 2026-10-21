@@ -1797,6 +1797,40 @@ fn the_kernels_listing_keeps_its_shape_while_the_wire_answers_upstreams() {
     assert!(record["rect"]["width"].is_number(), "the wire answers page space: {record}");
 }
 
+/// The kernel's create in its old spelling and the file's coordinates: the
+/// host takes upstream's v3 draft in page space, and the kernel gets back
+/// the annotation the previous reader reads, under `created`, with an
+/// `annotation.created` event carrying it (Task 8.14).
+#[test]
+fn the_kernels_create_keeps_its_shape_while_the_wire_takes_upstreams() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let draft = json!({ "subtype": "square", "nm": "kernel-square",
+        "rect": { "left": 100.0, "bottom": 100.0, "right": 160.0, "top": 140.0 },
+        "color": { "r": 255, "g": 0, "b": 0 }, "interiorColor": null, "opacity": 1,
+        "strokeWidth": 2, "rectDifferences": { "left": 1, "bottom": 1, "right": 1, "top": 1 },
+        "flags": { "print": true, "hidden": false } });
+    let call = translate("d", "page.annotations.create", Some(pon), &[draft], 3).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    let created = &decoded.value["created"];
+    assert_eq!(created["subtype"], "square", "{created}");
+    assert_eq!(created["nm"], "kernel-square");
+    assert_eq!(
+        created["rect"],
+        json!({ "left": 100.0, "bottom": 100.0, "right": 160.0, "top": 140.0 }),
+        "the rect back in the file's coordinates: {created}"
+    );
+    assert!(created["ref"]["annotObjectNumber"].as_u64().is_some_and(|n| n > 0), "{created}");
+    let event = decoded.event.expect("an event");
+    assert_eq!(event["type"], "annotation.created");
+    assert_eq!(event["created"], *created);
+    assert!(event.get("annotation").is_none(), "{event}");
+}
+
 // ── page space (Task 8.4) ───────────────────────────────────────────────────
 
 /// A two-page PDF whose visible boxes do not start at the origin: page 3

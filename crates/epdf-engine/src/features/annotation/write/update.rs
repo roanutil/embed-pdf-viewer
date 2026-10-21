@@ -29,8 +29,8 @@ use serde::{Deserialize, Serialize};
 
 use super::appearance::{AppearanceImpact, appearance_impact_of};
 use super::context::AnnotationWriteContext;
-use super::create::write;
 use super::impact::{AnnotationListMutationMeta, AnnotationMutationKind, compute_mutation_impact};
+use super::legacy::write;
 use super::patch::{AnnotationPatch, AnnotationPatchBase, AnnotationPatchKind};
 use super::resolve::{capture_or_stamp_stable_id, resolve_annotation};
 use crate::cancel::CancelToken;
@@ -298,7 +298,7 @@ fn preflight(
         AnnotationPatchKind::FreeText { fields } => {
             box_rotation_satisfiable(annotation, &fields.rotation, &fields.unrotated_rect)?;
             if let Some(family) = fields.font_family.as_deref() {
-                super::create::font_resolvable(family, context)?;
+                super::legacy::font_resolvable(family, context)?;
             }
             if let Some(size) = fields.font_size
                 && size <= 0.0
@@ -335,7 +335,7 @@ fn preflight(
         }
         AnnotationPatchKind::Redact { fields } => {
             if let Some(family) = fields.font_family.as_deref() {
-                super::create::font_resolvable(family, context)?;
+                super::legacy::font_resolvable(family, context)?;
             }
         }
         AnnotationPatchKind::Link { fields } => {
@@ -468,8 +468,8 @@ fn apply_base_patch(
     annotation: &pdfium::Annotation<'_>,
     base: &AnnotationPatchBase,
 ) -> Result<(), EngineError> {
-    super::create::write_patch_string(annotation, "Contents", &base.contents)?;
-    super::create::write_patch_string(annotation, "Subj", &base.subject)?;
+    super::legacy::write_patch_string(annotation, "Contents", &base.contents)?;
+    super::legacy::write_patch_string(annotation, "Subj", &base.subject)?;
     if let Some(flags) = base.flags {
         // Onto the live word, which is what makes `{ hidden: true }` hide
         // without also un-printing.
@@ -766,7 +766,7 @@ fn apply_text_markup_patch(
             }
         }
         // `/Rect` is recomputed so it stays the smallest enclosing box.
-        set_rect(annotation, super::create::enclosing_rect(quads))?;
+        set_rect(annotation, super::legacy::enclosing_rect(quads))?;
     }
     Ok(())
 }
@@ -943,9 +943,9 @@ fn write_patch_string_mapped(
 ) -> Result<(), EngineError> {
     match value {
         Patch::Keep => Ok(()),
-        Patch::Clear => super::create::write_patch_string(annotation, key, &Patch::Clear),
+        Patch::Clear => super::legacy::write_patch_string(annotation, key, &Patch::Clear),
         Patch::Set(value) => {
-            super::create::write_patch_string(annotation, key, &Patch::Set(to_pdf(value)))
+            super::legacy::write_patch_string(annotation, key, &Patch::Set(to_pdf(value)))
         }
     }
 }
@@ -1045,7 +1045,7 @@ fn apply_free_text_patch(
             .map(|da| f64::from(da.font_size))
             .filter(|size| *size > 0.0)
             .unwrap_or(crate::features::annotation::read::free_text::DEFAULT_FONT_SIZE);
-        super::create::set_default_appearance(annotation, family, size, color, context)?;
+        super::legacy::set_default_appearance(annotation, family, size, color, context)?;
     }
     // After the `/DA`, on the same terms as the draft.
     if let Some(font_color) = fields.font_color {
@@ -1162,7 +1162,7 @@ fn apply_redact_patch(
         // nothing about the box is asking for the box to follow, and one
         // that supplies both has already decided.
         if fields.rect.is_none() {
-            set_rect(annotation, super::create::enclosing_rect(quads))?;
+            set_rect(annotation, super::legacy::enclosing_rect(quads))?;
         }
     }
     if let Some(color) = fields.color {
@@ -1222,7 +1222,7 @@ fn apply_redact_patch(
         let color = fields
             .font_color
             .unwrap_or(crate::features::annotation::read::redact::DEFAULT_LABEL_COLOR);
-        super::create::set_default_appearance(annotation, &family, size, color, context)?;
+        super::legacy::set_default_appearance(annotation, &family, size, color, context)?;
     }
     if let Some(align) = fields.text_align
         && !annotation.set_text_alignment(align.code())
@@ -1300,7 +1300,7 @@ fn apply_link_patch(
             }
             Ok(())
         }
-        Patch::Set(target) => super::create::write_link_target(document, annotation, target),
+        Patch::Set(target) => super::legacy::write_link_target(document, annotation, target),
     }
 }
 
@@ -1341,7 +1341,7 @@ fn apply_stamp_patch(
     context: &super::context::AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
     if let Some(name) = fields.name.as_deref() {
-        super::create::set_stamp_name(annotation, name)?;
+        super::legacy::set_stamp_name(annotation, name)?;
     }
     let fit = fields.fit.unwrap_or_default();
 
@@ -1362,7 +1362,7 @@ fn apply_stamp_patch(
             Patch::Clear => false,
             Patch::Keep => super::super::read::transform::read_rotation(annotation)?.is_some(),
         };
-        return super::create::author_stamp_appearance(
+        return super::legacy::author_stamp_appearance(
             document,
             page,
             annotation,
@@ -1417,8 +1417,8 @@ fn apply_widget_patch(
     if let Some(rect) = fields.rect {
         set_rect(annotation, rect)?;
     }
-    super::create::set_mk_color_patch(annotation, 0, &fields.color)?;
-    super::create::set_mk_color_patch(annotation, 1, &fields.interior_color)?;
+    super::legacy::set_mk_color_patch(annotation, 0, &fields.color)?;
+    super::legacy::set_mk_color_patch(annotation, 1, &fields.interior_color)?;
     if fields.touches_border() {
         patch_border(annotation, fields.border_style, fields.stroke_width, &None)?;
     }

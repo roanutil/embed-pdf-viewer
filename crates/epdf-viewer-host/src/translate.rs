@@ -495,6 +495,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
         return kernel_annotations::listing(host, &request);
     }
     let respelled = base_index_refs(host, &mut request);
+    if kind == "annotations.create" {
+        return kernel_create::call(host, &request, payloads);
+    }
     let moved = page_space::render_target_to_page_space(host, &mut request);
     let response = if respelled || moved {
         host.call(&request.to_string(), payloads)
@@ -704,6 +707,313 @@ mod kernel_annotations {
     }
 }
 
+/// The kernel's annotation create, on the host's (Task 8.14).
+///
+/// The kernel sends the draft it always has: the old spelling, in the file's
+/// coordinates (`rect` edges, `unrotatedRect` beside a counterclockwise
+/// `rotation`, `p1`..`p4` quads, `{r, g, b}` colours, a `flags` object,
+/// `inReplyTo`), its bytes as keyed resources. The host now takes upstream's
+/// v3 draft in page space with its bytes by role, and answers the new record
+/// and an `annotations.created` event. [`call`] respells the draft and the
+/// resources, sends the create, and answers the kernel the annotation the
+/// previous reader reads (the shape `sync` takes) under `created`, with an
+/// `annotation.created` event carrying it. Fields the v3 kind doesn't
+/// declare (a measurement's scale and caption, `/RD`) are left out, as the
+/// previous create ignored them. Dead once Task 13 ports the kernel.
+mod kernel_create {
+    use epdf_engine::error::{EngineError, EngineErrorCode};
+    use epdf_engine::features::annotation::subtype::AnnotationSubtype;
+    use epdf_engine::features::annotation::write::prepare::declared_fields;
+    use epdf_engine::geom::{PdfPoint, PdfRect};
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::identity::PageRef;
+    use epdf_engine::page_space::destinations::page_destination_of;
+    use epdf_engine::page_space::{page_point_of, page_rect_of};
+    use serde_json::{Map, Value, json};
+
+    fn malformed(message: impl Into<String>) -> EngineError {
+        EngineError::with_message(EngineErrorCode::WireFormat, message)
+    }
+
+    fn refused(error: EngineError) -> HostResponse {
+        HostResponse { json: json!({ "error": error.to_wire() }).to_string(), payloads: Vec::new() }
+    }
+
+    /// The kernel's create, answered in the kernel's shape.
+    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
+        let (wire, payloads) = match respell(host, request, payloads) {
+            Ok(respelled) => respelled,
+            Err(error) => return refused(error),
+        };
+        let response = host.call(&wire.to_string(), payloads);
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        if envelope.get("error").is_some() {
+            return response;
+        }
+        match answer_for_kernel(host, request, &mut envelope) {
+            Ok(()) => HostResponse { json: envelope.to_string(), payloads: response.payloads },
+            Err(error) => refused(error),
+        }
+    }
+
+    /// The v3 request, in page space, with its bytes by role.
+    fn respell(
+        host: &Host,
+        request: &Value,
+        payloads: Vec<Vec<u8>>,
+    ) -> Result<(Value, Vec<Vec<u8>>), EngineError> {
+        let page: PageRef =
+            serde_json::from_value(request.get("page").cloned().unwrap_or_default())
+                .map_err(|e| malformed(format!("the create names no page: {e}")))?;
+        let mut box_of = super::page_space::visible_boxes(host, request);
+        let visible = box_of(page.object_number())?;
+        let draft = match request.get("draft") {
+            Some(Value::Object(draft)) => draft.clone(),
+            _ => return Err(malformed("the create carries no draft")),
+        };
+        let keyed = request.get("resources").cloned().unwrap_or(Value::Null);
+        let payload_of = |resource: Option<&Value>| -> Option<Value> {
+            let key = resource?.as_str()?;
+            keyed.get(key)?.get("payload").cloned()
+        };
+        let mut roles = Map::new();
+        if let Some(index) = payload_of(draft.get("source").and_then(|s| s.get("resource"))) {
+            roles.insert("appearance".into(), json!({ "payload": index }));
+        }
+        if let Some(index) = payload_of(draft.get("file").and_then(|f| f.get("resource"))) {
+            roles.insert("file".into(), json!({ "payload": index }));
+        }
+        let draft = v3_draft(draft, visible, &mut box_of)?;
+        let mut wire = Map::new();
+        for key in ["kind", "jobId", "docId", "layerName", "opId", "page", "objectNumberFloor"] {
+            if let Some(value) = request.get(key).filter(|v| !v.is_null()) {
+                wire.insert(key.into(), value.clone());
+            }
+        }
+        wire.insert("draft".into(), Value::Object(draft));
+        if !roles.is_empty() {
+            wire.insert("resources".into(), Value::Object(roles));
+        }
+        Ok((Value::Object(wire), payloads))
+    }
+
+    fn rect(value: &Value) -> Option<PdfRect> {
+        serde_json::from_value(value.clone()).ok()
+    }
+
+    fn page_point(value: &Value, visible: PdfRect) -> Value {
+        match serde_json::from_value::<PdfPoint>(value.clone()) {
+            Ok(point) => json!(page_point_of(point, visible)),
+            Err(_) => value.clone(),
+        }
+    }
+
+    fn page_points(value: &Value, visible: PdfRect) -> Value {
+        match value {
+            Value::Array(points) => {
+                Value::Array(points.iter().map(|p| page_point(p, visible)).collect())
+            }
+            other => other.clone(),
+        }
+    }
+
+    fn page_box(value: &Value, visible: PdfRect) -> Value {
+        match rect(value) {
+            Some(rect) => json!(page_rect_of(epdf_engine::geom::normalize_pdf_rect(rect), visible)),
+            None => value.clone(),
+        }
+    }
+
+    fn hex(value: &Value) -> Value {
+        let channel = |key: &str| value.get(key).and_then(Value::as_f64);
+        match (channel("r"), channel("g"), channel("b")) {
+            (Some(r), Some(g), Some(b)) => {
+                Value::String(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
+            }
+            _ => value.clone(),
+        }
+    }
+
+    /// A kernel draft (old spelling, the file's coordinates) as upstream's
+    /// v3 draft in page space, keeping only the fields its kind declares.
+    pub(super) fn v3_draft(
+        mut draft: Map<String, Value>,
+        visible: PdfRect,
+        box_of: &mut dyn FnMut(
+            epdf_engine::identity::PageObjectNumber,
+        ) -> Result<PdfRect, EngineError>,
+    ) -> Result<Map<String, Value>, EngineError> {
+        let subtype_name = draft.get("subtype").and_then(Value::as_str).unwrap_or("").to_owned();
+        let subtype: AnnotationSubtype = serde_json::from_value(json!(subtype_name))
+            .map_err(|_| malformed(format!("no annotation kind '{subtype_name}'")))?;
+        use AnnotationSubtype as S;
+        let mut out = Map::new();
+        // The `/F` flags, each its own field.
+        if let Some(Value::Object(flags)) = draft.remove("flags") {
+            for (name, value) in flags {
+                if value.is_boolean() {
+                    out.insert(name, value);
+                }
+            }
+        }
+        // `inReplyTo` and `replyType` are `reply`.
+        if let Some(to) = draft.remove("inReplyTo").filter(|to| !to.is_null()) {
+            let reply_type = draft.remove("replyType").unwrap_or(json!("reply"));
+            out.insert("reply".into(), json!({ "to": to, "type": reply_type }));
+        }
+        draft.remove("replyType");
+        // A box kind's box: the turned-from box when it is turned, its rect
+        // when upright. The kernel's turn is counterclockwise.
+        let rotation = draft.remove("rotation").and_then(|r| r.as_f64()).filter(|r| *r != 0.0);
+        let clockwise = rotation.map(|r| (360.0 - r.rem_euclid(360.0)).rem_euclid(360.0));
+        let is_box_kind =
+            matches!(subtype, S::Square | S::Circle | S::FreeText | S::Stamp | S::Caret);
+        let unrotated = draft.remove("unrotatedRect");
+        let given_rect = draft.remove("rect");
+        if is_box_kind {
+            let content =
+                unrotated.filter(|u| !u.is_null() && rotation.is_some()).or(given_rect.clone());
+            if let Some(content) = content {
+                out.insert("box".into(), page_box(&content, visible));
+            }
+        } else if matches!(subtype, S::Text | S::Link | S::Redact | S::FileAttachment | S::Popup)
+            && let Some(rect) = given_rect
+        {
+            out.insert("rect".into(), page_box(&rect, visible));
+        }
+        if let Some(degrees) = clockwise.filter(|d| *d != 0.0)
+            && matches!(
+                subtype,
+                S::Square
+                    | S::Circle
+                    | S::FreeText
+                    | S::Stamp
+                    | S::Caret
+                    | S::Polygon
+                    | S::Polyline
+                    | S::Line
+                    | S::Ink
+            )
+        {
+            out.insert("rotation".into(), json!(degrees));
+        }
+        for (name, value) in draft {
+            let converted = match name.as_str() {
+                "color" | "fontColor" => hex(&value),
+                "interiorColor" => {
+                    if value.is_null() {
+                        Value::Null
+                    } else {
+                        hex(&value)
+                    }
+                }
+                "quadPoints" => match &value {
+                    Value::Array(quads) => Value::Array(
+                        quads
+                            .iter()
+                            .map(|q| {
+                                json!({
+                                    "upperLeft": page_point(&q["p1"], visible),
+                                    "upperRight": page_point(&q["p2"], visible),
+                                    "lowerLeft": page_point(&q["p3"], visible),
+                                    "lowerRight": page_point(&q["p4"], visible),
+                                })
+                            })
+                            .collect(),
+                    ),
+                    other => other.clone(),
+                },
+                "vertices" | "calloutLine" => page_points(&value, visible),
+                "inkList" => match &value {
+                    Value::Array(strokes) => {
+                        Value::Array(strokes.iter().map(|s| page_points(s, visible)).collect())
+                    }
+                    other => other.clone(),
+                },
+                "linePoints" => json!({
+                    "start": page_point(&value["start"], visible),
+                    "end": page_point(&value["end"], visible),
+                }),
+                "cloudyIntensity" => match value.as_f64() {
+                    Some(intensity) if intensity > 0.0 => value,
+                    _ => continue,
+                },
+                "file" => {
+                    let mut file = Map::new();
+                    for key in ["name", "mimeType", "description"] {
+                        if let Some(v) = value.get(key) {
+                            file.insert(key.into(), v.clone());
+                        }
+                    }
+                    Value::Object(file)
+                }
+                "target" => match value.get("destination") {
+                    Some(destination) if value["kind"] == "goto" => {
+                        let destination: epdf_engine::features::actions::destination::PdfDestination =
+                            serde_json::from_value(destination.clone()).map_err(|e| {
+                                malformed(format!("a link destination the host can't read: {e}"))
+                            })?;
+                        json!({ "kind": "goto",
+                            "destination": page_destination_of(destination, &mut *box_of)? })
+                    }
+                    _ => value,
+                },
+                _ => value,
+            };
+            out.insert(name, converted);
+        }
+        // Only the fields the kind declares travel: the v3 create refuses
+        // any other, where the previous create ignored them.
+        let declared: Vec<&str> = declared_fields(subtype).map(|(name, _)| name).collect();
+        out.retain(|name, _| declared.contains(&name.as_str()));
+        out.insert("subtype".into(), json!(subtype_name));
+        Ok(out)
+    }
+
+    /// The created annotation as the previous reader reads it, under
+    /// `created`, and the event the kernel's sync takes.
+    fn answer_for_kernel(
+        host: &mut Host,
+        request: &Value,
+        envelope: &mut Value,
+    ) -> Result<(), EngineError> {
+        let object_number = envelope
+            .pointer("/result/result/annotation/ref/objectNumber")
+            .cloned()
+            .ok_or_else(|| malformed("a create answered no annotation"))?;
+        let page = request.get("page").cloned().unwrap_or_default();
+        let listing = super::kernel_annotations::listing(
+            host,
+            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
+                "layerName": request.get("layerName"), "pages": [page] }),
+        );
+        let listed: Value = serde_json::from_str(&listing.json)
+            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
+        let created = listed
+            .pointer("/result/pages/0/annotations")
+            .and_then(Value::as_array)
+            .and_then(|all| all.iter().find(|a| a["ref"]["objectNumber"] == object_number))
+            .cloned()
+            .ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::Unknown,
+                    "the created annotation does not read back",
+                )
+            })?;
+        let answer = &mut envelope["result"];
+        let meta = answer["result"]["meta"].take();
+        answer["result"] = json!({ "created": created, "meta": meta });
+        if let Some(Value::Object(event)) = answer.get_mut("event") {
+            event.remove("annotation");
+            event.insert("type".into(), json!("annotation.created"));
+            event.insert("created".into(), created);
+        }
+        Ok(())
+    }
+}
+
 /// The kernel's places in the file's coordinates, and the host's in page
 /// space (Task 8.4's boundary, `epdf_engine::page_space`).
 ///
@@ -740,7 +1050,7 @@ mod page_space {
     /// so it can issue no call: a kernel tile costs one page's box reads,
     /// not a page list, and reads the document as it is now, so there is
     /// nothing to go stale after a write.
-    fn visible_boxes<'h>(
+    pub(super) fn visible_boxes<'h>(
         host: &'h Host,
         request: &Value,
     ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + 'h {

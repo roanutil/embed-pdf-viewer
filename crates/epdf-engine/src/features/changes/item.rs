@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::attachments::AttachmentMutationMeta;
 use crate::error::EngineError;
+use crate::features::annotation::write::create::AnnotationMutationMeta;
 use crate::features::files::attachments::EmbeddedFileItem;
 use crate::features::metadata_write::{CustomMetadataUpdateResult, MetadataUpdateResult};
 use crate::identity::PageRef;
@@ -42,6 +43,24 @@ pub enum ChangeItem {
     /// back under its key.
     #[serde(rename = "attachments.restore")]
     AttachmentsRestore { attachment: EmbeddedFileItem, meta: AttachmentMutationMeta },
+    /// `AnnotationCreateResult`, with the page the create named: the new
+    /// annotation, read back as a listing reads it.
+    #[serde(rename = "annotations.create")]
+    AnnotationsCreate {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        annotation: serde_json::Value,
+        meta: AnnotationMutationMeta,
+    },
+    /// `AnnotationDeleteResult`, with its page: nothing exists after it, so
+    /// only `meta`, whose `changed` names what went. Here only as the undo
+    /// of a create; Task 8.16 runs it as an op.
+    #[serde(rename = "annotations.delete")]
+    AnnotationsDelete {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        meta: AnnotationMutationMeta,
+    },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -57,6 +76,9 @@ impl ChangeItem {
             Self::AttachmentsCreate { meta, .. }
             | Self::AttachmentsDelete { meta }
             | Self::AttachmentsRestore { meta, .. } => &meta.meta,
+            Self::AnnotationsCreate { meta, .. } | Self::AnnotationsDelete { meta, .. } => {
+                &meta.meta
+            }
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -68,6 +90,9 @@ impl ChangeItem {
             Self::AttachmentsCreate { meta, .. }
             | Self::AttachmentsDelete { meta }
             | Self::AttachmentsRestore { meta, .. } => &mut meta.meta,
+            Self::AnnotationsCreate { meta, .. } | Self::AnnotationsDelete { meta, .. } => {
+                &mut meta.meta
+            }
             Self::Skipped { meta, .. } => meta,
         }
     }
@@ -99,6 +124,17 @@ impl ChangeItem {
             Self::AttachmentsRestore { attachment, meta } => (
                 "attachments.restored",
                 serde_json::json!({ "attachment": to_value(attachment)?, "meta": to_value(meta)? }),
+            ),
+            Self::AnnotationsCreate { page, annotation, meta } => (
+                "annotations.created",
+                serde_json::json!({ "page": crate::identity::PageRef::new(*page),
+                    "annotation": annotation, "meta": to_value(meta)? }),
+            ),
+            // `deletedAnnotationsOf`: the refs in `meta.changed`.
+            Self::AnnotationsDelete { page, meta } => (
+                "annotations.deleted",
+                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                    "page": crate::identity::PageRef::new(*page), "meta": to_value(meta)? }),
             ),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };

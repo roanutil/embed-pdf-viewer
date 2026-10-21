@@ -58,13 +58,15 @@ fn every_annotation_write_names_its_page() {
         &mut host,
         json!({ "kind": "annotations.create", "docId": doc, "page": page,
                 "draft": { "subtype": "square",
-                           "rect": { "left": 10.0, "bottom": 10.0, "right": 50.0, "top": 50.0 } } }),
+                           "box": { "x": 10.0, "y": 10.0, "width": 40.0, "height": 40.0 } } }),
     );
-    assert_eq!(created["event"]["type"], json!("annotation.created"), "{created}");
+    // A create is a one-op change: its event is the item's
+    // (`changeEvents`), on the page the create named.
+    assert_eq!(created["event"]["type"], json!("annotations.created"), "{created}");
     assert_eq!(created["event"]["page"], page, "{created}");
     assert!(created["result"].get("page").is_none(), "the page leaked into the result");
     assert_result_rides(&created);
-    let annotation = created["result"]["created"]["ref"].clone();
+    let annotation = created["result"]["annotation"]["ref"].clone();
 
     let updated = call(
         &mut host,

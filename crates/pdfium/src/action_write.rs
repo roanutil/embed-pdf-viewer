@@ -138,6 +138,18 @@ impl Document {
         Ok(Action { action })
     }
 
+    /// Build a `/Named` action for one of the standard page verbs
+    /// (`NextPage`, `PrevPage`, `FirstPage`, `LastPage`).
+    pub fn create_named_action(&self, name: &str) -> Result<Action, PdfiumError> {
+        let name = CString::new(name).map_err(|_| PdfiumError::InvalidArgument("name"))?;
+        // SAFETY: the handle is live and the string outlives the call.
+        let action = unsafe { pdfium_sys::EPDFAction_CreateNamed(self.as_raw(), name.as_ptr()) };
+        if action.is_null() {
+            return Err(PdfiumError::ActionBuild);
+        }
+        Ok(Action { action })
+    }
+
     /// Build a `/GoTo` action around a destination.
     pub fn create_goto_action(&self, destination: Destination) -> Result<Action, PdfiumError> {
         // SAFETY: both handles belong to this document and are live.

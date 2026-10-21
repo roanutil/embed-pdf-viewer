@@ -168,12 +168,12 @@ impl Annotation<'_> {
 
     /// `/CA`, from a 0..=1 opacity.
     ///
-    /// The fork stores the value as given (1 removes `/CA`) and refuses one
-    /// outside 0..=1. The clamp is kept here so a caller that used to pass an
-    /// out-of-range opacity still gets the nearest legal one, as it did when
-    /// the native call took a byte.
+    /// Passed through as given: the fork stores it (1 removes `/CA`) and
+    /// refuses one outside 0..=1 with `false`, which is the answer upstream's
+    /// `setAnnotOpacity` gets and reports. A caller's schema check refuses
+    /// such a value first.
     pub fn set_opacity(&self, opacity: f64) -> bool {
-        let opacity = opacity.clamp(0.0, 1.0) as f32;
+        let opacity = opacity as f32;
         // SAFETY: the handle is live.
         unsafe { pdfium_sys::EPDFAnnot_SetOpacity(self.as_raw(), opacity) != 0 }
     }
@@ -550,5 +550,108 @@ impl Annotation<'_> {
                 }
             }
         }
+    }
+}
+
+impl crate::Document {
+    /// Create an annotation of `subtype_code` at the end of a page's
+    /// `/Annots`, without loading the page (`EPDFPage_CreateAnnotRaw`).
+    ///
+    /// The annotation is an indirect object: `object_number` is the number it
+    /// gets, or 0 for the next free one. `None` when the page is out of range,
+    /// the subtype is refused, or a number other objects have was asked for.
+    pub fn create_annotation_raw(
+        &self,
+        page_index: u32,
+        subtype_code: i32,
+        object_number: u32,
+    ) -> Option<Annotation<'_>> {
+        let page_index = i32::try_from(page_index).ok()?;
+        // SAFETY: the document handle is live for the borrow this returns.
+        let handle = unsafe {
+            pdfium_sys::EPDFPage_CreateAnnotRaw(
+                self.as_raw(),
+                page_index,
+                subtype_code,
+                std::os::raw::c_ulong::from(object_number),
+            )
+        };
+        // SAFETY: a non-null result is an annotation handle the caller owns.
+        unsafe { Annotation::from_raw_owned(handle) }
+    }
+
+    /// Remove the annotation at `index` of a page's `/Annots`, without
+    /// loading the page (`EPDFPage_RemoveAnnotRaw`).
+    pub fn remove_annotation_raw(&self, page_index: u32, index: u32) -> bool {
+        let (Ok(page_index), Ok(index)) = (i32::try_from(page_index), i32::try_from(index)) else {
+            return false;
+        };
+        // SAFETY: the document handle is live.
+        unsafe { pdfium_sys::EPDFPage_RemoveAnnotRaw(self.as_raw(), page_index, index) != 0 }
+    }
+}
+
+impl Annotation<'_> {
+    /// Acrobat's `/Rotate`, in PDF degrees (counterclockwise). 0 removes it.
+    pub fn set_rotate(&self, degrees: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetRotate(self.as_raw(), degrees) != 0 }
+    }
+
+    /// `/Border [h v w]`: a link's, written `[0 0 0]` so it draws none.
+    pub fn set_border(&self, horizontal_radius: f32, vertical_radius: f32, width: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::FPDFAnnot_SetBorder(
+                self.as_raw(),
+                horizontal_radius,
+                vertical_radius,
+                width,
+            ) != 0
+        }
+    }
+
+    /// A boolean entry, such as `/Open`.
+    pub fn set_boolean_value(&self, key: &str, value: bool) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetBooleanValue(self.as_raw(), key.as_ptr(), i32::from(value))
+                != 0
+        })
+    }
+
+    /// One `/EMBD_Metadata` string entry.
+    pub fn set_embed_metadata_string(&self, key: &str, value: &str) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        let value = wide(value);
+        // SAFETY: the handle is live and both strings outlive the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetEmbedMetadataString(
+                self.as_raw(),
+                key.as_ptr(),
+                value.as_ptr(),
+            ) != 0
+        })
+    }
+
+    /// Point `key` (`/IRT`, `/Popup`, `/Parent`) at another annotation of
+    /// the same document, which must be an indirect object.
+    pub fn set_linked_annotation(
+        &self,
+        key: &str,
+        linked: &Annotation<'_>,
+    ) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: both handles are live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetLinkedAnnot(self.as_raw(), key.as_ptr(), linked.as_raw()) != 0
+        })
+    }
+
+    /// `/RT`, as an `FPDF_ANNOT_REPLY_TYPE` code.
+    pub fn set_reply_type(&self, code: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetReplyType(self.as_raw(), code as _) != 0 }
     }
 }

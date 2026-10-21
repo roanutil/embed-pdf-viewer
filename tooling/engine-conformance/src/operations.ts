@@ -539,7 +539,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: 'The Phase 0 Stage B bridge spike runs over this operation, then is thrown away.',
+    note: "A one-op change (applyOne) and an op of document.apply: the v3 draft in page space, converted at the boundary (pdfAnnotationDraftOf), checked field by field against its kind (prepareCreate), and made on its page's /Annots without loading the page (EPDFPage_CreateAnnotRaw). Stamped with a UUIDv7 /NM when it names none; a stamp places a drawing found or added once per artwork (drawingFor); its reverse deletes it while it reads as left. Measurement fields (measure, captions, leader) are refused NotImplemented until 8.25. Gated by vectors/annotation/create.json through crates/epdf-engine/tests/annotation_create.rs.",
   },
   {
     kind: 'annotations.update',

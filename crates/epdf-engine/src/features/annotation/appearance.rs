@@ -363,7 +363,7 @@ fn pdf_rect(rect: RectF) -> PdfRect {
 
 /// The counterclockwise angle the file and the fork take for a clockwise
 /// one, in `(-180, 180]` (`pdfFromClockwise`).
-fn pdf_from_clockwise(degrees: f64) -> f64 {
+pub(crate) fn pdf_from_clockwise(degrees: f64) -> f64 {
     let counterclockwise = (((-degrees % 360.0) + 360.0) % 360.0) + 0.0;
     if counterclockwise > 180.0 { counterclockwise - 360.0 } else { counterclockwise }
 }

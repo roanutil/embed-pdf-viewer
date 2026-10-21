@@ -22,7 +22,7 @@ fn add_square(host: &mut Host, doc: &str, pon: u32) {
         host,
         json!({ "kind": "annotations.create", "docId": doc, "page": page_ref(pon),
                 "draft": { "subtype": "square",
-                           "rect": { "left": 10.0, "bottom": 10.0, "right": 50.0, "top": 50.0 } } }),
+                           "box": { "x": 10.0, "y": 10.0, "width": 40.0, "height": 40.0 } } }),
     );
 }
 

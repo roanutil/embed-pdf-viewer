@@ -7,8 +7,9 @@
 
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::create_annotation;
-use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
+use epdf_engine::features::annotation::write::create::{
+    CreateRequest, CreateServices, create_annotation,
+};
 use epdf_engine::geom::PdfRotation;
 use epdf_engine::identity::PageObjectNumber;
 use epdf_engine::session::authority::SessionAuthority;
@@ -173,32 +174,31 @@ fn an_event_carries_its_result_verbatim() {
     let session = open();
     let owned = session.document().expect("open");
     let page = PageObjectNumber::new(3).expect("a page object number");
-    let listed = epdf_engine::features::annotation::read::page::read_page_annotations(
-        owned.document(),
-        0,
-        page,
-        &epdf_engine::revision::RevisionToken::new("<session>", page, 0),
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists");
-
-    let draft: AnnotationDraft = serde_json::from_value(serde_json::json!({
+    let draft = serde_json::json!({
         "subtype": "square",
-        "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-    }))
-    .expect("the draft decodes");
-    let view = owned.document().page(0).expect("page");
+        "box": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
+    });
+    let drawings = std::cell::RefCell::default();
     let created = create_annotation(
         owned.document(),
-        &view,
-        page,
-        &listed.page_state,
-        &listed.page_state,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
-        &epdf_engine::clock::FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
+        0,
+        &epdf_engine::session::document::WriteStamp { op_id: "op".into(), undoable: false },
+        CreateRequest {
+            page,
+            draft: draft.as_object().expect("an object").clone(),
+            resources: Default::default(),
+            object_number: None,
+            actor: None,
+        },
+        &CreateServices {
+            context: &AnnotationWriteContext::empty(),
+            drawings: &drawings,
+            clock: &epdf_engine::clock::FixedClock(epdf_engine::clock::Timestamp::utc(
+                1_700_000_000_000,
+            )),
+            ids: &epdf_engine::ids::SeededIdSource::new(1),
+            holds_object_number: &|_| true,
+        },
         &CancelToken::never(),
     )
     .expect("the annotation is created");

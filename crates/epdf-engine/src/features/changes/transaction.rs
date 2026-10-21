@@ -9,7 +9,9 @@
 //! it and adds upstream's commit checks (the layer ceiling, the artifact's
 //! `lastObjectNumber`).
 
-use super::applier::{AppliedChange, ChangeAuthority, ChangeContext, ChangeSpace, apply, undo};
+use super::applier::{
+    AppliedChange, ChangeAuthority, ChangeContext, ChangeServices, ChangeSpace, apply, undo,
+};
 use super::item::{ChangeResult, pages_of};
 use super::ledger::KeptRecord;
 use super::op::Change;
@@ -50,7 +52,9 @@ fn roll_back(session: &mut DocumentSession, clock: &dyn Clock) -> Result<(), Eng
     let journal = session.take_journal();
     let authority = ChangeAuthority::rollback();
     let cancel = CancelToken::never();
-    let mut ctx = ChangeContext { session, authority: &authority, cancel: &cancel, clock };
+    let ChangeServices { clock, ids, fonts } = ChangeServices::of_clock(clock);
+    let mut ctx =
+        ChangeContext { session, authority: &authority, cancel: &cancel, clock, ids, fonts };
     let mut failed = None;
     for step in journal.iter().rev() {
         if let Err(e) = super::applier::run_step(&mut ctx, step) {
@@ -58,6 +62,10 @@ fn roll_back(session: &mut DocumentSession, clock: &dyn Clock) -> Result<(), Eng
         }
     }
     session.abort_transaction();
+    // What the steps removed may be a drawing the index names.
+    if let Ok(drawings) = session.drawing_index() {
+        drawings.borrow_mut().forget();
+    }
     match failed {
         None => Ok(()),
         Some(e) => Err(EngineError::with_message(
@@ -108,17 +116,18 @@ pub fn run_change(
     change: Change,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
-    clock: &dyn Clock,
+    services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<Answered, EngineError> {
+    let clock = services.clock;
     if let Some(prior) = session.ledger().outcome(op_id) {
         return Ok(Answered { result: prior.replay(&fingerprint, op_id)?, replayed: true });
     }
     let ran = in_transaction(session, op_id, clock, |session| {
         let applied = match change {
-            Change::Ops(ops) => apply(session, ops, authority, cancel, clock, space)?,
+            Change::Ops(ops) => apply(session, ops, authority, cancel, services, space)?,
             Change::UndoOf(undo_of) => {
-                undo_kept(session, &undo_of, authority, cancel, clock, space)?
+                undo_kept(session, &undo_of, authority, cancel, services, space)?
             }
         };
         result_of(session, applied)
@@ -143,7 +152,7 @@ fn undo_kept(
     undo_of: &str,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
-    clock: &dyn Clock,
+    services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
     let record = match session.ledger().record(undo_of) {
@@ -163,7 +172,7 @@ fn undo_kept(
             "permission denied: changes:undo",
         ));
     }
-    undo(session, &record, authority, cancel, clock, space)
+    undo(session, &record, authority, cancel, services, space)
 }
 
 fn nothing_to_undo(authority: &ChangeAuthority) -> AppliedChange {
@@ -255,8 +264,9 @@ pub fn run_server_changes(
     session: &mut DocumentSession,
     changes: Vec<ServerChange>,
     cancel: &CancelToken,
-    clock: &dyn Clock,
+    services: ChangeServices<'_>,
 ) -> Result<Vec<ServerChangeOutcome>, EngineError> {
+    let clock = services.clock;
     let mut records: Vec<(String, Option<ChangeRecord>)> = Vec::new();
     let mut outcomes = Vec::with_capacity(changes.len());
     for entry in changes {
@@ -264,7 +274,7 @@ pub fn run_server_changes(
         let ran = in_transaction(session, &op_id, clock, |session| {
             let applied = match change {
                 Change::Ops(ops) => {
-                    apply(session, ops, &authority, cancel, clock, ChangeSpace::Page)?
+                    apply(session, ops, &authority, cancel, services, ChangeSpace::Page)?
                 }
                 Change::UndoOf(undo_of) => {
                     let kept = match records.iter().find(|(id, _)| *id == undo_of) {
@@ -275,7 +285,7 @@ pub fn run_server_changes(
                         None => return Err(undo_unavailable(&undo_of, "expired")),
                         Some(None) => nothing_to_undo(&authority),
                         Some(Some(kept)) => {
-                            undo(session, &kept, &authority, cancel, clock, ChangeSpace::Page)?
+                            undo(session, &kept, &authority, cancel, services, ChangeSpace::Page)?
                         }
                     }
                 }

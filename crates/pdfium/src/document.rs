@@ -132,7 +132,8 @@ impl Document {
     /// close exactly once with `FPDF_CloseDocument`, and whatever it points
     /// into must outlive it. `EPDFLayer_OpenLayer` returns such a handle; the
     /// base document it points into is kept alive by
-    /// [`crate::LayerDocument`], which is the only caller.
+    /// [`crate::LayerDocument`]. A stamp drawing the fork exports or makes
+    /// canonical is another: it points into nothing (`crate::stamp`).
     pub(crate) unsafe fn from_raw_layer(
         handle: pdfium_sys::FPDF_DOCUMENT,
         library: Rc<Library>,

@@ -12,10 +12,11 @@
 use super::item::ChangeItem;
 use super::op::ChangeOp;
 use super::record::{ChangeRecord, ReverseStep};
-use crate::auth::scope::DocCapability;
+use crate::auth::scope::{DocCapability, IdentityClaims};
 use crate::cancel::CancelToken;
 use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
+use crate::ids::IdSource;
 use crate::mutation::MutationMeta;
 use crate::session::authority::SessionAuthority;
 use crate::session::document::DocumentSession;
@@ -25,6 +26,8 @@ use crate::session::document::DocumentSession;
 pub struct ChangeAuthority {
     /// Who makes the change: what its record names, and who may undo it.
     pub user_id: Option<String>,
+    /// Who the change acts for, as a create stamps it (`identity`).
+    pub identity: IdentityClaims,
     /// What each op is checked against. `None`: nothing is checked (a
     /// tenant writing its own document, `grants: null`).
     pub grants: Option<SessionAuthority>,
@@ -33,8 +36,10 @@ pub struct ChangeAuthority {
 impl ChangeAuthority {
     /// The session's own authority: a write whose request named none.
     pub fn of_session(session: &DocumentSession) -> Self {
+        let identity = session.authority().identity().clone();
         Self {
-            user_id: session.authority().identity().user_id.clone(),
+            user_id: identity.user_id.clone(),
+            identity,
             grants: Some(session.authority().clone()),
         }
     }
@@ -42,7 +47,13 @@ impl ChangeAuthority {
     /// Nothing checked and no one named: taking back a refused change, which
     /// only restores what the change itself wrote.
     pub fn rollback() -> Self {
-        Self { user_id: None, grants: None }
+        Self { user_id: None, identity: IdentityClaims::default(), grants: None }
+    }
+
+    /// `checkedAuthority`: a single verb's caller, stamped as it says, with
+    /// nothing checked: the host that sent it checked it.
+    pub fn checked(identity: IdentityClaims) -> Self {
+        Self { user_id: identity.user_id.clone(), identity, grants: None }
     }
 
     /// `authorizeCapability`.
@@ -51,6 +62,56 @@ impl ChangeAuthority {
             Some(grants) => grants.require(capability),
             None => Ok(()),
         }
+    }
+
+    /// `authorizeUnprotected`: what the document's signatures forbid is
+    /// refused `ProtectedDocument`, whoever asks.
+    pub fn require_unprotected(&self, capability: DocCapability) -> Result<(), EngineError> {
+        let Some(protection) = self.grants.as_ref().and_then(SessionAuthority::protection) else {
+            return Ok(());
+        };
+        if !crate::features::signature::protection::protected_capabilities(Some(protection))
+            .contains(&capability)
+        {
+            return Ok(());
+        }
+        // `describeProtection`.
+        let cause = match &protection.certification {
+            Some(certification) => format!(
+                "certification signature {} (permission {})",
+                certification.signature_index, certification.permission
+            ),
+            None => format!(
+                "an existing signature (declared level '{}')",
+                protection
+                    .enforced
+                    .and_then(|level| serde_json::to_value(level).ok())
+                    .and_then(|level| level.as_str().map(str::to_owned))
+                    .unwrap_or_else(|| "none declared".to_owned())
+            ),
+        };
+        Err(EngineError::with_message(
+            EngineErrorCode::ProtectedDocument,
+            format!("the document is signed: {cause} forbids '{capability}'"),
+        ))
+    }
+}
+
+/// What a change writes with besides its document and authority: the
+/// clock, the id source, and this thread's fonts (a free text in a
+/// registered face).
+#[derive(Clone, Copy)]
+pub struct ChangeServices<'a> {
+    pub clock: &'a dyn Clock,
+    pub ids: &'a dyn IdSource,
+    pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
+}
+
+impl<'a> ChangeServices<'a> {
+    /// With no fonts and the system's ids: taking back a refused change,
+    /// which only removes or restores what the change itself wrote.
+    pub fn of_clock(clock: &'a dyn Clock) -> Self {
+        Self { clock, ids: &crate::ids::SystemIdSource, fonts: None }
     }
 }
 
@@ -61,6 +122,10 @@ pub struct ChangeContext<'a> {
     pub cancel: &'a CancelToken,
     /// What a write stamps a date from (an attachment's creation date).
     pub clock: &'a dyn Clock,
+    /// Where a fresh name comes from (a created annotation's `/NM`).
+    pub ids: &'a dyn IdSource,
+    /// This thread's registered fonts, for a free text's face.
+    pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
 }
 
 /// What running an op or a step did: its item, and the steps that reverse
@@ -130,10 +195,11 @@ pub fn apply(
     ops: Vec<ChangeOp>,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
-    clock: &dyn Clock,
+    services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let mut ctx = ChangeContext { session, authority, cancel, clock };
+    let ChangeServices { clock, ids, fonts } = services;
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
     let mut collected = Collected::default();
     for (at, op) in ops.into_iter().enumerate() {
         cancel.check()?;
@@ -151,10 +217,11 @@ pub fn undo(
     record: &ChangeRecord,
     authority: &ChangeAuthority,
     cancel: &CancelToken,
-    clock: &dyn Clock,
+    services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let mut ctx = ChangeContext { session, authority, cancel, clock };
+    let ChangeServices { clock, ids, fonts } = services;
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts };
     let mut collected = Collected::default();
     for step in &record.steps {
         cancel.check()?;
@@ -214,6 +281,9 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::AttachmentsDelete { reference } => {
             super::attachments::delete_attachment(ctx, reference)
         }
+        ChangeOp::AnnotationsCreate { page, data, object_number, resources } => {
+            super::annotations::create_annotation(ctx, *page, data, *object_number, resources)
+        }
     }
 }
 
@@ -226,6 +296,7 @@ pub(super) fn run_step(
         ReverseStep::MetadataRevert(step) => super::metadata::revert_metadata(ctx, step),
         ReverseStep::AttachmentsRemove(step) => super::attachments::remove_attachment(ctx, step),
         ReverseStep::AttachmentsRestore(step) => super::attachments::restore_attachment(ctx, step),
+        ReverseStep::AnnotationRemove(step) => super::annotations::remove_annotation(ctx, step),
     }
 }
 

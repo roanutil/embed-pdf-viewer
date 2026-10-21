@@ -83,5 +83,5 @@ pub use signature_write::{
     SavedCandidate, SealedCandidate, SignaturePrepareOptions, seal_signature_candidate,
     write_signature_contents,
 };
-pub use stamp::{ImageObject, StampFit};
+pub use stamp::{ImageObject, StampFit, sha256};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

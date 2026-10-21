@@ -315,9 +315,10 @@ pub fn create_attachment(
     })
 }
 
-/// `writeAttachmentFilePayload`: the bytes, the creation date in UTC, the
+/// `writeAttachmentFilePayload`, for an embedded file and a file
+/// attachment's file alike: the bytes, the creation date in UTC, the
 /// declared type when there is one, and the description when given.
-fn write_file_payload(
+pub(crate) fn write_file_payload(
     document: &Document,
     attachment: &pdfium::Attachment<'_>,
     bytes: &[u8],

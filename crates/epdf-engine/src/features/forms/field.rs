@@ -661,7 +661,7 @@ pub fn create_widget_on(
         rect: placement.rect,
         style: placement.appearance.clone().unwrap_or_default(),
     };
-    crate::features::annotation::write::create::apply_widget(&annotation, &fields)?;
+    crate::features::annotation::write::legacy::apply_widget(&annotation, &fields)?;
 
     let object_number = annotation.object_number();
     if object_number == 0 {

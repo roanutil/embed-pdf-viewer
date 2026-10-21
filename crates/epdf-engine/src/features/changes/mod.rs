@@ -47,6 +47,7 @@
 //! `translate.rs` carry none (the kernel's metadata patch runs as a
 //! `document.apply`), and neither do most of `tests/document_apply.rs`'s.
 
+pub mod annotations;
 pub mod applier;
 pub mod attachments;
 pub mod fingerprint;

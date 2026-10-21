@@ -102,6 +102,9 @@ struct OpenState {
     /// Index to object number, in display order. Populated lazily.
     records: Vec<PageRecord>,
     fully_enumerated: bool,
+    /// The document's stamp drawings, by content (`DrawingIndex`): new with
+    /// each document it describes.
+    drawings: std::cell::RefCell<crate::features::annotation::write::stamp::DrawingIndex>,
 }
 
 /// One open, locked or closed document.
@@ -294,6 +297,7 @@ impl DocumentSession {
             revisions: RevisionAuthority::new(self.session_id.clone()),
             records: Vec::new(),
             fully_enumerated: false,
+            drawings: Default::default(),
         });
         self.authority = authority;
         self.parked_bytes = None;
@@ -379,6 +383,7 @@ impl DocumentSession {
             revisions: RevisionAuthority::new(self.session_id.clone()),
             records: Vec::new(),
             fully_enumerated: false,
+            drawings: Default::default(),
         });
         self.authority = authority;
         self.parked_bytes = None;
@@ -483,6 +488,16 @@ impl DocumentSession {
 
     pub fn document(&self) -> Result<&OwnedDocument, EngineError> {
         Ok(&self.state()?.document)
+    }
+
+    /// The open document's stamp drawings, by content (`drawingIndex`).
+    pub fn drawing_index(
+        &self,
+    ) -> Result<
+        &std::cell::RefCell<crate::features::annotation::write::stamp::DrawingIndex>,
+        EngineError,
+    > {
+        Ok(&self.state()?.drawings)
     }
 
     pub fn page_count(&self) -> Result<u32, EngineError> {
@@ -699,6 +714,7 @@ impl DocumentSession {
         state.kind = OpenKind::FatMemory;
         state.records.clear();
         state.fully_enumerated = false;
+        state.drawings.get_mut().forget();
         for pon in previous {
             state.revisions.bump(pon);
         }

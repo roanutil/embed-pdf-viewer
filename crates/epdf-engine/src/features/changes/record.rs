@@ -36,6 +36,20 @@ pub enum ReverseStep {
     AttachmentsRemove(AttachmentRemoveStep),
     #[serde(rename = "attachments.restore")]
     AttachmentsRestore(AttachmentRestoreStep),
+    #[serde(rename = "annotation.remove")]
+    AnnotationRemove(AnnotationRemoveStep),
+}
+
+/// Deletes what a create made, with its thread and popups, while it all
+/// reads as the change left it (`AnnotationRemoveStep`): undoing a create
+/// never deletes an annotation someone changed since. `left` is each, as it
+/// read in the file's coordinates, the annotation first.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AnnotationRemoveStep {
+    #[serde(rename = "ref")]
+    pub reference: crate::identity::AnnotationRef,
+    pub left: Vec<serde_json::Value>,
 }
 
 /// Deletes the embedded file a create or a restore brought, while it is
@@ -101,7 +115,9 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
         .steps
         .iter()
         .map(|step| match step {
-            ReverseStep::MetadataRevert(_) | ReverseStep::AttachmentsRemove(_) => 0,
+            ReverseStep::MetadataRevert(_)
+            | ReverseStep::AttachmentsRemove(_)
+            | ReverseStep::AnnotationRemove(_) => 0,
             ReverseStep::AttachmentsRestore(step) => {
                 step.capture.bytes.as_ref().map_or(0, Vec::len)
             }

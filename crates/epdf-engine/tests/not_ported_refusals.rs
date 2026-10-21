@@ -5,6 +5,9 @@
 //! asserts NotImplemented and that nothing was written: the document saves
 //! to the same bytes it did before the request, or, where an earlier write
 //! in the test makes saves differ anyway, the page reads back the same.
+//! A create writes `/RD` the way upstream does since 8.14 (its drafts have
+//! no `rectDifferences`, and the appearance writes `/RD`); the update and the
+//! field writes are 8.15's and 8.21's.
 
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::clock::{FixedClock, Timestamp};
@@ -12,8 +15,9 @@ use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
 use epdf_engine::features::annotation::read::page::read_page_annotations;
 use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::create_annotation;
-use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
+use epdf_engine::features::annotation::write::create::{
+    CreateRequest, CreateServices, create_annotation,
+};
 use epdf_engine::features::annotation::write::patch::AnnotationPatch;
 use epdf_engine::features::annotation::write::update::update_annotation;
 use epdf_engine::features::forms::field::{
@@ -42,57 +46,38 @@ fn field_count(document: &pdfium::Document) -> u32 {
     document.form_model().expect("a form model").field_count()
 }
 
-fn square_draft(extra: serde_json::Value) -> AnnotationDraft {
-    let mut draft = serde_json::json!({
-        "subtype": "square",
-        "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-    });
-    draft.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());
-    serde_json::from_value(draft).expect("the draft decodes")
-}
-
 fn rect_differences() -> serde_json::Value {
     serde_json::json!({ "left": 2.0, "top": 2.0, "right": 2.0, "bottom": 2.0 })
 }
 
-#[test]
-fn a_create_with_rect_differences_is_refused_before_the_annotation_exists() {
-    let session = open(test_support::fixture(test_support::REPORT));
-    let owned = session.document().expect("open");
-    let document = owned.document();
-    let page_object_number =
-        PageObjectNumber::new(document.page_object_number_by_index(0)).expect("indirect page");
-    let state = read_page_annotations(
+/// A square on the first page, made by the create, named as a read names it.
+fn create_square(document: &pdfium::Document) -> epdf_engine::identity::AnnotationRef {
+    let page = PageObjectNumber::new(document.page_object_number_by_index(0)).expect("indirect");
+    let draft = serde_json::json!({ "subtype": "square",
+        "box": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 } });
+    let drawings = std::cell::RefCell::default();
+    let created = create_annotation(
         document,
         0,
-        page_object_number,
-        &RevisionToken::new("<session>", page_object_number, 0),
-        &mut ActionReadBudgetTracker::default(),
+        &epdf_engine::session::document::WriteStamp { op_id: "op".into(), undoable: false },
+        CreateRequest {
+            page,
+            draft: draft.as_object().unwrap().clone(),
+            resources: Default::default(),
+            object_number: None,
+            actor: None,
+        },
+        &CreateServices {
+            context: &AnnotationWriteContext::empty(),
+            drawings: &drawings,
+            clock: &FixedClock(Timestamp::utc(1_700_000_000_000)),
+            ids: &SeededIdSource::new(3),
+            holds_object_number: &|_| true,
+        },
         &CancelToken::never(),
     )
-    .expect("the page lists")
-    .page_state;
-    let page = document.page(0).expect("page");
-    let annotations_before = page.annotation_count();
-    let bytes_before = saved(document);
-
-    let error = create_annotation(
-        document,
-        &page,
-        page_object_number,
-        &state,
-        &state,
-        &square_draft(serde_json::json!({ "rectDifferences": rect_differences() })),
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
-        &FixedClock(Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
-    )
-    .expect_err("refused");
-
-    assert_eq!(error.code, EngineErrorCode::NotImplemented, "{error}");
-    assert_eq!(page.annotation_count(), annotations_before);
-    assert_eq!(saved(document), bytes_before, "the refusal wrote to the document");
+    .expect("a square creates");
+    created.annotation.base.annotation_ref
 }
 
 #[test]
@@ -112,20 +97,8 @@ fn an_update_with_rect_differences_is_refused_before_the_identity_stamp() {
     )
     .expect("the page lists")
     .page_state;
+    let created = create_square(document);
     let page = document.page(0).expect("page");
-    let created = create_annotation(
-        document,
-        &page,
-        page_object_number,
-        &state,
-        &state,
-        &square_draft(serde_json::json!({})),
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty(),
-        &FixedClock(Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
-    )
-    .expect("a square without /RD still creates");
     // Bytes are no use here: two incremental saves of a document with an
     // unsaved create already differ from each other. The page's annotations
     // read back as DTOs carry `/NM` and every field a patch could touch.
@@ -157,7 +130,7 @@ fn an_update_with_rect_differences_is_refused_before_the_identity_stamp() {
         &page,
         0,
         page_object_number,
-        &created.created.base.annotation_ref,
+        &created,
         &patch,
         &AnnotationWriteContext::empty(),
         &state,

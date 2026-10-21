@@ -61,13 +61,53 @@ pub enum ChangeOp {
         #[serde(rename = "ref")]
         reference: AttachmentRef,
     },
+    /// An annotation on `page`, from its data (`AnnotationDraft`) and the
+    /// bytes beside it, at `objectNumber` when given. The data stays the
+    /// JSON object the caller sent: a create checks it field by field
+    /// (`features::annotation::write::prepare`).
+    #[serde(rename = "annotations.create", rename_all = "camelCase")]
+    AnnotationsCreate {
+        #[serde(with = "crate::identity::page_ref")]
+        page: crate::identity::PageObjectNumber,
+        data: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_number: Option<u32>,
+        #[serde(default, skip_serializing_if = "OpResources::is_empty")]
+        resources: OpResources,
+    },
 }
 
 /// The bytes beside an op, by role (`WireAnnotationResources`).
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct OpResources {
+    /// What a stamp shows: PNG, JPEG or a one-page PDF.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub appearance: Option<ResourceBytes>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file: Option<ResourceBytes>,
+}
+
+impl OpResources {
+    pub fn is_empty(&self) -> bool {
+        self.appearance.is_none() && self.file.is_none()
+    }
+
+    /// Each role's bytes from the request's payloads, by the payload each
+    /// names.
+    pub fn resolve(&mut self, payloads: &[Vec<u8>]) -> Result<(), EngineError> {
+        for slot in [&mut self.appearance, &mut self.file] {
+            if let Some(ResourceBytes::Payload(index)) = slot {
+                let bytes = payloads.get(*index).ok_or_else(|| {
+                    malformed(format!(
+                        "resource payload {index} is missing: the request carries {}",
+                        payloads.len()
+                    ))
+                })?;
+                *slot = Some(ResourceBytes::Bytes(bytes.clone()));
+            }
+        }
+        Ok(())
+    }
 }
 
 /// One resource's bytes. On this wire a resource names the request payload
@@ -126,17 +166,8 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
     };
     for op in ops {
         match op {
-            ChangeOp::AttachmentsCreate { resources, .. } => {
-                if let Some(ResourceBytes::Payload(index)) = resources.file {
-                    let bytes = payloads.get(index).ok_or_else(|| {
-                        malformed(format!(
-                            "resource payload {index} is missing: the request carries {}",
-                            payloads.len()
-                        ))
-                    })?;
-                    resources.file = Some(ResourceBytes::Bytes(bytes.clone()));
-                }
-            }
+            ChangeOp::AttachmentsCreate { resources, .. }
+            | ChangeOp::AnnotationsCreate { resources, .. } => resources.resolve(payloads)?,
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
             | ChangeOp::AttachmentsDelete { .. } => {}
@@ -176,6 +207,7 @@ impl ChangeOp {
             Self::MetadataUpdateCustom { .. } => "metadata.updateCustom",
             Self::AttachmentsCreate { .. } => "attachments.create",
             Self::AttachmentsDelete { .. } => "attachments.delete",
+            Self::AnnotationsCreate { .. } => "annotations.create",
         }
     }
 }
@@ -196,8 +228,7 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.14 to 8.16: the annotation ops.
-    ("annotations.create", "8.14"),
+    // 8.15 and 8.16: the other annotation ops.
     ("annotations.update", "8.15"),
     ("annotations.delete", "8.16"),
     ("annotations.reorder", "8.16"),
@@ -302,7 +333,9 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         ChangeOp::MetadataUpdate { keys, .. } | ChangeOp::MetadataUpdateCustom { keys, .. } => {
             *keys = PatchKeys::of(op);
         }
-        ChangeOp::AttachmentsCreate { .. } | ChangeOp::AttachmentsDelete { .. } => {}
+        ChangeOp::AttachmentsCreate { .. }
+        | ChangeOp::AttachmentsDelete { .. }
+        | ChangeOp::AnnotationsCreate { .. } => {}
     }
     Ok(parsed)
 }
@@ -427,9 +460,13 @@ mod tests {
         names.sort_unstable();
         names.dedup();
         assert_eq!(names.len(), OP_OWNERS.len());
-        for ported in
-            ["metadata.update", "metadata.updateCustom", "attachments.create", "attachments.delete"]
-        {
+        for ported in [
+            "metadata.update",
+            "metadata.updateCustom",
+            "attachments.create",
+            "attachments.delete",
+            "annotations.create",
+        ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }
     }

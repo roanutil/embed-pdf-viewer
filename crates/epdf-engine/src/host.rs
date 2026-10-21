@@ -1145,7 +1145,7 @@ impl Host {
                     &serde_json::json!({ "type": header.kind, "patch": patch }),
                 )?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let item = self.apply_one(&key, &op_id, op, cancel)?;
+                let item = self.apply_one(&key, &op_id, op, None, cancel)?;
                 let event = item.events()?.into_iter().next().ok_or_else(|| {
                     EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
                 })?;
@@ -1198,7 +1198,11 @@ impl Host {
                     change,
                     &authority,
                     cancel,
-                    self.clock.as_ref(),
+                    f::changes::applier::ChangeServices {
+                        clock: self.clock.as_ref(),
+                        ids: self.ids.as_ref(),
+                        fonts: self.fonts.as_ref(),
+                    },
                     f::changes::applier::ChangeSpace::Page,
                 )?;
                 let result = value(&answered.result)?;
@@ -1244,7 +1248,11 @@ impl Host {
                     self.sessions.session_mut(&key)?,
                     changes,
                     cancel,
-                    self.clock.as_ref(),
+                    f::changes::applier::ChangeServices {
+                        clock: self.clock.as_ref(),
+                        ids: self.ids.as_ref(),
+                        fonts: self.fonts.as_ref(),
+                    },
                 )?;
                 let wire = outcomes
                     .iter()
@@ -1275,30 +1283,50 @@ impl Host {
                     payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
                 })
             }
+            // `WorkerHost.handleAnnotationsCreate`: the single verb as a
+            // one-op change, its caller's `actor` stamped and nothing else
+            // checked (`checkedAuthority`). The draft reached here in the
+            // file's coordinates (the boundary converted it); the bytes are
+            // the request's payloads, by role.
             "annotations.create" => {
                 let page = page_field(body)?;
-                let draft: f::annotation::write::draft::AnnotationDraft = field(body, "draft")?;
-                let actor: f::annotation::write::draft::AnnotationActor =
-                    optional(body, "actor")?.unwrap_or_default();
-                let owned_payloads = resource_map(body, &payloads)?;
-                let resources = borrowed_resources(&owned_payloads);
-                let context = annotation_context(self.fonts.as_ref(), &resources);
-                let result = f::annotation::write::mutator::create(
-                    self.sessions.session_mut(&key)?,
+                let data: serde_json::Map<String, serde_json::Value> = field(body, "draft")?;
+                let object_number: Option<u32> = optional(body, "objectNumber")?;
+                let mut resources: f::changes::op::OpResources =
+                    optional(body, "resources")?.unwrap_or_default();
+                resources.resolve(&payloads)?;
+                let actor = optional::<f::annotation::write::draft::AnnotationActor>(
+                    body, "actor",
+                )?
+                .map(|actor| IdentityClaims {
+                    user_id: actor.user_id,
+                    group_id: actor.group_id,
+                    groups: Vec::new(),
+                    display_name: actor.display_name,
+                });
+                let op = f::changes::op::ChangeOp::AnnotationsCreate {
                     page,
-                    &draft,
-                    &actor,
-                    &context,
-                    self.clock.as_ref(),
-                    cancel,
-                )?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::AnnotationCreated {
-                        page_object_number: page,
-                        result: value(&result)?,
-                    },
-                )
+                    data,
+                    object_number,
+                    resources,
+                };
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let authority =
+                    f::changes::applier::ChangeAuthority::checked(actor.unwrap_or_default());
+                let item = self.apply_one(&key, &op_id, op, Some(authority), cancel)?;
+                let event = item.events()?.into_iter().next().ok_or_else(|| {
+                    EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
+                })?;
+                let (result, sequence, mut events, payloads) =
+                    self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
+                let mut answer = serde_json::json!({
+                    "result": result,
+                    "mutationSequence": sequence,
+                });
+                if let Some(event) = events.pop() {
+                    answer["event"] = event;
+                }
+                Ok(HostResponse { json: envelope(answer), payloads })
             }
             "annotations.update" => {
                 let annotation_ref: crate::identity::AnnotationRef = field(body, "ref")?;
@@ -2133,6 +2161,7 @@ impl Host {
         key: &SessionKey,
         op_id: &str,
         op: crate::features::changes::op::ChangeOp,
+        authority: Option<crate::features::changes::applier::ChangeAuthority>,
         cancel: &CancelToken,
     ) -> Result<crate::features::changes::item::ChangeItem, EngineError> {
         use crate::features::changes::op::{self, Change};
@@ -2142,7 +2171,12 @@ impl Host {
         let change = Change::Ops(vec![op]);
         let fingerprint = fingerprint::change_fingerprint(&op::change_value(&change)?);
         let session = self.sessions.session_mut(key)?;
-        let authority = applier::ChangeAuthority::of_session(session);
+        let authority = authority.unwrap_or_else(|| applier::ChangeAuthority::of_session(session));
+        let services = applier::ChangeServices {
+            clock: self.clock.as_ref(),
+            ids: self.ids.as_ref(),
+            fonts: self.fonts.as_ref(),
+        };
         let answered = transaction::run_change(
             session,
             op_id,
@@ -2150,7 +2184,7 @@ impl Host {
             change,
             &authority,
             cancel,
-            self.clock.as_ref(),
+            services,
             applier::ChangeSpace::File,
         )?;
         match answered.result.items.into_iter().next() {
@@ -2749,7 +2783,13 @@ fn change_authority(
             Some(authority)
         }
     };
-    Ok(crate::features::changes::applier::ChangeAuthority { user_id, grants })
+    let identity = IdentityClaims {
+        user_id: user_id.clone(),
+        group_id: wire.identity.group_id.clone(),
+        groups: Vec::new(),
+        display_name: wire.identity.display_name.clone(),
+    };
+    Ok(crate::features::changes::applier::ChangeAuthority { user_id, identity, grants })
 }
 
 /// A single verb's result: its item without the item's `type` and
@@ -2766,6 +2806,13 @@ fn strip_item(
             Ok(serde_json::json!({ "attachment": value(&attachment)?, "meta": value(&meta)? }))
         }
         ChangeItem::AttachmentsDelete { meta } => Ok(serde_json::json!({ "meta": value(&meta)? })),
+        // Without its `page` too, as `handleAnnotationsCreate` strips it.
+        ChangeItem::AnnotationsCreate { annotation, meta, .. } => {
+            Ok(serde_json::json!({ "annotation": annotation, "meta": value(&meta)? }))
+        }
+        ChangeItem::AnnotationsDelete { meta, .. } => {
+            Ok(serde_json::json!({ "meta": value(&meta)? }))
+        }
         ChangeItem::Skipped { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a write wrote nothing"))
         }

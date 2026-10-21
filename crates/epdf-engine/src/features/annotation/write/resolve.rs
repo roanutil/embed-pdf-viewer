@@ -82,6 +82,56 @@ pub fn base_index_position(
     }
 }
 
+/// Where the annotation `annotation_ref` names is in its page's `/Annots`,
+/// found from the page's dictionaries without loading the page
+/// (`resolveAnnotIndexRaw`). `NotFound` when it isn't there. A `baseIndex`
+/// on a page the layer promoted is found through its birth; on any other
+/// page it is still inline at that position.
+pub fn resolve_annotation_index_raw(
+    document: &Document,
+    page_index: u32,
+    annotation_ref: &AnnotationRef,
+) -> Result<u32, EngineError> {
+    let page = annotation_ref.page().get();
+    let count = document.raw_annotation_count(page_index).unwrap_or(0);
+    let index_of = |object_number: u32| {
+        (0..count).find(|index| {
+            document
+                .raw_annotation(page_index, *index)
+                .is_some_and(|annotation| annotation.object_number() == object_number)
+        })
+    };
+    match annotation_ref {
+        AnnotationRef::ObjectNumber { annot, .. } => index_of(*annot).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::NotFound,
+                format!("no annotation with object number {annot} on page {page}"),
+            )
+        }),
+        AnnotationRef::BaseIndex { base_index, .. } => {
+            let found = if document.layer_is_page_promoted(page) {
+                document.layer_birth_object_number(page, *base_index).and_then(index_of)
+            } else {
+                // Only an inline entry still sits at its birth position.
+                document
+                    .raw_annotation(page_index, *base_index)
+                    .filter(|annotation| annotation.object_number() == 0)
+                    .map(|_| *base_index)
+            };
+            found.ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::NotFound,
+                    format!("no annotation born at position {base_index} of page {page}"),
+                )
+            })
+        }
+        AnnotationRef::Nm { .. } | AnnotationRef::Index { .. } => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "an annotation is named by object number or base index",
+        )),
+    }
+}
+
 fn base_index_not_found(base_index: u32) -> EngineError {
     EngineError::with_message(
         EngineErrorCode::NotFound,

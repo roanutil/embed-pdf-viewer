@@ -18,8 +18,9 @@ use epdf_engine::error::EngineErrorCode;
 use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
 use epdf_engine::features::annotation::read::page::read_page_annotations;
 use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::create_annotation;
-use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
+use epdf_engine::features::annotation::write::create::{
+    CreateRequest, CreateServices, create_annotation,
+};
 use epdf_engine::features::annotation::write::patch::AnnotationPatch;
 use epdf_engine::features::annotation::write::update::update_annotation;
 use epdf_engine::identity::PageObjectNumber;
@@ -118,38 +119,22 @@ fn run(file: &VectorFile, case: &Case) -> Result<Updated, epdf_engine::error::En
     // the vector does not start moving.
     let ids = SeededIdSource::new(7);
 
-    let draft: AnnotationDraft = serde_json::from_value(case.draft.clone())
-        .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", case.name));
     let patch: AnnotationPatch = serde_json::from_value(case.patch.clone())
         .unwrap_or_else(|e| panic!("{}: the patch does not decode: {e}", case.name));
 
     let owned = session.document().expect("open");
     let view = owned.document().page(0).expect("page");
     let resources = write_resources(&case.resources);
-    let created = create_annotation(
-        owned.document(),
-        &view,
-        page,
-        &before,
-        &after,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty().with_resources(&resources),
-        &created_at,
-        &CancelToken::never(),
-    )
-    .unwrap_or_else(|e| panic!("{}: create: {e}", case.name));
-    let created_modified = serde_json::to_value(&created.created).expect("serialize")["modified"]
-        .as_str()
-        .expect("a created /M")
-        .to_owned();
+    let (created_ref, created_modified) =
+        create_subject(owned, page, &case.draft, &case.resources, &created_at)
+            .unwrap_or_else(|e| panic!("{}: create: {e}", case.name));
 
     let result = update_annotation(
         owned.document(),
         &view,
         0,
         page,
-        &created.created.base.annotation_ref,
+        &created_ref,
         &patch,
         &AnnotationWriteContext::empty().with_resources(&resources),
         &before,
@@ -410,24 +395,17 @@ fn with_patched<R>(
     let page = PageObjectNumber::new(case.page_object_number).expect("page number");
     let (before, after) = states(page, true);
     let resources = write_resources(&case.resources);
-    let draft: AnnotationDraft =
-        serde_json::from_value(case.draft.clone()).expect("the draft decodes");
     let patch: AnnotationPatch =
         serde_json::from_value(case.patch.clone()).expect("the patch decodes");
 
     let owned = session.document().expect("open");
     let view = owned.document().page(0).expect("page");
-    let created = create_annotation(
-        owned.document(),
-        &view,
+    let (created_ref, _) = create_subject(
+        owned,
         page,
-        &before,
-        &after,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty().with_resources(&resources),
+        &case.draft,
+        &case.resources,
         &FixedClock(Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
     )
     .unwrap_or_else(|e| panic!("{name}: create: {e}"));
     update_annotation(
@@ -435,7 +413,7 @@ fn with_patched<R>(
         &view,
         0,
         page,
-        &created.created.base.annotation_ref,
+        &created_ref,
         &patch,
         &AnnotationWriteContext::empty().with_resources(&resources),
         &before,
@@ -532,6 +510,51 @@ fn normalize_stamps(value: &serde_json::Value) -> serde_json::Value {
 /// A stamp patch is the only one that names a binary, and it names it the
 /// same way a draft does: the JSON carries a key and the bytes travel beside
 /// it, exactly as in a real mutation.
+/// Create a case's subject from its page-space draft, through the create
+/// `annotations.create` runs, and answer how a read names it and its `/M`.
+fn create_subject(
+    owned: &epdf_engine::access::OwnedDocument,
+    page: PageObjectNumber,
+    draft: &serde_json::Value,
+    resources: &std::collections::BTreeMap<String, Vec<u8>>,
+    clock: &FixedClock,
+) -> Result<(epdf_engine::identity::AnnotationRef, String), epdf_engine::error::EngineError> {
+    let document = owned.document();
+    let visible = epdf_engine::features::pages::visible_box_of(owned, page)?;
+    let draft = epdf_engine::page_space::annotations::pdf_annotation_draft_of(
+        draft.as_object().cloned().unwrap_or_default(),
+        visible,
+        &mut |_| Ok(visible),
+    )?;
+    let role = |name: &str| resources.get(name).map(Vec::as_slice);
+    let drawings = std::cell::RefCell::default();
+    let created = create_annotation(
+        document,
+        0,
+        &epdf_engine::session::document::WriteStamp { op_id: "op".into(), undoable: false },
+        CreateRequest {
+            page,
+            draft,
+            resources: epdf_engine::features::annotation::write::prepare::DraftResources {
+                appearance: role("appearance"),
+                file: role("file"),
+            },
+            object_number: None,
+            actor: None,
+        },
+        &CreateServices {
+            context: &AnnotationWriteContext::empty(),
+            drawings: &drawings,
+            clock,
+            ids: &SeededIdSource::new(5),
+            holds_object_number: &|_| true,
+        },
+        &CancelToken::never(),
+    )?;
+    let modified = created.annotation.base.modified_at.clone().unwrap_or_default();
+    Ok((created.annotation.base.annotation_ref, modified))
+}
+
 fn write_resources(
     bytes: &std::collections::BTreeMap<String, Vec<u8>>,
 ) -> epdf_engine::features::annotation::write::context::WriteResourceMap<'_> {

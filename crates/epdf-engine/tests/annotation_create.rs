@@ -5,31 +5,33 @@
 //!
 //! # The read is the assertion
 //!
-//! What is compared is the DTO the create RETURNED, and a create obtains that
-//! by reading the new annotation back through the same reader a listing uses.
-//! So this compares two documents rather than two descriptions of an intent:
-//! anything PDFium normalized on the way in shows up on both sides or on
-//! neither, and a writer that wrote nothing at all would be caught by the
-//! read rather than by believing its own report.
+//! Each case's draft is the v3 page-space draft the generator sent, replayed
+//! as the wire request through [`Host::call`], with its bytes as payloads by
+//! role. What is compared is the annotation the create answered, which a
+//! create reads back as a listing reads it: anything PDFium normalized on the
+//! way in shows up on both sides or on neither.
 //!
-//! `modified` is dropped from the comparison: it is `/M`, stamped from the
-//! clock, and the two engines ran at different instants. Its presence is
-//! asserted separately, because a writer that skipped it would otherwise pass.
+//! The stamps are left out of the comparison, as the generator leaves them
+//! out (`normalizeWriteStamps`): `modifiedAt` is `/M` from the clock (its
+//! presence is asserted), `createdAt` is `/CreationDate` and a file's
+//! creation date, and a create with no name of its own gets a fresh UUIDv7
+//! `/NM`. Each reads `"<stamped>"`, and its shape is asserted here.
 
-use epdf_engine::access::DocumentAccess;
-use epdf_engine::cancel::CancelToken;
-use epdf_engine::clock::FixedClock;
-use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::annotation::write::context::AnnotationWriteContext;
-use epdf_engine::features::annotation::write::create::create_annotation;
-use epdf_engine::features::annotation::write::draft::{AnnotationActor, AnnotationDraft};
-use epdf_engine::identity::PageObjectNumber;
-use epdf_engine::session::authority::SessionAuthority;
-use epdf_engine::session::document::DocumentSession;
+mod common;
+
+use common::replay::Replay;
+use epdf_engine::host::Host;
+use epdf_engine::session::registry::SessionKey;
 use serde::Deserialize;
+use serde_json::{Value, json};
 
 const SCHEMA_VERSION: u32 = 1;
-const SESSION: &str = "<session>";
+const STAMPED: &str = "<stamped>";
+const DOC: &str = "doc-1";
+/// The object numbers upstream's local engine reserves at open for the
+/// creates its main thread names (`OBJECT_NUMBER_POOL_SIZE`): a create that
+/// names none is numbered past them.
+const OBJECT_NUMBER_POOL_SIZE: u32 = 64;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -45,24 +47,25 @@ struct VectorFile {
 struct Case {
     name: String,
     covers: String,
-    draft: serde_json::Value,
-    /// The binaries this draft names by key. A draft is JSON and a file is
-    /// not, so the bytes travel beside it exactly as they do in a real
-    /// mutation.
+    draft: Value,
+    /// The bytes beside the draft, by role (`appearance`, `file`).
     #[serde(default)]
     resources: std::collections::BTreeMap<String, Vec<u8>>,
     page_object_number: u32,
-    created: serde_json::Value,
+    #[serde(default)]
+    created: Value,
+    #[serde(default)]
     has_modified: bool,
-    meta: ExpectedMeta,
+    #[serde(default)]
+    meta: Option<ExpectedMeta>,
+    #[serde(default)]
+    refused_with: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: serde_json::Value,
-    weak_refs_invalidated: bool,
-    should_refetch: serde_json::Value,
+    changed: Value,
 }
 
 fn load() -> VectorFile {
@@ -75,47 +78,94 @@ fn load() -> VectorFile {
     file
 }
 
-#[derive(Debug)]
+fn case<'a>(file: &'a VectorFile, name: &str) -> &'a Case {
+    file.cases.iter().find(|c| c.name == name).unwrap_or_else(|| panic!("no case {name}"))
+}
+
+fn page_ref(pon: u32) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": pon })
+}
+
+/// The wire request for a draft on page `pon`, with `resources` as the
+/// request's payloads, by role.
+fn request(
+    draft: &Value,
+    pon: u32,
+    resources: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> (Value, Vec<Vec<u8>>) {
+    let mut payloads = Vec::new();
+    let mut roles = serde_json::Map::new();
+    for (role, bytes) in resources {
+        roles.insert(role.clone(), json!({ "payload": payloads.len() }));
+        payloads.push(bytes.clone());
+    }
+    let mut request = json!({ "kind": "annotations.create", "jobId": "<job>", "docId": DOC,
+        "page": page_ref(pon), "draft": draft });
+    if !roles.is_empty() {
+        request["resources"] = Value::Object(roles);
+    }
+    (request, payloads)
+}
+
+/// What one create answered.
 struct Created {
-    dto: serde_json::Value,
-    meta: serde_json::Value,
+    outcome: Result<Value, Value>,
+    event: Option<Value>,
 }
 
-/// PDFium stamps an attachment's `/Params /CreationDate` from the clock when
-/// the bytes are written, so the two engines record different instants for
-/// the same file. The generator writes the token; this puts the Rust side on
-/// the same footing, and the PRESENCE of a real date is asserted separately.
-const STAMPED: &str = "<stamped>";
-
-/// Borrow the case's payloads as the write context takes them.
-fn write_resources(
-    bytes: &std::collections::BTreeMap<String, Vec<u8>>,
-) -> epdf_engine::features::annotation::write::context::WriteResourceMap<'_> {
-    bytes
-        .iter()
-        .map(|(key, value)| {
-            (
-                key.clone(),
-                epdf_engine::features::annotation::write::context::WriteResource {
-                    bytes: value.as_slice(),
-                    mime_type: None,
-                },
-            )
-        })
-        .collect()
+/// The fixture open as upstream's `open.fatMem` opens it: a layer over the
+/// bytes (`openBytesAsLayer`), whose new objects are numbered past the base
+/// file's. This engine opens `open.fatMem` as a plain document until Task
+/// 8.29, which numbers a new object from the file's first free number, so
+/// the layer is opened by name here.
+fn open(file: &VectorFile) -> Replay {
+    let mut host = Host::new();
+    let opened = host.call(
+        &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": DOC,
+            "baseKey": "base", "layer": { "kind": "fresh" }, "password": null,
+            "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
+        .to_string(),
+        vec![test_support::fixture(&file.fixture)],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    Replay::adopt(host, DOC)
 }
 
-fn normalize_stamps(value: &serde_json::Value) -> serde_json::Value {
+fn create_in(replay: &mut Replay, case: &Case) -> Created {
+    create_draft(replay, &case.draft, case.page_object_number, &case.resources)
+}
+
+fn create_draft(
+    replay: &mut Replay,
+    draft: &Value,
+    pon: u32,
+    resources: &std::collections::BTreeMap<String, Vec<u8>>,
+) -> Created {
+    let (request, payloads) = request(draft, pon, resources);
+    let answer = replay.send(&request, payloads);
+    // A write answers its result beside its sequence and its event.
+    match answer.outcome {
+        Ok(mut written) => Created {
+            event: written.get_mut("event").map(Value::take),
+            outcome: Ok(written["result"].take()),
+        },
+        Err(error) => Created { outcome: Err(error), event: None },
+    }
+}
+
+/// `value` with its stamps as the generator records them: `createdAt` and a
+/// UUID `nm` as `"<stamped>"` (`normalizeWriteStamps`).
+fn normalize_stamps(value: &Value) -> Value {
     match value {
-        serde_json::Value::Array(items) => {
-            serde_json::Value::Array(items.iter().map(normalize_stamps).collect())
-        }
-        serde_json::Value::Object(fields) => serde_json::Value::Object(
+        Value::Array(items) => Value::Array(items.iter().map(normalize_stamps).collect()),
+        Value::Object(fields) => Value::Object(
             fields
                 .iter()
                 .map(|(key, entry)| {
-                    if key == "creationDate" && entry.is_string() {
-                        (key.clone(), serde_json::Value::from(STAMPED))
+                    let stamped = (key == "createdAt" && entry.is_string())
+                        || (key == "nm" && entry.as_str().is_some_and(is_uuid));
+                    if stamped {
+                        (key.clone(), Value::from(STAMPED))
                     } else {
                         (key.clone(), normalize_stamps(entry))
                     }
@@ -126,84 +176,47 @@ fn normalize_stamps(value: &serde_json::Value) -> serde_json::Value {
     }
 }
 
-/// Open the fixture, create one annotation, and report what came back.
-fn create(file: &VectorFile, case: &Case) -> Result<Created, epdf_engine::error::EngineError> {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{}: read {}: {e}", case.name, file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-
-    let page_object_number =
-        PageObjectNumber::new(case.page_object_number).expect("a page object number");
-    // The listing is what populates the registry, and the page state the
-    // impact classifier needs a known weak flag from.
-    let annotations = epdf_engine::features::annotation::read::page::read_page_annotations(
-        session.document().expect("open").document(),
-        0,
-        page_object_number,
-        &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists");
-    let state = annotations.page_state;
-
-    let draft: AnnotationDraft = serde_json::from_value(case.draft.clone())
-        .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", case.name));
-    let resources = write_resources(&case.resources);
-
-    let owned = session.document().expect("open");
-    let page = owned.document().page(0).expect("page");
-    let result = create_annotation(
-        owned.document(),
-        &page,
-        page_object_number,
-        &state,
-        &state,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty().with_resources(&resources),
-        // A fixed clock, because `/M` is dropped from the comparison and a
-        // wall clock would make this test's own output depend on when it ran.
-        &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
-    )?;
-
-    let dto = serde_json::to_value(&result.created).expect("serialize");
-    let meta = serde_json::to_value(&result.meta).expect("serialize");
-    Ok(Created { dto, meta })
+/// A UUID's canonical form (`8-4-4-4-12` lowercase hex).
+fn is_uuid(text: &str) -> bool {
+    let groups: Vec<&str> = text.split('-').collect();
+    groups.iter().map(|g| g.len()).eq([8, 4, 4, 4, 12])
+        && groups
+            .iter()
+            .all(|g| g.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
 }
 
 #[test]
 fn a_created_annotation_reads_back_as_the_typescript_engines_did() {
     let file = load();
-    assert!(file.cases.len() >= 10, "the case list shrank");
-
+    assert_eq!(file.cases.len(), 57, "the case list moved");
     for case in &file.cases {
-        let created = create(&file, case).unwrap_or_else(|e| panic!("{}: create: {e}", case.name));
-
-        let mut mine = created.dto.as_object().expect("an object").clone();
-        let modified = mine.remove("modified").expect("the DTO carries a modified key");
+        let mut replay = open(&file);
+        let created = create_in(&mut replay, case);
+        if let Some(code) = &case.refused_with {
+            let error = created.outcome.expect_err(&case.name);
+            assert_eq!(error["code"], json!(code), "{}: {error}", case.name);
+            continue;
+        }
+        let result = created.outcome.unwrap_or_else(|e| panic!("{}: create: {e}", case.name));
+        let mut mine =
+            result["annotation"].as_object().unwrap_or_else(|| panic!("{result}")).clone();
+        let modified = mine.remove("modifiedAt").expect("the record carries modifiedAt");
         assert_eq!(
             case.has_modified,
             modified.as_str().is_some_and(|m| !m.is_empty()),
             "{}: /M presence differs",
             case.name,
         );
-
-        // An attachment's creation date is PDFium's own stamp, so it is
-        // replaced by the token the generator wrote and its shape is
-        // asserted here instead: a PDF date, not an empty string.
-        if let Some(date) = mine
-            .get("file")
-            .and_then(|file| file.get("creationDate"))
-            .and_then(serde_json::Value::as_str)
-        {
-            assert!(date.starts_with("D:"), "{}: /Params /CreationDate is {date}", case.name);
+        // The stamps, by shape: an ISO date, and a name the create made a
+        // UUIDv7 when the draft gave none.
+        let created_at = mine["createdAt"].as_str().expect("a creation date");
+        assert!(created_at.len() >= 20 && created_at.contains('T'), "{}: {created_at}", case.name);
+        if case.created["nm"] == STAMPED {
+            let nm = mine["nm"].as_str().expect("a name");
+            assert!(is_uuid(nm) && &nm[14..15] == "7", "{}: /NM {nm} is not a UUIDv7", case.name);
         }
-
         assert_eq!(
-            test_support::canonical_numbers(&normalize_stamps(&serde_json::Value::Object(mine))),
+            test_support::canonical_numbers(&normalize_stamps(&Value::Object(mine))),
             test_support::canonical_numbers(&case.created),
             "{}: {}",
             case.name,
@@ -214,562 +227,385 @@ fn a_created_annotation_reads_back_as_the_typescript_engines_did() {
 
 #[test]
 fn a_create_is_append_only_and_says_so() {
-    // The envelope, which is the impact classifier's verdict rather than the
-    // writer's. A create appends, so no existing index moves and no client
-    // holding one has to re-read, whatever else is on the page.
+    // The meta of a one-op change: the page it touched, the annotation it
+    // made, named by its object number, under the write's `opId`, and
+    // undoable, since its record deletes what it made.
     let file = load();
-    for case in &file.cases {
-        let created = create(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
-        let meta = created.meta.as_object().expect("an object");
-
+    for case in file.cases.iter().filter(|c| c.refused_with.is_none()) {
+        let mut replay = open(&file);
+        let created = create_in(&mut replay, case);
+        let result = created.outcome.unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let meta = &result["meta"];
         assert_eq!(
             test_support::canonical_numbers(&meta["changed"]),
-            test_support::canonical_numbers(&case.meta.changed),
+            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed),
             "{}: the changed list",
             case.name,
         );
         assert_eq!(
-            meta["weakRefsInvalidated"].as_bool(),
-            Some(case.meta.weak_refs_invalidated),
-            "{}: the weak flag",
-            case.name,
+            meta["affectedPages"],
+            json!([page_ref(case.page_object_number)]),
+            "{}",
+            case.name
         );
-        assert_eq!(meta["shouldRefetch"], case.meta.should_refetch, "{}", case.name);
-        assert!(meta["shouldRefetch"].is_null(), "{}: a create asked for a refetch", case.name);
+        assert_eq!(meta["cacheDelta"], Value::Null, "{}", case.name);
+        assert!(meta["opId"].as_str().is_some_and(|id| !id.is_empty()), "{}: {meta}", case.name);
+        assert_eq!(meta["undoable"], json!(true), "{}: {meta}", case.name);
+        assert!(meta.get("weakRefsInvalidated").is_none(), "{}: an old meta key", case.name);
+        // The event is the item's: `annotations.created`, on the page.
+        let event = created.event.expect("a create publishes");
+        assert_eq!(event["type"], "annotations.created", "{}", case.name);
+        assert_eq!(event["page"], page_ref(case.page_object_number), "{}", case.name);
+        assert_eq!(event["annotation"], result["annotation"], "{}", case.name);
     }
 }
 
 #[test]
 fn a_new_annotation_is_addressable() {
-    // Creation goes through the fork's indirect helper, so the result has an
-    // object number and therefore an address that survives a reordering. An
-    // annotation created weak would be one nobody can refer to.
+    // Born an indirect object, so named by its object number: an address
+    // that survives a reordering.
     let file = load();
-    for case in &file.cases {
-        let created = create(&file, case).unwrap_or_else(|e| panic!("{}: {e}", case.name));
-        assert_eq!(
-            created.dto["identityQuality"].as_str(),
-            Some("durable"),
-            "{}: a created annotation must be durable",
-            case.name,
-        );
-        assert_eq!(
-            created.dto["ref"]["kind"].as_str(),
-            Some("objectNumber"),
-            "{}: and addressed by its object number",
-            case.name,
-        );
+    for case in file.cases.iter().filter(|c| c.refused_with.is_none()) {
+        let mut replay = open(&file);
+        let result = create_in(&mut replay, case).outcome.expect("created");
+        let reference = &result["annotation"]["ref"];
+        assert_eq!(reference["kind"], "objectNumber", "{}", case.name);
+        assert!(reference["objectNumber"].as_u64().is_some_and(|n| n > 0), "{}", case.name);
+        assert_eq!(reference["page"], page_ref(case.page_object_number), "{}", case.name);
     }
+}
+
+/// A draft, the bytes beside it, what it gets wrong, and the field the
+/// refusal names (when it names one).
+type Refusal<'a> =
+    (Value, &'a std::collections::BTreeMap<String, Vec<u8>>, &'a str, Option<&'a str>);
+
+fn listed_count(replay: &mut Replay) -> usize {
+    let listed = replay
+        .replay(&json!({ "kind": "annotations.list", "jobId": "<job>", "docId": DOC }))
+        .expect("the document lists");
+    listed["annotations"].as_array().expect("annotations").len()
 }
 
 #[test]
 fn a_draft_that_cannot_be_written_is_refused_before_anything_is_written() {
-    // The apply boundary. A markup with no quads has no `/Rect` to derive,
-    // a vertex path of one point draws nothing, an ink stroke with no points
-    // is a pen that never touched the page,
-    // and a shape with an inside-out rect describes no region; both are the
-    // caller's mistake, and both have to be caught before an annotation
-    // exists in the file, because nothing here can take one back out.
+    // The apply boundary: each draft its kind's checks refuse is
+    // `InvalidArg`, and leaves the document as it was, so the next create
+    // is the only annotation the page gains.
     let file = load();
-    let case = file.cases.first().expect("a case to borrow the fixture from");
-
-    for (draft, what) in [
-        (serde_json::json!({ "subtype": "highlight", "quadPoints": [] }), "no quads"),
+    let pon = file.cases[0].page_object_number;
+    let png: Vec<u8> = case(&file, "stamp-png-contain").resources["appearance"].clone();
+    let png_only: std::collections::BTreeMap<String, Vec<u8>> =
+        [("appearance".to_owned(), png)].into_iter().collect();
+    let text_bytes: std::collections::BTreeMap<String, Vec<u8>> =
+        [("file".to_owned(), b"bytes".to_vec())].into_iter().collect();
+    let not_a_format: std::collections::BTreeMap<String, Vec<u8>> =
+        [("appearance".to_owned(), b"bytes".to_vec())].into_iter().collect();
+    let none = std::collections::BTreeMap::new();
+    let square = |extra: Value| {
+        let mut draft =
+            json!({ "subtype": "square", "box": { "x": 10, "y": 10, "width": 90, "height": 90 } });
+        for (k, v) in extra.as_object().unwrap() {
+            draft[k] = v.clone();
+        }
+        draft
+    };
+    let cases: Vec<Refusal<'_>> = vec![
         (
-            serde_json::json!({
-                "subtype": "square",
-                "rect": { "left": 100.0, "bottom": 100.0, "right": 10.0, "top": 200.0 },
-            }),
-            "an inside-out rect",
+            json!({ "subtype": "highlight", "quadPoints": [] }),
+            &none,
+            "no quads",
+            Some("quadPoints"),
         ),
         (
-            serde_json::json!({
-                "subtype": "square",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-                "opacity": 2.0,
-            }),
-            "an opacity outside 0..=1",
+            json!({ "subtype": "highlight" }),
+            &none,
+            "a markup with no quads at all",
+            Some("quadPoints"),
+        ),
+        (square(json!({ "color": "red" })), &none, "a colour not as #rrggbb", Some("color")),
+        (square(json!({ "opacity": 2 })), &none, "an opacity outside 0..1", Some("opacity")),
+        (
+            square(json!({ "cloudyIntensity": 0 })),
+            &none,
+            "a cloudy border of no intensity",
+            Some("cloudyIntensity"),
+        ),
+        (square(json!({ "strokeWidth": -1 })), &none, "a negative stroke", Some("strokeWidth")),
+        (
+            square(json!({ "borderStyle": "beveled" })),
+            &none,
+            "a border only widgets draw",
+            Some("borderStyle"),
+        ),
+        (square(json!({ "quadPoints": [] })), &none, "a field its kind doesn't declare", None),
+        (
+            json!({ "subtype": "square" }),
+            &none,
+            "a box kind with neither box nor rect",
+            Some("box"),
         ),
         (
-            serde_json::json!({
-                "subtype": "polygon",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-                "vertices": [{ "x": 10.0, "y": 10.0 }],
-            }),
-            "a vertex path of one point",
+            json!({ "subtype": "square", "rotation": 30,
+                    "rect": { "x": 10, "y": 10, "width": 90, "height": 90 } }),
+            &none,
+            "a rect at an angle a box can't be told from",
+            Some("rect"),
         ),
         (
-            serde_json::json!({
-                "subtype": "ink",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-                "inkList": [[{ "x": 10.0, "y": 10.0 }], []],
-            }),
+            json!({ "subtype": "polygon", "vertices": [{ "x": 1, "y": 1 }, { "x": 9, "y": 9 }] }),
+            &none,
+            "a polygon of two points",
+            Some("vertices"),
+        ),
+        (
+            json!({ "subtype": "polyline", "vertices": [{ "x": 1, "y": 1 }] }),
+            &none,
+            "a polyline of one point",
+            Some("vertices"),
+        ),
+        (
+            json!({ "subtype": "ink", "inkList": [[{ "x": 1, "y": 1 }], []] }),
+            &none,
             "an ink stroke with no points",
+            Some("inkList"),
         ),
         (
-            serde_json::json!({
-                "subtype": "square",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 100.0 },
-                "rotation": 30.0,
-            }),
-            "a rotation with no logical box to turn",
+            json!({ "subtype": "ink", "inkList": [[{ "x": 1, "y": 1 }]], "strokeWidth": 0 }),
+            &none,
+            "ink drawn with no width",
+            Some("strokeWidth"),
         ),
         (
-            serde_json::json!({
-                "subtype": "text",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
-                "state": "accepted",
-            }),
-            "a review state belonging to no model",
+            json!({ "subtype": "text", "rect": { "x": 10, "y": 10, "width": 20, "height": 20 },
+                    "state": "AwaitingCounsel" }),
+            &none,
+            "a custom review state with no model",
+            Some("stateModel"),
         ),
         (
-            serde_json::json!({
-                "subtype": "free-text",
-                "intent": "free-text-callout",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "fontFamily": "helvetica",
-                "fontSize": 12.0,
-                "textAlign": "left",
-            }),
-            "a callout with no leader to call anything out with",
-        ),
-        (
-            serde_json::json!({
-                "subtype": "free-text",
-                "intent": "free-text",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "fontFamily": "helvetica",
-                "fontSize": 12.0,
-                "textAlign": "left",
-                "calloutLine": [{ "x": 0.0, "y": 0.0 }, { "x": 10.0, "y": 10.0 }],
-            }),
+            json!({ "subtype": "free-text", "intent": "free-text",
+                    "box": { "x": 10, "y": 10, "width": 90, "height": 50 },
+                    "calloutLine": [{ "x": 0, "y": 0 }, { "x": 10, "y": 10 }] }),
+            &none,
             "a leader on a plain text box",
+            Some("intent"),
         ),
         (
-            serde_json::json!({
-                "subtype": "free-text",
-                "intent": "free-text",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "fontFamily": "helvetica",
-                "fontSize": 0.0,
-                "textAlign": "left",
-            }),
+            json!({ "subtype": "free-text", "box": { "x": 10, "y": 10, "width": 90, "height": 50 },
+                    "fontSize": 0 }),
+            &none,
             "text drawn at no size at all",
+            Some("fontSize"),
         ),
         (
-            serde_json::json!({
-                "subtype": "free-text",
-                "intent": "free-text",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "fontFamily": "a-font-nobody-registered",
-                "fontSize": 12.0,
-                "textAlign": "left",
-            }),
+            json!({ "subtype": "free-text", "box": { "x": 10, "y": 10, "width": 90, "height": 50 },
+                    "fontFamily": "a-font-nobody-registered" }),
+            &none,
             "a font this host has no registry to resolve",
+            None,
         ),
         (
-            serde_json::json!({
-                "subtype": "file-attachment",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
-                "file": { "resource": "never-arrived", "name": "notes.txt" },
-            }),
+            json!({ "subtype": "free-text", "box": { "x": 10, "y": 10, "width": 90, "height": 50 },
+                    "contents": "one", "richText": { "paragraphs": [{ "runs": [{ "text": "two" }] }] } }),
+            &none,
+            "contents that disagree with the rich text",
+            None,
+        ),
+        (
+            json!({ "subtype": "file-attachment", "rect": { "x": 10, "y": 10, "width": 20, "height": 20 },
+                    "file": { "name": "notes.txt" } }),
+            &none,
             "a file whose bytes did not travel with the draft",
+            None,
         ),
         (
-            serde_json::json!({
-                "subtype": "file-attachment",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 30.0, "top": 30.0 },
-                "file": { "resource": "r0", "name": "" },
-            }),
-            "a filespec that names nothing",
+            json!({ "subtype": "file-attachment", "rect": { "x": 10, "y": 10, "width": 20, "height": 20 } }),
+            &text_bytes,
+            "a file with no name",
+            Some("file.name"),
         ),
         (
-            serde_json::json!({
-                "subtype": "link",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 30.0 },
-                "target": { "kind": "uri", "uri": "" },
-            }),
-            "a link to an empty uri",
+            json!({ "subtype": "stamp", "box": { "x": 10, "y": 10, "width": 90, "height": 50 } }),
+            &text_bytes,
+            "a stamp given a file instead of its appearance",
+            None,
         ),
         (
-            serde_json::json!({
-                "subtype": "stamp",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "source": { "resource": "not-a-format" },
-            }),
-            "a stamp whose source is not a format this build places",
+            json!({ "subtype": "stamp", "box": { "x": 10, "y": 10, "width": 90, "height": 50 } }),
+            &not_a_format,
+            "an appearance that is not PNG, JPEG or PDF",
+            None,
         ),
         (
-            serde_json::json!({
-                "subtype": "stamp",
-                "rect": { "left": 10.0, "bottom": 10.0, "right": 100.0, "top": 60.0 },
-                "source": { "resource": "r0" },
-                "name": "QuarterlyReviewed",
-            }),
-            "a stamp label outside the enumerated set",
+            json!({ "subtype": "stamp", "box": { "x": 10, "y": 10, "width": 90, "height": 50 },
+                    "name": "" }),
+            &png_only,
+            "an empty stamp name",
+            None,
         ),
-    ] {
-        let mut refused_case = Case {
-            name: format!("refusal: {what}"),
-            // Two payloads, so a refusal that is about something OTHER
-            // than the bytes gets bytes that pass the sniffer: with only
-            // the unusable payload, every stamp refusal would be the same
-            // refusal and the later checks would never run.
-            resources: [
-                (
-                    String::from("r0"),
-                    vec![
-                        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 4,
-                        0, 0, 0, 2, 8, 2, 0, 0, 0, 240, 202, 234, 52, 0, 0, 0, 16, 73, 68, 65, 84,
-                        120, 156, 99, 184, 163, 161, 1, 71, 12, 200, 28, 0, 127, 154, 9, 97, 122,
-                        180, 22, 59, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130,
-                    ],
-                ),
-                (String::from("not-a-format"), b"bytes".to_vec()),
-            ]
-            .into_iter()
-            .collect(),
-            covers: what.to_string(),
-            draft,
-            page_object_number: case.page_object_number,
-            created: serde_json::Value::Null,
-            has_modified: false,
-            meta: ExpectedMeta {
-                changed: serde_json::Value::Null,
-                weak_refs_invalidated: false,
-                should_refetch: serde_json::Value::Null,
-            },
-        };
-        // Both creates go through ONE document. Running them through two
-        // would make the second assertion vacuous: a fresh document has an
-        // empty page whatever the first draft did to its own copy.
-        let (error, after) = refuse_then_create(
-            &file,
-            &refused_case,
-            &serde_json::json!({
-                "subtype": "highlight",
-                "quadPoints": [{
-                    "p1": { "x": 0.0, "y": 10.0 }, "p2": { "x": 10.0, "y": 10.0 },
-                    "p3": { "x": 0.0, "y": 0.0 }, "p4": { "x": 10.0, "y": 0.0 }
-                }],
-            }),
-        );
-        assert!(error.is(EngineErrorCode::InvalidArg), "{what}: {error}");
-        assert_eq!(
-            after["index"].as_u64(),
-            Some(0),
-            "{what}: the refused draft left something on the page",
-        );
-        let _ = &mut refused_case;
+        (
+            json!({ "subtype": "redact" }),
+            &none,
+            "a redaction with neither rect nor quads",
+            Some("rect"),
+        ),
+        (
+            json!({ "subtype": "widget", "box": { "x": 10, "y": 10, "width": 90, "height": 50 } }),
+            &none,
+            "a widget, which is the form's",
+            Some("subtype"),
+        ),
+        (
+            json!({ "subtype": "link", "rect": { "x": 10, "y": 10, "width": 90, "height": 20 },
+                    "target": { "kind": "named", "name": "Print" } }),
+            &none,
+            "a named verb that isn't a page turn",
+            Some("target"),
+        ),
+        (
+            json!({ "subtype": "text", "rect": { "left": 10, "bottom": 10, "right": 30, "top": 30 } }),
+            &none,
+            "a rect given in the file's coordinates",
+            Some("rect"),
+        ),
+    ];
+
+    let mut replay = open(&file);
+    let before = listed_count(&mut replay);
+    for (draft, resources, what, field) in cases {
+        let refused = create_draft(&mut replay, &draft, pon, resources)
+            .outcome
+            .expect_err(&format!("{what}: not refused"));
+        assert_eq!(refused["code"], "InvalidArg", "{what}: {refused}");
+        if let Some(field) = field {
+            assert_eq!(refused["details"]["field"], field, "{what}: {refused}");
+        }
+        assert_eq!(listed_count(&mut replay), before, "{what}: the refused draft left something");
     }
+    let valid = case(&file, "highlight-defaults");
+    create_in(&mut replay, valid).outcome.expect("a valid draft still creates");
+    assert_eq!(listed_count(&mut replay), before + 1);
 }
 
-/// Refuse one draft and create another, against the SAME document.
-///
-/// The point of the pair is the index the second create reports. A refusal
-/// that happened after the first native write leaves an annotation behind,
-/// and the only way to see it is to ask the same page again: nothing can
-/// take an annotation back out of a document this layer has written to.
-fn refuse_then_create(
-    file: &VectorFile,
-    refused: &Case,
-    valid: &serde_json::Value,
-) -> (epdf_engine::error::EngineError, serde_json::Value) {
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let page_object_number =
-        PageObjectNumber::new(refused.page_object_number).expect("a page object number");
-    let state = epdf_engine::features::annotation::read::page::read_page_annotations(
-        session.document().expect("open").document(),
-        0,
-        page_object_number,
-        &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists")
-    .page_state;
-    let resources = write_resources(&refused.resources);
-    let owned = session.document().expect("open");
-    let page = owned.document().page(0).expect("page");
-    let clock = FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000));
+/// The created annotation's appearances, rendered through the wire.
+fn render(replay: &mut Replay, pon: u32) -> Vec<(Value, Vec<u8>)> {
+    let answer = replay.send(
+        &json!({ "kind": "annotations.renderAppearances", "jobId": "<job>", "docId": DOC,
+            "page": page_ref(pon), "family": "annotations",
+            "options": { "viewport": { "kind": "scale", "scale": 1 }, "modes": ["normal"] } }),
+        Vec::new(),
+    );
+    let result = answer.outcome.expect("render");
+    result["appearances"]
+        .as_array()
+        .expect("appearances")
+        .iter()
+        .cloned()
+        .zip(answer.payloads)
+        .collect()
+}
 
-    let run = |draft: &serde_json::Value| {
-        let draft: AnnotationDraft = serde_json::from_value(draft.clone())
-            .unwrap_or_else(|e| panic!("{}: the draft does not decode: {e}", refused.name));
-        create_annotation(
-            owned.document(),
-            &page,
-            page_object_number,
-            &state,
-            &state,
-            &draft,
-            &AnnotationActor::default(),
-            &AnnotationWriteContext::empty().with_resources(&resources),
-            &clock,
-            &CancelToken::never(),
-        )
-    };
-
-    let error =
-        run(&refused.draft).err().unwrap_or_else(|| panic!("{}: not refused", refused.name));
-    let created =
-        run(valid).unwrap_or_else(|e| panic!("{}: a valid draft still creates: {e}", refused.name));
-    (error, serde_json::to_value(&created.created).expect("serialize"))
+fn painted(pixels: &[u8]) -> bool {
+    pixels.chunks(4).any(|pixel| pixel[3] > 0)
 }
 
 #[test]
 fn a_created_annotation_ships_with_an_appearance() {
-    // The one thing the DTO cannot show. An annotation's `/AP` is not on the
-    // wire, so every comparison in this file passes for a writer that never
-    // generated one, and the result would be an annotation that is in the
-    // document and draws nothing.
-    //
-    // Checked by rendering, which is also the only way a consumer would find
-    // out.
-    use epdf_engine::features::annotation::appearance::{
-        AnnotationFamily, AppearanceRenderOptions, render_page_appearances,
-    };
-
+    // An annotation's `/AP` is not in its record, so every comparison above
+    // passes for a writer that never generated one. Rendering is the only
+    // way a consumer would find out.
     let file = load();
-    let case = file
-        .cases
-        .iter()
-        .find(|c| c.name == "square-decorated")
-        .expect("a case with something to draw");
-
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture)).expect("read");
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let page_object_number =
-        PageObjectNumber::new(case.page_object_number).expect("a page object number");
-    let revision = epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0);
-
-    let before = epdf_engine::features::annotation::read::page::read_page_annotations(
-        session.document().expect("open").document(),
-        0,
-        page_object_number,
-        &revision,
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("list");
-    assert!(before.annotations.is_empty(), "the fixture starts with no annotations");
-
-    let draft: AnnotationDraft = serde_json::from_value(case.draft.clone()).expect("draft");
-    let resources = write_resources(&case.resources);
-    let owned = session.document().expect("open");
-    let page = owned.document().page(0).expect("page");
-    create_annotation(
-        owned.document(),
-        &page,
-        page_object_number,
-        &before.page_state,
-        &before.page_state,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty().with_resources(&resources),
-        &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
-    )
-    .expect("create");
-
-    // The appearance reader needs a page it can enumerate annotations on,
-    // which is the same page handle the create just wrote through.
-    let owned_page = owned.page(page_object_number).expect("page");
-    let rendered = render_page_appearances(
-        owned.document(),
-        &owned_page,
-        page_object_number,
-        AnnotationFamily::Annotations,
-        &AppearanceRenderOptions::default(),
-        &CancelToken::never(),
-    )
-    .expect("render");
-
+    let case = case(&file, "square-decorated");
+    let mut replay = open(&file);
+    assert!(render(&mut replay, case.page_object_number).is_empty(), "the page starts bare");
+    create_in(&mut replay, case).outcome.expect("created");
+    let rendered = render(&mut replay, case.page_object_number);
+    assert_eq!(rendered.len(), 1, "the new annotation draws nothing");
+    let (appearance, pixels) = &rendered[0];
     assert_eq!(
-        rendered.appearances.len(),
-        1,
-        "the new annotation has no /AP, so it is in the document and draws nothing",
+        test_support::canonical_numbers(&appearance["rect"]),
+        test_support::canonical_numbers(&case.created["rect"]),
     );
-    let drawn = &rendered.appearances[0];
-    assert_eq!(drawn.rect.left, 300.0);
-    assert!(drawn.raster.width > 0 && drawn.raster.height > 0);
-
-    // And it actually painted: the fixture's page is blank, so any opaque
-    // pixel in the appearance came from the annotation.
-    let painted = (0..drawn.raster.height).any(|y| {
-        (0..drawn.raster.width).any(|x| drawn.raster.pixel(x, y).is_some_and(|p| p.3 > 0))
-    });
-    assert!(painted, "the appearance stream is there and paints nothing");
+    assert!(painted(pixels), "the appearance stream is there and paints nothing");
 }
 
 #[test]
 fn a_created_annotation_survives_a_save_and_reopen() {
-    // The other half of "it is really in the document". Every comparison
-    // above reads the annotation back out of the session that created it,
-    // where an appearance stream the page does not reference still renders.
-    // Saving and reopening is what makes the page's own content stream
-    // matter, and it is also what a caller actually does with the result.
-    use epdf_engine::features::annotation::appearance::{
-        AnnotationFamily, AppearanceRenderOptions, render_page_appearances,
-    };
-    use epdf_engine::features::save::{SaveMode, save_to_buffer};
-
+    // Every comparison above reads the annotation back out of the session
+    // that made it. Saving and reopening is what a caller does with it.
     let file = load();
-    let case = file
-        .cases
-        .iter()
-        .find(|c| c.name == "square-decorated")
-        .expect("a case with something to draw");
-
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture)).expect("read");
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let page_object_number =
-        PageObjectNumber::new(case.page_object_number).expect("a page object number");
-    let revision = epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0);
-
-    let before = epdf_engine::features::annotation::read::page::read_page_annotations(
-        session.document().expect("open").document(),
-        0,
-        page_object_number,
-        &revision,
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("list");
-
-    let draft: AnnotationDraft = serde_json::from_value(case.draft.clone()).expect("draft");
-    {
-        let owned = session.document().expect("open");
-        let page = owned.document().page(0).expect("page");
-        create_annotation(
-            owned.document(),
-            &page,
-            page_object_number,
-            &before.page_state,
-            &before.page_state,
-            &draft,
-            &AnnotationActor::default(),
-            &AnnotationWriteContext::empty(),
-            &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
-            &CancelToken::never(),
-        )
-        .expect("create");
-    }
-
-    let saved = save_to_buffer(&session, SaveMode::Rewrite, &CancelToken::never()).expect("save");
-
-    let mut reopened = DocumentSession::new();
-    reopened.open_with(saved, None, SessionAuthority::unrestricted()).expect("reopen");
-    let listing = epdf_engine::features::annotation::read::page::read_page_annotations(
-        reopened.document().expect("open").document(),
-        0,
-        page_object_number,
-        &revision,
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("list");
-
-    assert_eq!(listing.annotations.len(), 1, "the annotation did not survive the save");
-    let dto = serde_json::to_value(&listing.annotations[0]).expect("serialize");
-    assert_eq!(dto["subtype"].as_str(), Some("square"));
-    assert_eq!(
-        test_support::canonical_numbers(&dto["rect"]),
-        test_support::canonical_numbers(&case.created["rect"])
+    let case = case(&file, "square-decorated");
+    let mut replay = open(&file);
+    create_in(&mut replay, case).outcome.expect("created");
+    let saved = replay.send(
+        &json!({ "kind": "document.saveBuffer", "jobId": "<job>", "docId": DOC, "mode": "rewrite" }),
+        Vec::new(),
     );
-    assert_eq!(dto["interiorColor"], case.created["interiorColor"]);
+    saved.outcome.expect("saved");
+    let bytes = saved.payloads.into_iter().next().expect("the saved bytes");
 
-    // And it still draws, which is what the page's regenerated content
-    // stream is for: an appearance the page does not reference is in the
-    // file and invisible.
-    let reopened_document = reopened.document().expect("open");
-    let owned_page = reopened_document.page(page_object_number).expect("page");
-    let rendered = render_page_appearances(
-        reopened_document.document(),
-        &owned_page,
-        page_object_number,
-        AnnotationFamily::Annotations,
-        &AppearanceRenderOptions::default(),
-        &CancelToken::never(),
-    )
-    .expect("render");
-    assert_eq!(rendered.appearances.len(), 1, "the /AP did not survive the save");
+    let mut host = Host::new();
+    let opened = host.call(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
+            "password": null })
+        .to_string(),
+        vec![bytes],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let mut reopened = Replay::adopt(host, DOC);
+    let listed = reopened
+        .replay(&json!({ "kind": "annotations.list", "jobId": "<job>", "docId": DOC }))
+        .expect("listed");
+    let annotations = listed["annotations"].as_array().expect("annotations");
+    assert_eq!(annotations.len(), 1, "the annotation did not survive the save");
+    let read = &annotations[0];
+    assert_eq!(read["subtype"], "square");
+    assert_eq!(
+        test_support::canonical_numbers(&read["rect"]),
+        test_support::canonical_numbers(&case.created["rect"]),
+    );
+    assert_eq!(read["interiorColor"], case.created["interiorColor"]);
+    let rendered = render(&mut reopened, case.page_object_number);
+    assert_eq!(rendered.len(), 1, "the /AP did not survive the save");
+    assert!(painted(&rendered[0].1));
 }
 
-/// Open the fixture, create one annotation, and hand the caller the written
-/// annotation to inspect directly.
-///
-/// The DTO comparison cannot see everything a writer decides. Where the
-/// reader normalizes on the way back out, two different files read as the
-/// same DTO, and the one that is wrong is wrong for every OTHER reader.
+/// Create `name`'s draft, then hand its annotation, as the file holds it, to
+/// `inspect`. A record can't show everything a writer decides: where the
+/// reader normalizes, two different files read the same.
 fn with_written<R>(
     file: &VectorFile,
     name: &str,
     inspect: impl FnOnce(&pdfium::Annotation<'_>) -> R,
 ) -> R {
-    let case =
-        file.cases.iter().find(|c| c.name == name).unwrap_or_else(|| panic!("no case {name}"));
-    let bytes = std::fs::read(test_support::workspace_root().join(&file.fixture))
-        .unwrap_or_else(|e| panic!("{name}: read {}: {e}", file.fixture));
-    let mut session = DocumentSession::new();
-    session.open_with(bytes, None, SessionAuthority::unrestricted()).expect("open");
-    let page_object_number =
-        PageObjectNumber::new(case.page_object_number).expect("a page object number");
-    let annotations = epdf_engine::features::annotation::read::page::read_page_annotations(
-        session.document().expect("open").document(),
-        0,
-        page_object_number,
-        &epdf_engine::revision::RevisionToken::new(SESSION, page_object_number, 0),
-        &mut epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker::default(),
-        &CancelToken::never(),
-    )
-    .expect("the page lists");
-    let state = annotations.page_state;
-    let draft: AnnotationDraft =
-        serde_json::from_value(case.draft.clone()).expect("the draft decodes");
-    let resources = write_resources(&case.resources);
-
-    let owned = session.document().expect("open");
-    let page = owned.document().page(0).expect("page");
-    create_annotation(
-        owned.document(),
-        &page,
-        page_object_number,
-        &state,
-        &state,
-        &draft,
-        &AnnotationActor::default(),
-        &AnnotationWriteContext::empty().with_resources(&resources),
-        &FixedClock(epdf_engine::clock::Timestamp::utc(1_700_000_000_000)),
-        &CancelToken::never(),
-    )
-    .unwrap_or_else(|e| panic!("{name}: create: {e}"));
-
-    // The fixture page starts empty, so the created annotation is the only
-    // one on it.
-    inspect(&page.annotation(0).expect("the created annotation"))
+    let case = case(file, name);
+    let mut replay = open(file);
+    let result = create_in(&mut replay, case).outcome.unwrap_or_else(|e| panic!("{name}: {e}"));
+    let object_number = result["annotation"]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let session = replay.host.sessions().session(&SessionKey::document(DOC)).expect("open");
+    let owned = session.document().expect("a document");
+    let document = owned.document();
+    let page_index = (0..document.page_count())
+        .find(|i| document.page_object_number_by_index(*i) == case.page_object_number)
+        .expect("the page");
+    let count = document.raw_annotation_count(page_index).expect("a count");
+    let annotation = (0..count)
+        .filter_map(|i| document.raw_annotation(page_index, i))
+        .find(|a| a.object_number() == object_number)
+        .expect("the created annotation");
+    inspect(&annotation)
 }
 
 #[test]
 fn a_review_state_is_written_in_the_spelling_the_pdf_uses() {
-    // §12.5.6.3 names these with a capital. The reader passes an unknown
-    // spelling through verbatim, which is what makes a lowercase `/State`
-    // invisible on a round trip through this engine: `accepted` goes in,
-    // fails to match `Accepted` in the table on the way out, and is handed
-    // back as `accepted`. It reads correctly here and means nothing to
-    // Acrobat, so the assertion is against the dictionary.
+    // §12.5.6.3 names these with a capital, and a standard state brings its
+    // own model when the draft names none.
     let file = load();
     for (name, model, state) in [
         ("text-reviewed", Some("Review"), Some("Accepted")),
         ("text-model-alone", Some("Marked"), None),
         // A model nobody standardized is written exactly as it arrived.
-        // Normalizing it would be inventing a spelling for somebody else's
-        // vocabulary.
         ("text-foreign-state", Some("LegalReview"), Some("AwaitingCounsel")),
         ("text-defaults", None, None),
     ] {
@@ -788,18 +624,22 @@ fn a_review_state_is_written_in_the_spelling_the_pdf_uses() {
     }
 }
 
+/// The bounds of the drawing a stamp's appearance places, in the
+/// appearance form's own space.
+fn drawing_bounds(written: &pdfium::Annotation<'_>) -> [f32; 4] {
+    assert_eq!(written.object_count(), 1, "one drawing placed");
+    let bounds = written.object_bounds(0).expect("the drawing's bounds");
+    [bounds.left, bounds.bottom, bounds.right, bounds.top]
+}
+
 #[test]
 fn a_stamp_fit_policy_decides_where_the_picture_lands() {
-    // The DTO carries the annotation's `/Rect` and never the placement
-    // inside it, so three fits of the same bytes into the same box read
-    // back identically. What differs is the appearance, and that is what
-    // this asserts.
-    //
-    // The source is 4x2 in an 80x80 box, and the bounds are in the
-    // appearance form's own space, which the closing re-fit anchors at the
-    // box's origin. `contain` fits the width and centres the 40-point band;
-    // `cover` fits the height and overflows 40 points either side, which is
-    // the crop; `fill` takes the box exactly and distorts.
+    // The record carries the box and never the placement inside it, so
+    // three fits of the same bytes into the same box read back the same.
+    // What differs is the appearance. The source is 4x2 in an 80x80 box:
+    // `contain` fits the width and centres a 40-point band; `cover` fits
+    // the height and overflows 40 points either side; `fill` takes the box
+    // and distorts.
     let file = load();
     for (name, expected) in [
         ("stamp-png-contain", [0.0_f32, 20.0, 80.0, 60.0]),
@@ -807,14 +647,9 @@ fn a_stamp_fit_policy_decides_where_the_picture_lands() {
         ("stamp-png-fill", [0.0, 0.0, 80.0, 80.0]),
     ] {
         with_written(&file, name, |written| {
-            assert_eq!(written.object_count(), 1, "{name}: appearance objects");
-            let bounds = written.object_bounds(0).expect("the image object's bounds");
-            let actual = [bounds.left, bounds.bottom, bounds.right, bounds.top];
+            let actual = drawing_bounds(written);
             for (got, want) in actual.iter().zip(expected.iter()) {
-                assert!(
-                    (got - want).abs() < 0.5,
-                    "{name}: placed at {actual:?}, expected about {expected:?}",
-                );
+                assert!((got - want).abs() < 0.5, "{name}: at {actual:?}, expected {expected:?}");
             }
         });
     }
@@ -822,40 +657,34 @@ fn a_stamp_fit_policy_decides_where_the_picture_lands() {
 
 #[test]
 fn a_rotated_stamp_is_authored_in_the_frame_it_is_turned_from() {
-    // Authoring into the ROTATED box bakes the letterbox bands in, and the
-    // closing re-fit then shrinks the picture by the aspect ratio a second
-    // time. The symptom is a small image adrift in white space, and it only
-    // appears when rotated, because at zero degrees the two frames coincide.
-    //
-    // So the assertion is that the content fills the LOGICAL box: 90x60,
-    // with a 4:2 source, is a 90-point band 45 points tall.
+    // Authoring into the turned box bakes the letterbox bands in, and the
+    // closing re-fit shrinks the picture a second time. The drawing must
+    // fill the box it turns from: 90x60, with a 4:2 source, is a 90-point
+    // band 45 points tall.
     let file = load();
     with_written(&file, "stamp-rotated", |written| {
-        let bounds = written.object_bounds(0).expect("the image object's bounds");
-        let width = bounds.right - bounds.left;
-        let height = bounds.top - bounds.bottom;
+        let [left, bottom, right, top] = drawing_bounds(written);
+        let (width, height) = (right - left, top - bottom);
         assert!(
             (width - 90.0).abs() < 0.5 && (height - 45.0).abs() < 0.5,
-            "the content is {width}x{height}, expected about 90x45 in the logical box",
+            "the content is {width}x{height}, expected about 90x45 in the box",
         );
+        assert_eq!(written.rotate(), Some(30.0), "Acrobat's /Rotate, counterclockwise");
     });
 }
 
 #[test]
 fn a_redaction_gets_a_default_appearance_only_when_it_has_a_label() {
-    // ISO 32000-2 requires a `/DA` alongside an `/OverlayText`, and a
-    // redaction with no label has nothing for one to describe. The DTO
-    // cannot tell the two apart: the reader reports the SAME defaults for a
-    // missing `/DA` that a writer would have put in one, so an engine that
-    // emitted a `/DA` on every redaction passes every vector while leaving
-    // an entry in the file that says nothing.
+    // ISO 32000-2 requires a `/DA` beside an `/OverlayText`, and a redaction
+    // with no label has nothing for one to describe. The record reads the
+    // same defaults for a missing `/DA`, so this is checked in the file.
     let file = load();
     for (name, has_da, overlay) in [
         ("redact-text-with-label", true, Some("REDACTED")),
         ("redact-autofit-label", true, Some("gone")),
         ("redact-area", false, None),
-        // An empty string is not a label, so it obliges no `/DA` either.
-        ("redact-empty-label", false, None),
+        // An empty label is no label; it still names a label, so a `/DA`.
+        ("redact-empty-label", true, None),
     ] {
         with_written(&file, name, |written| {
             assert_eq!(written.default_appearance().is_some(), has_da, "{name}: /DA");
@@ -870,26 +699,21 @@ fn a_redaction_gets_a_default_appearance_only_when_it_has_a_label() {
 
 #[test]
 fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
-    // The reader normalizes a zero rotation back to absent, so the DTO
-    // cannot tell a cleared `/Rotation` from one written as zero, and it
-    // never reports `/SchemaVersion` at all. Both are things a later reader
-    // of the FILE depends on, so they are asserted against the dictionary.
+    // The record reads a turn of 0 as none, and never reports
+    // `/SchemaVersion`. Both are what a later reader of the file depends on.
+    // A turn is recorded in PDF's counterclockwise degrees with the box it
+    // turns about: a box kind's box, a point kind's upright points' box.
     let file = load();
     // name -> (rotation, has an unrotated box, the dictionary exists)
     let expected: [(&str, Option<f32>, bool, bool); 4] = [
         ("square-rotated", Some(45.0), true, true),
-        ("square-zero-rotation", None, true, true),
-        ("ink-advisory-rotation", Some(45.0), false, true),
+        ("square-zero-rotation", None, false, false),
+        ("ink-advisory-rotation", Some(45.0), true, true),
         ("polyline-zero-rotation", None, false, false),
     ];
-
     for (name, rotation, has_box, has_dictionary) in expected {
         with_written(&file, name, |written| {
-            assert_eq!(
-                written.has_embed_metadata(),
-                has_dictionary,
-                "{name}: the /EMBD_Metadata dictionary",
-            );
+            assert_eq!(written.has_embed_metadata(), has_dictionary, "{name}: /EMBD_Metadata");
             assert_eq!(
                 written.embed_metadata_number("Rotation").expect("a dictionary read"),
                 rotation,
@@ -909,4 +733,220 @@ fn the_transform_keys_land_in_the_dictionary_and_not_only_in_the_dto() {
             }
         });
     }
+}
+
+// ── Ported from upstream's conformance and main tests ───────────────────────
+
+const QUAD: &str = r#"[{ "upperLeft": { "x": 72, "y": 72 }, "upperRight": { "x": 200, "y": 72 },
+    "lowerLeft": { "x": 72, "y": 92 }, "lowerRight": { "x": 200, "y": 92 } }]"#;
+
+fn quad() -> Value {
+    serde_json::from_str(QUAD).unwrap()
+}
+
+fn created(replay: &mut Replay, draft: Value) -> Value {
+    let pon = load().cases[0].page_object_number;
+    create_draft(replay, &draft, pon, &std::collections::BTreeMap::new())
+        .outcome
+        .unwrap_or_else(|e| panic!("{draft}: {e}"))
+}
+
+fn listed(replay: &mut Replay, reference: &Value) -> Value {
+    let listed = replay
+        .replay(&json!({ "kind": "annotations.list", "jobId": "<job>", "docId": DOC }))
+        .expect("listed");
+    listed["annotations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["ref"] == *reference)
+        .cloned()
+        .expect("the annotation lists")
+}
+
+/// `runAnnotationMutationConformance`: "create a reply links /IRT and
+/// defaults /RT to 'reply'" and "create a grouped subordinate writes /RT
+/// /Group".
+#[test]
+fn a_reply_links_its_parent_and_a_group_member_says_so() {
+    let file = load();
+    let mut replay = open(&file);
+    let parent = created(
+        &mut replay,
+        json!({ "subtype": "highlight", "contents": "reply parent", "quadPoints": quad() }),
+    );
+    assert_eq!(parent["annotation"]["reply"], Value::Null);
+    let parent_ref = parent["annotation"]["ref"].clone();
+
+    let reply = created(
+        &mut replay,
+        json!({ "subtype": "highlight", "contents": "a reply", "quadPoints": quad(),
+                "reply": { "to": parent_ref } }),
+    );
+    assert_eq!(reply["annotation"]["reply"], json!({ "to": parent_ref, "type": "reply" }));
+    // Only the reply was written.
+    assert_eq!(reply["meta"]["changed"], json!([reply["annotation"]["ref"]]));
+    let read = listed(&mut replay, &reply["annotation"]["ref"]);
+    assert_eq!(read["reply"]["type"], "reply");
+
+    let caret = created(
+        &mut replay,
+        json!({ "subtype": "caret", "contents": "", "color": "#000000", "opacity": 1,
+                "box": { "x": 300, "y": 132, "width": 20, "height": 30 },
+                "reply": { "to": parent_ref, "type": "group" } }),
+    );
+    assert_eq!(caret["annotation"]["reply"]["type"], "group");
+    assert_eq!(listed(&mut replay, &caret["annotation"]["ref"])["reply"]["type"], "group");
+
+    // A parent on another page is refused before anything is written.
+    let elsewhere = json!({ "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "objectNumber": 999 }, "objectNumber": 1 });
+    let refused = create_draft(
+        &mut replay,
+        &json!({ "subtype": "highlight", "quadPoints": quad(), "reply": { "to": elsewhere } }),
+        file.cases[0].page_object_number,
+        &std::collections::BTreeMap::new(),
+    )
+    .outcome
+    .expect_err("a parent on another page");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+}
+
+/// `runAnnotationMutationConformance`: "rich text: a draft with runs
+/// round-trips the body, the runs and the plain projection".
+#[test]
+fn a_rich_text_draft_writes_its_body_and_runs() {
+    let file = load();
+    let mut replay = open(&file);
+    let result = created(
+        &mut replay,
+        json!({ "subtype": "free-text", "intent": "free-text", "color": "#0000ff",
+            "box": { "x": 72, "y": 300, "width": 200, "height": 80 },
+            "richText": {
+                "body": { "family": "Helvetica", "size": 18, "color": "#102030" },
+                "paragraphs": [
+                    { "runs": [{ "text": "Hello " }, { "text": "bold", "style": { "weight": 700 } },
+                        { "text": " red", "style": { "color": "#FF0000" } }] },
+                    { "align": "center", "runs": [{ "text": "H" },
+                        { "text": "2", "style": { "script": "sub" } }] }
+                ] } }),
+    );
+    let dto = &result["annotation"];
+    assert_eq!(dto["contents"], "Hello bold red\rH2");
+    assert_eq!(dto["fontFamily"], "helvetica");
+    assert_eq!(test_support::canonical_numbers(&dto["fontSize"]), json!(18));
+    assert_eq!(dto["color"], "#0000ff");
+    assert_eq!(dto["fontColor"], "#102030");
+    assert_eq!(dto["richText"]["body"]["color"], "#102030");
+    assert_eq!(
+        test_support::canonical_numbers(&dto["richText"]["paragraphs"][0]["runs"]),
+        json!([{ "text": "Hello " }, { "text": "bold", "style": { "weight": 700 } },
+            { "text": " red", "style": { "color": "#ff0000" } }])
+    );
+    assert_eq!(dto["richText"]["paragraphs"][1]["align"], "center");
+    assert_eq!(
+        dto["richText"]["paragraphs"][1]["runs"][1],
+        json!({ "text": "2", "style": { "script": "sub" } })
+    );
+    let read = listed(&mut replay, &dto["ref"]);
+    assert_eq!(
+        test_support::canonical_numbers(&read["richText"]["paragraphs"][0]["runs"][1]),
+        json!({ "text": "bold", "style": { "weight": 700 } })
+    );
+}
+
+/// `annotations-stamp.test.ts`: "any non-empty stamp name is accepted; an
+/// empty one rejects before any write". `/Name` is the stamp's identifier,
+/// not an enum.
+#[test]
+fn any_non_empty_stamp_name_is_accepted() {
+    let file = load();
+    let png = case(&file, "stamp-png-contain").resources.clone();
+    let pon = file.cases[0].page_object_number;
+    let mut replay = open(&file);
+    let custom = "#LBGiYhk8V_oAfmqAPENiwD";
+    let result = create_draft(
+        &mut replay,
+        &json!({ "subtype": "stamp", "box": { "x": 20, "y": 100, "width": 60, "height": 30 },
+            "name": custom, "contents": "before" }),
+        pon,
+        &png,
+    )
+    .outcome
+    .expect("a custom name creates");
+    assert_eq!(result["annotation"]["name"], custom);
+}
+
+/// `drawingFor`: placing the same artwork twice adds one drawing, which
+/// both stamps place.
+#[test]
+fn two_stamps_of_one_artwork_place_one_drawing() {
+    let file = load();
+    let stamp = case(&file, "stamp-png-contain");
+    let mut replay = open(&file);
+    create_in(&mut replay, stamp).outcome.expect("first");
+    create_in(&mut replay, stamp).outcome.expect("second");
+    let session = replay.host.sessions().session(&SessionKey::document(DOC)).expect("open");
+    let drawings = session.document().unwrap().document().stamp_drawings();
+    assert_eq!(drawings.len(), 1, "{drawings:?}");
+}
+
+/// A create as an op of `document.apply`: in page space both ways, its
+/// item and event the single verb's, and undone by `{ undoOf }`, which
+/// deletes it while it reads as the create left it.
+#[test]
+fn a_create_op_applies_in_page_space_and_its_undo_deletes_it() {
+    let file = load();
+    let square = case(&file, "square-decorated");
+    let mut replay = open(&file);
+    let before = listed_count(&mut replay);
+    let applied = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+            "opId": "create-1",
+            "change": { "ops": [{ "type": "annotations.create",
+                "page": page_ref(square.page_object_number), "data": square.draft }] } }))
+        .expect("applied");
+    let item = &applied["result"]["items"][0];
+    assert_eq!(item["type"], "annotations.create");
+    assert_eq!(item["page"], page_ref(square.page_object_number));
+    assert_eq!(
+        test_support::canonical_numbers(&item["annotation"]["box"]),
+        test_support::canonical_numbers(&square.created["box"]),
+        "the item answers page space"
+    );
+    assert_eq!(applied["events"][0]["type"], "annotations.created");
+    assert_eq!(listed_count(&mut replay), before + 1);
+
+    let undone = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+            "opId": "undo-1", "change": { "undoOf": "create-1" } }))
+        .expect("undone");
+    assert_eq!(undone["result"]["items"][0]["type"], "annotations.delete", "{undone}");
+    assert_eq!(undone["result"]["items"][0]["meta"]["changed"][0], item["annotation"]["ref"]);
+    assert_eq!(undone["events"][0]["type"], "annotations.deleted");
+    assert_eq!(listed_count(&mut replay), before);
+}
+
+/// A change refused after its create ran is taken back whole: the
+/// journal's remove step deletes what the create made.
+#[test]
+fn a_refused_change_takes_its_create_back() {
+    let file = load();
+    let square = case(&file, "square-decorated");
+    let mut replay = open(&file);
+    let before = listed_count(&mut replay);
+    let refused = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+            "opId": "refused-1",
+            "change": { "ops": [
+                { "type": "annotations.create",
+                  "page": page_ref(square.page_object_number), "data": square.draft },
+                { "type": "annotations.create",
+                  "page": page_ref(square.page_object_number),
+                  "data": { "subtype": "square", "color": "red",
+                            "box": { "x": 1, "y": 1, "width": 9, "height": 9 } } }
+            ] } }))
+        .expect_err("the second op is refused");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(listed_count(&mut replay), before, "the first create was left behind");
 }

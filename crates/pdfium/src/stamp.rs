@@ -211,3 +211,160 @@ impl Annotation<'_> {
         }
     }
 }
+
+/// Acrobat's page size limit: an image drawing larger than this is scaled
+/// down to fit (`MAX_DRAWING_SIZE` in upstream's `stampDrawing.ts`).
+const MAX_DRAWING_SIZE: f64 = 14_400.0;
+
+impl Document {
+    /// A one-page PDF's first page as a stamp drawing in a document of its
+    /// own (`EPDFDoc_CanonicalDrawing`): what the stamp places, independent
+    /// of any stamp's box or fit. `Err(Load)` when the bytes do not open.
+    pub fn canonical_drawing_of_pdf(&self, bytes: &[u8]) -> Result<Document, PdfiumError> {
+        let source = self.open_sibling(bytes)?;
+        // SAFETY: the source handle is live for the call.
+        let handle = unsafe { pdfium_sys::EPDFDoc_CanonicalDrawing(source.as_raw(), 0) };
+        drop(source);
+        self.own_scratch(handle).ok_or(PdfiumError::Load)
+    }
+
+    /// PNG or JPEG bytes as a canonical stamp drawing: the image at its own
+    /// size on a page of its own, a pixel a point, scaled down to fit
+    /// [`MAX_DRAWING_SIZE`] (`withImageDocument`). `Ok(None)` when PDFium
+    /// refuses the image data.
+    pub fn canonical_drawing_of_image(
+        &self,
+        bytes: &[u8],
+        png: bool,
+        width: u32,
+        height: u32,
+    ) -> Result<Option<Document>, PdfiumError> {
+        let (width, height) = (f64::from(width), f64::from(height));
+        let scale = (MAX_DRAWING_SIZE / width.max(height)).min(1.0);
+        let (width, height) = (width * scale, height * scale);
+        // SAFETY: no arguments; a null return is the documented failure.
+        let scratch = self
+            .own_scratch(unsafe { pdfium_sys::FPDF_CreateNewDocument() })
+            .ok_or(PdfiumError::Load)?;
+        {
+            // SAFETY: the scratch handle is live.
+            let page = unsafe { pdfium_sys::FPDFPage_New(scratch.as_raw(), 0, width, height) };
+            if page.is_null() {
+                return Err(PdfiumError::Load);
+            }
+            struct ClosePage(pdfium_sys::FPDF_PAGE);
+            impl Drop for ClosePage {
+                fn drop(&mut self) {
+                    // SAFETY: created above and closed exactly once.
+                    unsafe { pdfium_sys::FPDF_ClosePage(self.0) };
+                }
+            }
+            let page = ClosePage(page);
+            let object = scratch.new_image_object().ok_or(PdfiumError::Load)?;
+            // SAFETY: the object handle is live and the bytes outlive the
+            // call; no page array, as upstream passes none.
+            let decoded = unsafe {
+                let call = if png {
+                    pdfium_sys::EPDFImageObj_SetPng
+                } else {
+                    pdfium_sys::EPDFImageObj_SetJpeg
+                };
+                call(std::ptr::null_mut(), 0, object.handle, bytes.as_ptr(), bytes.len()) != 0
+            };
+            if !decoded {
+                return Ok(None);
+            }
+            if !object.set_matrix(MatrixF {
+                a: width as f32,
+                b: 0.0,
+                c: 0.0,
+                d: height as f32,
+                e: 0.0,
+                f: 0.0,
+            }) {
+                return Err(PdfiumError::Load);
+            }
+            // SAFETY: both handles are live; the page owns the object after.
+            unsafe { pdfium_sys::FPDFPage_InsertObject(page.0, object.handle) };
+            std::mem::forget(object);
+            // SAFETY: the page handle is live.
+            if unsafe { pdfium_sys::FPDFPage_GenerateContent(page.0) } == 0 {
+                return Err(PdfiumError::Load);
+            }
+        }
+        // SAFETY: the scratch handle is live for the call.
+        let handle = unsafe { pdfium_sys::EPDFDoc_CanonicalDrawing(scratch.as_raw(), 0) };
+        drop(scratch);
+        Ok(Some(self.own_scratch(handle).ok_or(PdfiumError::Load)?))
+    }
+
+    /// Add a canonical drawing to this document, answering its object
+    /// number (`EPDFDoc_ImportDrawing`); `None` when refused.
+    pub fn import_drawing(&self, canonical: &Document) -> Option<u32> {
+        // SAFETY: both handles are live.
+        let drawing =
+            unsafe { pdfium_sys::EPDFDoc_ImportDrawing(self.as_raw(), canonical.as_raw()) };
+        (drawing != 0).then_some(drawing)
+    }
+
+    /// The drawings this document's stamps place (`EPDFDoc_GetStampDrawings`).
+    pub fn stamp_drawings(&self) -> Vec<u32> {
+        // SAFETY: a null buffer asks for the count.
+        let count =
+            unsafe { pdfium_sys::EPDFDoc_GetStampDrawings(self.as_raw(), std::ptr::null_mut(), 0) };
+        if count == 0 {
+            return Vec::new();
+        }
+        let mut drawings = vec![0u32; count as usize];
+        // SAFETY: the buffer holds `count` entries, as the length says.
+        let written = unsafe {
+            pdfium_sys::EPDFDoc_GetStampDrawings(self.as_raw(), drawings.as_mut_ptr(), count)
+        };
+        drawings.truncate((written as usize).min(drawings.len()));
+        drawings
+    }
+
+    /// One drawing of this document as a document of its own
+    /// (`EPDFDoc_ExportDrawing`).
+    pub fn export_drawing(&self, drawing: u32) -> Option<Document> {
+        // SAFETY: the handle is live.
+        let handle = unsafe { pdfium_sys::EPDFDoc_ExportDrawing(self.as_raw(), drawing) };
+        self.own_scratch(handle)
+    }
+
+    /// A document the fork made for this one, owned and closed on drop.
+    fn own_scratch(&self, handle: pdfium_sys::FPDF_DOCUMENT) -> Option<Document> {
+        // SAFETY: a non-null handle the fork handed over to be closed once;
+        // it points into nothing of this document's.
+        (!handle.is_null()).then(|| unsafe { Document::from_raw_layer(handle, self.library()) })
+    }
+}
+
+/// SHA-256 of `bytes` through the fork's digest (`EPDF_DigestBuffer`), or
+/// `None` when it refuses.
+pub fn sha256(bytes: &[u8]) -> Option<[u8; 32]> {
+    let mut out = [0u8; 32];
+    let mut len: std::os::raw::c_ulong = 32;
+    // SAFETY: the input outlives the call, the output holds 32 bytes, and
+    // `len` says so.
+    let ok = unsafe {
+        pdfium_sys::EPDF_DigestBuffer(
+            bytes.as_ptr().cast(),
+            bytes.len() as std::os::raw::c_ulong,
+            pdfium_sys::EPDF_DIGEST_SHA256 as i32,
+            out.as_mut_ptr(),
+            &raw mut len,
+        )
+    };
+    (ok != 0 && len == 32).then_some(out)
+}
+
+impl Annotation<'_> {
+    /// Place a drawing of the document in this stamp, under a wrapper of its
+    /// own that fits it into the box (`EPDFAnnot_SetStampDrawing`), honouring
+    /// any `/EMBD_Metadata` turn. The old appearance is replaced whole.
+    pub fn set_stamp_drawing(&self, drawing: u32, fit: StampFit) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetStampDrawing(self.as_raw(), drawing, fit.code()) != 0 }
+    }
+}

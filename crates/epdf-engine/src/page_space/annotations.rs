@@ -228,6 +228,64 @@ fn convert_field(
     }
 }
 
+/// The measured fields of `subtype`, or of every kind by name when an
+/// update leaves its kind out: a name holds the same thing in every kind
+/// (`spacesOf`, `ANNOTATION_FIELD_SPACES_BY_NAME`).
+fn space_of(subtype: Option<&str>, name: &str) -> Option<FieldSpace> {
+    let found = |spaces: &[(&str, FieldSpace)]| {
+        spaces.iter().find(|(n, _)| *n == name).map(|(_, space)| *space)
+    };
+    match subtype {
+        Some(subtype) => found(field_spaces(subtype)),
+        None => FIELD_SPACE_KINDS.iter().find_map(|kind| found(field_spaces(kind))),
+    }
+}
+
+/// Every kind with measured fields of its own, for the by-name table.
+const FIELD_SPACE_KINDS: &[&str] =
+    &["highlight", "square", "polygon", "line", "link", "ink", "free-text"];
+
+/// A place not given in page space (`notInPageSpace`).
+fn not_in_page_space(name: &str, space: FieldSpace) -> EngineError {
+    let shape =
+        if space == FieldSpace::Box { "{ x, y, width, height }" } else { "points as { x, y }" };
+    EngineError::with_message(
+        EngineErrorCode::InvalidArg,
+        format!("field '{name}': expected page space, {shape} from the page's top-left"),
+    )
+    .with_details(serde_json::json!({ "field": name }))
+}
+
+fn convert_object(
+    subtype: Option<&str>,
+    fields: Map<String, Value>,
+    visible: PdfRect,
+    box_of: &mut VisibleBoxOf<'_>,
+    direction: Direction,
+) -> Result<Value, EngineError> {
+    let mut out = Map::with_capacity(fields.len());
+    for (name, field) in fields {
+        let field = match space_of(subtype, &name) {
+            Some(space) if !field.is_null() => {
+                match convert_field(&name, space, field, visible, box_of, direction) {
+                    // A value that isn't a place in page space reads, on
+                    // the way in, as upstream's NaN check refuses it.
+                    Err(e)
+                        if direction == Direction::ToPdf
+                            && e.code == EngineErrorCode::WireFormat =>
+                    {
+                        return Err(not_in_page_space(&name, space));
+                    }
+                    converted => converted?,
+                }
+            }
+            _ => field,
+        };
+        out.insert(name, field);
+    }
+    Ok(Value::Object(out))
+}
+
 fn convert_fields(
     annotation: Value,
     box_of: &mut VisibleBoxOf<'_>,
@@ -239,19 +297,36 @@ fn convert_fields(
     let page: PageRef = read("page", fields.get("page").cloned().unwrap_or(Value::Null))?;
     let visible = box_of(page.object_number())?;
     let subtype = fields.get("subtype").and_then(Value::as_str).unwrap_or_default().to_owned();
-    let spaces = field_spaces(&subtype);
-    let mut out = Map::with_capacity(fields.len());
-    for (name, field) in fields {
-        let space = spaces.iter().find(|(n, _)| *n == name).map(|(_, space)| *space);
-        let field = match space {
-            Some(space) if !field.is_null() => {
-                convert_field(&name, space, field, visible, box_of, direction)?
-            }
-            _ => field,
-        };
-        out.insert(name, field);
+    convert_object(Some(&subtype), fields, visible, box_of, direction)
+}
+
+/// A page-space create in the file's coordinates (`pdfAnnotationDraftOf`),
+/// on the page whose visible box is `visible`.
+pub fn pdf_annotation_draft_of(
+    draft: Map<String, Value>,
+    visible: PdfRect,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<Map<String, Value>, EngineError> {
+    let subtype = draft.get("subtype").and_then(Value::as_str).unwrap_or_default().to_owned();
+    match convert_object(Some(&subtype), draft, visible, box_of, Direction::ToPdf)? {
+        Value::Object(converted) => Ok(converted),
+        _ => unreachable!("an object converts to an object"),
     }
-    Ok(Value::Object(out))
+}
+
+/// A page-space update in the file's coordinates (`pdfAnnotationPatchOf`).
+/// An update may leave out its `subtype`; its fields' names say what they
+/// hold.
+pub fn pdf_annotation_patch_of(
+    patch: Map<String, Value>,
+    visible: PdfRect,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<Map<String, Value>, EngineError> {
+    let subtype = patch.get("subtype").and_then(Value::as_str).map(str::to_owned);
+    match convert_object(subtype.as_deref(), patch, visible, box_of, Direction::ToPdf)? {
+        Value::Object(converted) => Ok(converted),
+        _ => unreachable!("an object converts to an object"),
+    }
 }
 
 /// A read in page space (`pageAnnotationOf`), measured on the page it names.

@@ -43,9 +43,7 @@ use crate::revision::WeakAnnotationState;
 use crate::session::document::DocumentSession;
 
 use super::context::AnnotationWriteContext;
-use super::create::{AnnotationCreateResult, create_annotation};
 use super::delete::{AnnotationDeleteResult, WidgetAttachment, delete_annotation};
-use super::draft::{AnnotationActor, AnnotationDraft};
 use super::move_::{AnnotationMoveResult, move_annotations};
 use super::patch::AnnotationPatch;
 use super::resolve::resolve_annotation;
@@ -138,44 +136,6 @@ fn widget_resolver(owned: &OwnedDocument) -> impl Fn(u32) -> WidgetAttachment + 
         Some(_) => WidgetAttachment::Attached,
         None => WidgetAttachment::Deletable,
     }
-}
-
-/// Create one annotation on a page.
-///
-/// Append-only, so the result is read back against the revision the page
-/// already had: a client that listed the page a moment ago can place the new
-/// annotation into that listing without refetching it.
-pub fn create(
-    session: &mut DocumentSession,
-    page_object_number: PageObjectNumber,
-    draft: &AnnotationDraft,
-    actor: &AnnotationActor,
-    context: &AnnotationWriteContext<'_>,
-    clock: &dyn Clock,
-    cancel: &CancelToken,
-) -> Result<AnnotationCreateResult, EngineError> {
-    cancel.check()?;
-    ensure_weak_state(session, page_object_number)?;
-    let state = session.page_state(page_object_number)?;
-
-    let owned = session.document()?;
-    let page = owned.page(page_object_number)?;
-    let result = create_annotation(
-        owned.document(),
-        page.view(),
-        page_object_number,
-        // The same state on both sides. Nothing moved, so there is no
-        // "after" to report that differs from the "before".
-        &state,
-        &state,
-        draft,
-        actor,
-        context,
-        clock,
-        cancel,
-    )?;
-    session.note_mutation();
-    Ok(result)
 }
 
 /// Rewrite one annotation in place.
