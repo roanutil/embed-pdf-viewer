@@ -32,8 +32,8 @@ use pdfium::Document;
 
 use super::metadata::{DocumentMetadata, read_metadata};
 use crate::cancel::CancelToken;
-use crate::clock::{format_pdf_date, iso_8601_to_timestamp};
-use crate::dto::{MetadataPatch, Patch};
+use crate::clock::format_pdf_date;
+use crate::dto::{CustomMetadataPatch, MetadataPatch, Patch};
 use crate::error::{EngineError, EngineErrorCode};
 
 /// What an update leaves behind.
@@ -96,22 +96,15 @@ pub fn update_metadata(
         write_text(document, key, as_str_patch(value))?;
     }
 
-    // The two dates arrive as ISO 8601 and are stored as PDF dates. The
-    // conversion is here rather than at the boundary because the wire's
-    // vocabulary and the file's are different vocabularies, and only one of
-    // them is this engine's to define.
-    for (value, key) in [(&patch.created, "CreationDate"), (&patch.modified, "ModDate")] {
+    // The two dates arrive as ISO 8601 and are stored as PDF dates, in the
+    // offset they arrived with. The conversion is here rather than at the
+    // boundary because the wire's vocabulary and the file's are different
+    // vocabularies, and only one of them is this engine's to define.
+    for (value, key) in [(&patch.created_at, "CreationDate"), (&patch.modified_at, "ModDate")] {
         let converted: Patch<String> = match value {
             Patch::Keep => Patch::Keep,
             Patch::Clear => Patch::Clear,
-            Patch::Set(iso) => Patch::Set(
-                iso_8601_to_timestamp(iso.as_str()).and_then(format_pdf_date).ok_or_else(|| {
-                    EngineError::with_message(
-                        EngineErrorCode::InvalidArg,
-                        format!("{key} is not a date this engine can write: {iso}"),
-                    )
-                })?,
-            ),
+            Patch::Set(iso) => Patch::Set(format_pdf_date(iso.as_str())?),
         };
         write_text(document, key, as_str_patch(&converted))?;
     }
@@ -122,15 +115,29 @@ pub fn update_metadata(
         return Err(refused("Trapped"));
     }
 
-    if let Some(custom) = patch.custom.as_ref() {
-        for (key, value) in custom {
-            if !is_writable_custom_key(key) {
-                continue;
-            }
-            write_text(document, key, patch_of(value))?;
-        }
-    }
+    cancel.check()?;
+    Ok(MetadataUpdateResult { metadata: read_metadata(document, cancel)? })
+}
 
+/// Apply a patch to the dict's other keys.
+///
+/// Split out of [`update_metadata`] when `custom` left `MetadataPatch` for
+/// its own type (fd175ba50). Upstream refuses a key it cannot write as
+/// `InvalidArg` and answers with the custom keys alone; this still skips one
+/// and answers with the whole dictionary until 8.6 ports
+/// `metadata.updateCustom`.
+pub fn update_custom_metadata(
+    document: &Document,
+    patch: &CustomMetadataPatch,
+    cancel: &CancelToken,
+) -> Result<MetadataUpdateResult, EngineError> {
+    cancel.check()?;
+    for (key, value) in &patch.0 {
+        if !is_writable_custom_key(key) {
+            continue;
+        }
+        write_text(document, key, patch_of(value))?;
+    }
     cancel.check()?;
     Ok(MetadataUpdateResult { metadata: read_metadata(document, cancel)? })
 }

@@ -37,7 +37,7 @@ use super::draft::{
 };
 use super::impact::{AnnotationListMutationMeta, AnnotationMutationKind, compute_mutation_impact};
 use crate::cancel::CancelToken;
-use crate::clock::{Clock, format_pdf_date};
+use crate::clock::{Clock, format_pdf_timestamp};
 use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::destination::PdfDestination;
@@ -112,7 +112,7 @@ pub fn create_annotation(
     if let Some(name) = actor.display_name.as_deref().filter(|n| !n.is_empty()) {
         write(annotation.set_string_value("T", name), "/T")?;
     }
-    let modified = format_pdf_date(clock.now()).ok_or_else(|| {
+    let modified = format_pdf_timestamp(clock.now()).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
     })?;
     write(annotation.set_string_value("M", &modified), "/M")?;

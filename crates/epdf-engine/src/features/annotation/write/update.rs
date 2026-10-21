@@ -34,7 +34,7 @@ use super::impact::{AnnotationListMutationMeta, AnnotationMutationKind, compute_
 use super::patch::{AnnotationPatch, AnnotationPatchBase, AnnotationPatchKind};
 use super::resolve::{capture_or_stamp_stable_id, resolve_annotation};
 use crate::cancel::CancelToken;
-use crate::clock::{Clock, format_pdf_date};
+use crate::clock::{Clock, format_pdf_timestamp};
 use crate::dto::Patch;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
@@ -144,7 +144,7 @@ pub fn update_annotation(
     apply_base_patch(&annotation, &patch.base)?;
     apply_kind_patch(document, page, &annotation, patch, context)?;
 
-    let modified = format_pdf_date(clock.now()).ok_or_else(|| {
+    let modified = format_pdf_timestamp(clock.now()).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
     })?;
     write(annotation.set_string_value("M", &modified), "/M")?;

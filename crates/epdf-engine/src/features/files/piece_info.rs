@@ -258,7 +258,7 @@ pub fn update_piece_info(
     // changed since it last wrote, and that check compares this date with
     // the document's; a batch stamped across two seconds would look like
     // two edits.
-    let last_modified = crate::clock::format_pdf_date(clock.now()).ok_or_else(|| {
+    let last_modified = crate::clock::format_pdf_timestamp(clock.now()).ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "the clock produced no PDF date")
     })?;
 

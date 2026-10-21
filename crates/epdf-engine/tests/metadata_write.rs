@@ -10,8 +10,8 @@
 //! only way to see that is to compare everything.
 
 use epdf_engine::cancel::CancelToken;
-use epdf_engine::dto::MetadataPatch;
-use epdf_engine::features::metadata_write::update_metadata;
+use epdf_engine::dto::{CustomMetadataPatch, MetadataPatch};
+use epdf_engine::features::metadata_write::{update_custom_metadata, update_metadata};
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
@@ -134,10 +134,11 @@ fn a_clear_and_an_empty_value_are_the_same_edit() {
         let mut session = DocumentSession::new();
         session.open_with(bytes.clone(), None, SessionAuthority::unrestricted()).expect("open");
         let owned = session.document().expect("open");
-        let patch: MetadataPatch =
-            serde_json::from_value(serde_json::json!({ "custom": { "Department": value } }))
+        let patch: CustomMetadataPatch =
+            serde_json::from_value(serde_json::json!({ "Department": value }))
                 .expect("the patch decodes");
-        update_metadata(owned.document(), &patch, &CancelToken::never()).expect("the patch lands");
+        update_custom_metadata(owned.document(), &patch, &CancelToken::never())
+            .expect("the patch lands");
         owned.document().meta_text("Department").expect("a dictionary read")
     };
     assert_eq!(custom(serde_json::Value::Null), None, "a custom clear left the key behind");
@@ -159,7 +160,7 @@ fn a_date_the_wire_cannot_hold_is_refused() {
     // The patch type validates on the way in, which is the first of the two
     // gates: a string that is not ISO 8601 never becomes a patch at all.
     let decoded: Result<MetadataPatch, _> =
-        serde_json::from_value(serde_json::json!({ "created": "not-a-date" }));
+        serde_json::from_value(serde_json::json!({ "createdAt": "not-a-date" }));
     assert!(decoded.is_err(), "a malformed date decoded into a patch");
 
     // And the document is untouched, because nothing was applied.
