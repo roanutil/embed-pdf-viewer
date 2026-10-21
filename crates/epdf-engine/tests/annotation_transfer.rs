@@ -1077,11 +1077,7 @@ fn a_server_change_runs_an_import() {
 // ── Round trips (`runAnnotationTransferConformance`) ───────────────────────
 //
 // Each fixture's bundle is imported into a copy without annotations, then
-// exported again. Not ported: R5 (a copy draws as its source, compared
-// raster by raster with `appearanceRasters`), whose shifted-difference
-// comparison has no Rust counterpart yet; and the frame check of a turned
-// shape, which needs `drawnPointsOf` (an un-turned shape's points are
-// checked).
+// exported again.
 
 /// The fixtures `annotation-transfer.test.ts` round-trips, `authoring`
 /// first. Left out until 8.25 writes measurements: `measure-acrobat-
@@ -1350,15 +1346,59 @@ fn normalized(exported: &Exported, attribution: &str) -> Value {
     canonical(&json!({ "pages": page_entries, "items": normal_items }))
 }
 
+/// The points a framed item's data places on the page (`geometryOf`): a
+/// line's, polyline's, polygon's or ink's as drawn, the upright points a read
+/// gives turned by `rotation` about the middle of their box (`drawnPointsOf`);
+/// a text markup's quads as they are.
+fn geometry_of(data: &Value) -> Vec<epdf_engine::geom::PagePoint> {
+    use epdf_engine::geom::PagePoint;
+    use epdf_engine::page_space::helpers::{page_point_turned, page_turn_of_upright};
+    let point = |p: &Value| PagePoint { x: p["x"].as_f64().unwrap(), y: p["y"].as_f64().unwrap() };
+    let list = |v: &Value| v.as_array().into_iter().flatten().map(point).collect::<Vec<_>>();
+    let drawn: Option<Vec<PagePoint>> = match data["subtype"].as_str().unwrap_or_default() {
+        "line" => {
+            Some(vec![point(&data["linePoints"]["start"]), point(&data["linePoints"]["end"])])
+        }
+        "polyline" | "polygon" => Some(list(&data["vertices"])),
+        "ink" => Some(data["inkList"].as_array().into_iter().flatten().flat_map(list).collect()),
+        _ => None,
+    };
+    if let Some(points) = drawn {
+        let Some(rotation) = data["rotation"].as_f64().filter(|r| *r != 0.0) else { return points };
+        let turn = page_turn_of_upright(&points, rotation);
+        return points.into_iter().map(|p| page_point_turned(p, turn)).collect();
+    }
+    let mut points = Vec::new();
+    fn visit(value: &Value, points: &mut Vec<PagePoint>) {
+        match value {
+            Value::Array(items) => items.iter().for_each(|v| visit(v, points)),
+            Value::Object(fields) => {
+                match (
+                    fields.get("x").and_then(Value::as_f64),
+                    fields.get("y").and_then(Value::as_f64),
+                ) {
+                    (Some(x), Some(y)) => points.push(PagePoint { x, y }),
+                    _ => fields.values().for_each(|v| visit(v, points)),
+                }
+            }
+            _ => {}
+        }
+    }
+    visit(&data["quadPoints"], &mut points);
+    points
+}
+
 /// The frame of each copy whose data is points holds those points
-/// (`expectFramesHoldGeometry`), for the shapes that aren't turned.
-fn expect_frames_hold_geometry(exported: &Exported) {
+/// (`expectFramesHoldGeometry`). Answers how many turned shapes it checked.
+fn expect_frames_hold_geometry(exported: &Exported) -> usize {
+    let mut turned = 0;
     for item in exported.items() {
         let data = &item["data"];
-        if !FRAMED.contains(&data["subtype"].as_str().unwrap_or_default())
-            || data["rotation"].as_f64().is_some_and(|r| r != 0.0)
-        {
+        if !FRAMED.contains(&data["subtype"].as_str().unwrap_or_default()) {
             continue;
+        }
+        if data["rotation"].as_f64().is_some_and(|r| r != 0.0) {
+            turned += 1;
         }
         let rect = &data["rect"];
         let (x, y, w, h) = (
@@ -1367,35 +1407,107 @@ fn expect_frames_hold_geometry(exported: &Exported) {
             rect["width"].as_f64().unwrap(),
             rect["height"].as_f64().unwrap(),
         );
-        let mut points = Vec::new();
-        fn visit(value: &Value, points: &mut Vec<(f64, f64)>) {
-            match value {
-                Value::Array(items) => items.iter().for_each(|v| visit(v, points)),
-                Value::Object(fields) => match (
-                    fields.get("x").and_then(Value::as_f64),
-                    fields.get("y").and_then(Value::as_f64),
-                ) {
-                    (Some(x), Some(y)) => points.push((x, y)),
-                    _ => fields.values().for_each(|v| visit(v, points)),
-                },
-                _ => {}
-            }
-        }
-        for name in ["linePoints", "vertices", "inkList", "quadPoints"] {
-            visit(&data[name], &mut points);
-        }
         let epsilon = 0.01;
-        let outside: Vec<_> = points
+        let outside: Vec<_> = geometry_of(data)
             .into_iter()
-            .filter(|(px, py)| {
-                *px < x - epsilon
-                    || *px > x + w + epsilon
-                    || *py < y - epsilon
-                    || *py > y + h + epsilon
+            .filter(|p| {
+                p.x < x - epsilon
+                    || p.x > x + w + epsilon
+                    || p.y < y - epsilon
+                    || p.y > y + h + epsilon
             })
             .collect();
         assert!(outside.is_empty(), "{}: {outside:?}", key(&data["ref"]));
     }
+    turned
+}
+
+/// An appearance as pixels: RGBA, no row padding (`Raster`).
+struct Raster {
+    width: usize,
+    height: usize,
+    rgba: Vec<u8>,
+}
+
+/// Every normal annotation appearance on a page, by annotation key, at
+/// scale 1, in one call (`appearanceRasters`).
+fn appearance_rasters(
+    engine: &mut Engine,
+    doc: &str,
+    page: u64,
+) -> std::collections::HashMap<String, Raster> {
+    let (answer, payloads) = engine
+        .send(
+            json!({ "kind": "annotations.renderAppearances", "effect": "read", "docId": doc,
+                "page": page_ref(page), "family": "annotations",
+                "options": { "viewport": { "kind": "scale", "scale": 1 } } }),
+            Vec::new(),
+        )
+        .unwrap_or_else(|e| panic!("renderAppearances: {e}"));
+    let mut rasters = std::collections::HashMap::new();
+    for (appearance, pixels) in answer["appearances"].as_array().unwrap().iter().zip(payloads) {
+        if appearance["mode"] != "normal" {
+            continue;
+        }
+        let raster = &appearance["raster"];
+        let (width, height, stride) = (
+            raster["width"].as_u64().unwrap() as usize,
+            raster["height"].as_u64().unwrap() as usize,
+            raster["stride"].as_u64().unwrap() as usize,
+        );
+        let mut rgba = Vec::with_capacity(width * height * 4);
+        for row in 0..height {
+            rgba.extend_from_slice(&pixels[row * stride..row * stride + width * 4]);
+        }
+        rasters.insert(key(&appearance["ref"]), Raster { width, height, rgba });
+    }
+    rasters
+}
+
+/// Channel `channel` of the pixel at `at` as drawn: color times alpha, or
+/// the alpha (`drawn`).
+fn drawn(rgba: &[u8], at: usize, channel: usize) -> i32 {
+    let alpha = i32::from(rgba[at + 3]);
+    if channel == 3 {
+        alpha
+    } else {
+        (f64::from(i32::from(rgba[at + channel]) * alpha) / 255.0).round() as i32
+    }
+}
+
+/// The largest difference between a pixel of one raster and the closest
+/// pixel of the other within `radius` pixels, both ways
+/// (`maxShiftedDifference`).
+fn max_shifted_difference(a: &Raster, b: &Raster, radius: i64) -> i32 {
+    let one_way = |from: &Raster, to: &Raster| {
+        let mut max = 0;
+        for y in 0..from.height as i64 {
+            for x in 0..from.width as i64 {
+                let mut best = 255;
+                'search: for dy in -radius..=radius {
+                    for dx in -radius..=radius {
+                        if best == 0 {
+                            break 'search;
+                        }
+                        let (ny, nx) = (y + dy, x + dx);
+                        if ny < 0 || nx < 0 || ny >= to.height as i64 || nx >= to.width as i64 {
+                            continue;
+                        }
+                        let a = ((y * from.width as i64 + x) * 4) as usize;
+                        let b = ((ny * to.width as i64 + nx) * 4) as usize;
+                        let difference = (0..4)
+                            .map(|c| (drawn(&from.rgba, a, c) - drawn(&to.rgba, b, c)).abs())
+                            .max()
+                            .unwrap();
+                        best = best.min(difference);
+                    }
+                }
+                max = max.max(best);
+            }
+        }
+        max
+    };
+    one_way(a, b).max(one_way(b, a))
 }
 
 /// Each turned box's `rect` is the upright box around its own box, turned
@@ -1488,6 +1600,78 @@ fn r1_r2_a_stamping_import_does_too_apart_from_the_attribution_and_names_it_stam
         expect_turned_rects(&again);
         expect_same_resources(&again, &taken);
     }
+}
+
+#[test]
+fn r5_a_stamp_draws_as_its_source_and_in_our_own_file_every_kind_does() {
+    for fixture in ROUND_TRIPS {
+        let (mut engine, bundle, result, _, _) = round_trip(fixture, "restore");
+        let copy_of: std::collections::HashMap<String, Value> = result["refMap"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|pair| (key(&pair["from"]), pair["to"].clone()))
+            .collect();
+        let mut compared = 0;
+        for entry in bundle.bundle["pages"].as_array().unwrap() {
+            let page = entry["page"]["objectNumber"].as_u64().unwrap();
+            let drawn = appearance_rasters(&mut engine, "source", page);
+            let copies = appearance_rasters(&mut engine, "copy", page);
+            for item in bundle.items() {
+                let data = &item["data"];
+                if data["ref"]["page"]["objectNumber"] != page {
+                    continue;
+                }
+                if *fixture != "authoring" && data["subtype"] != "stamp" {
+                    continue;
+                }
+                let from = key(&data["ref"]);
+                let (Some(to), Some(original)) = (copy_of.get(&from), drawn.get(&from)) else {
+                    continue;
+                };
+                let copied = copies.get(&key(to));
+                let size = copied.map(|c| (c.width, c.height));
+                let same = copied.is_some_and(|c| max_shifted_difference(c, original, 1) <= 3);
+                assert_eq!(
+                    (from.as_str(), size, same),
+                    (from.as_str(), Some((original.width, original.height)), true),
+                    "{fixture}"
+                );
+                compared += 1;
+            }
+        }
+        if fixture.starts_with("stamp-") || *fixture == "authoring" {
+            assert!(compared > 0, "{fixture}: nothing drawn was compared");
+        }
+    }
+}
+
+/// Turned point shapes through a round trip: the frame of each copy holds
+/// its points as drawn, turned about the middle of their box. Not one of
+/// upstream's inputs (its `fill` makes no turned point shape), so it runs
+/// apart from R1–R4, whose exact comparison a turned shape's points would
+/// fail by a few millionths of a point: the file keeps them turned, as
+/// 32-bit floats, and a read turns them back.
+#[test]
+fn a_turned_point_shapes_frame_holds_its_drawn_points() {
+    let (mut engine, page) = two_copies(HELLO_WORLD);
+    let rect = page_box(40.0, 40.0, 100.0, 60.0);
+    let vertices = json!([{ "x": 50, "y": 90 }, { "x": 130, "y": 90 }, { "x": 90, "y": 50 }]);
+    for draft in [
+        json!({ "subtype": "ink", "rect": rect, "inkList": [vertices], "rotation": 30 }),
+        json!({ "subtype": "polygon", "rect": rect, "vertices": vertices, "rotation": 45 }),
+        json!({ "subtype": "polyline", "rect": rect, "vertices": vertices, "rotation": 90 }),
+        json!({ "subtype": "line", "rect": rect,
+            "linePoints": { "start": { "x": 50, "y": 90 }, "end": { "x": 130, "y": 50 } }, "rotation": 60 }),
+    ] {
+        engine.create("source", page, draft, &[]);
+    }
+    let bundle = engine.export("source", json!({})).unwrap();
+    assert_eq!(expect_frames_hold_geometry(&bundle), 4);
+    let imported = engine.import("target", &bundle, json!({ "attribution": "stamp" })).unwrap();
+    assert_eq!(imported["result"]["dropped"], json!([]));
+    let again = engine.export("target", json!({})).unwrap();
+    assert_eq!(expect_frames_hold_geometry(&again), 4);
 }
 
 #[test]
