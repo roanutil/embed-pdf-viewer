@@ -1819,9 +1819,12 @@ fn the_kernels_create_keeps_its_shape_while_the_wire_takes_upstreams() {
     let created = &decoded.value["created"];
     assert_eq!(created["subtype"], "square", "{created}");
     assert_eq!(created["nm"], "kernel-square");
+    // The box is the rect less the statement's `/RD`, as the kernel's
+    // `ingest` reads it; a plain border draws no `/RD`, so the rect read
+    // back is that box, in the file's coordinates.
     assert_eq!(
         created["rect"],
-        json!({ "left": 100.0, "bottom": 100.0, "right": 160.0, "top": 140.0 }),
+        json!({ "left": 101.0, "bottom": 101.0, "right": 159.0, "top": 139.0 }),
         "the rect back in the file's coordinates: {created}"
     );
     assert!(created["ref"]["annotObjectNumber"].as_u64().is_some_and(|n| n > 0), "{created}");
@@ -1884,6 +1887,67 @@ fn the_kernels_update_keeps_its_shape_while_the_wire_takes_upstreams() {
     let event = decoded.event.expect("an event");
     assert_eq!(event["type"], "annotation.updated");
     assert_eq!(event["updated"], *updated);
+}
+
+/// A kernel callout's statement: its rect holds the line, and its
+/// `rectDifferences` inset it to the text box, as the kernel's `ingest`
+/// reads it. Moved whole, the box and the line both move (Task 8.15 fix
+/// round 1; the create took the rect for the box before).
+#[test]
+fn the_kernels_callout_keeps_its_box_through_a_create_and_a_move() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let statement = |dx: f64| {
+        json!({ "subtype": "free-text", "intent": "free-text-callout", "contents": "callout",
+            "rect": { "left": 100.0 + dx, "bottom": 100.0, "right": 260.0 + dx, "top": 200.0 },
+            "rectDifferences": { "left": 60.0, "bottom": 0.0, "right": 0.0, "top": 0.0 },
+            "calloutLine": [{ "x": 105.0 + dx, "y": 110.0 }, { "x": 160.0 + dx, "y": 150.0 }],
+            "fontFamily": "helvetica", "fontSize": 12, "textAlign": "left", "rotation": 0,
+            "color": { "r": 0, "g": 0, "b": 0 } })
+    };
+    let call = translate(
+        "d",
+        "page.annotations.create",
+        Some(pon),
+        std::slice::from_ref(&statement(0.0)),
+        3,
+    )
+    .unwrap();
+    let created = decode(
+        &call.decode,
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads),
+    )
+    .unwrap()
+    .value["created"]
+        .clone();
+    // The text box, as the kernel reads it back: the rect less its /RD.
+    let text_box_left = |a: &Value| {
+        a["rect"]["left"].as_f64().unwrap() + a["rectDifferences"]["left"].as_f64().unwrap_or(0.0)
+    };
+    assert!((text_box_left(&created) - 160.0).abs() < 0.5, "the box is the text box: {created}");
+
+    let call = translate(
+        "d",
+        "page.annotations.update",
+        Some(pon),
+        &[created["ref"].clone(), statement(10.0)],
+        4,
+    )
+    .unwrap();
+    let updated = decode(
+        &call.decode,
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads),
+    )
+    .unwrap()
+    .value["updated"]
+        .clone();
+    assert!((text_box_left(&updated) - 170.0).abs() < 0.5, "the box moved: {updated}");
+    assert!(
+        (updated["calloutLine"][0]["x"].as_f64().unwrap() - 115.0).abs() < 0.01,
+        "the line moved: {updated}"
+    );
 }
 
 // ── page space (Task 8.4) ───────────────────────────────────────────────────

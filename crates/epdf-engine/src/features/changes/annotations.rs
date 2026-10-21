@@ -514,7 +514,9 @@ fn values_changed(
 ) -> RevertFallback {
     let keys: Vec<&String> = patch
         .keys()
-        .filter(|key| *key != "subtype" && before.get(*key) != after.get(*key))
+        .filter(|key| {
+            *key != "subtype" && !super::applier::values_equal(before.get(*key), after.get(*key))
+        })
         .collect();
     let pick = |from: &Map<String, Value>| {
         keys.iter()
@@ -543,8 +545,11 @@ pub fn revert_annotation(
         return left_alone(ctx, &step.reports);
     };
     let keys: Vec<&String> = fallback.left.keys().collect();
-    let kept: Vec<&String> =
-        keys.iter().copied().filter(|key| current.get(*key) == fallback.left.get(*key)).collect();
+    let kept: Vec<&String> = keys
+        .iter()
+        .copied()
+        .filter(|key| super::applier::values_equal(current.get(*key), fallback.left.get(*key)))
+        .collect();
     if kept.is_empty() {
         return left_alone(ctx, &step.reports);
     }

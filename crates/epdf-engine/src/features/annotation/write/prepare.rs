@@ -777,8 +777,11 @@ pub(crate) fn read_field(
             fields.file = Some(if value.is_null() {
                 None
             } else {
+                // `AttachmentFileWriteSchema` strips the keys it doesn't
+                // name: what a read adds (size, checksum, dates) is ignored,
+                // so a read can be sent back.
                 #[derive(serde::Deserialize)]
-                #[serde(deny_unknown_fields, rename_all = "camelCase")]
+                #[serde(rename_all = "camelCase")]
                 struct File {
                     name: String,
                     #[serde(default)]

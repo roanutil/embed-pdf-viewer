@@ -1343,3 +1343,92 @@ fn a_note_and_its_popup_share_open_and_the_change_names_both() {
     let shown = listed(&mut replay).into_iter().find(|a| a["ref"] == note["ref"]).unwrap();
     assert_eq!(shown["open"], true);
 }
+
+// ── Fix round 1 ─────────────────────────────────────────────────────────────
+
+#[test]
+fn an_update_ops_expectation_compares_values_not_spellings() {
+    // `valuesEqual`: the read's `1.0` is the expectation's `1`, and a `box`
+    // the read gave, converted back, is the box the annotation has.
+    let file = load();
+    let square = case(&file, "square-resize");
+    let mut replay = open(&file);
+    let created = create(&mut replay, &square.draft, square.page_object_number, &BTreeMap::new());
+    let applied = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC, "opId": "op-e",
+            "change": { "ops": [{ "type": "annotations.update", "ref": created["ref"],
+                "patch": { "color": "#0000ff" },
+                "expect": { "opacity": 1, "strokeWidth": 1, "box": created["box"] } }] } }))
+        .expect("the expectation holds");
+    assert_eq!(applied["result"]["items"][0]["annotation"]["color"], "#0000ff");
+}
+
+#[test]
+fn a_file_sent_back_renamed_is_renamed_and_its_undo_names_it_again() {
+    // `AttachmentFileWriteSchema` ignores what a read adds (size, checksum,
+    // dates), so the whole `file` a read gives can be sent back changed.
+    let file = load();
+    let attachment = case(&file, "file-attachment-icon");
+    let mut replay = open(&file);
+    let created = create(
+        &mut replay,
+        &attachment.draft,
+        attachment.page_object_number,
+        &attachment.draft_resources,
+    );
+    assert_eq!(created["file"]["name"], "notes.txt", "{created}");
+    let mut renamed = created["file"].clone();
+    renamed["name"] = json!("renamed.txt");
+    renamed["description"] = json!("described");
+    let applied = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC, "opId": "op-f",
+            "change": { "ops": [{ "type": "annotations.update", "ref": created["ref"],
+                "patch": { "file": renamed } }] } }))
+        .expect("a rename");
+    let item = &applied["result"]["items"][0]["annotation"];
+    assert_eq!(item["file"]["name"], "renamed.txt", "{item}");
+    assert_eq!(item["file"]["description"], "described", "{item}");
+    assert_eq!(item["file"]["size"], created["file"]["size"], "the bytes stay: {item}");
+
+    let undone = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC, "opId": "op-g",
+            "change": { "undoOf": "op-f" } }))
+        .expect("the undo");
+    let item = &undone["result"]["items"][0];
+    assert_eq!(item["type"], "annotations.update", "{undone}");
+    assert_eq!(item["annotation"]["file"]["name"], "notes.txt", "{undone}");
+    assert_eq!(item["annotation"]["file"]["description"], created["file"]["description"]);
+}
+
+#[test]
+fn a_patch_without_its_subtype_converts_its_places_by_name() {
+    // A patch that leaves out its kind converts each field by what its name
+    // holds in every kind (`ANNOTATION_FIELD_SPACES_BY_NAME`); a box in the
+    // file's shape is no page-space place (`notInPageSpace`).
+    let file = load();
+    let square = case(&file, "square-rect-translation");
+    let mut replay = open(&file);
+    let created = create(&mut replay, &square.draft, square.page_object_number, &BTreeMap::new());
+    let moved = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "box": { "x": 330, "y": 147, "width": 100, "height": 60 } }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a subtype-less move");
+    assert_eq!(
+        test_support::canonical_numbers(&moved["annotation"]["box"]),
+        test_support::canonical_numbers(&json!({ "x": 330, "y": 147, "width": 100, "height": 60 }))
+    );
+    let refused = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "box": { "left": 0, "bottom": 0, "right": 10, "top": 10 } }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect_err("a box in the file's shape");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "box", "{refused}");
+}

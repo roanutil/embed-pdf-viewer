@@ -165,10 +165,8 @@ fn read_parent(value: &Value) -> Result<AnnotationRef, EngineError> {
 pub fn assert_annotation_patch(
     subtype: AnnotationSubtype,
     prepared: &Map<String, Value>,
-) -> Result<(DraftFields, Option<AnnotationRef>), EngineError> {
+) -> Result<(), EngineError> {
     let kind = subtype.as_str();
-    let mut fields = DraftFields::default();
-    let mut parent = None;
     for name in read_back_fields(subtype) {
         let Some(value) = prepared.get(*name) else { continue };
         let writable = match *name {
@@ -186,25 +184,35 @@ pub fn assert_annotation_patch(
         }
     }
     for (name, value) in prepared {
+        // A foreign scale can't be written whatever 8.25 brings
+        // (`measurementFollows`).
+        if name == "measure"
+            && owner_of(subtype, name) == Some(FieldOwner::Data)
+            && let Some(scale) = value.get("subtype").and_then(Value::as_str)
+            && !matches!(scale, "rectilinear" | "RL")
+        {
+            let what = if scale == "geospatial" { "geospatial" } else { "foreign" };
+            return Err(invalid(format!("A {what} measure can't be written; leave measure out")));
+        }
+    }
+    read_patch_fields(subtype, prepared).map(|_| ())
+}
+
+/// A patch's data fields read into their types, as the writers take them.
+/// Fields the engine works out, stamps or keeps as found are left out.
+fn read_patch_fields(
+    subtype: AnnotationSubtype,
+    patch: &Map<String, Value>,
+) -> Result<(DraftFields, Option<AnnotationRef>), EngineError> {
+    let mut fields = DraftFields::default();
+    let mut parent = None;
+    for (name, value) in patch {
         if name == "subtype" {
             continue;
         }
         match owner_of(subtype, name) {
             Some(FieldOwner::Data) if name == "parent" => parent = Some(read_parent(value)?),
-            Some(FieldOwner::Data) => {
-                // A foreign scale can't be written whatever 8.25 brings
-                // (`measurementFollows`).
-                if name == "measure"
-                    && let Some(scale) = value.get("subtype").and_then(Value::as_str)
-                    && !matches!(scale, "rectilinear" | "RL")
-                {
-                    let what = if scale == "geospatial" { "geospatial" } else { "foreign" };
-                    return Err(invalid(format!(
-                        "A {what} measure can't be written; leave measure out"
-                    )));
-                }
-                read_field("update", subtype, name, value, &mut fields)?;
-            }
+            Some(FieldOwner::Data) => read_field("update", subtype, name, value, &mut fields)?,
             // Accepted so a read can be sent back; the engine decides what
             // happens to them.
             _ => {}
@@ -575,8 +583,9 @@ pub fn pdf_resolve_annotation_patch(
     let (subtype, prepared) = pdf_prepare_annotation_patch(current, patch)?;
     assert_annotation_patch(subtype, &prepared)?;
     let data = pdf_derive_annotation_patch(subtype, current, prepared, describe)?;
-    // What follows was derived from checked values, so it reads as they do.
-    let (fields, parent) = assert_annotation_patch(subtype, &data)?;
+    // The writers take the derived patch typed: read, not checked again
+    // (the check ran on the prepared patch, as upstream's does).
+    let (fields, parent) = read_patch_fields(subtype, &data)?;
     Ok(ResolvedPatch { subtype, data, fields, parent })
 }
 

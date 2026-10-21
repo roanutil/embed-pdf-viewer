@@ -912,9 +912,23 @@ fn write_file_change(
         }
     }
     let metadata = metadata.and_then(Option::as_ref);
-    let current = attachment.as_ref().map(|a| {
-        (a.name().ok().flatten(), a.mime_type().ok().flatten(), a.description().ok().flatten())
-    });
+    // `readAttachmentFileInfo`: a read that fails is an error, not a
+    // missing value.
+    let read_error = |what: &str, e: pdfium::PdfiumError| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("reading the attachment's {what} failed: {e}"),
+        )
+    };
+    let current = match attachment.as_ref() {
+        Some(a) => Some((
+            a.name().map_err(|e| read_error("name", e))?,
+            a.mime_type().map_err(|e| read_error("type", e))?,
+            a.description().map_err(|e| read_error("description", e))?,
+        )),
+        None => None,
+    };
+    let had_file = current.is_some();
     if attachment.is_none() {
         // No file specification yet: writing one needs the name and the bytes.
         let (Some(file), Some(_)) = (metadata, bytes) else {
@@ -957,10 +971,8 @@ fn write_file_change(
         return Err(refused("the file attachment's file has no embedded data to give a MIME type"));
     }
     let Some(file) = metadata else { return Ok(()) };
-    if current_name.is_some()
-        && Some(&file.name) != current_name.as_ref()
-        && !attachment.set_name(&file.name)
-    {
+    // A file just added is named already (`current !== null`).
+    if had_file && Some(&file.name) != current_name.as_ref() && !attachment.set_name(&file.name) {
         return Err(unknown("EPDFAttachment_SetName returned false"));
     }
     if file.description != current_description

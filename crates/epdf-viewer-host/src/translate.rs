@@ -882,11 +882,22 @@ mod kernel_create {
         let unrotated = draft.remove("unrotatedRect");
         let given_rect = draft.remove("rect");
         let turned_from = unrotated.filter(|u| !u.is_null() && rotation.is_some());
-        if is_box_kind && !update {
-            if let Some(content) = turned_from.or(given_rect.clone()) {
-                out.insert("box".into(), page_box(&content, visible));
-            }
-        } else if is_box_kind && let Some(content) = turned_from {
+        // Upright, the box is the rect less the statement's `/RD`, as the
+        // kernel's `ingest` reads it (`inset_pdf_rect_by_rd`): a callout's
+        // rect holds its line, a cloudy border's its bumps.
+        let differences = draft.remove("rectDifferences");
+        let upright_box = given_rect.as_ref().and_then(rect).map(|r| {
+            let inset = |key: &str| {
+                differences.as_ref().and_then(|d| d.get(key)).and_then(Value::as_f64).unwrap_or(0.0)
+            };
+            json!(PdfRect {
+                left: r.left + inset("left"),
+                bottom: r.bottom + inset("bottom"),
+                right: r.right - inset("right"),
+                top: r.top - inset("top"),
+            })
+        });
+        if is_box_kind && let Some(content) = turned_from.or(upright_box) {
             out.insert("box".into(), page_box(&content, visible));
         } else if (update
             || matches!(subtype, S::Text | S::Link | S::Redact | S::FileAttachment | S::Popup))

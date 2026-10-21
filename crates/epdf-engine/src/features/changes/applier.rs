@@ -329,6 +329,30 @@ pub fn left_alone(ctx: &ChangeContext<'_>, op: &str) -> Result<Done, EngineError
     })
 }
 
+/// Whether two JSON values are equal by value (`valuesEqual`): numbers by
+/// their value whatever their spelling (`1` and `1.0` are one number), with
+/// `Object.is`'s `0` and `-0` apart; arrays item by item; objects by the
+/// same keys, whatever their order. A missing value is `undefined`, which
+/// equals only another missing one.
+pub fn values_equal(a: Option<&serde_json::Value>, b: Option<&serde_json::Value>) -> bool {
+    use serde_json::Value;
+    match (a, b) {
+        (None, None) => true,
+        (Some(Value::Number(x)), Some(Value::Number(y))) => match (x.as_f64(), y.as_f64()) {
+            (Some(x), Some(y)) => x == y && x.is_sign_negative() == y.is_sign_negative(),
+            _ => x == y,
+        },
+        (Some(Value::Array(x)), Some(Value::Array(y))) => {
+            x.len() == y.len() && x.iter().zip(y).all(|(x, y)| values_equal(Some(x), Some(y)))
+        }
+        (Some(Value::Object(x)), Some(Value::Object(y))) => {
+            x.len() == y.len() && x.iter().all(|(key, value)| values_equal(Some(value), y.get(key)))
+        }
+        (Some(x), Some(y)) => x == y,
+        _ => false,
+    }
+}
+
 /// Refuse the change with `ChangeConflict` when the document doesn't hold
 /// what op `op_index` expects: each field of `expected` must have that value
 /// now (`assertExpected`).
@@ -339,7 +363,7 @@ pub fn assert_expected(
 ) -> Result<(), EngineError> {
     let fields: Vec<&str> = expected
         .iter()
-        .filter(|(key, value)| current.get(key.as_str()) != Some(*value))
+        .filter(|(key, value)| !values_equal(current.get(key.as_str()), Some(*value)))
         .map(|(key, _)| key.as_str())
         .collect();
     if fields.is_empty() {
@@ -350,4 +374,22 @@ pub fn assert_expected(
         format!("op {op_index} expected other values in {}", fields.join(", ")),
     )
     .with_details(serde_json::json!({ "opIndex": op_index, "fields": fields })))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::values_equal;
+    use serde_json::json;
+
+    #[test]
+    fn values_compare_by_value_as_object_is_does() {
+        let same = |a: serde_json::Value, b: serde_json::Value| values_equal(Some(&a), Some(&b));
+        assert!(same(json!(1), json!(1.0)), "one number, two spellings");
+        assert!(!same(json!(0.0), json!(-0.0)), "Object.is keeps 0 and -0 apart");
+        assert!(same(json!({ "x": 1, "y": [2.0] }), json!({ "y": [2], "x": 1.0 })));
+        assert!(!same(json!({ "x": 1 }), json!({ "x": 1, "y": null })));
+        assert!(!same(json!(null), json!(0)));
+        assert!(!values_equal(None, Some(&json!(null))), "undefined isn't null");
+        assert!(values_equal(None, None));
+    }
 }
