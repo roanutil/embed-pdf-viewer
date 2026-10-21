@@ -71,10 +71,9 @@ const NOT_YET_ROUTED: &[(&str, &str)] = &[
 /// `objectNumbers.reserve` is routed (8.3) and hands out numbers on a layer
 /// session, but this test opens `open.fatMem`, which this engine opens as a
 /// plain document where upstream opens a layer (`openBytesAsLayer`), and a
-/// plain document has no object numbers to hand out. No sub-task owns that
-/// open yet; the row goes when one does.
-const STUBBED: &[(&str, &str)] =
-    &[("forms.import", "8.22"), ("objectNumbers.reserve", "fat-memory layer open (unowned)")];
+/// plain document has no object numbers to hand out. 8.29 opens it as a
+/// layer and removes the row.
+const STUBBED: &[(&str, &str)] = &[("forms.import", "8.22"), ("objectNumbers.reserve", "8.29")];
 
 #[derive(Debug)]
 struct Case {

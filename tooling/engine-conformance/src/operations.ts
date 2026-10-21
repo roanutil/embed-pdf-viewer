@@ -196,7 +196,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: "A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. Rust hands numbers out on a layer session only: it opens open.fatMem bytes as a plain document, where WorkerHost.openBytesAsLayer opens a layer, so a fat-memory session answers NotImplemented (wire_contract STUBBED).",
+    note: "A session effect: moves the layer's last object number up. Only a session that hands out object numbers itself takes it. Rust hands numbers out on a layer session only: it opens open.fatMem bytes as a plain document, where WorkerHost.openBytesAsLayer opens a layer, so a fat-memory session answers NotImplemented (wire_contract STUBBED) until Task 8.29 opens it as a layer.",
   },
   {
     kind: 'pages.workingSet',
@@ -205,7 +205,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
-    note: 'Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case. Rust records the sets on the page pool of the session and answers null, since Host::call answers every call; the pool keeps no page past its last holder, as an upstream pool without a residency keeps none.',
+    note: 'Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case. Rust records the sets on the page pool of an open session and answers null, since Host::call answers every call; input it cannot read is dropped and answered null too, as upstream drops it unanswered; the pool keeps no page past its last holder, as an upstream pool without a residency keeps none.',
   },
 
   // --- G4. Render and fonts. Fonts are engine-level and move as one unit,

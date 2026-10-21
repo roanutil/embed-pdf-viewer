@@ -339,7 +339,13 @@ fn a_reserve_hands_out_the_next_numbers_each_once() {
 
     // `DocumentSession.reserveObjectNumbers`: a count that is not a whole
     // number of at least one is refused on `count`.
-    for count in [serde_json::json!(0), serde_json::json!(1.5), serde_json::json!(-2)] {
+    for count in [
+        serde_json::json!(0),
+        serde_json::json!(1.5),
+        serde_json::json!(-2),
+        serde_json::json!("3"),
+        serde_json::json!(null),
+    ] {
         let refused = reserve(&mut host, count.clone());
         assert_eq!(refused["error"]["code"], "InvalidArg", "{count}: {refused}");
         assert_eq!(refused["error"]["details"]["field"], "count", "{count}: {refused}");
@@ -363,6 +369,15 @@ fn a_reserve_past_the_issue_limit_is_layer_full() {
     );
     assert_eq!(refused["error"]["code"], "LayerFull", "{refused}");
     assert_eq!(refused["error"]["details"]["lastObjectNumber"], last, "{refused}");
+    // A count past any document's numbers is the same refusal, not a
+    // malformed request.
+    let huge = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1e12 }),
+        vec![],
+    );
+    assert_eq!(huge["error"]["code"], "LayerFull", "{huge}");
+    assert_eq!(huge["error"]["details"]["lastObjectNumber"], last, "{huge}");
     // Up to the limit is still handed out.
     let to_limit = 8_000_000 - last;
     let json = call(
@@ -411,6 +426,65 @@ fn a_fat_memory_session_has_no_numbers_to_hand_out() {
         vec![],
     );
     assert_eq!(refused["error"]["code"], "NotImplemented", "{refused}");
+}
+
+#[test]
+fn a_fat_memory_open_that_asks_for_numbers_is_refused_before_it_takes_the_key() {
+    // Refused before a session exists, so the `docId` stays free for an
+    // open that does not ask (re-port (Task 8): 8.29).
+    let mut host = Host::new();
+    let refused = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "d", "reserveObjectNumbers": 2 }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(refused["error"]["code"], "NotImplemented", "{refused}");
+    assert_eq!(host.sessions().len(), 0);
+    let opened = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
+        vec![bytes(PLAIN)],
+    );
+    assert!(opened.get("error").is_none(), "{opened}");
+}
+
+#[test]
+fn a_write_refused_for_a_parked_signing_spends_no_numbers() {
+    // `WorkerHost.run` checks for a parked signing before it raises the
+    // floor (`WorkerHost.ts:548-553`), so a refused write moves nothing.
+    const SIGFIELD: &str = "packages/engine/main/test/fixtures/unsigned_sigfield.pdf";
+    let mut host = Host::new();
+    let opened = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "baseKey": "sig",
+            "layer": { "kind": "fresh" }, "password": null }),
+        vec![bytes(SIGFIELD)],
+    );
+    let last = opened["result"]["lastObjectNumber"].as_u64().expect("a layer");
+    let listed =
+        call(&mut host, serde_json::json!({ "kind": "signatures.list", "docId": "d" }), vec![]);
+    let field = listed["result"]["signatures"][0]["field"].clone();
+    let prepared = call(
+        &mut host,
+        serde_json::json!({ "kind": "signatures.prepare", "docId": "d",
+            "input": { "field": field, "attribution": { "name": "Test Signer" } } }),
+        vec![],
+    );
+    assert!(prepared.get("error").is_none(), "{prepared}");
+
+    let refused = call(
+        &mut host,
+        serde_json::json!({ "kind": "metadata.update", "docId": "d", "opId": "op-1",
+            "objectNumberFloor": 5000, "patch": { "title": "Refused" } }),
+        vec![],
+    );
+    assert_eq!(refused["error"]["code"], "SigningPending", "{refused}");
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "objectNumbers.reserve", "docId": "d", "count": 1 }),
+        vec![],
+    );
+    assert_eq!(json["result"]["range"]["first"], last + 1, "{json}");
 }
 
 #[test]
@@ -530,7 +604,7 @@ fn a_layer_reopens_from_the_artifact_its_save_answered() {
 fn a_working_set_is_taken_and_never_answered() {
     // `pages.workingSet` (`WorkerHost.receive`): bookkeeping, taken at once,
     // and ignored for a document that is not open. This entry answers every
-    // call, so it answers `null`.
+    // call, so it answers `null`, malformed input included.
     use epdf_engine::session::pages::Place;
     use epdf_engine::session::registry::SessionKey;
 
@@ -566,7 +640,17 @@ fn a_working_set_is_taken_and_never_answered() {
             "pages": [{ "page": page, "role": "offscreen", "pixels": 0 }] }),
         vec![],
     );
-    assert_eq!(malformed["error"]["code"], "WireFormat", "{malformed}");
+    // Upstream never answers it, so input it cannot read changes nothing
+    // and reports nothing.
+    assert_eq!(malformed, serde_json::json!({ "result": null }));
+    let still = host
+        .sessions()
+        .session(&SessionKey::document("d"))
+        .expect("open")
+        .page_pool()
+        .expect("a pool")
+        .place_of(epdf_engine::identity::PageObjectNumber::new(number).unwrap());
+    assert_eq!(still.place, Place::Visible, "a malformed set replaced the last one");
 }
 
 #[test]

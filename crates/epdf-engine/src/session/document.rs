@@ -768,6 +768,8 @@ impl DocumentSession {
     /// and nothing it hands out to protect, so this does nothing there.
     pub fn raise_last_object_number(&self, last: u32) -> Result<(), EngineError> {
         let state = self.state()?;
+        // re-port (Task 8): 8.29 opens open.fatMem as a layer, after which
+        // every session has a number to raise.
         if state.kind != OpenKind::Layer {
             return Ok(());
         }
@@ -787,7 +789,7 @@ impl DocumentSession {
     /// `reserveObjectNumbers`: hand out `count` more numbers. The layer's
     /// last object number moves up by `count`, so nothing the engine makes
     /// lands on them, and they are this session's to name objects with.
-    pub fn reserve_object_numbers(&mut self, count: u32) -> Result<ObjectNumberRange, EngineError> {
+    pub fn reserve_object_numbers(&mut self, count: u64) -> Result<ObjectNumberRange, EngineError> {
         if self.object_number_authority != ObjectNumberAuthority::Session {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
@@ -802,22 +804,27 @@ impl DocumentSession {
             .with_details(serde_json::json!({ "field": "count" })));
         }
         let state = self.state()?;
+        // re-port (Task 8): 8.29 opens open.fatMem as a layer; until then a
+        // fat-memory session is a plain document with no numbers to hand out.
         if state.kind != OpenKind::Layer {
             return Err(EngineError::with_message(
                 EngineErrorCode::NotImplemented,
                 "this session's document is not a layer, so it has no object numbers to hand \
-                 out: open.fatMem opens a plain document here, where upstream opens a layer",
+                 out: open.fatMem opens a plain document here, where upstream opens a layer \
+                 (Task 8.29)",
             ));
         }
         let document = state.document.document();
         let last = document.layer_last_object_number();
-        if u64::from(last) + u64::from(count) > u64::from(OBJECT_NUMBER_ISSUE_LIMIT) {
+        if u64::from(last).saturating_add(count) > u64::from(OBJECT_NUMBER_ISSUE_LIMIT) {
             return Err(EngineError::with_message(
                 EngineErrorCode::LayerFull,
                 "no more object numbers to hand out",
             )
             .with_details(serde_json::json!({ "lastObjectNumber": last })));
         }
+        // Within the issue limit, so it fits a u32.
+        let count = count as u32;
         if !document.raise_layer_last_object_number(last + count) {
             return Err(EngineError::with_message(
                 EngineErrorCode::Unknown,

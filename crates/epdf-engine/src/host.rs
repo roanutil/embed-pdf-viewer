@@ -522,14 +522,18 @@ impl Host {
         if legacy {
             return self.route_legacy(&header, &body, payloads, &cancel);
         }
-        // `WorkerHost.run`: the write's own objects go at or above the floor
-        // its caller set, so the layer's last object number is raised to
-        // just below it before the write runs. The arm reports a session
-        // that is not open.
+        // `WorkerHost.run` (`WorkerHost.ts:548-553`): a parked signing
+        // refuses a write before anything else, and then the write's own
+        // objects go at or above the floor its caller set, so the layer's
+        // last object number is raised to just below it before the write
+        // runs. The arm reports a session that is not open.
         if let Some(floor) = job.object_number_floor
             && let Ok(key) = header.key()
             && let Ok(session) = self.sessions.session(&key)
         {
+            if MUTATING_KINDS.contains(&header.kind.as_str()) {
+                crate::features::signature::mutator::assert_no_pending_signing(session)?;
+            }
             session.raise_last_object_number(floor.saturating_sub(1))?;
         }
 
@@ -544,7 +548,7 @@ impl Host {
             // answered, so a session that is not open ignores it. This entry
             // answers every call, so it answers `null`, which a host drops.
             "pages.workingSet" => {
-                self.set_working_set(&header, &body)?;
+                self.set_working_set(&header, &body);
                 serde_json::Value::Null
             }
             "shutdown" => {
@@ -2059,6 +2063,11 @@ impl Host {
         let password = body.get("password").and_then(serde_json::Value::as_str);
         let key = header.key()?;
         let options = OpenOptions::parse(body)?;
+        // re-port (Task 8): 8.29. A plain document has no object numbers to
+        // hand out, so the open is refused before a session takes the key.
+        if options.reserve_object_numbers.is_some() {
+            return Err(fat_memory_has_no_object_numbers());
+        }
         // A native extension of the wire: the TypeScript enforces scope in
         // `engine/main`, above the worker, and a native host has no such
         // layer. Absent is `["*"]`, everything.
@@ -2125,20 +2134,19 @@ impl Host {
     }
 
     /// `pages.workingSet` (`WorkerHost.setWorkingSet`): what `view` shows of
-    /// an open session's pages, replacing its last set.
-    fn set_working_set(
-        &mut self,
-        header: &RequestHeader,
-        body: &serde_json::Value,
-    ) -> Result<(), EngineError> {
-        let view = string_field(body, "view")?;
-        let pages: Vec<crate::session::pages::WorkingSetPage> = field(body, "pages")?;
-        if let Ok(session) = self.sessions.session(&header.key()?)
-            && let Some(pool) = session.page_pool()
-        {
+    /// an open session's pages, replacing its last set. Upstream looks the
+    /// session up first and never answers, so a request for no open session,
+    /// or one it cannot read, changes nothing and reports nothing.
+    fn set_working_set(&mut self, header: &RequestHeader, body: &serde_json::Value) {
+        let Ok(key) = header.key() else { return };
+        let Ok(session) = self.sessions.session(&key) else { return };
+        let Some(pool) = session.page_pool() else { return };
+        let view: Option<String> = optional(body, "view").ok().flatten();
+        let pages: Option<Vec<crate::session::pages::WorkingSetPage>> =
+            optional(body, "pages").ok().flatten();
+        if let (Some(view), Some(pages)) = (view, pages) {
             pool.set_working_set(&view, &pages);
         }
-        Ok(())
     }
 
     /// What an open document's signatures forbid (`WorkerHost.probeProtection`),
@@ -2446,7 +2454,7 @@ struct OpenOptions {
     /// `signedDocumentPolicy`, default `protect`.
     signed_document_policy: crate::features::signature::types::SignedDocumentPolicy,
     /// `reserveObjectNumbers`; `0` and absent ask for none.
-    reserve_object_numbers: Option<u32>,
+    reserve_object_numbers: Option<u64>,
 }
 
 impl OpenOptions {
@@ -2464,19 +2472,37 @@ impl OpenOptions {
     }
 }
 
-/// A count of object numbers to hand out. Not a number is `WireFormat`; a
-/// number that is not a whole one of at least 1 is `InvalidArg` on `count`,
-/// as `DocumentSession.reserveObjectNumbers` refuses it.
-fn object_number_count(body: &serde_json::Value, name: &str) -> Result<u32, EngineError> {
-    let raw: f64 = field(body, name)?;
-    if raw.fract() != 0.0 || raw < 1.0 || raw > f64::from(u32::MAX) {
-        return Err(EngineError::with_message(
+/// A count of object numbers to hand out. Anything but a whole number of
+/// at least 1 is `InvalidArg` on `count`, as `DocumentSession.
+/// reserveObjectNumbers` refuses it (`Number.isInteger(count) && count >=
+/// 1`). A count too large for any document passes here and is refused as
+/// `LayerFull` against the session's last object number.
+fn object_number_count(body: &serde_json::Value, name: &str) -> Result<u64, EngineError> {
+    let raw = body.get(name).and_then(serde_json::Value::as_f64);
+    match raw {
+        Some(n) if n.fract() == 0.0 && n >= 1.0 => {
+            Ok(if n >= u64::MAX as f64 { u64::MAX } else { n as u64 })
+        }
+        _ => Err(EngineError::with_message(
             EngineErrorCode::InvalidArg,
-            format!("cannot reserve {raw} object numbers"),
+            format!(
+                "cannot reserve {} object numbers",
+                body.get(name).unwrap_or(&serde_json::Value::Null)
+            ),
         )
-        .with_details(serde_json::json!({ "field": "count" })));
+        .with_details(serde_json::json!({ "field": "count" }))),
     }
-    Ok(raw as u32)
+}
+
+/// re-port (Task 8): 8.29. Upstream opens `open.fatMem` bytes as a layer
+/// (`WorkerHost.openBytesAsLayer`); this engine opens a plain document,
+/// which has no object numbers to hand out.
+fn fat_memory_has_no_object_numbers() -> EngineError {
+    EngineError::with_message(
+        EngineErrorCode::NotImplemented,
+        "this session's document is not a layer, so it has no object numbers to hand out: \
+         open.fatMem opens a plain document here, where upstream opens a layer (Task 8.29)",
+    )
 }
 
 /// `LayerOpenSource`, its bytes from payload `index`.
