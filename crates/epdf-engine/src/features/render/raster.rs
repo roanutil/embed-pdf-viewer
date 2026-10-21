@@ -10,19 +10,21 @@
 use serde::{Deserialize, Serialize};
 
 use super::geometry::{
-    RenderBackground, RenderTarget, RenderViewport, device_size, display_rect_to_device_matrix,
-    pdf_rect_to_display_rect, resolve_target,
+    RenderBackground, RenderTarget, RenderViewport, device_size, page_rect_of_display_rect,
+    pdf_rect_to_display_rect, render_matrix, resolve_target,
 };
 use crate::access::PageAccess;
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::geom::PdfRotation;
+use crate::geom::{PdfRect, PdfRotation, normalize_pdf_rect};
 
-/// What to draw and how big.
+/// What to draw and how big (`PageRenderOptions<C>`). `R` is the target
+/// region's space, as in [`RenderTarget`]: the renderer takes [`PdfRect`];
+/// the wire sends `PageRect`, which the boundary converts.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
-pub struct RenderOptions {
-    pub target: RenderTarget,
+pub struct RenderOptions<R = PdfRect> {
+    pub target: RenderTarget<R>,
     pub viewport: RenderViewport,
     pub rotation: PdfRotation,
     pub background: RenderBackground,
@@ -41,10 +43,30 @@ pub struct RenderOptions {
     pub max_output_pixels: Option<u64>,
 }
 
-impl Default for RenderOptions {
+impl<R> RenderOptions<R> {
+    /// The same options with the target's region converted.
+    pub fn try_map_target<S, E>(
+        self,
+        convert: impl FnOnce(R) -> Result<S, E>,
+    ) -> Result<RenderOptions<S>, E> {
+        Ok(RenderOptions {
+            target: match self.target {
+                RenderTarget::Page => RenderTarget::Page,
+                RenderTarget::Rect { rect } => RenderTarget::Rect { rect: convert(rect)? },
+            },
+            viewport: self.viewport,
+            rotation: self.rotation,
+            background: self.background,
+            include_annotations: self.include_annotations,
+            max_output_pixels: self.max_output_pixels,
+        })
+    }
+}
+
+impl<R> Default for RenderOptions<R> {
     fn default() -> Self {
         Self {
-            target: RenderTarget::default(),
+            target: RenderTarget::Page,
             viewport: RenderViewport::default(),
             rotation: PdfRotation::None,
             background: RenderBackground::default(),
@@ -81,6 +103,35 @@ impl PageRaster {
     }
 }
 
+/// The page's display box in PDF user space (`readPageBox`): the box
+/// PDFium's display matrix maps to the page's pixels, the crop box of a page
+/// loaded normalized. A rect in PDF user space, as annotation rects and
+/// render targets are, is placed relative to it.
+pub fn read_page_box(page: &pdfium::PageView<'_>) -> PdfRect {
+    match page.bounding_box() {
+        Some(r) => normalize_pdf_rect(PdfRect {
+            left: f64::from(r.left),
+            bottom: f64::from(r.bottom),
+            right: f64::from(r.right),
+            top: f64::from(r.top),
+        }),
+        None => PdfRect {
+            left: 0.0,
+            bottom: 0.0,
+            right: f64::from(page.width()),
+            top: f64::from(page.height()),
+        },
+    }
+}
+
+/// A page render: its pixels, and the area of the page they show, in PDF
+/// space (`{raster, area}` from `PageRenderReader.render`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct RenderedPage {
+    pub raster: PageRaster,
+    pub area: PdfRect,
+}
+
 /// Render a page region.
 ///
 /// Cancellation is cooperative up to the draw and not inside it:
@@ -93,13 +144,22 @@ pub fn render_page(
     options: &RenderOptions,
     cancel: &CancelToken,
 ) -> Result<PageRaster, EngineError> {
+    render_page_area(page, options, cancel).map(|rendered| rendered.raster)
+}
+
+/// [`render_page`], with the area of the page the pixels show: the resolved
+/// target, in PDF space. `pages.render` answers it, in page space.
+pub fn render_page_area(
+    page: &dyn PageAccess,
+    options: &RenderOptions,
+    cancel: &CancelToken,
+) -> Result<RenderedPage, EngineError> {
     cancel.check()?;
     let view = page.view();
-    let page_width = f64::from(view.width());
-    let page_height = f64::from(view.height());
+    let page_box = read_page_box(view);
 
-    let rect = resolve_target(options.target, page_width, page_height)?;
-    let display_rect = pdf_rect_to_display_rect(rect, page_height);
+    let rect = resolve_target(options.target, page_box)?;
+    let display_rect = pdf_rect_to_display_rect(rect, page_box);
     let (width, height) = device_size(display_rect, options.rotation, options.viewport)?;
 
     if let Some(budget) = options.max_output_pixels {
@@ -115,7 +175,10 @@ pub fn render_page(
         }
     }
 
-    let matrix = display_rect_to_device_matrix(display_rect, options.rotation, width, height);
+    // The page's display matrix already turned PDF space into page space
+    // (the display rect), so this is the matrix a page transform reports.
+    let matrix =
+        render_matrix(page_rect_of_display_rect(display_rect), options.rotation, width, height);
     cancel.check()?;
     let bitmap = view
         .render_rgba_with_matrix(
@@ -130,12 +193,15 @@ pub fn render_page(
         })?;
     cancel.check()?;
 
-    Ok(PageRaster {
-        width: bitmap.width,
-        height: bitmap.height,
-        stride: bitmap.stride,
-        // Already RGBA: the render asked PDFium for reversed byte order, so
-        // there is no pass over the pixels here.
-        rgba: bitmap.bgra,
+    Ok(RenderedPage {
+        raster: PageRaster {
+            width: bitmap.width,
+            height: bitmap.height,
+            stride: bitmap.stride,
+            // Already RGBA: the render asked PDFium for reversed byte order,
+            // so there is no pass over the pixels here.
+            rgba: bitmap.bgra,
+        },
+        area: rect,
     })
 }

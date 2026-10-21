@@ -1,7 +1,7 @@
 //! Page geometry without loading a page.
 //!
-//! The `...ByIndex` family reads a page's boxes, size, rotation, user unit and
-//! label straight from the page tree, parsing nothing. That is what keeps
+//! The `...ByIndex` family reads a page's boxes, rotation, tab order, user unit
+//! and label straight from the page tree, parsing nothing. That is what keeps
 //! listing a 500-page document cheap: no page object is built, so none has to
 //! be closed.
 //!
@@ -22,40 +22,17 @@ pub enum PageBoxType {
 }
 
 impl Document {
-    /// One of a page's boxes, or `None` when the optional box is absent.
-    ///
-    /// Media always resolves through page-tree inheritance and a US Letter
-    /// default, and crop falls back to media, so those two are always present
-    /// for a page that exists. Bleed, trim and art are genuinely optional,
-    /// and are read from the page dictionary only: since this pin they are no
-    /// longer inherited through `/Parent` (ISO 32000 never allowed it), where
-    /// the old fork inherited them like media and crop.
-    ///
-    /// The defaults live here because the fork stopped applying them:
-    /// `EPDF_GetPageBoxByIndex` now reports a box only as the file writes it
-    /// (runtime 3920846f3). [`Document::written_page_box_by_index`] is that
-    /// raw read.
-    pub fn page_box_by_index(&self, index: u32, which: PageBoxType) -> Option<RectF> {
-        if index >= self.page_count() {
-            return None;
-        }
-        match which {
-            PageBoxType::Media => Some(self.effective_media_box(index)),
-            PageBoxType::Crop => Some(
-                self.written_page_box_by_index(index, PageBoxType::Crop)
-                    .unwrap_or_else(|| self.effective_media_box(index)),
-            ),
-            PageBoxType::Bleed | PageBoxType::Trim | PageBoxType::Art => {
-                self.written_page_box_by_index(index, which)
-            }
-        }
-    }
-
-    /// One of a page's boxes exactly as the file writes it, corners in order.
+    /// One of a page's boxes exactly as the file writes it, its corners put
+    /// in order by PDFium.
     ///
     /// `None` when the box is absent, empty or not four numbers, or the page
     /// does not exist. Media and crop resolve through page-tree inheritance;
-    /// no default and no clipping to the media box is applied.
+    /// bleed, trim and art are read from the page dictionary only, since ISO
+    /// 32000 never let them inherit. Nothing is defaulted and nothing is cut
+    /// to the media box: since runtime 3920846f3 `EPDF_GetPageBoxByIndex`
+    /// reports a box only as the file writes it, and the engine applies ISO
+    /// 32000's defaults itself (`epdf_engine::geom::page_boxes_of`, upstream's
+    /// `pageBoxesOf`).
     pub fn written_page_box_by_index(&self, index: u32, which: PageBoxType) -> Option<RectF> {
         let mut rect = pdfium_sys::FS_RECTF { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 };
         // SAFETY: the handle is live and `rect` is an initialized local.
@@ -70,32 +47,11 @@ impl Document {
         })
     }
 
-    /// The media box as the fork used to resolve it: the written box, or
-    /// US Letter when there is none.
-    fn effective_media_box(&self, index: u32) -> RectF {
-        self.written_page_box_by_index(index, PageBoxType::Media).unwrap_or(RectF {
-            left: 0.0,
-            top: 792.0,
-            right: 612.0,
-            bottom: 0.0,
-        })
-    }
-
-    /// A page's size with rotation normalized away.
-    ///
-    /// The crop box, or the media box when there is none, cut to the media
-    /// box, and never swapped for `/Rotate`. That is what the removed
-    /// `EPDF_GetPageSizeByIndexNormalized` computed natively; it is computed
-    /// here now from the written boxes, with the same defaults.
-    pub fn page_size_by_index(&self, index: u32) -> Option<(f32, f32)> {
-        let media = self.page_box_by_index(index, PageBoxType::Media)?;
-        let crop = self.page_box_by_index(index, PageBoxType::Crop)?;
-        Some(intersection_size(media, crop))
-    }
-
     /// A page's `/Rotate` as the file writes it, resolved through page-tree
-    /// inheritance: 0 when absent, and not normalized, so 450 or 45 comes
-    /// back as written. `None` when the page does not exist.
+    /// inheritance: 0 when absent, and not reduced, so 450 or 45 comes back
+    /// as written. `None` when the page does not exist. The engine reads it
+    /// by upstream's `pageRotationOf` rule (`epdf_engine::geom::
+    /// page_rotation_of`).
     pub fn page_rotate_by_index(&self, index: u32) -> Option<i32> {
         let mut rotate = 0i32;
         // SAFETY: the handle is live and `rotate` is an initialized local.
@@ -105,15 +61,16 @@ impl Document {
         (ok != 0).then_some(rotate)
     }
 
-    /// A page's `/Rotate`, in quarter turns clockwise.
-    ///
-    /// A page that cannot be read becomes zero here: a page whose rotation
-    /// could not be read is upright as far as anything downstream can tell,
-    /// and there is no rotation value that means "unknown". The written value
-    /// is reduced the way the removed `EPDF_GetPageRotationByIndex` did:
-    /// truncated to whole quarter turns, then taken modulo four.
-    pub fn page_rotation_quarter_turns(&self, index: u32) -> u8 {
-        quarter_turns_of(self.page_rotate_by_index(index).unwrap_or(0))
+    /// A page's `/Tabs` name as the file writes it (`R`, `C`, `S`, or PDF
+    /// 2.0's `A` and `W`), read without parsing the page
+    /// (`EPDF_GetPageTabOrderByIndex`). `None` when the page sets none or does
+    /// not exist. `/Tabs` is not inherited.
+    pub fn page_tab_order_by_index(&self, index: u32) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: measure-then-fill with a null probe; the buffer holds the
+        // length passed with it.
+        crate::action::read_utf8(|buf, len| unsafe {
+            pdfium_sys::EPDF_GetPageTabOrderByIndex(self.handle, index as i32, buf, len)
+        })
     }
 
     /// A page's `/UserUnit`, defaulting to 1.
@@ -174,71 +131,136 @@ impl Document {
     }
 }
 
-/// The size of the overlap of two ordered rects, or nothing.
-///
-/// Either side at or below zero means they do not overlap, and the whole
-/// result is then zero, as `CFX_FloatRect::Intersect` and the TypeScript's
-/// `pdfRectIntersection` both have it. Clamping each axis separately would
-/// report a strip of positive width and zero height.
-fn intersection_size(a: RectF, b: RectF) -> (f32, f32) {
-    let width = a.right.min(b.right) - a.left.max(b.left);
-    let height = a.top.min(b.top) - a.bottom.max(b.bottom);
-    if width <= 0.0 || height <= 0.0 { (0.0, 0.0) } else { (width, height) }
-}
-
-/// The removed `EPDF_GetPageRotationByIndex` reduction: whole quarter turns,
-/// modulo four, made non-negative.
-fn quarter_turns_of(written: i32) -> u8 {
-    ((written / 90) % 4).rem_euclid(4) as u8
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Library;
+
+    /// A PDF whose page tree holds `pages`, each a page dictionary's body
+    /// without `/Type` and `/Parent`. `tree` goes into the root `/Pages`
+    /// dictionary, so a page can inherit from it. The cross-reference
+    /// offsets are computed, so PDFium reads the file as written.
+    fn pdf(tree: &str, pages: &[&str]) -> Vec<u8> {
+        let first = 3;
+        let kids: Vec<String> = (0..pages.len()).map(|i| format!("{} 0 R", first + i)).collect();
+        let mut objects = vec![
+            "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+            format!("<< /Type /Pages /Kids [{}] /Count {} {tree} >>", kids.join(" "), pages.len()),
+        ];
+        objects.extend(pages.iter().map(|body| format!("<< /Type /Page /Parent 2 0 R {body} >>")));
+        let mut out = b"%PDF-1.7\n".to_vec();
+        let mut offsets = Vec::new();
+        for (i, object) in objects.iter().enumerate() {
+            offsets.push(out.len());
+            out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+        }
+        let xref = out.len();
+        out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+        for offset in offsets {
+            out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+        }
+        out.extend(
+            format!(
+                "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+                objects.len() + 1
+            )
+            .as_bytes(),
+        );
+        out
+    }
+
+    fn open(bytes: &[u8]) -> Document {
+        Document::from_bytes(Library::acquire(), bytes, None).expect("the test PDF opens")
+    }
 
     fn rect(left: f32, bottom: f32, right: f32, top: f32) -> RectF {
         RectF { left, top, right, bottom }
     }
 
     #[test]
-    fn a_crop_inside_the_media_is_its_own_size() {
-        let media = rect(0.0, 0.0, 612.0, 792.0);
-        assert_eq!(intersection_size(media, rect(10.0, 20.0, 110.0, 220.0)), (100.0, 200.0));
+    fn a_box_the_file_leaves_out_is_absent_and_none_is_defaulted() {
+        // No media box anywhere: the old wrapper answered US Letter here.
+        let doc = open(&pdf("", &[""]));
+        for which in [
+            PageBoxType::Media,
+            PageBoxType::Crop,
+            PageBoxType::Bleed,
+            PageBoxType::Trim,
+            PageBoxType::Art,
+        ] {
+            assert_eq!(doc.written_page_box_by_index(0, which), None, "{which:?}");
+        }
+        assert_eq!(doc.written_page_box_by_index(1, PageBoxType::Media), None, "past the end");
     }
 
     #[test]
-    fn a_crop_past_the_media_is_cut_to_it() {
-        let media = rect(0.0, 0.0, 612.0, 792.0);
-        assert_eq!(intersection_size(media, rect(-10.0, -10.0, 700.0, 800.0)), (612.0, 792.0));
+    fn a_box_reads_as_written_and_is_not_cut_to_the_media_box() {
+        let doc = open(&pdf(
+            "",
+            &["/MediaBox [0 0 612 792] /CropBox [700 800 -10 -10] /TrimBox [100 100 10 10]"],
+        ));
+        assert_eq!(
+            doc.written_page_box_by_index(0, PageBoxType::Media),
+            Some(rect(0.0, 0.0, 612.0, 792.0))
+        );
+        // Past the media box, as written: the engine does the cutting now.
+        // PDFium puts the corners in order.
+        assert_eq!(
+            doc.written_page_box_by_index(0, PageBoxType::Crop),
+            Some(rect(-10.0, -10.0, 700.0, 800.0))
+        );
+        assert_eq!(
+            doc.written_page_box_by_index(0, PageBoxType::Trim),
+            Some(rect(10.0, 10.0, 100.0, 100.0))
+        );
+        // Bleed is absent: it does not default to crop here.
+        assert_eq!(doc.written_page_box_by_index(0, PageBoxType::Bleed), None);
     }
 
     #[test]
-    fn a_miss_on_one_axis_is_no_size_at_all() {
-        let media = rect(0.0, 0.0, 612.0, 792.0);
-        // Overlaps horizontally, sits above the media vertically.
-        assert_eq!(intersection_size(media, rect(100.0, 800.0, 200.0, 900.0)), (0.0, 0.0));
-        // Overlaps vertically, sits right of the media horizontally.
-        assert_eq!(intersection_size(media, rect(700.0, 100.0, 800.0, 200.0)), (0.0, 0.0));
-        // Touching edges is zero area too.
-        assert_eq!(intersection_size(media, rect(612.0, 0.0, 700.0, 792.0)), (0.0, 0.0));
+    fn media_and_crop_inherit_and_the_other_three_do_not() {
+        let doc = open(&pdf(
+            "/MediaBox [0 0 300 400] /CropBox [10 10 290 390] /BleedBox [0 0 300 400]",
+            &[""],
+        ));
+        assert_eq!(
+            doc.written_page_box_by_index(0, PageBoxType::Media),
+            Some(rect(0.0, 0.0, 300.0, 400.0))
+        );
+        assert_eq!(
+            doc.written_page_box_by_index(0, PageBoxType::Crop),
+            Some(rect(10.0, 10.0, 290.0, 390.0))
+        );
+        assert_eq!(doc.written_page_box_by_index(0, PageBoxType::Bleed), None);
     }
 
     #[test]
-    fn rotation_truncates_to_whole_quarter_turns() {
-        assert_eq!(quarter_turns_of(0), 0);
-        assert_eq!(quarter_turns_of(90), 1);
-        assert_eq!(quarter_turns_of(45), 0);
-        assert_eq!(quarter_turns_of(100), 1);
-        assert_eq!(quarter_turns_of(270), 3);
-        assert_eq!(quarter_turns_of(450), 1);
+    fn rotate_reads_as_written_inherited_and_unreduced() {
+        let doc = open(&pdf(
+            "/Rotate 270",
+            &[
+                "/MediaBox [0 0 10 10]",
+                "/MediaBox [0 0 10 10] /Rotate 45",
+                "/MediaBox [0 0 10 10] /Rotate -90",
+                "/MediaBox [0 0 10 10] /Rotate 450",
+            ],
+        ));
+        // The old wrapper truncated 45 to 0 and wrapped -90 to three quarter
+        // turns; the raw read hands both back for `pageRotationOf`.
+        assert_eq!(doc.page_rotate_by_index(0), Some(270), "inherited");
+        assert_eq!(doc.page_rotate_by_index(1), Some(45));
+        assert_eq!(doc.page_rotate_by_index(2), Some(-90));
+        assert_eq!(doc.page_rotate_by_index(3), Some(450));
+        assert_eq!(doc.page_rotate_by_index(4), None, "past the end");
     }
 
     #[test]
-    fn negative_rotation_wraps_to_the_same_turn() {
-        assert_eq!(quarter_turns_of(-90), 3);
-        assert_eq!(quarter_turns_of(-180), 2);
-        assert_eq!(quarter_turns_of(-270), 1);
-        assert_eq!(quarter_turns_of(-360), 0);
-        assert_eq!(quarter_turns_of(-45), 0);
+    fn tabs_reads_the_name_the_page_writes() {
+        let doc =
+            open(&pdf("/Tabs /R", &["/MediaBox [0 0 10 10] /Tabs /S", "/MediaBox [0 0 10 10]"]));
+        assert_eq!(doc.page_tab_order_by_index(0).unwrap().as_deref(), Some("S"));
+        // Not inherited from the tree.
+        assert_eq!(doc.page_tab_order_by_index(1).unwrap(), None);
+        assert_eq!(doc.page_tab_order_by_index(2).unwrap(), None, "past the end");
     }
 }

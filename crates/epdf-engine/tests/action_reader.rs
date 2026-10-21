@@ -160,7 +160,7 @@ fn the_payloads_this_build_cannot_read_come_back_inert_not_degraded() {
     // No fixture here carries one, so this asserts the shape of the mapping
     // rather than reading a document. When the artifact gains the accessors,
     // this test is what says the fallback is gone.
-    let inert = [
+    let inert: [ActionNodeKind; 3] = [
         ActionNodeKind::Hide { targets: Vec::new(), hide: true },
         ActionNodeKind::ResetForm { fields: None, exclude: false },
         ActionNodeKind::SubmitForm { payload: None },
@@ -214,34 +214,89 @@ fn open_case(case: &ActionsCase) -> Document {
         .unwrap_or_else(|e| panic!("{}: open: {e}", case.name))
 }
 
-#[test]
-fn catalog_actions_agree_with_the_typescript_engine() {
+/// The top-level keys of a JSON object, in the order the text writes them.
+/// `serde_json` here keeps no order, so this reads it off the text.
+struct KeyOrder(Vec<String>);
+
+impl<'de> Deserialize<'de> for KeyOrder {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        struct Keys;
+        impl<'de> serde::de::Visitor<'de> for Keys {
+            type Value = KeyOrder;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("an object")
+            }
+            fn visit_map<A: serde::de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<KeyOrder, A::Error> {
+                let mut keys = Vec::new();
+                while let Some(key) = map.next_key::<String>()? {
+                    map.next_value::<serde::de::IgnoredAny>()?;
+                    keys.push(key);
+                }
+                Ok(KeyOrder(keys))
+            }
+        }
+        d.deserialize_map(Keys)
+    }
+}
+
+/// `actions.read` as the wire answers it: read in the file's coordinates,
+/// then every destination in page space, as the host's boundary converts it.
+fn answered(
+    document: &Document,
+) -> epdf_engine::features::actions::document::DocumentActionsSnapshot<
+    epdf_engine::page_space::destinations::PageDestination,
+> {
     use epdf_engine::cancel::CancelToken;
     use epdf_engine::features::actions::document::read_document_actions;
+    use epdf_engine::features::pages::visible_box_reader;
+    use epdf_engine::page_space::destinations::page_document_actions_of;
 
+    let read = read_document_actions(document, &CancelToken::never()).expect("read");
+    page_document_actions_of(read, &mut visible_box_reader(document)).expect("in page space")
+}
+
+#[test]
+fn catalog_actions_agree_with_the_typescript_engine() {
     let file = load_actions();
     assert!(file.cases.len() >= 6, "the corpus shrank");
 
     for case in &file.cases {
         let document = open_case(case);
-        let actual = serde_json::to_value(
-            read_document_actions(&document, &CancelToken::never())
-                .unwrap_or_else(|e| panic!("{}: read: {e}", case.name)),
-        )
-        .expect("serialize");
-
-        // `openDestination` is the one field this build cannot produce:
-        // EPDFDoc_GetOpenActionDest is absent from the pinned artifact. It is
-        // dropped from the comparison rather than faked, and the test below
-        // says what that costs.
-        let mut expected = case.actions.clone();
-        expected.as_object_mut().expect("object").remove("openDestination");
-
-        let expected = test_support::corpus::quantized(&expected);
+        let actual = serde_json::to_value(answered(&document)).expect("serialize");
+        let expected = test_support::corpus::quantized(&case.actions);
         let actual = test_support::corpus::quantized(&actual);
         if let Some(difference) = test_support::corpus::first_difference(&expected, &actual) {
             panic!("{}: {difference} ({})", case.name, case.covers);
         }
+    }
+}
+
+#[test]
+fn the_triggers_come_before_the_scripts_and_the_open_entry() {
+    // `mapDocumentActions` spreads the triggers first (60283448c), and the
+    // vector records that order. A comparison of parsed values cannot see
+    // it, so the key order of the text is compared here.
+    let path = test_support::corpus::vectors_dir("metadata").join("actions.json");
+    let text = std::fs::read_to_string(&path).expect("actions.json");
+    #[derive(Deserialize)]
+    struct Case {
+        name: String,
+        actions: KeyOrder,
+    }
+    #[derive(Deserialize)]
+    struct File {
+        cases: Vec<Case>,
+    }
+    let ordered: File = serde_json::from_str(&text).expect("actions.json");
+    let file = load_actions();
+    for (case, order) in file.cases.iter().zip(&ordered.cases) {
+        assert_eq!(case.name, order.name);
+        let written = serde_json::to_string(&answered(&open_case(case))).expect("serialize");
+        let KeyOrder(actual) = serde_json::from_str(&written).expect("keys");
+        assert_eq!(actual, order.actions.0, "{}: the answer's key order", case.name);
     }
 }
 
@@ -285,27 +340,78 @@ fn a_document_with_no_catalog_actions_reports_none() {
     assert!(actions.will_close.is_none());
 }
 
-#[test]
-fn the_open_destination_form_is_not_read_by_this_build() {
-    // EPDFDoc_GetOpenActionDest is absent from the pinned fork artifact's
-    // epdf_action.h, which is from commit e4174c4f9. A document whose
-    // /OpenAction is a destination rather than an action therefore reports no
-    // open action at all.
-    //
-    // That is the honest answer this build can give, and it is a gap rather
-    // than a defect: reporting a wrong destination would be worse. This test
-    // exists so the day the artifact gains the accessor, somebody finds the
-    // one place that has to change.
-    let file = load_actions();
-    for case in &file.cases {
-        let reported = case.actions.get("openDestination");
-        assert!(
-            reported.is_none() || reported == Some(&serde_json::Value::Null),
-            "{}: the corpus gained a destination-form /OpenAction, which the Rust \
-             reader cannot produce; it needs EPDFDoc_GetOpenActionDest",
-            case.name,
-        );
+/// A one-page PDF whose `/OpenAction` is a destination, on a page whose
+/// visible box does not start at the origin. Cross-reference offsets are
+/// computed, so PDFium reads it as written.
+fn open_destination_pdf() -> Vec<u8> {
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R /OpenAction [3 0 R /XYZ 100 700 null] >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /CropBox [50 60 562 732] >>",
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
     }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn the_open_destination_form_is_read_and_answered_in_page_space() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::actions::document::read_document_actions;
+    use epdf_engine::host::Host;
+    use epdf_engine::identity::PageObjectNumber;
+
+    let bytes = open_destination_pdf();
+    let document = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
+    let read = read_document_actions(&document, &CancelToken::never()).expect("read");
+    let page = PageObjectNumber::new(3).unwrap();
+    // In the file's coordinates; the null zoom is read as null, not 0.
+    assert_eq!(
+        read.open_destination,
+        Some(PdfDestination::Xyz {
+            page_object_number: page,
+            left: Some(100.0),
+            top: Some(700.0),
+            zoom: None
+        })
+    );
+    assert!(read.open_action.is_none(), "/OpenAction is one entry");
+
+    // Through the wire: measured from the crop box's top-left, y down.
+    let mut host = Host::new();
+    let opened = host.call(
+        &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+        vec![bytes],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let answer = host.call(
+        &serde_json::json!({ "kind": "actions.read", "jobId": 2, "docId": "d" }).to_string(),
+        Vec::new(),
+    );
+    let envelope: serde_json::Value = serde_json::from_str(&answer.json).unwrap();
+    assert_eq!(
+        envelope["result"]["openDestination"],
+        serde_json::json!({
+            "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 3 },
+            "x": 50.0, "y": 32.0, "zoom": null,
+        })
+    );
 }
 
 #[test]

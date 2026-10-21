@@ -60,6 +60,22 @@ impl<'a> PageView<'a> {
         unsafe { pdfium_sys::FPDF_GetPageHeightF(self.handle) }
     }
 
+    /// The page's display box in PDF user space (`FPDF_GetPageBoundingBox`):
+    /// the crop box cut to the media box, as PDFium's display matrix maps it
+    /// to the page's pixels. Corners as PDFium reports them; `None` when the
+    /// call fails.
+    pub fn bounding_box(&self) -> Option<RectF> {
+        let mut rect = pdfium_sys::FS_RECTF { left: 0.0, top: 0.0, right: 0.0, bottom: 0.0 };
+        // SAFETY: the handle is live and `rect` is an initialized local.
+        let ok = unsafe { pdfium_sys::FPDF_GetPageBoundingBox(self.handle, &mut rect) };
+        (ok != 0).then_some(RectF {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+        })
+    }
+
     /// The page's PDF indirect object number, which is the engine's durable
     /// page identity. Zero means the file put a direct (non-indirect) page
     /// dictionary in the `/Pages` tree, which the engine reports as a
@@ -91,7 +107,7 @@ impl<'a> PageView<'a> {
     /// `matrix` is the six affine cells in `FS_MATRIX` order, and it maps
     /// display space, after PDFium's own `GetDisplayMatrix` has flipped the y
     /// axis, onto the bitmap. `epdf_engine`'s
-    /// `features::render::geometry::display_rect_to_device_matrix` produces it.
+    /// `features::render::geometry::render_matrix` produces it.
     pub fn render_rgba_with_matrix(
         &self,
         width: u32,

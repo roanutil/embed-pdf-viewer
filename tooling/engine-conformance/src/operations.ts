@@ -217,7 +217,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'non-preemptible',
     rustStatus: 'ported',
-    note: 'Cooperative up to FPDF_RenderPageBitmapWithMatrix (PageRenderReader.ts:51), which cannot be interrupted.',
+    note: 'Cooperative up to FPDF_RenderPageBitmapWithMatrix (PageRenderReader.ts:51), which cannot be interrupted. Rust takes the target in page space and answers page and area, converting both at the host boundary (page_space::boundary, pdfRenderTargetOf); usage, the dpi viewport and includeFormFields are not read yet.',
   },
   {
     kind: 'fonts.register',
@@ -308,7 +308,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Page identity must agree between lazy per-page lookup and full enumeration (DocumentSession.ts:41-44).',
+    note: 'Page identity must agree between lazy per-page lookup and full enumeration (DocumentSession.ts:41-44). Rust reads the boxes by pageBoxesOf and /Rotate by pageRotationOf, and answers them in page space at the host boundary (pageListOf).',
   },
   {
     kind: 'actions.read',
@@ -317,6 +317,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
+    note: 'Rust reads openDestination and answers every destination in page space at the host boundary (mapDocumentActions), triggers first.',
   },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
@@ -914,7 +915,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
-    note: 'Sole owner of the wire kind; the raster step comes from G4 internal entry point. Encoding stays host-injected.',
+    note: 'Sole owner of the wire kind; the raster step comes from G4 internal entry point. Encoding stays host-injected. Rust takes the target in page space, as pages.render does.',
   },
   {
     kind: 'annotations.renderAppearancesEncoded',
@@ -931,6 +932,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
+    note: 'The target is page space and converts on the page the render opens (renderOptionsInFileSpace), since no session carries the document to the host boundary.',
   },
   {
     kind: 'document.renderPageFileEncoded',
@@ -939,6 +941,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
+    note: 'The target is page space, as document.renderPageFile takes it.',
   },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.

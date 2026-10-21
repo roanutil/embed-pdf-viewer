@@ -505,7 +505,7 @@ impl Host {
                 format!("the request is not a wire envelope: {e}"),
             )
         })?;
-        let body: serde_json::Value = serde_json::from_str(request)
+        let mut body: serde_json::Value = serde_json::from_str(request)
             .map_err(|e| EngineError::with_message(EngineErrorCode::WireFormat, format!("{e}")))?;
         let cancel = CancelToken::never();
 
@@ -537,18 +537,52 @@ impl Host {
             session.raise_last_object_number(floor.saturating_sub(1))?;
         }
 
-        let result = match header.kind.as_str() {
-            "open.fatMem" => self.open_fat_memory(&header, &body, payloads)?,
-            "open.layerMemBase" | "open.layerFileBase" => {
-                self.open_layer(&header, &body, payloads)?
+        // `pageSpaceBoundary`: the places a caller sent in page space
+        // convert to the file's coordinates before the handler runs, and the
+        // places in its answer convert back after. A kind the wire does not
+        // have reaches its arm as it came, and the arm refuses it.
+        let kind = crate::page_space::boundary::WireKind::of(&header.kind);
+        let key = header.doc_id.is_some().then(|| header.key()).transpose()?;
+        if let Some(kind) = kind {
+            let mut box_of = crate::page_space::boundary::session_boxes(
+                &self.sessions,
+                key.clone(),
+                &header.kind,
+            );
+            crate::page_space::boundary::request_in_file_space(kind, &mut body, &mut box_of)?;
+        }
+        let response = self.route_wire(&header, &body, payloads, &cancel)?;
+        match kind {
+            Some(kind) => {
+                let mut box_of =
+                    crate::page_space::boundary::session_boxes(&self.sessions, key, &header.kind);
+                crate::page_space::boundary::result_in_page_space(kind, response, &mut box_of)
             }
-            "close" => self.close_document(&header)?,
-            "layer.close" => self.close_layer(&header)?,
+            None => Ok(response),
+        }
+    }
+
+    /// The wire's kinds, in the file's coordinates: [`Host::route`] has
+    /// converted the request and converts the answer.
+    fn route_wire(
+        &mut self,
+        header: &RequestHeader,
+        body: &serde_json::Value,
+        payloads: Payloads,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
+        let result = match header.kind.as_str() {
+            "open.fatMem" => self.open_fat_memory(header, body, payloads)?,
+            "open.layerMemBase" | "open.layerFileBase" => {
+                self.open_layer(header, body, payloads)?
+            }
+            "close" => self.close_document(header)?,
+            "layer.close" => self.close_layer(header)?,
             // `WorkerHost.receive`: bookkeeping, taken on arrival and never
             // answered, so a session that is not open ignores it. This entry
             // answers every call, so it answers `null`, which a host drops.
             "pages.workingSet" => {
-                self.set_working_set(&header, &body);
+                self.set_working_set(header, body);
                 serde_json::Value::Null
             }
             "shutdown" => {
@@ -560,7 +594,7 @@ impl Host {
             // to stop: a host that aborted a job which had already finished
             // must not report it as cancelled.
             "abort" => {
-                let job_id: JobId = field(&body, "jobId")?;
+                let job_id: JobId = field(body, "jobId")?;
                 serde_json::json!({ "aborted": self.sessions.abort(&job_id.to_string()) })
             }
             // Fonts belong to the library, not to a document, so these five
@@ -572,12 +606,12 @@ impl Host {
             // The answer is the key and what the runtime resolved for it;
             // the native id never leaves.
             "fonts.register" => {
-                let key = string_field(&body, "fontKey")?;
+                let key = string_field(body, "fontKey")?;
                 let fonts = self.fonts()?;
                 let description = pdfium::FontDescription {
-                    family_name: string_field(&body, "familyName")?,
-                    weight: field(&body, "weight")?,
-                    italic: crate::features::fonts::italic_from_wire(field(&body, "italic")?),
+                    family_name: string_field(body, "familyName")?,
+                    weight: field(body, "weight")?,
+                    italic: crate::features::fonts::italic_from_wire(field(body, "italic")?),
                 };
                 let data = payload(&payloads, 0, "the font file")?;
                 fonts.register(key.clone(), &description, data)?;
@@ -588,7 +622,7 @@ impl Host {
             // answer nothing but their tag, which this wire spells as a null
             // result (as `document.setFontSettings` does).
             "fonts.addFallback" => {
-                let key = string_field(&body, "fontKey")?;
+                let key = string_field(body, "fontKey")?;
                 self.fonts()?.add_fallback(&key)?;
                 serde_json::Value::Null
             }
@@ -598,7 +632,7 @@ impl Host {
             }
             // `WorkerHost.handleFontsAuthorizeEditing`.
             "fonts.authorizeEditing" => {
-                let key = string_field(&body, "fontKey")?;
+                let key = string_field(body, "fontKey")?;
                 let identity = self.fonts()?.authorize_editing(&key)?;
                 serde_json::json!({ "identity": identity })
             }
@@ -609,8 +643,8 @@ impl Host {
             // Both take a path and no session: the point of a probe is to
             // decide whether opening is worth attempting at all.
             "document.probeSecurityFile" => {
-                let path = string_field(&body, "path")?;
-                let password: Option<String> = optional(&body, "password")?;
+                let path = string_field(body, "path")?;
+                let password: Option<String> = optional(body, "password")?;
                 let probe = self.sessions.probe_security_file(
                     std::path::Path::new(&path),
                     password.as_deref(),
@@ -619,17 +653,21 @@ impl Host {
                 value(&probe)?
             }
             "document.renderPageFile" | "document.renderPageFileEncoded" => {
-                let path = string_field(&body, "path")?;
-                let password: Option<String> = optional(&body, "password")?;
-                let page_index: u32 = field(&body, "pageIndex")?;
-                let options = render_options(&body)?;
+                let path = string_field(body, "path")?;
+                let password: Option<String> = optional(body, "password")?;
+                let page_index: u32 = field(body, "pageIndex")?;
+                // Page space: no session carried this document to the
+                // boundary, so `render_page_file` converts the target on the
+                // page it opens.
+                let options: crate::features::render::raster::RenderOptions<crate::geom::PageRect> =
+                    optional(body, "options")?.unwrap_or_default();
                 let rendered = crate::features::server::render_page_file(
                     &pdfium::Library::acquire(),
                     std::path::Path::new(&path),
                     password.as_deref(),
                     page_index,
                     &options,
-                    &cancel,
+                    cancel,
                 )?;
                 // The rendered index's durable identity and the file's page
                 // count ride beside the image, as `WorkerHost` answers them:
@@ -640,12 +678,12 @@ impl Host {
                 let (mut answer, payload) = if header.kind == "document.renderPageFile" {
                     (raster_json(&rendered.raster), rendered.raster.rgba)
                 } else {
-                    let encode: crate::features::server::RenderEncode = field(&body, "encode")?;
+                    let encode: crate::features::server::RenderEncode = field(body, "encode")?;
                     let encoded = crate::features::server::encode_raster(
                         self.encoder.as_deref(),
                         &rendered.raster,
                         &encode,
-                        &cancel,
+                        cancel,
                     )?;
                     (encoded_json(&encoded), encoded.bytes)
                 };
@@ -668,7 +706,7 @@ impl Host {
                 let cms = payload(&payloads, 0, "the CMS")?;
                 value(&crate::features::signature::mutator::finalize_candidate(&input, cms)?)?
             }
-            _ => return self.route_session(&header, &body, payloads, &cancel),
+            _ => return self.route_session(header, body, payloads, cancel),
         };
         Ok(ok(result))
     }
@@ -884,17 +922,32 @@ impl Host {
             "measure.viewports" => {
                 self.on_page(&key, body, |page| f::measure::read_viewports(page.view(), cancel))
             }
+            // The boundary has put `options.target` in the file's
+            // coordinates, and puts the answer's `area` back in page space.
             "pages.render" | "pages.renderEncoded" => {
                 let options = render_options(body)?;
-                let raster = self.on_page_raw(&key, body, |page| {
-                    f::render::raster::render_page(page, &options, cancel)
+                let rendered = self.on_page_raw(&key, body, |page| {
+                    f::render::raster::render_page_area(page, &options, cancel)
                 })?;
                 if header.kind == "pages.render" {
-                    return Ok(raster_response(raster));
+                    // `{tag, page, area, raster}`: the raster's fields stay
+                    // at the top beside its pixels, as this host has always
+                    // answered them.
+                    let mut answer = raster_json(&rendered.raster);
+                    answer["page"] = body.get("page").cloned().unwrap_or_default();
+                    answer["area"] = value(&rendered.area)?;
+                    return Ok(HostResponse {
+                        json: envelope(answer),
+                        payloads: vec![rendered.raster.rgba],
+                    });
                 }
                 let encode: f::server::RenderEncode = field(body, "encode")?;
-                let encoded =
-                    f::server::encode_raster(self.encoder.as_deref(), &raster, &encode, cancel)?;
+                let encoded = f::server::encode_raster(
+                    self.encoder.as_deref(),
+                    &rendered.raster,
+                    &encode,
+                    cancel,
+                )?;
                 Ok(encoded_response(encoded))
             }
             "annotations.renderAppearances" | "annotations.renderAppearancesEncoded" => {
@@ -2272,15 +2325,6 @@ struct WireAttachmentFile {
     description: Option<String>,
 }
 
-/// A response whose result is a raster.
-///
-/// The pixels leave as a payload rather than as JSON: a page at a readable
-/// scale is megabytes, and the transfer list on the other side exists for
-/// exactly this.
-fn raster_response(raster: crate::features::render::raster::PageRaster) -> HostResponse {
-    HostResponse { json: envelope(raster_json(&raster)), payloads: vec![raster.rgba] }
-}
-
 /// What a raster's JSON says about the pixels in its payload.
 fn raster_json(raster: &crate::features::render::raster::PageRaster) -> serde_json::Value {
     serde_json::json!({
@@ -2359,7 +2403,8 @@ fn payload<'a>(payloads: &'a Payloads, index: usize, what: &str) -> Result<&'a [
     })
 }
 
-/// Render options, defaulted.
+/// Render options, defaulted, their target in the file's coordinates (the
+/// boundary converted it).
 ///
 /// Optional on the wire because the common render is "the page, at its own
 /// size". A required field here would make the simplest request an error.

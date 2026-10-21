@@ -1,7 +1,7 @@
 //! The `pdfium` layer against real files. Everything here runs on one thread
 //! by construction: `Library` is `!Send`, and each test acquires its own.
 
-use pdfium::{Document, Library, PdfiumError};
+use pdfium::{Document, Library, PageBoxType, PdfiumError};
 
 #[test]
 fn opens_a_document_and_reads_its_pages() {
@@ -140,24 +140,39 @@ fn closing_a_document_leaves_the_library_usable() {
 }
 
 #[test]
-fn page_size_by_index_matches_the_loaded_page_and_refuses_past_the_end() {
+fn the_written_boxes_match_the_loaded_page_and_refuse_past_the_end() {
     let lib = Library::acquire();
     let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
         .expect("open report.pdf");
-    let (width, height) = doc.page_size_by_index(0).expect("page 0 has a size");
+    // report.pdf writes a media box and no crop box, so the loaded page's
+    // size is its media box's and the raw crop read is absent.
+    let media = doc.written_page_box_by_index(0, PageBoxType::Media).expect("a media box");
     let page = doc.page(0).expect("load page 0");
-    assert!((width - page.width()).abs() < 0.01, "{width} vs {}", page.width());
-    assert!((height - page.height()).abs() < 0.01, "{height} vs {}", page.height());
-    assert_eq!(doc.page_size_by_index(doc.page_count()), None);
+    assert!(
+        (media.right - media.left - page.width()).abs() < 0.01,
+        "{media:?} vs {}",
+        page.width()
+    );
+    assert!(
+        (media.top - media.bottom - page.height()).abs() < 0.01,
+        "{media:?} vs {}",
+        page.height()
+    );
+    assert_eq!(doc.written_page_box_by_index(0, PageBoxType::Crop), None);
+    let bounds = page.bounding_box().expect("the loaded page has a display box");
+    assert_eq!(
+        (bounds.left, bounds.bottom, bounds.right, bounds.top),
+        (media.left, media.bottom, media.right, media.top)
+    );
+    assert_eq!(doc.written_page_box_by_index(doc.page_count(), PageBoxType::Media), None);
 }
 
 #[test]
-fn an_unrotated_page_reads_zero_quarter_turns() {
+fn an_unrotated_page_reads_its_rotate_as_zero() {
     let lib = Library::acquire();
     let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
         .expect("open report.pdf");
     assert_eq!(doc.page_rotate_by_index(0), Some(0));
-    assert_eq!(doc.page_rotation_quarter_turns(0), 0);
     assert_eq!(doc.page_rotate_by_index(doc.page_count()), None);
 }
 

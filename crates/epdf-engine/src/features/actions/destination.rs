@@ -9,7 +9,9 @@
 //!
 //! Coordinates are PDF user space: y-up, points, absolute rather than
 //! crop-relative. `None` means "retain the current value", which is the spec's
-//! meaning for a null array entry.
+//! meaning for a null array entry. The wire hands destinations out in page
+//! space ([`crate::page_space::destinations::PageDestination`]); this is the
+//! file's form, which readers make and writers take.
 
 use serde::{Deserialize, Serialize};
 
@@ -114,8 +116,12 @@ mod view {
 pub fn read_destination(raw: &RawDestination<'_>) -> Option<PdfDestination> {
     let page_object_number = PageObjectNumber::new(raw.page_object_number()).ok()?;
     let view = raw.view();
-    let at =
-        |i: usize| -> Option<f64> { (i < view.param_count).then(|| f64::from(view.params[i])) };
+    // A null parameter (the viewer keeps its value) reads as `None`, not the
+    // 0 `FPDFDest_GetView` reports for it.
+    let nulls = raw.view_null_params();
+    let at = |i: usize| -> Option<f64> {
+        (i < view.param_count && nulls & (1 << i) == 0).then(|| f64::from(view.params[i]))
+    };
 
     Some(match view.code {
         view::XYZ => {

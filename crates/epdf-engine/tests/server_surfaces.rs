@@ -34,7 +34,7 @@ fn a_page_rendered_from_a_file_is_the_page_a_session_would_render() {
     // have got. If the two ever differed, the cheap path would be a second
     // renderer with its own bugs.
     let library = library();
-    let options = RenderOptions::default();
+    let options: RenderOptions = RenderOptions::default();
 
     for index in 0..4u32 {
         let from_file = render_page_file(
@@ -42,7 +42,8 @@ fn a_page_rendered_from_a_file_is_the_page_a_session_would_render() {
             &path(FIXTURE),
             None,
             index,
-            &options,
+            // The same options in page space, as the wire sends them.
+            &RenderOptions::default(),
             &CancelToken::never(),
         )
         .unwrap_or_else(|e| panic!("page {index}: {e}"));

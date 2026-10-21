@@ -41,7 +41,7 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::intent::FreeTextIntent;
 use crate::features::annotation::read::dictionary_read;
 use crate::features::render::geometry::{
-    RenderViewport, device_size, display_rect_to_device_matrix, pdf_rect_to_display_rect,
+    RenderViewport, device_size, page_rect_of_display_rect, pdf_rect_to_display_rect, render_matrix,
 };
 use crate::features::render::raster::PageRaster;
 use crate::geom::{PdfRect, PdfRotation, normalize_pdf_rect};
@@ -299,7 +299,11 @@ fn render_one(
     let area = ((rect.right - rect.left) * (rect.top - rect.bottom)).max(1.0);
     let effective_scale = scale.min((APPEARANCE_PIXEL_CLAMP / area).sqrt());
 
-    let display_rect = pdf_rect_to_display_rect(rect, page_height);
+    // re-port (Task 8): 8.13 places the rect on the page's display box
+    // (`readPageBox`), as `pages.render` does since 8.4. Until then it is
+    // placed on a box at the origin, as it always was here.
+    let page_box = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: page_height };
+    let display_rect = pdf_rect_to_display_rect(rect, page_box);
     let (width, height) = device_size(
         display_rect,
         options.rotation,
@@ -319,7 +323,8 @@ fn render_one(
         }
     }
 
-    let matrix = display_rect_to_device_matrix(display_rect, options.rotation, width, height);
+    let matrix =
+        render_matrix(page_rect_of_display_rect(display_rect), options.rotation, width, height);
     let bitmap = view
         .render_annotation_rgba_with_matrix(
             annotation,

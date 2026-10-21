@@ -459,10 +459,185 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if epdf_engine::host::LEGACY_KINDS.contains(&kind.as_str()) {
         return host.call_legacy(json, payloads);
     }
-    if base_index_refs(host, &mut request) {
-        return host.call(&request.to_string(), payloads);
+    let respelled = base_index_refs(host, &mut request);
+    let moved = page_space::render_target_to_page_space(host, &mut request);
+    let response = if respelled || moved {
+        host.call(&request.to_string(), payloads)
+    } else {
+        host.call(json, payloads)
+    };
+    page_space::answer_to_file_space(host, &kind, &request, response)
+}
+
+/// The kernel's places in the file's coordinates, and the host's in page
+/// space (Task 8.4's boundary, `epdf_engine::page_space`).
+///
+/// The kernel still reads and sends PDF space: a page list's boxes, a
+/// destination, a render target. The host now answers and takes page space,
+/// as upstream's worker does. [`call_host`] converts a render target on the
+/// way out and a page list's or the catalog actions' places on the way back,
+/// reading the pages' visible boxes off the host's own page list, so the
+/// kernel keeps its space until Task 13 ports it. Dead then.
+mod page_space {
+    use epdf_engine::error::EngineError;
+    use epdf_engine::features::actions::document::DocumentActionsSnapshot;
+    use epdf_engine::features::pages::{PageLayout, PageListSnapshot};
+    use epdf_engine::geom::{PageBoxes, PdfRect, normalize_pdf_rect};
+    use epdf_engine::host::{Host, HostResponse};
+    use epdf_engine::identity::PageObjectNumber;
+    use epdf_engine::page_space::destinations::{PageDestination, pdf_destination_of};
+    use epdf_engine::page_space::{PageCoordinates, PdfCoordinates, page_rect_of, pdf_rect_of};
+    use serde_json::Value;
+    use std::collections::HashMap;
+
+    /// Every page's `pdfCropBox`, from the host's page list of the
+    /// request's document.
+    fn visible_boxes(host: &mut Host, request: &Value) -> HashMap<u32, PdfRect> {
+        let mut list =
+            serde_json::json!({ "kind": "pages.list", "jobId": 0, "docId": request["docId"] });
+        if let Some(layer) = request.get("layerName") {
+            list["layerName"] = layer.clone();
+        }
+        let response = host.call(&list.to_string(), Vec::new());
+        let listed = serde_json::from_str::<Value>(&response.json)
+            .ok()
+            .and_then(|mut e| e.get_mut("result").map(Value::take))
+            .and_then(|r| serde_json::from_value::<PageListSnapshot<PageCoordinates>>(r).ok());
+        listed
+            .map(|l| l.pages.iter().map(|p| (p.page_object_number.get(), p.pdf_crop_box)).collect())
+            .unwrap_or_default()
     }
-    host.call(json, payloads)
+
+    fn lookup(
+        boxes: &HashMap<u32, PdfRect>,
+    ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + '_ {
+        move |page| {
+            boxes.get(&page.get()).copied().ok_or_else(|| {
+                EngineError::with_message(
+                    epdf_engine::error::EngineErrorCode::NotFound,
+                    format!("no page with object number {}", page.get()),
+                )
+            })
+        }
+    }
+
+    /// A `pages.render` or `pages.renderEncoded` target the kernel sent in
+    /// the file's coordinates (`{left, bottom, right, top}`), in page space
+    /// on its page. Answers whether it changed anything; a target it cannot
+    /// place goes as it came, for the host to refuse.
+    pub(super) fn render_target_to_page_space(host: &mut Host, request: &mut Value) -> bool {
+        let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default();
+        if kind != "pages.render" && kind != "pages.renderEncoded" {
+            return false;
+        }
+        let Some(rect) =
+            request.pointer("/options/target/rect").filter(|r| r.get("left").is_some())
+        else {
+            return false;
+        };
+        let Ok(rect) = serde_json::from_value::<PdfRect>(rect.clone()) else { return false };
+        let Some(page) = request.pointer("/page/objectNumber").and_then(Value::as_u64) else {
+            return false;
+        };
+        let boxes = visible_boxes(host, request);
+        let Some(visible) = boxes.get(&(page as u32)) else { return false };
+        let Ok(rect) = serde_json::to_value(page_rect_of(normalize_pdf_rect(rect), *visible))
+        else {
+            return false;
+        };
+        request["options"]["target"]["rect"] = rect;
+        true
+    }
+
+    /// The host's page-space answer as the kernel reads it: `pages.list`'s
+    /// boxes and page actions, and `actions.read`'s destinations, in the
+    /// file's coordinates. Every other answer goes as it came.
+    pub(super) fn answer_to_file_space(
+        host: &mut Host,
+        kind: &str,
+        request: &Value,
+        response: HostResponse,
+    ) -> HostResponse {
+        if kind != "pages.list" && kind != "actions.read" {
+            return response;
+        }
+        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
+            return response;
+        };
+        let Some(result) = envelope.get_mut("result").filter(|r| r.is_object()) else {
+            return response;
+        };
+        let converted = if kind == "pages.list" {
+            serde_json::from_value::<PageListSnapshot<PageCoordinates>>(result.take())
+                .map_err(|e| e.to_string())
+                .and_then(|list| page_list_in_file_space(list).map_err(|e| e.message))
+                .and_then(|list| serde_json::to_value(list).map_err(|e| e.to_string()))
+        } else {
+            let boxes = visible_boxes(host, request);
+            serde_json::from_value::<DocumentActionsSnapshot<PageDestination>>(result.take())
+                .map_err(|e| e.to_string())
+                .and_then(|snapshot| {
+                    snapshot
+                        .try_map_destinations(&mut |d| pdf_destination_of(d, &mut lookup(&boxes)))
+                        .map_err(|e| e.message)
+                })
+                .and_then(|snapshot| serde_json::to_value(snapshot).map_err(|e| e.to_string()))
+        };
+        let envelope = match converted {
+            Ok(value) => {
+                *result = value;
+                envelope
+            }
+            // An answer the host should never give: refused, as the kernel's
+            // decode reports any host error.
+            Err(error) => serde_json::json!({ "error": {
+                "name": "EngineError",
+                "code": "WireFormat",
+                "message": format!("the {kind} answer is not in page space: {error}"),
+            } }),
+        };
+        HostResponse { json: envelope.to_string(), payloads: response.payloads }
+    }
+
+    fn page_list_in_file_space(
+        list: PageListSnapshot<PageCoordinates>,
+    ) -> Result<PageListSnapshot<PdfCoordinates>, EngineError> {
+        let boxes: HashMap<u32, PdfRect> =
+            list.pages.iter().map(|p| (p.page_object_number.get(), p.pdf_crop_box)).collect();
+        let pages = list
+            .pages
+            .into_iter()
+            .map(|page| {
+                let visible = page.pdf_crop_box;
+                let rect = |b| pdf_rect_of(b, visible);
+                let actions = page
+                    .actions
+                    .map(|a| {
+                        a.try_map_destinations(&mut |d| pdf_destination_of(d, &mut lookup(&boxes)))
+                    })
+                    .transpose()?;
+                Ok(PageLayout::<PdfCoordinates> {
+                    index: page.index,
+                    page_object_number: page.page_object_number,
+                    label: page.label,
+                    size: page.size,
+                    rotation: page.rotation,
+                    user_unit: page.user_unit,
+                    tab_order: page.tab_order,
+                    boxes: PageBoxes {
+                        media: rect(page.boxes.media),
+                        crop: rect(page.boxes.crop),
+                        bleed: rect(page.boxes.bleed),
+                        trim: rect(page.boxes.trim),
+                        art: rect(page.boxes.art),
+                    },
+                    pdf_crop_box: page.pdf_crop_box,
+                    actions,
+                })
+            })
+            .collect::<Result<Vec<_>, EngineError>>()?;
+        Ok(PageListSnapshot { page_count: list.page_count, pages, named_pages: list.named_pages })
+    }
 }
 
 /// The kernel's `nm` and `index` annotation refs, which the wire no longer

@@ -9,7 +9,7 @@
 //! every write; `/VP` itself is never rewritten.
 
 use pdfium::measure::{Measure, MeasureAxis, MeasureSubtype, MeasureText, Viewport};
-use pdfium::{Document, PageBoxType, PageView, PointF, RectF};
+use pdfium::{Document, PageView, PointF, RectF};
 use serde_json::{Map, Value, json};
 
 use crate::cancel::CancelToken;
@@ -365,15 +365,13 @@ pub fn set_scale(
             owned.push(i);
         }
     }
-    let raw = document
-        .page_box_by_index(index, PageBoxType::Crop)
-        .or_else(|| document.page_box_by_index(index, PageBoxType::Media))
-        .ok_or_else(|| invalid("Page has no valid calibration box"))?;
+    // `MeasureMutator`: the page's visible box (`readBoxes(...).crop`).
+    let crop = crate::features::pages::read_boxes(document, index).crop;
     let bbox = RectF {
-        left: raw.left.min(raw.right),
-        right: raw.left.max(raw.right),
-        bottom: raw.top.min(raw.bottom),
-        top: raw.top.max(raw.bottom),
+        left: crop.left as f32,
+        right: crop.right as f32,
+        bottom: crop.bottom as f32,
+        top: crop.top as f32,
     };
     if ![bbox.left, bbox.right, bbox.bottom, bbox.top].iter().all(|v| v.is_finite()) {
         return Err(invalid("Invalid calibration box"));

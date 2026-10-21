@@ -351,6 +351,52 @@ fn the_envelope_kinds_agree_with_the_vector() {
 }
 
 #[test]
+fn the_page_space_boundary_knows_every_wire_kind_and_no_other() {
+    // `page_space::boundary` matches `WireKind` with no catch-all, so a kind
+    // it knows is placed as converting or as holding no places. This is what
+    // keeps that list the wire's: a kind upstream adds to the union and the
+    // vector records fails here until the boundary places it.
+    use epdf_engine::page_space::boundary::WireKind;
+    let mut vector: Vec<String> = cases().into_iter().map(|c| c.kind).collect();
+    vector.sort();
+    let mut known: Vec<String> = WireKind::ALL.iter().map(|(k, _)| (*k).to_owned()).collect();
+    known.sort();
+    assert_eq!(known, vector);
+    for kind in LEGACY_KINDS {
+        assert_eq!(WireKind::of(kind), None, "{kind} was removed from the wire");
+    }
+}
+
+#[test]
+fn a_file_render_takes_its_target_in_page_space() {
+    // `renderOptionsInFileSpace` on the page the render opened: a target in
+    // page space ({x, y, width, height}) is read; one in the file's
+    // coordinates ({left, bottom, right, top}) is not the shape it takes.
+    let mut host = Host::new();
+    let path = test_support::workspace_root().join(FIXTURE);
+    let render = |host: &mut Host, rect: serde_json::Value| {
+        let response = host.call(
+            &serde_json::json!({ "kind": "document.renderPageFile", "jobId": 3,
+                "path": path, "password": "", "pageIndex": 0,
+                "options": { "target": { "kind": "rect", "rect": rect },
+                    "viewport": { "kind": "scale", "scale": 0.5 } } })
+            .to_string(),
+            Vec::new(),
+        );
+        serde_json::from_str::<serde_json::Value>(&response.json).expect("the response")
+    };
+    let body = render(&mut host, serde_json::json!({ "x": 0, "y": 0, "width": 100, "height": 40 }));
+    assert!(body.get("error").is_none(), "{body}");
+    assert_eq!(
+        (body["result"]["width"].as_u64(), body["result"]["height"].as_u64()),
+        (Some(50), Some(20))
+    );
+    let body =
+        render(&mut host, serde_json::json!({ "left": 0, "bottom": 0, "right": 100, "top": 40 }));
+    assert_eq!(body["error"]["code"], "WireFormat", "{body}");
+}
+
+#[test]
 fn a_write_envelope_is_read_whole() {
     let body = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
         "jobId": 7, "opId": "op-7", "objectNumberFloor": 900,

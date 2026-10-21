@@ -98,3 +98,36 @@ fn every_rotation_renders_the_same_pixels() {
         );
     }
 }
+
+#[test]
+fn the_listing_in_page_space_does_not_turn_with_the_page() {
+    // Page space ignores `/Rotate`: the 90-degree page still reads 612 by
+    // 792, its boxes are not turned, and only `rotation` says it turns.
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::pages::list_pages;
+    use epdf_engine::geom::{PageRect, PdfRotation, PdfSize};
+    use epdf_engine::page_space::pages::page_list_of;
+
+    let document = document();
+    let read = list_pages(document.document(), &CancelToken::never()).expect("list");
+    let listed = page_list_of(read).expect("in page space");
+    let rotations: Vec<PdfRotation> = listed.pages.iter().map(|p| p.rotation).collect();
+    assert_eq!(
+        rotations,
+        [
+            PdfRotation::None,
+            PdfRotation::Clockwise90,
+            PdfRotation::Clockwise180,
+            PdfRotation::Clockwise270
+        ]
+    );
+    for page in &listed.pages {
+        assert_eq!(page.size, PdfSize { width: 612.0, height: 792.0 }, "page {}", page.index);
+        let upright = PageRect { x: 0.0, y: 0.0, width: 612.0, height: 792.0 };
+        for b in
+            [page.boxes.media, page.boxes.crop, page.boxes.bleed, page.boxes.trim, page.boxes.art]
+        {
+            assert_eq!(b, upright, "page {}", page.index);
+        }
+    }
+}

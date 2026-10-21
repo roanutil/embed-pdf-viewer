@@ -1495,3 +1495,117 @@ fn an_nm_ref_reaches_the_host_as_its_base_index() {
     let answer = call_host_json(&mut host, update);
     assert!(answer.get("error").is_none(), "{answer}");
 }
+
+// ── page space (Task 8.4) ───────────────────────────────────────────────────
+
+/// A two-page PDF whose visible boxes do not start at the origin: page 3
+/// cropped inside its media box, page 4 centred on the origin. The catalog
+/// opens at a destination on page 4 and page 3 goes to page 4 when it
+/// closes. Cross-reference offsets are computed.
+fn shifted_pdf() -> Vec<u8> {
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R /OpenAction [4 0 R /XYZ -250 350 null] >>",
+        "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /CropBox [50 60 562 732] \
+         /AA << /C << /S /GoTo /D [4 0 R /FitH 300] >> >> >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [-300 -390 300 390] >>",
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+fn shifted_host() -> epdf_engine::host::Host {
+    let mut host = epdf_engine::host::Host::new();
+    let opened = host.call(
+        &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+        vec![shifted_pdf()],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    host
+}
+
+#[test]
+fn a_page_list_reaches_the_kernel_in_the_files_coordinates() {
+    // The host answers page space; the kernel's page registry and stage read
+    // PDF-space boxes and destinations until Task 13.
+    use epdf_viewer_host::translate::call_host;
+    let mut host = shifted_host();
+    let call = translate("d", "pages.list", None, &[], 2).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let list = decode(&call.decode, response).expect("decodes").value;
+    let first = &list["pages"][0];
+    assert_eq!(
+        first["boxes"]["crop"],
+        json!({ "left": 50.0, "bottom": 60.0, "right": 562.0, "top": 732.0 })
+    );
+    assert_eq!(
+        first["boxes"]["media"],
+        json!({ "left": 0.0, "bottom": 0.0, "right": 612.0, "top": 792.0 })
+    );
+    // The close action goes to page 4, measured on page 4's box.
+    let destination = &first["actions"]["close"]["root"]["destination"];
+    assert_eq!(destination["kind"], "fitH");
+    assert_eq!(destination["top"], json!(300.0));
+    assert_eq!(destination["page"], json!({ "kind": "objectNumber", "pageObjectNumber": 4 }));
+    assert!(destination.get("y").is_none(), "{destination}");
+}
+
+#[test]
+fn the_catalog_actions_reach_the_kernel_in_the_files_coordinates() {
+    use epdf_viewer_host::translate::call_host;
+    let mut host = shifted_host();
+    let call = translate("d", "actions.read", None, &[], 2).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let actions = decode(&call.decode, response).expect("decodes").value;
+    assert_eq!(
+        actions["openDestination"],
+        json!({ "kind": "xyz", "page": { "kind": "objectNumber", "pageObjectNumber": 4 },
+            "left": -250.0, "top": 350.0, "zoom": null })
+    );
+    // And the wire itself answers page space.
+    let wire = host
+        .call(&json!({ "kind": "actions.read", "jobId": 3, "docId": "d" }).to_string(), Vec::new());
+    let wire: Value = serde_json::from_str(&wire.json).unwrap();
+    assert_eq!(wire["result"]["openDestination"]["x"], json!(50.0));
+    assert_eq!(wire["result"]["openDestination"]["y"], json!(40.0));
+}
+
+#[test]
+fn a_render_target_from_the_kernel_goes_out_in_page_space() {
+    // The render plugin sends its tile in the file's coordinates
+    // (`page_rect_to_pdf`); the host measures a target from the visible
+    // box's top-left.
+    use epdf_viewer_host::translate::call_host;
+    let mut host = shifted_host();
+    let tile = json!({ "target": { "kind": "rect",
+        "rect": { "left": 150.0, "right": 250.0, "top": 632.0, "bottom": 582.0 } } });
+    let call = translate("d", "page.render.image", Some(3), &[tile], 2).unwrap();
+    let response = call_host(&mut host, &call.request.to_string(), call.payloads);
+    let envelope: Value = serde_json::from_str(&response.json).unwrap();
+    assert_eq!(
+        (envelope["result"]["width"].as_u64(), envelope["result"]["height"].as_u64()),
+        (Some(100), Some(50))
+    );
+    assert_eq!(
+        envelope["result"]["area"],
+        json!({ "x": 100.0, "y": 100.0, "width": 100.0, "height": 50.0 }),
+        "the host drew the area the kernel asked for"
+    );
+}

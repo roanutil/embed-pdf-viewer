@@ -132,7 +132,7 @@ pub fn render_page_file(
     path: &std::path::Path,
     password: Option<&str>,
     page_index: u32,
-    options: &RenderOptions,
+    options: &RenderOptions<crate::geom::PageRect>,
     cancel: &CancelToken,
 ) -> Result<RenderedPageFile, EngineError> {
     cancel.check()?;
@@ -176,6 +176,12 @@ pub fn render_page_file(
             format!("the page could not be loaded: {e}"),
         )
     })?;
-    let raster = render_page(&BorrowedFilePage(&page), options, cancel)?;
+    // `options` are page space, and no session carried this document to the
+    // host's boundary, so the target converts here, on the page it opened
+    // (`renderOptionsInFileSpace(req.options, () => page.pdfCropBox)`).
+    let options = crate::page_space::rendering::render_options_in_file_space(*options, || {
+        Ok::<_, EngineError>(crate::features::pages::read_boxes(&document, page_index).crop)
+    })?;
+    let raster = render_page(&BorrowedFilePage(&page), &options, cancel)?;
     Ok(RenderedPageFile { page_object_number, page_count, raster })
 }

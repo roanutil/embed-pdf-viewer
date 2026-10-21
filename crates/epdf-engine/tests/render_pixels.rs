@@ -228,7 +228,7 @@ fn the_pixel_budget_refuses_before_allocating() {
 fn the_default_is_unbudgeted() {
     // Exactness is the local product's promise, so a local render is not
     // silently capped.
-    assert_eq!(RenderOptions::default().max_output_pixels, None);
+    assert_eq!(RenderOptions::<PdfRect>::default().max_output_pixels, None);
 }
 
 #[test]
@@ -263,4 +263,118 @@ fn annotations_can_be_left_out() {
     let without =
         render(&document, RenderOptions { include_annotations: false, ..RenderOptions::default() });
     assert_eq!((with.width, with.height), (without.width, without.height));
+}
+
+/// Render through the wire, answering the result and the pixels.
+fn render_on_the_wire(
+    host: &mut epdf_engine::host::Host,
+    page: u32,
+    options: serde_json::Value,
+) -> (serde_json::Value, Vec<u8>) {
+    let response = host.call(
+        &serde_json::json!({
+            "kind": "pages.render", "jobId": 2, "docId": "d",
+            "page": { "kind": "objectNumber", "objectNumber": page },
+            "options": options,
+        })
+        .to_string(),
+        Vec::new(),
+    );
+    let mut envelope: serde_json::Value = serde_json::from_str(&response.json).expect("JSON");
+    assert!(envelope.get("error").is_none(), "{envelope}");
+    let pixels = response.payloads.into_iter().next().expect("the pixels");
+    (envelope["result"].take(), pixels)
+}
+
+/// A one-page PDF whose crop box does not start at the origin, its top-left
+/// quarter painted red (in the file's coordinates `[0 396 306 396]` from the
+/// crop box's corner). Cross-reference offsets are computed.
+fn shifted_page_pdf() -> Vec<u8> {
+    let content = "1 0 0 rg -306 0 306 396 re f";
+    let objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_owned(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [-306 -396 306 396] /Contents 4 0 R >>".to_owned(),
+        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
+    ];
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn a_page_space_target_is_measured_from_the_visible_boxs_top_left() {
+    // `pages.render` takes its target in page space and converts it with
+    // `pdfRectOf` on the page's crop box (`pdfRenderTargetOf`), and answers
+    // the area it drew in page space. On a page whose box is centred on the
+    // origin, page space's top-left quarter is the red one.
+    let mut host = epdf_engine::host::Host::new();
+    let opened = host.call(
+        &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
+        vec![shifted_page_pdf()],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+
+    let quarter = serde_json::json!({ "x": 0, "y": 0, "width": 306, "height": 396 });
+    let (answer, pixels) = render_on_the_wire(
+        &mut host,
+        3,
+        serde_json::json!({ "target": { "kind": "rect", "rect": quarter }, "viewport": { "kind": "scale", "scale": 0.25 } }),
+    );
+    assert_eq!(answer["page"], serde_json::json!({ "kind": "objectNumber", "objectNumber": 3 }));
+    assert_eq!(
+        test_support::corpus::quantized(&answer["area"]),
+        test_support::corpus::quantized(&quarter),
+        "the area comes back in page space",
+    );
+    let raster = PageRaster {
+        width: answer["width"].as_u64().unwrap() as u32,
+        height: answer["height"].as_u64().unwrap() as u32,
+        stride: answer["stride"].as_u64().unwrap() as u32,
+        rgba: pixels,
+    };
+    assert_eq!((raster.width, raster.height), (77, 99));
+    let middle = raster.pixel(raster.width / 2, raster.height / 2).expect("in bounds");
+    assert_eq!(middle, (255, 0, 0, 255), "the top-left quarter is the red one");
+
+    // The bottom-right quarter is white.
+    let (_, pixels) = render_on_the_wire(
+        &mut host,
+        3,
+        serde_json::json!({
+            "target": { "kind": "rect", "rect": { "x": 306, "y": 396, "width": 306, "height": 396 } },
+            "viewport": { "kind": "scale", "scale": 0.25 },
+        }),
+    );
+    let white = PageRaster { width: 77, height: 99, stride: 77 * 4, rgba: pixels };
+    assert_eq!(white.pixel(38, 49), Some((255, 255, 255, 255)));
+
+    // A whole-page render's area is the visible box at the origin.
+    let (answer, _) = render_on_the_wire(
+        &mut host,
+        3,
+        serde_json::json!({ "viewport": { "kind": "scale", "scale": 0.1 } }),
+    );
+    assert_eq!(
+        test_support::corpus::quantized(&answer["area"]),
+        test_support::corpus::quantized(
+            &serde_json::json!({ "x": 0, "y": 0, "width": 612, "height": 792 })
+        ),
+    );
 }
