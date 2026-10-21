@@ -764,6 +764,7 @@ export interface SliceCase {
       readonly matchCase?: boolean;
       readonly wholeWord?: boolean;
       readonly matchDiacritics?: boolean;
+      readonly ignoreWhitespace?: boolean;
     };
     readonly mode?: 'rects' | 'full';
     /**
@@ -809,8 +810,14 @@ export const SLICE_CASES: readonly SliceCase[] = [
   {
     name: 'regex-with-diacritics-is-refused',
     covers:
-      'The one rejected flag combination. Diacritic folding is a property of the folded text plane and a regex runs on the raw one, so this asks for something that does not exist.',
+      'A rejected flag combination. Diacritic folding is a property of the folded text plane and a regex runs on the raw one, so this asks for something that does not exist.',
     request: { query: { text: 'caf.', regex: true, matchDiacritics: true } },
+  },
+  {
+    name: 'regex-with-ignore-whitespace-is-refused',
+    covers:
+      'The other rejected combination, for the same reason: dropping whitespace is a property of the folded plane, and a pattern spells its own \\s*.',
+    request: { query: { text: 'in.oice', regex: true, ignoreWhitespace: true } },
   },
   {
     name: 'diacritics-is-reported-before-a-bad-pattern',
@@ -851,6 +858,17 @@ export const SLICE_CASES: readonly SliceCase[] = [
       query: { text: 'the', matchCase: true, wholeWord: true, matchDiacritics: true },
       mode: 'full',
     },
+  },
+  {
+    name: 'key-separates-ignore-whitespace',
+    covers:
+      'ignoreWhitespace has its own slot in the key, after wholeWord, as searchQueryKey spells it. A cursor minted for the same text without the flag is refused at the key check.',
+    keyMismatch: true,
+    request: {
+      query: { text: 'the', ignoreWhitespace: true },
+      cursor: { seq: 7, mintedFor: THE, start: 0, scanned: 5 },
+    },
+    seq: 7,
   },
   {
     name: 'key-separates-regex-from-literal',
