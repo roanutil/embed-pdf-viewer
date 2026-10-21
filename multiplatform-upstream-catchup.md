@@ -571,6 +571,9 @@ Kept divergences to re-check:
 - [ ] `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host --all-targets` prints no warnings. `cargo fmt -p epdf-engine -p epdf-viewer-host`, then `git checkout --` every file it changed that you did not otherwise touch, and drop its hunks outside lines you wrote.
 - [ ] Commit with explicit paths.
 
+
+**Added by controller ruling after 8.2:** resolve `baseIndex` refs to promoted annotations as upstream does (the `EPDFLayer` birth-name branch), binding what `crates/pdfium` lacks. Until this lands, `crates/epdf-engine` resolves only the non-promoted branch, and `redaction.rs` refuses several `baseIndex` refs on one page. Also owns removing `translate::call_host`'s `nm`/`index` to `baseIndex` rewrite once the kernel stops sending them (Task 13 may own the kernel side).
+
 #### Task 8.13: Annotation appearances
 
 Branch `research/catchup-plugins` (worktree `/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins`), or the branch off its tip the controller names. Needs 8.12. Rust matches upstream's TypeScript at `b456ee4fd`. Run cargo as `CARGO_BUILD_JOBS=6 cargo ...`. `crates/epdf-viewer-host/src/translate.rs` maps the kernel's engine calls onto this host's wire: when you change a kind's request or answer, change its arm there and in `crates/epdf-viewer-host/tests/translate.rs`, so the kernel side keeps working until Task 13 ports it. No `packages/**`, `tooling/**` or `.github/**` changes except `tooling/engine-conformance/src/operations.ts` and `OPERATIONS.md` (this task's rows). Commit with explicit paths; no `git add -A`, no `git stash`, no push. The per-file notes are in `docs/research/catchup-engine-vector-diffs.md`, "Annotation" (`appearances.json`).
@@ -962,6 +965,9 @@ Kept divergences to re-check: walk the list in `docs/research/rust-plugins-branc
 - [ ] Every `:check` script in `tooling/engine-conformance/package.json` is current.
 - [ ] Done when `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-viewer-host -p epdf-wasm -p epdf-uniffi -p epdf-node -p epdf-ffi -p pdfium -p pdfium-sys -p test-support` passes with no failures, and `CARGO_BUILD_JOBS=6 cargo clippy -p epdf-engine -p epdf-viewer-host -p epdf-wasm -p epdf-uniffi -p epdf-node -p epdf-ffi -p pdfium -p test-support --all-targets` prints no warnings. Plugin crates (`crates/plugins/`, `epdf-kernel`, `plugin-conformance`) are Task 13's.
 - [ ] Commit with explicit paths.
+
+
+**Added by controller ruling after 8.2:** bring `crates/epdf-engine/src/error.rs` to upstream's error-code set (6 added, 2 removed since the merge base), and decide whether `jobId` keeps accepting strings.
 
 #### Task 8.28: The Rust geometry parity test, after Task 9
 
