@@ -44,13 +44,15 @@ pub fn list_annotations(
             .iter()
             .map(|page| Ok((*page, document.page_index(*page)?)))
             .collect::<Result<_, EngineError>>()?,
+        // A page with no object number can't be named, which the session
+        // refuses at open; one here is a malformed document, not a page to
+        // pass over.
         None => (0..raw.page_count())
-            .filter_map(|index| {
+            .map(|index| {
                 PageObjectNumber::new(raw.page_object_number_by_index(index))
-                    .ok()
                     .map(|page| (page, index))
             })
-            .collect(),
+            .collect::<Result<_, EngineError>>()?,
     };
     let mut list = AnnotationList { annotations: Vec::new(), pages: Vec::new() };
     for (page, index) in listed {

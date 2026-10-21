@@ -23,6 +23,8 @@ use crate::identity::PageRef;
 /// What a measured field holds (`MeasuredFieldSpace`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldSpace {
+    /// A size, not a place: it doesn't move (`length`).
+    Length,
     Point,
     Points,
     Strokes,
@@ -65,9 +67,29 @@ pub fn field_spaces(subtype: &str) -> &'static [(&'static str, FieldSpace)] {
             ("rect", S::Box),
             ("actions", S::Actions),
             ("box", S::Box),
+            ("richText", S::Length),
             ("calloutLine", S::CalloutLine),
         ],
         _ => &[("rect", S::Box), ("actions", S::Actions)],
+    }
+}
+
+impl FieldSpace {
+    /// `MeasuredFieldSpace`'s spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Length => "length",
+            Self::Point => "point",
+            Self::Points => "points",
+            Self::Strokes => "strokes",
+            Self::Box => "box",
+            Self::Quads => "quads",
+            Self::LinePoints => "linePoints",
+            Self::CalloutLine => "calloutLine",
+            Self::Measure => "measure",
+            Self::LinkTarget => "linkTarget",
+            Self::Actions => "actions",
+        }
     }
 }
 
@@ -140,6 +162,7 @@ fn convert_field(
         }
     };
     match space {
+        S::Length => Ok(value),
         S::Point => point(value),
         S::Points | S::CalloutLine => each(name, value, &mut point),
         S::Strokes => each(name, value, &mut |stroke| each(name, stroke, &mut point)),

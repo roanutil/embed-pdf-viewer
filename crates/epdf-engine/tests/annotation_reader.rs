@@ -550,3 +550,115 @@ fn a_text_box_acrobat_turned_a_quarter_reads_its_turn() {
     assert_eq!(upright["rotation"], Value::Null);
     assert_eq!(upright["box"], upright["rect"]);
 }
+
+// ── `runColorConformance`'s read case ───────────────────────────────────────
+
+/// A PDF file of `objects`, numbered from 1, with its cross-reference table
+/// (`pdfOf`).
+fn pdf_of(objects: &[&str]) -> Vec<u8> {
+    let mut out = b"%PDF-1.7\n".to_vec();
+    let mut offsets = Vec::new();
+    for (i, object) in objects.iter().enumerate() {
+        offsets.push(out.len());
+        out.extend(format!("{} 0 obj\n{object}\nendobj\n", i + 1).as_bytes());
+    }
+    let xref = out.len();
+    out.extend(format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes());
+    for offset in offsets {
+        out.extend(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    out.extend(
+        format!(
+            "trailer\n<< /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    out
+}
+
+#[test]
+fn a_gray_or_cmyk_color_reads_as_its_srgb_value_lowercase() {
+    // `COLOR_FIXTURE_PDF`: a square whose border the file stores as gray
+    // (`/C [0.5]`) and whose fill as CMYK (`/IC [0 0 0 1]`).
+    let bytes = pdf_of(&[
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Annots [4 0 R] >>",
+        "<< /Type /Annot /Subtype /Square /Rect [20 20 120 120] /F 4 /C [0.5] /IC [0 0 0 1] \
+         /NM (colored) >>",
+    ]);
+    let mut host = epdf_engine::host::Host::new();
+    let opened = host.call(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "color",
+            "password": null })
+        .to_string(),
+        vec![bytes],
+    );
+    let opened: Value = serde_json::from_str(&opened.json).expect("JSON");
+    assert!(opened.get("error").is_none(), "{opened}");
+    let mut replay = Replay::adopt(host, "color");
+    let list = list_of(&mut replay, None);
+    let square = &list["annotations"][0];
+    assert_eq!(square["nm"], "colored", "{list}");
+
+    let color = square["color"].as_str().expect("a colour");
+    let gray = color.len() == 7
+        && color.starts_with('#')
+        && color[1..].chars().all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+        && color[1..3] == color[3..5]
+        && color[3..5] == color[5..7];
+    assert!(gray, "{color} is not a lowercase gray");
+    assert_eq!(square["interiorColor"], "#000000");
+}
+
+// ── `ANNOTATION_FIELD_SPACES` ───────────────────────────────────────────────
+
+/// Each kind's `spaces` in upstream's `kind-facts.generated.ts`.
+fn upstream_field_spaces() -> Vec<(String, BTreeSet<(String, String)>)> {
+    let path = test_support::workspace_root()
+        .join("packages/engine/core/src/annotation/kind-facts.generated.ts");
+    let text = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+    let mut kinds = Vec::new();
+    let mut kind: Option<String> = None;
+    let mut lines = text.lines();
+    while let Some(line) = lines.next() {
+        // A kind opens at two spaces of indent: `  square: {` or
+        // `  'free-text': {`.
+        if let Some(rest) = line.strip_prefix("  ")
+            && !rest.starts_with(' ')
+            && let Some(name) = rest.strip_suffix(": {")
+        {
+            kind = Some(name.trim_matches('\'').to_owned());
+        }
+        if line.trim() == "spaces: {" {
+            let mut spaces = BTreeSet::new();
+            for entry in lines.by_ref() {
+                if entry.trim().starts_with('}') {
+                    break;
+                }
+                let (name, space) = entry.trim().trim_end_matches(',').split_once(": ").unwrap();
+                spaces.insert((
+                    name.trim_matches('\'').to_owned(),
+                    space.trim_matches('\'').to_owned(),
+                ));
+            }
+            kinds.push((kind.clone().expect("spaces outside a kind"), spaces));
+        }
+    }
+    kinds
+}
+
+#[test]
+fn the_field_spaces_are_upstreams() {
+    use epdf_engine::page_space::annotations::field_spaces;
+    let upstream = upstream_field_spaces();
+    assert_eq!(upstream.len(), 20, "a kind came or went: {upstream:?}");
+    for (kind, theirs) in upstream {
+        let mine: BTreeSet<(String, String)> = field_spaces(&kind)
+            .iter()
+            .map(|(name, space)| ((*name).to_owned(), space.as_str().to_owned()))
+            .collect();
+        assert_eq!(mine, theirs, "{kind}");
+    }
+}
