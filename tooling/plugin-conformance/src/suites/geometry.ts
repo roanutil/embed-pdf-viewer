@@ -7,7 +7,9 @@
  * each method on the probe points and rects the case supplies.
  */
 import * as g from '../../../../packages/core/geometry/src/index';
-import type { Point, Quad, Rect, TextQuad } from '../../../../packages/core/geometry/src/index';
+import type { Point, Rect } from '../../../../packages/core/geometry/src/index';
+
+import { removedUpstream } from '../removed';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -18,6 +20,15 @@ const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ na
 
 const pt = (x: number, y: number): Point => ({ x, y });
 const rc = (x: number, y: number, width: number, height: number): Rect => ({ x, y, width, height });
+/**
+ * The old quad shapes. 00d2c8760 made every quad one shape, `{upperLeft,
+ * upperRight, lowerLeft, lowerRight}`: the positional `Quad` (`p1`..`p4`) and
+ * `TextQuad` (`upperStart`..`lowerEnd`) are gone. The cases keep their inputs.
+ */
+type Quad = { p1: Point; p2: Point; p3: Point; p4: Point };
+type TextQuad = { upperStart: Point; upperEnd: Point; lowerStart: Point; lowerEnd: Point };
+/** `pageSpace`'s edges type, removed with it in c053c3d33. */
+type PdfEdges = { left: number; bottom: number; right: number; top: number };
 const quad = (p1: Point, p2: Point, p3: Point, p4: Point): Quad => ({ p1, p2, p3, p4 });
 
 const ROTATIONS = [0, 90, 180, 270];
@@ -331,19 +342,23 @@ function pageTransformProbe(
     cssMatrix: t.cssMatrix,
     toPixels: points.map(t.toPixels),
     fromPixels: points.map(t.fromPixels),
-    contentToView: points.map(t.contentToView),
-    viewToContent: points.map(t.viewToContent),
-    contentToViewRect: rects.map(t.contentToViewRect),
-    viewToContentRect: rects.map(t.viewToContentRect),
+    // 81bdc82ec renamed content space to page space in these methods.
+    contentToView: points.map(t.pageToView),
+    viewToContent: points.map(t.viewToPage),
+    contentToViewRect: rects.map(t.pageToViewRect),
+    viewToContentRect: rects.map(t.viewToPageRect),
   };
 }
 
+/** c053c3d33 removed the PDF-to-page bridge: nothing in the viewer converts any more. */
+const pageSpace = removedUpstream('pageSpace', 'c053c3d33');
+
 /** `pageSpace` with its methods exercised on the probes. */
 function pageSpaceProbe(
-  crop: g.PdfEdges,
-  probe: { points?: Point[]; rects?: Rect[]; edges?: g.PdfEdges[]; quads?: Quad[] } = {},
+  crop: PdfEdges,
+  probe: { points?: Point[]; rects?: Rect[]; edges?: PdfEdges[]; quads?: Quad[] } = {},
 ) {
-  const s = g.pageSpace(crop);
+  const s = pageSpace(crop) as Record<string, never>;
   const points = probe.points ?? [];
   const quads = probe.quads ?? [];
   return {
@@ -361,12 +376,12 @@ function pageSpaceProbe(
 
 const pageFns: Record<string, Fn> = {
   rotateScaleMatrix: g.rotateScaleMatrix,
-  pdfToContentMatrix: g.pdfToContentMatrix,
-  pageGeometry: g.pageGeometry,
+  pdfToContentMatrix: removedUpstream('pdfToContentMatrix', 'c053c3d33'),
+  pageGeometry: removedUpstream('pageGeometry', 'c053c3d33'),
   pageTransform: pageTransformProbe,
   pageSpace: pageSpaceProbe,
-  edgesOverlap: g.edgesOverlap,
-  edgesOfQuad: g.edgesOfQuad,
+  edgesOverlap: removedUpstream('edgesOverlap', 'c053c3d33'),
+  edgesOfQuad: removedUpstream('edgesOfQuad', 'c053c3d33'),
 };
 
 const probe = {
@@ -470,20 +485,38 @@ const page: FunctionCase[] = [
 
 // ── text quads ──────────────────────────────────────────────────────────────
 
+// 00d2c8760 dropped "text" from the quad helpers (`textQuadPoints` is
+// `quadCorners`, `textQuadEdge` takes 'left' | 'right'), and removed
+// `positionalQuad` and `normalizeQuad`.
 const textQuadFns: Record<string, Fn> = {
-  textQuadFromRect: g.textQuadFromRect,
-  textQuadPoints: g.textQuadPoints,
-  textQuadRing: g.textQuadRing,
-  textQuadEdge: g.textQuadEdge,
-  textQuadEquals: g.textQuadEquals,
-  textQuadBounds: g.textQuadBounds,
-  applyTextQuad: g.applyTextQuad,
-  positionalQuad: g.positionalQuad,
-  normalizeQuad: g.normalizeQuad,
+  textQuadFromRect: g.quadFromRect,
+  textQuadPoints: g.quadCorners,
+  textQuadRing: g.quadRing,
+  textQuadEdge: g.quadEdge,
+  textQuadEquals: g.quadEquals,
+  textQuadBounds: g.quadBounds,
+  applyTextQuad: g.applyQuad,
+  positionalQuad: removedUpstream('positionalQuad', '00d2c8760'),
+  normalizeQuad: removedUpstream('normalizeQuad', '00d2c8760'),
 };
 
-const cell = g.textQuadFromRect(rc(100, 200, 60, 16));
-const tilted = g.applyTextQuad(g.rotate(0.7), cell);
+// The old helpers, to build the same `TextQuad` and positional inputs.
+const textQuadFromRect = (r: Rect): TextQuad => ({
+  upperStart: { x: r.x, y: r.y },
+  upperEnd: { x: r.x + r.width, y: r.y },
+  lowerStart: { x: r.x, y: r.y + r.height },
+  lowerEnd: { x: r.x + r.width, y: r.y + r.height },
+});
+const applyTextQuad = (m: g.Mat2D, t: TextQuad): TextQuad => ({
+  upperStart: g.applyPoint(m, t.upperStart as never),
+  upperEnd: g.applyPoint(m, t.upperEnd as never),
+  lowerStart: g.applyPoint(m, t.lowerStart as never),
+  lowerEnd: g.applyPoint(m, t.lowerEnd as never),
+});
+const positionalQuad = (t: TextQuad): Quad => ({ p1: t.upperStart, p2: t.upperEnd, p3: t.lowerStart, p4: t.lowerEnd });
+
+const cell = textQuadFromRect(rc(100, 200, 60, 16));
+const tilted = applyTextQuad(g.rotate(0.7), cell);
 const tq = (us: Point, ue: Point, ls: Point, le: Point): TextQuad => ({ upperStart: us, upperEnd: ue, lowerStart: ls, lowerEnd: le });
 
 const textQuads: FunctionCase[] = [
@@ -498,14 +531,14 @@ const textQuads: FunctionCase[] = [
   c('textQuadEdge', 'tilted-start', tilted, 'start'),
   c('textQuadEdge', 'tilted-end', tilted, 'end'),
 
-  c('textQuadEquals', 'same', cell, g.textQuadFromRect(rc(100, 200, 60, 16))),
+  c('textQuadEquals', 'same', cell, textQuadFromRect(rc(100, 200, 60, 16))),
   c('textQuadEquals', 'moved-lower-end-x', cell, { ...cell, lowerEnd: pt(161, 216) }),
   c('textQuadEquals', 'moved-lower-end-y', cell, { ...cell, lowerEnd: pt(160, 217) }),
   c('textQuadEquals', 'moved-upper-start-x', cell, { ...cell, upperStart: pt(99, 200) }),
   c('textQuadEquals', 'moved-upper-start-y', cell, { ...cell, upperStart: pt(100, 201) }),
   c('textQuadEquals', 'moved-upper-end', cell, { ...cell, upperEnd: pt(160, 199) }),
   c('textQuadEquals', 'moved-lower-start', cell, { ...cell, lowerStart: pt(101, 216) }),
-  c('textQuadEquals', 'rotated-in-place', cell, g.applyTextQuad(g.rotateAbout(pt(130, 208), Math.PI / 6), cell)),
+  c('textQuadEquals', 'rotated-in-place', cell, applyTextQuad(g.rotateAbout(pt(130, 208), Math.PI / 6), cell)),
   c('textQuadEquals', 'nan-never-equal', tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1)), tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
   c('textQuadEquals', 'negative-zero-equal', tq(pt(-0, 0), pt(1, 0), pt(0, 1), pt(1, 1)), tq(pt(0, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
 
@@ -515,17 +548,17 @@ const textQuads: FunctionCase[] = [
   c('textQuadBounds', 'nan', tq(pt(NaN, 0), pt(1, 0), pt(0, 1), pt(1, 1))),
   c('textQuadBounds', 'nan-y', tq(pt(0, 0), pt(1, 0), pt(0, NaN), pt(1, 1))),
 
-  c('applyTextQuad', 'quarter-turn', [0, 1, -1, 0, 0, 0], g.textQuadFromRect(rc(0, 0, 10, 4))),
+  c('applyTextQuad', 'quarter-turn', [0, 1, -1, 0, 0, 0], textQuadFromRect(rc(0, 0, 10, 4))),
   c('applyTextQuad', 'every-slot', [2, 3, 5, 7, 11, 13], cell),
 
   c('positionalQuad', 'cell', cell),
   c('positionalQuad', 'tilted', tilted),
 
   // normalizeQuad: zigzag pass-through.
-  c('normalizeQuad', 'rect-round-trip', g.positionalQuad(g.textQuadFromRect(rc(10, 20, 30, 12)))),
+  c('normalizeQuad', 'rect-round-trip', positionalQuad(textQuadFromRect(rc(10, 20, 30, 12)))),
   c('normalizeQuad', 'rotated-zigzag', quad(pt(50, 10), pt(50, 40), pt(38, 10), pt(38, 40))),
-  c('normalizeQuad', 'tilted-zigzag', g.positionalQuad(tilted)),
-  c('normalizeQuad', 'upside-down-zigzag', g.positionalQuad(g.applyTextQuad(g.rotate(Math.PI), cell))),
+  c('normalizeQuad', 'tilted-zigzag', positionalQuad(tilted)),
+  c('normalizeQuad', 'upside-down-zigzag', positionalQuad(applyTextQuad(g.rotate(Math.PI), cell))),
   c('normalizeQuad', 'mirrored-zigzag', quad(pt(10, 0), pt(0, 0), pt(10, 5), pt(0, 5))),
   // Ring order, repaired.
   c('normalizeQuad', 'ring-order', quad(pt(10, 20), pt(40, 20), pt(40, 32), pt(10, 32))),
