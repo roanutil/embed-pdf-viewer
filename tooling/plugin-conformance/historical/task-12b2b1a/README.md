@@ -40,7 +40,23 @@ does not recreate removed convenience geometry validation. Font lookup and
 byte-buffer wrappers retain only their existing serializable host ports.
 
 Schema-invalid imported-read edges remain explicit: missing/null refs,
-one-point callout, NaN rotation, empty color, absent rich text, and empty
+one-point callout, NaN rotation, empty color, absent rich text, absent required icon, and empty
 review-state strings. Other deliberately adversarial inputs include
 nonfinite geometry and non-hex colors. Focused tests allow only named
 refusals and require every finite-input result to be finite.
+
+Fix round 1 keeps the same 850-to-843 accounting and eight retirements.
+Draft defaults project link targets through shipping `writableTarget` before
+recording: read-only JavaScript lowers to null, and a fresh empty link explicitly
+states null. Its distinct placement keeps the read-only-link draft separate from
+the ordinary empty-target draft. All create drafts pass the shipping schema
+except three explicit geometry negatives: one-point callout, strikeout with a box,
+and markup with no quads. Those cases have explicit `covers` text.
+
+All 95 full-patch cases compare meaningful earlier rich body, target, scale,
+caption, leader, endings, font, reply, group and icon fields. Read-only targets
+are carried unchanged rather than authored by a diff. The twelve `text-no-icon`
+variants preserve an explicitly absent required icon as a malformed imported
+read, instead of duplicating the ordinary comment icon. The focused tests
+snapshot the decoded arguments actually invoked and prove the guard with a
+synthetic mutator.

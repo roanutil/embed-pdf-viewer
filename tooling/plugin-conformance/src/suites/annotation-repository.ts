@@ -64,7 +64,21 @@ const cases: FunctionCase[] = [];
 function replace(before: string, fn: string, ...args: unknown[]) {
   const name = fn === before.split('/')[0] ? before : `${fn}/${before}`;
   migration.push({ before, after: name });
-  cases.push({ name, fn, args });
+  const invalidDrafts: Readonly<Record<string, string>> = {
+    'toCreateDraft/callout-one-point':
+      'Intentionally invalid current draft: a callout line needs two or three points.',
+    'toCreateDraft/fresh/strikeout-rect-geom':
+      'Intentionally invalid current draft: a strikeout needs quads, not a box.',
+    'toCreateDraft/fresh/markup-no-geometry':
+      'Intentionally invalid current draft: text markup needs at least one quad.',
+  };
+  const covers =
+    fn === 'draftOf'
+      ? invalidDrafts[before]
+      : before.includes('text-no-icon')
+        ? 'Explicit malformed imported read: the required current icon field is absent.'
+        : undefined;
+  cases.push({ name, fn, args, ...(covers ? { covers } : {}) });
 }
 const retire = (before: string, reason: string) => migration.push({ before, after: null, reason });
 const rotatedBox = { x: 110, y: 110, width: 80, height: 80 };
@@ -148,7 +162,10 @@ export const DTOS: [string, Annotation][] = [
   ['link', link(38)],
   ['link-attached', link(39, { reply: { to: objRef(1), type: 'group' } })],
   ['link-no-target', link(40, { target: null })],
-  ['link-javascript', link(41, { target: { kind: 'javascript' } })],
+  [
+    'link-javascript',
+    link(41, { target: { kind: 'javascript' }, rect: { x: 220, y: 180, width: 80, height: 40 } }),
+  ],
   [
     'widget-text',
     widget(42, 'text', {
@@ -296,6 +313,16 @@ function RED_DTO() {
 const earlierDrawing = (annotation: Annotation): Annotation => {
   const shape = moved(annotation);
   const upright = 'rotation' in shape ? { ...shape, rotation: 0 } : shape;
+  const fontFamily =
+    'fontFamily' in annotation && annotation.fontFamily === 'courier' ? 'helvetica' : 'courier';
+  const fontSize = 'fontSize' in annotation && annotation.fontSize === 9 ? 10 : 9;
+  const fontColor =
+    'fontColor' in annotation && annotation.fontColor === '#010203' ? '#123456' : '#010203';
+  const textAlign =
+    'textAlign' in annotation && annotation.textAlign === 'right' ? 'left' : 'right';
+  const page = annotation.page.objectNumber;
+  const parent =
+    annotation.ref.kind === 'objectNumber' && annotation.ref.objectNumber === 2 ? 1 : 2;
   return withValues(withShape(fromDTO(annotation), upright), {
     color: '#010203',
     opacity: 0.8,
@@ -305,6 +332,52 @@ const earlierDrawing = (annotation: Annotation): Annotation => {
     cloudyIntensity: null,
     interiorColor: null,
     contents: 'earlier text',
+    reply: { to: objRef(parent, page), type: 'reply' },
+    groupId: 'earlier-group',
+    lineEndings: { start: 'closed-arrow', end: 'square' },
+    captionEnabled:
+      'captionEnabled' in annotation && annotation.captionEnabled === true ? false : true,
+    captionPosition:
+      'captionPosition' in annotation && annotation.captionPosition === 'top' ? 'inline' : 'top',
+    captionCenter: { x: 8, y: 9 },
+    captionOffset: { along: 1, perpendicular: 2 },
+    leader: { length: 3, extension: 1, offset: 2 },
+    measure: {
+      ...METRES,
+      ratio: '1 in = 2 cm',
+      x: [{ unit: 'cm', conversion: 2 / 72 }],
+      distance: [{ unit: 'cm', conversion: 1 }],
+      area: [{ unit: 'cm²', conversion: 1 }],
+    },
+    fontFamily,
+    fontSize,
+    fontColor,
+    textAlign,
+    richText: {
+      body: {
+        ...RICH_BODY(400, false, []),
+        family: fontFamily === 'courier' ? 'Courier' : 'Helvetica',
+        size: fontSize,
+        color: fontColor,
+        align: textAlign,
+      },
+      paragraphs: [{ runs: [{ text: 'earlier text' }] }],
+    },
+    ...(annotation.subtype === 'text'
+      ? { icon: annotation.icon === 'key' ? 'comment' : 'key' }
+      : {}),
+    ...(annotation.subtype === 'file-attachment'
+      ? { icon: annotation.icon === 'tag' ? 'paperclip' : 'tag' }
+      : {}),
+    // A read-only target can be carried unchanged, never authored by this diff.
+    ...(annotation.subtype === 'link'
+      ? {
+          target:
+            annotation.target && !writableTarget(annotation.target)
+              ? annotation.target
+              : { kind: 'uri', uri: 'https://earlier.example' },
+        }
+      : {}),
   }).annotation;
 };
 const dtoOf = (label: string): Annotation => {
@@ -317,7 +390,12 @@ const oldLabel = (label: string) => (label === 'base-index-ref' ? 'nm-ref' : lab
 /** Data fields for the drawing's draft, prepared before recording the arguments. */
 function dataOf(annotation: Annotation): FieldValues {
   const owners = kindFactsOf(annotation.subtype)!.owners;
-  return Object.fromEntries(Object.entries(annotation).filter(([name]) => owners[name] === 'data'));
+  const fields = Object.fromEntries(
+    Object.entries(annotation).filter(([name]) => owners[name] === 'data'),
+  );
+  return annotation.subtype === 'link'
+    ? { ...fields, target: writableTarget(annotation.target) }
+    : fields;
 }
 const moved = (annotation: Annotation): Shape => {
   const shape = shapeOf(annotation);
@@ -371,7 +449,8 @@ const STYLED: [string, Annotation][] = [
   ['highlight', dtoOf('highlight')],
   ['redact-text', dtoOf('redact-text')],
   ['text', dtoOf('text')],
-  ['text-no-icon', textNote(34, { icon: 'comment' })],
+  // Explicit malformed imported read: the current read schema requires an icon.
+  ['text-no-icon', textNote(34, { icon: undefined })],
   ['link', dtoOf('link')],
   ['link-null', dtoOf('link-no-target')],
   ['link-readonly', dtoOf('link-javascript')],
@@ -485,7 +564,7 @@ const freshDrafts: [string, string, Shape, FieldValues?][] = [
     { kind: 'quads', quadPoints: [quad(10, 10, 50, 12), quad(10, 30, 20, 12)] },
   ],
   ['free-text', 'free-text', SHAPES.text],
-  ['link', 'link', SHAPES.box],
+  ['link', 'link', SHAPES.box, { target: null }],
   ['widget', 'widget-text', SHAPES.box],
   ['markup-no-geometry', 'highlight', { kind: 'quads', quadPoints: [] }],
 ];

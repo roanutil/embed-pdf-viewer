@@ -5,7 +5,10 @@ import { canonical, snapshotHooks } from '../src/canonical';
 import type { FunctionSuite } from '../src/vectors';
 import * as repository from '../src/suites/annotation-repository';
 import * as pure from '../src/suites/annotation-pure';
-import { AnnotationSchema } from '../../../packages/engine/core/src/annotation/kinds';
+import {
+  AnnotationSchema,
+  AnnotationDraftSchema,
+} from '../../../packages/engine/core/src/annotation/kinds';
 import { annotationOfNew, shapeOf, textOf } from '../../../packages/core/annotation/src/record';
 import { annotationKey } from '@embedpdf/core';
 import type {
@@ -77,7 +80,13 @@ function run<T = unknown>(name: string): T {
   const suite = suites.find((s) => s.cases.some((c) => c.name === name));
   assert.ok(suite, name);
   const c = suite.cases.find((c) => c.name === name)!;
-  return suite.functions[c.fn]!(...(decode(canonical(c.args)) as never[])) as T;
+  const invoked = decode(canonical(c.args)) as never[];
+  const before = canonical(invoked);
+  try {
+    return suite.functions[c.fn]!(...invoked) as T;
+  } finally {
+    assert.deepEqual(canonical(invoked), before, `${name}: invoked args mutated`);
+  }
 }
 function nonfinite(v: unknown): boolean {
   if (typeof v === 'number') return !Number.isFinite(v);
@@ -185,7 +194,7 @@ test('current records pass the real read schema except explicitly malformed hist
   let checked = 0,
     malformed = 0;
   const expected =
-    /callout-one-point|square-rotation-nan|square-empty-interior|fromDTO\/null-ref|richDocOf\/dto-plain|buildCommentThreads\/(everything|mine|mine-absent)$/;
+    /callout-one-point|square-rotation-nan|square-empty-interior|text-no-icon|fromDTO\/null-ref|richDocOf\/dto-plain|buildCommentThreads\/(everything|mine|mine-absent)$/;
   const visit = (v: unknown, name: string): void => {
     if (!v || typeof v !== 'object') return;
     const o = v as Record<string, unknown>;
@@ -207,7 +216,7 @@ test('current records pass the real read schema except explicitly malformed hist
   };
   for (const s of suites) for (const c of s.cases) visit(c.args, c.name);
   assert.ok(checked > 690);
-  assert.equal(malformed, 24);
+  assert.equal(malformed, 36);
 });
 
 test('record conversion keeps stable refs and actual rotated/upright/page-offset boxes', () => {
@@ -421,4 +430,128 @@ test('full patch replacement writes current style/rotation and excludes engine m
   assert.equal(cloud.contents, null);
   for (const key of ['ref', 'page', 'rect', 'author', 'createdAt', 'modifiedAt', 'hasAppearance'])
     assert.ok(!(key in cloud), key);
+});
+
+test('every current create draft is writable except three explicit invalid geometry cases', () => {
+  const invalid = new Set([
+    'draftOf/toCreateDraft/callout-one-point',
+    'draftOf/toCreateDraft/fresh/strikeout-rect-geom',
+    'draftOf/toCreateDraft/fresh/markup-no-geometry',
+  ]);
+  for (const c of (repository.suites[0] as FunctionSuite).cases.filter((c) => c.fn === 'draftOf')) {
+    const checked = AnnotationDraftSchema.safeParse(run(c.name));
+    assert.equal(
+      checked.success,
+      !invalid.has(c.name),
+      `${c.name}: ${checked.success ? 'unexpectedly valid' : checked.error.message}`,
+    );
+  }
+  const c = (repository.suites[0] as FunctionSuite).cases.find(
+    (c) => c.name === 'draftOf/toCreateDraft/link-javascript',
+  )!;
+  assert.deepEqual((c.args[1] as Record<string, unknown>).target, null);
+  assert.deepEqual((run(c.name) as { target: unknown }).target, null);
+  assert.deepEqual((run('draftOf/toCreateDraft/fresh/link') as { target: unknown }).target, null);
+  const blank = (repository.suites[0] as FunctionSuite).cases.find(
+    (c) => c.name === 'draftOf/toCreateDraft/link-no-target',
+  )!;
+  assert.notDeepEqual(canonical(c.args), canonical(blank.args));
+});
+
+test('full patch variants emit real rich text, URI, measurement, line, relationship and text fields', () => {
+  const patch = (label: string) =>
+    run<Record<string, unknown>>(`annotationPatchBetween/toPatch/${label}`);
+  const line = patch('line-dimension');
+  assert.deepEqual(line.lineEndings, { start: 'none', end: 'open-arrow' });
+  assert.equal(line.captionEnabled, true);
+  assert.equal(line.captionPosition, 'inline');
+  assert.deepEqual(line.leader, { length: 12, extension: 5, offset: 0 });
+  assert.equal((line.measure as { subtype: string }).subtype, 'rectilinear');
+  assert.deepEqual(patch('link').target, { kind: 'uri', uri: 'https://example.com' });
+  assert.deepEqual(patch('link-no-target').target, null);
+  assert.deepEqual(patch('link-attached').reply, {
+    to: { kind: 'objectNumber', page: { kind: 'objectNumber', objectNumber: 1 }, objectNumber: 1 },
+    type: 'group',
+  });
+  assert.equal(patch('square').groupId, null);
+  assert.equal(patch('text').icon, 'comment');
+  assert.equal(patch('file-attachment').icon, 'paperclip');
+  const text = patch('free-text-rich');
+  assert.equal(text.fontFamily, 'helvetica');
+  assert.equal(text.fontSize, 12);
+  assert.equal(text.fontColor, '#ef4444');
+  assert.equal(text.textAlign, 'left');
+  assert.equal((text.richText as { body: { weight: number } }).body.weight, 700);
+  const all = (repository.suites[0] as FunctionSuite).cases.filter(
+    (c) => c.fn === 'annotationPatchBetween',
+  );
+  assert.equal(all.length, 95);
+  for (const c of all)
+    assert.equal(
+      AnnotationSchema.safeParse(c.args[0]).success,
+      c.name !== 'annotationPatchBetween/toPatch/callout-one-point',
+      `${c.name}: before read validity`,
+    );
+  const fields = new Set(all.flatMap((c) => Object.keys(run<Record<string, unknown>>(c.name))));
+  for (const key of [
+    'richText',
+    'target',
+    'measure',
+    'captionPosition',
+    'captionEnabled',
+    'leader',
+    'lineEndings',
+    'fontFamily',
+    'fontSize',
+    'fontColor',
+    'textAlign',
+    'reply',
+    'groupId',
+    'icon',
+  ])
+    assert.ok(fields.has(key), key);
+  for (const c of all)
+    for (const key of ['ref', 'page', 'author', 'createdAt', 'modifiedAt', 'hasAppearance'])
+      assert.ok(!(key in run<Record<string, unknown>>(c.name)), `${c.name}: ${key}`);
+});
+
+test('all twelve missing-icon variants keep a distinct explicit current read edge', () => {
+  const cases = (repository.suites[0] as FunctionSuite).cases;
+  const edge = cases.filter(
+    (c) =>
+      /toScopedPatch\/text-no-icon\//.test(c.name) ||
+      c.name.endsWith('toPatch/styled/text-no-icon'),
+  );
+  assert.equal(edge.length, 12);
+  for (const c of edge) {
+    const plain = cases.find((other) => other.name === c.name.replace('text-no-icon', 'text'))!;
+    assert.ok(plain);
+    assert.notDeepEqual(canonical(c.args), canonical(plain.args), c.name);
+  }
+  const c = edge.find((c) => c.name.endsWith('/color'))!;
+  const source = (c.args[0] as ModelAnnotation).annotation;
+  assert.ok(source.subtype === 'text');
+  assert.equal(source.icon, undefined);
+  assert.equal(
+    (run('annotationPatchBetween/toPatch/styled/text-no-icon') as { icon: unknown }).icon,
+    null,
+  );
+});
+
+test('the mutation guard inspects the decoded arguments actually handed to the function', () => {
+  const s = repository.suites[0] as FunctionSuite;
+  const functions = s.functions as Record<string, (...args: never[]) => unknown>;
+  const original = functions.withValues!;
+  const c = s.cases.find((c) => c.name === 'withValues/toScopedPatch/square/color')!;
+  const before = canonical(c.args);
+  functions.withValues = ((record: ModelAnnotation) => {
+    record.annotation.contents = 'mutated decoded argument';
+    return record;
+  }) as never;
+  try {
+    assert.throws(() => run(c.name), /invoked args mutated/);
+  } finally {
+    functions.withValues = original;
+  }
+  assert.deepEqual(canonical(c.args), before);
 });
