@@ -493,8 +493,8 @@ token and settings/create/state/connect. It takes complete current records from
 `form-current-fixtures.ts`, with explicit `FormSnapshot.widgets`, flat field properties
 and current refs. Its typed static value-set answers carry a full ChangeResult,
 FormMutationMeta and `forms.valueSet` event before settlement. It adds no old method
-aliases or console wrapper. The original `form-fixtures.ts` remains for the 59 deferred
-live form cases and the stamp/signature consumers; it is not the current replay API.
+aliases or console wrapper. The original `form-fixtures.ts` remains for the deferred
+stamp/signature consumers; it is not the current replay API.
 
 `case-entropy.ts` now owns the existing annotation fixture's UUID host input. Annotation
 and form factories join one sequence per case, across both factory orders and every
@@ -510,8 +510,8 @@ accounting. No vectors or Rust replay code are updated by these input migrations
 shipping behavior. [The fill/design history](historical/task-12b2b2-ii/README.md)
 links exact BASE source/inputs, the exhaustive before/after digest manifest,
 removed-door replacements and the verified upstream no-annotation handler
-refusal limitation. Current forms now comprise core102 + fill31 + design29;
-only scripting46/actions13 remain for the later forms slice.
+refusal limitation. The separately accounted scripting46/actions13 complete the current form family
+alongside core102 + fill31 + design29.
 
 `form-live-fixtures.ts` builds complete typed static apply answers and current
 page-space rows over the reviewed factory. Its distinct diagnostic host records
@@ -520,3 +520,19 @@ that fixed order, current bundle/ref-map schemas and the form-owned widget lende
 are Task13 replay seams. Shared entropy and the reviewed current factories are
 unchanged. Run `node --import=tsx --conditions=development --test test/form-live.test.ts`
 for independent operations/results/permission/event/schema/lifecycle assertions.
+
+### Current form scripting and actions inputs
+
+All original220 form cases now map to current shipping behavior; current221
+includes the additional lifecycle case. [The scripting/actions history](historical/task-12b2b2-iii/README.md)
+contains all59 remaining archives, before/current digests, aggregate accounting,
+removed-door evidence and Task13 host contracts. `form-script-fixtures.ts` uses
+an actual detached actions realm for direct controller effects, and the reviewed
+current form factory for native writes. Independent assertions pin complete
+K/V/C/F results and sandbox inputs, native ops/facts/public values, authority,
+exact diagnostics and host cleanup. Run
+`node --import=tsx --conditions=development --test test/form-script.test.ts`.
+The deferred form helper remains solely for stamp/signature consumers; both
+legacy bridges and the68 deferred compiler diagnostics remain open. Preserve
+the separately observed form-pipeline print policy gap and action-executor M14
+gate; no source behavior is changed here.

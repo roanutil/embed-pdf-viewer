@@ -790,24 +790,12 @@ test('all original 60 inputs and exact source bytes remain archived and every ac
   );
   for (const item of array(oldBaseline.sources).map(object)) {
     const name = String(item.path).split('/').at(-1)!;
-    if (['form-scripting.ts', 'form-actions.ts', 'form-fixtures.ts'].includes(name))
+    if (name === 'form-fixtures.ts')
       assert.equal(
         hash(await readFile(new URL('src/suites/' + name, root))),
         item.sha256,
         name + ' deferred bytes',
       );
-  }
-  for (const family of ['scripting', 'actions']) {
-    const { suites } = await import(`../src/suites/form-${family}`);
-    let count = 0;
-    for (const suite of suites)
-      for (const input of suite.cases) {
-        const old = original220.find((r) => r.file === suite.file && r.name === input.name);
-        assert.ok(old);
-        assert.deepEqual(canonical(input), old.input);
-        count++;
-      }
-    assert.equal(count, family === 'scripting' ? 46 : 13);
   }
 });
 
