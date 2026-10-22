@@ -854,3 +854,212 @@ test('snapshot reads retain raw scalar/array distinctions, page filtering, unpla
     height: 20.5,
   });
 });
+
+test('whole-form reset refusals preserve all selected values and success confirms every changed field, row and fact', async () => {
+  const input = all.find((c) => c.name === 'reset-all-failures');
+  assert.ok(input && 'steps' in input);
+  const probe = {
+    ...input,
+    steps: input.steps.flatMap((step, index) =>
+      index === 4
+        ? [call('onResynced', [{ $fn: 'initialResetSnapshot' }]), step]
+        : step.op === 'call' && step.method === 'getValue'
+          ? [step, ...[2, 3, 4].map((n) => call('getValue', [ref(n)])), call('getSnapshot')]
+          : [step],
+    ),
+  };
+  const { trace } = await runScenario(probe);
+  const reads: unknown[] = [];
+  const snapshots: FormSnapshot[] = [];
+  for (const [i, step] of probe.steps.entries())
+    if (step.op === 'call') {
+      if (step.method === 'getValue') reads.push(returned(trace, i));
+      if (step.method === 'getSnapshot')
+        snapshots.push(FormSnapshotSchema.parse(returned(trace, i)));
+    }
+  assert.deepEqual(reads, [
+    { value: 'Ada' },
+    { checked: false },
+    { value: 'r' },
+    { selectedValues: ['g'] },
+    null,
+    { checked: false },
+    null,
+    null,
+  ]);
+  const initial = trace.flatMap((t) => t.callbacks).find((c) => c.fn === 'initialResetSnapshot');
+  assert.ok(initial);
+  const initialForm = FormSnapshotSchema.parse(object(initial.args[0]).snapshot);
+  assert.deepEqual(
+    initialForm.fields.map((f) => f.valueEntry),
+    [
+      { kind: 'scalar', value: 'Ada' },
+      { kind: 'scalar', value: 'Off' },
+      { kind: 'scalar', value: 'r' },
+      { kind: 'array', values: ['g'] },
+    ],
+  );
+  assert.deepEqual(
+    snapshots.map((s) => s.fields.map((f) => f.valueEntry)),
+    [
+      [
+        { kind: 'scalar', value: 'Ada' },
+        { kind: 'scalar', value: 'Off' },
+        { kind: 'scalar', value: 'r' },
+        { kind: 'array', values: ['g'] },
+      ],
+      [{ kind: 'none' }, { kind: 'scalar', value: 'Off' }, { kind: 'none' }, { kind: 'none' }],
+    ],
+  );
+  const changed = trace
+    .flatMap((t) => t.settled)
+    .filter((s) => s.resolved && isObject(s.resolved) && 'fields' in s.resolved)
+    .map((s) => object(s.resolved));
+  assert.equal(changed.length, 1);
+  assert.deepEqual(
+    array(changed[0]!.fields).map((f) => object(f).ref),
+    [ref(1), ref(3), ref(4)],
+  );
+  const colour = snapshots[1]!.fields.find(
+    (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 3,
+  );
+  assert.ok(colour?.family === 'combobox');
+  assert.equal(colour.value, '');
+  assert.ok(colour.options.every((option) => !option.selected));
+  const colours = snapshots[1]!.fields.find(
+    (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 4,
+  );
+  assert.ok(colours?.family === 'listbox');
+  assert.deepEqual(colours.selectedValues, []);
+  assert.ok(colours.options.every((option) => !option.selected));
+  assert.deepEqual(
+    changed[0]!.fields,
+    snapshots[1]!.fields.filter(
+      (field) => field.ref.kind === 'objectNumber' && [1, 3, 4].includes(field.ref.objectNumber),
+    ),
+  );
+  assert.deepEqual(
+    engines(trace, 'apply').map((e) => e.args),
+    [1, 2].map((n) => [
+      { ops: [{ type: 'forms.reset', fields: [ref(1), ref(2), ref(3), ref(4)] }] },
+      { opId: operationAt(n) },
+    ]),
+  );
+  for (const name of ['reset-all-failures', 'reset-all', 'a-reset-action-without-a-batch-door']) {
+    const target = all.find((c) => c.name === name);
+    assert.ok(target && 'steps' in target);
+    const answers = Object.values(target.engine?.documents ?? {})
+      .flatMap((d) => d.responses ?? [])
+      .filter((r) => r.path === 'apply' && r.value);
+    const answer = object(answers[0]!.value),
+      item = object(array(answer.items)[0]);
+    assert.deepEqual(
+      array(item.fields).map((f) => object(f).ref),
+      [ref(1), ref(3), ref(4)],
+      name + ' changed fields',
+    );
+    assert.deepEqual(
+      array(item.widgets).map((w) => object(w).ref),
+      [objRef(101), objRef(103), objRef(104)],
+      name + ' changed rows',
+    );
+    const n = name === 'reset-all-failures' ? 2 : 1;
+    const meta = {
+      affectedPages: [pr(1)],
+      cacheDelta: null,
+      opId: operationAt(n),
+      undoable: true,
+      changedFields: [ref(1), ref(3), ref(4)],
+      changedWidgets: [placed(101), placed(103), placed(104)],
+      redrawnWidgets: [placed(101), placed(103), placed(104)],
+    };
+    assert.deepEqual(item.meta, meta, name + ' reset item meta');
+    assert.deepEqual(answer.meta, meta, name + ' reset answer meta');
+    const facts = answers[0]!.events ?? [];
+    assert.equal(facts.length, 3, name + ' changed facts');
+    for (const [index, event] of facts.entries()) {
+      const fact = object(event),
+        number = [1, 3, 4][index]!,
+        widgetNumber = number + 100;
+      assert.equal(fact.type, 'forms.valueSet');
+      assert.deepEqual(object(fact.field).ref, ref(number));
+      assert.deepEqual(
+        array(fact.widgets).map((w) => object(w).ref),
+        [objRef(widgetNumber)],
+      );
+      assert.deepEqual(fact.meta, {
+        ...meta,
+        changedFields: [ref(number)],
+        changedWidgets: [placed(widgetNumber)],
+        redrawnWidgets: [placed(widgetNumber)],
+      });
+      assert.deepEqual(object(fact.origin).tx, { id: operationAt(n), index, count: 3 });
+    }
+  }
+});
+test('ordinary create answers preserve every explicitly supplied placement style, including palette defaults', async () => {
+  let checked = 0;
+  for (const input of design.flatMap((s) => s.cases)) {
+    assert.ok('steps' in input);
+    const responses = Object.values(input.engine?.documents ?? {})
+      .flatMap((d) => d.responses ?? [])
+      .filter((r) => r.path === 'apply');
+    const reads = responses.flatMap((response) =>
+      response.value
+        ? array(object(response.value).items)
+            .filter((item) => object(item).type === 'forms.create')
+            .flatMap((item) => array(object(item).widgets).map((row) => WidgetDTOSchema.parse(row)))
+        : [],
+    );
+    const probe = {
+      ...input,
+      steps: [...input.steps, ...reads.map((row) => call('getWidget', [row.ref]))],
+    };
+    const { trace } = await runScenario(probe);
+    for (const [index, entry] of engines(trace, 'apply').entries()) {
+      const response = responses[index];
+      if (!response?.value) continue;
+      const op = object(array(object(array(entry.args)[0]).ops)[0]);
+      if (op.type !== 'forms.create') continue;
+      const widgets = array(object(op.draft).widgets),
+        rows = array(object(array(object(response.value).items)[0]).widgets);
+      for (const [at, placementValue] of widgets.entries()) {
+        const placement = object(placementValue),
+          widgetNumber = array(op.widgetObjectNumbers)[at],
+          matched = rows.find((value) => object(object(value).ref).objectNumber === widgetNumber);
+        if (input.name === 'auto-select-waits-for-a-stable-world' && index === 2 && !matched)
+          continue;
+        assert.ok(matched, input.name + ' created widget row');
+        const result = WidgetDTOSchema.parse(matched);
+        const readIndex = reads.findIndex(
+          (row) => row.ref.kind === 'objectNumber' && row.ref.objectNumber === widgetNumber,
+        );
+        assert.ok(readIndex >= 0);
+        const confirmed = WidgetDTOSchema.parse(returned(trace, input.steps.length + readIndex));
+        for (const key of [
+          'interiorColor',
+          'color',
+          'strokeWidth',
+          'borderStyle',
+          'fontSize',
+          'textAlign',
+          'caption',
+        ])
+          if (key in placement) {
+            assert.deepEqual(object(result)[key], placement[key], input.name + ' supplied ' + key);
+            assert.deepEqual(
+              object(confirmed)[key],
+              placement[key],
+              input.name + ' confirmed ' + key,
+            );
+            checked++;
+          }
+      }
+    }
+  }
+  assert.ok(checked >= 35, 'ordinary create style assertions exercised');
+  const { trace } = await run('place-a-text-field');
+  const op = object(array(object(array(engines(trace, 'apply')[1]!.args)[0]).ops)[0]);
+  assert.equal(object(array(object(op.draft).widgets)[0]).interiorColor, '#ffffff');
+  assert.equal(WidgetDTOSchema.parse(array(returned(trace, 5))[0]).interiorColor, '#ffffff');
+});

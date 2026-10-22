@@ -439,14 +439,17 @@
       "after": {
         "file": "plugins/form-fill.json",
         "name": "a-reset-action-without-a-batch-door",
-        "canonicalInputSha256": "1cbdc4fc4ccfd58a21cb3b437a98d26c3a4910af7f73fc6f931c22b71def5afe",
+        "canonicalInputSha256": "665cffe9417988cc4aa758580db333f602a178969f8b8e27493eb1d4d22dbcea",
         "intent": "The host reset action uses the same current forms.reset operation without an actions plugin or any removed batch API."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/write/reset.ts#createResetWrites",
-        "packages/plugin/form/src/read/fields.ts#valueOf"
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/engine/services/src/features/forms/FormMutator.ts#reset",
+        "packages/engine/core/src/forms/predict.ts#fieldAfterReset",
+        "packages/engine/core/src/mutation/FormMutationResults.ts#formResetFacts"
       ]
     },
     {
@@ -580,14 +583,17 @@
       "after": {
         "file": "plugins/form-fill.json",
         "name": "reset-all",
-        "canonicalInputSha256": "4c0c8135cfbb068ff8dd17a00a0d3d4c7bf8038f4a359a39839992023f5f9bab",
+        "canonicalInputSha256": "a5b997fe04dba72241b6d5106d6c9ea15cad5e7369165b3bbb901d7cc36f5234",
         "intent": "Current reset() selects every fillable resettable field, or explicit refs. Host action exclusion preserves ISO target selection; empty include selects none."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/write/reset.ts#createResetWrites",
-        "packages/plugin/form/src/read/fields.ts#valueOf"
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/engine/services/src/features/forms/FormMutator.ts#reset",
+        "packages/engine/core/src/forms/predict.ts#fieldAfterReset",
+        "packages/engine/core/src/mutation/FormMutationResults.ts#formResetFacts"
       ]
     },
     {
@@ -600,14 +606,17 @@
       "after": {
         "file": "plugins/form-fill.json",
         "name": "reset-all-failures",
-        "canonicalInputSha256": "6da159dd9682df65f655c63d609d41bc8eafe5cbe84264426499c1f3ceaf4570",
+        "canonicalInputSha256": "94a794d75351f548e2359624a6765ddf8140738cbb9715af8636a0c6715c216f",
         "intent": "Explicit denied reset rejects locally; reset waits for the snapshot. Current atomic engine refusal rejects the entire change and the next reset succeeds."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/write/reset.ts#createResetWrites",
-        "packages/plugin/form/src/read/fields.ts#valueOf"
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/engine/services/src/features/forms/FormMutator.ts#reset",
+        "packages/engine/core/src/forms/predict.ts#fieldAfterReset",
+        "packages/engine/core/src/mutation/FormMutationResults.ts#formResetFacts"
       ]
     },
     {
@@ -696,14 +705,16 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "place-a-text-field",
-        "canonicalInputSha256": "4432cd107f03b7b0ab3df5a4e945e2f6d3be75b216d3ba148fdf951a089c05b7",
+        "canonicalInputSha256": "364bb6b8e9fb99d2a527203234a62e09ab4b9588f42c095ef3ae767de5e41d01",
         "intent": "Current create accepts page-space drafts and explicit names. The handler owns auto-naming; engine answers fold without geometry reloads."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/write/fields.ts#createFieldWrites",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -736,7 +747,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "placement-before-the-snapshot",
-        "canonicalInputSha256": "32145b0f59827853f8537a2cef28fd6a13988c71073797a9be5bcbe2c443fc80",
+        "canonicalInputSha256": "1b4cc26d3f342a557ae4fd251730545b80ce7137a6039c37c320a383e2dd0175",
         "intent": "The actual handler names against the current view while the first list is pending; create shows after confirmation and remains after the snapshot loads."
       },
       "disposition": "current-shipping-replacement",
@@ -744,7 +755,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -757,7 +770,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "placement-is-page-bound",
-        "canonicalInputSha256": "79c75f311bb1b6d6ee69d1a9e6f5f866a811399bff6aae928716298d6f0aa9e0",
+        "canonicalInputSha256": "d77a36f7d327c987c91a9e22a6a79412f3e8b5d6fee033e4054c918d256c5cba",
         "intent": "Actual gesture placement clamps overshoots, ignores degenerate drags and unknown pages, and permits one-point geometry."
       },
       "disposition": "current-shipping-replacement",
@@ -765,7 +778,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1044,7 +1059,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "a-click-places-the-tool-default",
-        "canonicalInputSha256": "74df6879b5575fbafe2be0b0ffba9ad8262b120d48aea2422ac8bd6b96911a25",
+        "canonicalInputSha256": "81a32c42cd1486552d77245e649937a5eb1e25d73edc1268c18655fd0c5baa3c",
         "intent": "A real pointer click creates the default text tool draft and selects the final allocated widget in design mode."
       },
       "disposition": "current-shipping-replacement",
@@ -1054,7 +1069,9 @@
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
         "packages/plugin/form/src/write/lending.ts#createWidgetLender",
         "packages/plugin/form/src/services/design.ts#createDesign",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1067,7 +1084,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "a-click-near-the-edge-is-clamped",
-        "canonicalInputSha256": "df832a3bbc9bc3826d24403a5fe1feb4b4f0d3e52e7db62ea963a99b47463afc",
+        "canonicalInputSha256": "41501612856d92506140493158cc5d18fb94f93c0ae5cbb3dd75a5bcc90f081b",
         "intent": "The real listbox tool click clamps its standard size to the page edge."
       },
       "disposition": "current-shipping-replacement",
@@ -1075,7 +1092,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1088,7 +1107,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "a-thin-drag-is-a-drag",
-        "canonicalInputSha256": "a3790cfcd0f9303db0e641403151b250a9af1c3a726e311fa5a13ef0aa471afb",
+        "canonicalInputSha256": "910c1c7081cf2ace4e0fa4ac2dd12e7adcd0c79ea5b192ac2d617c65bf333628",
         "intent": "Without annotation a 100 by 2 drag commits its exact page-space rectangle and the tool static look."
       },
       "disposition": "current-shipping-replacement",
@@ -1096,7 +1115,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1109,7 +1130,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "the-home-page-tracks-through-the-projection",
-        "canonicalInputSha256": "749c3f0f357579a77d4ca3a6da58459030a58cd1d8ed553421dbfa56ead1c0ec",
+        "canonicalInputSha256": "98a92319bdae0f53093301ae2fe4d9c6c28b3f007a6e34d2a4fe09688b414f03",
         "intent": "Cross-page moves use the serialized projection callable, null projections are ignored, and gap releases use the last resolved home-page point."
       },
       "disposition": "current-shipping-replacement",
@@ -1117,7 +1138,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1130,7 +1153,7 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "the-live-preview",
-        "canonicalInputSha256": "4c7d31a3ff7a3e549243bfead8b52bd1b9d3424f8c53a8eff271617f78689ba9",
+        "canonicalInputSha256": "f0e6c188ea4d82a14d36e705defeb243634b9e97eff0fe6012b9480f90e487e9",
         "intent": "The real form placement handler updates annotation page items past the shared drag threshold and clears its preview on release."
       },
       "disposition": "current-shipping-replacement",
@@ -1139,7 +1162,9 @@
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
         "packages/plugin/form/src/write/lending.ts#createWidgetLender",
-        "packages/plugin/form/src/services/design.ts#createDesign"
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1160,7 +1185,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1173,14 +1200,16 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "the-handler-outranks-lower-priorities",
-        "canonicalInputSha256": "c8d6e13824dacb7b0180a7df079c9ca900843cf3f697099e6fc0c777dad9c5d4",
+        "canonicalInputSha256": "6461a5e5fdd135169d27596894319d1dc0226ea1cdec667390c0486be731c881",
         "intent": "The actual priority95 form handler captures before a priority50 observer and reports form-place in gesture events."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
-        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler"
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1200,7 +1229,9 @@
       "task11InputDrift": false,
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
-        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler"
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1213,8 +1244,8 @@
       "after": {
         "file": "plugins/form-design.json",
         "name": "auto-select-waits-for-a-stable-world",
-        "canonicalInputSha256": "47e8dad23913e532dcfd0c05779d6fafafb4e96b0bfdafc621fb9a63770faff7",
-        "intent": "Reserved object numbers make selection immediate; switching away drops it. A later field on another page or with no widget stays unselected."
+        "canonicalInputSha256": "541c98e5cfc855eca1830511f54c3aeddfc996a9c18c3a16892916eba3be725d",
+        "intent": "Reserved object numbers make pending selection immediate; switching tools clears it. The next two immediate engine answers publish another-page/no-widget facts synchronously during stage/apply before form.get, so those authored outcomes stay unselected."
       },
       "disposition": "current-shipping-replacement",
       "task11InputDrift": false,
@@ -1222,7 +1253,9 @@
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
         "packages/plugin/form/src/write/lending.ts#createWidgetLender",
-        "packages/plugin/form/src/services/design.ts#createDesign"
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     },
     {
@@ -1243,7 +1276,9 @@
       "sourceEvidence": [
         "packages/plugin/form/src/connect.ts#connectForm",
         "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
-        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/engine/services/src/features/forms/internal/authorWidget.ts#createUnattachedWidget",
+        "packages/engine/services/src/features/changes/internal/formChanges.ts#fieldResult"
       ]
     }
   ]

@@ -1,4 +1,5 @@
 /** Direct current form scenario inputs and static confirmed answers. No runtime request translation. */
+import { formResetFacts } from '@embedpdf/engine-core/runtime';
 import type {
   ChangeResult,
   DocumentEvent,
@@ -175,13 +176,9 @@ export const resetAnswer = (
   const meta = mutationMeta(n, fields, widgets, undoable);
   return {
     value: { items: [{ type: 'forms.reset', fields, widgets, meta }], meta },
-    events: fields.map((field, index) => ({
+    events: formResetFacts({ fields, widgets, meta }).map((fact, index) => ({
       type: 'forms.valueSet',
-      field,
-      widgets: widgets.filter(
-        (w) => w.field && JSON.stringify(w.field) === JSON.stringify(field.ref),
-      ),
-      meta: mutationMeta(n, [field], widgets),
+      ...fact,
       origin: { ...LOCAL, tx: { id: meta.opId, index, count: fields.length } },
     })),
   };

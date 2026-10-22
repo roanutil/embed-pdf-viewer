@@ -57,6 +57,8 @@ const ROWS = [
 const FORM = snapshot(FIELDS, ROWS);
 const GRACE = text(1, 'name', 'Grace');
 const EMPTY = text(1, 'name', '');
+const RESET_FIELDS = [EMPTY, combobox(3, 'colour', ''), listbox(4, 'colours', [])];
+const RESET_ROWS = [ROWS[0]!, ROWS[2]!, ROWS[3]!];
 const ro = text(6, 'ro', 'r', { readOnly: true });
 const v = (value: string): FormFieldValue => ({ value });
 const set = (n: number, value: string): Step => call('setValue', [ref(n), v(value)]);
@@ -532,7 +534,7 @@ const cases: ScenarioCase[] = [
       call('resetFormAction', [[], false]),
     ],
     FORM,
-    [apply(resetAnswer(1, [EMPTY], [ROWS[0]!]))],
+    [apply(resetAnswer(1, RESET_FIELDS, RESET_ROWS))],
   ),
   scenario(
     'close-unsubscribes',
@@ -673,7 +675,7 @@ const cases: ScenarioCase[] = [
     ],
     snapshot([...FIELDS, pushbutton(12, 'go')], ROWS),
     [
-      apply(resetAnswer(1, [EMPTY, combobox(3, 'colour', ''), listbox(4, 'colours', [])], ROWS)),
+      apply(resetAnswer(1, RESET_FIELDS, RESET_ROWS)),
       apply(resetAnswer(2, [], [], false)),
       apply(resetAnswer(3, [], [], false)),
     ],
@@ -688,7 +690,7 @@ const cases: ScenarioCase[] = [
         a: doc([
           list(FORM, { defer: 'first' }),
           refused('reset atomic refusal'),
-          apply(resetAnswer(2, [EMPTY], [ROWS[0]!])),
+          apply(resetAnswer(2, RESET_FIELDS, RESET_ROWS)),
         ]),
         b: doc([list(FORM)], gate),
       },

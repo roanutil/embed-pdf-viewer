@@ -3,6 +3,7 @@ import type {
   FormFieldDraft,
   FormFieldPatch,
   WidgetPlacement,
+  WidgetAppearance,
 } from '@embedpdf/engine-core/runtime';
 import type { ScenarioCase, Step } from '../scenario';
 import type { ScenarioSuite } from '../vectors';
@@ -49,6 +50,12 @@ const NEW = text(10001, 'text_1', '', {}, [placed(10002)]);
 const NEW_ROW = row(10002, NEW.ref, 1, BOX);
 const NEW2 = text(10003, 'text_2', '', {}, [placed(10004)]);
 const NEW_ROW2 = row(10004, NEW2.ref, 1, BOX);
+const PALETTE_CHROME: WidgetAppearance = {
+  color: '#6b7280',
+  interiorColor: '#ffffff',
+  strokeWidth: 1,
+};
+const PALETTE_TEXT: WidgetAppearance = { ...PALETTE_CHROME, fontSize: 12 };
 const EXISTING = text(1, 'text_1', 'taken');
 const PATCH: FormFieldPatch = { name: 'renamed' };
 const pointer = (
@@ -155,7 +162,7 @@ const cases: ScenarioCase[] = [
       apply(fieldAnswer('forms.create', 1, { ...NEW, name: 'text_3' }, [NEW_ROW])),
       apply(
         fieldAnswer('forms.create', 2, { ...NEW2, name: 'text_4', widgets: [placed(10004, 2)] }, [
-          row(10004, ref(10003), 2, BOX),
+          row(10004, ref(10003), 2, BOX, { interiorColor: '#ffffff', strokeWidth: 1 }),
         ]),
       ),
     ],
@@ -233,7 +240,7 @@ const cases: ScenarioCase[] = [
           list(snapshot([EXISTING]), { defer: 'list' }),
           apply(
             fieldAnswer('forms.create', 1, NEW, [
-              row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }),
+              row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
             ]),
           ),
         ]),
@@ -249,7 +256,7 @@ const cases: ScenarioCase[] = [
         'list',
         snapshot(
           [EXISTING, NEW],
-          [row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 })],
+          [row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT)],
         ),
       ),
       call('list'),
@@ -276,12 +283,12 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 0, y: 790, width: 600, height: 10 }),
+          row(10002, NEW.ref, 1, { x: 0, y: 790, width: 600, height: 10 }, PALETTE_TEXT),
         ]),
       ),
       apply(
         fieldAnswer('forms.create', 2, NEW2, [
-          row(10004, NEW2.ref, 1, { x: 599, y: 799, width: 1, height: 1 }),
+          row(10004, NEW2.ref, 1, { x: 599, y: 799, width: 1, height: 1 }, PALETTE_TEXT),
         ]),
       ),
     ],
@@ -527,7 +534,7 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }),
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
         ]),
       ),
     ],
@@ -551,7 +558,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 460, y: 0, width: 140, height: 72 },
-              { fieldFamily: 'listbox' },
+              { ...PALETTE_TEXT, fieldFamily: 'listbox' },
             ),
           ],
         ),
@@ -574,7 +581,7 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 50, y: 50, width: 100, height: 2 }),
+          row(10002, NEW.ref, 1, { x: 50, y: 50, width: 100, height: 2 }, PALETTE_TEXT),
         ]),
       ),
     ],
@@ -618,7 +625,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 10, y: 10, width: 100, height: 50 },
-              { fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
             ),
           ],
         ),
@@ -636,7 +643,7 @@ const cases: ScenarioCase[] = [
               ref(10003),
               1,
               { x: 10, y: 10, width: 50, height: 30 },
-              { fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
             ),
           ],
         ),
@@ -674,7 +681,7 @@ const cases: ScenarioCase[] = [
               ref(10001),
               1,
               { x: 10, y: 10, width: 50, height: 30 },
-              { fieldFamily: 'checkbox' },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
             ),
           ],
         ),
@@ -717,7 +724,7 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }),
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
         ]),
       ),
     ],
@@ -760,7 +767,7 @@ const cases: ScenarioCase[] = [
   },
   scenario(
     'auto-select-waits-for-a-stable-world',
-    'Reserved object numbers make selection immediate; switching away drops it. A later field on another page or with no widget stays unselected.',
+    'Reserved object numbers make pending selection immediate; switching tools clears it. The next two immediate engine answers publish another-page/no-widget facts synchronously during stage/apply before form.get, so those authored outcomes stay unselected.',
     [
       tool('form-text'),
       ...click(),
@@ -768,7 +775,7 @@ const cases: ScenarioCase[] = [
       settle(
         'slow',
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }),
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
         ]).value,
       ),
       anno('selection.list'),
@@ -782,13 +789,13 @@ const cases: ScenarioCase[] = [
     [
       apply(
         fieldAnswer('forms.create', 1, NEW, [
-          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }),
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
         ]),
         { defer: 'slow' },
       ),
       apply(
         fieldAnswer('forms.create', 2, { ...NEW2, widgets: [placed(10004, 2)] }, [
-          row(10004, NEW2.ref, 2, BOX),
+          row(10004, NEW2.ref, 2, BOX, PALETTE_TEXT),
         ]),
       ),
       apply(fieldAnswer('forms.create', 3, text(10005, 'text_3', '', {}, []))),
