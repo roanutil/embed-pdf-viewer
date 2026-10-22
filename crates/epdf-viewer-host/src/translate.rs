@@ -74,10 +74,11 @@ pub enum Decode {
     /// `signatures.cancel`'s `{ result }`, its `cancelled` status the
     /// kernel's `aborted`.
     SigningCancel,
-    /// Width, height and stride, with the pixels moved into the `HostTable`
-    /// behind a `$host` id, plus what the render plugin and its ffi read:
-    /// the pixel format as `PageRaster` spells it and a raw-pixel `source`
-    /// carrying the byte count.
+    /// `pages.render`'s `raster` (`PageRaster`: width, height, stride and
+    /// pixel format) beside the answer's `page` and `area`, with the pixels
+    /// moved into the `HostTable` behind a `$host` id, plus a raw-pixel
+    /// `source` carrying the byte count, as the render plugin and its ffi
+    /// read them.
     Raster,
     Unit,
     /// An annotation's embedded file: the result (`name`, `mimeType`,
@@ -97,9 +98,10 @@ pub enum Decode {
     /// Bytes in the first payload, put back into the result as `bytes`
     /// (`{"$bytes": base64}`), as the form plugin reads an export.
     ExportBytes,
-    /// `pages.renderEncoded`: width, height and type in the result, the
-    /// encoded bytes as the payload, answered as the `PageImage` a local
-    /// engine gives the stamp plugin (`source.kind == "bytes"`).
+    /// `pages.renderEncoded`: the answer's `image` (`EncodedImageWire`:
+    /// type, width, height), the encoded bytes as the payload, answered as
+    /// the `PageImage` a local engine gives the stamp plugin
+    /// (`source.kind == "bytes"`).
     Encoded,
     /// A read that answers `null` for nothing there (`pieceInfo.read` for
     /// an application with no entry), else the result as the host sent it.
@@ -3496,11 +3498,16 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .into_iter()
                 .next()
                 .ok_or_else(|| malformed("an encoded render without its bytes".into()))?;
-            let content_type = take(&mut result, "mimeType")?;
+            // `{image: {contentType, width, height, bytes}}`
+            // (`EncodedImageWire`), the bytes payload 0.
+            let Value::Object(mut image) = take(&mut result, "image")? else {
+                return Err(malformed("an encoded render whose image is not an object".into()));
+            };
+            let content_type = take(&mut image, "contentType")?;
             serde_json::json!({
                 "contentType": content_type,
-                "width": result.remove("width").unwrap_or(Value::Null),
-                "height": result.remove("height").unwrap_or(Value::Null),
+                "width": image.remove("width").unwrap_or(Value::Null),
+                "height": image.remove("height").unwrap_or(Value::Null),
                 "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
             })
         }
@@ -3510,6 +3517,18 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .into_iter()
                 .next()
                 .ok_or_else(|| malformed("a raster without its pixels".into()))?;
+            // `{page, area, raster: {width, height, stride, color,
+            // premultipliedAlpha, data}}` (`PageRaster`), the pixels payload
+            // 0. The kernel reads the raster's fields beside `page` and
+            // `area`, as this host answered them before they were nested.
+            let Value::Object(raster) = take(&mut result, "raster")? else {
+                return Err(malformed("a render whose raster is not an object".into()));
+            };
+            for (key, value) in raster {
+                if key != "data" {
+                    result.insert(key, value);
+                }
+            }
             let dimension = |key: &str| {
                 result.get(key).and_then(Value::as_u64).ok_or_else(|| {
                     malformed(format!("a raster without a whole \"{key}\": {result:?}"))
@@ -3525,11 +3544,6 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                     bytes.len()
                 )));
             }
-            // `PageRaster`'s pixel format: the host renders through
-            // `FPDF_REVERSE_BYTE_ORDER` into RGBA with straight alpha
-            // (`epdf_engine::features::render::raster::PageRaster`).
-            result.insert("color".into(), "rgba8".into());
-            result.insert("premultipliedAlpha".into(), false.into());
             result.insert(
                 "source".into(),
                 serde_json::json!({ "kind": "pixels", "$byteLength": bytes.len() }),

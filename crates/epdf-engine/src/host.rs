@@ -725,8 +725,13 @@ impl Host {
                 // page that was.
                 let page = crate::identity::PageRef::new(rendered.page_object_number);
                 let page_count = rendered.page_count;
-                let (mut answer, payload) = if header.kind == "document.renderPageFile" {
-                    (raster_json(&rendered.raster), rendered.raster.rgba)
+                // `{tag, page, pageCount, raster | image}`
+                // (`handleDocumentRenderPageFile`, `encodeRendered`), the
+                // pixels or the image's bytes payload 0.
+                let mut answer = serde_json::json!({});
+                let payload = if header.kind == "document.renderPageFile" {
+                    answer["raster"] = raster_json(&rendered.raster, 0);
+                    rendered.raster.rgba
                 } else {
                     let encode: crate::features::server::RenderEncode = field(body, "encode")?;
                     let encoded = crate::features::server::encode_raster(
@@ -735,7 +740,8 @@ impl Host {
                         &encode,
                         cancel,
                     )?;
-                    (encoded_json(&encoded), encoded.bytes)
+                    answer["image"] = encoded_json(&encoded, 0);
+                    encoded.bytes
                 };
                 answer["page"] = value(&page)?;
                 answer["pageCount"] = page_count.into();
@@ -1059,12 +1065,13 @@ impl Host {
                     f::render::raster::render_page_area(page, &options, cancel)
                 })?;
                 if header.kind == "pages.render" {
-                    // `{tag, page, area, raster}`: the raster's fields stay
-                    // at the top beside its pixels, as this host has always
-                    // answered them.
-                    let mut answer = raster_json(&rendered.raster);
-                    answer["page"] = body.get("page").cloned().unwrap_or_default();
-                    answer["area"] = value(&rendered.area)?;
+                    // `{tag, page, area, raster}` (`handlePagesRender`), the
+                    // pixels payload 0.
+                    let answer = serde_json::json!({
+                        "page": body.get("page").cloned().unwrap_or_default(),
+                        "area": value(&rendered.area)?,
+                        "raster": raster_json(&rendered.raster, 0),
+                    });
                     return Ok(HostResponse {
                         json: envelope(answer),
                         payloads: vec![rendered.raster.rgba],
@@ -1077,7 +1084,11 @@ impl Host {
                     &encode,
                     cancel,
                 )?;
-                Ok(encoded_response(encoded))
+                // `{tag, image}` (`encodeRendered`), the bytes payload 0.
+                Ok(HostResponse {
+                    json: envelope(serde_json::json!({ "image": encoded_json(&encoded, 0) })),
+                    payloads: vec![encoded.bytes],
+                })
             }
             "annotations.renderAppearances" | "annotations.renderAppearancesEncoded" => {
                 let family: f::annotation::appearance::AnnotationFamily = field(body, "family")?;
@@ -1111,10 +1122,7 @@ impl Host {
                     });
                     match &encode {
                         None => {
-                            let mut raster = raster_json(&appearance.raster);
-                            raster["color"] = "rgba8".into();
-                            raster["premultipliedAlpha"] = false.into();
-                            entry["raster"] = raster;
+                            entry["raster"] = raster_json(&appearance.raster, payloads.len());
                             payloads.push(appearance.raster.rgba);
                         }
                         Some(encode) => {
@@ -1124,7 +1132,7 @@ impl Host {
                                 encode,
                                 cancel,
                             )?;
-                            entry["image"] = encoded_json(&image);
+                            entry["image"] = encoded_json(&image, payloads.len());
                             payloads.push(image.bytes);
                         }
                     }
@@ -2734,27 +2742,34 @@ fn value<T: Serialize>(result: &T) -> Result<serde_json::Value, EngineError> {
     })
 }
 
-/// What a raster's JSON says about the pixels in its payload.
-fn raster_json(raster: &crate::features::render::raster::PageRaster) -> serde_json::Value {
+/// A raster as `PageRaster` (`raster` in the render answers), its pixels
+/// the response's `payload`-th payload as its `data`.
+fn raster_json(
+    raster: &crate::features::render::raster::PageRaster,
+    payload: usize,
+) -> serde_json::Value {
     serde_json::json!({
         "width": raster.width,
         "height": raster.height,
         "stride": raster.stride,
+        // The renderer asks PDFium for RGBA with straight alpha.
+        "color": "rgba8",
+        "premultipliedAlpha": false,
+        "data": { "payload": payload },
     })
 }
 
-/// A response whose result is an encoded image.
-fn encoded_response(encoded: crate::features::server::EncodedImage) -> HostResponse {
-    HostResponse { json: envelope(encoded_json(&encoded)), payloads: vec![encoded.bytes] }
-}
-
-/// What an encoded image's JSON says about the bytes in its payload.
-fn encoded_json(encoded: &crate::features::server::EncodedImage) -> serde_json::Value {
+/// An encoded image as `EncodedImageWire` (`image` in the encoded answers,
+/// `encodeRaster`), its bytes the response's `payload`-th payload.
+fn encoded_json(
+    encoded: &crate::features::server::EncodedImage,
+    payload: usize,
+) -> serde_json::Value {
     serde_json::json!({
-        "mimeType": encoded.content_type,
+        "contentType": encoded.content_type,
         "width": encoded.width,
         "height": encoded.height,
-        "size": encoded.bytes.len(),
+        "bytes": { "payload": payload },
     })
 }
 

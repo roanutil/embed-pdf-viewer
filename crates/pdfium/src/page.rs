@@ -7,8 +7,148 @@ use crate::{Bitmap, Document, PdfiumError, RectF, TextPage};
 
 /// Emit RGBA byte order rather than PDFium's native BGRA.
 const FPDF_REVERSE_BYTE_ORDER: i32 = 0x10;
-/// Draw annotation appearances along with the page content.
+/// `FPDF_ANNOT`: the annotations, form fields' widgets excepted.
 const FPDF_RENDER_ANNOT: i32 = 0x01;
+/// `EPDF_RENDER_WIDGETS`: the form fields' widgets.
+const EPDF_RENDER_WIDGETS: i32 = 0x8000;
+/// `FPDF_PRINTING`: the print rules. Layers take their print state, and
+/// annotations and widgets draw by their `print` flag (no-view ones too).
+const FPDF_PRINTING: i32 = 0x800;
+/// A sliced render paused, to be continued.
+const FPDF_RENDER_TOBECONTINUED: i32 = 1;
+/// A sliced render finished.
+const FPDF_RENDER_DONE: i32 = 2;
+
+/// What a page render draws beside the page content, and by which rules
+/// (`PageRenderReader`'s flags).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct RenderFlags {
+    /// The annotations, form fields' widgets excepted (`FPDF_ANNOT`).
+    pub annotations: bool,
+    /// The form fields' widgets (`EPDF_RENDER_WIDGETS`).
+    pub widgets: bool,
+    /// The print rules rather than the screen's (`FPDF_PRINTING`).
+    pub printing: bool,
+}
+
+impl RenderFlags {
+    /// The flags PDFium takes, RGBA byte order always.
+    fn bits(self) -> i32 {
+        let mut flags = FPDF_REVERSE_BYTE_ORDER;
+        if self.annotations {
+            flags |= FPDF_RENDER_ANNOT;
+        }
+        if self.widgets {
+            flags |= EPDF_RENDER_WIDGETS;
+        }
+        if self.printing {
+            flags |= FPDF_PRINTING;
+        }
+        flags
+    }
+}
+
+/// Why a sliced render gave no pixels: PDFium's refusal, or the caller's own
+/// error from between two slices.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SlicedRender<E> {
+    Pdfium(PdfiumError),
+    Stopped(E),
+}
+
+/// A filled bitmap over a pixel buffer this layer owns, with the matrix and
+/// clip a page render draws through. Destroys the bitmap when dropped; the
+/// pixels outlive it ([`RenderTarget::into_bitmap`]).
+struct RenderTarget {
+    bitmap: pdfium_sys::FPDF_BITMAP,
+    matrix: pdfium_sys::FS_MATRIX,
+    clip: pdfium_sys::FS_RECTF,
+    width: u32,
+    height: u32,
+    stride: u32,
+    pixels: Vec<u8>,
+}
+
+impl RenderTarget {
+    fn new(
+        width: u32,
+        height: u32,
+        matrix: [f64; 6],
+        opaque_background: bool,
+    ) -> Result<Self, PdfiumError> {
+        let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
+        let mut pixels = Vec::new();
+        pixels.try_reserve_exact(len).map_err(|_| PdfiumError::OutOfMemory)?;
+        pixels.resize(len, 0u8);
+
+        // SAFETY: the buffer is exactly stride * height bytes, proved by
+        // bitmap_layout, and it outlives the bitmap handle, which `Drop`
+        // destroys before the buffer is freed or moved out.
+        let bitmap = unsafe {
+            pdfium_sys::FPDFBitmap_CreateEx(
+                native_width,
+                native_height,
+                pdfium_sys::FPDFBitmap_BGRA as i32,
+                pixels.as_mut_ptr() as *mut c_void,
+                native_stride,
+            )
+        };
+        if bitmap.is_null() {
+            return Err(PdfiumError::Bitmap);
+        }
+        // SAFETY: the bitmap was created above.
+        unsafe {
+            pdfium_sys::FPDFBitmap_FillRect(
+                bitmap,
+                0,
+                0,
+                native_width,
+                native_height,
+                if opaque_background { 0xFFFF_FFFF } else { 0x0000_0000 },
+            );
+        }
+        Ok(Self {
+            bitmap,
+            matrix: pdfium_sys::FS_MATRIX {
+                a: matrix[0] as f32,
+                b: matrix[1] as f32,
+                c: matrix[2] as f32,
+                d: matrix[3] as f32,
+                e: matrix[4] as f32,
+                f: matrix[5] as f32,
+            },
+            // The clip is the whole bitmap. A narrower one belongs in the
+            // matrix, where it also scales; clipping here would crop instead.
+            clip: pdfium_sys::FS_RECTF {
+                left: 0.0,
+                top: 0.0,
+                right: width as f32,
+                bottom: height as f32,
+            },
+            width,
+            height,
+            stride: native_stride as u32,
+            pixels,
+        })
+    }
+
+    /// The pixels, the bitmap destroyed first.
+    fn into_bitmap(mut self) -> Bitmap {
+        let bgra = std::mem::take(&mut self.pixels);
+        let (width, height, stride) = (self.width, self.height, self.stride);
+        // Drops here, destroying the bitmap; `pixels` is already out, and
+        // its heap buffer did not move.
+        drop(self);
+        Bitmap { width, height, stride, bgra }
+    }
+}
+
+impl Drop for RenderTarget {
+    fn drop(&mut self) {
+        // SAFETY: created in `new` and destroyed exactly once, here.
+        unsafe { pdfium_sys::FPDFBitmap_Destroy(self.bitmap) };
+    }
+}
 
 /// The turn an appearance render takes back out.
 ///
@@ -93,11 +233,14 @@ impl<'a> PageView<'a> {
     /// The five calls, in this order and with this fill colour, are what the
     /// frozen vectors were generated from. Changing either changes the pixels
     /// and breaks the golden comparison on every host.
-    /// Render a region through a caller-supplied affine, into RGBA.
+    /// Render a region through a caller-supplied affine, into RGBA, in one
+    /// call (`FPDF_RenderPageBitmapWithMatrix`).
     ///
-    /// The general form. [`PageView::render_bgra`] is the whole page at a
-    /// size; this is what a viewport, a rotation and a sub-rect all become,
-    /// and it is the only entry point `epdf_engine::features::render` uses.
+    /// [`PageView::render_bgra`] is the whole page at a size; this is what a
+    /// viewport, a rotation and a sub-rect all become.
+    /// `epdf_engine::features::render` renders through
+    /// [`PageView::render_rgba_with_matrix_in_slices`], whose pixels are
+    /// these, however it is sliced.
     ///
     /// RGBA rather than BGRA, through `FPDF_REVERSE_BYTE_ORDER`. The
     /// TypeScript does the same and its callers receive `rgba8`; converting in
@@ -114,70 +257,79 @@ impl<'a> PageView<'a> {
         height: u32,
         matrix: [f64; 6],
         opaque_background: bool,
-        include_annotations: bool,
+        flags: RenderFlags,
     ) -> Result<Bitmap, PdfiumError> {
-        let (native_width, native_height, native_stride, len) = bitmap_layout(width, height)?;
-        let mut pixels = Vec::new();
-        pixels.try_reserve_exact(len).map_err(|_| PdfiumError::OutOfMemory)?;
-        pixels.resize(len, 0u8);
+        let target = RenderTarget::new(width, height, matrix, opaque_background)?;
+        // SAFETY: the bitmap is live until `target` drops, after this call;
+        // the matrix and clip are fields of `target`.
+        unsafe {
+            pdfium_sys::FPDF_RenderPageBitmapWithMatrix(
+                target.bitmap,
+                self.handle,
+                &target.matrix,
+                &target.clip,
+                flags.bits(),
+            );
+        }
+        Ok(target.into_bitmap())
+    }
 
-        // SAFETY: the buffer is exactly stride * height bytes, proved by
-        // bitmap_layout, and it outlives the bitmap handle destroyed below.
-        let bitmap = unsafe {
-            pdfium_sys::FPDFBitmap_CreateEx(
-                native_width,
-                native_height,
-                pdfium_sys::FPDFBitmap_BGRA as i32,
-                pixels.as_mut_ptr() as *mut c_void,
-                native_stride,
+    /// [`PageView::render_rgba_with_matrix`] in slices
+    /// (`EPDF_RenderPageBitmapWithMatrix_Start`, `EPDF_RenderPage_Continue`),
+    /// as `PageRenderReader.render` draws: PDFium works for `budget_ms` at a
+    /// time (0 pauses at every chance), and `between` runs between two
+    /// slices. An error from `between` stops the render there, and is
+    /// answered as [`SlicedRender::Stopped`]. However the render is sliced,
+    /// the pixels are those of the one-call render.
+    ///
+    /// The render is closed (`FPDF_RenderPage_Close`) whatever happened, and
+    /// before the bitmap it draws into is freed.
+    #[allow(clippy::too_many_arguments)]
+    pub fn render_rgba_with_matrix_in_slices<E>(
+        &self,
+        width: u32,
+        height: u32,
+        matrix: [f64; 6],
+        opaque_background: bool,
+        flags: RenderFlags,
+        budget_ms: u32,
+        mut between: impl FnMut() -> Result<(), E>,
+    ) -> Result<Bitmap, SlicedRender<E>> {
+        let target = RenderTarget::new(width, height, matrix, opaque_background)
+            .map_err(SlicedRender::Pdfium)?;
+        let budget = i32::try_from(budget_ms).unwrap_or(i32::MAX);
+        // SAFETY: the bitmap is live until `target` drops, which is after
+        // the render is closed below; the matrix and clip are fields of
+        // `target`, and the page handle is live for `self`'s borrow.
+        let mut status = unsafe {
+            pdfium_sys::EPDF_RenderPageBitmapWithMatrix_Start(
+                target.bitmap,
+                self.handle,
+                &target.matrix,
+                &target.clip,
+                flags.bits(),
+                budget,
             )
         };
-        if bitmap.is_null() {
-            return Err(PdfiumError::Bitmap);
+        let mut stopped = None;
+        while status == FPDF_RENDER_TOBECONTINUED {
+            if let Err(e) = between() {
+                stopped = Some(e);
+                break;
+            }
+            // SAFETY: a render of this page is in progress, started above.
+            status = unsafe { pdfium_sys::EPDF_RenderPage_Continue(self.handle, budget) };
         }
-
-        let fs_matrix = pdfium_sys::FS_MATRIX {
-            a: matrix[0] as f32,
-            b: matrix[1] as f32,
-            c: matrix[2] as f32,
-            d: matrix[3] as f32,
-            e: matrix[4] as f32,
-            f: matrix[5] as f32,
-        };
-        // The clip is the whole bitmap. A narrower one belongs in the matrix,
-        // where it also scales; clipping here would crop instead.
-        let clip = pdfium_sys::FS_RECTF {
-            left: 0.0,
-            top: 0.0,
-            right: width as f32,
-            bottom: height as f32,
-        };
-
-        let mut flags = FPDF_REVERSE_BYTE_ORDER;
-        if include_annotations {
-            flags |= FPDF_RENDER_ANNOT;
+        // SAFETY: called once after every start, whatever it returned, and
+        // before `target` frees the bitmap the render draws into.
+        unsafe { pdfium_sys::FPDF_RenderPage_Close(self.handle) };
+        if let Some(e) = stopped {
+            return Err(SlicedRender::Stopped(e));
         }
-
-        unsafe {
-            pdfium_sys::FPDFBitmap_FillRect(
-                bitmap,
-                0,
-                0,
-                native_width,
-                native_height,
-                if opaque_background { 0xFFFF_FFFF } else { 0x0000_0000 },
-            );
-            pdfium_sys::FPDF_RenderPageBitmapWithMatrix(
-                bitmap,
-                self.handle,
-                &fs_matrix,
-                &clip,
-                flags,
-            );
-            pdfium_sys::FPDFBitmap_Destroy(bitmap);
+        if status != FPDF_RENDER_DONE {
+            return Err(SlicedRender::Pdfium(PdfiumError::Render));
         }
-
-        Ok(Bitmap { width, height, stride: native_stride as u32, bgra: pixels })
+        Ok(target.into_bitmap())
     }
 
     /// Renders ONE annotation's appearance stream into a transparent bitmap.

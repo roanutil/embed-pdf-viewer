@@ -965,3 +965,67 @@ fn a_budget_past_an_appearances_size_refuses_in_upstreams_words() {
          (or tiles, once available)"
     );
 }
+
+/// An encoder that answers one byte per pixel row.
+struct RowsEncoder;
+
+impl epdf_engine::features::server::ImageEncoder for RowsEncoder {
+    fn encode(
+        &self,
+        raster: &epdf_engine::features::render::raster::PageRaster,
+        _: &epdf_engine::features::server::RenderEncode,
+    ) -> Result<epdf_engine::features::server::EncodedImage, epdf_engine::error::EngineError> {
+        Ok(epdf_engine::features::server::EncodedImage {
+            content_type: "image/png".into(),
+            width: raster.width,
+            height: raster.height,
+            bytes: vec![7; raster.height as usize],
+        })
+    }
+}
+
+#[test]
+fn each_appearance_answers_its_picture_in_upstreams_shape() {
+    // A raster is `PageRaster` and an image `EncodedImageWire`
+    // (`encodeRaster`): its `data` or `bytes` the payload at its index.
+    let mut host = host_with(states_pdf());
+    let (answer, payloads) = host_render(&mut host, 3, "widgets", None);
+    let appearances = answer["result"]["appearances"].as_array().expect("appearances");
+    assert_eq!(appearances.len(), payloads.len());
+    for (i, appearance) in appearances.iter().enumerate() {
+        let raster = &appearance["raster"];
+        assert_eq!(raster["color"], "rgba8", "{raster}");
+        assert_eq!(raster["premultipliedAlpha"], false, "{raster}");
+        assert_eq!(raster["data"], json!({ "payload": i }), "{raster}");
+    }
+
+    let mut host = Host::new().with_encoder(Box::new(RowsEncoder));
+    let opened = host.call(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "doc",
+            "password": null })
+        .to_string(),
+        vec![states_pdf()],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let response = host.call(
+        &json!({ "kind": "annotations.renderAppearancesEncoded", "effect": "read", "jobId": 2,
+            "docId": "doc", "page": { "kind": "objectNumber", "objectNumber": 3 },
+            "family": "widgets", "encode": { "format": "png" } })
+        .to_string(),
+        Vec::new(),
+    );
+    let answer: Value = serde_json::from_str(&response.json).expect("JSON");
+    let appearances = answer["result"]["appearances"].as_array().expect("appearances");
+    assert_eq!(appearances.len(), 5, "{answer}");
+    for (i, appearance) in appearances.iter().enumerate() {
+        let image = &appearance["image"];
+        assert_eq!(
+            *image,
+            json!({ "contentType": "image/png", "width": 40, "height": 40,
+                "bytes": { "payload": i } }),
+            "{answer}"
+        );
+        assert!(appearance.get("raster").is_none(), "{answer}");
+        assert_eq!(response.payloads[i], vec![7; 40]);
+    }
+}

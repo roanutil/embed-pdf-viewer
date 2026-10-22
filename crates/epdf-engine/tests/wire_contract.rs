@@ -345,7 +345,7 @@ fn a_file_render_takes_its_target_in_page_space() {
     let body = render(&mut host, serde_json::json!({ "x": 0, "y": 0, "width": 100, "height": 40 }));
     assert!(body.get("error").is_none(), "{body}");
     assert_eq!(
-        (body["result"]["width"].as_u64(), body["result"]["height"].as_u64()),
+        (body["result"]["raster"]["width"].as_u64(), body["result"]["raster"]["height"].as_u64()),
         (Some(50), Some(20))
     );
     let body =
@@ -633,5 +633,9 @@ fn a_file_render_names_the_page_it_rendered() {
     assert_eq!(body["result"]["page"]["kind"], "objectNumber", "{body}");
     assert!(body["result"]["page"]["objectNumber"].as_u64().is_some_and(|n| n > 0), "{body}");
     assert!(body["result"]["pageCount"].as_u64().is_some_and(|n| n > 0), "{body}");
+    // `{tag, page, pageCount, raster}`, the pixels payload 0.
+    assert_eq!(body["result"]["raster"]["color"], "rgba8", "{body}");
+    assert_eq!(body["result"]["raster"]["premultipliedAlpha"], false, "{body}");
+    assert_eq!(body["result"]["raster"]["data"], serde_json::json!({ "payload": 0 }), "{body}");
     assert_eq!(response.payloads.len(), 1, "the pixels ride as the payload");
 }

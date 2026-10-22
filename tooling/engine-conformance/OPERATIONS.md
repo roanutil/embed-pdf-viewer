@@ -36,7 +36,7 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `pages.render` | A | 1 | non-preemptible | ported | Cooperative up to FPDF_RenderPageBitmapWithMatrix (PageRenderReader.ts:51), which cannot be interrupted. Rust takes the target in page space and answers page and area, converting both at the host boundary (page_space::boundary, pdfRenderTargetOf); usage, the dpi viewport and includeFormFields are not read yet. |
+| `pages.render` | A | 1 | cooperative | ported | Renders in slices (EPDF_RenderPageBitmapWithMatrix_Start/EPDF_RenderPage_Continue, 33ea7b4c9); Rust checks the cancel token between slices inside the synchronous call and does not yield to other jobs. Reads usage, the dpi viewport (checkRenderUsage with no rights, printScale, FPDF_PRINTING) and includeFormFields (resolvePageLayers, EPDF_RENDER_WIDGETS). Takes the target in page space and answers {page, area, raster}, the pixels payload 0; page and area convert at the host boundary (page_space::boundary, pdfRenderTargetOf). |
 | `fonts.register` | A | 1 | queued-only | routed | Engine-level, not per document. One Rust FontRegistry per combined worker owns the key-to-ID map and the retained handles. |
 | `fonts.addFallback` | A | 1 | queued-only | routed |  |
 | `fonts.clearFallbacks` | A | 1 | queued-only | routed |  |
@@ -154,10 +154,10 @@ cancellation case it has to document. Group assignments come from
 
 | Operation | Stage | Phase | Cancellation | Rust | Note |
 | --- | --- | --- | --- | --- | --- |
-| `pages.renderEncoded` | C | 5 | non-preemptible | routed | Sole owner of the wire kind; the raster step comes from G4 internal entry point. Encoding stays host-injected. Rust takes the target in page space, as pages.render does. |
+| `pages.renderEncoded` | C | 5 | non-preemptible | routed | Sole owner of the wire kind; the raster step comes from G4 internal entry point, sliced and with pages.render options (usage, dpi viewport, includeFormFields). Encoding stays host-injected and is not interruptible. Rust takes the target in page space, as pages.render does, and answers {image: {contentType, width, height, bytes}}, the bytes payload 0. |
 | `annotations.renderAppearancesEncoded` | C | 5 | non-preemptible | routed |  |
-| `document.renderPageFile` | C | 5 | non-preemptible | routed | The target is page space and converts on the page the render opens (renderOptionsInFileSpace), since no session carries the document to the host boundary. |
-| `document.renderPageFileEncoded` | C | 5 | non-preemptible | routed | The target is page space, as document.renderPageFile takes it. |
+| `document.renderPageFile` | C | 5 | non-preemptible | routed | The target is page space and converts on the page the render opens (renderOptionsInFileSpace), since no session carries the document to the host boundary. Rendered as pages.render renders (sliced, usage, dpi viewport, includeFormFields); answers {page, pageCount, raster}, the pixels payload 0. |
+| `document.renderPageFileEncoded` | C | 5 | non-preemptible | routed | The target is page space, as document.renderPageFile takes it. Answers {page, pageCount, image}, the bytes payload 0. |
 | `signatures.list` | A | 5 | queued-only | routed | No port group in multiplatform-port-order.md covers signing yet; parked in G15 until the port order assigns one. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
 | `signatures.analyze` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |
 | `signatures.contents` | A | 5 | queued-only | routed | WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them. |

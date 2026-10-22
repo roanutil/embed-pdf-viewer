@@ -325,13 +325,18 @@ fn a_raster_decodes_to_the_raw_pixels_the_render_plugin_reads() {
     let pixels = vec![255, 0, 0, 255, 0, 0, 255, 255];
     let decoded = decode(
         &Decode::Raster,
-        raster(r#"{"result":{"width":2,"height":1,"stride":8}}"#, pixels.clone()),
+        raster(
+            r#"{"result":{"page":{"kind":"objectNumber","objectNumber":12},"area":{"x":0,"y":0,"width":2,"height":1},"raster":{"width":2,"height":1,"stride":8,"color":"rgba8","premultipliedAlpha":false,"data":{"payload":0}}}}"#,
+            pixels.clone(),
+        ),
     )
     .unwrap();
     let id = decoded.value["$host"].as_u64().unwrap();
     assert_eq!(
         decoded.value,
         json!({
+            "page": {"kind": "objectNumber", "pageObjectNumber": 12},
+            "area": {"x": 0, "y": 0, "width": 2, "height": 1},
             "width": 2, "height": 1, "stride": 8,
             "color": "rgba8", "premultipliedAlpha": false,
             "source": {"kind": "pixels", "$byteLength": 8},
@@ -344,15 +349,27 @@ fn a_raster_decodes_to_the_raw_pixels_the_render_plugin_reads() {
 
 #[test]
 fn a_raster_whose_pixels_do_not_fit_is_an_error() {
-    let short = raster(r#"{"result":{"width":2,"height":2,"stride":8}}"#, vec![0; 8]);
+    let short = raster(
+        r#"{"result":{"page":{"kind":"objectNumber","objectNumber":12},"area":{"x":0,"y":0,"width":2,"height":1},"raster":{"width":2,"height":2,"stride":8,"color":"rgba8","premultipliedAlpha":false,"data":{"payload":0}}}}"#,
+        vec![0; 8],
+    );
     assert!(decode(&Decode::Raster, short).is_err());
-    let narrow = raster(r#"{"result":{"width":3,"height":1,"stride":8}}"#, vec![0; 8]);
+    let narrow = raster(
+        r#"{"result":{"page":{"kind":"objectNumber","objectNumber":12},"area":{"x":0,"y":0,"width":2,"height":1},"raster":{"width":3,"height":1,"stride":8,"color":"rgba8","premultipliedAlpha":false,"data":{"payload":0}}}}"#,
+        vec![0; 8],
+    );
     assert!(decode(&Decode::Raster, narrow).is_err());
-    let no_stride = raster(r#"{"result":{"width":2,"height":1}}"#, vec![0; 8]);
+    let no_stride = raster(
+        r#"{"result":{"page":{"kind":"objectNumber","objectNumber":12},"area":{"x":0,"y":0,"width":2,"height":1},"raster":{"width":2,"height":1,"color":"rgba8","premultipliedAlpha":false,"data":{"payload":0}}}}"#,
+        vec![0; 8],
+    );
     assert!(decode(&Decode::Raster, no_stride).is_err());
     assert!(
-        decode(&Decode::Raster, answer(r#"{"result":{"width":2,"height":1,"stride":8}}"#)).is_err()
+        decode(&Decode::Raster, answer(r#"{"result":{"page":{"kind":"objectNumber","objectNumber":12},"area":{"x":0,"y":0,"width":2,"height":1},"raster":{"width":2,"height":1,"stride":8,"color":"rgba8","premultipliedAlpha":false,"data":{"payload":0}}}}"#)).is_err()
     );
+    // The flat shape this host answered before 8.31 is not a raster.
+    let flat = raster(r#"{"result":{"width":2,"height":1,"stride":8}}"#, vec![0; 8]);
+    assert!(decode(&Decode::Raster, flat).is_err());
 }
 
 #[test]
@@ -1793,12 +1810,14 @@ fn an_encoded_render_asks_for_png_and_answers_bytes() {
     assert_eq!(call.request["encode"], json!({ "format": "png" }));
     assert!(call.request["options"].get("format").is_none());
     let response = HostResponse {
-        json: r#"{"result":{"mimeType":"image/png","width":64,"height":80,"size":3}}"#.into(),
+        json: r#"{"result":{"image":{"contentType":"image/png","width":64,"height":80,"bytes":{"payload":0}}}}"#
+            .into(),
         payloads: vec![vec![1, 2, 3]],
     };
     let decoded = decode(&Decode::Encoded, response).unwrap();
     assert_eq!(decoded.value["contentType"], json!("image/png"));
     assert_eq!(decoded.value["width"], json!(64));
+    assert_eq!(decoded.value["height"], json!(80));
     assert_eq!(decoded.value["source"]["kind"], json!("bytes"));
     assert_eq!(decoded.value["source"]["bytes"], json!({ "$bytes": "AQID" }));
     let jpeg = json!({ "format": "jpeg" });
@@ -2572,7 +2591,10 @@ fn a_render_target_from_the_kernel_goes_out_in_page_space() {
     let response = call_host(&mut host, &call.request.to_string(), call.payloads);
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(
-        (envelope["result"]["width"].as_u64(), envelope["result"]["height"].as_u64()),
+        (
+            envelope["result"]["raster"]["width"].as_u64(),
+            envelope["result"]["raster"]["height"].as_u64()
+        ),
         (Some(100), Some(50))
     );
     assert_eq!(

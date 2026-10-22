@@ -279,7 +279,9 @@ fn plain_pattern_page() -> Vec<u8> {
 
 fn render_view(page: &pdfium::PageView<'_>) -> Vec<u8> {
     let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-    page.render_rgba_with_matrix(306, 396, identity, true, false).expect("render").bgra
+    page.render_rgba_with_matrix(306, 396, identity, true, pdfium::RenderFlags::default())
+        .expect("render")
+        .bgra
 }
 
 #[test]

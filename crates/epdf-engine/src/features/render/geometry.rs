@@ -48,6 +48,12 @@ pub enum RenderViewport {
     /// An exact output width. Height preserves the region's aspect ratio
     /// after rotation.
     Width { width: f64 },
+    /// A print picture's size (`usage: 'print'` only): `dpi` dots per inch
+    /// of the paper the page prints on, A4 or Letter ([`print_scale`]). The
+    /// wire's `PrintDpi` is 150 or 300; any other number is read, and
+    /// refused by `check_render_usage` naming the `viewport`, as
+    /// `checkRenderUsage` refuses it.
+    Dpi { dpi: f64 },
 }
 
 /// The scale a `scale` viewport has when it names none.
@@ -72,7 +78,27 @@ pub enum RenderBackground {
     Transparent,
 }
 
-/// Device pixel size for a region under a rotation and viewport.
+/// The paper a print picture is sized for, in points: the larger of A4
+/// (595 by 842) and Letter (612 by 792) on each side (`PRINT_PAPER`).
+pub const PRINT_PAPER_LONG: f64 = 842.0;
+/// The short side of [`PRINT_PAPER_LONG`]'s paper.
+pub const PRINT_PAPER_SHORT: f64 = 612.0;
+
+/// The scale (pixels per point) of a print picture of a page `width` by
+/// `height` points big at `dpi` dots per inch of paper (`printScale`). A
+/// page that fits on the paper is drawn at its own size at that DPI; a
+/// bigger one gets no more pixels than it needs shrunk to fit, since the
+/// printer would throw the rest away. Portrait or landscape doesn't matter.
+pub fn print_scale(width: f64, height: f64, dpi: f64) -> f64 {
+    let long = width.max(height);
+    let short = width.min(height);
+    let fit = 1f64.min(PRINT_PAPER_LONG / long).min(PRINT_PAPER_SHORT / short);
+    (dpi / 72.0) * fit
+}
+
+/// Device pixel size for a region under a rotation and viewport
+/// (`renderSize`). A `dpi` viewport sizes a print picture for its paper
+/// ([`print_scale`]).
 ///
 /// Width swaps with height on a quarter turn. Both dimensions are at least 1:
 /// a zero-pixel bitmap is not a smaller picture, it is no picture, and every
@@ -88,7 +114,7 @@ pub fn device_size(
     let base_width = if swap { rect_height } else { rect_width };
     let base_height = if swap { rect_width } else { rect_height };
 
-    match viewport {
+    let scale = match viewport {
         RenderViewport::Width { width } => {
             if !width.is_finite() || width <= 0.0 {
                 return Err(EngineError::with_message(
@@ -100,21 +126,22 @@ pub fn device_size(
             // Height from the ratio rather than from a second scale, so a
             // width request lands on exactly the width that was asked for.
             let out_height = (out_width * base_height / base_width).round().max(1.0);
-            Ok((clamp_dimension(out_width), clamp_dimension(out_height)))
+            return Ok((clamp_dimension(out_width), clamp_dimension(out_height)));
         }
-        RenderViewport::Scale { scale } => {
-            if !scale.is_finite() || scale <= 0.0 {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::InvalidArg,
-                    "render viewport scale must be positive",
-                ));
-            }
-            Ok((
-                clamp_dimension((base_width * scale).round().max(1.0)),
-                clamp_dimension((base_height * scale).round().max(1.0)),
-            ))
-        }
+        RenderViewport::Scale { scale } => scale,
+        // The area as it is, before the turn: a print picture is upright.
+        RenderViewport::Dpi { dpi } => print_scale(rect_width, rect_height, dpi),
+    };
+    if !scale.is_finite() || scale <= 0.0 {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "render viewport scale must be positive",
+        ));
     }
+    Ok((
+        clamp_dimension((base_width * scale).round().max(1.0)),
+        clamp_dimension((base_height * scale).round().max(1.0)),
+    ))
 }
 
 /// A dimension that does not fit in a `u32` is clamped rather than wrapped.

@@ -224,7 +224,7 @@ fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
         .document()
         .page(12)
         .expect("load page 12 of the layer")
-        .render_rgba_with_matrix(612, 792, identity, true, false)
+        .render_rgba_with_matrix(612, 792, identity, true, pdfium::RenderFlags::default())
         .expect("render the layer's page");
     assert!(
         from_layer.bgra.as_chunks::<4>().0.iter().any(|pixel| pixel[..3] != [255, 255, 255]),
@@ -235,7 +235,7 @@ fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
     let from_plain = plain
         .page(12)
         .expect("load page 12")
-        .render_rgba_with_matrix(612, 792, identity, true, false)
+        .render_rgba_with_matrix(612, 792, identity, true, pdfium::RenderFlags::default())
         .expect("render the plain page");
     assert!(from_layer.bgra == from_plain.bgra, "the layer's page renders as the plain page");
 }
