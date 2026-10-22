@@ -1,0 +1,2000 @@
+{
+  "base": "87f9035447cbf80875dfa90b79139f00d3c2db9b",
+  "originalArchiveBase": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "original": 50,
+  "originalScenarios": 22,
+  "originalPure": 28,
+  "current": 57,
+  "currentScenarios": 25,
+  "currentPure": 32,
+  "mapped": 49,
+  "wholeCaseRetirements": 1,
+  "added": 8,
+  "netAdditions": 7,
+  "task11InputDiff": 0,
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "initial-state-and-twins",
+        "inputSha256": "a18b6e5017f69715004d30ebb11fe1c83551dd74ebd39f000a7b88aab4171ec1"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "initial-state-and-twins",
+        "inputSha256": "1b2794238949bc70ec3f8ea12c9d619978aac0e7fe39a86762ba46fbaa27d5ae"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Required DocumentHandle.redaction replaces old optional-service omission. The final valid document now has canApply true. Original absent-service branch is a partial retirement and defensive source gap, not active malformed live coverage.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "mark-the-text-selection",
+        "inputSha256": "54fbacdc42affca20189dd81107f171aff62686ebe7b21ecc1df8ae4aae47ce8"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "mark-the-text-selection",
+        "inputSha256": "3774ba5bbf2d83da77452e594db5986d1f28ddddf6a2ff3b78e48c630789e2c9"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current half-open start/end page refs, page-space $textLayout glyphs, actual ensureLoaded and markSelection; one authored current apply result/event per selected page. Empty selection returns {marks:[]}, replacing old boolean.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "marking-needs-create-authority",
+        "inputSha256": "fc0be12ca6eca8daebd78b915a70fcb17fc432dac38555bf4f4981bfaffe5f3e"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "marking-needs-create-authority",
+        "inputSha256": "e694be42a5337c8f18e47ea55fcd48c8a2ea9754a072dc1f3b5e60632c3f5d76"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current annotations:create permission rejects with PluginError instead of legacy false; assert retained selection and no engine create.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "the-redact-tool",
+        "inputSha256": "756b9644b71557c5820afb85532e1769af12a49c2f20b3419c65a38c19896abb"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "the-redact-tool",
+        "inputSha256": "958fad1d58d6a454b5c05fd469f8315decb8eaf2c6ffaf2f6da97f10c7271364"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire local enable/toggle/isActive tool lens. Direct current interaction getActiveToolId/activateTool/activateDefaultTool plus annotation createPointer preserve composed-tool activation and area geometry.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "without-a-selection-plugin",
+        "inputSha256": "70c92edb9cbc15f0ae0fe12852a66a3c222b23ccaad464511aebb81a0bdc80b9"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "without-a-selection-plugin",
+        "inputSha256": "c76befc50907186e5d3634e54a19a5fa2dd089555267da9928fe05eb49d89698"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Direct current activateTool retains source-named interaction not-found unknown-tool; current markSelection rejects unsupported. No alias/tool-lens dispatcher remains.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "pending-projection",
+        "inputSha256": "76b3072e7fa7778bee5b135f09ef16b32745b86c7d88f4314f1010f94b0ae79a"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "pending-projection",
+        "inputSha256": "a07196ffb32c9e12fbf58ffee7217f7a39f75b742cb1dc4a0070dd68d94a73f3"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire obsolete preparePending explicit load alias; annotation auto-hydration status and synchronous listPending preserve loaded marks/page order/labels.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "estimate-collateral",
+        "inputSha256": "4720742e2515c23d2125834b03944eccda3dec3612b5ee9727501f8f8627eaa1"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "estimate-collateral",
+        "inputSha256": "fc9e7b87415bd688208499843193dace37583775977da47f2e8d828d2f5de5ec"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current complete DTOs, PageBox/PageQuad and direct AnnotationRef arrays replace PDF rects, p1..p4 and string-id conversion; policy exclusively createPendingReads.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "apply-named-marks",
+        "inputSha256": "af70974a14cbb9db9b69a6b691f98937ccafebfd7fd59d3a6c6e6223c571db96"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "apply-named-marks",
+        "inputSha256": "7b73dcc1df12efea29d50ac074544d868e1aae402b2233ac53caabbd780db73f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Explicit current refs and {annotations} scope, complete RedactionApplyResult/meta/events, meaningful deferred result/busy/callback/readback/unsubscribe.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "apply-all-pages",
+        "inputSha256": "57f33deee70c9921cd36aaa4765b5e036cc0ba9952c8def7f34b391718c14a61"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "apply-all-pages",
+        "inputSha256": "936a051e6578161f207d925b8caa59ffcef004f433842d9d822bb704d91542ae"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current {pages} scope and confirmed events; author an applied result and reload for both populated pages, then assert both callbacks and no remaining marks.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "apply-refused",
+        "inputSha256": "388515126f88eabb0fbba45472791dcb61415897235f01fd666d158575618bb3"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "apply-refused",
+        "inputSha256": "76bcc90b4e196fb2ac114660446e64c63463dadf14fc42e578c5635c28ed27fd"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current engine Refused becomes exact operation-failed PluginError; prior confirmed history and pending mark survive while busy clears.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "apply-refusals-before-the-engine",
+        "inputSha256": "cbb7fdb2f3107a8678eb8c038b437672a6a47cae4946b7305e1d1989af7f6039"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "apply-refusals-before-the-engine",
+        "inputSha256": "3adfc22c7c279d446de148cefc780cf802516bda0acb8f5aaa91b8e24c6eee95"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Empty/unknown refs and zero-page preflight survive. Remove out-of-contract omitted refs call and absent-service omission; replace service substeps with actual EngineError Unsupported, exact operation-failed channel, retained marks and successful recovery.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "remote-applies-arrive-as-events",
+        "inputSha256": "ad8a3f3449f2c3abfb0c98f427870485260ef47d2f39db390a048f91064e5ae8"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "remote-applies-arrive-as-events",
+        "inputSha256": "aa232e9e7ae33c0e64dcf8df8361d802794de0d2f9828d73edd4a8fb06ff9d58"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current sync/document-events handles BOTH local and remote facts, not historical remote-only. Explicit unrelated annotation fact ignored; confirmed result/origin/tx survives and close releases subscription.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "a-throwing-listener-is-isolated",
+        "inputSha256": "1c8198fee509d27043738e8aefc2b2c12fe5db89a40cc93b454e25a1cab3cf99"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "a-throwing-listener-is-isolated",
+        "inputSha256": "c4d3b8a7d2da623cdf33af2f46603b73a738d3ff276ac062c0a6f55bcec7650f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire redaction console.error shim: actual event host reports listener Error to kernel while good callback and successful result survive.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "set-label",
+        "inputSha256": "0cc11ddd0d92aebe00a899f601a0c9cfe6aab236000e883f902f6a3b0fda6509"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "set-label",
+        "inputSha256": "9ec1107310bb3e71d1f37c1a1759ac8e8214a7c0cdd84c43dde26bcf67b3833f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Direct updateLabel and current refs; explicit current font/style fields in update results, null clears, non-mark/missing ref errors preserved.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "mark-area-and-page",
+        "inputSha256": "c5dd4a95da825404123b7841bac5c464a8d7ffcbab091f343822b8b90e4a4614"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "mark-area-and-page",
+        "inputSha256": "6aecc2977e8a4e4c6cdb0f1a2a7e44ed6005fb1136b7ea4a1d638c093510e544"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current page-space bounds and visible size400x500 replace PDF crop10,20,410,520; complete current apply answers and overlay defaults, actual creation authority and pending callbacks.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "an-overlay-without-values-adds-nothing",
+        "inputSha256": "29a8b8fe6016c5082d680170a07173f65668f939835ee904af57615482afb196"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "an-overlay-without-values-adds-nothing",
+        "inputSha256": "319f9babdca69f74d3d11c8a36c7bcd649e1ad74306f9349f23321bdc5918aa7"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current settings merge supplies black/white defaults even for empty overlay text patch; old no-props expectation retired with sync/overlay/contract source evidence.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "mark-search-matches",
+        "inputSha256": "70292be158670f0949840ad73d73c179eadec3a59db02a892c326f045cfc4bc6"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "mark-search-matches",
+        "inputSha256": "2340b44545ee7e0270df026795cd248cd1afa27435f2e1bd71e6415721ca1350"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual SearchMatch start/count, SearchSlice pagesSearched/pageCount and canonical PageTextSegment quads; skip empty geometry and retain page-filtered hit order.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "marking-refusals",
+        "inputSha256": "1d2372977957da23f6d0a932186727bc945fb3ab9b642bde3b5a3568e480b3b7"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "marking-refusals",
+        "inputSha256": "18e45762e0ac5da97bf815281d5f2920312dcdea293467d046085ce3b0e41231"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current missing sibling unsupported and create permission-denied are preserved as exact channels.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "unmark-and-clear",
+        "inputSha256": "f8e2a2f8766f021320430115c7952a5e4b00370eb38d102a213071da7bc63c98"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "unmark-and-clear",
+        "inputSha256": "f99da39277dc66d66ad7a3709bba9f71a6119571a68a836ffecf88632ebe056a"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Direct typed refs and current delete ChangeItems/events. Batch applies/skips/fails separately; engine refusal rolls back only its target.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "apply-pages",
+        "inputSha256": "ff3a1acc2d3b2298a3efddbe8efaedb4f6cd512590d351f4b91a707d471d48bd"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "apply-pages",
+        "inputSha256": "b1b841b193bc07acba6d0b2bdecfce85a3bd2c7c7dd22d618b8b59753ec6a9c9"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current page resolution/{pages} scope and exact invalid-input for empty targets, complete confirmed result.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "pending-reads",
+        "inputSha256": "37b43c0a9941c086bab3fca37d774cd43ad07e1ad680e0a7226bfab555522ef5"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "pending-reads",
+        "inputSha256": "4c962c87771918e8198ec46dfbe71bed6a62773b619dc8e2712bb6f3f3004b32"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current objectNumber/baseIndex references replace removed nm/index/revision refs (bc0057f3a). page filters/counts, absent-page empty and non-mark null preserved.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction.json",
+        "name": "update-label-refused",
+        "inputSha256": "406efdf9cbb75b0a3fa9e5bb8e92076dc159cf0e24cb6cc70a5ed48dee178cb9"
+      },
+      "after": {
+        "file": "plugins/redaction.json",
+        "name": "update-label-refused",
+        "inputSha256": "c81cbd50e58a20fc5e62c3f25e0832a7c2f479cd58e4b31fe0f423fc76ea5ff3"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual Refused annotation PluginError is preserved, later successful update emits pending fact; confirmed original label survives rollback.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "initial-state",
+        "inputSha256": "07cbd2d3db93c6bd9fe136307ce9c5a1e53474a098f8b91b4cb0a13761041aef"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "initial-state",
+        "inputSha256": "07cbd2d3db93c6bd9fe136307ce9c5a1e53474a098f8b91b4cb0a13761041aef"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Direct current initialRedactionState, original input unchanged.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "started-from-idle",
+        "inputSha256": "b16a416cfc617e79e5a9f5bad97a7ce341faa9467312f8882b9cb75d5d8d2b28"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "started-from-idle",
+        "inputSha256": "91c33fdaeac431e3a74389b1ee41afc2db04023351d9cb025e1fdc5cc95416ab"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "started-keeps-the-last-result",
+        "inputSha256": "3ddc8645e7de84396af92b7919b4ce8014dc2ee633f5cf0284be604aa869473e"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "started-keeps-the-last-result",
+        "inputSha256": "0b623681b7b811f09fd4fb02ebd0ffe2ba10faab80a202a3456e6df1710f2609"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-with-a-result",
+        "inputSha256": "47367d3c5de5db88831db6096d4e4a147a23cbacffbb4d8340f6d82acdbfaa46"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-with-a-result",
+        "inputSha256": "67ab284d803a16aedaf8990cab4bf79a4e618e44b37dd75a972015134e0d9f8e"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-replaces-the-result",
+        "inputSha256": "0f0bee6d06f1dc82bec0eb04464f6ee0eb2571a2b7a85d6b8bb7d124894e03e2"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-replaces-the-result",
+        "inputSha256": "4def3507e14c0fa9ac914bf43fa79da94068cbb6a543cec44d25c919b39b15fb"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-with-null-keeps-the-result",
+        "inputSha256": "3450a3368d6ee756cb5f665ced7ff568c5c7a46ba43d2bc79e29cb7dcf2da520"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-with-null-keeps-the-result",
+        "inputSha256": "0df8d30519ed0766ab78e4a992488041f0a9fcd1ec2544ba4481c4b5b1ffc603"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-without-a-result-member",
+        "inputSha256": "c26d9b71cc665a8d98cc48ba5073080b135bfde3b92a6650101ea0b5ab3d33b6"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-without-a-result-member",
+        "inputSha256": "7e3f9ca51d09963738d137bf753bf4469c9f8c7c337b18f801ba1f2118b83c9f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-when-idle",
+        "inputSha256": "0e069226f6d9ec0d8f06ac7e88099115670fb75de966400187ee058263dffe73"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "finished-when-idle",
+        "inputSha256": "588ca3de4507acf5ea98345aec42c872dcc0f631a8b6531850aefaa590f06a1c"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Invoke actual named transition with explicit complete state/result, removing old RedactionAction conversion (4fc1a32af). startApply/finishApply/setLastResult identities now follow shipping model; finish and result storage have separate added pure coverage and live apply success/refusal assertions.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "unknown-action",
+        "inputSha256": "9574f42f1324d947cdf93b47af400dcd4f7b4bb647f20d8294017111b52f1f00"
+      },
+      "after": null,
+      "disposition": "retired",
+      "task11InputDrift": false,
+      "reason": "WHOLE CASE RETIRED: the removed RedactionAction/reducer dispatcher has no current unknown-action function. Exact original action and outcome archived; 4fc1a32af replaces dispatcher with named transitions. No local replacement dispatcher or tombstone emitted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-document",
+        "inputSha256": "999fc79a01e767f96531168e0f8118bfc4ea29efd3b506f42f7b0a89e83f900b"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-document",
+        "inputSha256": "6c217e9b09fc5a0816331141429081c87aa3867aec953b42332d53b8b340885f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-pages",
+        "inputSha256": "b48b3862adf00c5fee6a9cab290d9b66c3a204110f478dc978a3f832211ce476"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-pages",
+        "inputSha256": "f9a12b06320caa09e0c77e5892b006d2e3eca4b87aba518eec63dbd1b03321bb"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-marks",
+        "inputSha256": "b45703c19194037e917e3093171c8aa9c0ff5f60c0230b56919c8a30a94f55b8"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "no-marks",
+        "inputSha256": "b959008771338b5a63a4d5f30584bb4115f98fec12d3bc0973d439859f193d61"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "rect-mark-overlaps",
+        "inputSha256": "0ed941d55635e1cae6ab7b9c91c80c68e6ea1ffe17b92b84b26c19c02436c51a"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "rect-mark-overlaps",
+        "inputSha256": "d57251434ce3b8c402cd0581c67c042dd0b4a73709ed2a70b8126ad81f3ac147"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "touching-edges-do-not-count",
+        "inputSha256": "609a07b3e7b0f880c3f47e4346a392d7db694a1fde5665a63fed152d7b136fc4"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "touching-edges-do-not-count",
+        "inputSha256": "00381c271335dad096e9fe155c0325344232ab1e97086063950555706a95b985"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "contained-and-containing",
+        "inputSha256": "0981f7bd5c33afbd372546bb62c1ec10469e1b834b6ffcb8b1dadbe97944cfc7"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "contained-and-containing",
+        "inputSha256": "f038b36df2f83fc0c08c00fce4470da60367ed58948d300ee437dd92ffefe038"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "sliver-overlap",
+        "inputSha256": "e410d0263f255272f07de029bc9b97460e1af551e6549c325154602ab6041632"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "sliver-overlap",
+        "inputSha256": "d7585e9d7a414809258c12d7e16d642fc45b96d96c262fc653af413e538bca7a"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "quads-replace-the-rect",
+        "inputSha256": "32b13a087d5d1e8e3f9ec4df028e8961b7d9649054ad8720f973dde46451ff08"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "quads-replace-the-rect",
+        "inputSha256": "3db49c42e65dbc0a55d7ee303c4303c0fa89cbc5ce565d2251358ce17831eac1"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "tilted-quad-box",
+        "inputSha256": "6c9098cb0702873c5b2378af03372533ca3cfbc295a41a43d629ab5a8d9fcf76"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "tilted-quad-box",
+        "inputSha256": "c52b82ad2c899a7a5a75f887a6b2c731c05f13716e51005daa1035341cdc8bc6"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "one-annotation-counts-once",
+        "inputSha256": "2b4167d2270891df07b19a212f05c32848d19030a2615c7e31d650319fc974c2"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "one-annotation-counts-once",
+        "inputSha256": "8d4234290cb2d02217f73726172e63fc0fa3b155622f2a1fc1ae00ecfd8ac21c"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "marks-are-never-collateral",
+        "inputSha256": "68cdd1e8f99b01653fbb768c039818d6cfaf2c89c074b158fa0efb21e8d5c643"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "marks-are-never-collateral",
+        "inputSha256": "642c0aa32e2d4088d85496fe7c46c766a063f6b0f7035faabc2c688c9963922d"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-by-id",
+        "inputSha256": "2ac4cdfb46c1f09e3cae2e769d8d8da108cdaa88ddc61e27614575ed72d9c290"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-by-id",
+        "inputSha256": "d94c42abacb8eacf38c61ccc3744f9405d4f29d12fb5d9de6698dd9c69c085c8"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-matches-nothing",
+        "inputSha256": "c213b5cd0109c3ae02c03af0e4245ded56b36d067575e4144883626b03fdd340"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-matches-nothing",
+        "inputSha256": "8f26bac6bcadfcfc81e30eaf3214c924962ef727a92d81fea2140187a53181fc"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "empty-filter",
+        "inputSha256": "53bb4b0cae2b71bd49a24bf3659c8380e8b4956ef82357cd8465c01f6f325601"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "empty-filter",
+        "inputSha256": "e84b7edee6aebfdd8618932b57c900b6da2d46cca4ac020fbfe06b2a8c1472ec"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "null-filter-is-all",
+        "inputSha256": "3edd7ebdd76f9249a1ead90634e628a0075a2f5bbda39b445ff34a130a03ee95"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "null-filter-is-all",
+        "inputSha256": "6fc88ec155964c38e3671e3bb0be08fd03ba1205c9ae0f1160c5129d88ca5d99"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current optional refs parameter records omission instead of out-of-contract null; source default-all collateral intent survives. Exact old null input archived.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-by-nm-and-index",
+        "inputSha256": "1a0dc23a1fcc2028ce0664e1b5ce478cfd7f96317fdb421b00d0b69cb892fd9e"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "filter-by-nm-and-index",
+        "inputSha256": "444047d92c8c334aa0dc0bb511b61722d0eb735e0e1cd62fd35f28555b70e70c"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Removed nm/index/revision identities replaced by explicit baseIndex refs (bc0057f3a); preserve selecting only one target mark and its collateral.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "pages-in-document-order",
+        "inputSha256": "76f6498b9adff70a54b0c7f75c19f79e9d0186fbb560974d2d3fdfb1631b18f1"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "pages-in-document-order",
+        "inputSha256": "70776716ae661f8abd34311d8ae117c40da19749d34bd8acbef3caf70072620f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "nan-geometry-never-intersects",
+        "inputSha256": "fd949905e6bd05020fe50aa2908b13320034a86cf7bffba652061a8ae205f1a2"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "nan-geometry-never-intersects",
+        "inputSha256": "d374595c4f73c18766348d8b56069630418b4dcfcdb08b125dde9bd36baaacae"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/redaction-functions.json",
+        "name": "negative-and-fractional",
+        "inputSha256": "44e40f7e31d641e8618976bf371bb254391a15c7210668b82c602f9ba624c603"
+      },
+      "after": {
+        "file": "plugins/redaction-functions.json",
+        "name": "negative-and-fractional",
+        "inputSha256": "eb587937592200a7e3409a725d55db9eb0865b33418272036fe03a8ae18a024f"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current explicit PageLayout/Annotation DTOs and direct refs drive actual createPendingReads(ctx,{store,siblings}). Geometry is authored directly in page space; policy is neither copied nor translated behind invocation. Exact collateral refs/counts are independently asserted.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ],
+      "commits": [
+        "4fc1a32af",
+        "cdf4586c7",
+        "bc0057f3a"
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/redaction.json",
+      "name": "mark-ownership-and-flags",
+      "inputSha256": "4acb0ffe4d8bf9e0aa8b8bc0cba947642b670daa9d991d94fd08cea687ab75a3",
+      "reason": "Self-scoped owner mutation/deletion authority plus foreign/unstamped/locked refusal and exact batch failures.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction.json",
+      "name": "apply-queue-and-unchanged-page",
+      "inputSha256": "387d5871d4d28b852a8ceacbb1d3f734915677f774044bae823b8d0f0984e1fa",
+      "reason": "Serialize two actual engine applies; preserve unrelated page-two marks and final engine history.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction.json",
+      "name": "close-during-apply",
+      "inputSha256": "d7dd67c8a6162c7ce498fc1fb0955a19837705717dd2589da525eecf78c6d7e7",
+      "reason": "Actual instance-close cancellation/report, released listener and fresh document idle/result state.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction-functions.json",
+      "name": "already-started-is-stable",
+      "inputSha256": "25c04c5c2877a20cfaa6ac068ac09197906bdef9ed4cd3164731a8c2d1b6e941",
+      "reason": "Direct named startApply identity replaces removed unknown-action dispatcher coverage without reconstructing that dispatcher.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction-functions.json",
+      "name": "set-first-result",
+      "inputSha256": "5567ac2bf4b0a119b4aa6c1f5303681c3ae48511dc4ec0092cc4c9bbd0759298",
+      "reason": "Direct setLastResult stores first confirmed result.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction-functions.json",
+      "name": "set-same-result-is-stable",
+      "inputSha256": "36789c0188e22317051c88f5b3eff3bd148e598f8e9fedf645de65d3b2494c18",
+      "reason": "Direct setLastResult value preservation; a separate identity test checks actual shared result reference.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction-functions.json",
+      "name": "mark-of-text",
+      "inputSha256": "4f100c973849e805b6224987b0ea3425da316772075af2551fcf49d3fbe1076a",
+      "reason": "Actual markOf projection preserves text quad kind/pageIndex/bounds.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    },
+    {
+      "file": "plugins/redaction-functions.json",
+      "name": "mark-of-area",
+      "inputSha256": "94486535878eca3b7898151fd31c776559ff1313f5a99bdfc9b279e2e87e0462",
+      "reason": "Actual markOf projection preserves area bounds/label.",
+      "evidence": [
+        "packages/plugin/redaction/src/model.ts",
+        "packages/plugin/redaction/src/read/pending.ts",
+        "packages/plugin/redaction/src/write/marks.ts",
+        "packages/plugin/redaction/src/write/apply.ts",
+        "packages/plugin/redaction/src/sync/document-events.ts",
+        "packages/plugin/redaction/src/sync/overlay.ts",
+        "packages/plugin/redaction/src/services/store.ts",
+        "packages/plugin/annotation/src/tools/definitions.ts",
+        "packages/plugin/annotation/src/write/markup.ts",
+        "packages/plugin/annotation/src/services/authority.ts",
+        "packages/engine/core/src/identity/AnnotationRef.ts",
+        "packages/engine/core/src/engine/DocumentHandle.ts",
+        "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+        "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+        "packages/engine/core/src/search/types.ts"
+      ]
+    }
+  ],
+  "sourceEvidence": [
+    {
+      "path": "packages/plugin/redaction/src/model.ts",
+      "sha256": "6913ca59c34a04b13275665c649ad79a8306787e99d82f8f94e55160619619b3",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/redaction/src/read/pending.ts",
+      "sha256": "03e675f95391733498ec24f3f1cc2f9f90aa1917abffd76cd8080f9a70fda842",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/redaction/src/write/marks.ts",
+      "sha256": "207adb05a93d89cbcf2689dc96b39f330a1a8c00d765001de56d238633912987",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/redaction/src/write/apply.ts",
+      "sha256": "bbdb550522f307fdde61e6402936d8e17842eee7d9b327a991a7d2dc50da9855",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/redaction/src/sync/document-events.ts",
+      "sha256": "55ad41ac85d228d1d1286d47fc98bd0e5cbb7f83270032c5af891daafe6c3f0a",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/redaction/src/sync/overlay.ts",
+      "sha256": "eacd51e4f18e6dbe2c1e0413065be966565af1beb3a6e7ab56f6480753e58af5",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/redaction/src/services/store.ts",
+      "sha256": "c7f405ede001a55df453497ec332b0c330da0353830053fff5764c5d1053ab8f",
+      "commit": "595bdc6c72d7192a530f73eba58b9c3b1d0bb7fa"
+    },
+    {
+      "path": "packages/plugin/annotation/src/tools/definitions.ts",
+      "sha256": "1c569379995115b55f887c81de90b55c746aecb9a9fc44d0e25f4654f6fb9d55",
+      "commit": "0427f5648b9261f53610c181bb08300d1c7eae29"
+    },
+    {
+      "path": "packages/plugin/annotation/src/write/markup.ts",
+      "sha256": "7505f9979e043866d89f849b4cf379bab39cdfa98c565a74b10b0ad82d754a98",
+      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+    },
+    {
+      "path": "packages/plugin/annotation/src/services/authority.ts",
+      "sha256": "12a14960dcc6f04acba50a55702a6445e70c590994fb61097cc1d3dfff837e22",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/engine/core/src/identity/AnnotationRef.ts",
+      "sha256": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/engine/DocumentHandle.ts",
+      "sha256": "6424dbfe177564aa55fb97dd97ac78ac1f829c1303dfba56005de2606d408b4f",
+      "commit": "67ccb76dc0bfe473406a43274d425baf6c285878"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/RedactionApplyResult.ts",
+      "sha256": "ec5d76f60ef445470270766cbeedc43eb94c75ddf607ab5d10191c975b21af50",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageGeometrySnapshot.ts",
+      "sha256": "156c00682ecf49a8d930ec8a1294b9138520d752a1ae06e4bb230f24dda135b1",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/search/types.ts",
+      "sha256": "cd8e95f3babb963a8e91cd1b5018f63f7ee60f9383a9ee18f1816f0b96ac8537",
+      "commit": "3bad82c8d7c5de04185d7d35fa503d4ea4746e12"
+    }
+  ]
+}

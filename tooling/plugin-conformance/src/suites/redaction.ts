@@ -1,703 +1,596 @@
-/**
- * `packages/plugin/redaction`: the destructive apply stage over `redact`
- * annotation marks. Marks live on the annotation plane, so every scenario
- * runs the real interaction, selection and annotation plugins beside this
- * one, with the annotation fixtures' shims. Replayed by
- * `crates/plugins/redaction/tests/conformance.rs`.
- *
- * One more shim, mirrored by `crates/plugins/redaction/src/harness.rs`:
- * while a `redaction` factory is current, a `console.error` whose message
- * starts `[redaction]` logs as the callback `console.error` (the Rust port
- * takes it as `RedactionHost::console_error`).
- */
-import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/core';
-
+/** Current redaction marks, annotation ownership, destructive applies and pure transitions. */
+import type {
+  Annotation,
+  AnnotationRef,
+  PageLayout,
+  RedactionApplyScope,
+} from '@embedpdf/engine-core/runtime';
 import * as model from '../../../../packages/plugin/redaction/src/model';
-import { initialRedactionState } from '../../../../packages/plugin/redaction/src/model';
-import { createPendingReads } from '../../../../packages/plugin/redaction/src/read/pending';
-import { redactionPlugin } from '../../../../packages/plugin/redaction/src/index';
-import { RedactionToken, type RedactionConfig } from '../../../../packages/plugin/redaction/src/contract';
-import type { RedactionState } from '../../../../packages/plugin/redaction/src/model';
-import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
-
-import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
-
-/** The old `RedactionAction`: its `type` and fields. */
-type RedactionAction = { type: string; result?: unknown };
-
-/**
- * 4fc1a32af replaced `redactionReducer` with one transition per step: an
- * `APPLY_FINISHED` ends the apply, then records its result when it has one.
- */
-function redactionReducer(state: RedactionState, action: RedactionAction): RedactionState {
-  switch (action.type) {
-    case 'APPLY_STARTED':
-      return model.startApply(state);
-    case 'APPLY_FINISHED': {
-      const finished = model.finishApply(state);
-      return action.result ? model.setLastResult(finished, action.result as never) : finished;
-    }
-    default:
-      return state;
-  }
-}
+import { markOf } from '../../../../packages/plugin/redaction/src/read/pending';
 import type { FunctionCase, Suite } from '../vectors';
-
+import type { ScenarioCase, Step } from '../scenario';
 import {
-  base,
-  boot,
-  call as anno,
-  created,
+  rd,
+  PLUGINS,
+  WITH_SELECTION,
+  SNAP,
+  docOf,
   doc,
   hydrate,
-  ix,
-  markup,
-  objRef,
-  open,
-  pr,
-  redact,
-  sel,
-  settle,
   square,
   textNote,
+  markup,
+  redact,
+  objRef,
+  baseRef,
+  pr,
+  quad,
+  layout,
+  boot,
+  open,
+  call as an,
+  createdFact,
+  created,
   updated,
-  v3Event,
-} from './annotation-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins refusals, pending projections and collateral estimates, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-// ── the console.error shim ────────────────────────────────────────────────────
-
-let redactionLog: PluginEnv['log'] | null = null;
-onCaseEnd(() => {
-  redactionLog = null;
+  deleted,
+  write,
+  refused,
+  confirmation,
+  result,
+  applyAnswer,
+  applied,
+  reload,
+  REMOTE,
+  LOCAL,
+  OVERLAY,
+  APPLY_CAPS,
+  READS,
+  load,
+  sel,
+  ix,
+  sample,
+  range,
+  segment,
+  hit,
+  settle,
+} from './redaction-fixtures';
+const areaMark = redact(10, {
+  rect: { x: 90, y: 90, width: 120, height: 120 },
+  overlayText: 'CONFIDENTIAL',
 });
-const previousError = console.error;
-console.error = (...args: unknown[]) => {
-  if (redactionLog && typeof args[0] === 'string' && args[0].startsWith('[redaction]')) {
-    redactionLog('console.error', args);
-    return;
-  }
-  previousError(...args);
-};
-
-registerPlugin('redaction', {
-  factory: (config, env) => {
-    redactionLog = env.log;
-    return redactionPlugin((config ?? {}) as RedactionConfig) as AnyPlugin;
-  },
-  tokens: [RedactionToken],
-});
-
-/**
- * v2's redact-tool verbs (enableRedact, toggleRedact, isRedactActive) left
- * the plugin: the `redact` tool is the annotation plugin's, armed through the
- * interaction hub. This lens keeps those three verbs over the hub, so the
- * cases read the same; `crates/plugins/redaction/src/harness.rs` mirrors it.
- */
-const ToolLensToken = createCapabilityToken<Record<string, () => unknown>>('redaction-test/tool');
-registerPlugin('redaction-tool', {
-  factory: () =>
-    definePlugin({
-      id: 'redaction-test/tool',
-      token: ToolLensToken,
-      scope: 'document',
-      requires: [InteractionToken],
-      capability: (ctx) => {
-        const hub = () => ctx.get(InteractionToken);
-        const active = () => hub().getActiveToolId() === 'redact';
-        return {
-          enableRedact: () => hub().activateTool('redact'),
-          toggleRedact: () => (active() ? hub().activateDefaultTool() : hub().activateTool('redact')),
-          isRedactActive: active,
-        };
-      },
-    }) as AnyPlugin,
-  tokens: [ToolLensToken],
-});
-
-// ── text geometry (the annotation-markup suite's page 1) ─────────────────────
-
-const W = 6;
-const H = 12;
-const ZERO = { left: 0, bottom: 0, right: 0, top: 0 };
-type Glyph = { looseBox: typeof ZERO; flags: number; tightBox?: typeof ZERO };
-const glyphs = (text: string, x: number, top: number): Glyph[] =>
-  [...text].map((ch, i) => {
-    const left = x + i * W;
-    const looseBox = { left, bottom: top - H, right: left + W, top };
-    if (ch === ' ') return { looseBox, flags: 1 };
-    return { looseBox, flags: 0, tightBox: { left: left + 0.5, bottom: top - H + 1, right: left + W - 0.5, top: top - 1 } };
-  });
-const newline: Glyph[] = [
-  { looseBox: ZERO, flags: 2 },
-  { looseBox: ZERO, flags: 2 },
-];
-const run = (charStart: number, gs: Glyph[]) => {
-  const real = gs.filter((g) => !(g.flags & 2));
-  return {
-    rect: {
-      left: Math.min(...real.map((g) => g.looseBox.left)),
-      bottom: Math.min(...real.map((g) => g.looseBox.bottom)),
-      right: Math.max(...real.map((g) => g.looseBox.right)),
-      top: Math.max(...real.map((g) => g.looseBox.top)),
-    },
-    charStart,
-    glyphs: gs,
-    fontSize: 12,
-  };
-};
-const geo1 = { runs: [run(0, [...glyphs('Hello world', 50, 750), ...newline]), run(13, glyphs('Second line', 50, 730))] };
-const geo2 = { runs: [run(0, glyphs('Page two', 40, 500))] };
-const reads = [
-  { path: 'page.geometry.read', pon: 1, value: geo1 },
-  { path: 'page.geometry.read', pon: 2, value: geo2 },
-  { path: 'page.text.read', pon: 1, value: { text: 'Hello world\r\nSecond line', charCount: 24 } },
-  { path: 'page.text.read', pon: 2, value: { text: 'Page two', charCount: 8 } },
-];
-const load: Step[] = [sel('ensurePage', [1]), sel('ensurePage', [2])];
-const range = (from: [number, number], to: [number, number]) => ({
-  start: { pon: from[0], index: from[1] },
-  end: { pon: to[0], index: to[1] },
-});
-
-// ── steps ─────────────────────────────────────────────────────────────────────
-
-/** A v2 mark id (`obj:N`, `nm:X` on page 2, anything else unknown) as a ref. */
-const idRef = (id: unknown): unknown => {
-  if (typeof id !== 'string') return id;
-  if (id.startsWith('obj:')) return objRef(Number(id.slice(4)));
-  if (id.startsWith('nm:')) return { kind: 'nm', page: pr(2), nm: id.slice(3) };
-  if (id.startsWith('idx:')) {
-    const [, pon, index] = id.split(':');
-    return { kind: 'index', page: pr(Number(pon)), index: Number(index), revision: { docSessionId: 's', page: pr(Number(pon)), generation: 1 } };
-  }
-  return { kind: 'nm', page: pr(1), nm: id };
-};
-const RENAMED: Readonly<Record<string, string>> = {
-  lastResult: 'getLastResult',
-  queueCurrentSelection: 'markSelection',
-  pendingCount: 'getPendingCount',
-  getPending: 'listPending',
-  setLabel: 'updateLabel',
-};
-const TOOL = new Set(['enableRedact', 'toggleRedact', 'isRedactActive']);
-const call = (method: string, args: unknown[] = [], docId = 'a'): Step => {
-  if (TOOL.has(method)) return { op: 'call', target: { token: 'redaction-test/tool', doc: docId }, method, args };
-  // The pending list is read off the annotation plane, which hydrates on
-  // its own; v2's explicit preparePending is its ensureHydrated.
-  if (method === 'preparePending') return anno('ensurePage', [], docId);
-  const out = (method === 'apply' || method === 'estimateCollateral') && Array.isArray(args[0]) ? [(args[0] as unknown[]).map(idRef), ...args.slice(1)] : args;
-  return { op: 'call', target: { token: 'redaction', doc: docId }, method: RENAMED[method] ?? method, args: out };
-};
-const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
-/** A v3 call on the redaction capability, no renames. */
-const rd = (method: string, args: unknown[] = [], docId = 'a'): Step => ({ op: 'call', target: { token: 'redaction', doc: docId }, method, args });
-const emit = (event: Record<string, unknown>, docId = 'a'): Step => ({ op: 'emit', doc: docId, event: v3Event(event) });
-const openDoc = (id: string): Step => open(id);
-
-const noMods = { shift: false, alt: false, ctrl: false, meta: false };
-const at = (phase: string, x: number, y: number, pon = 1) => ({
-  phase,
-  viewport: { x, y },
-  page: { ref: pr(pon), point: { x, y }, scale: 1 },
-  modifiers: noMods,
-});
-const ptr = (phase: string, x: number, y: number): Step => ix('dispatch', [at(phase, x, y)]);
-
-const REMOTE = { kind: 'remote', serverId: 'srv-7' };
-const LOCAL = { kind: 'local', serverId: null };
-const APPLY_CAPS = ['doc.redact', 'doc.pages.modify', 'doc.annotate.modify'];
-
-const WITH_SELECTION = [{ factory: 'interaction' }, { factory: 'selection' }, { factory: 'annotation' }, { factory: 'redaction' }, { factory: 'redaction-tool' }];
-const PLUGINS = [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction' }, { factory: 'redaction-tool' }];
-const SNAP = ['redaction::a', 'annotation::a'];
-const withService = (responses: Parameters<typeof doc>[0], over: Parameters<typeof doc>[1] = {}) =>
-  doc(responses, { services: ['redaction'], ...over });
-
-// ── fixtures ──────────────────────────────────────────────────────────────────
-
-const quad = (x: number, y: number, w: number, h: number) => ({
-  p1: { x, y: y + h },
-  p2: { x: x + w, y: y + h },
-  p3: { x, y },
-  p4: { x: x + w, y },
-});
-/** Page 1: an area mark over a square and a note, a text mark, a stray. */
-const areaMark = redact(10, { rect: { left: 90, bottom: 590, right: 210, top: 710 }, overlayText: 'CONFIDENTIAL' });
 const textMark = redact(11, {
-  rect: { left: 50, bottom: 730, right: 200, top: 745 },
-  quadPoints: [quad(50, 730, 150, 15), quad(50, 710, 60, 15)],
+  rect: { x: 50, y: 55, width: 150, height: 35 },
+  quadPoints: [quad(50, 55, 150, 15), quad(50, 75, 60, 15)],
 });
-const nmMark = redact(12, {
-  ref: { kind: 'nm', page: pr(2), nm: 'mark-b' },
-  pageObjectNumber: 2,
-  rect: { left: 20, bottom: 20, right: 60, top: 60 },
+const secondMark = redact(12, {
+  ref: baseRef(4, 2),
+  page: pr(2),
+  rect: { x: 10, y: 460, width: 40, height: 40 },
+  fontFamily: 'courier',
+  fontSize: 9,
 });
-const seed = {
-  1: [
-    square(1),
-    textNote(2, { rect: { left: 205, bottom: 650, right: 225, top: 670 } }),
-    markup('highlight', 3, { rect: { left: 60, bottom: 712, right: 90, top: 722 }, quadPoints: [quad(60, 712, 30, 10)] }),
-    areaMark,
-    textMark,
-    square(4, { rect: { left: 400, bottom: 100, right: 500, top: 200 } }),
-  ],
-  2: [nmMark, square(5, { pageObjectNumber: 2, rect: { left: 60, bottom: 20, right: 90, top: 60 } })],
-};
-const applyResult = (scope: unknown, removed = 2) => ({
-  scope,
-  results: [
-    { page: pr(1), status: 'applied', removedAnnotationCount: removed },
-    { page: pr(2), status: 'unchanged', removedAnnotationCount: 0 },
-  ],
-  removedAnnotationCount: removed,
-  meta: { revision: 3 },
-});
-const OVERLAY = { overlay: { fill: '#ff0000', text: { color: '#00ff00', fontFamily: 'courier', fontSize: 0 } } };
-const CROP2_RECT = { left: 10, bottom: 20, right: 410, top: 520 };
-/** An engine search match and one axis-aligned PDF-space segment. */
-const seg = (left: number, bottom: number, right: number, top: number) => ({
-  quad: { p1: { x: left, y: top }, p2: { x: right, y: top }, p3: { x: left, y: bottom }, p4: { x: right, y: bottom } },
-  rect: { left, bottom, right, top },
-  advance: 1,
-});
-const match = (pon: number, charStart: number, segments: unknown[]) => ({ page: pr(pon), charStart, charCount: 3, segments });
-const refsScope = { kind: 'annotations', refs: [objRef(10), { kind: 'nm', page: pr(2), nm: 'mark-b' }] };
-const pagesScope = { kind: 'pages', pages: [pr(1), pr(2)] };
-const reloadPages = [
-  { path: 'page.annotations.list', pon: 1, value: { annotations: [square(4, { rect: { left: 400, bottom: 100, right: 500, top: 200 } })] } },
-  { path: 'page.annotations.list', pon: 2, value: { annotations: [] } },
+const seed: Annotation[] = [
+  square(1),
+  textNote(2, { rect: { x: 205, y: 130, width: 20, height: 20 } }),
+  markup('highlight', 3, {
+    rect: { x: 60, y: 78, width: 30, height: 10 },
+    quadPoints: [quad(60, 78, 30, 10)],
+  }),
+  areaMark,
+  textMark,
+  square(4, { rect: { x: 400, y: 600, width: 100, height: 100 } }),
+  secondMark,
+  square(5, { ref: objRef(5, 2), page: pr(2), rect: { x: 50, y: 460, width: 30, height: 40 } }),
 ];
-
-// ── scenarios ─────────────────────────────────────────────────────────────────
-
+const refsScope: RedactionApplyScope = { annotations: [objRef(10), baseRef(4, 2)] };
+const pagesScope: RedactionApplyScope = { pages: [pr(1), pr(2)] };
+const answer = result(pagesScope);
+const scenario = (
+  name: string,
+  covers: string,
+  steps: Step[],
+  responses: Parameters<typeof docOf>[0] = [hydrate(seed)],
+  over: Partial<Omit<ScenarioCase, 'snapshot' | 'reason'>> = {},
+): ScenarioCase => ({
+  name,
+  covers,
+  plugins: PLUGINS,
+  engine: { documents: { a: docOf(responses) } },
+  snapshot: SNAP,
+  steps: [...boot, ...steps],
+  ...over,
+});
+const close: Step = { op: 'call', target: 'documents', method: 'close', args: ['a'] };
+const ref = (n: number): Step => ({ op: 'call', target: { ref: n } });
+const fresh = (
+  n: number,
+  rect: Extract<Annotation, { subtype: 'redact' }>['rect'],
+  pon = 1,
+  extra: Partial<Extract<Annotation, { subtype: 'redact' }>> = {},
+) =>
+  redact(n, {
+    ref: objRef(n, pon),
+    page: pr(pon),
+    rect,
+    color: '#e44234',
+    textAlign: 'left',
+    ...extra,
+  });
+const selection1 = fresh(10001, { x: 50, y: 50, width: 66, height: 32 }, 1, {
+  quadPoints: [quad(50, 50, 66, 12), quad(50, 70, 66, 12)],
+});
+const selection2 = fresh(10002, { x: 30, y: 20, width: 24, height: 12 }, 2, {
+  quadPoints: [quad(30, 20, 24, 12)],
+});
+const overlayFields = {
+  interiorColor: '#ff0000',
+  fontColor: '#00ff00',
+  fontFamily: 'courier' as const,
+  fontSize: 0,
+};
 const cases: ScenarioCase[] = [
-  {
-    name: 'initial-state-and-twins',
-    covers:
-      'A fresh slice is idle with no result. canMark is annotation create authority; canApply needs the engine service and all three of doc.redact, doc.pages.modify and doc.annotate.modify.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate()]),
-        b: withService([hydrate()], { security: { allows: ['doc.annotate.read', ...APPLY_CAPS] } }),
-        c: withService([hydrate()], { security: { allows: ['doc.annotate.read', 'doc.annotate.create', 'doc.redact', 'doc.pages.modify'] } }),
-        d: withService([hydrate()], { security: { allows: ['doc.annotate.read', 'doc.redact', 'doc.annotate.modify'] } }),
-        e: withService([hydrate()], { security: { allows: ['doc.annotate.read', 'doc.pages.modify', 'doc.annotate.modify'] } }),
-        f: doc([hydrate()]),
-      },
-    },
-    snapshot: ['redaction::a'],
-    steps: [
-      ...boot,
-      openDoc('b'),
-      openDoc('c'),
-      openDoc('d'),
-      openDoc('e'),
-      openDoc('f'),
-      call('isApplying'),
-      call('lastResult'),
-      call('canMark'),
-      call('canApply'),
-      call('canMark', [], 'b'),
-      call('canApply', [], 'b'),
-      call('canMark', [], 'c'),
-      call('canApply', [], 'c'),
-      call('canApply', [], 'd'),
-      call('canApply', [], 'e'),
-      call('canMark', [], 'f'),
-      call('canApply', [], 'f'),
+  scenario(
+    'initial-state-and-twins',
+    'A fresh slice is idle. Marking reads annotation create authority; apply requires the redaction service and all three engine grants.',
+    [
+      ...['b', 'c', 'd', 'e', 'f'].map((id) => open(id)),
+      rd('isApplying'),
+      rd('getLastResult'),
+      rd('canMark'),
+      rd('canApply'),
+      rd('canMark', [], 'b'),
+      rd('canApply', [], 'b'),
+      rd('canMark', [], 'c'),
+      rd('canApply', [], 'c'),
+      rd('canApply', [], 'd'),
+      rd('canApply', [], 'e'),
+      rd('canMark', [], 'f'),
+      rd('canApply', [], 'f'),
     ],
-  },
-  {
-    name: 'mark-the-text-selection',
-    covers:
-      'queueCurrentSelection creates one redact markup per selected page from the segment quads, with the redact preset, clears the selection and resolves true; the marks then read back as text-kind pending items.',
-    plugins: WITH_SELECTION,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(),
-          ...reads,
-          { path: 'page.annotations.create', pon: 1, value: created(redact(20, { quadPoints: [quad(50, 738, 66, 12)] })) },
-          { path: 'page.annotations.create', pon: 2, value: created(redact(21, { pageObjectNumber: 2, quadPoints: [quad(40, 488, 24, 12)] })) },
-        ]),
+    [],
+    {
+      engine: {
+        documents: {
+          a: docOf(),
+          b: docOf([hydrate()], { security: { allows: ['doc.annotate.read', ...APPLY_CAPS] } }),
+          c: docOf([hydrate()], {
+            security: {
+              allows: ['doc.annotate.read', 'doc.annotate.create', 'doc.redact', 'doc.pages.modify'],
+            },
+          }),
+          d: docOf([hydrate()], {
+            security: { allows: ['doc.annotate.read', 'doc.redact', 'doc.annotate.modify'] },
+          }),
+          e: docOf([hydrate()], {
+            security: { allows: ['doc.annotate.read', 'doc.pages.modify', 'doc.annotate.modify'] },
+          }),
+          f: docOf(),
+        },
       },
     },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
+  ),
+  scenario(
+    'mark-the-text-selection',
+    'The current selection creates a mark per selected page from page-space segments, clears selection, and reads the confirmed marks.',
+    [
       ...load,
       sel('select', [range([1, 0], [2, 4])]),
-      call('queueCurrentSelection'),
+      rd('markSelection'),
       sel('hasSelection'),
-      call('getPending'),
-      call('pendingCount'),
-      call('queueCurrentSelection'),
+      rd('listPending'),
+      rd('getPendingCount'),
+      rd('markSelection'),
     ],
-  },
-  {
-    name: 'marking-needs-create-authority',
-    covers: 'Without annotation create authority canMark is false and queueCurrentSelection resolves false without creating or clearing anything.',
-    plugins: WITH_SELECTION,
-    engine: {
-      documents: {
-        a: withService([hydrate(), ...reads], { security: { allows: ['doc.annotate.read', 'doc.text.select', ...APPLY_CAPS] } }),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, ...load, sel('select', [range([1, 0], [1, 4])]), call('canMark'), call('queueCurrentSelection'), sel('hasSelection')],
-  },
-  {
-    name: 'the-redact-tool',
-    covers:
-      'enableRedact activates the composed redact tool; isRedactActive follows it; toggleRedact switches between redact and pointer. A drag off text under the tool draws an area mark, pending as area-kind.',
-    plugins: WITH_SELECTION,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(),
-          ...reads,
-          { path: 'page.annotations.create', pon: 1, value: created(redact(30, { rect: { left: 300, bottom: 200, right: 400, top: 300 } })) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
+    [
+      hydrate(),
+      ...READS,
+      write(1, [{ item: created(selection1) }]),
+      write(2, [{ item: created(selection2) }]),
+    ],
+    { plugins: WITH_SELECTION },
+  ),
+  scenario(
+    'marking-needs-create-authority',
+    'Marking rejects permission-denied without create authority and leaves the text selection intact.',
+    [
       ...load,
-      call('isRedactActive'),
-      call('enableRedact'),
-      call('isRedactActive'),
-      ix('activeToolId'),
-      ptr('down', 300, 300),
-      ptr('move', 320, 280),
-      ptr('move', 400, 200),
-      ptr('up', 400, 200),
-      call('getPending'),
-      call('toggleRedact'),
-      call('isRedactActive'),
-      ix('activeToolId'),
-      call('toggleRedact'),
-      call('isRedactActive'),
+      sel('select', [range([1, 0], [1, 4])]),
+      rd('canMark'),
+      rd('markSelection'),
+      sel('hasSelection'),
     ],
-  },
-  {
-    name: 'without-a-selection-plugin',
-    covers:
-      'Without the selection plugin the composed redact tool never registers: enableRedact and toggleRedact throw the hub’s unknown-tool error, and queueCurrentSelection resolves false.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate()]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('isRedactActive'), call('enableRedact'), call('toggleRedact'), call('queueCurrentSelection')],
-  },
-  {
-    name: 'pending-projection',
-    covers:
-      'getPending projects every loaded redact annotation in page order: its model id (obj: and nm:), ref, page, display index, area or text kind, and overlay label. preparePending asks the annotation plane for every page and resolves.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate(seed)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('preparePending'), call('getPending'), call('pendingCount')],
-  },
-  {
-    name: 'estimate-collateral',
-    covers:
-      'estimateCollateral counts the non-redact annotations whose rect has positive-area overlap with a mark’s quads (else its rect), for all marks, for the named ones, and for none.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate(seed)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('estimateCollateral'),
-      call('estimateCollateral', [['obj:10']]),
-      call('estimateCollateral', [['obj:11']]),
-      call('estimateCollateral', [['nm:mark-b']]),
-      call('estimateCollateral', [[]]),
-      call('estimateCollateral', [['obj:1', 'nope']]),
-    ],
-  },
-  {
-    name: 'apply-named-marks',
-    covers:
-      'apply(ids) sends the matching pending refs as an annotations scope; the slice is applying until the engine answers, then records the result, fires onApplied and resolves with it. The unsubscribe stops later notifications and answers whether it removed anything.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate(seed), { path: 'redaction.apply', args: [refsScope], defer: 'apply' }, { path: 'redaction.apply', value: applyResult({ kind: 'annotations', refs: [objRef(11)] }, 0) }]),
+    [hydrate(), ...READS],
+    {
+      plugins: WITH_SELECTION,
+      engine: {
+        documents: {
+          a: docOf([hydrate(), ...READS], {
+            security: { allows: ['doc.annotate.read', 'doc.text.select', ...APPLY_CAPS] },
+          }),
+        },
       },
     },
-    snapshot: ['redaction::a'],
-    steps: [
-      ...boot,
-      call('onApplied', [{ $fn: 'applied' }]),
-      call('apply', [['obj:10', 'nm:mark-b', 'obj:1', 'missing']]),
-      call('isApplying'),
-      settle('apply', applyResult(refsScope)),
-      call('isApplying'),
-      call('lastResult'),
+  ),
+  scenario(
+    'the-redact-tool',
+    'The actual interaction tool activates redact, draws an area through annotation createPointer, and switches to pointer and back.',
+    [
+      ix('getActiveToolId'),
+      ix('activateTool', ['redact']),
+      ix('getActiveToolId'),
+      an('createPointer', ['redact', 'down', pr(1), { x: 300, y: 300 }]),
+      an('createPointer', ['redact', 'move', pr(1), { x: 320, y: 280 }]),
+      an('createPointer', ['redact', 'move', pr(1), { x: 400, y: 200 }]),
+      an('createPointer', ['redact', 'up', pr(1), { x: 400, y: 200 }]),
+      rd('listPending'),
+      ix('activateDefaultTool'),
+      ix('getActiveToolId'),
+      ix('activateTool', ['redact']),
+      ix('getActiveToolId'),
+    ],
+    [
+      hydrate(),
+      write(1, [{ item: created(fresh(10001, { x: 300, y: 200, width: 100, height: 100 })) }]),
+    ],
+    { plugins: WITH_SELECTION },
+  ),
+  scenario(
+    'without-a-selection-plugin',
+    'Without selection the composed redact tool is absent: activating it rejects not-found; markSelection rejects unsupported.',
+    [
+      ix('getActiveToolId'),
+      ix('activateTool', ['redact']),
+      ix('getActiveToolId'),
+      ix('activateDefaultTool'),
+      rd('markSelection'),
+    ],
+    [hydrate()],
+  ),
+  scenario(
+    'pending-projection',
+    'Pending is a synchronous projection of current loaded annotations, in page order, with current refs and page indices.',
+    [an('getStatus'), rd('listPending'), rd('getPendingCount')],
+  ),
+  scenario(
+    'estimate-collateral',
+    'Positive area overlap uses quad boxes in preference to the mark rect and counts each non-mark once.',
+    [
+      rd('estimateCollateral'),
+      rd('estimateCollateral', [[objRef(10)]]),
+      rd('estimateCollateral', [[objRef(11)]]),
+      rd('estimateCollateral', [[baseRef(4, 2)]]),
+      rd('estimateCollateral', [[]]),
+      rd('estimateCollateral', [[objRef(1), objRef(99)]]),
+    ],
+  ),
+  scenario(
+    'apply-named-marks',
+    'Apply filters explicit current refs. Busy begins before settlement; the confirmed event records the result and callback, and unsubscribe removes its listener.',
+    [
+      rd('onApplied', [{ $fn: 'applied' }]),
+      rd('apply', [[objRef(10), baseRef(4, 2), objRef(1), objRef(99)]]),
+      rd('isApplying'),
+      settle('apply', result(refsScope)),
+      rd('isApplying'),
+      rd('getLastResult'),
       ref(0),
       ref(0),
-      call('apply', [['obj:11']]),
+      rd('apply', [[objRef(11)]]),
     ],
-  },
-  {
-    name: 'apply-all-pages',
-    covers: 'applyAll sends every page of the document as a pages scope, including pages without marks.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate(seed), { path: 'redaction.apply', args: [pagesScope], value: applyResult(pagesScope, 3) }]),
+    [
+      { ...hydrate(seed), times: 1 },
+      applyAnswer(result(refsScope), { defer: 'apply' }),
+      reload([textMark]),
+      applyAnswer(result({ annotations: [objRef(11)] }, 0, 'redaction-2')),
+      reload([], [pr(1)]),
+    ],
+  ),
+  scenario(
+    'apply-all-pages',
+    'ApplyAll sends every current page, including unloaded pages, with fact provenance and both listeners.',
+    [
+      rd('onApplied', [{ $fn: 'first' }]),
+      rd('onApplied', [{ $fn: 'second' }]),
+      rd('applyAll'),
+      rd('getLastResult'),
+      rd('listPending'),
+    ],
+    [{ ...hydrate(seed), times: 1 }, applyAnswer(result(pagesScope, 3)), reload([seed[5]!])],
+  ),
+  scenario(
+    'apply-refused',
+    'A refused second apply clears busy, preserves the previous confirmed result and pending annotations, and publishes no false applied fact.',
+    [
+      rd('onApplied', [{ $fn: 'applied' }]),
+      rd('applyAll'),
+      rd('apply', [[objRef(10)]]),
+      rd('getLastResult'),
+      rd('isApplying'),
+      rd('listPending'),
+    ],
+    [
+      { ...hydrate(seed), times: 1 },
+      applyAnswer(result(pagesScope, 1)),
+      reload([areaMark]),
+      {
+        path: 'redaction.apply',
+        error: { name: 'EngineError', message: 'permission denied', code: 'Refused' },
+      },
+    ],
+  ),
+  scenario(
+    'apply-refusals-before-the-engine',
+    'Empty and unknown refs reject not-found; an empty document rejects not-ready; the required redaction service can refuse with EngineError Unsupported, then recover. Historical absent-service semantics are archived.',
+    [
+      open('b'),
+      open('c'),
+      rd('apply', [[]]),
+      rd('apply', [[objRef(99)]]),
+      rd('applyAll', [], 'b'),
+      rd('getPendingCount', [], 'b'),
+      an('getStatus', [], 'b'),
+      rd('apply', [[objRef(10)]], 'c'),
+      rd('getPendingCount', [], 'c'),
+      rd('isApplying', [], 'c'),
+      rd('applyAll', [], 'c'),
+      rd('getLastResult', [], 'c'),
+    ],
+    [],
+    {
+      engine: {
+        documents: {
+          a: docOf([hydrate(seed)]),
+          b: docOf([hydrate()], { pages: [] }),
+          c: docOf([
+            { ...hydrate(seed), times: 1 },
+            {
+              path: 'redaction.apply',
+              times: 1,
+              error: { name: 'EngineError', message: 'redaction unsupported', code: 'Unsupported' },
+            },
+            applyAnswer(result(pagesScope, 0, 'recovered-apply')),
+            reload([]),
+          ]),
+        },
       },
     },
-    snapshot: ['redaction::a'],
-    steps: [...boot, call('onApplied', [{ $fn: 'first' }]), call('onApplied', [{ $fn: 'second' }]), call('applyAll')],
-  },
-  {
-    name: 'apply-refused',
-    covers:
-      'An engine refusal ends the apply with a null result, which keeps the last result, and rejects with the engine’s error.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(seed),
-          { path: 'redaction.apply', times: 1, value: applyResult(pagesScope, 1) },
-          {
-            path: 'redaction.apply',
-            error: { name: 'PermissionDenied', message: 'permission denied (local): doc.redact', required: 'doc.redact', context: 'local' },
-          },
-        ]),
-      },
-    },
-    snapshot: ['redaction::a'],
-    steps: [...boot, call('onApplied', [{ $fn: 'applied' }]), call('applyAll'), call('apply', [['obj:10']]), call('lastResult'), call('isApplying')],
-  },
-  {
-    name: 'apply-refusals-before-the-engine',
-    covers:
-      'apply rejects when no pending id matches (an empty list, no argument, an unknown id); applyAll rejects for a document with no pages; both reject without the engine redaction service. None of them dispatches.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate(seed)]),
-        b: withService([hydrate()], { pages: [] }),
-        c: doc([hydrate(seed)]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      openDoc('b'),
-      openDoc('c'),
-      call('apply', [[]]),
-      call('apply'),
-      call('apply', [['obj:99']]),
-      call('applyAll', [], 'b'),
-      call('pendingCount', [], 'b'),
-      call('preparePending', [], 'b'),
-      call('apply', [['obj:10']], 'c'),
-      call('applyAll', [], 'c'),
+  ),
+  scenario(
+    'remote-applies-arrive-as-events',
+    'Both local and remote confirmed redaction events update lastResult; unrelated events do not. Closing releases listeners.',
+    [
+      rd('onApplied', [{ $fn: 'applied' }]),
+      { op: 'emit', doc: 'a', event: applied(answer) },
+      rd('getLastResult'),
+      { op: 'emit', doc: 'a', event: createdFact(square(70)) },
+      rd('getLastResult'),
+      { op: 'emit', doc: 'a', event: applied(result(pagesScope, 4, 'remote-apply'), REMOTE) },
+      rd('getLastResult'),
+      rd('listPending'),
+      close,
+      { op: 'emit', doc: 'a', event: applied(answer, REMOTE) },
     ],
-  },
-  {
-    name: 'remote-applies-arrive-as-events',
-    covers:
-      'A redaction.applied event from a remote origin is recorded as the last result and fires onApplied; a local one (own applies flow through apply) and other event types are ignored. Closing the document releases the subscription.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate(seed), ...reloadPages]) } },
-    snapshot: ['redaction::a'],
-    steps: [
-      ...boot,
-      call('onApplied', [{ $fn: 'applied' }]),
-      emit({ type: 'redaction.applied', origin: LOCAL, ...applyResult(pagesScope) }),
-      emit({ type: 'annotations.created', origin: REMOTE, pageObjectNumber: 1 }),
-      call('lastResult'),
-      emit({ type: 'redaction.applied', origin: REMOTE, ...applyResult(pagesScope, 4) }),
-      call('lastResult'),
-      call('getPending'),
-      { op: 'call', target: 'documents', method: 'close', args: ['a'] },
+    [{ ...hydrate(seed), times: 1 }, reload([])],
+  ),
+  scenario(
+    'a-throwing-listener-is-isolated',
+    'A throwing onApplied callback reaches the kernel report; the next callback still runs and the apply succeeds.',
+    [
+      rd('onApplied', [{ $fn: 'bad', throws: { name: 'Error', message: 'listener broke' } }]),
+      rd('onApplied', [{ $fn: 'good' }]),
+      rd('applyAll'),
     ],
-  },
-  {
-    name: 'a-throwing-listener-is-isolated',
-    covers: 'A throwing onApplied callback is reported to console.error and the next callback still runs.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate(seed), { path: 'redaction.apply', value: applyResult(pagesScope) }]) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('onApplied', [{ $fn: 'bad', throws: { name: 'Error', message: 'listener broke' } }]),
-      call('onApplied', [{ $fn: 'good' }]),
-      call('applyAll'),
+    [{ ...hydrate(seed), times: 1 }, applyAnswer(answer), reload([])],
+  ),
+  scenario(
+    'set-label',
+    'updateLabel writes explicit patch members and preserves the current font styling; non-mark and missing refs reject.',
+    [
+      rd('updateLabel', [objRef(10), { overlayText: 'SECRET' }]),
+      rd('listPending'),
+      rd('updateLabel', [objRef(10), { overlayText: null, repeat: true }]),
+      rd('updateLabel', [objRef(10), {}]),
+      rd('updateLabel', [baseRef(4, 2), { overlayText: 'B', repeat: false }]),
+      rd('updateLabel', [objRef(1), { overlayText: 'x' }]),
+      rd('updateLabel', [objRef(77), { overlayText: 'x' }]),
     ],
-  },
-  {
-    name: 'set-label',
-    covers:
-      'setLabel writes the label fields the patch names (null clears the text) and always carries the mark’s current font family, size, colour and alignment; it rejects for a non-redact annotation and for an unknown ref.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(seed),
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated({ ...areaMark, overlayText: 'SECRET' }) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated({ ...areaMark, overlayText: null, repeat: true }) },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated({ ...areaMark, overlayText: null, repeat: true }) },
-          {
-            path: 'page.annotations.update',
-            pon: 2,
-            value: updated({ ...nmMark, overlayText: 'B', fontFamily: 'courier', fontSize: 9 }),
-          },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('setLabel', [objRef(10), { overlayText: 'SECRET' }]),
-      call('getPending'),
-      call('setLabel', [objRef(10), { overlayText: null, repeat: true }]),
-      call('setLabel', [objRef(10), {}]),
-      call('setLabel', [{ kind: 'nm', page: pr(2), nm: 'mark-b' }, { overlayText: 'B', repeat: false }]),
-      call('setLabel', [objRef(1), { overlayText: 'x' }]),
-      call('setLabel', [objRef(77), { overlayText: 'x' }]),
+    [
+      hydrate(seed),
+      write(1, [{ item: updated({ ...areaMark, overlayText: 'SECRET' }) }]),
+      write(2, [{ item: updated({ ...areaMark, overlayText: null, repeat: true }) }]),
+      write(3, [{ item: updated({ ...areaMark, overlayText: null, repeat: true }) }]),
+      write(4, [{ item: updated({ ...secondMark, overlayText: 'B', repeat: false }) }]),
     ],
-  },
-  {
-    name: 'mark-area-and-page',
-    covers:
-      'markArea creates a redact annotation over a page-space rectangle with the redact tool and the configured overlay look (fill, label colour, family, and a size of 0); markPage covers the whole page. onPendingChanged fires for each redact creation and not for a square. markPage of a page the document lacks throws not-found; without create authority markArea and markPage throw permission-denied.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction', config: OVERLAY }, { factory: 'redaction-tool' }],
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(redact(40, { rect: { left: 10, bottom: 730, right: 110, top: 780 }, interiorColor: { r: 255, g: 0, b: 0 }, fontColor: { r: 0, g: 255, b: 0 }, fontFamily: 'courier' })) },
-          { path: 'page.annotations.create', pon: 2, value: created(redact(41, { pageObjectNumber: 2, rect: CROP2_RECT, interiorColor: { r: 255, g: 0, b: 0 }, fontColor: { r: 0, g: 255, b: 0 }, fontFamily: 'courier' })) },
-          { path: 'page.annotations.create', pon: 1, value: created(square(42)) },
-        ]),
-        b: withService([hydrate()], { security: { allows: ['doc.annotate.read', ...APPLY_CAPS] } }),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      openDoc('b'),
+  ),
+  scenario(
+    'mark-area-and-page',
+    'Page-space rectangles and full visible page sizes take configured overlay defaults. Missing pages and absent create authority reject; pending events omit non-mark creations.',
+    [
+      open('b'),
       rd('onPendingChanged', [{ $fn: 'pending' }]),
       rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]),
       rd('markPage', [pr(2)]),
-      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'create', args: [{ page: pr(1), subtype: 'square', bounds: { x: 300, y: 300, width: 50, height: 50 } }] },
+      an('create', [pr(1), { subtype: 'square', box: { x: 300, y: 300, width: 50, height: 50 } }]),
       rd('markPage', [pr(9)]),
       rd('listPending'),
       rd('canMark', [], 'b'),
       rd('markArea', [pr(1), { x: 0, y: 0, width: 10, height: 10 }], 'b'),
       rd('markPage', [pr(1)], 'b'),
     ],
-  },
-  {
-    name: 'an-overlay-without-values-adds-nothing',
-    covers: 'An overlay config whose fill and text members are all absent adds no props to a mark. A document with pages but no marks lists none.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'redaction', config: { overlay: { text: {} } } }],
-    engine: {
-      documents: {
-        a: withService([hydrate(), { path: 'page.annotations.create', pon: 1, value: created(redact(43, { rect: { left: 10, bottom: 730, right: 110, top: 780 } })) }]),
+    [],
+    {
+      plugins: [
+        { factory: 'interaction' },
+        { factory: 'annotation-live' },
+        { factory: 'redaction-current', config: OVERLAY },
+      ],
+      engine: {
+        documents: {
+          a: docOf([
+            hydrate(),
+            write(1, [
+              {
+                item: created(
+                  fresh(10001, { x: 10, y: 20, width: 100, height: 50 }, 1, overlayFields),
+                ),
+              },
+            ]),
+            write(2, [
+              {
+                item: created(
+                  fresh(10002, { x: 0, y: 0, width: 400, height: 500 }, 2, overlayFields),
+                ),
+              },
+            ]),
+            write(3, [
+              {
+                item: created(
+                  square(10003, {
+                    rect: { x: 300, y: 300, width: 50, height: 50 },
+                    box: { x: 300, y: 300, width: 50, height: 50 },
+                  }),
+                ),
+              },
+            ]),
+          ]),
+          b: docOf([hydrate()], { security: { allows: ['doc.annotate.read', ...APPLY_CAPS] } }),
+        },
       },
     },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, rd('listPending'), rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]), rd('getPendingCount')],
-  },
-  {
-    name: 'mark-search-matches',
-    covers:
-      'markMatches runs the search and creates one redact mark per hit from its segment quads, in hit order, skipping hits without segments; a pages filter keeps only the hits on those pages. Without a config the marks carry no overlay props.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'search' }, { factory: 'redaction' }],
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(),
-          { path: 'search.query', value: { matches: [match(1, 0, [seg(50, 738, 116, 750), seg(50, 718, 80, 730)]), match(1, 20, []), match(2, 3, [seg(40, 488, 64, 500)])], nextCursor: null, scannedPages: 2, totalPages: 2 } },
-          { path: 'page.annotations.create', pon: 1, value: created(redact(50, { quadPoints: [quad(50, 738, 66, 12), quad(50, 718, 30, 12)] })) },
-          { path: 'page.annotations.create', pon: 2, times: 1, value: created(redact(51, { pageObjectNumber: 2, quadPoints: [quad(40, 488, 24, 12)] })) },
-          { path: 'page.annotations.create', pon: 2, value: created(redact(52, { pageObjectNumber: 2, quadPoints: [quad(40, 488, 24, 12)] })) },
-        ]),
-      },
+  ),
+  scenario(
+    'an-overlay-without-values-adds-nothing',
+    'A partial empty overlay is merged with current settings defaults; marking still receives the default fill and text styling.',
+    [
+      rd('listPending'),
+      rd('markArea', [pr(1), { x: 10, y: 20, width: 100, height: 50 }]),
+      rd('getPendingCount'),
+    ],
+    [
+      hydrate(),
+      write(1, [{ item: created(fresh(10001, { x: 10, y: 20, width: 100, height: 50 })) }]),
+    ],
+    {
+      plugins: [
+        { factory: 'interaction' },
+        { factory: 'annotation-live' },
+        { factory: 'redaction-current', config: { overlay: { text: {} } } },
+      ],
     },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
+  ),
+  scenario(
+    'mark-search-matches',
+    'Actual search results yield one mark per segmented hit in hit order; the page filter selects only page two.',
+    [
       rd('markMatches', [{ text: 'the' }]),
       rd('markMatches', [{ text: 'the' }, { pages: [pr(2)] }]),
       rd('listPending'),
     ],
-  },
-  {
-    name: 'marking-refusals',
-    covers:
-      'markMatches rejects unsupported without a search plugin and permission-denied without create authority; markSelection rejects unsupported without a selection plugin once authority is there.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate()]),
-        b: withService([hydrate()], { security: { allows: ['doc.annotate.read'] } }),
+    [
+      hydrate(),
+      {
+        path: 'search.query',
+        value: {
+          matches: [
+            hit(1, 0, [segment(50, 50, 66, 12), segment(50, 70, 30, 12)]),
+            hit(1, 20, []),
+            hit(2, 3, [segment(30, 20, 24, 12)]),
+          ],
+          nextCursor: null,
+          pagesSearched: 2,
+          pageCount: 2,
+        },
+      },
+      write(1, [
+        {
+          item: created(
+            fresh(10001, { x: 50, y: 50, width: 66, height: 32 }, 1, {
+              quadPoints: [quad(50, 50, 66, 12), quad(50, 70, 30, 12)],
+            }),
+          ),
+        },
+      ]),
+      write(2, [
+        {
+          item: created(
+            fresh(10002, { x: 30, y: 20, width: 24, height: 12 }, 2, {
+              quadPoints: [quad(30, 20, 24, 12)],
+            }),
+          ),
+        },
+      ]),
+      write(3, [
+        {
+          item: created(
+            fresh(10003, { x: 30, y: 20, width: 24, height: 12 }, 2, {
+              quadPoints: [quad(30, 20, 24, 12)],
+            }),
+          ),
+        },
+      ]),
+    ],
+    {
+      plugins: [
+        { factory: 'interaction' },
+        { factory: 'annotation-live' },
+        { factory: 'redaction-search' },
+        { factory: 'redaction-current' },
+      ],
+    },
+  ),
+  scenario(
+    'marking-refusals',
+    'Missing search or selection rejects unsupported only after authority passes; denied create rejects permission-denied.',
+    [
+      open('b'),
+      rd('markMatches', [{ text: 'x' }]),
+      rd('markMatches', [{ text: 'x' }], 'b'),
+      rd('markSelection'),
+      rd('markSelection', [], 'b'),
+    ],
+    [],
+    {
+      engine: {
+        documents: {
+          a: docOf(),
+          b: docOf([hydrate()], { security: { allows: ['doc.annotate.read'] } }),
+        },
       },
     },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, openDoc('b'), rd('markMatches', [{ text: 'x' }]), rd('markMatches', [{ text: 'x' }], 'b'), rd('markSelection'), rd('markSelection', [], 'b')],
-  },
-  {
-    name: 'unmark-and-clear',
-    covers:
-      'unmark deletes the refs that are pending marks through the annotation plane and reports every other ref as skipped; with no marks among them it resolves without touching the engine. clearPending unmarks every mark; a refused delete lands in failed. onPendingChanged fires once per deleted mark, with its page.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(seed),
-          { path: 'page.annotations.delete', pon: 1, times: 1, value: {} },
-          { path: 'page.annotations.delete', pon: 1, error: { name: 'EngineError', message: 'locked', code: 'Refused' } },
-          { path: 'page.annotations.delete', pon: 2, value: {} },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
+  ),
+  scenario(
+    'unmark-and-clear',
+    'Unmark applies pending refs, skips others, and reports per-mark refused deletes while retaining the refused mark. Confirmed delete events publish pending page changes.',
+    [
       rd('onPendingChanged', [{ $fn: 'pending' }]),
       rd('unmark', [[objRef(10), objRef(1), objRef(99)]]),
       rd('unmark', [[objRef(1)]]),
       rd('clearPending'),
       rd('listPending'),
     ],
-  },
-  {
-    name: 'apply-pages',
-    covers: 'applyPages rejects invalid-input for no pages and otherwise sends the given pages as a pages scope.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([hydrate(seed), { path: 'redaction.apply', args: [{ kind: 'pages', pages: [pr(2)] }], value: applyResult({ kind: 'pages', pages: [pr(2)] }, 1) }]),
-      },
-    },
-    snapshot: ['redaction::a'],
-    steps: [...boot, rd('applyPages', [[]]), rd('isApplying'), rd('applyPages', [[pr(2)]]), rd('getLastResult')],
-  },
-  {
-    name: 'pending-reads',
-    covers:
-      'getPending finds a mark by any ref kind and answers null for a non-mark; listPending with a page filter reads only that page (a page the document lacks has none), a filter without a page reads them all, and repeated reads answer the same marks. getPendingCount counts one page or all.',
-    plugins: PLUGINS,
-    engine: { documents: { a: withService([hydrate(seed)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    [
+      hydrate(seed),
+      write(1, [{ item: deleted(objRef(10)), changed: [objRef(10)] }]),
+      refused('locked'),
+      write(3, [{ item: deleted(baseRef(4, 2)), changed: [baseRef(4, 2)] }]),
+    ],
+  ),
+  scenario(
+    'apply-pages',
+    'Empty pages reject invalid-input; current page refs resolve to a pages scope and lastResult reflects the engine fact.',
+    [rd('applyPages', [[]]), rd('isApplying'), rd('applyPages', [[pr(2)]]), rd('getLastResult')],
+    [
+      { ...hydrate(seed), times: 1 },
+      applyAnswer(result({ pages: [pr(2)] }, 1)),
+      reload([], [pr(2)]),
+    ],
+  ),
+  scenario(
+    'pending-reads',
+    'Current objectNumber and baseIndex refs resolve pending marks; page filters are stable, absent pages are empty, and page counts agree.',
+    [
       rd('getPending', [objRef(10)]),
-      rd('getPending', [{ kind: 'nm', page: pr(2), nm: 'mark-b' }]),
+      rd('getPending', [baseRef(4, 2)]),
       rd('getPending', [objRef(1)]),
       rd('listPending', [{ page: pr(2) }]),
       rd('listPending', [{ page: pr(2) }]),
@@ -708,144 +601,320 @@ const cases: ScenarioCase[] = [
       rd('getPendingCount', [pr(9)]),
       rd('getPendingCount'),
     ],
-  },
-  {
-    name: 'update-label-refused',
-    covers:
-      'An engine refusal of a label edit rejects as a redaction PluginError; a later edit that lands fires onPendingChanged for the mark’s page.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: withService([
-          hydrate(seed),
-          { path: 'page.annotations.update', pon: 1, times: 1, error: { name: 'EngineError', message: 'locked', code: 'Refused' } },
-          { path: 'page.annotations.update', pon: 1, value: updated({ ...areaMark, repeat: true }) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+  ),
+  scenario(
+    'update-label-refused',
+    'An engine label refusal rejects and rolls back. A later successful edit carries the unchanged overlay label and fires pending changed.',
+    [
       rd('onPendingChanged', [{ $fn: 'pending' }]),
       rd('updateLabel', [objRef(10), { overlayText: 'X' }]),
+      rd('getPending', [objRef(10)]),
       rd('updateLabel', [objRef(10), { repeat: true }]),
+      rd('getPending', [objRef(10)]),
     ],
-  },
+    [
+      hydrate(seed),
+      refused('locked'),
+      write(2, [{ item: updated({ ...areaMark, repeat: true }) }]),
+    ],
+  ),
+  scenario(
+    'mark-ownership-and-flags',
+    'Self-scoped authority allows the owned mark only; foreign, unstamped and locked marks refuse without dispatch. Owned update and removal publish facts.',
+    [
+      rd('canUpdateLabel', [objRef(60)]),
+      rd('canUnmark', [objRef(60)]),
+      rd('canUpdateLabel', [objRef(61)]),
+      rd('canUnmark', [objRef(61)]),
+      rd('canUpdateLabel', [objRef(62)]),
+      rd('canUnmark', [objRef(63)]),
+      rd('updateLabel', [objRef(61), { overlayText: 'forbidden' }]),
+      rd('updateLabel', [objRef(60), { overlayText: 'mine' }]),
+      rd('unmark', [[objRef(60), objRef(61), objRef(62), objRef(63)]]),
+      rd('listPending'),
+    ],
+    [
+      hydrate([
+        redact(60, { userId: 'me' }),
+        redact(61, { userId: 'other' }),
+        redact(62),
+        redact(63, { userId: 'me', locked: true }),
+      ]),
+      write(1, [{ item: updated(redact(60, { userId: 'me', overlayText: 'mine' })) }]),
+      write(2, [{ item: deleted(objRef(60)), changed: [objRef(60)] }]),
+    ],
+    {
+      engine: {
+        documents: {
+          a: docOf(
+            [
+              hydrate([
+                redact(60, { userId: 'me' }),
+                redact(61, { userId: 'other' }),
+                redact(62),
+                redact(63, { userId: 'me', locked: true }),
+              ]),
+              write(1, [{ item: updated(redact(60, { userId: 'me', overlayText: 'mine' })) }]),
+              write(2, [{ item: deleted(objRef(60)), changed: [objRef(60)] }]),
+            ],
+            {
+              security: {
+                rawScope: [
+                  'doc.annotate.read',
+                  'doc.annotate.modify',
+                  'annotations:update:self',
+                  'annotations:delete:self',
+                ],
+                identity: { userId: 'me' },
+              },
+            },
+          ),
+        },
+      },
+    },
+  ),
+  scenario(
+    'apply-queue-and-unchanged-page',
+    'Queued applies compute refs when their turn begins. Each confirmed single-page apply removes its mark while page two survives unchanged.',
+    [
+      rd('onApplied', [{ $fn: 'applied' }]),
+      rd('apply', [[objRef(10)]]),
+      rd('apply', [[objRef(11)]]),
+      rd('isApplying'),
+      settle('first', result({ annotations: [objRef(10)] }, 1, 'first')),
+      rd('listPending'),
+      rd('getLastResult'),
+      rd('isApplying'),
+    ],
+    [
+      { ...hydrate(seed), times: 1 },
+      applyAnswer(result({ annotations: [objRef(10)] }, 1, 'first'), { defer: 'first' }),
+      { ...reload([textMark], [pr(1)]), times: 1 },
+      applyAnswer(result({ annotations: [objRef(11)] }, 0, 'second')),
+      reload([], [pr(1)]),
+    ],
+  ),
+  scenario(
+    'close-during-apply',
+    'Closing a document cancels its pending apply and releases the event listener; a later engine settlement cannot publish an applied callback into the closed instance.',
+    [
+      rd('onApplied', [{ $fn: 'applied' }]),
+      rd('applyAll'),
+      rd('isApplying'),
+      close,
+      settle('closing', answer),
+      open('b'),
+      rd('isApplying', [], 'b'),
+      rd('getLastResult', [], 'b'),
+    ],
+    [],
+    {
+      engine: {
+        documents: {
+          a: docOf([hydrate(seed), applyAnswer(answer, { defer: 'closing' })]),
+          b: docOf(),
+        },
+      },
+    },
+  ),
 ];
 
-// ── functions ─────────────────────────────────────────────────────────────────
-
-/**
- * `estimateCollateral` reads only the document's page list and the
- * annotation plane's `listRaw({page})`, so a function case drives the real
- * pending reads over a stub: `pages` is the document's page list (`null` for
- * no document) and `byPage` the annotations `listRaw` answers per object
- * number. A filter lists v2 mark ids, turned into refs.
- */
-const stubReads = (pages: { pageObjectNumber: number }[] | null, byPage: Record<string, unknown[]>) =>
-  createPendingReads({
-    store: {
-      pages: () => (pages ?? []).map((p) => pr(p.pageObjectNumber)),
-      pageIndexOf: () => -1,
-    },
-    siblings: {
-      annotation: { listRaw: ({ page }: { page: { pageObjectNumber: number } }) => byPage[String(page.pageObjectNumber)] ?? [] },
-    },
-  } as never).api;
+import { pending } from './redaction-read-inputs';
 
 const functions = {
-  initialRedactionState,
-  redactionReducer: (state: RedactionState, action: RedactionAction) => {
-    const next = redactionReducer(state, action);
-    return { changed: next !== state, state: next };
-  },
-  estimateCollateral: (pages: { pageObjectNumber: number }[] | null, byPage: Record<string, unknown[]>, ids?: unknown[] | null) =>
-    stubReads(pages, byPage).estimateCollateral(ids ? (ids.map(idRef) as never) : undefined),
+  initialRedactionState: model.initialRedactionState,
+  startApply: model.startApply,
+  finishApply: model.finishApply,
+  setLastResult: model.setLastResult,
+  markOf,
+  estimateCollateral: (
+    pages: readonly PageLayout[] | null,
+    records: readonly Annotation[],
+    refs?: readonly AnnotationRef[],
+  ) => pending(pages, records).api.estimateCollateral(refs),
 };
-
-const RESULT = applyResult(pagesScope);
-const busy: RedactionState = { applying: true, lastResult: null };
-const done: RedactionState = { applying: false, lastResult: RESULT as never };
-
-const r = (name: string, state: RedactionState, action: unknown, covers?: string): FunctionCase => ({
-  name,
-  fn: 'redactionReducer',
-  args: [state, action],
-  ...(covers === undefined ? {} : { covers }),
-});
-
-const page = (index: number, pon: number) => ({ index, pageObjectNumber: pon });
-const rect = (left: number, bottom: number, right: number, top: number) => ({ left, bottom, right, top });
-const mark = (n: number, over: Record<string, unknown> = {}) => redact(n, over);
-const other = (n: number, box: ReturnType<typeof rect>, over: Record<string, unknown> = {}) => square(n, { rect: box, ...over });
-/** A mark's region is its quads' axis-aligned boxes, however the quad is wound. */
-const tilted = { p1: { x: 150, y: 100 }, p2: { x: 200, y: 150 }, p3: { x: 100, y: 150 }, p4: { x: 150, y: 200 } };
-const NAN = { $number: 'NaN' };
-
-const c = (name: string, byPage: Record<string, unknown[]>, ids?: unknown, pages: unknown[] | null = [page(0, 1)], covers?: string): FunctionCase => ({
-  name,
-  fn: 'estimateCollateral',
-  args: ids === undefined ? [pages, byPage] : [pages, byPage, ids],
-  ...(covers === undefined ? {} : { covers }),
-});
-
+const initial = model.initialRedactionState(),
+  busy = { applying: true, lastResult: null },
+  done = { applying: false, lastResult: answer };
+const f = <K extends keyof typeof functions>(
+  name: string,
+  fn: K,
+  args: Parameters<(typeof functions)[K]>,
+  covers?: string,
+): FunctionCase => ({ name, fn, args, ...(covers ? { covers } : {}) });
+const box = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
+const m = (n: number, over: Partial<Extract<Annotation, { subtype: 'redact' }>> = {}) =>
+  redact(n, { rect: box(100, 600, 100, 100), ...over });
+const other = (
+  n: number,
+  rect: Annotation['rect'],
+  over: Partial<Extract<Annotation, { subtype: 'square' }>> = {},
+) => square(n, { rect, ...over });
+const c = (
+  name: string,
+  records: Annotation[],
+  refs?: AnnotationRef[],
+  pages: PageLayout[] | null = [layout(0, 1)],
+  covers?: string,
+) =>
+  f(
+    name,
+    'estimateCollateral',
+    refs === undefined ? [pages, records] : [pages, records, refs],
+    covers,
+  );
 const functionCases: FunctionCase[] = [
-  { name: 'initial-state', fn: 'initialRedactionState', args: [] },
-  r('started-from-idle', initialRedactionState(), { type: 'APPLY_STARTED' }),
-  r('started-keeps-the-last-result', done, { type: 'APPLY_STARTED' }, 'APPLY_STARTED sets applying and keeps lastResult.'),
-  r('finished-with-a-result', busy, { type: 'APPLY_FINISHED', result: RESULT }),
-  r('finished-replaces-the-result', { applying: true, lastResult: RESULT as never }, { type: 'APPLY_FINISHED', result: applyResult(pagesScope, 9) }),
-  r('finished-with-null-keeps-the-result', { applying: true, lastResult: RESULT as never }, { type: 'APPLY_FINISHED', result: null }, 'A failed apply (result null) clears applying and keeps the previous result.'),
-  r('finished-without-a-result-member', { applying: true, lastResult: RESULT as never }, { type: 'APPLY_FINISHED' }),
-  r('finished-when-idle', initialRedactionState(), { type: 'APPLY_FINISHED', result: null }, 'APPLY_FINISHED always makes a new state, even when nothing changes.'),
-  r('unknown-action', done, { type: 'OTHER' }, 'An action outside the union returns the same state.'),
-
-  c('no-document', { 1: [mark(1), other(2, rect(100, 600, 200, 700))] }, undefined, null, 'Without a document there are no pages, so nothing is counted.'),
-  c('no-pages', { 1: [mark(1)] }, undefined, []),
-  c('no-marks', { 1: [other(1, rect(0, 0, 10, 10)), other(2, rect(0, 0, 10, 10))] }),
-  c('rect-mark-overlaps', { 1: [mark(1), other(2, rect(150, 650, 250, 750)), other(3, rect(300, 300, 400, 400))] }),
-  c('touching-edges-do-not-count', { 1: [mark(1), other(2, rect(200, 600, 300, 700)), other(3, rect(100, 700, 200, 800)), other(4, rect(0, 500, 100, 600))] }, undefined, undefined, 'Intersection needs positive area: shared edges and corners are not collateral.'),
-  c('contained-and-containing', { 1: [mark(1), other(2, rect(120, 620, 130, 630)), other(3, rect(0, 0, 600, 800))] }),
-  c('sliver-overlap', { 1: [mark(1), other(2, rect(199.999, 600, 300, 700)), other(3, rect(100, 699.5, 200, 701))] }),
-  c('quads-replace-the-rect', { 1: [mark(1, { rect: rect(0, 0, 600, 800), quadPoints: [quad(100, 100, 50, 10), quad(300, 100, 50, 10)] }), other(2, rect(120, 105, 130, 108)), other(3, rect(200, 100, 250, 110)), other(4, rect(340, 90, 360, 120))] }, undefined, undefined, 'A mark with quads targets the quads’ boxes only, not its /Rect.'),
-  c('tilted-quad-box', { 1: [mark(1, { quadPoints: [tilted] }), other(2, rect(195, 195, 210, 210)), other(3, rect(100, 100, 101, 101)), other(4, rect(201, 150, 210, 160))] }),
-  c('one-annotation-counts-once', { 1: [mark(1), mark(2, { rect: rect(150, 650, 160, 660) }), other(3, rect(140, 640, 170, 670))] }, undefined, undefined, 'An annotation under several marks is one piece of collateral.'),
-  c('marks-are-never-collateral', { 1: [mark(1), mark(2, { rect: rect(150, 650, 250, 750) })] }),
-  c('filter-by-id', { 1: [mark(1), mark(2, { rect: rect(300, 300, 400, 400) }), other(3, rect(150, 650, 160, 660)), other(4, rect(350, 350, 360, 360))] }, ['obj:2']),
-  c('filter-matches-nothing', { 1: [mark(1), other(3, rect(150, 650, 160, 660))] }, ['obj:3', 'nm:x']),
-  c('empty-filter', { 1: [mark(1), other(3, rect(150, 650, 160, 660))] }, []),
-  c('null-filter-is-all', { 1: [mark(1), other(3, rect(150, 650, 160, 660))] }, null),
-  c('filter-by-nm-and-index', {
-    1: [
-      mark(1, { ref: { kind: 'nm', page: pr(1), nm: 'n1' } }),
-      mark(2, { ref: { kind: 'index', page: pr(1), index: 4, revision: { docSessionId: 's', page: pr(1), generation: 2 } }, rect: rect(300, 300, 400, 400) }),
-      other(3, rect(150, 650, 160, 660)),
-      other(4, rect(350, 350, 360, 360)),
+  f('initial-state', 'initialRedactionState', []),
+  f('started-from-idle', 'startApply', [initial]),
+  f('started-keeps-the-last-result', 'startApply', [done]),
+  f(
+    'finished-with-a-result',
+    'finishApply',
+    [busy],
+    'finishApply clears busy; setLastResult is separately exercised.',
+  ),
+  f('finished-replaces-the-result', 'setLastResult', [
+    { applying: false, lastResult: answer },
+    result(pagesScope, 9),
+  ]),
+  f('finished-with-null-keeps-the-result', 'finishApply', [{ applying: true, lastResult: answer }]),
+  f('finished-without-a-result-member', 'finishApply', [{ applying: true, lastResult: answer }]),
+  f('finished-when-idle', 'finishApply', [initial]),
+  f(
+    'already-started-is-stable',
+    'startApply',
+    [busy],
+    'Replaces removed unknown-action dispatcher behavior with current transition identity.',
+  ),
+  c('no-document', [m(1), other(2, box(100, 600, 100, 100))], undefined, null),
+  c('no-pages', [m(1)], undefined, []),
+  c('no-marks', [other(1, box(0, 0, 10, 10)), other(2, box(0, 0, 10, 10))]),
+  c('rect-mark-overlaps', [
+    m(1),
+    other(2, box(150, 650, 100, 100)),
+    other(3, box(300, 300, 100, 100)),
+  ]),
+  c('touching-edges-do-not-count', [
+    m(1),
+    other(2, box(200, 600, 100, 100)),
+    other(3, box(100, 700, 100, 100)),
+    other(4, box(0, 500, 100, 100)),
+  ]),
+  c('contained-and-containing', [
+    m(1),
+    other(2, box(120, 620, 10, 10)),
+    other(3, box(0, 0, 600, 800)),
+  ]),
+  c('sliver-overlap', [
+    m(1),
+    other(2, box(199.999, 600, 100.001, 100)),
+    other(3, box(100, 699.5, 100, 1.5)),
+  ]),
+  c('quads-replace-the-rect', [
+    m(1, {
+      rect: box(0, 0, 600, 800),
+      quadPoints: [quad(100, 100, 50, 10), quad(300, 100, 50, 10)],
+    }),
+    other(2, box(120, 105, 10, 3)),
+    other(3, box(200, 100, 50, 10)),
+    other(4, box(340, 90, 20, 30)),
+  ]),
+  c('tilted-quad-box', [
+    m(1, {
+      quadPoints: [
+        {
+          upperLeft: { x: 150, y: 100 },
+          upperRight: { x: 200, y: 150 },
+          lowerLeft: { x: 100, y: 150 },
+          lowerRight: { x: 150, y: 200 },
+        },
+      ],
+    }),
+    other(2, box(195, 195, 15, 15)),
+    other(3, box(100, 100, 1, 1)),
+    other(4, box(201, 150, 9, 10)),
+  ]),
+  c('one-annotation-counts-once', [
+    m(1),
+    m(2, { rect: box(150, 650, 10, 10) }),
+    other(3, box(140, 640, 30, 30)),
+  ]),
+  c('marks-are-never-collateral', [m(1), m(2, { rect: box(150, 650, 100, 100) })]),
+  c(
+    'filter-by-id',
+    [
+      m(1),
+      m(2, { rect: box(300, 300, 100, 100) }),
+      other(3, box(150, 650, 10, 10)),
+      other(4, box(350, 350, 10, 10)),
     ],
-  }, ['idx:1:4']),
-  c('pages-in-document-order', {
-    1: [mark(1), other(2, rect(150, 650, 160, 660))],
-    2: [mark(3, { pageObjectNumber: 2 }), other(4, rect(150, 650, 160, 660), { pageObjectNumber: 2 }), other(5, rect(0, 0, 1, 1), { pageObjectNumber: 2 })],
-    3: [mark(6, { pageObjectNumber: 3 }), other(7, rect(150, 650, 160, 660), { pageObjectNumber: 3 })],
-  }, undefined, [page(0, 2), page(1, 1)], 'Only pages in the document are counted, each against its own marks.'),
-  c('nan-geometry-never-intersects', { 1: [mark(1), other(2, rect(NAN as never, 600, 200, 700)), mark(3, { quadPoints: [{ ...quad(100, 600, 10, 10), p1: { x: NAN, y: 610 } }] }), other(4, rect(100, 600, 105, 605))] }),
-  c('negative-and-fractional', { 1: [mark(1, { rect: rect(-50.5, -50.5, -10.25, -10.25) }), other(2, rect(-20, -20, 0, 0)), other(3, rect(-10.25, -60, 0, 0))] }),
-
+    [objRef(2)],
+  ),
+  c('filter-matches-nothing', [m(1), other(3, box(150, 650, 10, 10))], [objRef(3), baseRef(9, 2)]),
+  c('empty-filter', [m(1), other(3, box(150, 650, 10, 10))], []),
+  c(
+    'null-filter-is-all',
+    [m(1), other(3, box(150, 650, 10, 10))],
+    undefined,
+    undefined,
+    'The current optional refs contract records omitted refs; null is outside the public contract.',
+  ),
+  c(
+    'filter-by-nm-and-index',
+    [
+      m(1, { ref: baseRef(1) }),
+      m(2, { ref: baseRef(4), rect: box(300, 300, 100, 100) }),
+      other(3, box(150, 650, 10, 10)),
+      other(4, box(350, 350, 10, 10)),
+    ],
+    [baseRef(4)],
+    undefined,
+    'Current baseIndex refs replace removed nm/index revision refs; exact originals remain archived.',
+  ),
+  c(
+    'pages-in-document-order',
+    [
+      m(1),
+      other(2, box(150, 650, 10, 10)),
+      m(3, { page: pr(2), ref: objRef(3, 2) }),
+      other(4, box(150, 650, 10, 10), { page: pr(2), ref: objRef(4, 2) }),
+      other(5, box(0, 0, 1, 1), { page: pr(2), ref: objRef(5, 2) }),
+      m(6, { page: pr(3), ref: objRef(6, 3) }),
+      other(7, box(150, 650, 10, 10), { page: pr(3), ref: objRef(7, 3) }),
+    ],
+    undefined,
+    [layout(0, 2), layout(1, 1)],
+  ),
+  c('nan-geometry-never-intersects', [
+    m(1),
+    other(2, box(NaN, 600, 100, 100)),
+    m(3, { quadPoints: [{ ...quad(100, 600, 10, 10), upperLeft: { x: NaN, y: 610 } }] }),
+    other(4, box(100, 600, 5, 5)),
+  ]),
+  c('negative-and-fractional', [
+    m(1, { rect: box(-50.5, -50.5, 40.25, 40.25) }),
+    other(2, box(-20, -20, 20, 20)),
+    other(3, box(-10.25, -60, 10.25, 60)),
+  ]),
+  f('set-first-result', 'setLastResult', [initial, answer]),
+  f('set-same-result-is-stable', 'setLastResult', [done, answer]),
+  f('mark-of-text', 'markOf', [textMark, 0]),
+  f('mark-of-area', 'markOf', [areaMark, 0]),
 ];
-
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/redaction.json',
-    describes: 'packages/plugin/redaction: marking from a selection and by area, the pending view, collateral, labels, the apply flow over the engine’s redaction service, remote applies, and the permission twins.',
+    describes:
+      'Current redaction selection/search/area marks, pending ownership and apply lifecycle.',
     cases,
   },
   {
     kind: 'function',
     file: 'plugins/redaction-functions.json',
-    describes: 'packages/plugin/redaction: the reducer, and estimateCollateral over a stub annotation plane.',
+    describes:
+      'Current named session transitions, markOf and pending collateral over explicit current read inputs.',
     functions,
     cases: functionCases,
   },
 ];
-
