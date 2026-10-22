@@ -39,6 +39,34 @@ function decode(v: unknown): unknown {
   if ('$undefined' in o) return undefined;
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, decode(v)]));
 }
+const expectedDiagnostics: Record<string, readonly string[]> = {
+  'navigation-executors': [
+    'executor-failed:goto: the destination page is not in this document',
+    "executor-inert:named: unknown named action 'Bogus'",
+  ],
+  'a-goto-without-a-destination': [
+    "executor-failed:goto: Cannot read properties of undefined (reading 'page')",
+    "executor-failed:goto: Cannot read properties of undefined (reading 'kind')",
+  ],
+  'a-thumbnail-lens-stays-out': [
+    'no-executor:named: no executor registered',
+    'no-executor:goto: no executor registered',
+  ],
+};
+function diagnosticsOf(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(diagnosticsOf);
+  if (!value || typeof value !== 'object') return [];
+  const object = value as Record<string, unknown>;
+  return Object.entries(object).flatMap(([key, value]) =>
+    key === 'diagnostics' && Array.isArray(value)
+      ? value.map(
+          (diagnostic: { code: string; message: string }) =>
+            `${diagnostic.code}:${diagnostic.message}`,
+        )
+      : diagnosticsOf(value),
+  );
+}
+
 const runs = new Map<string, TraceEntry[]>();
 const values = new Map<string, unknown>();
 test('all owned cases have unique names and exactly their current shipping outcome', async () => {
@@ -68,6 +96,7 @@ test('all owned cases have unique names and exactly their current shipping outco
         const result = await runScenario(c as ScenarioCase);
         assert.deepEqual(result.unmatched, [], `${c.name}: unmatched`);
         const errors: unknown[] = [];
+        const diagnostics: string[] = [];
         result.trace.forEach((t, i) => {
           for (const value of [
             t.outcome && 'threw' in t.outcome ? t.outcome.threw : undefined,
@@ -82,6 +111,18 @@ test('all owned cases have unique names and exactly their current shipping outco
             );
             errors.push([i, e.code ?? e.name, e.message]);
           }
+          diagnostics.push(...diagnosticsOf(t.outcome), ...diagnosticsOf(t.settled));
+          for (const callback of t.callbacks) {
+            const first = callback.args[0];
+            if (
+              first &&
+              typeof first === 'object' &&
+              'code' in first &&
+              'action' in first &&
+              'source' in first
+            )
+              diagnostics.push(`callback:${String(first.code)}`);
+          }
           for (const report of t.reports) {
             assert.equal(c.name, 'change-hooks');
             assert.deepEqual(report, { $error: { name: 'Error', message: 'listener' } });
@@ -91,6 +132,11 @@ test('all owned cases have unique names and exactly their current shipping outco
           errors,
           expectedRefusals[c.name] ?? [],
           `${suite.file}:${c.name}: refusals`,
+        );
+        assert.deepEqual(
+          diagnostics,
+          expectedDiagnostics[c.name] ?? [],
+          `${suite.file}:${c.name}: diagnostics`,
         );
         runs.set(`${suite.file}:${c.name}`, result.trace);
       }
@@ -335,4 +381,98 @@ test('layout mapping preserves pre-settlement events, error/abort paths and the 
   fake.settle('late', { value: { $textLayout: geometry } });
   assert.equal(oldEvents, 1);
   assert.equal(newEvents, 0);
+});
+
+const scenarioOf = (file: string, name: string): ScenarioCase => {
+  const suite = suites.find((s) => s.file === file);
+  assert.ok(suite?.kind === 'scenario');
+  const scenario = suite.cases.find((c) => c.name === name);
+  assert.ok(scenario);
+  return scenario;
+};
+const stageState = (trace: TraceEntry[], at: number) =>
+  (
+    trace[at].state as {
+      plugins: Record<
+        string,
+        { camera: { x: number; y: number; zoom: number }; cursor: number; motionCause: string }
+      >;
+    }
+  ).plugins['stage::a'];
+
+test('review: search permission twins exercise both typed snippets branches', async () => {
+  const scenario = scenarioOf('plugins/search.json', 'can-search');
+  const result = await runScenario(scenario);
+  assert.deepEqual(
+    result.trace.slice(5).map((t) => t.outcome),
+    [true, true, false, true, true, true, false, false, false, true, true, true].map(
+      (returned) => ({ returned }),
+    ),
+  );
+});
+
+test('review: action XYZ destinations retain the actual requested camera placement', async () => {
+  const base = scenarioOf('plugins/stage-feeds.json', 'navigation-executors');
+  const result = await runScenario({
+    ...base,
+    steps: [
+      ...base.steps.slice(0, 4),
+      {
+        op: 'call',
+        target: { token: 'stage', doc: 'a' },
+        method: 'pageToViewport',
+        args: [
+          { kind: 'objectNumber', objectNumber: 3 },
+          { x: 100, y: 100 },
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(result.unmatched, []);
+  assert.deepEqual(stageState(result.trace, 3).camera, { x: 88, y: 1720, zoom: 2 });
+  assert.deepEqual(result.trace[4].outcome, { returned: { x: 24, y: 24 } });
+});
+
+test('review: page lifecycle triggers navigate and produce no failure diagnostics', async () => {
+  const scenario = scenarioOf('plugins/stage-feeds.json', 'page-state-feed');
+  const result = await runScenario(scenario);
+  assert.deepEqual(result.unmatched, []);
+  assert.deepEqual(
+    result.trace.flatMap((t) => t.callbacks.filter((c) => c.fn === 'diagnostic')),
+    [],
+  );
+  assert.deepEqual(result.trace[6].outcome, { returned: 2 });
+  assert.equal(stageState(result.trace, 6).cursor, 2);
+  assert.equal(stageState(result.trace, 6).motionCause, 'programmatic');
+});
+
+test('review: navigation executors honor smooth and instant settings with real host frames', async () => {
+  const smooth = scenarioOf('plugins/stage-feeds.json', 'executors-navigate-smoothly');
+  const result = await runScenario(smooth);
+  assert.deepEqual(
+    [4, 7, 10].map((i) => result.trace[i].outcome),
+    [{ returned: true }, { returned: true }, { returned: true }],
+  );
+  assert.equal(stageState(result.trace, 5).camera.zoom, 2);
+  assert.equal(stageState(result.trace, 8).cursor, 3);
+  assert.equal(stageState(result.trace, 11).cursor, 4);
+  const probe = await runScenario({
+    ...smooth,
+    steps: [...smooth.steps.slice(0, 4), { op: 'advance', ms: 32 }, { op: 'advance', ms: 300 }],
+  });
+  assert.ok(
+    stageState(probe.trace, 4).camera.zoom > 1 && stageState(probe.trace, 4).camera.zoom < 2,
+  );
+  assert.deepEqual(stageState(probe.trace, 5).camera, { x: 88, y: 1720, zoom: 2 });
+  const instant = scenarioOf('plugins/stage-feeds.json', 'navigation-executors');
+  const jump = await runScenario({
+    ...instant,
+    clock: { frames: true },
+    steps: [
+      ...instant.steps.slice(0, 4),
+      { op: 'call', target: { token: 'stage', doc: 'a' }, method: 'isMoving' },
+    ],
+  });
+  assert.deepEqual(jump.trace[4].outcome, { returned: false });
+  assert.deepEqual(stageState(jump.trace, 3).camera, { x: 88, y: 1720, zoom: 2 });
 });

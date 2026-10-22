@@ -18,6 +18,8 @@
  *     Angular stages do.
  */
 import { definePlugin, type AnyPlugin, type CapabilityToken } from '@embedpdf/core';
+import type { FormSnapshot, PageDestination, PdfDestination } from '@embedpdf/engine-core/runtime';
+import { pageDestinationOf } from '../../../../packages/engine/core/src/pageSpace/destinations';
 
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 import { createScrollHandler, stagePlugin } from '../../../../packages/plugin/stage/src/index';
@@ -1941,7 +1943,13 @@ const layoutEvent = (type: 'pages.rotated' | 'pages.deleted', pages: ReturnType<
 
 const FORMS_EMPTY: ResponseSpec = {
   path: 'forms.list',
-  value: { formKind: 'none', needsAppearances: false, fields: [], calculationOrder: [] },
+  value: {
+    formKind: 'none',
+    needsAppearances: false,
+    fields: [],
+    widgets: [],
+    calculationOrder: [],
+  } satisfies FormSnapshot,
 };
 const ANNOTS_EMPTY: ResponseSpec = { path: 'page.annotations.list', value: { annotations: [] } };
 const withActions = (pages: unknown[]): FakeEngineSpec => ({
@@ -1955,12 +1963,14 @@ const act = (method: string, ...args: unknown[]): Step => ({
   args,
 });
 const tree = (root: unknown) => ({ root, incomplete: false, warningFlags: 0, warnings: [] });
-const goto = (destination: Record<string, unknown>) => ({
+const goto = (destination: PageDestination) => ({
   type: 'goto',
   subtype: 'GoTo',
   destination,
   next: [],
 });
+const pdfGoto = (destination: PdfDestination) =>
+  goto(pageDestinationOf(destination, { left: 0, bottom: 0, right: 600, top: 800 }));
 const named = (name: string) => ({ type: 'named', subtype: 'Named', name, next: [] });
 const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
 
@@ -2018,15 +2028,19 @@ const feedCases: ScenarioCase[] = [
   {
     name: 'navigation-executors',
     covers:
-      'The default lens registers goto and named executors with actions: goto reveals the destination smoothly (failed when the page is gone), NextPage/PrevPage/FirstPage/LastPage navigate, and any other name is inert.',
+      'The default lens registers goto and named executors with actions: goto reveals the destination under the instant scroll setting (failed when the page is gone), NextPage/PrevPage/FirstPage/LastPage navigate, and any other name is inert.',
     plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant' })],
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
+      act(
+        'execute',
+        tree(pdfGoto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })),
+        USER,
+      ),
       st('currentPage'),
       act('execute', tree(goto({ kind: 'fit', page: pr(5) })), USER),
-      act('execute', tree(goto({ kind: 'fitH', page: pr(99), top: 10 })), USER),
+      act('execute', tree(pdfGoto({ kind: 'fitH', page: pr(99), top: 10 })), USER),
       act('execute', tree(named('FirstPage')), USER),
       act('execute', tree(named('NextPage')), USER),
       act('execute', tree(named('NextPage')), USER),
@@ -2047,7 +2061,11 @@ const feedCases: ScenarioCase[] = [
     steps: [
       ...boot,
       act('execute', tree({ type: 'goto', subtype: 'GoTo', next: [] }), USER),
-      act('execute', tree(goto({ kind: 'fit' })), USER),
+      act(
+        'execute',
+        tree({ type: 'goto', subtype: 'GoTo', destination: { kind: 'fit' }, next: [] }),
+        USER,
+      ),
       st('currentPage'),
     ],
     snapshot: SNAP,
@@ -2055,12 +2073,16 @@ const feedCases: ScenarioCase[] = [
   {
     name: 'executors-navigate-smoothly',
     covers:
-      'The executors navigate smoothly whatever the scrollBehavior setting: with frames each lands over a tween.',
-    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'instant', frames: true })],
+      'The executors honor the smooth scrollBehavior setting: with frames each lands over a tween; the instant-setting case remains covered separately.',
+    plugins: [ACTIONS_OFF, ...stage({ scrollBehavior: 'smooth', frames: true })],
     engine: withActions(FIVE),
     steps: [
       ...boot,
-      act('execute', tree(goto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })), USER),
+      act(
+        'execute',
+        tree(pdfGoto({ kind: 'xyz', page: pr(3), left: 100, top: 700, zoom: 2 })),
+        USER,
+      ),
       st('cameraInMotion'),
       advance(300),
       act('execute', tree(named('NextPage')), USER),

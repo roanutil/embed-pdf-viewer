@@ -846,11 +846,18 @@ const geometryCases: ScenarioCase[] = [
 
 // ── the permission twin ───────────────────────────────────────────────────────
 
+const canSearchStep = (doc: string, ...args: Parameters<SearchCapability['canSearch']>): Step => ({
+  op: 'call',
+  target: { token: 'search', doc },
+  method: 'canSearch',
+  args,
+});
+
 const twinCases: ScenarioCase[] = [
   {
     name: 'can-search',
     covers:
-      "canSearch() and canSearch('rects') ask doc.text.search; canSearch('full') also needs doc.text.copy; copy alone finds nothing; the wildcard grants both.",
+      'canSearch() and canSearch({snippets:false}) ask doc.text.search; canSearch({snippets:true}) also needs doc.text.copy; copy alone finds nothing; the wildcard grants both.',
     plugins: search(),
     engine: {
       documents: {
@@ -868,9 +875,9 @@ const twinCases: ScenarioCase[] = [
       open('c'),
       open('d'),
       ...['a', 'b', 'c', 'd'].flatMap((id): Step[] => [
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: [] },
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: ['rects'] },
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: ['full'] },
+        canSearchStep(id),
+        canSearchStep(id, { snippets: false }),
+        canSearchStep(id, { snippets: true }),
       ]),
     ],
   },
