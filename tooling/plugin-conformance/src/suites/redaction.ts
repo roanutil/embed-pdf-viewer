@@ -4,6 +4,7 @@ import type {
   AnnotationRef,
   PageLayout,
   RedactionApplyScope,
+  SearchSlice,
 } from '@embedpdf/engine-core/runtime';
 import * as model from '../../../../packages/plugin/redaction/src/model';
 import { markOf } from '../../../../packages/plugin/redaction/src/read/pending';
@@ -499,7 +500,7 @@ const cases: ScenarioCase[] = [
           nextCursor: null,
           pagesSearched: 2,
           pageCount: 2,
-        },
+        } satisfies SearchSlice,
       },
       write(1, [
         {
