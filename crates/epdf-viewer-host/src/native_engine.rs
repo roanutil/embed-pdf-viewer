@@ -243,6 +243,18 @@ impl Engine for NativeEngine {
         let (settled, stopped) = (resolver.clone(), aborted.clone());
         rt::spawn(async move {
             let (security, protection) = match opened.await {
+                // TEMPORARY (Task 13 moves the kernel to upstream's locked-tab
+                // prompt): the host parks a wrong-password open and answers
+                // `passwordRejected` (`WorkerHost.handleOpen`), where the
+                // kernel still expects the open to fail. Close the parked
+                // session and fail as the host used to.
+                Ok(answer) if answer["passwordRejected"] == Value::Bool(true) => {
+                    inner.close(&doc);
+                    return settled.reject(Error::engine(
+                        "DocPasswordIncorrect",
+                        "DocPasswordIncorrect: incorrect document password".to_string(),
+                    ));
+                }
                 Ok(mut answer) => (
                     answer.get_mut("security").map(Value::take).unwrap_or(Value::Null),
                     answer.get_mut("protection").map(Value::take).unwrap_or(Value::Null),

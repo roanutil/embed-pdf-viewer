@@ -733,3 +733,134 @@ fn a_version_and_a_file_save_answer_as_upstream_does() {
     assert!(std::fs::read(&path).unwrap().starts_with(b"%PDF"));
     std::fs::remove_dir_all(&dir).ok();
 }
+
+/// `opening.test.ts`'s locked file: PDFium's `encrypted.pdf`, user password
+/// `1234` (no copy, no print), owner password `5678`.
+const LOCKED: &str = "packages/engine/main/test/fixtures/encrypted.pdf";
+
+/// The three input kinds, as the open request each one sends: `bytes`
+/// (`open.fatMem`), `layerBytes` (`open.layerMemBase`) and `layerFile`
+/// (`open.layerFileBase`), with the payloads it carries.
+fn locked_opens(password: Option<&str>) -> Vec<(&'static str, serde_json::Value, Vec<Vec<u8>>)> {
+    let path = test_support::workspace_root().join(LOCKED);
+    vec![
+        (
+            "bytes",
+            serde_json::json!({ "kind": "open.fatMem", "docId": "d", "password": password }),
+            vec![bytes(LOCKED)],
+        ),
+        (
+            "layerBytes",
+            serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "baseKey": "base",
+                "layer": { "kind": "fresh" }, "password": password }),
+            vec![bytes(LOCKED)],
+        ),
+        (
+            "layerFile",
+            serde_json::json!({ "kind": "open.layerFileBase", "docId": "d", "baseKey": "base",
+                "basePath": path.to_string_lossy(), "layer": { "kind": "fresh" },
+                "password": password }),
+            Vec::new(),
+        ),
+    ]
+}
+
+fn unlock(host: &mut Host, password: &str) -> serde_json::Value {
+    call(
+        host,
+        serde_json::json!({ "kind": "document.checkPasswordPermissions", "docId": "d",
+            "password": password }),
+        Vec::new(),
+    )
+}
+
+fn pages(host: &mut Host) -> serde_json::Value {
+    call(host, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new())
+}
+
+#[test]
+fn a_locked_file_opens_locked_without_a_password_and_unlocks_whatever_it_came_from() {
+    // `WorkerHost.handleOpen`: every input kind loads the same way with or
+    // without a password, so a locked file parks and unlocks the same way
+    // whatever it came from. The locked answer is the probe alone: no
+    // `protection`, no numbers.
+    for (kind, request, payloads) in locked_opens(None) {
+        let mut host = Host::new();
+        let opened = call(&mut host, request, payloads);
+        let answer = &opened["result"];
+        assert_eq!(answer["security"]["encryptionRequiresPassword"], true, "{kind}: {opened}");
+        assert!(answer.get("protection").is_none(), "{kind}: {opened}");
+        assert!(answer.get("passwordRejected").is_none(), "{kind}: {opened}");
+        assert!(answer.get("lastObjectNumber").is_none(), "{kind}: {opened}");
+
+        let locked = pages(&mut host);
+        assert_eq!(locked["error"]["code"], "DocPasswordRequired", "{kind}: {locked}");
+
+        let unlocked = unlock(&mut host, "1234");
+        assert!(unlocked.get("error").is_none(), "{kind}: {unlocked}");
+        assert!(unlocked["result"]["security"]["pdfOpenedAs"].is_string(), "{kind}: {unlocked}");
+        let listed = pages(&mut host);
+        assert!(listed["result"]["pageCount"].as_u64() > Some(0), "{kind}: {listed}");
+    }
+}
+
+#[test]
+fn a_wrong_password_opens_locked_and_says_it_was_wrong() {
+    // `passwordRejected` when a password was given and was wrong; an unlock
+    // with another wrong one is `DocPasswordIncorrect` and leaves the
+    // session parked for the right one.
+    for (kind, request, payloads) in locked_opens(Some("tiger")) {
+        let mut host = Host::new();
+        let opened = call(&mut host, request, payloads);
+        assert_eq!(opened["result"]["passwordRejected"], true, "{kind}: {opened}");
+        assert!(opened["result"].get("protection").is_none(), "{kind}: {opened}");
+
+        let wrong = unlock(&mut host, "lion");
+        assert_eq!(wrong["error"]["code"], "DocPasswordIncorrect", "{kind}: {wrong}");
+        let still = pages(&mut host);
+        assert_eq!(still["error"]["code"], "DocPasswordRequired", "{kind}: {still}");
+
+        let unlocked = unlock(&mut host, "1234");
+        assert!(unlocked.get("error").is_none(), "{kind}: {unlocked}");
+        assert!(pages(&mut host)["result"]["pageCount"].as_u64() > Some(0), "{kind}");
+    }
+}
+
+#[test]
+fn an_empty_password_is_no_password_to_reject() {
+    // `...(req.password ? { passwordRejected: true } : {})`: an empty
+    // password is falsy, so the open is locked but nothing was rejected.
+    let mut host = Host::new();
+    let opened = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.fatMem", "docId": "d", "password": "" }),
+        vec![bytes(LOCKED)],
+    );
+    assert_eq!(opened["result"]["security"]["encryptionRequiresPassword"], true, "{opened}");
+    assert!(opened["result"].get("passwordRejected").is_none(), "{opened}");
+}
+
+#[test]
+fn a_locked_layer_keeps_its_object_number_authority_for_the_unlock() {
+    // The open's `objectNumbers` and `signedDocumentPolicy` are set before
+    // the load, so a parked layer keeps them, and the unlock opens with
+    // them.
+    let mut host = Host::new();
+    let opened = call(
+        &mut host,
+        serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "baseKey": "base",
+            "layer": { "kind": "fresh" }, "objectNumbers": "caller" }),
+        vec![bytes(LOCKED)],
+    );
+    assert!(opened.get("error").is_none(), "{opened}");
+    unlock(&mut host, "1234");
+    let session = host
+        .sessions()
+        .session(&epdf_engine::session::registry::SessionKey::document("d"))
+        .expect("unlocked");
+    assert_eq!(
+        session.object_number_authority(),
+        epdf_engine::session::document::ObjectNumberAuthority::Caller
+    );
+    assert_eq!(session.password(), Some("1234"), "the unlock's password is the session's");
+}

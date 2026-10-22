@@ -80,6 +80,24 @@ pub enum LayerOpenSource {
     ArtifactFile(std::path::PathBuf),
 }
 
+/// How a layer open that failed on its password loads once it has one
+/// (`DocumentSession.parkLocked`'s `load`): the base's key and what it is
+/// read from, and what the layer starts as.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParkedLayer {
+    pub base_key: String,
+    pub base: ParkedBase,
+    pub source: LayerOpenSource,
+}
+
+/// Where a parked layer's base is read from: the bytes `open.layerMemBase`
+/// transferred, or the path `open.layerFileBase` named.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParkedBase {
+    Memory(Vec<u8>),
+    File(std::path::PathBuf),
+}
+
 /// A session id, unique within this process.
 ///
 /// Monotonic rather than random. The id exists for one job: a revision token
@@ -118,6 +136,9 @@ pub struct DocumentSession {
     open: Option<OpenState>,
     /// Bytes retained for a later unlock attempt. Locked sessions only.
     parked_bytes: Option<Vec<u8>>,
+    /// How a layer open loads once it has its password. Locked layer
+    /// sessions only.
+    parked_layer: Option<ParkedLayer>,
     /// The authority a parked open asked for, applied when it unlocks.
     parked_authority: Option<SessionAuthority>,
     /// A parked signing and the last completed one (`SignatureMutator.ts`).
@@ -250,6 +271,7 @@ impl DocumentSession {
             session_id: session_id.into(),
             open: None,
             parked_bytes: None,
+            parked_layer: None,
             parked_authority: None,
             signing: Default::default(),
             password: None,
@@ -288,7 +310,7 @@ impl DocumentSession {
 
     /// True while the session holds bytes it could not open without a password.
     pub fn is_locked(&self) -> bool {
-        self.open.is_none() && self.parked_bytes.is_some()
+        self.open.is_none() && (self.parked_bytes.is_some() || self.parked_layer.is_some())
     }
 
     /// Open a document from bytes.
@@ -372,6 +394,8 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.parked_layer = None;
+        self.parked_authority = None;
         self.password = password.map(str::to_owned);
         self.persist_layer_artifact = false;
         self.loaded_sequence.set(self.mutation_sequence.get());
@@ -459,6 +483,8 @@ impl DocumentSession {
         });
         self.authority = authority;
         self.parked_bytes = None;
+        self.parked_layer = None;
+        self.parked_authority = None;
         self.loaded_sequence.set(self.mutation_sequence.get());
         Ok(())
     }
@@ -488,6 +514,42 @@ impl DocumentSession {
         self.park_locked(bytes)?;
         self.parked_authority = Some(authority);
         Ok(())
+    }
+
+    /// Park a layer open whose base wanted a password it did not get, or
+    /// got wrong (`parkLocked`): the session keeps how to load it, and the
+    /// authority the open asked for.
+    pub fn park_layer(
+        &mut self,
+        layer: ParkedLayer,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
+        if self.open.is_some() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                "document already open",
+            ));
+        }
+        self.parked_layer = Some(layer);
+        self.parked_authority = Some(authority);
+        Ok(())
+    }
+
+    /// How a parked layer open loads, for the registry that holds its base.
+    pub fn parked_layer(&self) -> Option<&ParkedLayer> {
+        self.parked_layer.as_ref()
+    }
+
+    /// The authority a parked open asked for: full authority when it was
+    /// parked without one.
+    pub fn parked_authority(&self) -> SessionAuthority {
+        self.parked_authority.clone().unwrap_or_else(SessionAuthority::unrestricted)
+    }
+
+    /// The password the document opened with, as an unlock gives it
+    /// (`parked.password = req.password`).
+    pub fn set_password(&mut self, password: Option<&str>) {
+        self.password = password.map(str::to_owned);
     }
 
     /// Unlock a parked session under the authority it was parked with, or
@@ -535,7 +597,7 @@ impl DocumentSession {
 
     fn state(&self) -> Result<&OpenState, EngineError> {
         self.open.as_ref().ok_or_else(|| {
-            if self.parked_bytes.is_some() {
+            if self.parked_bytes.is_some() || self.parked_layer.is_some() {
                 EngineError::with_message(
                     EngineErrorCode::DocPasswordRequired,
                     "document is locked and requires a password",
@@ -831,6 +893,8 @@ impl DocumentSession {
             // the PDFium handle, on this thread.
         }
         self.parked_bytes = None;
+        self.parked_layer = None;
+        self.parked_authority = None;
         self.transaction = None;
         self.unusable_reason = None;
         self.ledger.clear();

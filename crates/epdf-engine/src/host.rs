@@ -2461,7 +2461,7 @@ impl Host {
         let file_base = header.kind == "open.layerFileBase";
         let source = layer_source(body, &payloads, if file_base { 0 } else { 1 })?;
 
-        if file_base {
+        let opened = if file_base {
             let path = string_field(body, "basePath")?;
             self.sessions.open_layer_file_from(
                 key.clone(),
@@ -2470,7 +2470,7 @@ impl Host {
                 &source,
                 password.as_deref(),
                 SessionAuthority::unrestricted(),
-            )?;
+            )
         } else {
             // The base bytes are a payload, never a JSON field, for the same
             // reason `open.fatMem`'s are.
@@ -2482,9 +2482,30 @@ impl Host {
                 &source,
                 password.as_deref(),
                 SessionAuthority::unrestricted(),
-            )?;
+            )
+        };
+        self.parked_or(&key, opened)?;
+        self.open_answer(&key, options, password.as_deref())
+    }
+
+    /// `WorkerHost.handleOpen`: a password failure is a state, not an
+    /// error. The registry parked the session with its key and how to load
+    /// it, so an error here would make a caller tear down something that is
+    /// waiting for a password; the open answers locked instead.
+    fn parked_or(
+        &self,
+        key: &SessionKey,
+        opened: Result<(), EngineError>,
+    ) -> Result<(), EngineError> {
+        match opened {
+            Err(error)
+                if crate::session::registry::is_password_open_error(&error)
+                    && self.sessions.is_locked(key) =>
+            {
+                Ok(())
+            }
+            other => other,
         }
-        self.open_answer(&key, options)
     }
 
     fn open_fat_memory(
@@ -2517,19 +2538,9 @@ impl Host {
                     format!("invalid scope: {e}"),
                 )
             })?;
-        match self.sessions.open_memory(key.clone(), bytes, password, authority) {
-            Ok(()) => {}
-            // A password is a STATE on the wire, not a failure. The registry
-            // reports it as an error because internally it IS one: the
-            // document is not readable. To a client it is a prompt, and the
-            // session has already parked with its key and its bytes, so an
-            // error here would make a caller tear down something that is
-            // waiting for a password. This is the shape `WorkerHost`'s own
-            // open path produces, deliberately.
-            Err(error) if error.is(EngineErrorCode::DocPasswordRequired) => {}
-            Err(error) => return Err(error),
-        }
-        self.open_answer(&key, options)
+        let opened = self.sessions.open_memory(key.clone(), bytes, password, authority);
+        self.parked_or(&key, opened)?;
+        self.open_answer(&key, options, password)
     }
 
     /// The open answer (`{ tag: 'open', docId, security, protection,
@@ -2540,11 +2551,14 @@ impl Host {
     /// and signed-document policy before it loads, so a parked session keeps
     /// them; and only an open that loaded hands out the numbers it asked
     /// for and reports the layer's last object number. A failed reserve
-    /// fails the open and leaves the session open, as upstream's does.
+    /// fails the open and leaves the session open, as upstream's does. A
+    /// parked open answers the security probe alone (no `protection`), and
+    /// `passwordRejected` when a password was given and was wrong.
     fn open_answer(
         &mut self,
         key: &SessionKey,
         options: OpenOptions,
+        password: Option<&str>,
     ) -> Result<serde_json::Value, EngineError> {
         if let Some(session) = self.sessions.configure(key) {
             session.set_object_number_authority(options.object_numbers);
@@ -2553,11 +2567,14 @@ impl Host {
         let mut answer = serde_json::json!({
             "docId": key.doc_id,
             "security": value(&self.security_on_open(key)?)?,
-            "protection": self.protection_of(key),
         });
         if self.sessions.is_locked(key) {
+            if password.is_some_and(|password| !password.is_empty()) {
+                answer["passwordRejected"] = serde_json::Value::Bool(true);
+            }
             return Ok(answer);
         }
+        answer["protection"] = self.protection_of(key);
         let session = self.sessions.session_mut(key)?;
         if let Some(count) = options.reserve_object_numbers {
             answer["objectNumbers"] = value(&session.reserve_object_numbers(count)?)?;
