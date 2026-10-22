@@ -12,10 +12,6 @@
 //! fails to compile until it converts. A kind added to [`WireKind`] does not
 //! compile until it is placed in each match, as converting or as holding no
 //! places.
-//!
-//! A family that has not moved to page space yet passes its answer through
-//! unconverted under a `re-port (Task 8)` tag naming the sub-task that adds
-//! its conversion here.
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;

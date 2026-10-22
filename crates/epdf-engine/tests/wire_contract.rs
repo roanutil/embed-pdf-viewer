@@ -1,5 +1,4 @@
-//! Every wire kind reaches an implementation, or is listed as not yet
-//! routed, with the sub-task that routes it.
+//! Every wire kind reaches an implementation.
 //!
 //! Replays `vectors/wire/requests.json`, which the TypeScript compiler
 //! produced by reading the `WorkerRequest` union: eighty-nine kinds and the
@@ -38,17 +37,26 @@ const DOC_ID: &str = "doc-1";
 /// arms have something real to act on.
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf";
 
-/// The kinds of upstream's union this host does not route yet, each with the
-/// sub-task that routes it. That sub-task removes its rows; 8.26 removed the
-/// last, `signatures.cancel`.
-const NOT_YET_ROUTED: &[(&str, &str)] = &[];
-
-/// Routed kinds whose arm answers `NotImplemented` for the request this
-/// test sends, each with the sub-task that ports it. Task 6 stubbed them
-/// against the runtime 1461b0c51 API (`// re-port (Task 8):`); 8.22 ported
-/// the last, `forms.import`. The owner removes its row; a row whose kind
-/// stops answering `NotImplemented` fails.
-const STUBBED: &[(&str, &str)] = &[];
+/// The kinds upstream's union dropped (`docs/research/catchup-engine-vector-diffs.md`,
+/// "Removed"), and `signatures.abort`, renamed `signatures.cancel`
+/// (7bccc4f35).
+const RETIRED: &[&str] = &[
+    "annotations.listFullPage",
+    "annotations.listRawAll",
+    "annotations.listRawPage",
+    "annotations.move",
+    "attachments.create",
+    "attachments.delete",
+    "forms.applyEffects",
+    "forms.attachWidget",
+    "pages.delete",
+    "pages.insert",
+    "pages.insertBlank",
+    "pages.move",
+    "pages.rotate",
+    "pieceInfo.clear",
+    "signatures.abort",
+];
 
 #[derive(Debug)]
 struct Case {
@@ -209,12 +217,6 @@ fn payloads() -> Payloads {
 fn every_wire_kind_routes_to_an_implementation() {
     let cases = cases();
     assert_eq!(cases.len(), 89, "the vector and the protocol disagree about how many kinds exist");
-    for (kind, owner) in NOT_YET_ROUTED {
-        assert!(
-            cases.iter().any(|c| c.kind == *kind),
-            "{kind} (owner {owner}) is listed as not yet routed but is not a wire kind",
-        );
-    }
 
     let mut wrong = Vec::new();
     for case in &cases {
@@ -237,26 +239,10 @@ fn every_wire_kind_routes_to_an_implementation() {
         let body: serde_json::Value =
             serde_json::from_str(&response.json).expect("every response is JSON");
         let message = body["error"]["message"].as_str().unwrap_or("");
-        let unknown = message.starts_with(UNKNOWN_KIND);
-        let listed = NOT_YET_ROUTED.iter().find(|(kind, _)| *kind == case.kind);
-        let not_implemented = body["error"]["code"] == "NotImplemented";
-        if let Some((kind, owner)) = STUBBED.iter().find(|(kind, _)| *kind == case.kind) {
-            if !not_implemented {
-                wrong.push(format!("{kind} is ported; remove it from STUBBED ({owner}): {body}"));
-            }
-            continue;
-        }
-        match listed {
-            // Routed now: the row is stale, and its owner removes it.
-            Some((kind, owner)) if !unknown => {
-                wrong.push(format!("{kind} routes; remove it from NOT_YET_ROUTED ({owner})"))
-            }
-            Some(_) => {}
-            None if unknown => wrong.push(format!("{}: {message}", case.kind)),
-            None if not_implemented => {
-                wrong.push(format!("{} answers NotImplemented: {message}", case.kind))
-            }
-            None => {}
+        if message.starts_with(UNKNOWN_KIND) {
+            wrong.push(format!("{}: {message}", case.kind));
+        } else if body["error"]["code"] == "NotImplemented" {
+            wrong.push(format!("{} answers NotImplemented: {message}", case.kind));
         }
     }
 
@@ -280,7 +266,7 @@ fn every_removed_kind_is_unknown_to_the_wire() {
     // `forms.addWidget` replaced (d7bd2d277); 8.26 `signatures.abort`,
     // renamed `signatures.cancel` (7bccc4f35).
     let cases = cases();
-    for kind in ["signatures.abort", "forms.applyEffects", "annotations.move"] {
+    for kind in RETIRED.iter().copied() {
         assert!(!cases.iter().any(|c| c.kind == kind), "{kind} is in upstream's union");
         let mut host = open();
         let wire = send(&mut host, serde_json::json!({ "kind": kind }));

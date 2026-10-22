@@ -7,8 +7,8 @@
 //!
 //! # Why one entry point rather than one export per operation
 //!
-//! There are sixty-five wire kinds. Three bindings times sixty-five exports
-//! is a hundred and ninety-five places for a signature to drift, and the
+//! There are eighty-nine wire kinds. Three bindings times eighty-nine exports
+//! is two hundred and sixty-seven places for a signature to drift, and the
 //! drift would be silent: a Kotlin binding that forgot an argument compiles.
 //! One entry point moves all of that into one match that the compiler checks
 //! exhaustively, and leaves each binding with a single function to get right.
