@@ -69,8 +69,9 @@ impl OutlineFields {
     /// The fields of a draft or a patch as sent, refused `InvalidArg`,
     /// before anything is written, when no write can take them: a title too
     /// long, a colour that isn't `#rrggbb`, a target a write can't make
-    /// (`assertWritableFields`). Keys it doesn't know are left alone, as
-    /// upstream's writer leaves them.
+    /// (`assertWritableFields`). Keys it doesn't know are left alone, and
+    /// `bold`, `italic` and `open` read by truthiness, as upstream's writer
+    /// reads them.
     pub fn of(fields: &Map<String, Value>) -> Result<Self, EngineError> {
         let title = match fields.get("title") {
             None => None,
@@ -100,18 +101,27 @@ impl OutlineFields {
             title,
             target,
             color,
-            bold: flag(fields, "bold")?,
-            italic: flag(fields, "italic")?,
-            open: flag(fields, "open")?,
+            bold: flag(fields, "bold"),
+            italic: flag(fields, "italic"),
+            open: flag(fields, "open"),
         })
     }
 }
 
-fn flag(fields: &Map<String, Value>, name: &str) -> Result<Option<bool>, EngineError> {
-    match fields.get(name) {
-        None => Ok(None),
-        Some(Value::Bool(value)) => Ok(Some(*value)),
-        Some(_) => Err(invalid(name, format!("{name} is true or false"))),
+/// A flag as upstream's writer reads it: present (`!== undefined`) and then
+/// by JavaScript truthiness, so `null` clears it, as `false` does.
+fn flag(fields: &Map<String, Value>, name: &str) -> Option<bool> {
+    fields.get(name).map(truthy)
+}
+
+/// JavaScript's truthiness of a JSON value.
+fn truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(value) => *value,
+        Value::Number(number) => number.as_f64().is_some_and(|n| n != 0.0 && !n.is_nan()),
+        Value::String(text) => !text.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
     }
 }
 

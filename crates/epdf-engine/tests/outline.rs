@@ -155,9 +155,10 @@ fn send(host: &mut Host, mut request: Value) -> Result<Value, Value> {
     }
 }
 
-/// `doc.outline.get()`.
+/// `doc.outline.get()`: the `outline` of `{ outline }`, the payload
+/// `outline.read` answers without its tag.
 fn get(host: &mut Host) -> Value {
-    send(host, json!({ "kind": "outline.read" })).expect("the outline reads")
+    send(host, json!({ "kind": "outline.read" })).expect("the outline reads")["outline"].take()
 }
 
 /// `doc.apply(change)`: the whole answer, or the refusal.
@@ -863,4 +864,104 @@ fn an_expect_compares_an_axis_left_out_apart_from_a_null_one() {
     assert_eq!(refused["code"], "ChangeConflict", "{refused}");
     apply(&mut host, op(target(Some(Value::Null)))).expect("a null axis");
     assert_eq!(item_of(&get(&mut host), A).unwrap()["title"], "A!");
+}
+
+#[test]
+fn the_read_answers_the_outline_under_its_key() {
+    let mut host = open(outline_fixture());
+    let answer = send(&mut host, json!({ "kind": "outline.read" })).expect("the outline reads");
+    let keys: Vec<&String> = answer.as_object().unwrap().keys().collect();
+    assert_eq!(keys, ["outline"]);
+    assert_eq!(answer["outline"]["incomplete"], false);
+    // In page space: A goes to (20, 20) from page 3's top-left.
+    assert_matches(
+        &item_of(&answer["outline"], A).unwrap()["target"],
+        json!({ "destination": { "x": 20, "y": 20 } }),
+    );
+}
+
+// ── The fields as upstream's writer reads them ─────────────────────────────
+
+#[test]
+fn a_flag_reads_by_truthiness_and_null_clears_it() {
+    let mut host = open(outline_fixture());
+    // B is bold: `null` clears the bit, as `false` does.
+    assert_eq!(update(&mut host, B, json!({ "bold": null }))["item"]["bold"], false);
+    assert_eq!(update(&mut host, B, json!({ "bold": "yes" }))["item"]["bold"], true);
+    assert_eq!(update(&mut host, B, json!({ "italic": 1 }))["item"]["italic"], true);
+    assert_eq!(update(&mut host, B, json!({ "italic": 0 }))["item"]["italic"], false);
+    // `open: null` closes an open parent; a truthy value opens a closed one.
+    assert_eq!(update(&mut host, A, json!({ "open": null }))["item"]["open"], false);
+    assert_eq!(update(&mut host, C, json!({ "open": "yes" }))["item"]["open"], true);
+    let created =
+        create(&mut host, json!({ "title": "Flags", "bold": 1, "italic": "" }), None, None);
+    assert_matches(&created["item"], json!({ "bold": true, "italic": false }));
+}
+
+#[test]
+fn a_draft_without_a_title_is_refused_as_upstream_s_write_fails_and_writes_nothing() {
+    // Upstream's checks let it through and `withUtf16String(undefined)`
+    // throws a TypeError, which the worker answers `Unknown`. A title that
+    // is there but not a string is `assertWritableFields`' `InvalidArg`.
+    let mut host = open(outline_fixture());
+    let before = get(&mut host);
+    let refused =
+        try_create(&mut host, json!({ "color": "#00ff00" }), None, None).expect_err("no title");
+    assert_eq!(refused["code"], "Unknown", "{refused}");
+    let refused =
+        try_create(&mut host, json!({ "title": null }), None, None).expect_err("a null title");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "title");
+    // A parent the outline doesn't have is refused first, as upstream's
+    // `parentNumberOf` runs before the write.
+    let refused = try_create(&mut host, json!({}), Some(3), None).expect_err("no parent 3");
+    assert_eq!(refused["code"], "NotFound", "{refused}");
+    assert_same(&get(&mut host), &before);
+}
+
+// ── An undo of a target past a later change (the fallback) ─────────────────
+
+#[test]
+fn an_undo_past_a_later_rename_brings_the_old_target_back() {
+    let mut host = open(outline_fixture());
+    let before = item_of(&get(&mut host), B).unwrap();
+    let retargeted = update(
+        &mut host,
+        B,
+        json!({ "target": { "kind": "goto",
+            "destination": { "kind": "fit", "page": r(SECOND_PAGE) } } }),
+    );
+    update(&mut host, B, json!({ "title": "Theirs" }));
+    let undone = undo(&mut host, &retargeted["meta"]["opId"]);
+    let item = &undone["items"][0];
+    assert_eq!(item["type"], "outline.update", "{undone}");
+    assert!(item.get("skipped").is_none(), "{undone}");
+    let b = item_of(&get(&mut host), B).unwrap();
+    assert_eq!(b["title"], "Theirs");
+    assert_same(&b["target"], &before["target"]);
+    assert_matches(
+        &b["action"],
+        json!({ "root": { "type": "uri", "uri": "https://example.com/" } }),
+    );
+}
+
+#[test]
+fn an_old_target_no_write_can_make_lands_in_skipped() {
+    // D's target is a script, which a write can't make: past a later
+    // rename, its undo puts back what it can and names the target skipped.
+    let mut host = open(outline_fixture());
+    let changed = update(
+        &mut host,
+        D,
+        json!({ "target": { "kind": "uri", "uri": "https://example.com/" }, "italic": true }),
+    );
+    update(&mut host, D, json!({ "title": "Theirs" }));
+    let undone = undo(&mut host, &changed["meta"]["opId"]);
+    let item = &undone["items"][0];
+    assert_eq!(item["type"], "outline.update", "{undone}");
+    assert_eq!(item["skipped"], json!(["target"]));
+    let d = item_of(&get(&mut host), D).unwrap();
+    assert_eq!(d["italic"], false);
+    assert_eq!(d["title"], "Theirs");
+    assert_eq!(d["target"], json!({ "kind": "uri", "uri": "https://example.com/" }));
 }

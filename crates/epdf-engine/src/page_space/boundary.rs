@@ -445,8 +445,11 @@ pub fn result_in_page_space(
 
         // Every item's target and action, each destination on the page it
         // goes to (`pageOutlineOf`).
-        K::OutlineRead => convert_result(response, |outline: serde_json::Value| {
-            super::outline::page_outline_of(outline, box_of)
+        K::OutlineRead => convert_result(response, |mut answer: serde_json::Value| {
+            if let Some(outline) = answer.get_mut("outline") {
+                *outline = super::outline::page_outline_of(outline.take(), box_of)?;
+            }
+            Ok(answer)
         }),
 
         // re-port (Task 8): these answer places in PDF space until their

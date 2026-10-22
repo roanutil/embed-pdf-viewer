@@ -55,15 +55,20 @@ pub fn create_outline_item(
 ) -> Result<Done, EngineError> {
     authorize(ctx)?;
     let fields = OutlineFields::of(data)?;
-    let title = fields.title.clone().ok_or_else(|| {
-        EngineError::with_message(EngineErrorCode::InvalidArg, "a title is a string")
-            .with_details(serde_json::json!({ "field": "title" }))
-    })?;
-    let object_number = object_number.map(super::annotations::object_number_of).transpose()?;
     let place = mutator(ctx)?.plan_create(parent, position.unwrap_or(&ListPosition::END))?;
+    let object_number = object_number.map(super::annotations::object_number_of).transpose()?;
     if let Some(number) = object_number {
         ctx.session.claim_object_number(number)?;
     }
+    // A draft without a title passes `assertWritableFields` upstream and
+    // fails writing it (`withUtf16String` on `undefined`, a TypeError the
+    // worker answers `Unknown`), after the checks above.
+    let title = fields.title.clone().ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "the draft has no title to write: a title is a string",
+        )
+    })?;
     let created = mutator(ctx)?.create(place, &title, &fields, object_number.unwrap_or(0))?;
     let reference = created.item.reference;
     Ok(Done {

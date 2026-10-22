@@ -8,7 +8,8 @@
 //!
 //! A parent is an item's object number, or [`OUTLINE_TOP`] for the outline
 //! itself. An [`OutlineItem`] is a handle into the document as it is now:
-//! take a new one after a write.
+//! take a new one after a write (see the type for why that is the caller's
+//! to keep).
 
 use std::os::raw::c_ulong;
 
@@ -19,6 +20,15 @@ use crate::{Action, Document, PdfiumError};
 pub const OUTLINE_TOP: u32 = 0;
 
 /// One item of the outline, read through `FPDFBookmark_*`.
+///
+/// The handle points at the item's dictionary in the live document. The
+/// borrow of the document keeps the document open, but nothing here stops a
+/// write through the same `&Document` from deleting that dictionary: the
+/// writes take `&self`. The caller's obligation is to not use an item across
+/// a write that may delete it (`delete_outline_item`, an import, or a layer
+/// transaction's abort); take a fresh one with
+/// [`Document::outline_item`] instead. The engine reads items only between
+/// writes, and never holds one across a write.
 #[derive(Debug, Clone, Copy)]
 pub struct OutlineItem<'doc> {
     handle: pdfium_sys::FPDF_BOOKMARK,
@@ -142,13 +152,16 @@ impl<'doc> OutlineItem<'doc> {
     /// The item's object number; 0 when it isn't an indirect object
     /// (`EPDFOutline_GetObjectNumber`).
     pub fn object_number(&self) -> u32 {
-        // SAFETY: the bookmark is live for the borrow of its document.
+        // SAFETY: the bookmark is live while the caller keeps the type's
+        // obligation: no write since it was taken deleted its dictionary.
         unsafe { pdfium_sys::EPDFOutline_GetObjectNumber(self.handle) }
     }
 
     /// Its first child.
     pub fn first_child(&self) -> Option<OutlineItem<'doc>> {
-        // SAFETY: both handles are live.
+        // SAFETY: the document handle is live for the borrow; the bookmark is
+        // live while no write since it was taken deleted it (the caller's
+        // obligation, see the type).
         item(
             unsafe { pdfium_sys::FPDFBookmark_GetFirstChild(self.document.handle, self.handle) },
             self.document,
@@ -157,7 +170,9 @@ impl<'doc> OutlineItem<'doc> {
 
     /// The sibling after it; a loop ends the list (PDFium stops it).
     pub fn next_sibling(&self) -> Option<OutlineItem<'doc>> {
-        // SAFETY: both handles are live.
+        // SAFETY: the document handle is live for the borrow; the bookmark is
+        // live while no write since it was taken deleted it (the caller's
+        // obligation, see the type).
         item(
             unsafe { pdfium_sys::FPDFBookmark_GetNextSibling(self.document.handle, self.handle) },
             self.document,
@@ -167,27 +182,31 @@ impl<'doc> OutlineItem<'doc> {
     /// `/Title`; `None` when it has none or it is empty.
     pub fn title(&self) -> Result<Option<String>, PdfiumError> {
         read_utf16(|buffer, length: c_ulong| {
-            // SAFETY: `buffer` is null or holds `length` bytes.
+            // SAFETY: `buffer` is null or holds `length` bytes; the bookmark
+            // is live under the type's obligation.
             unsafe { pdfium_sys::FPDFBookmark_GetTitle(self.handle, buffer.cast(), length) }
         })
     }
 
     /// `/Count`, signed: above 0 when open.
     pub fn count(&self) -> i32 {
-        // SAFETY: the bookmark is live.
+        // SAFETY: the bookmark is live while no write since it was taken
+        // deleted it (the caller's obligation, see the type).
         unsafe { pdfium_sys::FPDFBookmark_GetCount(self.handle) }
     }
 
     /// `/F`.
     pub fn style(&self) -> i32 {
-        // SAFETY: the bookmark is live.
+        // SAFETY: the bookmark is live while no write since it was taken
+        // deleted it (the caller's obligation, see the type).
         unsafe { pdfium_sys::FPDFBookmark_GetStyle(self.handle) }
     }
 
     /// `/C` as DeviceRGB components; `None` when it has none.
     pub fn color(&self) -> Option<[f32; 3]> {
         let (mut r, mut g, mut b) = (0f32, 0f32, 0f32);
-        // SAFETY: the bookmark is live and the out pointers are locals.
+        // SAFETY: the out pointers are locals; the bookmark is live under
+        // the type's obligation.
         let ok = unsafe {
             pdfium_sys::FPDFBookmark_GetColor(self.handle, &raw mut r, &raw mut g, &raw mut b)
         };
@@ -196,15 +215,16 @@ impl<'doc> OutlineItem<'doc> {
 
     /// Whether it has an `/A`.
     pub fn has_action(&self) -> bool {
-        // SAFETY: the bookmark is live.
+        // SAFETY: the bookmark is live while no write since it was taken
+        // deleted it (the caller's obligation, see the type).
         !unsafe { pdfium_sys::FPDFBookmark_GetAction(self.handle) }.is_null()
     }
 
     /// Its `/A` as a detached action model (`EPDFAction_LoadModel`); `None`
     /// without `/A`, or when the model could not be loaded.
     pub fn action_model(&self) -> Option<ActionModel<'doc>> {
-        // SAFETY: the bookmark is live; the action it answers belongs to the
-        // document the model borrows.
+        // SAFETY: the bookmark is live under the type's obligation; the
+        // action it answers belongs to the document the model borrows.
         let action = unsafe { pdfium_sys::FPDFBookmark_GetAction(self.handle) };
         if action.is_null() {
             return None;
@@ -216,7 +236,9 @@ impl<'doc> OutlineItem<'doc> {
     /// Its `/Dest`, a named one resolved (`FPDFBookmark_GetDest`); `None`
     /// without one.
     pub fn destination(&self) -> Option<RawDestination<'doc>> {
-        // SAFETY: both handles are live.
+        // SAFETY: the document handle is live for the borrow; the bookmark is
+        // live while no write since it was taken deleted it (the caller's
+        // obligation, see the type).
         let dest = unsafe { pdfium_sys::FPDFBookmark_GetDest(self.document.handle, self.handle) };
         RawDestination::from_raw(dest, self.document)
     }

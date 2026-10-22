@@ -744,12 +744,12 @@ impl Host {
                 Ok(ok(value(&f::actions::document::read_document_actions(d, cancel)?)?))
             }
             // `WorkerHost.handleOutlineRead`: every item, depth first, no
-            // page loaded. Answers the `DocumentOutline` (`{ tag, outline }`
-            // without its tag and its key), as `metadata.read` answers its
-            // metadata.
+            // page loaded. Answers `{ outline }`, the payload
+            // `{ tag: 'outline.read', outline }` without its tag.
             "outline.read" => {
                 let d = self.document(&key)?;
-                Ok(ok(value(&f::outline::read::read_outline(d, cancel)?)?))
+                let outline = f::outline::read::read_outline(d, cancel)?;
+                Ok(ok(serde_json::json!({ "outline": value(&outline)? })))
             }
             "annotations.list" => {
                 let pages = match body.get("pages") {
