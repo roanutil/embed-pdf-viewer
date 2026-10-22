@@ -1,24 +1,36 @@
-/**
- * `packages/plugin/annotation/src/repository`: the DTO <-> content-model
- * boundary, kind by kind. Function cases; replayed by
- * `crates/plugins/annotation/tests/conformance.rs`.
- *
- * Every derivation is pinned from both ends: `fromDTO` over one fixture per
- * kind (and the rotated, callout and widget variants), then `toPatch`,
- * `toScopedPatch` (geometry and props scopes) and `toCreateDraft` over the
- * annotations it produced, with styles varied to reach the cloudy, dashed and
- * endings couplings.
- */
-import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
-import { linkChildRects, writableTarget } from '../../../../packages/core/annotation/src/record/links';
-import { widgetKindOf } from '../../../../packages/core/annotation/src/kinds/widget';
-import { removedUpstream } from '../removed';
-import type { Annot, Border } from './annotation-core-fixtures';
-import { annotationKey } from '../../../../packages/engine/core/src/runtime';
-
+/** Current record conversion and field/shape writes, replacing the removed plugin repository. */
 import {
-  CROP,
-  CROP2,
+  annotationKey,
+  colorOf,
+  rgbOf,
+  annotationPatchBetween,
+  type Annotation,
+  type RichTextBody,
+  type RichTextParagraph,
+} from '@embedpdf/engine-core/runtime';
+import {
+  fromDTO,
+  shapeOf,
+  styleOf,
+  withShape,
+  withValues,
+  kindOf,
+  linkChildRects,
+  writableTarget,
+} from '../../../../packages/core/annotation/src/record';
+import { kindFactsOf } from '../../../../packages/engine/core/src/annotation/kind-facts';
+import { rotatedAabb } from '../../../../packages/core/annotation/src/rect';
+import { draftOf } from '../../../../packages/core/annotation/src/update/changes';
+import { familyOf } from '../../../../packages/core/annotation/src/shapes';
+import { widgetAppearanceOf } from '../../../../packages/core/annotation/src/record/defaults';
+import { widgetKindOf } from '../../../../packages/core/annotation/src/kinds/widget';
+import { pagePointsBounds } from '@embedpdf/engine-core/runtime';
+import type {
+  ModelAnnotation,
+  Shape,
+  FieldValues,
+} from '../../../../packages/core/annotation/src/types';
+import {
   callout,
   caret,
   circle,
@@ -31,126 +43,233 @@ import {
   polygon,
   polyline,
   redact,
-  resetUuid,
   square,
   stamp,
   textNote,
   unsupported,
   widget,
   objRef,
+  baseRef,
   pr,
-} from './annotation-fixtures';
+  quad,
+} from './annotation-current-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 
-type Dto = Record<string, unknown>;
-
 const METRES = METRES_FORMAT();
-const RICH_PARAS = [{ runs: [{ text: 'Hel' }, { text: 'lo', style: { weight: 700 } }] }];
+const RICH_PARAS: RichTextParagraph[] = [
+  { runs: [{ text: 'Hel' }, { text: 'lo', style: { weight: 700 } }] },
+];
+export const migration: { before: string; after: string | null; reason?: string }[] = [];
+const cases: FunctionCase[] = [];
+function replace(before: string, fn: string, ...args: unknown[]) {
+  const name = fn === before.split('/')[0] ? before : `${fn}/${before}`;
+  migration.push({ before, after: name });
+  cases.push({ name, fn, args });
+}
+const retire = (before: string, reason: string) => migration.push({ before, after: null, reason });
+const rotatedBox = { x: 110, y: 110, width: 80, height: 80 };
+const rotated = { rotation: 30, box: rotatedBox, rect: rotatedAabb(rotatedBox, 30) };
 
-const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
-
-const rotated = { rotation: 30, unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } };
-
-/** One DTO per kind and variant, with the crop it is read against. */
-const DTOS: [string, Dto, typeof CROP][] = [
-  ['square', square(1), CROP],
-  ['square-rotated', square(2, rotated), CROP],
-  ['square-rotation-only', square(3, { rotation: 90 }), CROP],
-  ['square-cloudy', square(4, { cloudyIntensity: 2, rectDifferences: { left: 3, bottom: 3, right: 3, top: 3 } }), CROP],
-  ['square-dashed', square(5, { borderStyle: 'dashed', dashArray: [4, 2], interiorColor: { r: 0, g: 128, b: 255 } }), CROP],
-  ['square-dashed-empty', square(6, { borderStyle: 'dashed', dashArray: [] }), CROP],
-  ['square-offset-crop', square(7, { pageObjectNumber: 2, rect: { left: 60, bottom: 100, right: 160, top: 200 } }), CROP2],
-  ['circle', circle(8, { rotation: 45, unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } }), CROP],
-  ['line', line(9), CROP],
-  ['line-rotated', line(10, { rotation: 15 }), CROP],
-  ['line-no-endings', line(11, { lineEndings: undefined }), CROP],
-  ['polygon', polygon(12), CROP],
-  ['polygon-cloudy', polygon(13, { cloudyIntensity: 1.5, rotation: 20 }), CROP],
-  ['polyline', polyline(14), CROP],
-  ['ink', ink(15), CROP],
-  ['ink-highlight', ink(16, { intent: 'ink-highlight', rotation: 10 }), CROP],
-  ['free-text', freeText(17), CROP],
-  ['free-text-rotated', freeText(18, { ...rotated, fontColor: BLUE_DTO() }), CROP],
-  ['free-text-null-contents', freeText(19, { contents: null, interiorColor: { r: 255, g: 255, b: 0 } }), CROP],
-  ['callout', callout(20), CROP],
-  ['callout-two-points', callout(21, { calloutLine: [{ x: 60, y: 510 }, { x: 150, y: 600 }], lineEnding: undefined }), CROP],
-  ['callout-rotated', callout(22, { rotation: 90, unrotatedRect: { left: 150, bottom: 550, right: 300, top: 700 } }), CROP],
-  ['callout-rotation-no-box', callout(23, { rotation: 90 }), CROP],
-  ['callout-one-point', callout(24, { calloutLine: [{ x: 60, y: 510 }] }), CROP],
-  ['highlight', markup('highlight', 25), CROP],
-  ['underline', markup('underline', 26), CROP],
-  ['squiggly', markup('squiggly', 27), CROP],
-  ['strikeout', markup('strikeout', 28), CROP],
-  ['strikeout-text-edit', markup('strikeout', 29, { intent: 'strikeout-text-edit', inReplyTo: objRef(30), replyType: 'group' }), CROP],
-  ['caret', caret(30, { intent: 'replace', contents: 'new words' }), CROP],
-  ['caret-rotated', caret(31, { rotation: 90, unrotatedRect: { left: 86, bottom: 746, right: 94, top: 754 } }), CROP],
-  ['redact-area', redact(32), CROP],
-  ['redact-no-fill', redact(51, { interiorColor: null }), CROP],
-  ['redact-text', redact(33, { quadPoints: markup('x', 0).quadPoints, overlayText: 'REDACTED', repeat: true }), CROP],
-  ['text', textNote(34), CROP],
-  ['text-reply', textNote(35, { inReplyTo: objRef(34), replyType: 'reply', contents: 'a reply' }), CROP],
-  ['file-attachment', fileAttachment(36), CROP],
-  ['stamp', stamp(37, rotated), CROP],
-  ['link', link(38), CROP],
-  ['link-attached', link(39, { inReplyTo: objRef(1), replyType: 'group' }), CROP],
-  ['link-no-target', link(40, { target: null }), CROP],
-  ['link-javascript', link(41, { target: { kind: 'javascript' } }), CROP],
-  ['widget-text', widget(42, 'text', { fontFamily: 'courier', fontSize: 10, fontColor: { r: 0, g: 0, b: 255 }, color: RED_DTO() }), CROP],
-  ['widget-combobox', widget(43, 'combobox'), CROP],
-  ['widget-listbox', widget(44, 'listbox', { interiorColor: { r: 240, g: 240, b: 240 }, borderStyle: 'dashed' }), CROP],
-  ['widget-pushbutton', widget(45, 'pushbutton'), CROP],
-  ['widget-checkbox', widget(46, 'checkbox'), CROP],
-  ['widget-radio', widget(47, 'radio'), CROP],
-  ['widget-signature', widget(48, 'signature'), CROP],
-  ['unsupported', unsupported(49), CROP],
-  ['nm-ref', square(50, { ref: { kind: 'nm', page: pr(1), nm: 'abc' } }), CROP],
-  // An unrotated box is read only with a rotation, and never mistaken for the
-  // RD-inset rect (unlike `callout-rotated`, whose two boxes coincide).
-  ['highlight-multiply', markup('highlight', 53, { blendMode: 'multiply' }), CROP],
-  ['callout-unrotated-box-no-rotation', callout(54, { unrotatedRect: { left: 160, bottom: 560, right: 290, top: 690 } }), CROP],
-  ['callout-rotated-distinct-box', callout(55, { rotation: 90, unrotatedRect: { left: 160, bottom: 560, right: 290, top: 690 } }), CROP],
-  ['free-text-unrotated-box-no-rotation', freeText(56, { unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } }), CROP],
-  // A NaN rotation is falsy and an infinite one truthy, as JavaScript reads them.
-  ['square-rotation-nan', square(90, { rotation: Number.NaN, unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } }), CROP],
-  ['square-rotation-infinite', square(91, { rotation: Number.POSITIVE_INFINITY, unrotatedRect: { left: 110, bottom: 610, right: 190, top: 690 } }), CROP],
-  ['caret-unrotated-box-no-rotation', caret(58, { unrotatedRect: { left: 86, bottom: 746, right: 94, top: 754 } }), CROP],
+/** One current page-space DTO per kind and historical variant. */
+export const DTOS: [string, Annotation][] = [
+  ['square', square(1)],
+  ['square-rotated', square(2, rotated)],
+  ['square-rotation-only', square(3, { rotation: 90 })],
+  ['square-cloudy', square(4, { cloudyIntensity: 2 })],
+  [
+    'square-dashed',
+    square(5, { borderStyle: 'dashed', dashArray: [4, 2], interiorColor: '#0080ff' }),
+  ],
+  ['square-dashed-empty', square(6, { borderStyle: 'dashed', dashArray: [] })],
+  [
+    'square-offset-crop',
+    square(7, {
+      page: pr(2),
+      box: { x: 50, y: 320, width: 100, height: 100 },
+      rect: { x: 50, y: 320, width: 100, height: 100 },
+    }),
+  ],
+  ['circle', circle(8, { rotation: 45, box: { x: 110, y: 110, width: 80, height: 80 } })],
+  ['line', line(9)],
+  ['line-rotated', line(10, { rotation: 15 })],
+  ['line-no-endings', line(11, { lineEndings: { start: 'none', end: 'none' } })],
+  ['polygon', polygon(12)],
+  ['polygon-cloudy', polygon(13, { cloudyIntensity: 1.5, rotation: 20 })],
+  ['polyline', polyline(14)],
+  ['ink', ink(15)],
+  ['ink-highlight', ink(16, { intent: 'ink-highlight', rotation: 10 })],
+  ['free-text', freeText(17)],
+  ['free-text-rotated', freeText(18, { ...rotated, fontColor: BLUE_DTO() })],
+  ['free-text-null-contents', freeText(19, { contents: null, interiorColor: '#ffff00' })],
+  ['callout', callout(20)],
+  [
+    'callout-two-points',
+    callout(21, {
+      calloutLine: [
+        { x: 60, y: 290 },
+        { x: 150, y: 200 },
+      ],
+      lineEnding: 'none',
+    }),
+  ],
+  [
+    'callout-rotated',
+    callout(22, { rotation: 90, box: { x: 150, y: 100, width: 150, height: 150 } }),
+  ],
+  ['callout-rotation-no-box', callout(23, { rotation: 90 })],
+  ['callout-one-point', Object.assign(callout(24), { calloutLine: [{ x: 60, y: 290 }] })],
+  ['highlight', markup('highlight', 25)],
+  ['underline', markup('underline', 26)],
+  ['squiggly', markup('squiggly', 27)],
+  ['strikeout', markup('strikeout', 28)],
+  [
+    'strikeout-text-edit',
+    markup('strikeout', 29, {
+      intent: 'strikeout-text-edit',
+      reply: { to: objRef(30), type: 'group' },
+    }),
+  ],
+  ['caret', caret(30, { intent: 'replace', contents: 'new words' })],
+  ['caret-rotated', caret(31, { rotation: 90, box: { x: 86, y: 46, width: 8, height: 8 } })],
+  ['redact-area', redact(32)],
+  ['redact-no-fill', redact(51, { interiorColor: null })],
+  [
+    'redact-text',
+    redact(33, {
+      quadPoints: markup('highlight', 0).quadPoints,
+      overlayText: 'REDACTED',
+      repeat: true,
+    }),
+  ],
+  ['text', textNote(34)],
+  ['text-reply', textNote(35, { reply: { to: objRef(34), type: 'reply' }, contents: 'a reply' })],
+  ['file-attachment', fileAttachment(36)],
+  ['stamp', stamp(37, rotated)],
+  ['link', link(38)],
+  ['link-attached', link(39, { reply: { to: objRef(1), type: 'group' } })],
+  ['link-no-target', link(40, { target: null })],
+  ['link-javascript', link(41, { target: { kind: 'javascript' } })],
+  [
+    'widget-text',
+    widget(42, 'text', {
+      fontFamily: 'courier',
+      fontSize: 10,
+      fontColor: '#0000ff',
+      color: RED_DTO(),
+    }),
+  ],
+  ['widget-combobox', widget(43, 'combobox')],
+  ['widget-listbox', widget(44, 'listbox', { interiorColor: '#f0f0f0', borderStyle: 'dashed' })],
+  ['widget-pushbutton', widget(45, 'pushbutton')],
+  ['widget-checkbox', widget(46, 'checkbox')],
+  ['widget-radio', widget(47, 'radio')],
+  ['widget-signature', widget(48, 'signature')],
+  ['unsupported', unsupported(49)],
+  ['base-index-ref', square(50, { ref: baseRef(3), nm: 'abc' })],
+  // The engine now supplies each kind's own box, including upright boxes.
+  // These retain distinct boxes rather than a locally calculated /RD inset.
+  ['highlight-multiply', markup('highlight', 53, { blendMode: 'multiply' })],
+  [
+    'callout-unrotated-box-no-rotation',
+    callout(54, { box: { x: 160, y: 110, width: 130, height: 130 } }),
+  ],
+  [
+    'callout-rotated-distinct-box',
+    callout(55, { rotation: 90, box: { x: 160, y: 110, width: 130, height: 130 } }),
+  ],
+  [
+    'free-text-unrotated-box-no-rotation',
+    freeText(56, { box: { x: 110, y: 110, width: 80, height: 80 } }),
+  ],
+  // Explicitly hostile nonfinite rotations remain robustness inputs.
+  [
+    'square-rotation-nan',
+    square(90, { rotation: Number.NaN, box: { x: 110, y: 110, width: 80, height: 80 } }),
+  ],
+  [
+    'square-rotation-infinite',
+    square(91, {
+      rotation: Number.POSITIVE_INFINITY,
+      box: { x: 110, y: 110, width: 80, height: 80 },
+    }),
+  ],
+  ['caret-unrotated-box-no-rotation', caret(58, { box: { x: 86, y: 46, width: 8, height: 8 } })],
   // Only a strikeout reads its intent.
-  ['highlight-with-intent', markup('highlight', 57, { intent: 'strikeout-text-edit' }), CROP],
+  [
+    'highlight-with-intent',
+    Object.assign(markup('highlight', 57), { intent: 'strikeout-text-edit' }),
+  ],
   // Measurement dimensions: the line carries its leader and caption, the
   // shapes their caption, and every one derives /Contents from /Measure.
   [
     'line-dimension',
     line(59, {
-      intent: 'LineDimension',
+      intent: 'line-dimension',
       measure: METRES,
-      caption: { enabled: true, position: 'inline' },
+      captionEnabled: true,
+      captionPosition: 'inline',
       leader: { length: 12, extension: 5, offset: 0 },
       contents: '2 m',
-      linePoints: { start: { x: 100, y: 700 }, end: { x: 244, y: 700 } },
+      linePoints: { start: { x: 100, y: 100 }, end: { x: 244, y: 100 } },
     }),
-    CROP,
   ],
-  ['line-dimension-bare', line(60, { intent: 'LineDimension' }), CROP],
-  ['line-dimension-foreign', line(61, { intent: 'LineDimension', measure: { subtype: 'GEO' }, caption: { enabled: false }, contents: null }), CROP],
-  ['polyline-dimension', polyline(62, { intent: 'PolyLineDimension', measure: METRES, caption: { enabled: true }, contents: 'stale' }), CROP],
-  ['polygon-dimension', polygon(63, { intent: 'PolygonDimension', measure: METRES, caption: { enabled: true, center: { x: 150, y: 670 } } }), CROP],
-  ['polygon-dimension-bare', polygon(64, { intent: 'PolygonDimension', rotation: 30 }), CROP],
+  ['line-dimension-bare', line(60, { intent: 'line-dimension' })],
+  [
+    'line-dimension-foreign',
+    line(61, {
+      intent: 'line-dimension',
+      measure: { subtype: 'geospatial' },
+      captionEnabled: false,
+      contents: null,
+    }),
+  ],
+  [
+    'polyline-dimension',
+    polyline(62, {
+      intent: 'polyline-dimension',
+      measure: METRES,
+      captionEnabled: true,
+      contents: 'stale',
+    }),
+  ],
+  [
+    'polygon-dimension',
+    polygon(63, {
+      intent: 'polygon-dimension',
+      measure: METRES,
+      captionEnabled: true,
+      captionCenter: { x: 150, y: 130 },
+    }),
+  ],
+  ['polygon-dimension-bare', polygon(64, { intent: 'polygon-dimension', rotation: 30 })],
   // A rich body carries the formatting the /DA cannot.
-  ['free-text-rich', freeText(65, { richText: { body: RICH_BODY(700, true, ['underline']), paragraphs: RICH_PARAS } }), CROP],
-  ['free-text-rich-plain', freeText(66, { richText: { body: RICH_BODY(400, false, []), paragraphs: RICH_PARAS } }), CROP],
+  [
+    'free-text-rich',
+    freeText(65, {
+      richText: { body: RICH_BODY(700, true, ['underline']), paragraphs: RICH_PARAS },
+    }),
+  ],
+  [
+    'free-text-rich-plain',
+    freeText(66, { richText: { body: RICH_BODY(400, false, []), paragraphs: RICH_PARAS } }),
+  ],
 ];
 
 /** 72 pt to the metre. */
 function METRES_FORMAT() {
   return {
-    subtype: 'RL',
+    subtype: 'rectilinear' as const,
     ratio: '1 in = 1 m',
     x: [{ unit: 'm', conversion: 1 / 72 }],
     distance: [{ unit: 'm', conversion: 1 }],
     area: [{ unit: 'm²', conversion: 1 }],
   };
 }
-function RICH_BODY(weight: number, italic: boolean, decoration: string[]) {
+function RICH_BODY(
+  weight: number,
+  italic: boolean,
+  decoration: RichTextBody['decoration'],
+): RichTextBody {
   return {
     family: 'Helvetica',
     weight,
@@ -167,265 +286,397 @@ function RICH_BODY(weight: number, italic: boolean, decoration: string[]) {
 }
 
 function BLUE_DTO() {
-  return { r: 56, g: 88, b: 233 };
+  return '#3858e9';
 }
 function RED_DTO() {
-  return { r: 239, g: 68, b: 68 };
+  return '#ef4444';
 }
 
-// d29344e88 moved the record conversion from the plugin's `repository/` into
-// the core (`record/`): `fromDTO`, `linkChildRects` and `writableTarget` are
-// there, and `widgetKindOf` is in `kinds/widget.ts`. `fromDTO` takes the
-// engine's record alone and answers a `ModelAnnotation`. The rest went as the
-// core moved onto the engine's records; each records a removal error.
-const fromDTO = (dto: never, _crop?: unknown, _source?: unknown) => upstreamFromDTO(dto) as unknown as Annot;
-const boxGeomFields = removedUpstream('boxGeomFields', 'b979f2aef');
-const cssToColor = removedUpstream('cssToColor', 'c053c3d33');
-const colorToCss = removedUpstream('colorToCss', 'c053c3d33');
-const styleFromDTO = removedUpstream('styleFromDTO', '23a18802a');
-const toCreateDraft = removedUpstream('toCreateDraft', 'b979f2aef');
-const toPatch = removedUpstream('toPatch', 'b979f2aef');
-const toScopedPatch = removedUpstream('toScopedPatch', '0bcaa4e8c');
-const widgetAppearanceFromProps = removedUpstream('widgetAppearanceFromProps', '17191ea39');
-const borderFromDTO = removedUpstream('borderFromDTO', '23a18802a');
-const boxGeomFromDTO = removedUpstream('boxGeomFromDTO', '513541817');
-const insetPdfRectByRD = removedUpstream('insetPdfRectByRD', '2bdc74fbf');
-const rotFromDTO = removedUpstream('rotFromDTO', 'b979f2aef');
-const cloudyExtras = removedUpstream('cloudyExtras', '513541817');
-const calloutFields = removedUpstream('calloutFields', '14bf747f2');
-const pdfBoundsOfQuads = removedUpstream('pdfBoundsOfQuads', '1a243431a');
-const quadPointsFor = removedUpstream('quadPointsFor', 'b979f2aef');
-
-const annotOf = (label: string, source: 'baked' | 'vector' = 'vector'): Annot => {
-  const found = DTOS.find(([l]) => l === label);
-  if (!found) throw new Error(`no dto ${label}`);
-  return fromDTO(found[1] as never, found[2], source);
+/** An actual earlier drawing, constructed with shipping edits before recording both DTOs. */
+const earlierDrawing = (annotation: Annotation): Annotation => {
+  const shape = moved(annotation);
+  const upright = 'rotation' in shape ? { ...shape, rotation: 0 } : shape;
+  return withValues(withShape(fromDTO(annotation), upright), {
+    color: '#010203',
+    opacity: 0.8,
+    strokeWidth: 1,
+    borderStyle: 'solid',
+    dashArray: null,
+    cloudyIntensity: null,
+    interiorColor: null,
+    contents: 'earlier text',
+  }).annotation;
 };
-const cropOf = (label: string) => DTOS.find(([l]) => l === label)![2];
+const dtoOf = (label: string): Annotation => {
+  const found = DTOS.find(([name]) => name === label);
+  if (!found) throw new Error(`missing current DTO ${label}`);
+  return found[1];
+};
+const record = (label: string): ModelAnnotation => fromDTO(dtoOf(label));
+const oldLabel = (label: string) => (label === 'base-index-ref' ? 'nm-ref' : label);
+/** Data fields for the drawing's draft, prepared before recording the arguments. */
+function dataOf(annotation: Annotation): FieldValues {
+  const owners = kindFactsOf(annotation.subtype)!.owners;
+  return Object.fromEntries(Object.entries(annotation).filter(([name]) => owners[name] === 'data'));
+}
+const moved = (annotation: Annotation): Shape => {
+  const shape = shapeOf(annotation);
+  return familyOf(shape).translate(shape, { x: 7, y: -3 });
+};
+for (const [label, dto] of DTOS) {
+  const old = oldLabel(label);
+  replace(`fromDTO/${old}`, 'fromDTO', dto);
+  replace(`toPatch/${old}`, 'annotationPatchBetween', earlierDrawing(dto), dto);
+  replace(`toScopedPatch/${old}/geometry`, 'withShape', fromDTO(dto), moved(dto));
+  if (dto.subtype === 'unsupported')
+    retire(
+      `toCreateDraft/${old}`,
+      'Unsupported annotations cannot be created (write/crud.ts:72-79); no replacement create exists.',
+    );
+  else replace(`toCreateDraft/${old}`, 'draftOf', kindOf(dto).name, dataOf(dto), shapeOf(dto));
+}
+retire(
+  'fromDTO/vector-source',
+  'd29344e88: fromDTO takes one engine record and always uses baked; no caller-selected source. fromDTO/square covers this record.',
+);
+retire(
+  'fromDTO/default-source',
+  'd29344e88 core record/index.ts:98-116 already has one argument and baked source; same record covered by fromDTO/square.',
+);
+replace('fromDTO/no-ref', 'fromDTO', (({ ref: _ref, ...rest }) => rest)(square(1)));
+replace('fromDTO/null-ref', 'fromDTO', { ...square(1), ref: null });
 
-/** Style overrides that reach the shape and stroke couplings. */
-const CLOUDY: Border = { kind: 'cloudy', intensity: 2 };
-const DASHED: Border = { kind: 'dashed', dash: [5, 3] };
-const restyle = (a: Annot, style: Partial<Annot['style']>): Annot => ({ ...a, style: { ...a.style, ...style } });
-
-const PROP_SCOPES: [string, string[]][] = [
-  ['color', ['color']],
-  ['stroke-width', ['strokeWidth']],
-  ['border', ['border']],
-  ['line-endings', ['lineEndings']],
-  ['interior', ['interiorColor', 'opacity', 'blendMode']],
-  ['font', ['fontFamily', 'fontSize', 'fontColor', 'textAlign']],
-  ['format', ['bold', 'italic', 'underline']],
-  ['icon', ['icon']],
-  ['link', ['link']],
-  ['unknown', ['bogus']],
-  ['empty', []],
+const cloud = { cloudyIntensity: 2 };
+const dash = { borderStyle: 'dashed', dashArray: [5, 3] } as const;
+const STYLED: [string, Annotation][] = [
+  ['square', square(1)],
+  ['square-cloudy', square(1, cloud)],
+  [
+    'square-dashed',
+    square(1, { ...dash, dashArray: [...dash.dashArray], interiorColor: '#00ff00' }),
+  ],
+  ['circle-cloudy', circle(8, { ...cloud, strokeWidth: 4 })],
+  ['line', dtoOf('line')],
+  ['line-no-endings', dtoOf('line-no-endings')],
+  ['polygon-cloudy', polygon(12, cloud)],
+  ['polygon-dashed', polygon(12, { ...dash, dashArray: [...dash.dashArray] })],
+  ['polyline', dtoOf('polyline')],
+  ['ink', dtoOf('ink')],
+  ['free-text', dtoOf('free-text')],
+  [
+    'free-text-no-text',
+    freeText(17, { richText: { body: RICH_BODY(400, false, []), paragraphs: [] } }),
+  ],
+  ['callout', dtoOf('callout')],
+  ['highlight', dtoOf('highlight')],
+  ['redact-text', dtoOf('redact-text')],
+  ['text', dtoOf('text')],
+  ['text-no-icon', textNote(34, { icon: 'comment' })],
+  ['link', dtoOf('link')],
+  ['link-null', dtoOf('link-no-target')],
+  ['link-readonly', dtoOf('link-javascript')],
+  ['widget-text', dtoOf('widget-text')],
+  ['stamp', dtoOf('stamp')],
+  ['square-empty-interior', square(1, { interiorColor: '' })],
+  ['free-text-rich', dtoOf('free-text-rich')],
+  [
+    'free-text-bold-draft',
+    freeText(17, {
+      richText: { body: RICH_BODY(700, false, ['underline']), paragraphs: RICH_PARAS },
+    }),
+  ],
+  ['line-dimension', dtoOf('line-dimension')],
+  ['polygon-dimension', dtoOf('polygon-dimension')],
 ];
-
-const cases: FunctionCase[] = [];
-
-for (const [label, dto, crop] of DTOS) {
-  cases.push(c('fromDTO', label, dto, crop, 'baked'));
-}
-cases.push(c('fromDTO', 'vector-source', square(1), CROP, 'vector'));
-cases.push(c('fromDTO', 'default-source', square(1), CROP));
-// annotationKey(dto.ref) throws on a record without its address.
-cases.push(c('fromDTO', 'no-ref', (({ ref: _ref, ...rest }) => rest)(square(1)), CROP, 'baked'));
-cases.push(c('fromDTO', 'null-ref', { ...square(1), ref: null }, CROP, 'baked'));
-
-for (const [label] of DTOS) {
-  const a = annotOf(label);
-  const crop = cropOf(label);
-  cases.push(c('toPatch', label, a, crop));
-  cases.push(c('toScopedPatch', `${label}/geometry`, a, { kind: 'geometry' }, crop));
-  cases.push(c('toCreateDraft', label, a, crop));
-}
-
-// Style variants through the prop scopes.
-const STYLED: [string, Annot, typeof CROP][] = [
-  ['square', annotOf('square'), CROP],
-  ['square-cloudy', restyle(annotOf('square'), { border: CLOUDY }), CROP],
-  ['square-dashed', restyle(annotOf('square'), { border: DASHED, interiorColor: '#00ff00' }), CROP],
-  ['circle-cloudy', restyle(annotOf('circle'), { border: CLOUDY, strokeWidth: 4 }), CROP],
-  ['line', annotOf('line'), CROP],
-  ['line-no-endings', annotOf('line-no-endings'), CROP],
-  ['polygon-cloudy', restyle(annotOf('polygon'), { border: CLOUDY }), CROP],
-  ['polygon-dashed', restyle(annotOf('polygon'), { border: DASHED }), CROP],
-  ['polyline', annotOf('polyline'), CROP],
-  ['ink', annotOf('ink'), CROP],
-  ['free-text', annotOf('free-text'), CROP],
-  ['free-text-no-text', { ...annotOf('free-text'), text: undefined } as Annot, CROP],
-  ['callout', annotOf('callout'), CROP],
-  ['highlight', annotOf('highlight'), CROP],
-  ['redact-text', annotOf('redact-text'), CROP],
-  ['text', annotOf('text'), CROP],
-  ['text-no-icon', { ...annotOf('text'), icon: undefined } as Annot, CROP],
-  ['link', annotOf('link'), CROP],
-  ['link-null', annotOf('link-no-target'), CROP],
-  ['link-readonly', annotOf('link-javascript'), CROP],
-  ['widget-text', annotOf('widget-text'), CROP],
-  ['stamp', annotOf('stamp'), CROP],
-  ['square-empty-interior', restyle(annotOf('square'), { interiorColor: '' }), CROP],
-  ['free-text-rich', annotOf('free-text-rich'), CROP],
-  ['free-text-bold-draft', { ...annotOf('free-text'), text: { ...annotOf('free-text').text!, bold: true, underline: true }, data: undefined } as Annot, CROP],
-  ['line-dimension', annotOf('line-dimension'), CROP],
-  ['polygon-dimension', annotOf('polygon-dimension'), CROP],
+/** Current engine fields are recorded in full, including atomic border and rich body changes. */
+const PROP_SCOPES: [string, FieldValues][] = [
+  ['color', { color: '#123456' }],
+  ['stroke-width', { strokeWidth: 5 }],
+  ['border', { borderStyle: 'dashed', dashArray: [6, 2], cloudyIntensity: null }],
+  ['line-endings', { lineEndings: { start: 'circle', end: 'closed-arrow' } }],
+  ['interior', { interiorColor: '#00ff00', opacity: 0.4, blendMode: 'multiply' }],
+  ['font', { fontFamily: 'courier', fontSize: 18, fontColor: '#0000ff', textAlign: 'center' }],
+  ['format', { richText: { body: { weight: 700, italic: true, decoration: ['underline'] } } }],
+  ['icon', { icon: 'key' }],
+  ['link', { target: { kind: 'uri', uri: 'https://docs.example' } }],
+  ['unknown', { bogus: 1 }],
+  ['empty', {}],
 ];
-// The measurement scopes: a caption for every dimension, a leader for the line only.
-for (const label of ['line-dimension', 'line-dimension-bare', 'polyline-dimension', 'polygon-dimension', 'square']) {
-  cases.push(c('toScopedPatch', `${label}/caption`, annotOf(label), { kind: 'caption' }, CROP));
-  cases.push(c('toScopedPatch', `${label}/leader`, annotOf(label), { kind: 'leader' }, CROP));
+for (const label of [
+  'line-dimension',
+  'line-dimension-bare',
+  'polyline-dimension',
+  'polygon-dimension',
+  'square',
+]) {
+  replace(`toScopedPatch/${label}/caption`, 'withValues', record(label), {
+    captionEnabled: true,
+    captionPosition: 'top',
+    captionCenter: { x: 170, y: 140 },
+  });
+  replace(`toScopedPatch/${label}/leader`, 'withValues', record(label), {
+    leader: { length: 18, extension: 7, offset: 2 },
+  });
 }
-for (const [label, a, crop] of STYLED) {
-  for (const [scope, keys] of PROP_SCOPES) {
-    cases.push(c('toScopedPatch', `${label}/${scope}`, a, { kind: 'props', keys }, crop));
+for (const [label, annotation] of STYLED) {
+  for (const [scope, values] of PROP_SCOPES) {
+    const stated =
+      scope === 'format' && annotation.subtype === 'free-text'
+        ? {
+            richText: {
+              ...annotation.richText,
+              body: {
+                ...annotation.richText.body,
+                weight: 700,
+                italic: true,
+                decoration: ['underline'],
+              },
+            },
+          }
+        : values;
+    replace(`toScopedPatch/${label}/${scope}`, 'withValues', fromDTO(annotation), stated);
   }
+  replace(
+    `toPatch/styled/${label}`,
+    'annotationPatchBetween',
+    earlierDrawing(annotation),
+    annotation,
+  );
 }
-for (const [label, a, crop] of STYLED) cases.push(c('toPatch', `styled/${label}`, a, crop));
-cases.push(c('toCreateDraft', 'styled/square-cloudy', STYLED[1][1], CROP));
-cases.push(c('toCreateDraft', 'styled/polygon-cloudy', STYLED[6][1], CROP));
+for (const label of ['square-cloudy', 'polygon-cloudy']) {
+  const annotation = STYLED.find(([name]) => name === label)![1];
+  replace(
+    `toCreateDraft/styled/${label}`,
+    'draftOf',
+    kindOf(annotation).name,
+    dataOf(annotation),
+    shapeOf(annotation),
+  );
+}
 
-// Drafts from annotations that never had a DTO (a fresh draw).
-const fresh = (subtype: string, geom: Annot['geom'], over: Partial<Annot> = {}): Annot => ({
-  ...annotOf('square'),
-  id: 'tmp:1',
-  ref: null,
-  subtype,
-  geom,
-  data: undefined,
-  ...over,
+// Fresh shapes use current discriminants and full engine fields. Wrong-family cases stay explicit.
+const BOX = { x: 10, y: 10, width: 100, height: 30 };
+const SHAPES = {
+  ink: {
+    kind: 'ink',
+    inkList: [
+      [
+        { x: 1, y: 2 },
+        { x: 3, y: 4 },
+      ],
+    ],
+    rotation: 0,
+  },
+  caret: { kind: 'caret', box: { x: 10, y: 10, width: 6, height: 8 }, rotation: 0 },
+  quads: { kind: 'quads', quadPoints: [quad(10, 10, 50, 12)] },
+  box: { kind: 'box', box: BOX, rotation: 0, ellipse: false },
+  text: { kind: 'text-box', box: BOX, rotation: 0, calloutLine: null, lineEnding: 'none' },
+  line: { kind: 'line', linePoints: { start: { x: 1, y: 1 }, end: { x: 3, y: 4 } }, rotation: 0 },
+} satisfies Record<string, Shape>;
+const freshDrafts: [string, string, Shape, FieldValues?][] = [
+  ['ink-highlight', 'ink', SHAPES.ink, { intent: 'ink-highlight' }],
+  ['caret', 'caret', SHAPES.caret],
+  ['caret-replace', 'caret', { ...SHAPES.caret, rotation: 90 }, { intent: 'replace' }],
+  ['strikeout-edit', 'strikeout', SHAPES.quads, { intent: 'strikeout-text-edit' }],
+  ['strikeout-rect-geom', 'strikeout', SHAPES.box],
+  [
+    'redact-quads',
+    'redact',
+    { kind: 'quads', quadPoints: [quad(10, 10, 50, 12), quad(10, 30, 20, 12)] },
+  ],
+  ['free-text', 'free-text', SHAPES.text],
+  ['link', 'link', SHAPES.box],
+  ['widget', 'widget-text', SHAPES.box],
+  ['markup-no-geometry', 'highlight', { kind: 'quads', quadPoints: [] }],
+];
+for (const [label, kind, shape, fields = {}] of freshDrafts)
+  replace(`toCreateDraft/fresh/${label}`, 'draftOf', kind, {}, shape, fields);
+replace(
+  'toPatch/fresh/unsupported',
+  'annotationPatchBetween',
+  earlierDrawing(unsupported(500)),
+  unsupported(500),
+);
+for (const [label, dto, shape] of [
+  ['unsupported-geometry', unsupported(500), SHAPES.box],
+  ['highlight-geometry', markup('highlight', 501), SHAPES.quads],
+  ['square-no-rect-geom', line(502), SHAPES.box],
+  ['poly-on-ink-geom', polygon(503), SHAPES.line],
+  ['ink-on-line-geom', ink(504), SHAPES.line],
+  ['caret-on-rect-geom', caret(505), SHAPES.box],
+  ['free-text-on-rect-geom', freeText(506), SHAPES.box],
+  ['redact-quads-geometry', redact(507), SHAPES.quads],
+  ['text-on-line-geom', textNote(508), SHAPES.line],
+] as const)
+  replace(`toScopedPatch/fresh/${label}`, 'withShape', fromDTO(dto), shape);
+replace('toScopedPatch/fresh/line-endings-on-rect', 'withValues', fromDTO(line(509)), {
+  lineEndings: { start: 'circle', end: 'none' },
 });
-const tq = (x: number, y: number, w: number, h: number) => ({
-  upperStart: { x, y },
-  upperEnd: { x: x + w, y },
-  lowerStart: { x, y: y + h },
-  lowerEnd: { x: x + w, y: y + h },
-});
-cases.push(
-  c('toCreateDraft', 'fresh/ink-highlight', fresh('ink', { t: 'ink', strokes: [[{ x: 1, y: 2 }, { x: 3, y: 4 }]] }, { intent: 'ink-highlight' }), CROP),
-  c('toCreateDraft', 'fresh/caret', fresh('caret', { t: 'caret', rect: { x: 10, y: 10, width: 6, height: 8 } }), CROP),
-  c('toCreateDraft', 'fresh/caret-replace', fresh('caret', { t: 'caret', rect: { x: 10, y: 10, width: 6, height: 8 }, rot: 90 }, { intent: 'replace' }), CROP),
-  c('toCreateDraft', 'fresh/strikeout-edit', fresh('strikeout', { t: 'quads', quads: [tq(10, 10, 50, 12)] }, { intent: 'strikeout-text-edit' }), CROP),
-  c('toCreateDraft', 'fresh/strikeout-rect-geom', fresh('strikeout', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), CROP),
-  c('toCreateDraft', 'fresh/redact-quads', fresh('redact', { t: 'quads', quads: [tq(10, 10, 50, 12), tq(10, 30, 20, 12)] }), CROP),
-  c('toCreateDraft', 'fresh/free-text', fresh('free-text', { t: 'text', rect: { x: 10, y: 10, width: 100, height: 30 } }), CROP),
-  c('toCreateDraft', 'fresh/link', fresh('link', { t: 'rect', rect: { x: 10, y: 10, width: 100, height: 30 }, ellipse: false }), CROP),
-  c('toCreateDraft', 'fresh/widget', fresh('widget-text', { t: 'rect', rect: { x: 10, y: 10, width: 100, height: 30 }, ellipse: false }), CROP),
-  c('toCreateDraft', 'fresh/markup-no-geometry', fresh('highlight', { t: 'quads', quads: [] }), CROP),
-  c('toPatch', 'fresh/unsupported', fresh('unsupported', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), CROP),
-  c('toScopedPatch', 'fresh/unsupported-geometry', fresh('unsupported', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/highlight-geometry', fresh('highlight', { t: 'quads', quads: [tq(1, 1, 5, 5)] }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/square-no-rect-geom', fresh('line', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/poly-on-ink-geom', fresh('polygon', { t: 'line', a: { x: 1, y: 1 }, b: { x: 3, y: 4 } }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/ink-on-line-geom', fresh('ink', { t: 'line', a: { x: 1, y: 1 }, b: { x: 3, y: 4 } }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/caret-on-rect-geom', fresh('caret', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/free-text-on-rect-geom', fresh('free-text', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/redact-quads-geometry', fresh('redact', { t: 'quads', quads: [tq(1, 1, 5, 5)] }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/text-on-line-geom', fresh('text', { t: 'line', a: { x: 1, y: 1 }, b: { x: 3, y: 4 } }), { kind: 'geometry' }, CROP),
-  c('toScopedPatch', 'fresh/line-endings-on-rect', fresh('line', { t: 'rect', rect: { x: 1, y: 1, width: 1, height: 1 }, ellipse: false }), { kind: 'props', keys: ['lineEndings'] }, CROP),
-  c('toScopedPatch', 'fresh/square-props-on-line', fresh('square', { t: 'line', a: { x: 1, y: 1 }, b: { x: 3, y: 4 } }, { style: { ...annotOf('square').style, border: CLOUDY } }), { kind: 'props', keys: ['border', 'strokeWidth'] }, CROP),
+replace(
+  'toScopedPatch/fresh/square-props-on-line',
+  'withValues',
+  fromDTO(square(510, cloud)),
+  cloud,
 );
 
-// The seam helpers.
-cases.push(
-  c('annotationKey', 'object-number', objRef(12)),
-  c('annotationKey', 'nm', { kind: 'nm', page: pr(1), nm: 'x y' }),
-  c('annotationKey', 'index', { kind: 'index', page: pr(3), index: 7, revision: { docSessionId: 's', page: pr(3), generation: 1 } }),
-  c('colorToCss', 'plain', { r: 255, g: 16, b: 0 }),
-  c('colorToCss', 'clamped', { r: 300, g: -5, b: 12.6 }),
-  c('cssToColor', 'six', '#aabbcc'),
-  c('cssToColor', 'six-bare-upper', 'AABBCC'),
-  c('cssToColor', 'three', '#abc'),
-  c('cssToColor', 'three-padded', '  #ABC\n'),
-  c('cssToColor', 'named', 'red'),
-  c('cssToColor', 'four', '#abcd'),
-  c('boxGeomFields', 'flat', { x: 10, y: 20, width: 100, height: 50 }, 0, CROP),
-  c('boxGeomFields', 'rotated', { x: 10, y: 20, width: 100, height: 50 }, 30, CROP2),
-  c('boxGeomFromDTO', 'flat', { rect: CROP }, undefined, undefined, CROP, false),
-  c('boxGeomFromDTO', 'rotated', { rect: CROP }, 90, { left: 1, bottom: 2, right: 3, top: 4 }, CROP, true),
-  c('boxGeomFromDTO', 'rotation-without-box', { rect: CROP }, 45, undefined, CROP, false),
-  c('boxGeomFromDTO', 'full-turn', { rect: CROP }, 360, { left: 1, bottom: 2, right: 3, top: 4 }, CROP, false),
-  c('insetPdfRectByRD', 'inset', { left: 0, bottom: 0, right: 100, top: 50 }, { left: 1, bottom: 2, right: 3, top: 4 }),
-  c('insetPdfRectByRD', 'none', { left: 0, bottom: 0, right: 100, top: 50 }, null),
-  c('rotFromDTO', 'set', 30),
-  c('rotFromDTO', 'zero', 0),
-  c('rotFromDTO', 'absent'),
-  c('borderFromDTO', 'cloudy', { cloudyIntensity: 1, borderStyle: 'dashed' }),
-  c('borderFromDTO', 'dashed', { borderStyle: 'dashed', dashArray: [2, 1] }),
-  c('borderFromDTO', 'dashed-default', { borderStyle: 'dashed' }),
-  c('borderFromDTO', 'solid', { borderStyle: 'solid', cloudyIntensity: 0 }),
-  c('writableTarget', 'goto', { kind: 'goto', destination: { kind: 'fit', page: pr(1) } }),
-  c('writableTarget', 'uri', { kind: 'uri', uri: 'https://x' }),
-  c('writableTarget', 'named', { kind: 'named', name: 'NextPage' }),
-  c('writableTarget', 'null', null),
-  c('writableTarget', 'undefined'),
-  c('widgetKindOf', 'text', 'text'),
-  c('widgetKindOf', 'unknown', 'signature'),
-  c('widgetAppearanceFromProps', 'everything', {
-    color: '#ff0000',
-    interiorColor: '#00ff00',
-    strokeWidth: 2,
-    border: { kind: 'dashed', dash: [2, 2] },
-    fontFamily: 'courier',
-    fontSize: 11,
-    fontColor: '#0000ff',
-    textAlign: 'center',
-  }),
-  c('widgetAppearanceFromProps', 'clears', { interiorColor: null, border: { kind: 'solid' } }),
-  c('widgetAppearanceFromProps', 'empty-interior', { interiorColor: '' }),
-  c('widgetAppearanceFromProps', 'none', {}),
-  c('cloudyExtras', 'cloudy', restyle(annotOf('square'), { border: CLOUDY })),
-  c('cloudyExtras', 'plain', annotOf('square')),
-  c('cloudyExtras', 'not-a-rect', annotOf('line')),
-  c('calloutFields', 'callout', annotOf('callout'), CROP),
-  c('calloutFields', 'rotated', annotOf('callout-rotated'), CROP),
-  c('calloutFields', 'plain', annotOf('free-text'), CROP),
-  c('quadPointsFor', 'quads', annotOf('highlight'), CROP),
-  c('quadPointsFor', 'not-quads', annotOf('square'), CROP),
-  c('pdfBoundsOfQuads', 'two', [
-    { p1: { x: 1, y: 9 }, p2: { x: 5, y: 9 }, p3: { x: 1, y: 2 }, p4: { x: 5, y: 2 } },
-    { p1: { x: -3, y: 20 }, p2: { x: 0, y: 20 }, p3: { x: -3, y: 12 }, p4: { x: 0, y: 12 } },
+replace('annotationKey/object-number', 'annotationKey', objRef(12));
+replace('annotationKey/nm', 'annotationKey', baseRef(7));
+replace('annotationKey/index', 'annotationKey', baseRef(7, 3));
+replace('colorToCss/plain', 'colorOf', 255, 16, 0);
+replace('colorToCss/clamped', 'colorOf', 300, -5, 12.6);
+for (const [label, css] of [
+  ['six', '#aabbcc'],
+  ['six-bare-upper', 'AABBCC'],
+  ['three', '#abc'],
+  ['three-padded', '  #ABC\n'],
+  ['named', 'red'],
+  ['four', '#abcd'],
+])
+  replace(`cssToColor/${label}`, 'rgbOf', css);
+for (const label of ['flat', 'rotated'])
+  replace(
+    `boxGeomFields/${label}`,
+    'draftOf',
+    'square',
+    {},
+    { ...SHAPES.box, rotation: label === 'flat' ? 0 : 30 },
+  );
+for (const [label, rotation] of [
+  ['flat', 0],
+  ['rotated', 90],
+  ['rotation-without-box', 45],
+  ['full-turn', 360],
+] as const)
+  replace(
+    `boxGeomFromDTO/${label}`,
+    'shapeOf',
+    square(600, { rotation, box: { x: 0, y: 0, width: 600, height: 800 } }),
+  );
+// Rectangle differences no longer reach public records. Their historical raw PDF insetting has no plugin replacement.
+for (const label of ['inset', 'none'])
+  retire(
+    `insetPdfRectByRD/${label}`,
+    '2bdc74fbf removes /RD repository inset; current record/shape.ts reads the engine-owned box directly. Explicit text/callout box variants cover surviving placement.',
+  );
+for (const [label, rotation] of [
+  ['set', 30],
+  ['zero', 0],
+  ['absent', null],
+] as const)
+  replace(`rotFromDTO/${label}`, 'shapeOf', square(601, { rotation }));
+for (const [label, fields] of [
+  ['cloudy', { cloudyIntensity: 1, borderStyle: 'dashed' }],
+  ['dashed', { borderStyle: 'dashed', dashArray: [2, 1] as number[] }],
+  ['dashed-default', { borderStyle: 'dashed' }],
+  ['solid', { borderStyle: 'solid', cloudyIntensity: null }],
+] as const)
+  replace(
+    `borderFromDTO/${label}`,
+    'styleOf',
+    square(602, {
+      ...fields,
+      ...('dashArray' in fields ? { dashArray: [...fields.dashArray] } : {}),
+    }),
+  );
+for (const [label, target] of [
+  ['goto', { kind: 'goto', destination: { kind: 'fit', page: pr(1) } }],
+  ['uri', { kind: 'uri', uri: 'https://x' }],
+  ['named', { kind: 'named', name: 'NextPage' }],
+  ['null', null],
+  ['undefined', undefined],
+])
+  replace(`writableTarget/${label}`, 'writableTarget', target);
+replace('widgetKindOf/text', 'widgetKindOf', 'text');
+replace('widgetKindOf/unknown', 'widgetKindOf', 'signature');
+for (const [label, defaults] of [
+  [
+    'everything',
+    {
+      color: '#ff0000',
+      interiorColor: '#00ff00',
+      strokeWidth: 2,
+      borderStyle: 'dashed',
+      dashArray: [2, 2],
+      fontFamily: 'courier',
+      fontSize: 11,
+      fontColor: '#0000ff',
+      textAlign: 'center',
+    },
+  ],
+  ['clears', { interiorColor: null, borderStyle: 'solid' }],
+  ['empty-interior', { interiorColor: '' }],
+  ['none', {}],
+])
+  replace(`widgetAppearanceFromProps/${label}`, 'widgetAppearanceOf', defaults);
+for (const [label, dto] of [
+  ['cloudy', square(1, cloud)],
+  ['plain', square(1)],
+  ['not-a-rect', line(9)],
+] as const)
+  replace(`cloudyExtras/${label}`, 'draftOf', kindOf(dto).name, dataOf(dto), shapeOf(dto));
+for (const [label, dto] of [
+  ['callout', callout(20)],
+  ['rotated', dtoOf('callout-rotated')],
+  ['plain', freeText(17)],
+] as const)
+  replace(`calloutFields/${label}`, 'draftOf', kindOf(dto).name, dataOf(dto), shapeOf(dto));
+for (const [label, dto] of [
+  ['quads', markup('highlight', 25)],
+  ['not-quads', square(1)],
+] as const)
+  replace(`quadPointsFor/${label}`, 'shapeOf', dto);
+replace(
+  'pdfBoundsOfQuads/two',
+  'pagePointsBounds',
+  [quad(1, 2, 4, 7), quad(-3, -10, 3, 8)].flatMap((q) => [
+    q.upperLeft,
+    q.upperRight,
+    q.lowerLeft,
+    q.lowerRight,
   ]),
-  c('pdfBoundsOfQuads', 'none', []),
 );
+replace('pdfBoundsOfQuads/none', 'pagePointsBounds', []);
 for (const label of ['square-rotated', 'callout', 'highlight', 'line', 'ink', 'redact-text']) {
-  cases.push(c('linkChildRects', label, annotOf(label)));
+  const dto = dtoOf(label);
+  replace(`linkChildRects/${label}`, 'linkChildRects', shapeOf(dto), styleOf(dto));
 }
-for (const label of ['square', 'polygon-cloudy', 'ink', 'free-text', 'highlight', 'caret', 'redact-area', 'redact-no-fill', 'text', 'widget-text', 'widget-checkbox', 'unsupported']) {
-  const found = DTOS.find(([l]) => l === label)!;
-  cases.push(c('styleFromDTO', label, found[1]));
-}
-
+for (const label of [
+  'square',
+  'polygon-cloudy',
+  'ink',
+  'free-text',
+  'highlight',
+  'caret',
+  'redact-area',
+  'redact-no-fill',
+  'text',
+  'widget-text',
+  'widget-checkbox',
+  'unsupported',
+])
+  replace(`styleFromDTO/${label}`, 'styleOf', dtoOf(label));
 export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/annotation-repository.json',
-    describes: 'packages/plugin/annotation/src/repository: the DTO to content-model boundary, kind by kind.',
+    describes:
+      'Current annotation record, shape, style and draft boundary; historical removed repository targets mapped to shipping functions.',
     functions: {
       fromDTO: fromDTO as never,
-      toPatch: toPatch as never,
-      toScopedPatch: toScopedPatch as never,
-      toCreateDraft: ((a: Annot, crop: typeof CROP) => {
-        resetUuid();
-        return toCreateDraft(a, crop);
-      }) as never,
+      annotationPatchBetween: annotationPatchBetween as never,
+      withShape: withShape as never,
+      withValues: withValues as never,
+      draftOf: draftOf as never,
       annotationKey: annotationKey as never,
-      colorToCss: colorToCss as never,
-      cssToColor: cssToColor as never,
-      boxGeomFields: boxGeomFields as never,
-      boxGeomFromDTO: boxGeomFromDTO as never,
-      insetPdfRectByRD: insetPdfRectByRD as never,
-      rotFromDTO: rotFromDTO as never,
-      borderFromDTO: borderFromDTO as never,
+      colorOf: colorOf as never,
+      rgbOf: rgbOf as never,
+      shapeOf: shapeOf as never,
+      styleOf: styleOf as never,
       writableTarget: writableTarget as never,
       widgetKindOf: widgetKindOf as never,
-      widgetAppearanceFromProps: widgetAppearanceFromProps as never,
-      cloudyExtras: cloudyExtras as never,
-      calloutFields: calloutFields as never,
-      quadPointsFor: quadPointsFor as never,
-      pdfBoundsOfQuads: pdfBoundsOfQuads as never,
+      widgetAppearanceOf: widgetAppearanceOf as never,
+      pagePointsBounds: pagePointsBounds as never,
       linkChildRects: linkChildRects as never,
-      styleFromDTO: styleFromDTO as never,
     },
     cases,
   },
