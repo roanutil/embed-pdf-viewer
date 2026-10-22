@@ -49,6 +49,16 @@ function toPtr(value: number | bigint): Ptr {
   return BigInt(typeof value === 'number' ? value >>> 0 : value) as Ptr;
 }
 
+/**
+ * The same correction for a Rust export's raw return or `u32` out-parameter,
+ * kept as a number because it indexes `HEAPU8` directly. A negative address
+ * there doesn't fault: `slice` counts it from the end of the heap and reads
+ * the wrong bytes.
+ */
+function toAddress(value: number): number {
+  return value >>> 0;
+}
+
 function toNumber(ptr: Ptr | Callback): number {
   return Number(ptr);
 }
@@ -113,11 +123,11 @@ function createWasmRustCore(
       // terminator would truncate it.
       const lenPtr = mem.alloc(4);
       try {
-        const out = pageGeometry(toNumber(pagePtr), toNumber(lenPtr));
+        const out = toAddress(pageGeometry(toNumber(pagePtr), toNumber(lenPtr)));
         if (out === 0) {
           throw new Error('the Rust core refused a page read without reporting why');
         }
-        const len = Number(mem.peek(lenPtr, 'i32'));
+        const len = toAddress(Number(mem.peek(lenPtr, 'i32')));
         try {
           // A copy, deliberately: the buffer goes back to Rust on the next
           // line, and a view into freed linear memory reads as whatever lands
@@ -217,7 +227,7 @@ function createWasmRustHost(
   ) => number,
   destroyHost: (host: number) => void,
 ): PdfRuntimeRustHost {
-  const host = create();
+  const host = toAddress(create());
   if (host === 0) {
     throw new Error('the Rust core could not create an engine');
   }
@@ -241,18 +251,20 @@ function createWasmRustHost(
           module.HEAPU8.set(framed, toNumber(payloadsPtr));
           const lenPtr = mem.alloc(4);
           try {
-            const out = call(
-              host,
-              toNumber(requestPtr),
-              encoded.length,
-              toNumber(payloadsPtr),
-              framed.length,
-              toNumber(lenPtr),
+            const out = toAddress(
+              call(
+                host,
+                toNumber(requestPtr),
+                encoded.length,
+                toNumber(payloadsPtr),
+                framed.length,
+                toNumber(lenPtr),
+              ),
             );
             if (out === 0) {
               throw new Error('the Rust core refused a request without reporting why');
             }
-            const len = Number(mem.peek(lenPtr, 'i32'));
+            const len = toAddress(Number(mem.peek(lenPtr, 'i32')));
             try {
               // Copied out before the buffer goes back: `unpackResponse`
               // reads it, and a view into freed linear memory reads as

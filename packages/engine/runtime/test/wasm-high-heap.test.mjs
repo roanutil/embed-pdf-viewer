@@ -29,9 +29,15 @@ async function readDocuments(runtime, { highHeap }) {
   assert.equal(mem.peek(probe, 'ptr'), probe);
   mem.free(probe);
 
+  // The Rust core, when the payload carries it, hands back buffers it
+  // allocated itself, so their addresses come from its export's i32 return
+  // rather than from `mem.alloc`.
+  const host = rt.rust?.createHost?.();
+
   const results = [];
   for (const file of FIXTURES) {
-    const access = fileAccess.fromMemory(readFileSync(file));
+    const bytes = readFileSync(file);
+    const access = fileAccess.fromMemory(bytes);
     const doc = fn.FPDF_LoadCustomDocument(access.ptr, '');
     assert.ok(doc, `open ${file}`);
     const page = fn.FPDF_LoadPage(doc, 0);
@@ -52,14 +58,32 @@ async function readDocuments(runtime, { highHeap }) {
     mem.free(textPtr);
     fn.FPDFText_ClosePage(textPage);
 
-    results.push({ file, sha: createHash('sha256').update(pixels).digest('hex'), text });
+    const rust = {};
+    if (rt.rust) {
+      rust.geometry = JSON.parse(rt.rust.pageGeometry(page));
+    }
+    if (host) {
+      // Whatever the dispatcher answers, the framing must decode to the same
+      // envelope, and the document's bytes cross as a payload either way.
+      const opened = host.call(JSON.stringify({ kind: 'open.fatMem', docId: file }), [bytes]);
+      rust.open = { json: JSON.parse(opened.json), payloads: opened.payloads.length };
+      host.call(JSON.stringify({ kind: 'close', docId: file }), []);
+    }
+
+    results.push({
+      file,
+      sha: createHash('sha256').update(pixels).digest('hex'),
+      text,
+      rust,
+    });
     fn.FPDFBitmap_Destroy(bitmap);
     fn.FPDF_ClosePage(page);
     fn.FPDF_CloseDocument(doc);
     access.close();
   }
+  host?.destroy();
   await rt.destroy();
-  return results;
+  return { rustCore: Boolean(rt.rust), host: Boolean(host), results };
 }
 
 test('wasm runtime reads, renders and writes above 2 GiB as it does below', async (t) => {
@@ -70,6 +94,12 @@ test('wasm runtime reads, renders and writes above 2 GiB as it does below', asyn
   }
   const low = await readDocuments(runtime, { highHeap: false });
   const high = await readDocuments(runtime, { highHeap: true });
-  assert.ok(low.some((result) => result.text.length > 0));
+  assert.ok(low.results.some((result) => result.text.length > 0));
+  if (low.rustCore) {
+    assert.ok(low.results.every((result) => result.rust.geometry !== undefined));
+  }
+  if (low.host) {
+    assert.ok(low.results.every((result) => result.rust.open !== undefined));
+  }
   assert.deepEqual(high, low);
 });
