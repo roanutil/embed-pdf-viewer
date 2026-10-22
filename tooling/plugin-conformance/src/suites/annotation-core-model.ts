@@ -71,7 +71,7 @@ type AnnotationPropsPatch = Record<string, unknown>;
 
 /** Every subtype the kind table names, plus unknown and prototype keys. */
 export const SUBTYPES = [
-  ...Object.keys(kd.KINDS),
+  ...new Set(Object.keys(kd.KINDS)),
   'popup',
   'widget',
   'free-text-callout',

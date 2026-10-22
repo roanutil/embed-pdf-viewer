@@ -45,6 +45,7 @@ import {
   gQuads,
   gRect,
   gText,
+  initialStyle,
   modelOf,
   pageRef,
   rc,
@@ -813,8 +814,8 @@ modelCases.push(
   c('applyProps', 'bold-off', BOLD_FT, { bold: false, underline: true }),
   c('applyProps', 'bold-square', sq('s'), { bold: true }),
   c('applyProps', 'italic-no-text', annot('ft', 'free-text', gText(rc(0, 0, 100, 30))), { italic: true }),
-  c('textStyleFromProps', 'with-bold', { ...initialModel.style, ...TEXT, bold: true, italic: false, lineEndings: ends('none', 'none') }),
-  c('textStyleFromProps', 'with-underline', { ...initialModel.style, ...TEXT, underline: true, lineEndings: ends('none', 'none') }),
+  c('textStyleFromProps', 'with-bold', { ...initialStyle, ...TEXT, bold: true, italic: false, lineEndings: ends('none', 'none') }),
+  c('textStyleFromProps', 'with-underline', { ...initialStyle, ...TEXT, underline: true, lineEndings: ends('none', 'none') }),
   c('defaultsFor', 'bold-tool', { defaults: { 'free-text': { bold: true, underline: false } } }, 'free-text'),
 );
 

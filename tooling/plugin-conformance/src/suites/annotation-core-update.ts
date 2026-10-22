@@ -11,6 +11,7 @@
  */
 import * as up from '../../../../packages/core/annotation/src/update';
 import { MIN_DRAG } from '../../../../packages/core/annotation/src/placement';
+import { rectFromPoints } from '../../../../packages/core/annotation/src/rect';
 import type { ViewEnv } from '../../../../packages/core/annotation/src/anchor';
 import type { Draft, Id, Model, PointerInput } from '../../../../packages/core/annotation/src/types';
 import { step } from '../../../../packages/core/annotation/test/support';
@@ -77,11 +78,13 @@ export const updateFns: Record<string, Fn> = {
   calloutBox: up.calloutBox,
   calloutUprightRot: up.calloutUprightRot,
   annotsInBox: (s: Partial<Model>, pon: number, a: Vec, b: Vec, inert?: Set<Id>, view?: ViewEnv) =>
-    up.annotsInBox(modelOf(s), pageRef(pon), a, b, inert, view),
+    up.annotsInBox(modelOf(s), pageRef(pon), rectFromPoints(a, b), inert, view),
   /** One page, many boxes: `[pon, a, b, inert?, view?]` each. */
   annotsInBoxes: (s: Partial<Model>, calls: [number, Vec, Vec, Set<Id>?, ViewEnv?][]) => {
     const m = modelOf(s);
-    return calls.map(([pon, a, b, inert, view]) => up.annotsInBox(m, pageRef(pon), a, b, inert, view));
+    return calls.map(([pon, a, b, inert, view]) =>
+      up.annotsInBox(m, pageRef(pon), rectFromPoints(a, b), inert, view),
+    );
   },
 };
 
