@@ -252,7 +252,7 @@ fn an_extract_keeps_the_documents_title() {
                 .json,
         )
         .unwrap();
-        answer["result"]["title"].clone()
+        answer["result"]["metadata"]["title"].clone()
     };
     let title = read(&mut host, "src");
     assert!(title.is_string(), "the fixture has a title: {title}");

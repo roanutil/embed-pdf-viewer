@@ -361,8 +361,12 @@ pub fn result_in_page_space(
         K::PagesList => convert_result(response, |snapshot: PageListSnapshot<PdfCoordinates>| {
             page_list_of(snapshot)
         }),
-        K::ActionsRead => convert_result(response, |snapshot: DocumentActionsSnapshot| {
-            page_document_actions_of(snapshot, box_of)
+        K::ActionsRead => convert_result(response, |mut answer: serde_json::Value| {
+            let snapshot: DocumentActionsSnapshot = from_value(
+                answer.get_mut("snapshot").map(serde_json::Value::take).unwrap_or_default(),
+            )?;
+            answer["snapshot"] = to_value(&page_document_actions_of(snapshot, box_of)?)?;
+            Ok(answer)
         }),
         K::PagesRender => convert_result(response, |mut answer: serde_json::Value| {
             let page: PageRef = from_value(answer.get("page").cloned().unwrap_or_default())?;

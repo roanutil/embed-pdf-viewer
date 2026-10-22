@@ -644,7 +644,7 @@ fn a_layer_reopens_from_the_artifact_its_save_answered() {
         serde_json::json!({ "kind": "metadata.read", "docId": "d", "layerName": "again" }),
         vec![],
     );
-    assert_eq!(read["result"]["title"], "Layered", "{read}");
+    assert_eq!(read["result"]["metadata"]["title"], "Layered", "{read}");
 
     // A layer that names bytes it did not send is refused before it opens.
     let missing = call(

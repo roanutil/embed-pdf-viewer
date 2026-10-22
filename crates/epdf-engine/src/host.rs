@@ -792,21 +792,27 @@ impl Host {
         let key = header.key()?;
         match header.kind.as_str() {
             // ── Document reads ────────────────────────────────────────
+            // `{ tag: 'metadata.read', metadata }` and `{ tag:
+            // 'metadata.readCustom', custom }`, without their tags.
             "metadata.read" => {
                 let d = self.document(&key)?;
-                Ok(ok(value(&f::metadata::read_metadata(d, cancel)?)?))
+                let metadata = f::metadata::read_metadata(d, cancel)?;
+                Ok(ok(serde_json::json!({ "metadata": value(&metadata)? })))
             }
             "metadata.readCustom" => {
                 let d = self.document(&key)?;
-                Ok(ok(value(&f::metadata::read_custom_metadata(d, cancel)?)?))
+                let custom = f::metadata::read_custom_metadata(d, cancel)?;
+                Ok(ok(serde_json::json!({ "custom": value(&custom)? })))
             }
             "pages.list" => {
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::pages::list_pages(d, cancel)?)?))
             }
+            // `{ tag: 'actions.read', snapshot }`, without its tag.
             "actions.read" => {
                 let d = self.document(&key)?;
-                Ok(ok(value(&f::actions::document::read_document_actions(d, cancel)?)?))
+                let snapshot = f::actions::document::read_document_actions(d, cancel)?;
+                Ok(ok(serde_json::json!({ "snapshot": value(&snapshot)? })))
             }
             // `WorkerHost.handleOutlineRead`: every item, depth first, no
             // page loaded. Answers `{ outline }`, the payload
@@ -1006,24 +1012,32 @@ impl Host {
                 // `{ tag: 'signatures.analyze', analysis }`.
                 Ok(ok(serde_json::json!({ "analysis": value(&analysis)? })))
             }
+            // `{ tag: 'signatures.contents', bytes }`, the bytes payload 0.
             "signatures.contents" => {
                 self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let d = self.document(&key)?;
-                Ok(bytes_response(f::signature::reader::read_contents(d, &target)?))
+                let bytes = f::signature::reader::read_contents(d, &target)?;
+                Ok(payload_response(serde_json::json!({ "bytes": { "payload": 0 } }), bytes))
             }
+            // `{ tag: 'signatures.digest', digest }`, the digest payload 0.
             "signatures.digest" => {
                 self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let target: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
                 let algorithm: f::signature::types::DigestAlgorithm = field(body, "algorithm")?;
                 let d = self.document(&key)?;
-                Ok(bytes_response(f::signature::reader::digest(d, &target, algorithm)?))
+                let digest = f::signature::reader::digest(d, &target, algorithm)?;
+                Ok(payload_response(serde_json::json!({ "digest": { "payload": 0 } }), digest))
             }
+            // `{ tag: 'signatures.revisionBytes', bytes, size }`, the bytes
+            // payload 0.
             "signatures.revisionBytes" => {
                 self.sessions.session(&key)?.require(DocCapability::DocDownload)?;
                 let index: u32 = field(body, "revisionIndex")?;
                 let d = self.document(&key)?;
-                Ok(bytes_response(f::signature::reader::revision_bytes(d, index)?))
+                let bytes = f::signature::reader::revision_bytes(d, index)?;
+                let answer = serde_json::json!({ "bytes": { "payload": 0 }, "size": bytes.len() });
+                Ok(payload_response(answer, bytes))
             }
             // `{ tag: 'document.version'; version: BaseVersionInfo }`.
             "document.version" => {
@@ -2865,6 +2879,11 @@ fn resource_payload<'a>(
             "a resource names its payload",
         )),
     }
+}
+
+/// `result`, which names `bytes` as its payload 0.
+fn payload_response(result: serde_json::Value, bytes: Vec<u8>) -> HostResponse {
+    HostResponse { json: envelope(result), payloads: vec![bytes] }
 }
 
 fn bytes_response(bytes: Vec<u8>) -> HostResponse {

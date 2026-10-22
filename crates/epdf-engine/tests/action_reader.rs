@@ -406,7 +406,7 @@ fn the_open_destination_form_is_read_and_answered_in_page_space() {
     );
     let envelope: serde_json::Value = serde_json::from_str(&answer.json).unwrap();
     assert_eq!(
-        envelope["result"]["openDestination"],
+        envelope["result"]["snapshot"]["openDestination"],
         serde_json::json!({
             "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 3 },
             "x": 50.0, "y": 32.0, "zoom": null,

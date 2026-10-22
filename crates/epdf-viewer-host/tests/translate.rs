@@ -2575,8 +2575,8 @@ fn the_catalog_actions_reach_the_kernel_in_the_files_coordinates() {
     let wire = host
         .call(&json!({ "kind": "actions.read", "jobId": 3, "docId": "d" }).to_string(), Vec::new());
     let wire: Value = serde_json::from_str(&wire.json).unwrap();
-    assert_eq!(wire["result"]["openDestination"]["x"], json!(50.0));
-    assert_eq!(wire["result"]["openDestination"]["y"], json!(40.0));
+    assert_eq!(wire["result"]["snapshot"]["openDestination"]["x"], json!(50.0));
+    assert_eq!(wire["result"]["snapshot"]["openDestination"]["y"], json!(40.0));
 }
 
 #[test]

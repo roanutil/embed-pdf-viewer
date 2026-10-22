@@ -594,8 +594,11 @@ mod metadata {
 
     /// Both halves of the dictionary, in the kernel's spelling.
     fn read(host: &mut Host, request: &Value) -> Result<Value, HostResponse> {
+        // `{ metadata }` and `{ custom }`.
         let (mut metadata, _) = send(host, &on_document(request, "metadata.read"))?;
-        let (custom, _) = send(host, &on_document(request, "metadata.readCustom"))?;
+        let mut metadata = metadata["metadata"].take();
+        let (mut custom, _) = send(host, &on_document(request, "metadata.readCustom"))?;
+        let custom = custom["custom"].take();
         if let Some(fields) = metadata.as_object_mut() {
             let created = fields.remove("createdAt").unwrap_or(Value::Null);
             let modified = fields.remove("modifiedAt").unwrap_or(Value::Null);
@@ -2339,15 +2342,18 @@ mod page_space {
                 .and_then(|list| page_list_in_file_space(list).map_err(|e| e.message))
                 .and_then(|list| serde_json::to_value(list).map_err(|e| e.to_string()))
         } else {
+            // `{ snapshot }`, answered to the kernel as the snapshot itself.
             let mut boxes = visible_boxes(host, request);
-            serde_json::from_value::<DocumentActionsSnapshot<PageDestination>>(result.take())
-                .map_err(|e| e.to_string())
-                .and_then(|snapshot| {
-                    snapshot
-                        .try_map_destinations(&mut |d| pdf_destination_of(d, &mut boxes))
-                        .map_err(|e| e.message)
-                })
-                .and_then(|snapshot| serde_json::to_value(snapshot).map_err(|e| e.to_string()))
+            serde_json::from_value::<DocumentActionsSnapshot<PageDestination>>(
+                result["snapshot"].take(),
+            )
+            .map_err(|e| e.to_string())
+            .and_then(|snapshot| {
+                snapshot
+                    .try_map_destinations(&mut |d| pdf_destination_of(d, &mut boxes))
+                    .map_err(|e| e.message)
+            })
+            .and_then(|snapshot| serde_json::to_value(snapshot).map_err(|e| e.to_string()))
         };
         let envelope = match converted {
             Ok(value) => {

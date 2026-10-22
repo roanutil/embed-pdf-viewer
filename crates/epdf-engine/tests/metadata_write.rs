@@ -62,12 +62,15 @@ fn load() -> VectorFile {
 /// The dictionary as the generator read it back: the standard fields with
 /// the custom keys under `custom`.
 fn read_back(replay: &mut Replay) -> Value {
+    // `{ metadata }` and `{ custom }`.
     let mut metadata = replay
         .replay(&json!({ "kind": "metadata.read", "effect": "read", "jobId": "<job>" }))
-        .expect("metadata.read");
+        .expect("metadata.read")["metadata"]
+        .take();
     let custom = replay
         .replay(&json!({ "kind": "metadata.readCustom", "effect": "read", "jobId": "<job>" }))
-        .expect("metadata.readCustom");
+        .expect("metadata.readCustom")["custom"]
+        .take();
     metadata["custom"] = custom;
     metadata
 }

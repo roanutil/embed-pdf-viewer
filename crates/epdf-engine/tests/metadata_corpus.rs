@@ -88,17 +88,20 @@ fn read_through_host(case: &Case) -> serde_json::Value {
             "password": case.password }),
         vec![test_support::fixture(&case.fixture)],
     );
+    // `{ metadata }` and `{ custom }`.
     let mut metadata = call(
         &mut host,
         serde_json::json!({ "kind": "metadata.read", "effect": "read", "jobId": 2, "docId": "d" }),
         Vec::new(),
-    );
+    )["metadata"]
+        .take();
     metadata["custom"] = call(
         &mut host,
         serde_json::json!({ "kind": "metadata.readCustom", "effect": "read", "jobId": 3,
             "docId": "d" }),
         Vec::new(),
-    );
+    )["custom"]
+        .take();
     metadata
 }
 

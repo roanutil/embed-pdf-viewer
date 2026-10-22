@@ -54,8 +54,9 @@ fn applied(host: &mut Host, change: Value) -> Value {
 /// (`factsOf`).
 fn facts(host: &mut Host) -> Value {
     json!({
-        "metadata": send(host, json!({ "kind": "metadata.read" })).expect("read"),
-        "custom": send(host, json!({ "kind": "metadata.readCustom" })).expect("read custom"),
+        "metadata": send(host, json!({ "kind": "metadata.read" })).expect("read")["metadata"],
+        "custom": send(host, json!({ "kind": "metadata.readCustom" })).expect("read custom")
+            ["custom"],
     })
 }
 
