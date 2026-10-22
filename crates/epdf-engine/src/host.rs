@@ -374,6 +374,19 @@ impl Host {
         }
     }
 
+    /// Keep at most `bytes` of parsed pages between calls, across every
+    /// document this host holds (`WorkerHostOptions.parsedPageBudgetBytes`;
+    /// 384 MB by default). 0 keeps none.
+    pub fn with_parsed_page_budget(self, bytes: u64) -> Self {
+        let residency = self.sessions.residency();
+        let policy = residency.borrow().policy();
+        residency.borrow_mut().set_policy(crate::session::residency::PageResidencyPolicy {
+            budget_bytes: bytes,
+            ..policy
+        });
+        self
+    }
+
     /// Install the host's image encoder, enabling the `*Encoded` kinds.
     pub fn with_encoder(mut self, encoder: Box<dyn crate::features::server::ImageEncoder>) -> Self {
         self.encoder = Some(encoder);
@@ -451,10 +464,29 @@ impl Host {
                 format!("the request is not a wire envelope: {e}"),
             )
         })?;
-        let mut body: serde_json::Value = serde_json::from_str(request)
+        let body: serde_json::Value = serde_json::from_str(request)
             .map_err(|e| EngineError::with_message(EngineErrorCode::WireFormat, format!("{e}")))?;
         let cancel = CancelToken::never();
+        // The residency's idle timer would have fired between calls.
+        self.sessions.residency().borrow_mut().tick();
+        // `WorkerHost.run`: a write that changes content closes the pages it
+        // may change before it runs and after, done or refused, so no change
+        // meets a page parsed before it (`pageEffectOf`).
+        let effect = PageEffect::of(&header.kind);
+        self.close_pages_changed_by(&header, effect);
+        let routed = self.route_job(&header, body, payloads, &cancel);
+        self.close_pages_changed_by(&header, effect);
+        routed
+    }
 
+    /// [`Host::route`] once the pages a job may change are closed.
+    fn route_job(
+        &mut self,
+        header: &RequestHeader,
+        mut body: serde_json::Value,
+        payloads: Payloads,
+        cancel: &CancelToken,
+    ) -> Result<HostResponse, EngineError> {
         // Read so that a malformed envelope is refused before any arm runs.
         let job = JobEnvelope::parse(&header.kind, &body)?;
 
@@ -473,9 +505,9 @@ impl Host {
             crate::page_space::boundary::request_in_file_space(kind, &mut body, &mut box_of)?;
         }
         self.artifact_path = optional(&body, "artifactPath")?;
-        let written = self.begin_write(&header, &mut body, &job);
+        let written = self.begin_write(header, &mut body, &job);
         let routed = written.and_then(|transacted| {
-            let routed = self.route_wire(&header, &body, payloads, &cancel);
+            let routed = self.route_wire(header, &body, payloads, cancel);
             self.end_write(transacted.as_ref(), routed)
         });
         self.artifact_path = None;
@@ -492,6 +524,24 @@ impl Host {
                 )
             }
             None => Ok(response),
+        }
+    }
+
+    /// `closePagesChangedBy`: closes the pages a job of `effect` may change,
+    /// those no job holds. A content write closes its document's; a runtime
+    /// write (fonts) every document's.
+    fn close_pages_changed_by(&self, header: &RequestHeader, effect: PageEffect) {
+        match effect {
+            PageEffect::Runtime => self.sessions.residency().borrow_mut().close_idle(),
+            PageEffect::Document => {
+                if let Ok(key) = header.key()
+                    && let Ok(session) = self.sessions.session(&key)
+                    && let Some(pool) = session.page_pool()
+                {
+                    pool.close_idle();
+                }
+            }
+            PageEffect::None => {}
         }
     }
 
@@ -1039,10 +1089,10 @@ impl Host {
                 let options: f::annotation::appearance::AppearanceRenderOptions =
                     optional(body, "options")?.unwrap_or_default();
                 let page = page_field(body)?;
-                let owned = self.sessions.session(&key)?.document()?;
-                let opened = owned.page(page)?;
+                let session = self.sessions.session(&key)?;
+                let opened = session.acquire_page(page)?;
                 let result = f::annotation::appearance::render_page_appearances(
-                    owned.document(),
+                    session.document()?.document(),
                     &opened,
                     page,
                     family,
@@ -2412,10 +2462,8 @@ impl Host {
         body: &serde_json::Value,
         read: impl FnOnce(&dyn crate::access::PageAccess) -> Result<serde_json::Value, EngineError>,
     ) -> Result<HostResponse, EngineError> {
-        use crate::access::DocumentAccess;
         let page = page_field(body)?;
-        let owned = self.sessions.session(key)?.document()?;
-        let opened = owned.page(page)?;
+        let opened = self.sessions.session(key)?.acquire_page(page)?;
         Ok(ok(read(&opened)?))
     }
 
@@ -2426,10 +2474,8 @@ impl Host {
         body: &serde_json::Value,
         read: impl FnOnce(&dyn crate::access::PageAccess) -> Result<T, EngineError>,
     ) -> Result<T, EngineError> {
-        use crate::access::DocumentAccess;
         let page = page_field(body)?;
-        let owned = self.sessions.session(key)?.document()?;
-        let opened = owned.page(page)?;
+        let opened = self.sessions.session(key)?.acquire_page(page)?;
         read(&opened)
     }
 
@@ -3079,6 +3125,37 @@ const MUTATING_KINDS: &[&str] = &[
     "pieceInfo.update",
     "pieceInfo.delete",
 ];
+
+/// What a job does to the parsed pages the host keeps (`pageEffectOf`,
+/// from each kind's `RequestEffect`): a `contentWrite` changes content or
+/// the page tree in place, so its document's pages close before and after
+/// it; a `runtimeWrite` changes the fonts text is set in, for every
+/// document, so every page closes. Any other job keeps them: a `write`
+/// changes what a page reads afresh at every render, and a page a write in a
+/// layer transaction did change closes when it is next taken
+/// (`EPDFPage_IsContentCurrent`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PageEffect {
+    None,
+    Document,
+    Runtime,
+}
+
+impl PageEffect {
+    fn of(kind: &str) -> Self {
+        match kind {
+            "annotations.flatten" | "pages.flatten" | "redaction.apply" | "signatures.complete" => {
+                Self::Document
+            }
+            "fonts.register"
+            | "fonts.addFallback"
+            | "fonts.clearFallbacks"
+            | "fonts.clear"
+            | "fonts.authorizeEditing" => Self::Runtime,
+            _ => Self::None,
+        }
+    }
+}
 
 /// The kinds that run as one layer transaction (`writesDocument`): every
 /// write to an open document but `document.applyChanges`, whose changes

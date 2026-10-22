@@ -73,6 +73,9 @@ pub struct SessionRegistry {
     /// nature and the caller cannot tell which won.
     jobs: BTreeMap<JobId, CancelToken>,
     destroyed: bool,
+    /// The parsed pages every session here keeps its pages in: one per host
+    /// (`WorkerHost.residency`).
+    residency: super::pages::SharedResidency,
 }
 
 impl SessionRegistry {
@@ -82,6 +85,18 @@ impl SessionRegistry {
 
     pub fn bases(&self) -> &BaseDocumentRegistry {
         &self.bases
+    }
+
+    /// The parsed pages every session here keeps its pages in.
+    pub fn residency(&self) -> &super::pages::SharedResidency {
+        &self.residency
+    }
+
+    /// A session whose pages the host's residency keeps.
+    fn new_session(&self) -> DocumentSession {
+        let mut session = DocumentSession::new();
+        session.set_residency(Rc::clone(&self.residency));
+        session
     }
 
     pub fn is_destroyed(&self) -> bool {
@@ -126,7 +141,7 @@ impl SessionRegistry {
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let mut session = DocumentSession::new();
+        let mut session = self.new_session();
         let parked_authority = authority.clone();
         match session.open_with(bytes.clone(), password, authority) {
             Ok(()) => {
@@ -249,7 +264,7 @@ impl SessionRegistry {
         error: EngineError,
     ) -> Result<(), EngineError> {
         if is_password_open_error(&error) {
-            let mut session = DocumentSession::new();
+            let mut session = self.new_session();
             session.park_layer(parked, authority)?;
             self.sessions.insert(key, session);
         }
@@ -275,7 +290,7 @@ impl SessionRegistry {
         password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
-        let mut session = DocumentSession::new();
+        let mut session = self.new_session();
         match session.open_layer_from(base, source, authority) {
             Ok(()) => {
                 session.set_password(password);
@@ -346,7 +361,7 @@ impl SessionRegistry {
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let mut session = DocumentSession::new();
+        let mut session = self.new_session();
         session.open_layer(base, authority)?;
         self.sessions.insert(key, session);
         Ok(())
@@ -518,6 +533,7 @@ impl SessionRegistry {
         for (_, mut session) in std::mem::take(&mut self.sessions) {
             session.close();
         }
+        self.residency.borrow_mut().close_idle();
         self.bases.release_all();
     }
 }

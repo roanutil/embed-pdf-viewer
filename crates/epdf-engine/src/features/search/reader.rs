@@ -223,7 +223,7 @@ pub fn search(
         let page_number = order[scanned as usize];
 
         let page = session.acquire_page(page_number)?;
-        let snapshot = read_page_text(page.as_ref(), cancel)?;
+        let snapshot = read_page_text(&page, cancel)?;
         let ranges = match_page_text(&snapshot.text, &request.query).map_err(|issue| {
             EngineError::with_message(
                 EngineErrorCode::InvalidArg,
@@ -232,7 +232,7 @@ pub fn search(
         })?;
 
         if !ranges.is_empty() {
-            let geometry = read_page_geometry(page.as_ref(), cancel)?;
+            let geometry = read_page_geometry(&page, cancel)?;
             // One canonical layout per page, shared by every match on it.
             let layout = PdfTextLayout::new(geometry);
             for range in ranges {

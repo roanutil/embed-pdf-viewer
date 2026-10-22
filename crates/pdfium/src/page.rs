@@ -348,6 +348,51 @@ impl<'a> PageView<'a> {
     pub unsafe fn as_raw(&self) -> pdfium_sys::FPDF_PAGE {
         self.handle
     }
+
+    /// `EPDFPage_GetParsedSize`: what the page's parsed content costs in
+    /// memory, its estimate on the safe side. `None` when the fork reports
+    /// nothing.
+    pub fn parsed_size(&self) -> Option<ParsedSize> {
+        let mut size = pdfium_sys::EPDF_PAGE_PARSED_SIZE_::default();
+        // SAFETY: the handle is live for this borrow and `size` is a valid
+        // out-parameter of the struct's own type.
+        let ok = unsafe { pdfium_sys::EPDFPage_GetParsedSize(self.handle, &raw mut size) };
+        (ok != 0).then_some(ParsedSize {
+            objects: size.objects,
+            path_points: size.path_points,
+            text_chars: size.text_chars,
+            estimated_bytes: size.estimated_bytes,
+            complete: size.complete != 0,
+        })
+    }
+
+    /// `EPDFPage_IsContentCurrent`: whether the parsed objects still match
+    /// the document (its boxes, rotation and content streams), which a
+    /// write in a layer transaction, or its abort, can change.
+    pub fn is_content_current(&self) -> bool {
+        // SAFETY: the handle is live for this borrow.
+        unsafe { pdfium_sys::EPDFPage_IsContentCurrent(self.handle) != 0 }
+    }
+
+    /// `EPDFPage_ResetRenderCache`: empty the page's image cache, so its
+    /// next render decodes images as a newly loaded page does. `false`, and
+    /// nothing changed, while a progressive render of it is in progress.
+    pub fn reset_render_cache(&self) -> bool {
+        // SAFETY: the handle is live for this borrow.
+        unsafe { pdfium_sys::EPDFPage_ResetRenderCache(self.handle) != 0 }
+    }
+}
+
+/// What a page's parsed content costs (`EPDF_PAGE_PARSED_SIZE`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ParsedSize {
+    pub objects: u64,
+    pub path_points: u64,
+    pub text_chars: u64,
+    /// The bytes the objects hold, estimated on the safe side.
+    pub estimated_bytes: u64,
+    /// False while the page is still parsing.
+    pub complete: bool,
 }
 
 /// A page this layer loaded and closes on drop.

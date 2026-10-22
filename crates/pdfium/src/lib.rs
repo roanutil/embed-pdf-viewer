@@ -73,7 +73,7 @@ pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
 pub use outline::{OUTLINE_TOP, OutlineItem};
-pub use page::{AppearanceTurn, Page, PageView, SharedPage};
+pub use page::{AppearanceTurn, Page, PageView, ParsedSize, SharedPage};
 pub use page_list::PageBoxType;
 pub use page_write::{AnnotationFlattenStatus, FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};

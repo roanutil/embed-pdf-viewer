@@ -229,7 +229,7 @@ fn overlapping_acquires_share_one_page_and_release_together() {
 
     let first = session.acquire_page(page).expect("first");
     let second = session.acquire_page(page).expect("second");
-    assert!(std::rc::Rc::ptr_eq(&first, &second), "the second acquire reloaded");
+    assert!(std::rc::Rc::ptr_eq(first.shared(), second.shared()), "the second acquire reloaded");
     assert_eq!(session.held_page_count(), 1);
 
     drop(first);

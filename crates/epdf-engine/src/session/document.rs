@@ -27,7 +27,7 @@
 use std::cell::Cell;
 use std::rc::Rc;
 
-use pdfium::{BaseDocument, Document, Library, PdfiumError, SharedPage};
+use pdfium::{BaseDocument, Document, Library, PdfiumError};
 
 use super::authority::SessionAuthority;
 use super::pages::{PagePtrPool, PageRecord};
@@ -181,6 +181,9 @@ pub struct DocumentSession {
     /// Why the session can't be used any more, after a transaction neither
     /// committed nor aborted (`unusableReason`).
     unusable_reason: Option<&'static str>,
+    /// The host's parsed pages, which this session's pool keeps its pages
+    /// in (`session.residency`). `None`: the pool keeps nothing.
+    residency: Option<super::pages::SharedResidency>,
     /// A native failure a test forces at the next commit (see
     /// [`DocumentSession::force_commit_failure`]).
     forced_failure: Cell<Option<CommitFailure>>,
@@ -286,12 +289,27 @@ impl DocumentSession {
             ledger: ChangeLedger::new(),
             persist_layer_artifact: true,
             unusable_reason: None,
+            residency: None,
             forced_failure: Cell::new(None),
         }
     }
 
     pub fn session_id(&self) -> &str {
         &self.session_id
+    }
+
+    /// Keep this session's parsed pages in `residency`, beside every other
+    /// session's on the host (`session.residency = this.residency`). Set
+    /// before the document loads.
+    pub fn set_residency(&mut self, residency: super::pages::SharedResidency) {
+        self.residency = Some(residency);
+    }
+
+    fn new_pool(&self) -> PagePtrPool {
+        match &self.residency {
+            Some(residency) => PagePtrPool::with_residency(Rc::clone(residency)),
+            None => PagePtrPool::new(),
+        }
     }
 
     pub fn kind(&self) -> Option<OpenKind> {
@@ -386,7 +404,7 @@ impl DocumentSession {
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
             kind: OpenKind::Layer,
-            pages: PagePtrPool::new(),
+            pages: self.new_pool(),
             revisions: RevisionAuthority::new(self.session_id.clone()),
             records: Vec::new(),
             fully_enumerated: false,
@@ -475,7 +493,7 @@ impl DocumentSession {
         self.open = Some(OpenState {
             document: OwnedDocument::new(document)?,
             kind: OpenKind::Layer,
-            pages: PagePtrPool::new(),
+            pages: self.new_pool(),
             revisions: RevisionAuthority::new(self.session_id.clone()),
             records: Vec::new(),
             fully_enumerated: false,
@@ -712,7 +730,7 @@ impl DocumentSession {
     pub fn acquire_page(
         &self,
         page_object_number: PageObjectNumber,
-    ) -> Result<Rc<SharedPage>, EngineError> {
+    ) -> Result<super::pages::PooledPage, EngineError> {
         let state = self.state()?;
         state.pages.acquire(&state.document, page_object_number)
     }
@@ -842,11 +860,12 @@ impl DocumentSession {
         let protection = document_protection(&document);
         let document = OwnedDocument::new(document)?;
         self.authority.set_protection(protection);
+        let pool = self.new_pool();
         let state = self.state_mut()?;
         let previous: Vec<PageObjectNumber> =
             state.records.iter().map(|r| r.page_object_number).collect();
         state.pages.close_all();
-        state.pages = PagePtrPool::new();
+        state.pages = pool;
         state.document = document;
         state.kind = OpenKind::Layer;
         state.records.clear();
