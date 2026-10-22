@@ -17,6 +17,7 @@ import type {
   EventOrigin,
   PageLayout,
   PageRef,
+  PageTextSnapshot,
 } from '@embedpdf/engine-core/runtime';
 const box = { x: 0, y: 0, width: 600, height: 800 };
 const origin: EventOrigin = { kind: 'local', sessionId: 'fake', sub: null, ts: 0, serverId: null };
@@ -1011,9 +1012,9 @@ const cases: ScenarioCase[] = [
     covers:
       'Required and present optional dependencies construct and connect before dependents; optional self-dependency is not a cycle.',
     plugins: [
-      probe({ id: 'c', token: 'tc', requires: ['tb'] }),
-      probe({ id: 'b', token: 'tb', optional: ['ta', 'tb', 'nobody'] }),
-      probe({ id: 'a', token: 'ta' }),
+      probe({ id: 'c', token: 'tc', requires: ['tb'], connect: true }),
+      probe({ id: 'b', token: 'tb', optional: ['ta', 'tb', 'nobody'], connect: true }),
+      probe({ id: 'a', token: 'ta', connect: true }),
     ],
     steps: [start],
   },
@@ -1480,7 +1481,11 @@ const v3Cases: ScenarioCase[] = [
           responses: [
             { path: 'metadata.get', times: 1, value: { ...metadata, title: 'T' } },
             { path: 'metadata.get', defer: 'slow' },
-            { path: 'page.text.get', pon: 1, value: { runs: [] } },
+            {
+              path: 'page.text.get',
+              pon: 1,
+              value: { text: '', charCount: 0 } satisfies PageTextSnapshot,
+            },
           ],
         }),
       },

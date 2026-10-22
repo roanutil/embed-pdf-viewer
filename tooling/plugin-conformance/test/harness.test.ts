@@ -3,7 +3,12 @@ import { test } from 'node:test';
 import '../src/probe';
 import { runScenario, type ScenarioCase, type TraceEntry } from '../src/scenario';
 import { suites } from '../src/suites/kernel';
-import type { DocumentEvent } from '@embedpdf/engine-core/runtime';
+import type {
+  DocumentEvent,
+  DocumentSecurityState,
+  DocumentUnlockResult,
+  PageLayout,
+} from '@embedpdf/engine-core/runtime';
 import { createFakeEngine } from '../src/fake-engine';
 
 const start = { op: 'call', target: 'kernel', method: 'start' } as const;
@@ -110,7 +115,7 @@ test('confirmed engine events reach the kernel before an immediate or deferred m
           op: 'call',
           target: { token: 'p', doc: 'a' },
           method: 'docCall',
-          args: ['pages.reorder', [], 0],
+          args: ['pages.reorder', [], 'end'],
           meter: 20,
         },
         ...(deferred ? [{ op: 'settle' as const, label: 'mutation', value: {}, meter: 20 }] : []),
@@ -369,4 +374,136 @@ test('the fake exposes current service methods and isolates listeners while adva
   assert.equal(delivered, 2);
   assert.equal(reports.length, 2);
   assert.equal(doc.events.lastServerId(), 9);
+});
+
+test('late responses and retained old handles cannot publish into a reopened document session', async () => {
+  for (const plainPromises of [false, true]) {
+    const page = scenarioNamed('controller-pages').engine!.documents!.a.pages![0] as PageLayout;
+    const event: DocumentEvent = {
+      type: 'pages.reordered',
+      pages: [page.ref],
+      origin: { kind: 'local', sessionId: 'old', sub: null, ts: 0, serverId: null },
+      layout: { pageCount: 1, pages: [page], namedPages: [] },
+      meta: { affectedPages: [], cacheDelta: null, opId: 'old-write', undoable: true },
+    };
+    const fake = createFakeEngine(
+      {
+        plainPromises,
+        documents: {
+          a: {
+            pages: [],
+            responses: [{ path: 'pages.reorder', defer: 'late', events: [event] }],
+          },
+        },
+      },
+      (v) => v,
+    );
+    const input = { kind: 'bytes', id: 'a', bytes: new Uint8Array() } as const;
+    const old = await fake.engine.open(input);
+    const pending = old.pages.reorder([], 'end');
+    await old.close();
+    const reopened = await fake.engine.open(input);
+    const received: DocumentEvent[] = [];
+    reopened.events.subscribe((event) => received.push(event));
+    assert.ok(fake.settle('late', { value: {} }));
+    await pending;
+    assert.deepEqual(received, []);
+    assert.equal((await reopened.pages.list()).pageCount, 0);
+    // The publisher belongs to the old handle even for calls started after reopening.
+    const retained = old.pages.reorder([], 'end');
+    assert.ok(fake.settle('late', { value: {} }));
+    await retained;
+    assert.deepEqual(received, []);
+    assert.equal((await reopened.pages.list()).pageCount, 0);
+    assert.deepEqual(fake.unmatched, []);
+  }
+});
+
+test('successful unlock refreshes state, prompt and PDF-bit authorization before resolving', async () => {
+  for (const deferred of [false, true]) {
+    const locked: DocumentSecurityState = {
+      encryption: { state: 'encrypted', requiresPassword: true },
+      permissions: {
+        known: true,
+        bits: 0,
+        allAllowed: false,
+        openedAs: 'none',
+        securityHandlerRevision: 6,
+        canUpgradeToOwner: false,
+      },
+      access: { required: true, reasons: ['password'] },
+    };
+    const owner: DocumentSecurityState = {
+      ...locked,
+      permissions: { ...locked.permissions, bits: 0xffffffff, allAllowed: true, openedAs: 'owner' },
+      access: { required: false, reasons: [] },
+    };
+    const result = { security: owner } satisfies DocumentUnlockResult;
+    const fake = createFakeEngine(
+      {
+        documents: {
+          a: {
+            security: {
+              state: locked,
+              rawScope: ['pdf.permissions'],
+              passwordPrompt: { state: 'required', hint: 'user', incorrect: false },
+            },
+            responses: [
+              {
+                path: 'security.unlock',
+                args: [{ password: 'wrong' }],
+                error: {
+                  name: 'EngineError',
+                  message: 'incorrect password',
+                  code: 'DocPasswordIncorrect',
+                },
+              },
+              {
+                path: 'security.unlock',
+                args: [{ password: 'owner' }],
+                value: result,
+                ...(deferred ? { defer: 'unlock' } : {}),
+              },
+            ],
+          },
+        },
+      },
+      (v) => v,
+    );
+    const doc = await fake.engine.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
+    assert.equal(doc.security.allows('doc.print'), false);
+    assert.equal(doc.security.allowsAnnotation('create'), false);
+    assert.equal(doc.security.allowsField('fill', { groupId: null }), false);
+    await assert.rejects(Promise.resolve(doc.security.unlock({ password: 'wrong' })));
+    assert.deepEqual(doc.security.state, locked);
+    const pending = doc.security.unlock({ password: 'owner' });
+    if (deferred) {
+      assert.deepEqual(doc.security.state, locked);
+      assert.ok(fake.settle('unlock', { value: result }));
+    }
+    await pending.then(() => {
+      assert.deepEqual(doc.security.state, owner);
+      assert.deepEqual(doc.security.passwordPrompt, { state: 'none' });
+      assert.equal(doc.security.allows('doc.print'), true);
+      assert.ok(doc.security.scope.includes('doc.print'));
+      assert.equal(doc.security.allowsAnnotation('create'), true);
+      assert.equal(doc.security.allowsField('fill', { groupId: null }), true);
+    });
+  }
+});
+
+test('plan-order connects required and optional dependencies before dependents', async () => {
+  const { trace } = await runNamed('plan-order');
+  assert.deepEqual(
+    trace[0].callbacks.map((c) => c.fn),
+    ['a.create', 'b.create', 'c.create', 'a.connect', 'b.connect', 'c.connect'],
+  );
+});
+
+test('guarded page text reads use the current PageTextSnapshot response', async () => {
+  const { trace } = await runNamed('guarded-handle');
+  assert.deepEqual(
+    trace[4].settled.map((s) => s.resolved),
+    [{ text: '', charCount: 0 }],
+  );
 });

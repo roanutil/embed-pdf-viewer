@@ -27,6 +27,20 @@
 import {
   AbortablePromise,
   PermissionDenied,
+  passwordPromptFromState,
+  checkCapability,
+  checkCollab,
+  checkFieldAction,
+  checkSetGroup,
+  collabTargetOf,
+  fieldRightsOf,
+  type AnnotationOwner,
+  type Identity,
+  decodePdfBits,
+  expandRawScope,
+  type DocCapability,
+  type DocumentSecurityState,
+  type DocumentUnlockResult,
   LOCAL_ENGINE_BRAND,
   type PageRef,
   type PageLayout,
@@ -65,6 +79,9 @@ export interface SecuritySpec {
   >;
   readonly allowsField?: Partial<Record<'fill' | 'sign' | 'set-group', boolean>>;
   readonly scope?: readonly string[];
+  /** Raw scope fixture: use the shipping resolver against the current security bits.
+   * Explicit allows overrides still take precedence. */
+  readonly rawScope?: readonly string[];
   readonly identity?: unknown;
   readonly state?: unknown;
   readonly passwordPrompt?: unknown;
@@ -290,6 +307,7 @@ export function createFakeEngine(
     fallback?: () => unknown,
     map: (value: unknown) => unknown = (value) => value,
     validate?: () => void,
+    publish?: (event: DocumentEvent) => void,
   ): AbortablePromise<unknown> {
     const args = rawArgs.map((arg) => canonical(arg));
     const index = log.length;
@@ -321,11 +339,11 @@ export function createFakeEngine(
         try {
           const result = map(value);
           for (const event of entry.events ?? []) {
-            if (doc === null)
+            if (!publish)
               throw new Error(
                 '[fake-engine] an engine-level response cannot publish document events',
               );
-            handles.get(doc)!.publish(decode(event) as DocumentEvent);
+            publish(decode(event) as DocumentEvent);
           }
           resolve(result);
         } catch (error) {
@@ -360,8 +378,12 @@ export function createFakeEngine(
     pon?: number,
     absent: ReadonlySet<string> = new Set(),
     validate?: () => void,
+    publish?: (event: DocumentEvent) => void,
   ): unknown {
-    const custom = prefix === 'metadata' ? service(doc, table, 'metadata.custom') : undefined;
+    const custom =
+      prefix === 'metadata'
+        ? service(doc, table, 'metadata.custom', undefined, undefined, undefined, publish)
+        : undefined;
     return new Proxy(
       {},
       {
@@ -374,7 +396,17 @@ export function createFakeEngine(
           )
             return undefined;
           return (...args: unknown[]) =>
-            call(doc, table, `${prefix}.${member}`, pon, args, undefined, undefined, validate);
+            call(
+              doc,
+              table,
+              `${prefix}.${member}`,
+              pon,
+              args,
+              undefined,
+              undefined,
+              validate,
+              publish,
+            );
         },
       },
     );
@@ -417,64 +449,132 @@ export function createFakeEngine(
       }
     };
     handles.set(id, { listeners, publish });
+    // Every method owns this open's event stream, including calls retained across a reopen.
+    const callForHandle: typeof call = (doc, table, path, pon, args, fallback, map, validate) =>
+      call(doc, table, path, pon, args, fallback, map, validate, publish);
+    const serviceForHandle: typeof service = (doc, table, prefix, pon, absent, validate) =>
+      service(doc, table, prefix, pon, absent, validate, publish);
     const numbers = [...(document.objectNumbers ?? [])];
     let nextNumber = Math.max(0, ...pages.map((page) => page.ref.objectNumber), ...numbers) + 1;
     const lostListeners = new Set<Parameters<DocumentHandle['objectNumbers']['onLost']>[0]>();
+    let currentSecurityState = decode(
+      security.state ?? {
+        encryption: { state: 'none', requiresPassword: false },
+        permissions: {
+          known: true,
+          bits: null,
+          allAllowed: true,
+          openedAs: 'none',
+          securityHandlerRevision: null,
+          canUpgradeToOwner: false,
+        },
+        access: { required: false, reasons: [] },
+      },
+    ) as DocumentSecurityState;
+    let currentPasswordPrompt = decode(
+      security.passwordPrompt ?? passwordPromptFromState(currentSecurityState),
+    );
+    const identity = decode(security.identity ?? {}) as Identity;
+    const currentBits = () => decodePdfBits(currentSecurityState.permissions.bits);
     const allows = (capability: string) =>
-      security.allows === '*' || (security.allows ?? []).includes(capability);
+      security.allows !== undefined
+        ? security.allows === '*' || security.allows.includes(capability)
+        : security.rawScope !== undefined &&
+          checkCapability(capability as DocCapability, security.rawScope, currentBits());
 
     const handle: Record<string, unknown> = {
       id,
       security: {
-        state: decode(
-          security.state ?? {
-            encryption: { state: 'none', requiresPassword: false },
-            permissions: {
-              known: true,
-              bits: null,
-              allAllowed: true,
-              openedAs: 'none',
-              securityHandlerRevision: null,
-              canUpgradeToOwner: false,
-            },
-            access: { required: false, reasons: [] },
-          },
-        ),
-        scope: decode(security.scope ?? []),
+        get state() {
+          return currentSecurityState;
+        },
+        get passwordPrompt() {
+          return currentPasswordPrompt;
+        },
+        get scope() {
+          return security.rawScope === undefined
+            ? decode(security.scope ?? [])
+            : [...expandRawScope(security.rawScope, currentBits())].sort();
+        },
         identity: decode(security.identity ?? null),
-        passwordPrompt: decode(security.passwordPrompt ?? { state: 'none' }),
         allows,
-        allowsAnnotation: (action: 'create' | 'update' | 'delete' | 'set-group') =>
-          security.allowsAnnotation?.[action] ??
-          (action === 'set-group'
+        allowsAnnotation: (
+          action: 'create' | 'update' | 'delete' | 'set-group',
+          target?: AnnotationOwner | { groupId: string },
+        ) => {
+          const configured = security.allowsAnnotation?.[action];
+          if (configured !== undefined) return configured;
+          if (security.rawScope !== undefined) {
+            if (action === 'set-group')
+              return checkSetGroup(
+                'annotations',
+                (target as { groupId: string }).groupId,
+                identity.groupId,
+                security.rawScope,
+              );
+            if (
+              action !== 'create' &&
+              (target as AnnotationOwner | undefined)?.subtype === 'widget'
+            )
+              return allows('doc.forms.modify');
+            return checkCollab(
+              action,
+              action === 'create' ? identity : collabTargetOf(target ?? {}),
+              security.rawScope,
+              identity,
+              currentBits(),
+            );
+          }
+          return action === 'set-group'
             ? false
-            : allows(action === 'create' ? 'doc.annotate.create' : 'doc.annotate.modify')),
-        allowsField: (action: 'fill' | 'sign' | 'set-group') =>
-          security.allowsField?.[action] ??
-          (action === 'set-group'
+            : allows(action === 'create' ? 'doc.annotate.create' : 'doc.annotate.modify');
+        },
+        allowsField: (
+          action: 'fill' | 'sign' | 'set-group',
+          target?: { groupId: string | null },
+        ) => {
+          const configured = security.allowsField?.[action];
+          if (configured !== undefined) return configured;
+          if (security.rawScope !== undefined)
+            return action === 'set-group'
+              ? checkSetGroup('fields', target?.groupId ?? '', identity.groupId, security.rawScope)
+              : checkFieldAction(action, target?.groupId ?? null, security.rawScope, currentBits());
+          return action === 'set-group'
             ? false
-            : allows(action === 'fill' ? 'doc.forms.fill' : 'doc.sign')),
-        fieldRights: () => ({
-          fill: { all: allows('doc.forms.fill') },
-          sign: { all: allows('doc.sign') },
-          setGroup: { all: false, groups: [] },
-        }),
-        unlock: (...args: unknown[]) => call(id, table, 'security.unlock', undefined, args),
+            : allows(action === 'fill' ? 'doc.forms.fill' : 'doc.sign');
+        },
+        fieldRights: () =>
+          security.rawScope !== undefined
+            ? fieldRightsOf(security.rawScope, currentBits(), null, identity.groupId)
+            : {
+                fill: { all: allows('doc.forms.fill') },
+                sign: { all: allows('doc.sign') },
+                setGroup: { all: false, groups: [] },
+              },
+        unlock: (...args: unknown[]) =>
+          callForHandle(id, table, 'security.unlock', undefined, args, undefined, (value) => {
+            const result = value as DocumentUnlockResult;
+            currentSecurityState = result.security;
+            currentPasswordPrompt = passwordPromptFromState(currentSecurityState);
+            return result;
+          }),
       },
-      metadata: service(id, table, 'metadata'),
-      annotations: service(id, table, 'annotations'),
+      metadata: serviceForHandle(id, table, 'metadata'),
+      annotations: serviceForHandle(id, table, 'annotations'),
       // `forms.submit` is optional in the contract (a submit-capable home):
       // present only when `services` lists it, so `typeof submit` can be false.
-      forms: service(id, table, 'forms', undefined, formsAbsent),
-      search: service(id, table, 'search'),
-      outline: service(id, table, 'outline'),
-      actions: service(id, table, 'actions'),
-      attachments: service(id, table, 'attachments'),
-      redaction: service(id, table, 'redaction'),
-      signatures: service(id, table, 'signatures'),
+      forms: serviceForHandle(id, table, 'forms', undefined, formsAbsent),
+      search: serviceForHandle(id, table, 'search'),
+      outline: serviceForHandle(id, table, 'outline'),
+      actions: serviceForHandle(id, table, 'actions'),
+      attachments: serviceForHandle(id, table, 'attachments'),
+      redaction: serviceForHandle(id, table, 'redaction'),
+      signatures: serviceForHandle(id, table, 'signatures'),
       render: {
         getPolicy: () =>
-          call(id, table, 'render.getPolicy', undefined, [], () => ({ kind: 'continuous' })),
+          callForHandle(id, table, 'render.getPolicy', undefined, [], () => ({
+            kind: 'continuous',
+          })),
       },
       objectNumbers: {
         take: () => numbers.shift() ?? null,
@@ -482,7 +582,7 @@ export function createFakeEngine(
           return numbers.length;
         },
         reserve: (count: number) =>
-          call(
+          callForHandle(
             id,
             table,
             'objectNumbers.reserve',
@@ -508,7 +608,7 @@ export function createFakeEngine(
           };
         },
       },
-      apply: (...args: unknown[]) => call(id, table, 'apply', undefined, args),
+      apply: (...args: unknown[]) => callForHandle(id, table, 'apply', undefined, args),
       with: () => handle,
       setWorkingSet: () => {},
       pages: new Proxy(
@@ -522,7 +622,7 @@ export function createFakeEngine(
             )
               return undefined;
             return (...args: unknown[]) =>
-              call(
+              callForHandle(
                 id,
                 table,
                 `pages.${member}`,
@@ -564,7 +664,7 @@ export function createFakeEngine(
         };
         const pageHandle: Record<string | symbol, unknown> = { ref: { ...ref } };
         for (const name of ['annotations', 'forms', 'text', 'render', 'measure'] as const) {
-          pageHandle[name] = service(
+          pageHandle[name] = serviceForHandle(
             id,
             table,
             `page.${name}`,
@@ -578,27 +678,36 @@ export function createFakeEngine(
           );
         }
         if (document.local || services.has('page.pieceInfo'))
-          pageHandle.pieceInfo = service(id, table, 'page.pieceInfo', pon, undefined, validate);
+          pageHandle.pieceInfo = serviceForHandle(
+            id,
+            table,
+            'page.pieceInfo',
+            pon,
+            undefined,
+            validate,
+          );
         if (document.local) pageHandle[LOCAL_ENGINE_BRAND] = true;
         return pageHandle;
       },
-      download: (...args: unknown[]) => call(id, table, 'download', undefined, args),
-      close: (...args: unknown[]) => call(id, table, 'close', undefined, args, () => undefined),
+      download: (...args: unknown[]) => callForHandle(id, table, 'download', undefined, args),
+      close: (...args: unknown[]) =>
+        callForHandle(id, table, 'close', undefined, args, () => undefined),
     };
     for (const optional of ['pieceInfo', 'fonts'] as const) {
-      if (document.local || services.has(optional)) handle[optional] = service(id, table, optional);
+      if (document.local || services.has(optional))
+        handle[optional] = serviceForHandle(id, table, optional);
     }
     if (document.local || services.has('version')) {
-      handle.version = (...args: unknown[]) => call(id, table, 'version', undefined, args);
+      handle.version = (...args: unknown[]) => callForHandle(id, table, 'version', undefined, args);
     }
     if (document.local || services.has('downloadLayer')) {
       handle.downloadLayer = (...args: unknown[]) =>
-        call(id, table, 'downloadLayer', undefined, args);
+        callForHandle(id, table, 'downloadLayer', undefined, args);
     }
     if (document.local) {
       Object.defineProperty(handle, LOCAL_ENGINE_BRAND, { value: true });
       handle.downloadToFile = (...args: unknown[]) =>
-        call(id, table, 'downloadToFile', undefined, args);
+        callForHandle(id, table, 'downloadToFile', undefined, args);
     }
     return handle as unknown as DocumentHandle;
   }

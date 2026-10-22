@@ -197,7 +197,9 @@ Every asynchronous call is logged and answered by the first entry whose `path`, 
 match; `args` compares canonically, and an entry without it matches any arguments. An entry with
 `times` is consumed that many times; one without is sticky. It answers with `value`, `error`, or
 `defer: label`. A successful response may also carry `events`: they publish synchronously, in order,
-before its promise resolves, including when a later `settle` completes a deferred response. An
+before its promise resolves, including when a later `settle` completes a deferred response.
+Publication stays bound to the originating open handle; a same-id reopen owns a distinct stream
+and page registry, even when old responses settle or retained old methods run afterwards. An
 error publishes none. Event listeners are isolated through the runner's report sink, and the
 cursor is the highest observed `origin.serverId`.
 
@@ -250,7 +252,12 @@ behaviour. `allows` takes a list or `"*"`. `allowsAnnotation` takes create/updat
 false. `allowsField` similarly takes fill/sign/set-group overrides; the defaults use
 `doc.forms.fill`, `doc.sign` and false. `fieldRights` exposes those coarse defaults. These are
 fixture decisions, not a second implementation of the engine's collaboration resolver. Security
-reads are `state`, `scope`, `identity` and `passwordPrompt`.
+reads are `state`, `scope`, `identity` and `passwordPrompt`. Successful `security.unlock` updates
+`state` from its `DocumentUnlockResult.security` and derives `passwordPrompt` with the shipping
+helper before settling. A `security.rawScope` fixture delegates capability, collaboration and
+field authorization to the shipping scope resolvers with the current state's PDF bits; its
+expanded `scope` and authorization getters therefore reflect an unlock. Explicit decision
+fixtures (`allows`, `allowsAnnotation`, `allowsField`) remain available for targeted cases.
 
 Every call returns an `AbortablePromise`. An abort is logged as `{abort: <index of the call>, reason}`
 and rejects with `AbortError`. An answer that arrives after an abort is still mapped (an `open`
