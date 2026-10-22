@@ -75,7 +75,7 @@ async function readDocuments(runtime, { highHeap }) {
       };
       rust.open = send({ kind: 'open.fatMem', effect: 'open', jobId: 1, docId: file }, [bytes]);
       rust.metadata = send({ kind: 'metadata.read', effect: 'read', jobId: 2, docId: file });
-      send({ kind: 'close', docId: file });
+      rust.close = send({ kind: 'close', effect: 'close', jobId: 3, docId: file });
     }
 
     results.push({
@@ -110,6 +110,7 @@ test('wasm runtime reads, renders and writes above 2 GiB as it does below', asyn
     for (const { rust } of low.results) {
       assert.equal(rust.open.json.error, undefined, JSON.stringify(rust.open.json));
       assert.ok(rust.metadata.json.result, JSON.stringify(rust.metadata.json));
+      assert.equal(rust.close.json.error, undefined, JSON.stringify(rust.close.json));
     }
   }
   assert.deepEqual(high, low);
