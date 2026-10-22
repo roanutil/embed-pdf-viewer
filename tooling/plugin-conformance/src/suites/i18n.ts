@@ -18,10 +18,12 @@
  *   `seq`); the factory turns it into a function that logs its call and
  *   answers as the spec says, which is what `$fn` means everywhere else.
  */
-import { i18nPlugin, interpolate, negotiateLocale, translate } from '../../../../packages/plugin/i18n/src/index';
-import { I18nToken, i18nReducer, initialI18nState } from '../../../../packages/plugin/i18n/src/internal';
+import { I18N_DEFAULTS, I18nToken, i18nPlugin, negotiateLocale } from '../../../../packages/plugin/i18n/src/index';
+import { interpolate, translate } from '../../../../packages/plugin/i18n/src/translate';
+import * as model from '../../../../packages/plugin/i18n/src/model';
+import { initialI18nState, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
 import type { I18nConfig, Locale } from '../../../../packages/plugin/i18n/src/contract';
-import type { I18nAction, I18nState } from '../../../../packages/plugin/i18n/src/model';
+import type { I18nState } from '../../../../packages/plugin/i18n/src/model';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
@@ -121,6 +123,30 @@ const state = (over: Partial<I18nState> = {}): I18nState => ({
 const fnCase = (name: string, fn: string, args: unknown[], covers?: string): FunctionCase =>
   covers === undefined ? { name, fn, args } : { name, fn, args, covers };
 
+/** The old `I18nAction`: its `type` and fields. */
+type I18nAction = { type: string; [field: string]: unknown };
+
+/** 4fc1a32af replaced `i18nReducer` with one transition per action. */
+function i18nReducer(state: I18nState, action: I18nAction): I18nState {
+  const a = action as unknown as Record<string, never>;
+  switch (action.type) {
+    case 'I18N/SET_LOCALE':
+      return model.setLocale(state, a.locale);
+    case 'I18N/REGISTER_LOCALE':
+      return model.registerLocale(state, a.locale);
+    case 'I18N/UNREGISTER_LOCALE':
+      return model.unregisterLocale(state, a.locale);
+    case 'I18N/ADD_TRANSLATIONS':
+      return model.addTranslations(state, a.locale, a.translations);
+    case 'I18N/LOAD_STARTED':
+      return model.startLocaleLoad(state, a.locale);
+    case 'I18N/LOAD_FAILED':
+      return model.endLocaleLoad(state, a.locale);
+    default:
+      return state;
+  }
+}
+
 /** The reducer, with its reference identity made visible. */
 const reduce = (s: I18nState, action: I18nAction) => {
   const next = i18nReducer(s, action);
@@ -129,7 +155,10 @@ const reduce = (s: I18nState, action: I18nAction) => {
 
 /** `initialI18nState` reads only whether a loader exists, so a vector's
  *  loaders are any non-undefined value. */
-const initial = (config: I18nConfig) => initialI18nState(config);
+const initial = (config: I18nConfig) =>
+  // The config is the plugin's settings over I18N_DEFAULTS since 75791ed22;
+  // the controller seeds the state from them.
+  seedFromSettings(initialI18nState(), { ...I18N_DEFAULTS, ...config } as never);
 
 const coreCases: FunctionCase[] = [
   // translate

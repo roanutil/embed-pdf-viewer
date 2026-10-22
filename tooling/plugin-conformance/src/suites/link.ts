@@ -15,11 +15,11 @@
 import type { AnyPlugin } from '@embedpdf/core';
 
 import { linkPlugin } from '../../../../packages/plugin/link/src/link.plugin';
-import { initialLinkState, linkReducer } from '../../../../packages/plugin/link/src/model';
-import { LinkToken, type LinkActivatedEvent, type LinkAction, type LinkHostCapability, type LinkState } from '../../../../packages/plugin/link/src/host-contract';
+import { LinkToken, type LinkActivatedEvent, type LinkHostCapability } from '../../../../packages/plugin/link/src/host-contract';
 
 import type { ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import { scriptedCallback, type AnswerSpec } from './acrojs';
 import { stageStep } from './stage-plugin';
@@ -624,8 +624,16 @@ const cases: ScenarioCase[] = [
 
 // ── functions ─────────────────────────────────────────────────────────────────
 
+// 4fc1a32af removed the link page cache (`model.ts`): its state, reducer and
+// initial state are gone. The cases keep their old state and actions.
+type LinkState = { pages: Record<number, readonly unknown[]> };
+type LinkAction = { type: string; [field: string]: unknown };
+const linkReducer = removedUpstream('linkReducer', '4fc1a32af') as (state: LinkState, action: LinkAction) => LinkState;
+/** The old `initialLinkState()`, as the cases' inputs. */
+const EMPTY_LINKS: LinkState = { pages: {} };
+
 const functions = {
-  initialLinkState,
+  initialLinkState: removedUpstream('initialLinkState', '4fc1a32af'),
   linkReducer: (state: LinkState, action: LinkAction) => {
     const next = linkReducer(state, action);
     return { changed: next !== state, state: next };
@@ -651,14 +659,14 @@ const r = (name: string, state: LinkState, action: unknown, covers?: string): Fu
 
 const functionCases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialLinkState', args: [] },
-  r('set-a-first-page', initialLinkState(), { type: 'setPage', page: pr(1), items: [item(1)] }),
+  r('set-a-first-page', EMPTY_LINKS, { type: 'setPage', page: pr(1), items: [item(1)] }),
   r('set-another-page', loaded, { type: 'setPage', page: pr(2), items: [item(2, { activate: tree(uriNode('u')), hoverEvents: { enter: true, exit: false } })] }),
   r('set-replaces-a-page', loaded, { type: 'setPage', page: pr(1), items: [item(4), item(5, { attached: true })] }, 'setPage replaces the page and keeps the others.'),
   r('set-an-empty-page', loaded, { type: 'setPage', page: pr(0), items: [] }),
   r('drop-a-page', loaded, { type: 'dropPage', page: pr(1) }),
   r('drop-an-empty-page', loaded, { type: 'dropPage', page: pr(3) }, 'A page cached with no links is still present, so dropping it makes a new state.'),
   r('drop-an-absent-page', loaded, { type: 'dropPage', page: pr(2) }, 'Dropping a page that is not cached returns the same state.'),
-  r('drop-from-empty', initialLinkState(), { type: 'dropPage', page: pr(1) }),
+  r('drop-from-empty', EMPTY_LINKS, { type: 'dropPage', page: pr(1) }),
 ];
 
 export const suites: Suite[] = [

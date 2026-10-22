@@ -14,18 +14,21 @@ import {
   PluginError,
   composeApi,
   createEventHook,
-  docInfoEquals,
-  docInfoListEquals,
   isPluginError,
-  originOf,
   toPluginError,
   toPluginErrorInfo,
-  type DocInfo,
 } from '@embedpdf/core';
 import { PermissionDenied } from '@embedpdf/engine-core/runtime';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
+
+/** The old kernel's document row (`types.ts`), as the cases build it. */
+type DocInfo = { id: string; name?: string; status: string; pageCount: number; passwordProvided?: boolean; error?: unknown };
+const docInfoEquals = removedUpstream('docInfoEquals', 'cdf4586c7');
+const docInfoListEquals = removedUpstream('docInfoListEquals', 'cdf4586c7');
+const originOf = removedUpstream('originOf', '75791ed22');
 
 type HookOp =
   | { op: 'on'; id: string }

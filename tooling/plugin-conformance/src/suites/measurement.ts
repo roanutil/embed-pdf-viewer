@@ -12,13 +12,13 @@ import type { AnyPlugin } from '@embedpdf/core';
 
 import { measurementPlugin } from '../../../../packages/plugin/measurement/src/index';
 import type { MeasurementConfig } from '../../../../packages/plugin/measurement/src/contract';
-import { MeasurementToken } from '../../../../packages/plugin/measurement/src/host-contract';
-import { initialMeasurementState, measurementReducer } from '../../../../packages/plugin/measurement/src/model';
-import type { MeasurementAction, MeasurementState } from '../../../../packages/plugin/measurement/src/model';
+import { MeasurementToken } from '../../../../packages/plugin/measurement/src/contract';
+import * as model from '../../../../packages/plugin/measurement/src/model';
+import { initialMeasurementState } from '../../../../packages/plugin/measurement/src/model';
+import type { MeasurementState } from '../../../../packages/plugin/measurement/src/model';
 import {
   DEFAULT_PRESETS,
   defaultMeasure,
-  selectPageScale,
   withAreaUnit,
   withPrecision,
   withUnit,
@@ -26,6 +26,7 @@ import {
 
 import type { ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 
 import {
@@ -716,6 +717,48 @@ const cases: ScenarioCase[] = [
 ];
 
 // ── functions ─────────────────────────────────────────────────────────────────
+
+/** The old `MeasurementAction`: its `type` and fields. */
+type MeasurementAction = { type: string; [field: string]: unknown };
+
+/**
+ * 4fc1a32af replaced `measurementReducer` with one transition per action. A
+ * page's viewports and scale moved to a page mirror, so `PAGE_SCALE` has no
+ * transition. The busy counter moves one step per transition, so a `PENDING`
+ * delta takes that many steps.
+ */
+function measurementReducer(state: MeasurementState, action: MeasurementAction): MeasurementState {
+  const a = action as unknown as Record<string, never>;
+  switch (action.type) {
+    case 'PAGE_SCALE':
+      return removedUpstream("measurementReducer 'PAGE_SCALE'", '4fc1a32af')();
+    case 'PENDING': {
+      const delta = a.delta as number;
+      let next = state;
+      for (let step = 0; step < Math.abs(delta); step++) {
+        next = delta > 0 ? model.beginScaleChange(next) : model.endScaleChange(next);
+      }
+      return next;
+    }
+    case 'CALIBRATION':
+      return model.setCalibration(state, a.request);
+    case 'REPORTS':
+      return model.setReports(state, a.reports);
+    default:
+      return state;
+  }
+}
+
+/**
+ * `selectPageScale` moved to `model.ts` and takes the page's size, not its
+ * crop box, since c053c3d33 put measurement in page space.
+ */
+const selectPageScale = (
+  viewports: never,
+  crop: { left: number; bottom: number; right: number; top: number },
+  fallback: never,
+  persistent: boolean,
+) => model.selectPageScale(viewports, { width: crop.right - crop.left, height: crop.top - crop.bottom }, fallback, persistent);
 
 const functions = {
   initialMeasurementState,

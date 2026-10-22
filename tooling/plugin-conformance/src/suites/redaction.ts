@@ -12,14 +12,35 @@
  */
 import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/core';
 
-import { initialRedactionState, redactionReducer } from '../../../../packages/plugin/redaction/src/model';
+import * as model from '../../../../packages/plugin/redaction/src/model';
+import { initialRedactionState } from '../../../../packages/plugin/redaction/src/model';
 import { createPendingReads } from '../../../../packages/plugin/redaction/src/read/pending';
 import { redactionPlugin } from '../../../../packages/plugin/redaction/src/index';
-import { RedactionToken, type RedactionConfig } from '../../../../packages/plugin/redaction/src/host-contract';
-import type { RedactionAction, RedactionState } from '../../../../packages/plugin/redaction/src/model';
+import { RedactionToken, type RedactionConfig } from '../../../../packages/plugin/redaction/src/contract';
+import type { RedactionState } from '../../../../packages/plugin/redaction/src/model';
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 
 import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+
+/** The old `RedactionAction`: its `type` and fields. */
+type RedactionAction = { type: string; result?: unknown };
+
+/**
+ * 4fc1a32af replaced `redactionReducer` with one transition per step: an
+ * `APPLY_FINISHED` ends the apply, then records its result when it has one.
+ */
+function redactionReducer(state: RedactionState, action: RedactionAction): RedactionState {
+  switch (action.type) {
+    case 'APPLY_STARTED':
+      return model.startApply(state);
+    case 'APPLY_FINISHED': {
+      const finished = model.finishApply(state);
+      return action.result ? model.setLastResult(finished, action.result as never) : finished;
+    }
+    default:
+      return state;
+  }
+}
 import type { FunctionCase, Suite } from '../vectors';
 
 import {
