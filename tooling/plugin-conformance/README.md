@@ -383,3 +383,37 @@ random, so `fixtures/signature/generate.ts` runs once and its output is committe
 reads it, and `vectors:check` stays deterministic. Re-running the script replaces every key and
 changes every vector that embeds one. The Rust test host reads the same file for the keys its
 scripted WebCrypto hands out.
+
+Current text-layout and frame fixtures (Task12b2a):
+
+- A `page.text.layout` response/settlement stores `{ "$textLayout": snapshot }`, where
+  `snapshot` is a current page-space `PageGeometrySnapshot`: runs use `start`,
+  glyphs use `loose`/`tight` with `space`/`empty`, and quads have semantic corner
+  names. The fake reconstructs **shipping** `createTextLayout(snapshot)` in its
+  existing result mapper, for both immediate and deferred success. Only this
+  method interprets the marker. Rust Task13 must reconstruct its text-layout
+  implementation from the same recorded snapshot; JSON never embeds functions.
+- A scenario's `clock: { frames: true }` passes the current kernel HostClock:
+  monotonic fake `performance.now()`, fake timer `after`, and 16 ms `nextFrame`.
+  Without it the host is frameless. The shipping instance clock owns lifetime
+  cancellation. The retired stage `config.scheduler` is never passed to a plugin.
+- Pure cases record named shipping transitions and their positional arguments.
+  Selection layout probes record page-space geometry, including converted points
+  and grids. Geometry normalizer cases call engine `normalizePdfQuad` with four
+  recorded PDF-space points; page-transform cases carry current page size/scale.
+- Seven historical definitions are retired: four `pdfToContentMatrix` cases
+  (`origin`, `offset`, `negative`, `extra-members-ignored`, removed in c053c3d33),
+  selection `reduceSelection/page-loaded{,-again}` (4fc1a32af removes loaded-page
+  session state; current page-mirror scenarios retain loading coverage), and
+  search `unknown-action` (4fc1a32af removes action dispatch; no shipping unknown
+  action transition). Exact historical definitions: `git show
+6bba125f9:tooling/plugin-conformance/src/suites/{geometry,selection,search-reducer}.ts`.
+  Other old geometry targets have current shipping replacements, including
+  engine page/PDF conversions and quad normalization; they remain active.
+
+Run `node --import=tsx --conditions=development --test test/current-suites.test.ts`
+from this package to audit all 1,287 owned definitions and the text-layout/frame
+seams. The explicit refusal table includes deliberately malformed grid inputs
+and the independently reproduced shipping paged-empty camera refusal
+(`stage/src/services/scene.ts:itemRect`); Task13 must preserve the observation
+without an accidental Rust panic, and Task14 owns any upstream follow-up.

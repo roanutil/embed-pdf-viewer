@@ -50,6 +50,9 @@ import type {
 } from '../../../../packages/plugin/stage/src/contract';
 import type { StageState } from '../../../../packages/plugin/stage/src/model';
 
+import { pageDestinationOf } from '../../../../packages/engine/core/src/pageSpace/destinations';
+import type { PdfDestination } from '@embedpdf/engine-core/runtime';
+
 import type { FunctionCase, Suite } from '../vectors';
 
 type Fn = (...args: never[]) => unknown;
@@ -59,49 +62,33 @@ type Fn = (...args: never[]) => unknown;
  * layout, bbox?)` became `revealOfDestination(dest, size)`, which takes the
  * page's size and no bounding box, and answers the reveal options alone.
  */
-const destinationToReveal = (dest: unknown, layout: { size: unknown }, _bbox?: unknown) =>
-  revealOfDestination(dest as never, layout.size as never);
 
-/** The old `StageAction`: its `type` and fields. */
-type StageAction = { type: string; [field: string]: unknown };
-
-/**
- * 4fc1a32af replaced `stageReducer` with one transition per action, and
- * renamed the state's `vp` to `viewport`.
- */
-function stageReducer(state: StageState, action: StageAction): StageState {
-  const a = action as unknown as Record<string, never>;
-  switch (action.type) {
-    case 'CAMERA':
-      return model.setCamera(state, a.camera);
-    case 'CAMERA_REST':
-      return model.setCameraResting(state, a.resting);
-    case 'PLACED':
-      return model.markPlaced(state);
-    case 'VP':
-      return model.setViewport(state, a.vp);
-    case 'DPR':
-      return model.setDpr(state, a.dpr);
-    case 'CURSOR':
-      return model.setCursor(state, a.cursor);
-    case 'MOTION_CAUSE':
-      return model.setMotionCause(state, a.cause);
-    case 'PATCH':
-      return model.patchSettings(state, a.patch);
-    case 'RESPONSIVE':
-      return model.setActiveRules(state, a.active);
-    default:
-      return state;
+const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => {
+  if (fn === 'destinationToReveal') {
+    const layout = args[1] as {
+      size: { width: number; height: number };
+      boxes: { crop: { left: number; bottom: number; right: number; top: number } };
+    };
+    return {
+      name: `${fn}/${label}`,
+      fn: 'revealOfDestination',
+      args: [pageDestinationOf(args[0] as PdfDestination, () => layout.boxes.crop), layout.size],
+    };
   }
-}
-const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
+  return { name: `${fn}/${label}`, fn, args };
+};
 
 // ── destinations ──────────────────────────────────────────────────────────────
 
-const box = (left: number, bottom: number, right: number, top: number) => ({ left, bottom, right, top });
+const box = (left: number, bottom: number, right: number, top: number) => ({
+  left,
+  bottom,
+  right,
+  top,
+});
 const layout = (over: Record<string, unknown> = {}) => ({
   index: 3,
-  ref: { kind: 'objectNumber', pageObjectNumber: 12 },
+  ref: { kind: 'objectNumber', objectNumber: 12 },
   label: null,
   size: { width: 612, height: 792 },
   rotation: 0,
@@ -110,41 +97,227 @@ const layout = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 const letter = layout();
-const cropped = layout({ size: { width: 600, height: 780 }, boxes: { media: box(0, 0, 612, 792), crop: box(10, 8, 610, 788) } });
+const cropped = layout({
+  size: { width: 600, height: 780 },
+  boxes: { media: box(0, 0, 612, 792), crop: box(10, 8, 610, 788) },
+});
 const turned = layout({ rotation: 90 });
 const scaled = layout({ userUnit: 2 });
 const bbox = { x: 50, y: 60, width: 400, height: 500 };
 
 const destinationCases: FunctionCase[] = [
-  c('destinationToReveal', 'xyz-all', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700, zoom: 1.5 }, letter),
-  c('destinationToReveal', 'xyz-null-left-zero-zoom', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null, top: 700, zoom: 0 }, letter),
-  c('destinationToReveal', 'xyz-null-top', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: null, zoom: null }, letter),
-  c('destinationToReveal', 'xyz-absent', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
-  c('destinationToReveal', 'xyz-cropped', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 110, top: 708, zoom: 2 }, cropped),
-  c('destinationToReveal', 'xyz-rotated', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700, zoom: 1 }, turned),
-  c('destinationToReveal', 'xyz-user-unit', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, top: 700 }, scaled),
-  c('destinationToReveal', 'xyz-negative-zoom', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 0, top: 0, zoom: -1 }, letter),
-  c('destinationToReveal', 'fit', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
-  c('destinationToReveal', 'fit-with-bbox', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter, bbox),
-  c('destinationToReveal', 'fitH', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 700 }, letter),
-  c('destinationToReveal', 'fitH-null', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: null }, letter),
-  c('destinationToReveal', 'fitH-absent-cropped', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, cropped),
-  c('destinationToReveal', 'fitH-cropped', { kind: 'fitH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 500 }, cropped),
-  c('destinationToReveal', 'fitV', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 200 }, letter),
-  c('destinationToReveal', 'fitV-null', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null }, cropped),
-  c('destinationToReveal', 'fitV-cropped', { kind: 'fitV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 200 }, cropped),
-  c('destinationToReveal', 'fitR', { kind: 'fitR', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 100, bottom: 200, right: 300, top: 600 }, letter),
-  c('destinationToReveal', 'fitR-inverted', { kind: 'fitR', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 300, bottom: 600, right: 100, top: 200 }, cropped),
-  c('destinationToReveal', 'fitB', { kind: 'fitB', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
-  c('destinationToReveal', 'fitB-bbox', { kind: 'fitB', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter, bbox),
-  c('destinationToReveal', 'fitBH', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: 700 }, letter, bbox),
-  c('destinationToReveal', 'fitBH-null-bbox', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 }, top: null }, letter, bbox),
-  c('destinationToReveal', 'fitBH-absent-page', { kind: 'fitBH', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
-  c('destinationToReveal', 'fitBV', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 150 }, cropped, bbox),
-  c('destinationToReveal', 'fitBV-null-bbox', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: null }, letter, bbox),
-  c('destinationToReveal', 'fitBV-absent-page', { kind: 'fitBV', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, letter),
-  c('destinationToReveal', 'zero-user-unit-throws', { kind: 'fit', page: { kind: 'objectNumber', pageObjectNumber: 12 } }, layout({ userUnit: 0 })),
-  c('destinationToReveal', 'absent-user-unit', { kind: 'xyz', page: { kind: 'objectNumber', pageObjectNumber: 12 }, left: 5, top: 6 }, layout({ userUnit: { $undefined: true } })),
+  c(
+    'destinationToReveal',
+    'xyz-all',
+    {
+      kind: 'xyz',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: 100,
+      top: 700,
+      zoom: 1.5,
+    },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-null-left-zero-zoom',
+    {
+      kind: 'xyz',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: null,
+      top: 700,
+      zoom: 0,
+    },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-null-top',
+    {
+      kind: 'xyz',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: 100,
+      top: null,
+      zoom: null,
+    },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-absent',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-cropped',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 110, top: 708, zoom: 2 },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-rotated',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 100, top: 700, zoom: 1 },
+    turned,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-user-unit',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 100, top: 700 },
+    scaled,
+  ),
+  c(
+    'destinationToReveal',
+    'xyz-negative-zoom',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 0, top: 0, zoom: -1 },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fit',
+    { kind: 'fit', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fit-with-bbox',
+    { kind: 'fit', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitH',
+    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 }, top: 700 },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitH-null',
+    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 }, top: null },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitH-absent-cropped',
+    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 } },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'fitH-cropped',
+    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 }, top: 500 },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'fitV',
+    { kind: 'fitV', page: { kind: 'objectNumber', objectNumber: 12 }, left: 200 },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitV-null',
+    { kind: 'fitV', page: { kind: 'objectNumber', objectNumber: 12 }, left: null },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'fitV-cropped',
+    { kind: 'fitV', page: { kind: 'objectNumber', objectNumber: 12 }, left: 200 },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'fitR',
+    {
+      kind: 'fitR',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: 100,
+      bottom: 200,
+      right: 300,
+      top: 600,
+    },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitR-inverted',
+    {
+      kind: 'fitR',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: 300,
+      bottom: 600,
+      right: 100,
+      top: 200,
+    },
+    cropped,
+  ),
+  c(
+    'destinationToReveal',
+    'fitB',
+    { kind: 'fitB', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitB-bbox',
+    { kind: 'fitB', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBH',
+    { kind: 'fitBH', page: { kind: 'objectNumber', objectNumber: 12 }, top: 700 },
+    letter,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBH-null-bbox',
+    { kind: 'fitBH', page: { kind: 'objectNumber', objectNumber: 12 }, top: null },
+    letter,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBH-absent-page',
+    { kind: 'fitBH', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBV',
+    { kind: 'fitBV', page: { kind: 'objectNumber', objectNumber: 12 }, left: 150 },
+    cropped,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBV-null-bbox',
+    { kind: 'fitBV', page: { kind: 'objectNumber', objectNumber: 12 }, left: null },
+    letter,
+    bbox,
+  ),
+  c(
+    'destinationToReveal',
+    'fitBV-absent-page',
+    { kind: 'fitBV', page: { kind: 'objectNumber', objectNumber: 12 } },
+    letter,
+  ),
+  c(
+    'destinationToReveal',
+    'zero-user-unit-does-not-affect-page-space',
+    { kind: 'fit', page: { kind: 'objectNumber', objectNumber: 12 } },
+    layout({ userUnit: 0 }),
+  ),
+  c(
+    'destinationToReveal',
+    'absent-user-unit',
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 5, top: 6 },
+    layout({ userUnit: { $undefined: true } }),
+  ),
 ];
 
 // ── settings ──────────────────────────────────────────────────────────────────
@@ -152,7 +325,11 @@ const destinationCases: FunctionCase[] = [
 const S = DEFAULT_SETTINGS;
 const settingsCases: FunctionCase[] = [
   c('settingsEqual', 'defaults', S, { ...S }),
-  c('settingsEqual', 'fresh-objects', S, { ...S, fitAlign: { x: 'center', y: 'center' }, zoom: { mode: 'automatic' } }),
+  c('settingsEqual', 'fresh-objects', S, {
+    ...S,
+    fitAlign: { x: 'center', y: 'center' },
+    zoom: { mode: 'automatic' },
+  }),
   c('settingsEqual', 'primitive-differs', S, { ...S, padding: 4 }),
   c('settingsEqual', 'object-member-differs', S, { ...S, arrivalAlign: { x: 'start', y: 0.35 } }),
   c('settingsEqual', 'number-vs-object', S, { ...S, gap: { px: 16 } }),
@@ -218,9 +395,14 @@ const responsiveCases: FunctionCase[] = [
   c('matchesQuery', 'max-height-fail', { maxHeight: 799 }, portrait),
   c('matchesQuery', 'orientation-pass', { orientation: 'landscape' }, landscape),
   c('matchesQuery', 'orientation-fail', { orientation: 'portrait' }, landscape),
-  c('matchesQuery', 'all-pass', { minWidth: 1000, maxWidth: 1300, minHeight: 600, maxHeight: 800, orientation: 'landscape' }, landscape),
+  c(
+    'matchesQuery',
+    'all-pass',
+    { minWidth: 1000, maxWidth: 1300, minHeight: 600, maxHeight: 800, orientation: 'landscape' },
+    landscape,
+  ),
   c('mergeSettings', 'patch', S, { padding: 4, gap: { px: 8 } }),
-  c('mergeSettings', 'undefined-skipped', S, { padding: { $undefined: true }, layout: 'grid' }),
+  c('mergeSettings', 'undefined-skipped', S, { padding: undefined, layout: 'grid' }),
   c('mergeSettings', 'empty', S, {}),
   c('eqSetting', 'same-primitive', 4, 4),
   c('eqSetting', 'different-primitive', 4, 5),
@@ -258,28 +440,49 @@ const responsiveCases: FunctionCase[] = [
     ],
     landscape,
   ),
-  c('resolveResponsive', 'undefined-in-patch', S, [{ name: 'u', when: {}, settings: { padding: { $undefined: true } } }], portrait),
+  c(
+    'resolveResponsive',
+    'undefined-in-patch',
+    S,
+    [{ name: 'u', when: {}, settings: { padding: undefined } }],
+    portrait,
+  ),
 ];
 
 // ── reducer ───────────────────────────────────────────────────────────────────
 
+const transition = <K extends keyof typeof model>(
+  fn: K,
+  label: string,
+  ...args: Parameters<(typeof model)[K]>
+): FunctionCase => ({ name: `stageReducer/${label}`, fn, args });
 const base = initialStageState({ viewUnitsPerPoint: 1 });
 const reducerCases: FunctionCase[] = [
   c('initialStageState', 'empty', {}),
-  c('initialStageState', 'overrides', { layout: 'grid', columns: 3, zoom: { level: 0.2 }, padding: 0, gap: { px: 8 } }),
-  c('initialStageState', 'strips-capability-config', { responsive: [], scheduler: 'frames', flow: 'paged' }),
-  c('stageReducer', 'camera', base, { type: 'CAMERA', camera: { x: 1, y: 2, zoom: 3 } }),
-  c('stageReducer', 'camera-rest-change', base, { type: 'CAMERA_REST', resting: false }),
-  c('stageReducer', 'camera-rest-same', base, { type: 'CAMERA_REST', resting: true }),
-  c('stageReducer', 'placed', base, { type: 'PLACED' }),
-  c('stageReducer', 'placed-again', { ...base, placed: true }, { type: 'PLACED' }),
-  c('stageReducer', 'vp', base, { type: 'VP', vp: { width: 1000, height: 700 } }),
-  c('stageReducer', 'dpr', base, { type: 'DPR', dpr: 2 }),
-  c('stageReducer', 'cursor', base, { type: 'CURSOR', cursor: 4 }),
-  c('stageReducer', 'motion-cause', base, { type: 'MOTION_CAUSE', cause: 'programmatic' }),
-  c('stageReducer', 'patch', base, { type: 'PATCH', patch: { layout: 'horizontal', padding: { $undefined: true }, zoom: { level: 2 } } }),
-  c('stageReducer', 'patch-empty', base, { type: 'PATCH', patch: {} }),
-  c('stageReducer', 'responsive', base, { type: 'RESPONSIVE', active: ['compact'] }),
+  c('initialStageState', 'overrides', {
+    layout: 'grid',
+    columns: 3,
+    zoom: { level: 0.2 },
+    padding: 0,
+    gap: { px: 8 },
+  }),
+  c('initialStageState', 'strips-capability-config', { responsive: [], flow: 'paged' }),
+  transition('setCamera', 'camera', base, { x: 1, y: 2, zoom: 3 }),
+  transition('setCameraResting', 'camera-rest-change', base, false),
+  transition('setCameraResting', 'camera-rest-same', base, true),
+  transition('markPlaced', 'placed', base),
+  transition('markPlaced', 'placed-again', { ...base, placed: true }),
+  transition('setViewport', 'vp', base, { width: 1000, height: 700 }),
+  transition('setDpr', 'dpr', base, 2),
+  transition('setCursor', 'cursor', base, 4),
+  transition('setMotionCause', 'motion-cause', base, 'programmatic'),
+  transition('patchSettings', 'patch', base, {
+    layout: 'horizontal',
+    padding: undefined,
+    zoom: { level: 2 },
+  }),
+  transition('patchSettings', 'patch-empty', base, {}),
+  transition('setActiveRules', 'responsive', base, ['compact']),
 ];
 
 // ── the table ─────────────────────────────────────────────────────────────────
@@ -288,11 +491,20 @@ const reducerCases: FunctionCase[] = [
 const liveRules = (rules: readonly Record<string, unknown>[]): ResponsiveRule[] =>
   rules.map((rule) => {
     const when = rule.when as Record<string, unknown>;
-    return '$returns' in when ? ({ ...rule, when: () => when.$returns } as unknown as ResponsiveRule) : (rule as unknown as ResponsiveRule);
+    return '$returns' in when
+      ? ({ ...rule, when: () => when.$returns } as unknown as ResponsiveRule)
+      : (rule as unknown as ResponsiveRule);
   });
 
+const observe =
+  <S, A extends unknown[]>(transition: (state: S, ...args: A) => S) =>
+  (state: S, ...args: A) => {
+    const next = transition(state, ...args);
+    return { state: next, same: next === state };
+  };
+
 const functions: Record<string, Fn> = {
-  destinationToReveal: destinationToReveal as Fn,
+  revealOfDestination: revealOfDestination as Fn,
   settingsEqual: settingsEqual as Fn,
   constants: (() => ({
     DEFAULT_SETTINGS,
@@ -316,11 +528,16 @@ const functions: Record<string, Fn> = {
   eqSetting: eqSetting as Fn,
   resolveResponsive: ((b: StageSettings, rules: Record<string, unknown>[], bx: StageBox) =>
     resolveResponsive(b, liveRules(rules), bx)) as Fn,
-  initialStageState: ((config: StageConfig) => initialStageState(config)) as Fn,
-  stageReducer: ((state: StageState, action: StageAction) => {
-    const next = stageReducer(state, action);
-    return { state: next, same: next === state };
-  }) as Fn,
+  initialStageState,
+  setCamera: observe(model.setCamera),
+  setCameraResting: observe(model.setCameraResting),
+  markPlaced: observe(model.markPlaced),
+  setViewport: observe(model.setViewport),
+  setDpr: observe(model.setDpr),
+  setCursor: observe(model.setCursor),
+  setMotionCause: observe(model.setMotionCause),
+  patchSettings: observe(model.patchSettings),
+  setActiveRules: observe(model.setActiveRules),
 };
 
 export const suites: Suite[] = [
@@ -334,7 +551,8 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/stage-pure.json',
-    describes: 'packages/plugin/stage: the settings registry, motion laws, responsive rules and reducer.',
+    describes:
+      'packages/plugin/stage: the settings registry, motion laws, responsive rules and named transitions.',
     functions,
     cases: [...settingsCases, ...motionCases, ...responsiveCases, ...reducerCases],
   },

@@ -26,6 +26,8 @@
  */
 import {
   AbortablePromise,
+  createTextLayout,
+  type PageGeometrySnapshot,
   PermissionDenied,
   passwordPromptFromState,
   checkCapability,
@@ -403,7 +405,17 @@ export function createFakeEngine(
               pon,
               args,
               undefined,
-              undefined,
+              prefix === 'page.text' && member === 'layout'
+                ? (value) => {
+                    if (!value || typeof value !== 'object' || !('$textLayout' in value))
+                      throw new Error(
+                        '[fake-engine] page.text.layout needs a $textLayout geometry fixture',
+                      );
+                    return createTextLayout(
+                      (value as { $textLayout: PageGeometrySnapshot }).$textLayout,
+                    );
+                  }
+                : undefined,
               validate,
               publish,
             );

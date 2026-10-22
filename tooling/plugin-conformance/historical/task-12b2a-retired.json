@@ -1,0 +1,420 @@
+{
+  "base": "6bba125f9",
+  "reason": "Removed viewer PDF matrix / loaded-page reducer / unknown-action dispatcher; never shipping vector targets. Current equivalents cover surviving semantics.",
+  "cases": [
+    {
+      "source": "geometry.ts",
+      "suite": "core/geometry-page.json",
+      "removedIn": "c053c3d33",
+      "definition": {
+        "name": "pdfToContentMatrix/origin",
+        "fn": "pdfToContentMatrix",
+        "args": [
+          {
+            "left": 0,
+            "top": 792
+          }
+        ]
+      }
+    },
+    {
+      "source": "geometry.ts",
+      "suite": "core/geometry-page.json",
+      "removedIn": "c053c3d33",
+      "definition": {
+        "name": "pdfToContentMatrix/offset",
+        "fn": "pdfToContentMatrix",
+        "args": [
+          {
+            "left": 10,
+            "top": 220
+          }
+        ]
+      }
+    },
+    {
+      "source": "geometry.ts",
+      "suite": "core/geometry-page.json",
+      "removedIn": "c053c3d33",
+      "definition": {
+        "name": "pdfToContentMatrix/negative",
+        "fn": "pdfToContentMatrix",
+        "args": [
+          {
+            "left": -50,
+            "top": 170
+          }
+        ]
+      }
+    },
+    {
+      "source": "geometry.ts",
+      "suite": "core/geometry-page.json",
+      "removedIn": "c053c3d33",
+      "definition": {
+        "name": "pdfToContentMatrix/extra-members-ignored",
+        "fn": "pdfToContentMatrix",
+        "args": [
+          {
+            "left": 3,
+            "bottom": 1,
+            "right": 9,
+            "top": 4
+          }
+        ]
+      }
+    },
+    {
+      "source": "search-reducer.ts",
+      "suite": "plugins/search-reducer.json",
+      "removedIn": "4fc1a32af",
+      "definition": {
+        "name": "unknown-action",
+        "fn": "reduceSearch",
+        "args": [
+          {
+            "query": {
+              "text": "test"
+            },
+            "status": "searching",
+            "operationId": null,
+            "hits": [
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 0,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 5
+                },
+                "pageIndex": 0,
+                "charStart": 9,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              },
+              {
+                "page": {
+                  "kind": "objectNumber",
+                  "pageObjectNumber": 7
+                },
+                "pageIndex": 0,
+                "charStart": 2,
+                "charCount": 4,
+                "segments": [
+                  {
+                    "quad": {
+                      "upperStart": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "upperEnd": {
+                        "x": 10,
+                        "y": 0
+                      },
+                      "lowerStart": {
+                        "x": 0,
+                        "y": 10
+                      },
+                      "lowerEnd": {
+                        "x": 10,
+                        "y": 10
+                      }
+                    },
+                    "rect": {
+                      "x": 0,
+                      "y": 0,
+                      "width": 10,
+                      "height": 10
+                    },
+                    "advance": 1
+                  }
+                ],
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 10,
+                  "height": 10
+                }
+              }
+            ],
+            "hitsByPage": {
+              "5": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 0,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                },
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 5
+                  },
+                  "pageIndex": 0,
+                  "charStart": 9,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ],
+              "7": [
+                {
+                  "page": {
+                    "kind": "objectNumber",
+                    "pageObjectNumber": 7
+                  },
+                  "pageIndex": 0,
+                  "charStart": 2,
+                  "charCount": 4,
+                  "segments": [
+                    {
+                      "quad": {
+                        "upperStart": {
+                          "x": 0,
+                          "y": 0
+                        },
+                        "upperEnd": {
+                          "x": 10,
+                          "y": 0
+                        },
+                        "lowerStart": {
+                          "x": 0,
+                          "y": 10
+                        },
+                        "lowerEnd": {
+                          "x": 10,
+                          "y": 10
+                        }
+                      },
+                      "rect": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 10,
+                        "height": 10
+                      },
+                      "advance": 1
+                    }
+                  ],
+                  "bounds": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 10,
+                    "height": 10
+                  }
+                }
+              ]
+            },
+            "activeHitIndex": -1,
+            "progress": {
+              "scanned": 2,
+              "total": 8
+            },
+            "error": null,
+            "activeIndex": 0
+          },
+          {
+            "type": "OTHER"
+          }
+        ],
+        "covers": "An action outside the union returns the same state."
+      }
+    },
+    {
+      "source": "selection.ts",
+      "suite": "plugins/selection-geometry.json",
+      "removedIn": "4fc1a32af",
+      "definition": {
+        "name": "reduceSelection/page-loaded",
+        "fn": "reduceSelection",
+        "args": [
+          {
+            "selection": null,
+            "segments": {},
+            "highlightHidden": false,
+            "selecting": false
+          },
+          {
+            "type": "pageLoaded",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "source": "selection.ts",
+      "suite": "plugins/selection-geometry.json",
+      "removedIn": "4fc1a32af",
+      "definition": {
+        "name": "reduceSelection/page-loaded-again",
+        "fn": "reduceSelection",
+        "args": [
+          {
+            "selection": null,
+            "segments": {},
+            "highlightHidden": false,
+            "selecting": false,
+            "loaded": {
+              "3": true
+            }
+          },
+          {
+            "type": "pageLoaded",
+            "page": {
+              "kind": "objectNumber",
+              "pageObjectNumber": 3
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -12,114 +12,140 @@ import type { SearchHit } from '../../../../packages/plugin/search/src/contract'
 
 import type { FunctionCase, Suite } from '../vectors';
 
-/** The old `SearchAction`: its `type` and fields. */
-type SearchAction = { type: string; [field: string]: unknown };
-
-/**
- * 4fc1a32af replaced `reduceSearch` with one transition per action. An
- * `APPEND`'s `scanned` and `total` are the slice's progress, which upstream
- * names `pagesSearched` and `pageCount`.
- */
-function reduceSearch(state: SearchState, action: SearchAction): SearchState {
-  const a = action as unknown as Record<string, never>;
-  switch (action.type) {
-    case 'START':
-      return model.startSession(state, a.query, a.operationId);
-    case 'APPEND':
-      return model.appendHits(state, a.hits, { pagesSearched: a.scanned, pageCount: a.total });
-    case 'COMPLETE':
-      return model.completeSession(state);
-    case 'CANCELLED':
-      return model.cancelSession(state);
-    case 'ERROR':
-      return model.failSession(state, a.error);
-    case 'SET_ACTIVE':
-      return model.setActiveHit(state, a.index);
-    case 'CLEAR':
-      return model.clearSession(state);
-    default:
-      return state;
-  }
-}
+const observe =
+  <S, A extends unknown[]>(transition: (state: S, ...args: A) => S) =>
+  (state: S, ...args: A) => {
+    const next = transition(state, ...args);
+    return { changed: next !== state, state: next };
+  };
 
 const functions = {
   initialSearchState,
-  reduceSearch: (state: SearchState, action: SearchAction) => {
-    const next = reduceSearch(state, action);
-    return { changed: next !== state, state: next };
-  },
+  startSession: observe(model.startSession),
+  appendHits: observe(model.appendHits),
+  completeSession: observe(model.completeSession),
+  cancelSession: observe(model.cancelSession),
+  failSession: observe(model.failSession),
+  setActiveHit: observe(model.setActiveHit),
+  clearSession: observe(model.clearSession),
 };
 
 const rect = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
 const seg = (r: { x: number; y: number; width: number; height: number }) => ({
   quad: {
-    upperStart: { x: r.x, y: r.y },
-    upperEnd: { x: r.x + r.width, y: r.y },
-    lowerStart: { x: r.x, y: r.y + r.height },
-    lowerEnd: { x: r.x + r.width, y: r.y + r.height },
+    upperLeft: { x: r.x, y: r.y },
+    upperRight: { x: r.x + r.width, y: r.y },
+    lowerLeft: { x: r.x, y: r.y + r.height },
+    lowerRight: { x: r.x + r.width, y: r.y + r.height },
   },
   rect: r,
   advance: 1 as const,
 });
 const hit = (pon: number, charStart: number, over: Partial<SearchHit> = {}): SearchHit => ({
-  page: { kind: 'objectNumber', pageObjectNumber: pon },
+  page: { kind: 'objectNumber', objectNumber: pon },
   pageIndex: 0,
-  charStart,
-  charCount: 4,
+  start: charStart,
+  count: 4,
   segments: [seg(rect(0, 0, 10, 10))],
   bounds: rect(0, 0, 10, 10),
   ...over,
 });
 
-const failure = (message: string) => ({ code: 'operation-failed' as const, message, capability: 'search' });
-const started: SearchState = { ...initialSearchState(), query: { text: 'test' }, status: 'searching' };
+const failure = (message: string) => ({
+  code: 'operation-failed' as const,
+  message,
+  capability: 'search',
+  permission: null,
+});
+const started: SearchState = {
+  ...initialSearchState(),
+  query: { text: 'test' },
+  status: 'searching',
+};
 const withHits: SearchState = {
   ...started,
   hits: [hit(5, 0), hit(5, 9), hit(7, 2)],
   hitsByPage: { 5: [hit(5, 0), hit(5, 9)], 7: [hit(7, 2)] },
-  activeIndex: 0,
-  progress: { scanned: 2, total: 8 },
+  activeHitIndex: 0,
+  progress: { pagesSearched: 2, pageCount: 8 },
 };
-const done: SearchState = { ...withHits, status: 'complete', activeIndex: 2 };
+const done: SearchState = { ...withHits, status: 'complete', activeHitIndex: 2 };
 const failed: SearchState = { ...withHits, status: 'error', error: failure('boom') };
 
-const c = (name: string, state: SearchState, action: unknown, covers?: string): FunctionCase => ({
-  name,
-  fn: 'reduceSearch',
-  args: [state, action],
-  ...(covers === undefined ? {} : { covers }),
-});
+const c = <K extends keyof typeof functions>(
+  name: string,
+  fn: K,
+  ...args: Parameters<(typeof functions)[K]>
+): FunctionCase => ({ name, fn, args });
 
 const cases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialSearchState', args: [] },
-  c('start-from-idle', initialSearchState(), { type: 'START', query: { text: 'x', matchCase: true }, operationId: 'search#2' }),
-  c('start-resets-a-finished-search', done, { type: 'START', query: { text: 'again', regex: true, wholeWord: true }, operationId: 'search#2' }, 'START drops hits, index, progress and error and keeps only the new query.'),
-  c('start-resets-an-error', failed, { type: 'START', query: { text: 'y' }, operationId: 'search#2' }),
-  c('append-first-hits', started, { type: 'APPEND', hits: [hit(5, 0), hit(5, 9)], scanned: 1, total: 8 }, 'The first hits activate index 0 and bucket by page object number.'),
-  c('append-more-hits', withHits, { type: 'APPEND', hits: [hit(7, 11), hit(9, 0), hit(5, 20)], scanned: 5, total: 8 }, 'Later hits extend existing page buckets and add new ones; the active index is kept.'),
-  c('append-keeps-an-explicit-index', { ...withHits, activeIndex: 2 }, { type: 'APPEND', hits: [hit(9, 1)], scanned: 6, total: 8 }),
-  c('append-empty-advances-progress', withHits, { type: 'APPEND', hits: [], scanned: 7, total: 8 }, 'An empty APPEND is a new object with only progress changed.'),
-  c('append-empty-before-any-hit', started, { type: 'APPEND', hits: [], scanned: 4, total: 8 }),
-  c('append-to-idle', initialSearchState(), { type: 'APPEND', hits: [hit(3, 0, { segments: [], bounds: undefined, snippet: { text: 'a b', matchStart: 2, matchLength: 1 } })], scanned: 1, total: 1 }),
-  c('complete', withHits, { type: 'COMPLETE' }),
-  c('complete-when-idle', initialSearchState(), { type: 'COMPLETE' }),
-  c('error', withHits, { type: 'ERROR', error: failure('boom') }),
-  c('error-replaces-an-error', failed, { type: 'ERROR', error: failure('again') }),
-  c('set-active', withHits, { type: 'SET_ACTIVE', index: 2 }),
-  c('set-active-unchecked', withHits, { type: 'SET_ACTIVE', index: 7 }, 'The reducer stores the index it is given; wrapping is the capability\'s job.'),
-  c('set-active-negative', done, { type: 'SET_ACTIVE', index: -1 }),
-  c('set-active-same-index', withHits, { type: 'SET_ACTIVE', index: 0 }, 'The index already active returns the same state, so the store does not notify.'),
-  c('cancelled', withHits, { type: 'CANCELLED' }, 'CANCELLED keeps the hits, the index and the progress.'),
-  c('clear', failed, { type: 'CLEAR' }),
-  c('clear-when-idle', initialSearchState(), { type: 'CLEAR' }),
-  c('unknown-action', withHits, { type: 'OTHER' }, 'An action outside the union returns the same state.'),
+  c(
+    'start-from-idle',
+    'startSession',
+    initialSearchState(),
+    { text: 'x', matchCase: true },
+    'search#2',
+  ),
+  c(
+    'start-resets-a-finished-search',
+    'startSession',
+    done,
+    { text: 'again', regex: true, wholeWord: true },
+    'search#2',
+  ),
+  c('start-resets-an-error', 'startSession', failed, { text: 'y' }, 'search#2'),
+  c('append-first-hits', 'appendHits', started, [hit(5, 0), hit(5, 9)], {
+    pagesSearched: 1,
+    pageCount: 8,
+  }),
+  c('append-more-hits', 'appendHits', withHits, [hit(7, 11), hit(9, 0), hit(5, 20)], {
+    pagesSearched: 5,
+    pageCount: 8,
+  }),
+  c(
+    'append-keeps-an-explicit-index',
+    'appendHits',
+    { ...withHits, activeHitIndex: 2 },
+    [hit(9, 1)],
+    { pagesSearched: 6, pageCount: 8 },
+  ),
+  c('append-empty-advances-progress', 'appendHits', withHits, [], {
+    pagesSearched: 7,
+    pageCount: 8,
+  }),
+  c('append-empty-before-any-hit', 'appendHits', started, [], { pagesSearched: 4, pageCount: 8 }),
+  c(
+    'append-to-idle',
+    'appendHits',
+    initialSearchState(),
+    [
+      hit(3, 0, {
+        segments: [],
+        bounds: undefined,
+        snippet: { before: 'a ', match: 'b', after: '' },
+      }),
+    ],
+    { pagesSearched: 1, pageCount: 1 },
+  ),
+  c('complete', 'completeSession', withHits),
+  c('complete-when-idle', 'completeSession', initialSearchState()),
+  c('error', 'failSession', withHits, failure('boom')),
+  c('error-replaces-an-error', 'failSession', failed, failure('again')),
+  c('set-active', 'setActiveHit', withHits, 2),
+  c('set-active-unchecked', 'setActiveHit', withHits, 7),
+  c('set-active-negative', 'setActiveHit', done, -1),
+  c('set-active-same-index', 'setActiveHit', withHits, 0),
+  c('cancelled', 'cancelSession', withHits),
+  c('clear', 'clearSession', failed),
+  c('clear-when-idle', 'clearSession', initialSearchState()),
 ];
 
 export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'plugins/search-reducer.json',
-    describes: 'packages/plugin/search: initialSearchState and reduceSearch.',
+    describes: 'packages/plugin/search: initialSearchState and named session transitions.',
     functions,
     cases,
   },

@@ -100,6 +100,8 @@ interface ScenarioCaseBase {
    *  (WebCrypto), which no number of microtask turns settles. The Rust side
    *  has no such pool: its step already runs until nothing is left. */
   readonly awaitCalls?: boolean;
+  /** A painting host: deterministic frames every 16 ms on the scenario clock. */
+  readonly clock?: { readonly frames: true };
 }
 
 export type Outcome =
@@ -292,6 +294,21 @@ async function runInstalled(
   let kernel: Kernel;
   try {
     kernel = createKernel({
+      ...(scenario.clock?.frames
+        ? {
+            clock: {
+              now: () => performance.now(),
+              after: (ms: number, run: () => void) => {
+                const timer = setTimeout(run, ms);
+                return () => clearTimeout(timer);
+              },
+              nextFrame: (run: (timeMs: number) => void) => {
+                const timer = setTimeout(() => run(performance.now()), 16);
+                return () => clearTimeout(timer);
+              },
+            },
+          }
+        : {}),
       engine: fake.engine,
       plugins,
       report: (error) => entry.reports.push(canonicalError(error, snapshotHooks)),
