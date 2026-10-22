@@ -42,15 +42,13 @@ use crate::identity::{
 };
 use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
 
-/// How the underlying document was opened.
+/// How the underlying document was opened. Every open here makes a layer:
+/// `open.fatMem` opens its bytes as one over a private base
+/// (`openBytesAsLayer`), so upstream's plain `openFatMemoryDocument` session
+/// has no counterpart.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OpenKind {
-    /// The whole file in memory, opened plain (`openFatMemoryDocument`).
-    /// No open here makes one: `open.fatMem` opens its bytes as a layer
-    /// (`openBytesAsLayer`).
-    FatMemory,
-    /// A base document plus a layer delta: every open, including
-    /// `open.fatMem`, whose base is private to the session.
+    /// A base document plus a layer delta.
     Layer,
 }
 
@@ -850,9 +848,6 @@ impl DocumentSession {
     pub fn install(&mut self, bytes: Vec<u8>) -> Result<(), EngineError> {
         let document = open_bytes_as_layer(&bytes, self.password.as_deref())
             .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.message))?;
-        if self.kind() != Some(OpenKind::Layer) {
-            self.persist_layer_artifact = false;
-        }
         if document.is_encrypted() {
             document.set_runtime_owner_permissions(true);
         }
@@ -1159,13 +1154,8 @@ impl DocumentSession {
     }
 
     /// `lastObjectNumber()`: every object the layer has is at or below it.
-    /// `None` for a session whose document is not a layer, which no open
-    /// makes.
     pub fn last_object_number(&self) -> Result<Option<u32>, EngineError> {
         let state = self.state()?;
-        if state.kind != OpenKind::Layer {
-            return Ok(None);
-        }
         Ok(Some(state.document.document().layer_last_object_number()))
     }
 

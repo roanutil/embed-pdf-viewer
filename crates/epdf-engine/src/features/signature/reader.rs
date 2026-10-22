@@ -12,7 +12,7 @@ use pdfium::{Document, SignatureModel, field_list, string_key};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::forms::snapshot::{FormFieldKind, FormFieldRef, read_form_fields};
-use crate::session::document::{DocumentSession, OpenKind};
+use crate::session::document::DocumentSession;
 
 use super::analysis::types::{RevisionField, RevisionStructure};
 use super::protection::derive_protection;
@@ -327,8 +327,9 @@ pub fn loaded_bytes(doc: &Document) -> Result<Vec<u8>, EngineError> {
 }
 
 /// `SignatureReader.version`: SHA-256 and length of the base the session
-/// is on. A layer reports its base's hash; a plain session hashes its
-/// loaded bytes.
+/// is on, which a layer reports. Every session is a layer (`OpenKind`), so
+/// upstream's plain-session branch, hashing the loaded bytes, has no
+/// counterpart.
 pub fn version(session: &DocumentSession) -> Result<BaseVersionInfo, EngineError> {
     let doc = session.document()?.document();
     let byte_length = doc.base_bytes_size();
@@ -338,14 +339,10 @@ pub fn version(session: &DocumentSession) -> Result<BaseVersionInfo, EngineError
             "document has no loaded bytes",
         ));
     }
-    if session.kind() == Some(OpenKind::Layer) {
-        let sha = doc.layer_base_sha256().ok_or_else(|| {
-            EngineError::with_message(EngineErrorCode::Unknown, "failed to read the base hash")
-        })?;
-        return Ok(BaseVersionInfo { sha256: to_hex(&sha), byte_length });
-    }
-    let digest = digest_range(doc, [0, byte_length, byte_length, 0], DigestAlgorithm::Sha256)?;
-    Ok(BaseVersionInfo { sha256: to_hex(&digest), byte_length })
+    let sha = doc.layer_base_sha256().ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::Unknown, "failed to read the base hash")
+    })?;
+    Ok(BaseVersionInfo { sha256: to_hex(&sha), byte_length })
 }
 
 /// `SignatureReader.digestRange`.

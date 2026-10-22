@@ -10,10 +10,10 @@
 
 use std::collections::HashSet;
 
-use pdfium::{DerivedDocument, Document, Library, ObjectDiff, PdfSaveMode};
+use pdfium::{DerivedDocument, Document, ObjectDiff};
 
 use crate::error::{EngineError, EngineErrorCode};
-use crate::session::document::{DocumentSession, OpenKind};
+use crate::session::document::DocumentSession;
 
 use super::analysis::types::{
     AnalysisBasis, AnalysisMode, AnalysisSince, AnalysisUntil, AnalyzeBasis, AnalyzeDetail,
@@ -85,36 +85,15 @@ fn anchor_set(s: &RevisionStructure, changed: &HashSet<u32>) -> HashSet<u32> {
     out
 }
 
-/// The document a save would write, and whose bytes that is.
-enum WorkingCopy {
-    /// The session's own document is the working copy.
-    Loaded,
-    /// A standalone incremental save, opened whole (a plain session).
-    Plain(Document),
-}
-
 /// A layer session's working copy borrows the layer it composes over.
 enum LayerCopy<'a> {
     Loaded,
     Derived(DerivedDocument<'a>),
 }
 
-/// `openWorkingCopy` for a plain session.
-fn open_plain_working_copy(session: &DocumentSession) -> Result<WorkingCopy, EngineError> {
-    if !session.has_unsaved_edits() {
-        return Ok(WorkingCopy::Loaded);
-    }
-    let doc = session.document()?.document();
-    let saved = doc.save_to_buffer_ex(PdfSaveMode::Incremental).map_err(|_| {
-        EngineError::with_message(EngineErrorCode::DocOpenFailed, "failed to save document")
-    })?;
-    let Some(bytes) = saved else { return Ok(WorkingCopy::Loaded) };
-    let opened = Document::from_bytes(Library::acquire(), &bytes, session.password())
-        .map_err(|e| EngineError::with_message(EngineErrorCode::DocOpenFailed, e.to_string()))?;
-    Ok(WorkingCopy::Plain(opened))
-}
-
-/// `openWorkingCopy` for a layer session (and `freshLayerOverBase`).
+/// `openWorkingCopy` for a layer session (and `freshLayerOverBase`). Every
+/// session is a layer (`OpenKind`), so upstream's plain-session branch has
+/// nothing to open.
 fn open_layer_working_copy<'a>(session: &'a DocumentSession) -> Result<LayerCopy<'a>, EngineError> {
     if !session.has_unsaved_edits() {
         return Ok(LayerCopy::Loaded);
@@ -146,16 +125,9 @@ fn with_working_copy<T>(
     session: &DocumentSession,
     body: impl FnOnce(Option<&Document>) -> Result<T, EngineError>,
 ) -> Result<T, EngineError> {
-    if session.kind() == Some(OpenKind::Layer) {
-        match open_layer_working_copy(session)? {
-            LayerCopy::Loaded => body(None),
-            LayerCopy::Derived(doc) => body(Some(&doc)),
-        }
-    } else {
-        match open_plain_working_copy(session)? {
-            WorkingCopy::Loaded => body(None),
-            WorkingCopy::Plain(doc) => body(Some(&doc)),
-        }
+    match open_layer_working_copy(session)? {
+        LayerCopy::Loaded => body(None),
+        LayerCopy::Derived(doc) => body(Some(&doc)),
     }
 }
 
