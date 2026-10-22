@@ -1029,9 +1029,7 @@ fn a_line_read_sent_back_as_a_create_is_accepted() {
 /// `claimObjectNumber`: a number a change's earlier create took is
 /// `taken` for a later one, before anything is written; one the session
 /// doesn't hold is `not-held`; a number that isn't whole is not an object
-/// number. (Checked on the session: the fork's numbered create needs the
-/// layer transaction Task 8.30 adds, so a create naming a number can't make
-/// its object here yet.)
+/// number.
 #[test]
 fn a_create_names_an_object_number_once_per_change() {
     let file = load();
@@ -1089,4 +1087,52 @@ fn a_refused_popup_create_gives_its_parent_back() {
     let after = listed(&mut replay, &note_ref);
     assert_eq!(after["popup"], Value::Null, "the parent still names the popup: {after}");
     assert_eq!(after["open"], json!(true), "the parent's /Open was not put back: {after}");
+}
+
+/// A create naming a number the session holds makes its object at that
+/// number, in the write's layer transaction; the commit spends the number.
+/// Its undo takes the object out, and the redo, which restores the capture
+/// rather than creating again, brings it back at the same number though the
+/// session no longer holds it.
+#[test]
+fn a_numbered_create_makes_its_object_there_and_its_undo_and_redo_follow_it() {
+    let file = load();
+    let mut replay = open(&file);
+    let key = SessionKey::document(DOC);
+    let held = (1..10_000u32)
+        .find(|n| replay.host.sessions().session(&key).unwrap().holds_object_number(*n))
+        .expect("a held number");
+    let square = case(&file, "square-defaults");
+    let (mut created, payloads) =
+        request(&square.draft, square.page_object_number, &Default::default());
+    created["opId"] = json!("numbered");
+    created["objectNumber"] = json!(held);
+    let answer = replay.send(&created, payloads).outcome.expect("the numbered create");
+    assert_eq!(answer["result"]["annotation"]["ref"]["objectNumber"], json!(held), "{answer}");
+    let session = replay.host.sessions().session(&key).unwrap();
+    assert!(!session.holds_object_number(held), "the commit did not spend the number");
+
+    let listed = |replay: &mut Replay| -> Vec<u64> {
+        let listing = replay
+            .replay(&json!({ "kind": "annotations.list", "jobId": "<job>", "docId": DOC,
+                "pages": [page_ref(square.page_object_number)] }))
+            .expect("list");
+        listing["annotations"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|a| a["ref"]["objectNumber"].as_u64())
+            .collect()
+    };
+    assert!(listed(&mut replay).contains(&u64::from(held)));
+    let apply = |replay: &mut Replay, op_id: &str, undo_of: &str| {
+        replay
+            .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+                "opId": op_id, "change": { "undoOf": undo_of } }))
+            .unwrap_or_else(|e| panic!("{op_id}: {e}"))
+    };
+    apply(&mut replay, "undo", "numbered");
+    assert!(!listed(&mut replay).contains(&u64::from(held)), "the undo left the object");
+    apply(&mut replay, "redo", "undo");
+    assert!(listed(&mut replay).contains(&u64::from(held)), "the redo did not bring it back");
 }

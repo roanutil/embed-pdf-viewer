@@ -337,10 +337,8 @@ fn a_layer_session_writes_an_artifact_that_opens_again() {
     // because nothing produced a delta. `EPDFLayer_SaveDelta` is this group,
     // so both now have something to open.
     //
-    // The layer carries no edits, because writes are G11 onward, and that
-    // turns out to separate the two forms: an artifact of an empty layer
-    // writes and reopens, while a bare delta of one is refused because there
-    // is no overlay to serialize. Both halves are asserted below.
+    // The layer carries no edits: an artifact of it writes and reopens, and
+    // a bare delta of it is empty. Both halves are asserted below.
     use epdf_engine::session::base_registry::BaseDocumentRegistry;
     use pdfium::FileAccess;
 
@@ -365,19 +363,26 @@ fn a_layer_session_writes_an_artifact_that_opens_again() {
     assert_eq!(reopened_artifact.document().page_count(), 4);
     drop(reopened_artifact);
 
-    // THE BARE DELTA CANNOT BE WRITTEN YET, and not because of this port.
-    // `EPDFLayer_SaveDeltaToOwnedBuffer` refuses a layer with no promoted
-    // objects: there is no overlay to serialize. Writes are G11 onward, so
-    // nothing in this repository can produce one, and the delta half of the
-    // round trip becomes testable the day a mutator lands.
+    // A bare delta of a layer with no edits is empty, as upstream's
+    // `DocumentSaver.saveLayerDelta` answers it: the layer equals its base,
+    // and an empty delta opens as a fresh layer.
     assert_eq!(
         pdfium::BaseDocument::promoted_object_count(layer.document().expect("open").document()),
         0,
-        "the layer has no edits, which is why there is no delta",
+        "the layer has no edits",
     );
-    let refused = save_layer_to_buffer(&layer, LayerArtifactKind::Delta, &CancelToken::never())
-        .expect_err("an empty layer has no delta to write");
-    assert!(refused.is(EngineErrorCode::DocOpenFailed));
+    let delta = save_layer_to_buffer(&layer, LayerArtifactKind::Delta, &CancelToken::never())
+        .expect("an empty layer's delta");
+    assert!(delta.is_empty(), "an unchanged layer wrote a delta of {} bytes", delta.len());
+    let mut again = DocumentSession::new();
+    again
+        .open_layer_from(
+            base.clone(),
+            &epdf_engine::session::document::LayerOpenSource::RawDelta(delta),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("an empty delta opens");
+    assert_eq!(again.page_count().expect("pages"), 4);
 
     // And the artifact refuses a base it was not written against, which is
     // the whole difference between the two forms: a bare delta carries no
