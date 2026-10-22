@@ -352,17 +352,6 @@ pub(crate) fn write_file_payload(
     Ok(())
 }
 
-fn set_param(
-    attachment: &pdfium::Attachment<'_>,
-    key: &str,
-    value: &str,
-) -> Result<(), EngineError> {
-    match attachment.set_string_value(key, value) {
-        Ok(true) => Ok(()),
-        _ => Err(unknown(&format!("FPDFAttachment_SetStringValue refused /{key}"))),
-    }
-}
-
 fn unknown(message: &str) -> EngineError {
     EngineError::with_message(EngineErrorCode::Unknown, message)
 }
@@ -386,120 +375,6 @@ pub fn delete_attachment(
     })?;
     if !document.delete_attachment(index) {
         return Err(unknown("FPDFDoc_DeleteAttachment returned false"));
-    }
-    Ok(())
-}
-
-/// What an undo of a delete puts back: the file under its key, as it read
-/// before the delete.
-///
-/// Upstream captures the file's objects (`EPDFAttachment_ExportRawToOwnedBuffer`)
-/// and imports them back (`EPDFAttachment_ImportRaw`), which the fork allows
-/// only inside a layer transaction. This engine takes back a refused change
-/// through reverse steps, with no layer transaction (8.30), so the capture is
-/// the file as the API reads and writes it: its name, type, description,
-/// `/Params` dates and checksum, and decoded bytes. What it does not keep: the
-/// filespec's object number, whether a stream was shared with another entry,
-/// `/Params /Size` (which the restore derives from the bytes), a `/CheckSum`
-/// that is not hex (a literal string the setter would write back in another
-/// form, so the restore keeps the digest `FPDFAttachment_SetFile` computes),
-/// entries the API has no setter for, and the absence of a `/Params` entry the
-/// restore's `FPDFAttachment_SetFile` writes (`Size`, `CheckSum`,
-/// `CreationDate`).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AttachmentCapture {
-    /// `/UF`, which can differ from the key.
-    pub name: String,
-    pub mime_type: Option<String>,
-    pub description: Option<String>,
-    /// `/Params /CreationDate` and `/ModDate` as the PDF wrote them, and
-    /// `/CheckSum` when it reads as hex.
-    pub creation_date: Option<String>,
-    pub mod_date: Option<String>,
-    pub checksum: Option<String>,
-    /// The decoded file; `None` for an entry with no embedded stream.
-    #[serde(with = "hex_bytes")]
-    pub bytes: Option<Vec<u8>>,
-}
-
-/// Capture the file under `key` before a delete removes it.
-pub fn capture_attachment(
-    document: &Document,
-    key: &str,
-) -> Result<AttachmentCapture, EngineError> {
-    let index = document.attachment_index_by_key(key).ok_or_else(|| {
-        EngineError::with_message(
-            EngineErrorCode::NotFound,
-            format!("no embedded file with key '{key}' in the document"),
-        )
-    })?;
-    let attachment = document
-        .attachment(index)
-        .ok_or_else(|| unknown(&format!("attachment '{key}' could not be captured")))?;
-    let info = read_attachment_info(&attachment)?;
-    let read = |key: &str| attachment.string_value(key).ok().flatten().filter(|v| !v.is_empty());
-    let bytes = match attachment.extract(0) {
-        Ok(bytes) => Some(bytes),
-        Err(AttachmentExtractError::NoFileStream) => None,
-        Err(e) => return Err(extract_error(e)),
-    };
-    Ok(AttachmentCapture {
-        name: info.name,
-        mime_type: info.mime_type,
-        description: info.description,
-        creation_date: read("CreationDate"),
-        mod_date: read("ModDate"),
-        // Only a hex checksum round-trips through the setter; the restore
-        // leaves any other to `FPDFAttachment_SetFile`'s digest.
-        checksum: read("CheckSum").filter(|_| info.checksum.as_deref().is_some_and(is_hex)),
-        bytes,
-    })
-}
-
-fn is_hex(text: &str) -> bool {
-    !text.is_empty() && text.chars().all(|c| c.is_ascii_hexdigit())
-}
-
-/// Put a captured file back under `key`, which no file may hold now.
-pub fn restore_attachment(
-    document: &Document,
-    key: &str,
-    capture: &AttachmentCapture,
-) -> Result<(), EngineError> {
-    if document.attachment_index_by_key(key).is_some() {
-        return Err(unknown(&format!("attachment '{key}' is held by another file")));
-    }
-    let attachment = document
-        .add_attachment(key)
-        .ok_or_else(|| unknown("FPDFDoc_AddAttachment returned NULL"))?;
-    if let Some(bytes) = &capture.bytes
-        && !attachment.set_file(document, bytes)
-    {
-        return Err(unknown("FPDFAttachment_SetFile returned false"));
-    }
-    // PDFium names the file after its key; a foreign file's `/UF` can differ.
-    if !capture.name.is_empty() && capture.name != key && !attachment.set_name(&capture.name) {
-        return Err(unknown("EPDFAttachment_SetName returned false"));
-    }
-    if let Some(date) = &capture.creation_date {
-        set_param(&attachment, "CreationDate", date)?;
-    }
-    if let Some(date) = &capture.mod_date {
-        set_param(&attachment, "ModDate", date)?;
-    }
-    if let Some(checksum) = &capture.checksum {
-        set_param(&attachment, "CheckSum", checksum)?;
-    }
-    if let Some(mime) = &capture.mime_type
-        && !matches!(attachment.set_mime_type(mime), Ok(true))
-    {
-        return Err(unknown("EPDFAttachment_SetSubtype returned false"));
-    }
-    if let Some(description) = &capture.description
-        && !attachment.set_description(description)
-    {
-        return Err(unknown("EPDFAttachment_SetDescription returned false"));
     }
     Ok(())
 }

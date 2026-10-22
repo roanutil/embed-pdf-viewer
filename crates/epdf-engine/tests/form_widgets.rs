@@ -440,9 +440,13 @@ fn a_push_button_has_a_caption_and_an_action_and_holds_no_value() {
         "widget": widget, "patch": { "caption": "Start over" } }));
     assert_eq!(renamed["result"]["appearance"]["action"], "regenerated");
     assert_eq!(doc.row(&widget).unwrap()["caption"], "Start over");
-    doc.ok(json!({ "kind": "document.apply", "opId": "undo-rename",
+    let undone = doc.ok(json!({ "kind": "document.apply", "opId": "undo-rename",
         "change": { "undoOf": "rename-1" } }));
     assert_eq!(doc.row(&widget).unwrap()["caption"], "Clear form");
+    // Put back from the widget's captured dictionary, not by value.
+    let item = &undone["result"]["items"][0];
+    assert_eq!(item["type"], "forms.updateWidget", "{undone}");
+    assert_eq!(item["appearance"], json!({ "action": "restored", "changed": true }), "{undone}");
     doc.write(
         json!({ "kind": "forms.updateWidget", "widget": widget, "patch": { "caption": null } }),
     );

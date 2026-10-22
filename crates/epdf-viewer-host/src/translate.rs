@@ -1882,6 +1882,12 @@ mod kernel_update {
             Ok(respelled) => respelled,
             Err(error) => return refused(error),
         };
+        // TEMPORARY (Task 13 moves the kernel onto upstream's refs): an
+        // update promotes its page's inline annotations first
+        // (`writeUpdate`), so the previous reader names an annotation born
+        // inline by its object number afterwards. The kernel keys it by the
+        // ref the reader gave it before, so the answer keeps that one.
+        let before = kernel_ref_at(host, request, index);
         let response = host.call(&wire.to_string(), payloads);
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
             return response;
@@ -1889,7 +1895,7 @@ mod kernel_update {
         if envelope.get("error").is_some() {
             return response;
         }
-        match answer_for_kernel(host, request, index, &mut envelope) {
+        match answer_for_kernel(host, request, index, before, &mut envelope) {
             Ok(()) => HostResponse { json: envelope.to_string(), payloads: response.payloads },
             Err(error) => refused(error),
         }
@@ -1956,12 +1962,32 @@ mod kernel_update {
         Ok((Value::Object(wire), index))
     }
 
+    /// The `ref` the previous reader gives the annotation at `index` of the
+    /// request's page, before the update.
+    fn kernel_ref_at(host: &mut Host, request: &Value, index: u32) -> Option<Value> {
+        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
+        let listing = super::kernel_annotations::listing(
+            host,
+            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
+                "layerName": request.get("layerName"), "pages": [page] }),
+        );
+        let listed: Value = serde_json::from_str(&listing.json).ok()?;
+        listed
+            .pointer("/result/pages/0/annotations")?
+            .as_array()?
+            .iter()
+            .find(|a| a["index"] == json!(index))
+            .map(|a| a["ref"].clone())
+    }
+
     /// The updated annotation as the previous reader reads it, under
-    /// `updated`, and the event the kernel's sync takes.
+    /// `updated`, named by `before` when the reader named it so before the
+    /// update, and the event the kernel's sync takes.
     fn answer_for_kernel(
         host: &mut Host,
         request: &Value,
         index: u32,
+        before: Option<Value>,
         envelope: &mut Value,
     ) -> Result<(), EngineError> {
         let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
@@ -1983,6 +2009,10 @@ mod kernel_update {
                     "the updated annotation does not read back",
                 )
             })?;
+        let mut updated = updated;
+        if let Some(before) = before {
+            updated["ref"] = before;
+        }
         let answer = &mut envelope["result"];
         let appearance = answer["result"]["appearance"].take();
         let meta = answer["result"]["meta"].take();

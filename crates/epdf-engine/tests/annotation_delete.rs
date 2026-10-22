@@ -540,3 +540,41 @@ fn a_server_record_with_no_capture_is_refused() {
         "the refused undo wrote something"
     );
 }
+
+/// The document as an incremental save writes it.
+fn saved(replay: &mut Replay) -> Vec<u8> {
+    replay
+        .send(
+            &json!({ "kind": "document.saveBuffer", "jobId": "<job>", "docId": DOC,
+                "mode": "incremental" }),
+            Vec::new(),
+        )
+        .payloads
+        .remove(0)
+}
+
+/// A delete promotes the page's inline annotations before it checks who may
+/// delete what; a refusal there aborts the write's layer transaction, which
+/// takes the promotion back with it.
+#[test]
+fn a_delete_refused_after_its_promotion_leaves_the_page_as_it_was() {
+    let file = load();
+    let pon = file.cases[0].page_object_number;
+    let mut replay = Replay::open(&file.fixture, DOC);
+    let before = listed(&mut replay, pon);
+    let bytes_before = saved(&mut replay);
+    let inline = refs(&before).into_iter().find(|r| r["kind"] == "baseIndex").expect("inline");
+    // May delete only its own annotations; the inline one is no one's.
+    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
+        "bit10": true, "bit11": true, "bit12": true });
+    let refused = replay
+        .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+            "opId": "refused", "change": { "ops": [{ "type": "annotations.delete", "ref": inline }] },
+            "authority": { "identity": { "userId": "someone" },
+                "grants": { "scope": ["doc.open", "doc.annotate.modify", "annotations:delete:self"],
+                    "pdfBits": bits } } }))
+        .expect_err("not the caller's to delete");
+    assert_eq!(refused["code"], "Forbidden", "{refused}");
+    assert_eq!(listed(&mut replay, pon), before, "the refused delete changed the listing");
+    assert_eq!(saved(&mut replay), bytes_before, "the promotion outlived the refusal");
+}

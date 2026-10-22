@@ -13,8 +13,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::features::annotation::read::file_attachment::AttachmentFileInfo;
-use crate::features::files::attachments::{AttachmentCapture, AttachmentRef};
+use crate::features::files::attachments::AttachmentRef;
 
 /// A change's record (`ChangeRecord`), and what crosses the wire as a
 /// `ChangeRecordPayload`.
@@ -311,10 +310,10 @@ mod hex_vec {
 /// puts back, by value, only what still shows what the op set
 /// (`fallback`); any other op is skipped.
 ///
-/// A form write captures its dictionaries (`objects`, the fork's raw and
-/// canonical dictionary exports). An annotation update does not yet: its
-/// captures wait for Task 8.30, so its `objects` is empty and it always
-/// takes the value path.
+/// `objects` are the fork's raw and canonical dictionary exports of what
+/// the op wrote: an annotation update's annotation (with what its `/AP` and
+/// `/FS` reach) and the annotations linked to it, a form write's fields and
+/// widgets.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectsRevertStep {
@@ -436,10 +435,9 @@ pub struct AnnotationRemoveStep {
 /// them (`EPDFPage_ExportAnnotsRawToOwnedBuffer`), which only a layer can
 /// take, and every session is one: `None` only for a delete that removed
 /// nothing.
-/// `unlinked` is where upstream keeps a capture of each annotation that
-/// stayed and stopped naming a popup that went (`captureAfter`), which the
-/// fork exports only in a layer transaction (Task 8.30): here each is named,
-/// with the popup it showed, and linked again while it names none.
+/// `unlinked` holds each annotation that stayed and stopped naming a popup
+/// that went, captured as it was and as the delete left it, and put back
+/// while it still reads that way.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AnnotationRestoreStep {
@@ -450,19 +448,10 @@ pub struct AnnotationRestoreStep {
     #[serde(with = "crate::features::files::attachments::hex_bytes")]
     pub capture: Option<Vec<u8>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub unlinked: Vec<UnlinkedPopup>,
+    pub unlinked: Vec<CapturedObject>,
     /// The rights it takes: a restoring import's (see [`StepRights`]).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rights: Option<StepRights>,
-}
-
-/// An annotation that stayed when the popup it showed went with a delete.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UnlinkedPopup {
-    #[serde(rename = "ref")]
-    pub reference: crate::identity::AnnotationRef,
-    pub popup: crate::identity::AnnotationRef,
 }
 
 /// Puts the rows of a reorder back beside their old neighbours
@@ -482,27 +471,27 @@ pub struct AnnotationReorderStep {
 
 /// Deletes the embedded file a create or a restore brought, while it is
 /// still that file, as the change left it (`AttachmentRemoveStep`): undoing
-/// an upload never deletes a file someone put under its name since.
-///
-/// `left` is the file as it read ([`AttachmentFileInfo`]) where upstream
-/// keeps its canonical bytes, which the fork exports only from a layer
-/// (`features::changes::attachments`).
+/// an upload never deletes a file someone put under its name since. `left`
+/// is the file as the change left it, in canonical bytes (the guard).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentRemoveStep {
     #[serde(rename = "ref")]
     pub reference: AttachmentRef,
-    pub left: AttachmentFileInfo,
+    #[serde(with = "hex_vec")]
+    pub left: Vec<u8>,
 }
 
-/// Brings back the file a delete removed, under its key
-/// (`AttachmentRestoreStep`). Left alone when another file has the key now.
+/// Brings back the file a delete removed, under its key, with its file
+/// specification and streams as they were (`AttachmentRestoreStep`): the
+/// fork's raw capture. Left alone when another file has the key now.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AttachmentRestoreStep {
     #[serde(rename = "ref")]
     pub reference: AttachmentRef,
-    pub capture: AttachmentCapture,
+    #[serde(with = "hex_vec")]
+    pub capture: Vec<u8>,
 }
 
 /// Which metadata write a revert puts back.
@@ -536,27 +525,32 @@ pub struct MetadataRevertStep {
 }
 
 /// The bytes of captures a record holds, which the ledger budgets
-/// (`recordBytes`). A metadata step captures no bytes, and neither does an
-/// attachment remove here: its guard is a read, not canonical bytes. An
-/// annotation restore, a page restore and a form write's revert hold their
-/// captures.
+/// (`recordBytes`). A metadata step captures no bytes; an attachment's
+/// guard and capture, an annotation restore, a page restore and a form
+/// write's revert hold theirs.
 pub fn record_bytes(record: &ChangeRecord) -> usize {
     record
         .steps
         .iter()
         .map(|step| match step {
-            ReverseStep::MetadataRevert(_)
-            | ReverseStep::AttachmentsRemove(_)
-            | ReverseStep::AnnotationRemove(_) => 0,
+            ReverseStep::MetadataRevert(_) | ReverseStep::AnnotationRemove(_) => 0,
+            ReverseStep::AttachmentsRemove(step) => step.left.len(),
             ReverseStep::ObjectsRevert(step) => step
                 .objects
                 .iter()
                 .map(|object| object.before.as_ref().map_or(0, Vec::len) + object.after.len())
                 .sum(),
-            ReverseStep::AttachmentsRestore(step) => {
-                step.capture.bytes.as_ref().map_or(0, Vec::len)
+            ReverseStep::AttachmentsRestore(step) => step.capture.len(),
+            ReverseStep::AnnotationRestore(step) => {
+                step.capture.as_ref().map_or(0, Vec::len)
+                    + step
+                        .unlinked
+                        .iter()
+                        .map(|object| {
+                            object.before.as_ref().map_or(0, Vec::len) + object.after.len()
+                        })
+                        .sum::<usize>()
             }
-            ReverseStep::AnnotationRestore(step) => step.capture.as_ref().map_or(0, Vec::len),
             ReverseStep::AnnotationReorder(_)
             | ReverseStep::PagesRotate(_)
             | ReverseStep::PagesReorder(_)

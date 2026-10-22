@@ -422,6 +422,70 @@ fn an_undone_delete_brings_back_the_file_as_it_read() {
     assert_eq!(bytes_after, bytes_before);
 }
 
+/// The file under `key` as the fork's guard reads it
+/// (`EPDFAttachment_ExportCanonicalToOwnedBuffer`): its key, the object
+/// number of its file specification, the specification, and every stream it
+/// reaches as it reads.
+fn canonical(replay: &Replay, key: &str) -> Option<Vec<u8>> {
+    let session = replay
+        .host
+        .sessions()
+        .session(&epdf_engine::session::registry::SessionKey::document(replay.doc_id.clone()))
+        .expect("the session");
+    session.document().expect("open").document().export_attachment_canonical(key)
+}
+
+#[test]
+fn an_undone_delete_puts_back_the_same_file_specification_at_its_object_number() {
+    // Upstream restores from the fork's raw capture: the file specification
+    // comes back at its own object number, its streams as they were, and no
+    // `/Params` entry the file did not have. The canonical bytes hold the
+    // number and every object it reaches, so they compare all three.
+    for key in ["aaa-first", "zzz-last"] {
+        let mut replay = Replay::open(ATTACHMENT_FIXTURE, "files-undo");
+        let before = canonical(&replay, key).expect("the file is there");
+        apply(&mut replay, "delete", serde_json::json!({ "ops": [delete_op(key)] }), Vec::new())
+            .expect("the delete applies");
+        assert_eq!(canonical(&replay, key), None, "{key} was not deleted");
+
+        apply(&mut replay, "undo", serde_json::json!({ "undoOf": "delete" }), Vec::new())
+            .expect("the undo applies");
+        assert_eq!(canonical(&replay, key).as_ref(), Some(&before), "{key} came back different");
+
+        // And its redo removes it again: the guard is the file as the undo
+        // left it.
+        apply(&mut replay, "redo", serde_json::json!({ "undoOf": "undo" }), Vec::new())
+            .expect("the redo applies");
+        assert_eq!(canonical(&replay, key), None, "{key} was not deleted again");
+    }
+}
+
+#[test]
+fn an_undone_create_leaves_a_file_someone_changed_since() {
+    // `removeAttachment` deletes the file only while it reads, in canonical
+    // bytes, as the create left it.
+    let mut replay = Replay::open(ATTACHMENT_FIXTURE, "files-undo");
+    apply(
+        &mut replay,
+        "create",
+        serde_json::json!({ "ops": [create_op("added.txt", 0)] }),
+        vec![b"hello".to_vec()],
+    )
+    .expect("the create applies");
+    apply(
+        &mut replay,
+        "replace",
+        serde_json::json!({ "ops": [delete_op("added.txt"), create_op("added.txt", 0)] }),
+        vec![b"someone else".to_vec()],
+    )
+    .expect("the replacement applies");
+
+    let undone = apply(&mut replay, "undo", serde_json::json!({ "undoOf": "create" }), Vec::new())
+        .expect("the undo answers");
+    assert_eq!(undone["items"][0]["type"], "skipped", "{undone}");
+    assert!(keys(&listing(&mut replay)).contains(&"added.txt"), "the undo deleted another file");
+}
+
 #[test]
 fn a_refused_change_takes_back_the_attachment_ops_before_it() {
     let mut replay = Replay::open(ATTACHMENT_FIXTURE, "files-rollback");

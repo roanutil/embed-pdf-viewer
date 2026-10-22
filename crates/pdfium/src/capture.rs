@@ -24,6 +24,11 @@ fn take_owned(buffer: *mut std::ffi::c_void, size: std::os::raw::c_ulong) -> Opt
     Some(bytes)
 }
 
+/// UTF-16 with its terminator, as `FPDF_WIDESTRING` takes it.
+fn wide(value: &str) -> Vec<u16> {
+    value.encode_utf16().chain(std::iter::once(0)).collect()
+}
+
 impl Document {
     /// `EPDFPage_ExportAnnotsRawToOwnedBuffer`: the annotations at `indexes`
     /// of page `page_index`'s `/Annots`, with their positions, and every
@@ -237,6 +242,57 @@ impl Document {
         // SAFETY: the handle is live and `capture` outlives the call.
         unsafe {
             pdfium_sys::EPDFDoc_ImportDictRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0
+        }
+    }
+
+    /// `EPDFAttachment_ExportRawToOwnedBuffer`: the embedded file under
+    /// `key` as a delete removes it: its key, its file specification and
+    /// every object the layer holds a version of that it reaches (its `/EF`
+    /// streams). `None` when no entry has `key`.
+    pub fn export_attachment_raw(&self, key: &str) -> Option<Vec<u8>> {
+        let key = wide(key);
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live, `key` is NUL-terminated UTF-16 and
+        // outlives the call, and `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFAttachment_ExportRawToOwnedBuffer(
+                self.as_raw(),
+                key.as_ptr(),
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFAttachment_ExportCanonicalToOwnedBuffer`: the embedded file under
+    /// `key` as bytes a guard compares, the same while it is the same file
+    /// as it was (its number included). Never imported. `None` when no entry
+    /// has `key`.
+    pub fn export_attachment_canonical(&self, key: &str) -> Option<Vec<u8>> {
+        let key = wide(key);
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: as `export_attachment_raw`.
+        let buffer = unsafe {
+            pdfium_sys::EPDFAttachment_ExportCanonicalToOwnedBuffer(
+                self.as_raw(),
+                key.as_ptr(),
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFAttachment_ImportRaw`: put the file of `capture` back under its
+    /// key. `false` outside a layer transaction, for a malformed capture,
+    /// when another file holds the key now, or when what its number holds
+    /// isn't a file specification.
+    pub fn import_attachment_raw(&self, capture: &[u8]) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(capture.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and `capture` outlives the call.
+        unsafe {
+            pdfium_sys::EPDFAttachment_ImportRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0
         }
     }
 

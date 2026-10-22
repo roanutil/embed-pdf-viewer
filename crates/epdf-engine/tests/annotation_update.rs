@@ -1373,7 +1373,7 @@ fn an_update_ops_expectation_compares_values_not_spellings() {
 }
 
 #[test]
-fn a_file_sent_back_renamed_is_renamed_and_its_undo_names_it_again() {
+fn a_file_sent_back_renamed_is_renamed_and_its_undo_restores_the_annotation() {
     // `AttachmentFileWriteSchema` ignores what a read adds (size, checksum,
     // dates), so the whole `file` a read gives can be sent back changed.
     let file = load();
@@ -1399,14 +1399,97 @@ fn a_file_sent_back_renamed_is_renamed_and_its_undo_names_it_again() {
     assert_eq!(item["file"]["description"], "described", "{item}");
     assert_eq!(item["file"]["size"], created["file"]["size"], "the bytes stay: {item}");
 
+    // The undo puts the annotation's dictionary back from its capture
+    // (`revertObjects`). The rename was written into the file
+    // specification, which the layer already held a version of; the fork's
+    // import puts back only the objects under `/AP` and `/FS` the layer holds
+    // no version of (`EPDFDoc_ImportDictRaw`), so the specification keeps
+    // the rename, as upstream's undo leaves it.
     let undone = replay
         .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC, "opId": "op-g",
             "change": { "undoOf": "op-f" } }))
         .expect("the undo");
     let item = &undone["result"]["items"][0];
     assert_eq!(item["type"], "annotations.update", "{undone}");
-    assert_eq!(item["annotation"]["file"]["name"], "notes.txt", "{undone}");
-    assert_eq!(item["annotation"]["file"]["description"], created["file"]["description"]);
+    assert_eq!(item["appearance"], json!({ "action": "restored", "changed": false }), "{undone}");
+    assert_eq!(item["annotation"]["file"]["name"], "renamed.txt", "{undone}");
+}
+
+#[test]
+fn an_undone_update_puts_the_dictionary_back_exactly_and_says_restored() {
+    // `revertAnnotation`: while the annotation reads as the update left it,
+    // its dictionaries come back from their captures, and the item says
+    // `restored`. Its redo is the update again, from the captures the undo
+    // took.
+    let file = load();
+    let square = case(&file, "square-resize");
+    let mut replay = open(&file);
+    let created = create(&mut replay, &square.draft, square.page_object_number, &BTreeMap::new());
+    let apply = |replay: &mut common::replay::Replay, op_id: &str, change: Value| {
+        replay
+            .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+                "opId": op_id, "change": change }))
+            .unwrap_or_else(|e| panic!("{op_id}: {e}"))
+    };
+    let updated = apply(
+        &mut replay,
+        "op-u",
+        json!({ "ops": [{ "type": "annotations.update", "ref": created["ref"],
+            "patch": { "color": "#0000ff", "contents": "changed" } }] }),
+    );
+    assert_eq!(updated["result"]["items"][0]["annotation"]["color"], "#0000ff");
+
+    let undone = apply(&mut replay, "op-v", json!({ "undoOf": "op-u" }));
+    let item = &undone["result"]["items"][0];
+    assert_eq!(item["appearance"]["action"], "restored", "{undone}");
+    assert_eq!(item["appearance"]["changed"], true, "the update redrew it: {undone}");
+    let mut back = item["annotation"].clone();
+    let mut before = created.clone();
+    for value in [&mut back, &mut before] {
+        value.as_object_mut().unwrap().remove("ref");
+    }
+    assert_eq!(back, before, "the annotation did not come back as it was");
+
+    let redone = apply(&mut replay, "op-w", json!({ "undoOf": "op-v" }));
+    let item = &redone["result"]["items"][0];
+    assert_eq!(item["appearance"]["action"], "restored", "{redone}");
+    assert_eq!(item["annotation"]["color"], "#0000ff", "{redone}");
+    assert_eq!(item["annotation"]["contents"], "changed", "{redone}");
+}
+
+#[test]
+fn an_update_changed_since_is_undone_by_value_for_what_still_shows_it() {
+    // When someone changed the annotation since, the dictionaries no longer
+    // read as the update left them: the undo puts back, by value, the fields
+    // that still hold what the update set, and names the rest skipped.
+    let file = load();
+    let square = case(&file, "square-resize");
+    let mut replay = open(&file);
+    let created = create(&mut replay, &square.draft, square.page_object_number, &BTreeMap::new());
+    let apply = |replay: &mut common::replay::Replay, op_id: &str, change: Value| {
+        replay
+            .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+                "opId": op_id, "change": change }))
+            .unwrap_or_else(|e| panic!("{op_id}: {e}"))
+    };
+    apply(
+        &mut replay,
+        "op-u",
+        json!({ "ops": [{ "type": "annotations.update", "ref": created["ref"],
+            "patch": { "color": "#0000ff", "contents": "changed" } }] }),
+    );
+    apply(
+        &mut replay,
+        "op-x",
+        json!({ "ops": [{ "type": "annotations.update", "ref": created["ref"],
+            "patch": { "contents": "someone else" } }] }),
+    );
+    let undone = apply(&mut replay, "op-v", json!({ "undoOf": "op-u" }));
+    let item = &undone["result"]["items"][0];
+    assert_ne!(item["appearance"]["action"], "restored", "{undone}");
+    assert_eq!(item["annotation"]["color"], created["color"], "{undone}");
+    assert_eq!(item["annotation"]["contents"], "someone else", "{undone}");
+    assert_eq!(item["skipped"], json!(["contents"]), "{undone}");
 }
 
 #[test]

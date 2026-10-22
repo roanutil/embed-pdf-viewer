@@ -18,7 +18,7 @@ use super::item::ChangeItem;
 use super::op::OpResources;
 use super::record::{
     AnnotationRemoveStep, AnnotationReorderStep, AnnotationRestoreStep, ObjectsRevertStep,
-    ReverseStep, RevertFallback, RevertSubject, StepRights, UnlinkedPopup,
+    ReverseStep, RevertFallback, RevertSubject, StepRights,
 };
 use crate::auth::scope::{CollabAction, CollabEntity, CollabTarget, DocCapability};
 use crate::cancel::CancelToken;
@@ -31,7 +31,8 @@ use crate::features::annotation::write::create::{
 use crate::features::annotation::write::draft::AnnotationActor;
 use crate::features::annotation::write::prepare::DraftResources;
 use crate::features::annotation::write::update::{
-    UpdateRequest, UpdateServices, update_annotation as update,
+    AnnotationUpdateResult, AppearanceAction, AppearanceOutcome, UpdateRequest, UpdateServices,
+    update_annotation as update,
 };
 use crate::features::annotation::write::{delete, reorder};
 use crate::identity::{AnnotationRef, PageObjectNumber};
@@ -375,18 +376,24 @@ fn write_delete(
     let refs: Vec<AnnotationRef> =
         members.iter().map(delete::member_ref).collect::<Result<_, _>>()?;
     let going: Vec<String> = refs.iter().map(AnnotationRef::key).collect();
-    // A popup that goes without its annotation unlinks it.
-    let unlinked: Vec<UnlinkedPopup> = members
-        .iter()
-        .zip(&refs)
-        .filter(|(member, _)| member.get("subtype").and_then(Value::as_str) == Some("popup"))
-        .filter_map(|(member, popup)| {
-            let parent: AnnotationRef =
-                serde_json::from_value(member.get("parent").cloned()?).ok()?;
-            (!going.contains(&parent.key()))
-                .then(|| UnlinkedPopup { reference: parent, popup: popup.clone() })
-        })
-        .collect();
+    // A popup that goes without its annotation unlinks it: the annotation
+    // that stays is captured as it is, and as the delete leaves it.
+    let mut parents = Vec::new();
+    for member in &members {
+        if member.get("subtype").and_then(Value::as_str) != Some("popup") {
+            continue;
+        }
+        let Some(parent) = member
+            .get("parent")
+            .and_then(|parent| serde_json::from_value::<AnnotationRef>(parent.clone()).ok())
+        else {
+            continue;
+        };
+        if !going.contains(&parent.key()) {
+            parents.push((annotation_object_number(ctx, &parent)?, &[] as &[&str]));
+        }
+    }
+    let pending = super::objects::capture_before(document, &parents);
     let capture = if members.is_empty() {
         None
     } else {
@@ -417,7 +424,7 @@ fn write_delete(
         page,
         members: result.meta.changed.clone(),
         capture,
-        unlinked,
+        unlinked: super::objects::capture_after(document, pending)?,
         rights,
     });
     Ok(Done {
@@ -525,24 +532,9 @@ pub fn restore_annotations(
         ));
     }
     // A popup the delete took from an annotation that stayed links to it
-    // again, while that annotation names no popup, as the delete left it.
-    for link in &step.unlinked {
-        let resolve = |reference| {
-            crate::features::annotation::write::resolve::resolve_annotation_index_raw(
-                document, page_index, reference,
-            )
-            .ok()
-            .and_then(|at| document.raw_annotation(page_index, at))
-        };
-        if let (Some(parent), Some(popup)) = (resolve(&link.reference), resolve(&link.popup))
-            && matches!(parent.linked_annotation("Popup"), Ok(None))
-            && !matches!(parent.set_linked_annotation("Popup", &popup), Ok(true))
-        {
-            return Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "restoring /Popup failed",
-            ));
-        }
+    // again, when that annotation is as the delete left it.
+    if !step.unlinked.is_empty() && super::objects::unchanged_since(document, &step.unlinked) {
+        super::objects::revert_objects(document, &step.unlinked)?;
     }
     let after = listed(&CancelToken::never())?;
     let restored = step
@@ -901,9 +893,17 @@ pub fn update_annotation(
     write_update(ctx, reference, patch.clone(), resources, "annotations.update")
 }
 
+/// The keys whose objects an update's capture of an annotation holds
+/// (`APPEARANCE_KEYS`): its appearance streams and its file.
+const APPEARANCE_KEYS: &[&str] = &["AP", "FS"];
+
 /// An update of `reference` with `patch`, recording its reverse
 /// (`writeUpdate`), reported as `reports`: an annotation's update, or a
-/// widget's `forms.updateWidget`.
+/// widget's `forms.updateWidget`. The reverse puts back the dictionaries the
+/// update wrote, captured before it (and, under `/AP` and `/FS`, the objects
+/// the layer held), while each reads as the update left it; when someone
+/// changed them since, it puts back by value only the fields that still hold
+/// what the update set.
 pub(super) fn write_update(
     ctx: &mut ChangeContext<'_>,
     reference: &AnnotationRef,
@@ -911,6 +911,13 @@ pub(super) fn write_update(
     resources: &OpResources,
     reports: &str,
 ) -> Result<Done, EngineError> {
+    // Captures go by object number: an annotation born inline gets one
+    // first.
+    {
+        let owned = ctx.session.document()?;
+        let page = reference.page();
+        delete::promote_inline_annotations(owned.document(), owned.page_index(page)?, page)?;
+    }
     let before = read_annotation(ctx, reference)?;
     // A widget's patch as its field's family takes it (`fitWidgetToFamily`).
     let patch = if before.get("subtype").and_then(Value::as_str) == Some("widget") {
@@ -922,6 +929,11 @@ pub(super) fn write_update(
         patch
     };
     let actor = authorize_update(ctx, &before, patch.get("groupId"))?;
+    let mut wanted = vec![(annotation_object_number(ctx, reference)?, APPEARANCE_KEYS)];
+    for other in linked_to(&before, &patch) {
+        wanted.push((annotation_object_number(ctx, &other)?, &[]));
+    }
+    let pending = super::objects::capture_before(ctx.session.document()?.document(), &wanted);
     let appearance = resources.appearance.as_ref().map(|r| r.bytes()).transpose()?;
     let file = resources.file.as_ref().map(|r| r.bytes()).transpose()?;
     let session = &*ctx.session;
@@ -945,10 +957,11 @@ pub(super) fn write_update(
         &services,
         ctx.cancel,
     )?;
+    let objects = super::objects::capture_after(owned.document(), pending)?;
     let after = result.annotation.clone();
     let reverse = ReverseStep::ObjectsRevert(ObjectsRevertStep {
         reports: reports.to_owned(),
-        objects: Vec::new(),
+        objects,
         subject: RevertSubject::Annotation { annotation: reference.clone() },
         appearance_changed: Some(result.appearance.changed),
         fallback: Some(values_changed(&before, &after, &written)),
@@ -1004,6 +1017,32 @@ fn updated_item(
     })
 }
 
+/// `linkedTo`: the annotations an update writes besides the one it names: a
+/// note and its popup share `/Open`, and relinking a popup writes its old
+/// and new parent.
+fn linked_to(annotation: &Map<String, Value>, patch: &Map<String, Value>) -> Vec<AnnotationRef> {
+    let reference = |key: &str, from: &Map<String, Value>| -> Option<AnnotationRef> {
+        from.get(key)
+            .filter(|value| !value.is_null())
+            .and_then(|value| serde_json::from_value(value.clone()).ok())
+    };
+    let subtype = annotation.get("subtype").and_then(Value::as_str);
+    let mut linked = Vec::new();
+    if patch.contains_key("open") {
+        if subtype == Some("text") {
+            linked.extend(reference("popup", annotation));
+        }
+        if subtype == Some("popup") {
+            linked.extend(reference("parent", annotation));
+        }
+    }
+    if subtype == Some("popup") && patch.contains_key("parent") {
+        linked.extend(reference("parent", annotation));
+        linked.extend(reference("parent", patch));
+    }
+    linked
+}
+
 /// `valuesChanged`: the fields the patch named whose value changed, their
 /// old values and the values the update left.
 fn values_changed(
@@ -1025,9 +1064,12 @@ fn values_changed(
     RevertFallback::Annotation { restore: pick(before), left: pick(after) }
 }
 
-/// Undoes an update (`revertAnnotation`): puts back, by value, each field it
-/// changed that still holds what it left, and reports the rest skipped.
-/// Left alone when the annotation is gone or none still shows the update.
+/// Undoes an update (`revertAnnotation`): puts the dictionaries it wrote back
+/// exactly, from their captures, while each reads as the update left it
+/// (`restored`). When someone changed them since, puts back, by value, each
+/// field it changed that still holds what it left, and reports the rest
+/// skipped. Left alone when the annotation is gone or none still shows the
+/// update.
 pub fn revert_annotation(
     ctx: &mut ChangeContext<'_>,
     step: &ObjectsRevertStep,
@@ -1046,9 +1088,41 @@ pub fn revert_annotation(
             DocCapability::DocAnnotateModify
         },
     )?;
-    // re-port (Task 8): 8.30 puts the dictionaries back exactly from their
-    // captures while they read as the update left them; until then every
-    // revert takes the value path below.
+    let document = ctx.session.document()?.document();
+    if super::objects::unchanged_since(document, &step.objects) {
+        authorize_update(ctx, &current, None)?;
+        let redo = super::objects::revert_objects(document, &step.objects)?;
+        let annotation = read_annotation(ctx, reference)?;
+        let result = AnnotationUpdateResult {
+            annotation: annotation.clone(),
+            appearance: AppearanceOutcome {
+                action: AppearanceAction::Restored,
+                changed: step.appearance_changed.unwrap_or(true),
+            },
+            meta: AnnotationMutationMeta::of(
+                &ctx.session.write_stamp()?,
+                reference.page(),
+                vec![reference.clone()],
+            ),
+            resolved: Map::new(),
+        };
+        let fallback = step.fallback.as_ref().map(|fallback| match fallback {
+            RevertFallback::Annotation { restore, left } => {
+                RevertFallback::Annotation { restore: left.clone(), left: restore.clone() }
+            }
+            other => other.clone(),
+        });
+        return Ok(Done {
+            item: updated_item(ctx, &step.reports, reference, annotation, result)?,
+            reverse: vec![ReverseStep::ObjectsRevert(ObjectsRevertStep {
+                objects: redo,
+                fallback,
+                ..step.clone()
+            })],
+        });
+    }
+    // Someone changed it since: put back by value what still shows the
+    // update.
     let Some(RevertFallback::Annotation { restore, left }) = &step.fallback else {
         return left_alone(ctx, &step.reports);
     };

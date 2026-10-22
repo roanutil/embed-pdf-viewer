@@ -3,12 +3,12 @@
 //!
 //! A create's reverse deletes the file while it is still the file the create
 //! made; a delete's reverse brings the file back while no file has its key.
-//! Upstream guards the first with the file's canonical bytes and restores
-//! the second from a raw capture, both of which the fork offers only on a
-//! layer inside a layer transaction. This engine has neither yet (8.30), so
-//! the guard is the file as it reads ([`AttachmentFileInfo`]) and the
-//! capture the file as the API reads and writes it
-//! ([`crate::features::files::attachments::AttachmentCapture`]).
+//! The guard is the file's canonical bytes
+//! (`EPDFAttachment_ExportCanonicalToOwnedBuffer`), and the restore imports
+//! the fork's raw capture of what the delete removed
+//! (`EPDFAttachment_ExportRawToOwnedBuffer`, `EPDFAttachment_ImportRaw`), in
+//! the change's layer transaction: the same file specification at the same
+//! object number, its streams, and its `/Params` as they were.
 
 use serde::{Deserialize, Serialize};
 
@@ -17,9 +17,7 @@ use super::item::ChangeItem;
 use super::record::{AttachmentRemoveStep, AttachmentRestoreStep, ReverseStep};
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::files::attachments::{
-    self as files, AttachmentFileBase, AttachmentRef, EmbeddedFileItem,
-};
+use crate::features::files::attachments::{self as files, AttachmentFileBase, AttachmentRef};
 use crate::mutation::MutationMeta;
 
 /// The `meta` of an attachment write: the attachments it created or deleted
@@ -42,7 +40,7 @@ pub fn create_attachment(
     ctx.authority.require(DocCapability::DocAttachmentsModify)?;
     let document = ctx.session.document()?.document();
     let attachment = files::create_attachment(document, file, bytes, ctx.clock, ctx.cancel)?;
-    let reverse = remove_step_of(attachment.clone());
+    let reverse = remove_step_of(ctx, &attachment.reference)?;
     Ok(Done {
         item: ChangeItem::AttachmentsCreate {
             meta: meta_of(ctx, &attachment.reference)?,
@@ -52,8 +50,8 @@ pub fn create_attachment(
     })
 }
 
-/// `attachments.delete`, captured first so an undo brings back the same
-/// file.
+/// `attachments.delete`, captured in its transaction so an undo brings back
+/// the same file.
 pub fn delete_attachment(
     ctx: &mut ChangeContext<'_>,
     reference: &AttachmentRef,
@@ -68,8 +66,9 @@ pub fn remove_attachment(
     ctx: &mut ChangeContext<'_>,
     step: &AttachmentRemoveStep,
 ) -> Result<Done, EngineError> {
-    let now = files::find_attachment(ctx.session.document()?.document(), step.reference.as_key())?;
-    if now.map(|entry| entry.file).as_ref() != Some(&step.left) {
+    let now =
+        ctx.session.document()?.document().export_attachment_canonical(step.reference.as_key());
+    if now.as_ref() != Some(&step.left) {
         return left_alone(ctx, "attachments.delete");
     }
     ctx.authority.require(DocCapability::DocAttachmentsModify)?;
@@ -88,14 +87,19 @@ pub fn restore_attachment(
         return left_alone(ctx, "attachments.restore");
     }
     ctx.authority.require(DocCapability::DocAttachmentsModify)?;
-    files::restore_attachment(document, key, &step.capture)?;
+    if !document.import_attachment_raw(&step.capture) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFAttachment_ImportRaw refused a capture",
+        ));
+    }
     let attachment = files::find_attachment(document, key)?.ok_or_else(|| {
         EngineError::with_message(
             EngineErrorCode::Unknown,
             format!("attachment '{key}' did not come back"),
         )
     })?;
-    let reverse = remove_step_of(attachment.clone());
+    let reverse = remove_step_of(ctx, &step.reference)?;
     Ok(Done {
         item: ChangeItem::AttachmentsRestore { meta: meta_of(ctx, &step.reference)?, attachment },
         reverse: vec![reverse],
@@ -117,7 +121,12 @@ fn write_delete(
         )
         .with_details(serde_json::json!({ "field": "ref" })));
     }
-    let capture = files::capture_attachment(document, key)?;
+    let capture = document.export_attachment_raw(key).ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::Unknown,
+            format!("the capture of attachment '{key}' failed"),
+        )
+    })?;
     files::delete_attachment(document, key, ctx.cancel)?;
     Ok(Done {
         item: ChangeItem::AttachmentsDelete { meta: meta_of(ctx, reference)? },
@@ -128,13 +137,21 @@ fn write_delete(
     })
 }
 
-/// The step that deletes `attachment` again while it reads as it does now
-/// (`removeStepOf`).
-fn remove_step_of(attachment: EmbeddedFileItem) -> ReverseStep {
-    ReverseStep::AttachmentsRemove(AttachmentRemoveStep {
-        reference: attachment.reference,
-        left: attachment.file,
-    })
+/// The step that deletes the file under `reference` again while it reads as
+/// it does now, in canonical bytes (`removeStepOf`).
+fn remove_step_of(
+    ctx: &ChangeContext<'_>,
+    reference: &AttachmentRef,
+) -> Result<ReverseStep, EngineError> {
+    let key = reference.as_key();
+    let left =
+        ctx.session.document()?.document().export_attachment_canonical(key).ok_or_else(|| {
+            EngineError::with_message(
+                EngineErrorCode::Unknown,
+                format!("attachment '{key}' is not there to guard"),
+            )
+        })?;
+    Ok(ReverseStep::AttachmentsRemove(AttachmentRemoveStep { reference: reference.clone(), left }))
 }
 
 /// A write's meta, naming the file it changed (`AttachmentMutator.meta`).
