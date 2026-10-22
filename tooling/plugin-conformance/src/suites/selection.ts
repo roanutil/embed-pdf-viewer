@@ -11,13 +11,8 @@
  * reducer and the handle policy.
  */
 import {
-  buildPageTextLayout,
-  expandTextRangeToLine,
-  expandTextRangeToWord,
-  sliceTextByChars,
-  textGlyphAt,
-  textGlyphQuad,
-  textSegmentsForRange,
+  createPdfTextLayout,
+  sliceText,
   type PageGeometrySnapshot,
   type PageTextSnapshot,
   type PageRef,
@@ -33,23 +28,70 @@ import {
   selectionPlugin,
 } from '../../../../packages/plugin/selection/src/index';
 import type { SelectionHandleEndpoint, SelectionHandleView } from '../../../../packages/plugin/selection/src/index';
+import { SelectionToken } from '../../../../packages/plugin/selection/src/host-contract';
 import {
-  SelectionToken,
-  buildSelectionPageGeometry,
-  contentPointToPdf,
+  clearSelection,
   initialSelectionState,
-  reduceSelection,
-  toContentSegment,
-  toContentTextQuad,
-} from '../../../../packages/plugin/selection/src/internal';
+  setHighlightHidden,
+  setSelecting,
+  setSelection,
+  type SelectionState,
+} from '../../../../packages/plugin/selection/src/model';
 
 import { createCapabilityToken, type AnyPlugin, type OperationOptions } from '@embedpdf/core';
 import type { SelectionConfig, TextRange } from '../../../../packages/plugin/selection/src/contract';
 import type { SelectionHostCapability } from '../../../../packages/plugin/selection/src/host-contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
+import { removedUpstream } from '../removed';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
+
+// ── upstream's text layout ───────────────────────────────────────────────────
+//
+// a10ed2659 made the free layout functions internal: a page's layout is a
+// `TextLayout` (`createPdfTextLayout`), and words, lines, quads and segments
+// are its methods. `charAt` takes no tolerance any more. `sliceTextByChars`
+// became `sliceText(snapshot, range)`. These reach the same code there.
+
+type Layout = ReturnType<typeof createPdfTextLayout>;
+const buildPageTextLayout = (snap: PageGeometrySnapshot): Layout => createPdfTextLayout(snap as never);
+const textGlyphAt = (layout: Layout, p: { x: number; y: number }, _tolerance?: number) => layout.charAt(p);
+const expandTextRangeToWord = (layout: Layout, glyph: number) => layout.wordAt(glyph);
+const expandTextRangeToLine = (layout: Layout, glyph: number) => layout.lineAt(glyph);
+const textGlyphQuad = (layout: Layout, glyph: number) => layout.charQuad(glyph);
+const textSegmentsForRange = (layout: Layout, start: number, count: number) => layout.segments({ start, count });
+const sliceTextByChars = (snap: PageTextSnapshot, from: number, to: number) => sliceText(snap, { start: from, count: to - from });
+
+// 3bad82c8d moved selection into page space: the content-space seam
+// (`buildSelectionPageGeometry`, `contentPointToPdf`, `toContentTextQuad`,
+// `toContentSegment`) is gone.
+const buildSelectionPageGeometry = removedUpstream('buildSelectionPageGeometry', '3bad82c8d');
+const contentPointToPdf = removedUpstream('contentPointToPdf', '3bad82c8d');
+const toContentTextQuad = removedUpstream('toContentTextQuad', '3bad82c8d');
+const toContentSegment = removedUpstream('toContentSegment', '3bad82c8d');
+
+/**
+ * 4fc1a32af replaced the reducer with one transition per action, and
+ * renamed `gestureActive` to `selecting`. `pageLoaded` has no transition:
+ * the state no longer tracks loaded pages.
+ */
+const reduceSelection = (state: SelectionState, action: { type: string; [field: string]: unknown }) => {
+  switch (action.type) {
+    case 'pageLoaded':
+      return removedUpstream("reduceSelection 'pageLoaded'", '4fc1a32af')();
+    case 'set':
+      return setSelection(state, action.selection as never, action.segments as never);
+    case 'clear':
+      return clearSelection(state);
+    case 'setHighlightHidden':
+      return setHighlightHidden(state, action.hidden as boolean);
+    case 'setGestureActive':
+      return setSelecting(state, action.active as boolean);
+    default:
+      return state;
+  }
+};
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
@@ -1234,7 +1276,7 @@ const maps: Record<string, PageTextSnapshot> = {
  *  glyph. */
 const layoutSweep = (snap: PageGeometrySnapshot) => {
   const layout = buildPageTextLayout(snap);
-  const n = layout.glyphs.length;
+  const n = layout.charCount;
   const segments: unknown[] = [];
   for (let from = -1; from <= n; from++)
     for (const count of new Set([0, 1, 2, 3, 5, 8, n - from, n + 1 - from])) segments.push(textSegmentsForRange(layout, from, count));
@@ -1259,7 +1301,7 @@ const glyphAtGrid = (snap: PageGeometrySnapshot, grid: { x0: number; x1: number;
 /** The two runs of a pair, whole: segments, and the line around each end. */
 const pairProbe = (snap: PageGeometrySnapshot) => {
   const layout = buildPageTextLayout(snap);
-  const n = layout.glyphs.length;
+  const n = layout.charCount;
   return { segments: textSegmentsForRange(layout, 0, n), first: expandTextRangeToLine(layout, 0), last: expandTextRangeToLine(layout, n - 1) };
 };
 
@@ -1272,7 +1314,7 @@ const sliceSweep = (snap: PageTextSnapshot) => {
 };
 
 const geomOf = (spec: { snapshot: PageGeometrySnapshot; crop: PdfRect; rotation: 0 | 90 | 180 | 270; userUnit: number }) =>
-  buildSelectionPageGeometry(spec.snapshot, spec.crop, spec.rotation, spec.userUnit);
+  buildSelectionPageGeometry(spec.snapshot, spec.crop, spec.rotation, spec.userUnit) as never;
 type GeomSpec = Parameters<typeof geomOf>[0];
 const spec = (snapshot: PageGeometrySnapshot, c = crop, rotation: 0 | 90 | 180 | 270 = 0, userUnit = 1) => ({
   snapshot,
@@ -1285,8 +1327,8 @@ const geometryFns = {
   buildSelectionPageGeometry,
   contentPointToPdf: (s: GeomSpec, p: { x: number; y: number }) => contentPointToPdf(geomOf(s), p),
   toContentTextQuad: (s: GeomSpec, q: PdfQuad) => toContentTextQuad(geomOf(s), q),
-  toContentSegment: (s: GeomSpec, segment: Parameters<typeof toContentSegment>[1]) => toContentSegment(geomOf(s), segment),
-  buildPageTextLayout,
+  toContentSegment: (s: GeomSpec, segment: unknown) => toContentSegment(geomOf(s), segment),
+  buildPageTextLayout: removedUpstream('buildPageTextLayout', 'a10ed2659'),
   textGlyphAt: (snap: PageGeometrySnapshot, p: { x: number; y: number }, tolerance?: number) => textGlyphAt(buildPageTextLayout(snap), p, tolerance),
   expandTextRangeToWord: (snap: PageGeometrySnapshot, glyph: number) => expandTextRangeToWord(buildPageTextLayout(snap), glyph),
   expandTextRangeToLine: (snap: PageGeometrySnapshot, glyph: number) => expandTextRangeToLine(buildPageTextLayout(snap), glyph),
@@ -1308,8 +1350,17 @@ const allGlyphs = (snap: PageGeometrySnapshot) => {
 };
 
 const state = (over: Record<string, unknown> = {}) => ({ ...initialSelectionState(), ...over });
-const segmentsOf = (s: GeomSpec, from: number, to: number) =>
-  textSegmentsForRange(buildPageTextLayout(s.snapshot), from, to - from + 1).map((seg) => toContentSegment(geomOf(s), seg));
+/**
+ * The content-space segments of `simple(3)`'s glyphs 0 to 2, as the old
+ * `toContentSegment` gave them (removed in 3bad82c8d), frozen from the vectors.
+ */
+const SIMPLE3_SEGMENTS_0_2 = [
+  {
+    quad: { upperStart: { x: 10, y: 0 }, upperEnd: { x: 34, y: 0 }, lowerStart: { x: 10, y: 10 }, lowerEnd: { x: 34, y: 10 } },
+    rect: { x: 10, y: 0, width: 24, height: 10 },
+    advance: 1,
+  },
+];
 
 const geometryCases: FunctionCase[] = [
   fc('buildSelectionPageGeometry', 'simple', simple(3), crop, 0, 1),
@@ -1428,7 +1479,7 @@ const geometryCases: FunctionCase[] = [
   fc('reduceSelection', 'set', state({ gestureActive: true }), {
     type: 'set',
     selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 2 } },
-    segments: { 1: segmentsOf(spec(simple(3)), 0, 2) },
+    segments: { 1: SIMPLE3_SEGMENTS_0_2 },
   }),
   fc('reduceSelection', 'clear', state({ selection: { anchor: { page: pr(1), glyph: 0 }, focus: { page: pr(1), glyph: 0 } }, segments: {} }), { type: 'clear' }),
   fc('reduceSelection', 'clear-segments-only', state({ segments: { 2: [] } }), { type: 'clear' }),
