@@ -9,7 +9,9 @@
     "coverage": "tsx --conditions=development src/coverage.ts",
     "coverage:check": "tsx --conditions=development src/coverage.ts --check",
     "typecheck": "tsc --noEmit",
-    "member-order:allow": "tsx src/member-order-allow.ts"
+    "member-order:allow": "tsx src/member-order-allow.ts",
+    "test:harness": "node --import=tsx --conditions=development --test test/harness.test.ts",
+    "audit:kernel": "node --import=tsx --conditions=development test/audit-kernel.ts"
   },
   "devDependencies": {
     "@embedpdf/core": "workspace:*",

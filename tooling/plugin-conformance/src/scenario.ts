@@ -11,14 +11,25 @@ import {
   createCapabilityToken,
   createKernel,
   DocumentsToken,
-  type Action,
   type AnyPlugin,
   type CapabilityToken,
   type Kernel,
 } from '@embedpdf/core';
 
-import { canonical, canonicalError, isThenable, snapshotHooks, type CanonicalHooks } from './canonical';
-import { createFakeEngine, makeError, type ErrorSpec, type FakeEngine, type FakeEngineSpec } from './fake-engine';
+import {
+  canonical,
+  canonicalError,
+  isThenable,
+  snapshotHooks,
+  type CanonicalHooks,
+} from './canonical';
+import {
+  createFakeEngine,
+  makeError,
+  type ErrorSpec,
+  type FakeEngine,
+  type FakeEngineSpec,
+} from './fake-engine';
 
 // ── the vector format ─────────────────────────────────────────────────────────
 
@@ -45,9 +56,19 @@ interface Metered {
 }
 
 export type Step =
-  | ({ readonly op: 'call'; readonly target: Target; readonly method?: string; readonly args?: readonly unknown[] } & Metered)
+  | ({
+      readonly op: 'call';
+      readonly target: Target;
+      readonly method?: string;
+      readonly args?: readonly unknown[];
+    } & Metered)
   | ({ readonly op: 'emit'; readonly doc: string; readonly event: unknown } & Metered)
-  | ({ readonly op: 'settle'; readonly label: string; readonly value?: unknown; readonly error?: ErrorSpec } & Metered)
+  | ({
+      readonly op: 'settle';
+      readonly label: string;
+      readonly value?: unknown;
+      readonly error?: ErrorSpec;
+    } & Metered)
   | { readonly op: 'advance'; readonly ms: number }
   | ({ readonly op: 'abort'; readonly promise: number; readonly reason?: unknown } & Metered)
   | ({ readonly op: 'drain' } & Metered);
@@ -55,7 +76,7 @@ export type Step =
 /** A case either snapshots state after every step, or says why it does not.
  *  `reason` lands in the vector beside `snapshot: 'none'`: what the case
  *  compares instead, so a reviewer can tell an outcome-only case from one
- *  that skipped the state its reducers wrote. */
+ *  that skipped the state its plugins wrote. */
 export type ScenarioCase = ScenarioCaseBase &
   (
     | {
@@ -89,7 +110,8 @@ export type Outcome =
 export interface TraceEntry {
   outcome?: Outcome;
   settled: { promise: number; resolved?: unknown; rejected?: unknown }[];
-  actions: { slice: string; action: unknown }[];
+  stateChanges: { slice: string; previous: unknown; next: unknown }[];
+  documentEvents: { event: string; value: unknown }[];
   engine: unknown[];
   callbacks: { fn: string; args: unknown[] }[];
   reports: unknown[];
@@ -133,7 +155,8 @@ export function tokenNamed(name: string, hint?: string): CapabilityToken<unknown
 export function registerPlugin(name: string, entry: PluginEntry): void {
   // Two suites registering one name would leave every case of the first
   // building the second's plugin, depending on import order.
-  if (factories.has(name)) throw new Error(`[scenario] plugin factory "${name}" is registered twice`);
+  if (factories.has(name))
+    throw new Error(`[scenario] plugin factory "${name}" is registered twice`);
   factories.set(name, entry);
   for (const token of entry.tokens ?? []) tokens.set(token.name, token);
 }
@@ -151,19 +174,6 @@ export function registerToken(token: CapabilityToken<unknown>): void {
   tokens.set(token.name, token);
 }
 
-// ── the core-action spy ───────────────────────────────────────────────────────
-
-const CORE_ACTIONS = [
-  '@@core/document-added',
-  '@@core/document-removed',
-  '@@core/active-changed',
-  '@@core/order-changed',
-  '@@core/document-pages-updated',
-  '@@core/document-opening',
-  '@@core/document-locked',
-  '@@core/document-open-failed',
-];
-
 // ── running a case ────────────────────────────────────────────────────────────
 
 /** Real `setImmediate`, captured before fake timers install: one turn of it
@@ -173,13 +183,17 @@ const realSetTimeout = globalThis.setTimeout;
 const realClearTimeout = globalThis.clearTimeout;
 const drainMicrotasks = () => new Promise<void>((resolve) => realSetImmediate(resolve));
 
-export async function runScenario(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
+export async function runScenario(
+  scenario: ScenarioCase,
+): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
   const base = await instanceBase();
   const { trace, unmatched } = await runScenarioRaw(scenario);
   return { trace: renumberInstances(trace, base) as TraceEntry[], unmatched };
 }
 
-async function runScenarioRaw(scenario: ScenarioCase): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
+async function runScenarioRaw(
+  scenario: ScenarioCase,
+): Promise<{ trace: TraceEntry[]; unmatched: string[] }> {
   assertPlainAnswers(scenario);
   runTokens = new Map();
   const clock = FakeTimers.install({
@@ -228,19 +242,35 @@ async function runInstalled(
   };
 
   let fake: FakeEngine;
-  const decode = (value: unknown): unknown => decodeValue(value, { hooks, refs, fake: () => fake, entry: () => entry });
-  fake = createFakeEngine(scenario.engine ?? {}, decode);
+  const decode = (value: unknown): unknown =>
+    decodeValue(value, { hooks, refs, fake: () => fake, entry: () => entry });
+  fake = createFakeEngine(scenario.engine ?? {}, decode, (error) =>
+    entry.reports.push(canonicalError(error, snapshotHooks)),
+  );
 
   const spy: AnyPlugin = {
     id: '@@conformance/spy',
-    effects: (ctx) => {
-      for (const type of CORE_ACTIONS) {
-        ctx.onAction(type, (action) => entry.actions.push({ slice: '@@core', action: canonical(action, snapshotHooks) }));
-      }
-    },
+    create: (ctx) => ({
+      api: {},
+      connect: () => {
+        const documents = ctx.get(DocumentsToken);
+        const observe = <T>(event: string, source: (listener: (value: T) => void) => () => void) =>
+          ctx.listen(source, (value) =>
+            entry.documentEvents.push({ event, value: canonical(value, snapshotHooks) }),
+          );
+        observe('opened', documents.onOpened);
+        observe('openFailed', documents.onOpenFailed);
+        observe('locked', documents.onLocked);
+        observe('closed', documents.onClosed);
+        observe('activeChanged', documents.onActiveChanged);
+        observe('pagesChanged', documents.onPagesChanged);
+        observe('unsavedChangesChanged', documents.onUnsavedChangesChanged);
+      },
+    }),
   };
   const env: PluginEnv = {
-    log: (fn, args) => entry.callbacks.push({ fn, args: args.map((arg) => canonical(arg, snapshotHooks)) }),
+    log: (fn, args) =>
+      entry.callbacks.push({ fn, args: args.map((arg) => canonical(arg, snapshotHooks)) }),
     defer: (label, resolve, reject) => fake.defer(label, resolve, reject),
     token: tokenNamed,
   };
@@ -277,7 +307,7 @@ async function runInstalled(
   const trace: TraceEntry[] = [];
   let loggedEngine = 0;
   for (const step of scenario.steps) {
-    entry = blankEntry();
+    if (trace.length > 0) entry = blankEntry();
     const log = entry.callbacks;
     // Started inside runStep, in the same synchronous run as the step's
     // action: awaiting runStep first would put the meter a turn behind.
@@ -311,17 +341,35 @@ async function runInstalled(
 async function settledInRealTime(promise: PromiseLike<unknown>): Promise<void> {
   let timer: ReturnType<typeof realSetTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = realSetTimeout(() => reject(new Error('[scenario] awaitCalls: a call did not settle in 5 s')), 5000);
+    timer = realSetTimeout(
+      () => reject(new Error('[scenario] awaitCalls: a call did not settle in 5 s')),
+      5000,
+    );
   });
   try {
-    await Promise.race([Promise.resolve(promise).then(() => undefined, () => undefined), timeout]);
+    await Promise.race([
+      Promise.resolve(promise).then(
+        () => undefined,
+        () => undefined,
+      ),
+      timeout,
+    ]);
   } finally {
     realClearTimeout(timer);
   }
 }
 
 function blankEntry(): TraceEntry {
-  return { settled: [], actions: [], engine: [], callbacks: [], reports: [], status: '', engineState: {} };
+  return {
+    settled: [],
+    stateChanges: [],
+    documentEvents: [],
+    engine: [],
+    callbacks: [],
+    reports: [],
+    status: '',
+    engineState: {},
+  };
 }
 
 function instantiate(spec: PluginSpec, env: PluginEnv): AnyPlugin {
@@ -330,27 +378,23 @@ function instantiate(spec: PluginSpec, env: PluginEnv): AnyPlugin {
   return entry.factory(spec.config, env);
 }
 
-/** Wrap every context the kernel hands this plugin so its dispatches are
- *  logged with the slice they target, before the reducer runs. A proxy, not a
- *  spread: a controller context's `doc` is a getter that throws for a
- *  workspace plugin, and must stay lazy. */
+/** Observe committed session state without changing the context or its lifecycle. */
 function instrument(plugin: AnyPlugin, entry: () => TraceEntry): AnyPlugin {
-  const wrap = <C extends { dispatch(action: Action): void; documentId?: string }>(ctx: C): C => {
-    const slice = ctx.documentId ? `${plugin.id}::${ctx.documentId}` : plugin.id;
-    const dispatch = (action: Action) => {
-      entry().actions.push({ slice, action: canonical(action, snapshotHooks) });
-      ctx.dispatch(action);
-    };
-    return new Proxy(ctx, {
-      get: (target, member) => (member === 'dispatch' ? dispatch : Reflect.get(target, member, target)),
-    });
-  };
   return {
     ...plugin,
-    capability: plugin.capability && ((ctx) => plugin.capability!(wrap(ctx))),
-    init: plugin.init && ((ctx) => plugin.init!(wrap(ctx))),
-    effects: plugin.effects && ((ctx) => plugin.effects!(wrap(ctx))),
-    create: plugin.create && ((ctx) => plugin.create!(wrap(ctx))),
+    create: (ctx) => {
+      const slice = ctx.documentId ? `${plugin.id}::${ctx.documentId}` : plugin.id;
+      ctx.cleanup(
+        ctx.state.onChange(({ previous, next }) => {
+          entry().stateChanges.push({
+            slice,
+            previous: canonical(previous, snapshotHooks),
+            next: canonical(next, snapshotHooks),
+          });
+        }),
+      );
+      return plugin.create(ctx);
+    },
   };
 }
 
@@ -364,17 +408,15 @@ function instrument(plugin: AnyPlugin, entry: () => TraceEntry): AnyPlugin {
  *  whose counter starts at zero writes. The Rust kernel counts per kernel. */
 let burned = false;
 async function instanceBase(): Promise<number> {
-  const fake = createFakeEngine(
-    { documents: { probe: { pages: [] } } },
-    (value) => value,
-  );
+  const fake = createFakeEngine({ documents: { probe: { pages: [] } } }, (value) => value);
   const kernel = createKernel({ engine: fake.engine, plugins: [], report: () => {} });
   await kernel.start();
   // Lane ids (`<lane>#<n>`) share the shape and count from one per lane.
   // Pushing the counter past any lane's count first keeps the two apart.
   if (!burned) {
     burned = true;
-    for (let i = 0; i < 1000; i += 1) void kernel.documents.open({ kind: 'bytes', id: `burn${i}` } as never).catch(() => {});
+    for (let i = 0; i < 1000; i += 1)
+      void kernel.documents.open({ kind: 'bytes', id: `burn${i}` } as never).catch(() => {});
   }
   await kernel.documents.open({ kind: 'bytes', id: 'probe', bytes: new Uint8Array() } as never);
   const instanceId = kernel.getState().core.documents.probe!.instanceId;
@@ -391,7 +433,8 @@ function renumberInstances(value: unknown, base: number): unknown {
   if (Array.isArray(value)) return value.map((item) => renumberInstances(item, base));
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
-    for (const [key, member] of Object.entries(value)) out[renumberInstances(key, base) as string] = renumberInstances(member, base);
+    for (const [key, member] of Object.entries(value))
+      out[renumberInstances(key, base) as string] = renumberInstances(member, base);
     return out;
   }
   return value;
@@ -405,7 +448,10 @@ function snapshot(kernel: Kernel, keys: readonly string[] | undefined): unknown 
     if (key === '@@core') continue;
     if (key in state.plugins) plugins[key] = state.plugins[key];
   }
-  return canonical(keys.includes('@@core') ? { core: state.core, plugins } : { plugins }, snapshotHooks);
+  return canonical(
+    keys.includes('@@core') ? { core: state.core, plugins } : { plugins },
+    snapshotHooks,
+  );
 }
 
 interface StepContext {
@@ -439,11 +485,13 @@ function runSyncStep(step: Exclude<Step, { op: 'advance' }>, ctx: StepContext): 
       ctx.fake.emit(step.doc, step.event);
       return;
     case 'settle':
-      if (!ctx.fake.settle(step.label, step)) throw new Error(`[scenario] nothing pending as "${step.label}"`);
+      if (!ctx.fake.settle(step.label, step))
+        throw new Error(`[scenario] nothing pending as "${step.label}"`);
       return;
     case 'abort': {
       const promise = ctx.promises[step.promise] as { abort?: (reason?: unknown) => void };
-      if (typeof promise?.abort !== 'function') throw new Error(`[scenario] promise ${step.promise} is not abortable`);
+      if (typeof promise?.abort !== 'function')
+        throw new Error(`[scenario] promise ${step.promise} is not abortable`);
       promise.abort(ctx.decode(step.reason));
       return;
     }
@@ -475,7 +523,8 @@ function resolveTarget(
   else if ('ref' in target) {
     const ref = ctx.refs[target.ref];
     if (!ref) throw new Error(`[scenario] no ref ${target.ref}`);
-    if (method !== undefined) throw new Error('[scenario] a ref is a function; call it without a method');
+    if (method !== undefined)
+      throw new Error('[scenario] a ref is a function; call it without a method');
     return { self: ref.self, fn: ref.fn };
   } else {
     object = ctx.kernel.capability(tokenNamed(target.token), target.doc);
@@ -517,7 +566,12 @@ function decodeValue(value: unknown, dc: DecodeContext): unknown {
   if ('$bytes' in object) return new Uint8Array(Buffer.from(object.$bytes as string, 'base64'));
   if ('$error' in object) return makeError(object.$error as ErrorSpec);
   if ('$map' in object) {
-    return new Map((object.$map as [unknown, unknown][]).map(([k, v]) => [decodeValue(k, dc), decodeValue(v, dc)]));
+    return new Map(
+      (object.$map as [unknown, unknown][]).map(([k, v]) => [
+        decodeValue(k, dc),
+        decodeValue(v, dc),
+      ]),
+    );
   }
   if ('$set' in object) return new Set((object.$set as unknown[]).map((v) => decodeValue(v, dc)));
   if ('$token' in object) return tokenNamed(object.$token as string);
@@ -536,7 +590,10 @@ function decodeValue(value: unknown, dc: DecodeContext): unknown {
 function scriptedFn(spec: FnSpec, dc: DecodeContext): (...args: unknown[]) => unknown {
   let calls = 0;
   return (...args: unknown[]) => {
-    dc.entry().callbacks.push({ fn: spec.$fn, args: args.map((arg) => canonical(arg, snapshotHooks)) });
+    dc.entry().callbacks.push({
+      fn: spec.$fn,
+      args: args.map((arg) => canonical(arg, snapshotHooks)),
+    });
     const answer = spec.seq ? spec.seq[Math.min(calls, spec.seq.length - 1)] : spec;
     calls += 1;
     if (answer.throws) throw makeError(answer.throws);
@@ -562,7 +619,9 @@ function refuseLiveTags(value: unknown, where: string): void {
   if (value === null || typeof value !== 'object') return;
   const tag = LIVE_TAGS.find((t) => t in value);
   if (tag) {
-    throw new Error(`[scenario] ${where} carries ${tag}, which the Rust runner would replay as raw JSON`);
+    throw new Error(
+      `[scenario] ${where} carries ${tag}, which the Rust runner would replay as raw JSON`,
+    );
   }
   for (const member of Object.values(value)) refuseLiveTags(member, where);
 }
@@ -586,12 +645,16 @@ function refuseInCallbackAnswers(value: unknown, where: string): void {
 function assertPlainAnswers(scenario: ScenarioCase): void {
   const where = `case "${scenario.name}"`;
   const engine = scenario.engine ?? {};
-  for (const response of engine.responses ?? []) refuseLiveTags(response.value, `${where}: engine ${response.path}`);
+  for (const response of engine.responses ?? [])
+    refuseLiveTags([response.value, response.events], `${where}: engine ${response.path}`);
   for (const [key, document] of Object.entries(engine.documents ?? {})) {
     for (const response of document.responses ?? []) {
-      refuseLiveTags(response.value, `${where}: document ${key} ${response.path}`);
+      refuseLiveTags(
+        [response.value, response.events],
+        `${where}: document ${key} ${response.path}`,
+      );
     }
-    refuseLiveTags([document.capabilities, document.security, document.pages], `${where}: document ${key}`);
+    refuseLiveTags([document.security, document.pages, document.namedPages], `${where}: document ${key}`);
   }
   refuseInCallbackAnswers(scenario.plugins, where);
   for (const step of scenario.steps) {
